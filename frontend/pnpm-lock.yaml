@@ -104,8 +104,8 @@ importers:
         specifier: ^0.511.0
         version: 0.511.0
       lucide-vue-next:
-        specifier: ^0.462.0
-        version: 0.462.0(vue@3.5.16(typescript@5.8.3))
+        specifier: ^0.511.0
+        version: 0.511.0(vue@3.5.16(typescript@5.8.3))
       markdown-it:
         specifier: ^14.1.0
         version: 14.1.0
@@ -3513,8 +3513,8 @@ packages:
   lucide-static@0.511.0:
     resolution: {integrity: sha512-/MWOjEyGZO84B16BeqbeleinbmeYxOBsbYDt/Yk6xGwMYwDm6dx43jKHMxGDqW9U84qWL13dNvVW0SMADhUSyg==}
 
-  lucide-vue-next@0.462.0:
-    resolution: {integrity: sha512-3H+GzhWA+qAW29EpJr/vCtPJK209zejoqsy6pCWSC6niPnywQeOA/yxl/WPQ38ODo3h7r0iGjpMKl8g/LS3+JA==}
+  lucide-vue-next@0.511.0:
+    resolution: {integrity: sha512-VSv0F3pHniGN7JMMzDcLFNMQbl8381+shNnHwV8hi+El7xl2ZL8qdNuzPoiBViKk8mTKK5K3ZDfmE/wEcTZVIQ==}
     peerDependencies:
       vue: '>=3.0.1'
 
@@ -8562,7 +8562,7 @@ snapshots:
 
   lucide-static@0.511.0: {}
 
-  lucide-vue-next@0.462.0(vue@3.5.16(typescript@5.8.3)):
+  lucide-vue-next@0.511.0(vue@3.5.16(typescript@5.8.3)):
     dependencies:
       vue: 3.5.16(typescript@5.8.3)
 
