@@ -456,12 +456,12 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		PlanUID:     planUID,
 		PipelineUID: rolloutUID,
 		Title:       request.Issue.Title,
-		Status:      storepb.IssueStatus_OPEN,
+		Status:      storepb.Issue_OPEN,
 		Type:        base.IssueDatabaseGeneral,
 		Description: request.Issue.Description,
 	}
 
-	issueCreateMessage.Payload = &storepb.IssuePayload{
+	issueCreateMessage.Payload = &storepb.Issue{
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
 			ApprovalTemplates:   nil,
@@ -533,7 +533,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		PlanUID:     nil,
 		PipelineUID: nil,
 		Title:       request.Issue.Title,
-		Status:      storepb.IssueStatus_OPEN,
+		Status:      storepb.Issue_OPEN,
 		Type:        base.IssueGrantRequest,
 		Description: request.Issue.Description,
 	}
@@ -543,7 +543,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.Internal, "failed to convert GrantRequest, error: %v", err)
 	}
 
-	issueCreateMessage.Payload = &storepb.IssuePayload{
+	issueCreateMessage.Payload = &storepb.Issue{
 		GrantRequest: convertedGrantRequest,
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
@@ -640,12 +640,12 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		PlanUID:     planUID,
 		PipelineUID: rolloutUID,
 		Title:       request.Issue.Title,
-		Status:      storepb.IssueStatus_OPEN,
+		Status:      storepb.Issue_OPEN,
 		Type:        base.IssueDatabaseDataExport,
 		Description: request.Issue.Description,
 	}
 
-	issueCreateMessage.Payload = &storepb.IssuePayload{
+	issueCreateMessage.Payload = &storepb.Issue{
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
 			ApprovalTemplates:   nil,
@@ -750,7 +750,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.IssuePayload{
+		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
 		},
 	})
@@ -868,7 +868,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, storepb.IssueStatus_DONE, s.store.GetSystemBotUser(ctx), ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, storepb.Issue_DONE, s.store.GetSystemBotUser(ctx), ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
@@ -947,7 +947,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 	})
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.IssuePayload{
+		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
 		},
 	})
@@ -1035,7 +1035,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.IssuePayload{
+		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
 		},
 	})
@@ -1130,7 +1130,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			}
 
 			if patch.PayloadUpsert == nil {
-				patch.PayloadUpsert = &storepb.IssuePayload{}
+				patch.PayloadUpsert = &storepb.Issue{}
 			}
 			patch.PayloadUpsert.Approval = &storepb.IssuePayloadApproval{
 				ApprovalFindingDone: false,
@@ -1233,7 +1233,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				patch.RemoveLabels = true
 			} else {
 				if patch.PayloadUpsert == nil {
-					patch.PayloadUpsert = &storepb.IssuePayload{}
+					patch.PayloadUpsert = &storepb.Issue{}
 				}
 				patch.PayloadUpsert.Labels = request.Issue.Labels
 			}

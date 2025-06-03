@@ -36,10 +36,10 @@ func init() {
 type IssueMessage struct {
 	Project         *ProjectMessage
 	Title           string
-	Status          storepb.IssueStatus
+	Status          storepb.Issue_Status
 	Type            base.IssueType
 	Description     string
-	Payload         *storepb.IssuePayload
+	Payload         *storepb.Issue
 	Subscribers     []*UserMessage
 	PipelineUID     *int
 	PlanUID         *int64
@@ -60,10 +60,10 @@ type IssueMessage struct {
 // UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
 	Title       *string
-	Status      *storepb.IssueStatus
+	Status      *storepb.Issue_Status
 	Description *string
 	// PayloadUpsert upserts the presented top-level keys.
-	PayloadUpsert *storepb.IssuePayload
+	PayloadUpsert *storepb.Issue
 	RemoveLabels  bool
 	Subscribers   *[]*UserMessage
 
@@ -85,7 +85,7 @@ type FindIssueMessage struct {
 	CreatedAtAfter  *time.Time
 	Types           *[]base.IssueType
 
-	StatusList []storepb.IssueStatus
+	StatusList []storepb.Issue_Status
 	TaskTypes  *[]base.TaskType
 	// Any of the task in the issue changes the instance with InstanceResourceID.
 	InstanceResourceID *string
@@ -137,7 +137,7 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 
 // CreateIssueV2 creates a new issue.
 func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
-	create.Status = storepb.IssueStatus_OPEN
+	create.Status = storepb.Issue_OPEN
 
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
@@ -493,7 +493,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	defer rows.Close()
 	for rows.Next() {
 		issue := IssueMessage{
-			Payload: &storepb.IssuePayload{},
+			Payload: &storepb.Issue{},
 		}
 		var payload []byte
 		var subscriberUIDs pgtype.Int4Array
@@ -517,8 +517,8 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		); err != nil {
 			return nil, err
 		}
-		if statusValue, ok := storepb.IssueStatus_value[statusString]; ok {
-			issue.Status = storepb.IssueStatus(statusValue)
+		if statusValue, ok := storepb.Issue_Status_value[statusString]; ok {
+			issue.Status = storepb.Issue_Status(statusValue)
 		} else {
 			return nil, errors.Errorf("invalid status string: %s", statusString)
 		}
@@ -571,7 +571,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 }
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
-func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status storepb.IssueStatus) error {
+func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status storepb.Issue_Status) error {
 	var ids []string
 	for _, id := range issueUIDs {
 		ids = append(ids, fmt.Sprintf("%d", id))

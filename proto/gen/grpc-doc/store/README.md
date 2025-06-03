@@ -149,9 +149,9 @@
   
 - [store/issue.proto](#store_issue-proto)
     - [GrantRequest](#bytebase-store-GrantRequest)
-    - [IssuePayload](#bytebase-store-IssuePayload)
+    - [Issue](#bytebase-store-Issue)
   
-    - [IssueStatus](#bytebase-store-IssueStatus)
+    - [Issue.Status](#bytebase-store-Issue-Status)
   
 - [store/issue_comment.proto](#store_issue_comment-proto)
     - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
@@ -2574,9 +2574,9 @@ InstanceRole is the API message for instance role.
 
 
 
-<a name="bytebase-store-IssuePayload"></a>
+<a name="bytebase-store-Issue"></a>
 
-### IssuePayload
+### Issue
 
 
 
@@ -2593,9 +2593,9 @@ InstanceRole is the API message for instance role.
  
 
 
-<a name="bytebase-store-IssueStatus"></a>
+<a name="bytebase-store-Issue-Status"></a>
 
-### IssueStatus
+### Issue.Status
 
 
 | Name | Number | Description |
