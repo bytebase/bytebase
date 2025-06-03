@@ -173,8 +173,8 @@ importers:
         specifier: 9.1.0
         version: 9.1.0
       splitpanes:
-        specifier: 3.1.5
-        version: 3.1.5
+        specifier: 3.2.0
+        version: 3.2.0(vue@3.5.16(typescript@5.7.3))
       sql-formatter:
         specifier: 15.4.7
         version: 15.4.7
@@ -4471,9 +4471,6 @@ packages:
 
   spark-md5@3.0.2:
     resolution: {integrity: sha512-wcFzz9cDfbuqe0FZzfi2or1sgyIrsDwmPwfZC4hiNidPdPINjeUwNfv5kldczoEAcjl9Y1L3SM7Uz2PUEQzxQw==}
-
-  splitpanes@3.1.5:
-    resolution: {integrity: sha512-r3Mq2ITFQ5a2VXLOy4/Sb2Ptp7OfEO8YIbhVJqJXoFc9hc5nTXXkCvtVDjIGbvC0vdE7tse+xTM9BMjsszP6bw==}
 
   splitpanes@3.2.0:
     resolution: {integrity: sha512-K+WKxWdqtKShV33gPjQl769wHxB3glypTOReCvYu/AJd38J+abHlpiF8rK6uBNPMrgw5thHZCI5JkEwsAqa9XA==}
@@ -10204,8 +10201,6 @@ snapshots:
   source-map@0.7.4: {}
 
   spark-md5@3.0.2: {}
-
-  splitpanes@3.1.5: {}
 
   splitpanes@3.2.0(vue@3.5.16(typescript@5.7.3)):
     dependencies:
