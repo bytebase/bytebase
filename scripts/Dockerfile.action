@@ -7,7 +7,7 @@ RUN go build \
 --ldflags="-X 'github.com/bytebase/bytebase/action/args.Gitcommit=${GIT_COMMIT}'" \
 -o bytebase-action action/*.go
 
-FROM alpine:3.21
+FROM alpine:3.22
 RUN apk update
 # Azure DevOps pipeline requires bash.
 RUN apk add --no-cache jq bash gcompat
