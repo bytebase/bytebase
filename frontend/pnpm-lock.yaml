@@ -35,8 +35,8 @@ importers:
         specifier: 15.0.2
         version: 15.0.2
       '@markdoc/markdoc':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.2
+        version: 0.5.2
       '@soerenmartius/vue3-clipboard':
         specifier: 0.1.2
         version: 0.1.2
@@ -1791,8 +1791,8 @@ packages:
   '@juggle/resize-observer@3.4.0':
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
-  '@markdoc/markdoc@0.5.1':
-    resolution: {integrity: sha512-W2apYOglq0hOnvWbhE70yl6V9++FG+YPFKNHmgiSjv0HTmdJaMLt+NA1LMqoH5LasSiTI7R0yVc5ofjaFh39Pg==}
+  '@markdoc/markdoc@0.5.2':
+    resolution: {integrity: sha512-clrqWpJ3+S8PXigRE+zBIs6LVZYXaJ7JTDFq1CcCWc4xpoB2kz+9qRUQQ4vXtLUjQ8ige1BGdMruV6gM/2gloA==}
     engines: {node: '>=14.7.0'}
     peerDependencies:
       '@types/react': '*'
@@ -7191,7 +7191,7 @@ snapshots:
 
   '@juggle/resize-observer@3.4.0': {}
 
-  '@markdoc/markdoc@0.5.1':
+  '@markdoc/markdoc@0.5.2':
     optionalDependencies:
       '@types/linkify-it': 3.0.5
       '@types/markdown-it': 12.2.3
