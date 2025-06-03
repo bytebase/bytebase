@@ -1,15 +1,16 @@
 <template>
-  <NTooltip :disabled="errors.length === 0">
+  <NTooltip :disabled="!tooltipMessage" :arrow="false">
     <template #trigger>
       <NSwitch
         :value="enabled"
-        :disabled="!allowChange"
+        :disabled="!allowChange || errors.length > 0"
         @update:value="toggleChecked"
       />
     </template>
-    <template #default>
-      <ErrorList :errors="errors" />
-    </template>
+    <div class="max-w-sm">
+      <p class="opacity-80">{{ tooltipMessage }}</p>
+      <ErrorList v-if="errors.length > 0" :errors="errors" class="mt-2" />
+    </div>
   </NTooltip>
 </template>
 
@@ -18,6 +19,7 @@ import { cloneDeep } from "lodash-es";
 import { NSwitch, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { targetsForSpec } from "@/components/Plan/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { planServiceClient } from "@/grpcweb";
@@ -60,6 +62,66 @@ const errors = computed(() => {
     );
   }
   return errors;
+});
+
+// Computed properties for tooltip functionality
+const specTargets = computed(() => {
+  if (!selectedSpec.value) return [];
+  return targetsForSpec(selectedSpec.value);
+});
+
+const checkedDatabasesCount = computed(() => {
+  return databases.value.length;
+});
+
+const totalDatabasesCount = computed(() => {
+  return specTargets.value.length;
+});
+
+const databasesNotMeetingRequirements = computed(() => {
+  return databases.value.filter((db) => {
+    // Check if database doesn't have backup available or doesn't allow ghost
+    if (!db.backupAvailable || !allowGhostForDatabase(db)) return true;
+    // Check if instance doesn't have activation
+    if (!db.instanceResource.activation) return true;
+    return false;
+  });
+});
+
+const tooltipMessage = computed(() => {
+  // Check if only some databases are checked
+  if (
+    checkedDatabasesCount.value < totalDatabasesCount.value &&
+    checkedDatabasesCount.value > 0
+  ) {
+    return t("plan.ghost.only-some-databases-checked");
+  }
+
+  // Check if some databases don't meet requirements (show summary)
+  if (databasesNotMeetingRequirements.value.length > 0) {
+    // If there are specific errors, show a general summary
+    if (errors.value.length > 0) {
+      return t("plan.ghost.some-databases-have-issues", {
+        count: databasesNotMeetingRequirements.value.length,
+      });
+    }
+    // Otherwise show the databases that don't meet requirements
+    const dbNames = databasesNotMeetingRequirements.value
+      .map((db) => db.databaseName)
+      .join(", ");
+    return t("plan.ghost.some-databases-not-meeting-requirements", {
+      databases: dbNames,
+    });
+  }
+
+  // If there are errors but all databases are selected, show a general error summary
+  if (errors.value.length > 0) {
+    return t("plan.ghost.configuration-has-issues", {
+      count: errors.value.length,
+    });
+  }
+
+  return undefined;
 });
 
 const toggleChecked = async (on: boolean) => {

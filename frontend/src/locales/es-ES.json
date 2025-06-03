@@ -994,6 +994,18 @@
       "applies-to-all-tasks": "Se aplica a todas las tareas.",
       "applies-to-some-tasks": "Se aplica a algunas tareas {count}/{total}",
       "split-into-multiple-issues-tip": "Si desea configurar diferentes opciones para cada tarea, divídala en varios problemas."
+    },
+    "pre-backup": {
+      "only-some-databases-checked": "Sólo se comprueban algunas bases de datos",
+      "some-databases-not-meeting-requirements": "Algunas bases de datos ({databases}) no cumplen los requisitos",
+      "some-databases-have-issues": "{count} la base de datos tiene problemas | {count} las bases de datos tienen problemas",
+      "configuration-has-issues": "La configuración tiene {count} problemas | La configuración tiene {count} problemas"
+    },
+    "ghost": {
+      "only-some-databases-checked": "Sólo se comprueban algunas bases de datos",
+      "some-databases-not-meeting-requirements": "Algunas bases de datos ({databases}) no cumplen los requisitos",
+      "some-databases-have-issues": "{count} la base de datos tiene problemas | {count} las bases de datos tienen problemas",
+      "configuration-has-issues": "La configuración tiene {count} problemas | La configuración tiene {count} problemas"
     }
   },
   "quick-action": {
@@ -1487,7 +1499,8 @@
       "reference": "Referencia"
     },
     "checks": "Cheques",
-    "create-target-database-or-schema-for-backup": "Primero cree la base de datos o el esquema de destino para la copia de seguridad",
+    "backup-unavailable-for-databases": "La copia de seguridad no está disponible para las bases de datos: {databases}",
+    "engine-not-supported-for-backup": "No se admite la copia de seguridad previa para: {databases}",
     "revision": {
       "self": "Revisión",
       "applied-at": "Aplicado en",
