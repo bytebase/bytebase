@@ -36,7 +36,7 @@ func init() {
 type IssueMessage struct {
 	Project         *ProjectMessage
 	Title           string
-	Status          base.IssueStatus
+	Status          storepb.IssueStatus
 	Type            base.IssueType
 	Description     string
 	Payload         *storepb.IssuePayload
@@ -60,7 +60,7 @@ type IssueMessage struct {
 // UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
 	Title       *string
-	Status      *base.IssueStatus
+	Status      *storepb.IssueStatus
 	Description *string
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.IssuePayload
@@ -85,7 +85,7 @@ type FindIssueMessage struct {
 	CreatedAtAfter  *time.Time
 	Types           *[]base.IssueType
 
-	StatusList []base.IssueStatus
+	StatusList []storepb.IssueStatus
 	TaskTypes  *[]base.TaskType
 	// Any of the task in the issue changes the instance with InstanceResourceID.
 	InstanceResourceID *string
@@ -137,7 +137,7 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 
 // CreateIssueV2 creates a new issue.
 func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
-	create.Status = base.IssueOpen
+	create.Status = storepb.IssueStatus_OPEN
 
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
@@ -178,7 +178,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.PipelineUID,
 		create.PlanUID,
 		create.Title,
-		create.Status,
+		create.Status.String(),
 		create.Type,
 		create.Description,
 		payload,
@@ -221,7 +221,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Status; v != nil {
-		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, base.IssueStatus(*v))
+		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, v.String())
 	}
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
@@ -411,7 +411,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		var list []string
 		for _, status := range find.StatusList {
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
-			args = append(args, status)
+			args = append(args, status.String())
 		}
 		where = append(where, fmt.Sprintf("issue.status IN (%s)", strings.Join(list, ", ")))
 	}
@@ -498,6 +498,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		var payload []byte
 		var subscriberUIDs pgtype.Int4Array
 		var taskRunStatusCount []byte
+		var statusString string
 		if err := rows.Scan(
 			&issue.UID,
 			&issue.creatorUID,
@@ -507,7 +508,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.PipelineUID,
 			&issue.PlanUID,
 			&issue.Title,
-			&issue.Status,
+			&statusString,
 			&issue.Type,
 			&issue.Description,
 			&payload,
@@ -515,6 +516,11 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&taskRunStatusCount,
 		); err != nil {
 			return nil, err
+		}
+		if statusValue, ok := storepb.IssueStatus_value[statusString]; ok {
+			issue.Status = storepb.IssueStatus(statusValue)
+		} else {
+			return nil, errors.Errorf("invalid status string: %s", statusString)
 		}
 		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err
@@ -565,7 +571,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 }
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
-func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status base.IssueStatus) error {
+func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status storepb.IssueStatus) error {
 	var ids []string
 	for _, id := range issueUIDs {
 		ids = append(ids, fmt.Sprintf("%d", id))
@@ -583,7 +589,7 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, status)
+	rows, err := tx.QueryContext(ctx, query, status.String())
 	if err != nil {
 		return errors.Wrapf(err, "failed to query")
 	}

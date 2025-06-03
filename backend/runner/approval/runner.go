@@ -113,7 +113,7 @@ func (r *Runner) runOnce(ctx context.Context) {
 
 func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
 	issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
-		StatusList: []base.IssueStatus{base.IssueOpen},
+		StatusList: []storepb.IssueStatus{storepb.IssueStatus_OPEN},
 	})
 	if err != nil {
 		err := errors.Wrap(err, "failed to list issues")
@@ -180,7 +180,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
-		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, base.IssueDone, r.store.GetSystemBotUser(ctx), ""); err != nil {
+		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, storepb.IssueStatus_DONE, r.store.GetSystemBotUser(ctx), ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
