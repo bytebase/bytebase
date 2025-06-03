@@ -1299,7 +1299,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 
 		// Check if there is any running/pending task runs.
 		if issue.PipelineUID != nil {
-			taskRunStatusList := []base.TaskRunStatus{base.TaskRunRunning, base.TaskRunPending}
+			taskRunStatusList := []storepb.TaskRun_Status{storepb.TaskRun_RUNNING, storepb.TaskRun_PENDING}
 			taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{PipelineUID: issue.PipelineUID, Status: &taskRunStatusList})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to list task runs, err: %v", err)

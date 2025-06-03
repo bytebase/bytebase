@@ -619,7 +619,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		Project: webhook.NewProject(project),
 		Rollout: webhook.NewRollout(rollout),
 		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Status: base.TaskRunPending.String(),
+			Status: storepb.TaskRun_PENDING.String(),
 		},
 	})
 	// Tickle task run scheduler.
@@ -731,7 +731,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		Project: webhook.NewProject(project),
 		Rollout: webhook.NewRollout(rollout),
 		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Status:        base.TaskRunSkipped.String(),
+			Status:        storepb.TaskRun_SKIPPED.String(),
 			SkippedReason: request.Reason,
 		},
 	})
@@ -832,15 +832,15 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 
 	for _, taskRun := range taskRuns {
 		switch taskRun.Status {
-		case base.TaskRunPending:
-		case base.TaskRunRunning:
+		case storepb.TaskRun_PENDING:
+		case storepb.TaskRun_RUNNING:
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "taskRun %v is not pending or running", taskRun.ID)
 		}
 	}
 
 	for _, taskRun := range taskRuns {
-		if taskRun.Status == base.TaskRunRunning {
+		if taskRun.Status == storepb.TaskRun_RUNNING {
 			if cancelFunc, ok := s.stateCfg.RunningTaskRunsCancelFunc.Load(taskRun.ID); ok {
 				cancelFunc.(context.CancelFunc)()
 			}
@@ -864,7 +864,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		Rollout: webhook.NewRollout(rollout),
 		Project: webhook.NewProject(project),
 		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Status: base.TaskRunCanceled.String(),
+			Status: storepb.TaskRun_CANCELED.String(),
 		},
 	})
 
@@ -892,7 +892,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 
 	taskRun := taskRuns[0]
 
-	if taskRun.Status != base.TaskRunDone {
+	if taskRun.Status != storepb.TaskRun_DONE {
 		return nil, status.Errorf(codes.InvalidArgument, "task run %v is not done", taskRun.ID)
 	}
 

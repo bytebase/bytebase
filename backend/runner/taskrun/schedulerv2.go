@@ -257,7 +257,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		Project: webhook.NewProject(project),
 		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
 			Title:  task.GetDatabaseName(),
-			Status: base.TaskRunPending.String(),
+			Status: storepb.TaskRun_PENDING.String(),
 		},
 	})
 
@@ -266,7 +266,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 
 func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
-		Status: &[]base.TaskRunStatus{base.TaskRunPending},
+		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_PENDING},
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to list pending tasks")
@@ -332,7 +332,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
 		ID:        taskRun.ID,
 		UpdaterID: base.SystemBotID,
-		Status:    base.TaskRunRunning,
+		Status:    storepb.TaskRun_RUNNING,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update task run status to running")
 	}
@@ -347,7 +347,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 
 func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
-		Status: &[]base.TaskRunStatus{base.TaskRunRunning},
+		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_RUNNING},
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to list pending tasks")
@@ -589,7 +589,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRun.ID,
 			UpdaterID: base.SystemBotID,
-			Status:    base.TaskRunCanceled,
+			Status:    storepb.TaskRun_CANCELED,
 			Code:      &code,
 			Result:    &result,
 		}
@@ -637,7 +637,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRun.ID,
 			UpdaterID: base.SystemBotID,
-			Status:    base.TaskRunFailed,
+			Status:    storepb.TaskRun_FAILED,
 			Code:      &code,
 			Result:    &result,
 		}
@@ -666,7 +666,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
 
-		s.createActivityForTaskRunStatusUpdate(ctx, task, base.TaskRunFailed, taskRunResult.Detail)
+		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_FAILED, taskRunResult.Detail)
 		return
 	}
 
@@ -685,7 +685,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRun.ID,
 			UpdaterID: base.SystemBotID,
-			Status:    base.TaskRunDone,
+			Status:    storepb.TaskRun_DONE,
 			Code:      &code,
 			Result:    &result,
 		}
@@ -713,7 +713,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
 
-		s.createActivityForTaskRunStatusUpdate(ctx, task, base.TaskRunDone, "")
+		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_DONE, "")
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 		return
 	}
@@ -921,7 +921,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 	}
 }
 
-func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus base.TaskRunStatus, errDetail string) {
+func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus storepb.TaskRun_Status, errDetail string) {
 	if err := func() error {
 		rollout, err := s.store.GetPipelineV2ByID(ctx, task.PipelineID)
 		if err != nil {
@@ -965,7 +965,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
 	for _, task := range tasks {
 		skipped := task.Payload.GetSkipped()
-		done := task.LatestTaskRunStatus == base.TaskRunDone
+		done := task.LatestTaskRunStatus == storepb.TaskRun_DONE
 		if !skipped && !done {
 			return false, nil
 		}

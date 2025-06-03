@@ -301,7 +301,10 @@
     - [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table)
     - [SchedulerInfo](#bytebase-store-SchedulerInfo)
     - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
+    - [TaskRun](#bytebase-store-TaskRun)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
+  
+    - [TaskRun.Status](#bytebase-store-TaskRun-Status)
   
 - [store/task_run_log.proto](#store_task_run_log-proto)
     - [TaskRunLog](#bytebase-store-TaskRunLog)
@@ -4738,6 +4741,16 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
+<a name="bytebase-store-TaskRun"></a>
+
+### TaskRun
+
+
+
+
+
+
+
 <a name="bytebase-store-TaskRunResult"></a>
 
 ### TaskRunResult
@@ -4759,6 +4772,24 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
  
+
+
+<a name="bytebase-store-TaskRun-Status"></a>
+
+### TaskRun.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| RUNNING | 2 |  |
+| DONE | 3 |  |
+| FAILED | 4 |  |
+| CANCELED | 5 |  |
+| NOT_STARTED | 6 |  |
+| SKIPPED | 7 |  |
+
 
  
 

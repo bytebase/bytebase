@@ -22,6 +22,106 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type TaskRun_Status int32
+
+const (
+	TaskRun_STATUS_UNSPECIFIED TaskRun_Status = 0
+	TaskRun_PENDING            TaskRun_Status = 1
+	TaskRun_RUNNING            TaskRun_Status = 2
+	TaskRun_DONE               TaskRun_Status = 3
+	TaskRun_FAILED             TaskRun_Status = 4
+	TaskRun_CANCELED           TaskRun_Status = 5
+	TaskRun_NOT_STARTED        TaskRun_Status = 6
+	TaskRun_SKIPPED            TaskRun_Status = 7
+)
+
+// Enum value maps for TaskRun_Status.
+var (
+	TaskRun_Status_name = map[int32]string{
+		0: "STATUS_UNSPECIFIED",
+		1: "PENDING",
+		2: "RUNNING",
+		3: "DONE",
+		4: "FAILED",
+		5: "CANCELED",
+		6: "NOT_STARTED",
+		7: "SKIPPED",
+	}
+	TaskRun_Status_value = map[string]int32{
+		"STATUS_UNSPECIFIED": 0,
+		"PENDING":            1,
+		"RUNNING":            2,
+		"DONE":               3,
+		"FAILED":             4,
+		"CANCELED":           5,
+		"NOT_STARTED":        6,
+		"SKIPPED":            7,
+	}
+)
+
+func (x TaskRun_Status) Enum() *TaskRun_Status {
+	p := new(TaskRun_Status)
+	*p = x
+	return p
+}
+
+func (x TaskRun_Status) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TaskRun_Status) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_task_run_proto_enumTypes[0].Descriptor()
+}
+
+func (TaskRun_Status) Type() protoreflect.EnumType {
+	return &file_store_task_run_proto_enumTypes[0]
+}
+
+func (x TaskRun_Status) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TaskRun_Status.Descriptor instead.
+func (TaskRun_Status) EnumDescriptor() ([]byte, []int) {
+	return file_store_task_run_proto_rawDescGZIP(), []int{0, 0}
+}
+
+type TaskRun struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskRun) Reset() {
+	*x = TaskRun{}
+	mi := &file_store_task_run_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskRun) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRun) ProtoMessage() {}
+
+func (x *TaskRun) ProtoReflect() protoreflect.Message {
+	mi := &file_store_task_run_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRun.ProtoReflect.Descriptor instead.
+func (*TaskRun) Descriptor() ([]byte, []int) {
+	return file_store_task_run_proto_rawDescGZIP(), []int{0}
+}
+
 type TaskRunResult struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Detail string                 `protobuf:"bytes,1,opt,name=detail,proto3" json:"detail,omitempty"`
@@ -41,7 +141,7 @@ type TaskRunResult struct {
 
 func (x *TaskRunResult) Reset() {
 	*x = TaskRunResult{}
-	mi := &file_store_task_run_proto_msgTypes[0]
+	mi := &file_store_task_run_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -53,7 +153,7 @@ func (x *TaskRunResult) String() string {
 func (*TaskRunResult) ProtoMessage() {}
 
 func (x *TaskRunResult) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_run_proto_msgTypes[0]
+	mi := &file_store_task_run_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -66,7 +166,7 @@ func (x *TaskRunResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskRunResult.ProtoReflect.Descriptor instead.
 func (*TaskRunResult) Descriptor() ([]byte, []int) {
-	return file_store_task_run_proto_rawDescGZIP(), []int{0}
+	return file_store_task_run_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *TaskRunResult) GetDetail() string {
@@ -127,7 +227,7 @@ type PriorBackupDetail struct {
 
 func (x *PriorBackupDetail) Reset() {
 	*x = PriorBackupDetail{}
-	mi := &file_store_task_run_proto_msgTypes[1]
+	mi := &file_store_task_run_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -139,7 +239,7 @@ func (x *PriorBackupDetail) String() string {
 func (*PriorBackupDetail) ProtoMessage() {}
 
 func (x *PriorBackupDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_run_proto_msgTypes[1]
+	mi := &file_store_task_run_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -152,7 +252,7 @@ func (x *PriorBackupDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PriorBackupDetail.ProtoReflect.Descriptor instead.
 func (*PriorBackupDetail) Descriptor() ([]byte, []int) {
-	return file_store_task_run_proto_rawDescGZIP(), []int{1}
+	return file_store_task_run_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PriorBackupDetail) GetItems() []*PriorBackupDetail_Item {
@@ -172,7 +272,7 @@ type SchedulerInfo struct {
 
 func (x *SchedulerInfo) Reset() {
 	*x = SchedulerInfo{}
-	mi := &file_store_task_run_proto_msgTypes[2]
+	mi := &file_store_task_run_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -184,7 +284,7 @@ func (x *SchedulerInfo) String() string {
 func (*SchedulerInfo) ProtoMessage() {}
 
 func (x *SchedulerInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_run_proto_msgTypes[2]
+	mi := &file_store_task_run_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -197,7 +297,7 @@ func (x *SchedulerInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchedulerInfo.ProtoReflect.Descriptor instead.
 func (*SchedulerInfo) Descriptor() ([]byte, []int) {
-	return file_store_task_run_proto_rawDescGZIP(), []int{2}
+	return file_store_task_run_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *SchedulerInfo) GetReportTime() *timestamppb.Timestamp {
@@ -228,7 +328,7 @@ type PriorBackupDetail_Item struct {
 
 func (x *PriorBackupDetail_Item) Reset() {
 	*x = PriorBackupDetail_Item{}
-	mi := &file_store_task_run_proto_msgTypes[3]
+	mi := &file_store_task_run_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -240,7 +340,7 @@ func (x *PriorBackupDetail_Item) String() string {
 func (*PriorBackupDetail_Item) ProtoMessage() {}
 
 func (x *PriorBackupDetail_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_run_proto_msgTypes[3]
+	mi := &file_store_task_run_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -253,7 +353,7 @@ func (x *PriorBackupDetail_Item) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PriorBackupDetail_Item.ProtoReflect.Descriptor instead.
 func (*PriorBackupDetail_Item) Descriptor() ([]byte, []int) {
-	return file_store_task_run_proto_rawDescGZIP(), []int{1, 0}
+	return file_store_task_run_proto_rawDescGZIP(), []int{2, 0}
 }
 
 func (x *PriorBackupDetail_Item) GetSourceTable() *PriorBackupDetail_Item_Table {
@@ -297,7 +397,7 @@ type PriorBackupDetail_Item_Table struct {
 
 func (x *PriorBackupDetail_Item_Table) Reset() {
 	*x = PriorBackupDetail_Item_Table{}
-	mi := &file_store_task_run_proto_msgTypes[4]
+	mi := &file_store_task_run_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -309,7 +409,7 @@ func (x *PriorBackupDetail_Item_Table) String() string {
 func (*PriorBackupDetail_Item_Table) ProtoMessage() {}
 
 func (x *PriorBackupDetail_Item_Table) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_run_proto_msgTypes[4]
+	mi := &file_store_task_run_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -322,7 +422,7 @@ func (x *PriorBackupDetail_Item_Table) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PriorBackupDetail_Item_Table.ProtoReflect.Descriptor instead.
 func (*PriorBackupDetail_Item_Table) Descriptor() ([]byte, []int) {
-	return file_store_task_run_proto_rawDescGZIP(), []int{1, 0, 0}
+	return file_store_task_run_proto_rawDescGZIP(), []int{2, 0, 0}
 }
 
 func (x *PriorBackupDetail_Item_Table) GetDatabase() string {
@@ -360,7 +460,7 @@ type SchedulerInfo_WaitingCause struct {
 
 func (x *SchedulerInfo_WaitingCause) Reset() {
 	*x = SchedulerInfo_WaitingCause{}
-	mi := &file_store_task_run_proto_msgTypes[5]
+	mi := &file_store_task_run_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -372,7 +472,7 @@ func (x *SchedulerInfo_WaitingCause) String() string {
 func (*SchedulerInfo_WaitingCause) ProtoMessage() {}
 
 func (x *SchedulerInfo_WaitingCause) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_run_proto_msgTypes[5]
+	mi := &file_store_task_run_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -385,7 +485,7 @@ func (x *SchedulerInfo_WaitingCause) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchedulerInfo_WaitingCause.ProtoReflect.Descriptor instead.
 func (*SchedulerInfo_WaitingCause) Descriptor() ([]byte, []int) {
-	return file_store_task_run_proto_rawDescGZIP(), []int{2, 0}
+	return file_store_task_run_proto_rawDescGZIP(), []int{3, 0}
 }
 
 func (x *SchedulerInfo_WaitingCause) GetCause() isSchedulerInfo_WaitingCause_Cause {
@@ -448,7 +548,18 @@ var File_store_task_run_proto protoreflect.FileDescriptor
 
 const file_store_task_run_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/task_run.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\xde\x02\n" +
+	"\x14store/task_run.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\x87\x01\n" +
+	"\aTaskRun\"|\n" +
+	"\x06Status\x12\x16\n" +
+	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aPENDING\x10\x01\x12\v\n" +
+	"\aRUNNING\x10\x02\x12\b\n" +
+	"\x04DONE\x10\x03\x12\n" +
+	"\n" +
+	"\x06FAILED\x10\x04\x12\f\n" +
+	"\bCANCELED\x10\x05\x12\x0f\n" +
+	"\vNOT_STARTED\x10\x06\x12\v\n" +
+	"\aSKIPPED\x10\a\"\xde\x02\n" +
 	"\rTaskRunResult\x12\x16\n" +
 	"\x06detail\x18\x01 \x01(\tR\x06detail\x12\x1c\n" +
 	"\tchangelog\x18\b \x01(\tR\tchangelog\x12\x18\n" +
@@ -490,28 +601,31 @@ func file_store_task_run_proto_rawDescGZIP() []byte {
 	return file_store_task_run_proto_rawDescData
 }
 
-var file_store_task_run_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_store_task_run_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_task_run_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_store_task_run_proto_goTypes = []any{
-	(*TaskRunResult)(nil),                // 0: bytebase.store.TaskRunResult
-	(*PriorBackupDetail)(nil),            // 1: bytebase.store.PriorBackupDetail
-	(*SchedulerInfo)(nil),                // 2: bytebase.store.SchedulerInfo
-	(*PriorBackupDetail_Item)(nil),       // 3: bytebase.store.PriorBackupDetail.Item
-	(*PriorBackupDetail_Item_Table)(nil), // 4: bytebase.store.PriorBackupDetail.Item.Table
-	(*SchedulerInfo_WaitingCause)(nil),   // 5: bytebase.store.SchedulerInfo.WaitingCause
-	(*Position)(nil),                     // 6: bytebase.store.Position
-	(*timestamppb.Timestamp)(nil),        // 7: google.protobuf.Timestamp
+	(TaskRun_Status)(0),                  // 0: bytebase.store.TaskRun.Status
+	(*TaskRun)(nil),                      // 1: bytebase.store.TaskRun
+	(*TaskRunResult)(nil),                // 2: bytebase.store.TaskRunResult
+	(*PriorBackupDetail)(nil),            // 3: bytebase.store.PriorBackupDetail
+	(*SchedulerInfo)(nil),                // 4: bytebase.store.SchedulerInfo
+	(*PriorBackupDetail_Item)(nil),       // 5: bytebase.store.PriorBackupDetail.Item
+	(*PriorBackupDetail_Item_Table)(nil), // 6: bytebase.store.PriorBackupDetail.Item.Table
+	(*SchedulerInfo_WaitingCause)(nil),   // 7: bytebase.store.SchedulerInfo.WaitingCause
+	(*Position)(nil),                     // 8: bytebase.store.Position
+	(*timestamppb.Timestamp)(nil),        // 9: google.protobuf.Timestamp
 }
 var file_store_task_run_proto_depIdxs = []int32{
-	6,  // 0: bytebase.store.TaskRunResult.start_position:type_name -> bytebase.store.Position
-	6,  // 1: bytebase.store.TaskRunResult.end_position:type_name -> bytebase.store.Position
-	1,  // 2: bytebase.store.TaskRunResult.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
-	3,  // 3: bytebase.store.PriorBackupDetail.items:type_name -> bytebase.store.PriorBackupDetail.Item
-	7,  // 4: bytebase.store.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
-	5,  // 5: bytebase.store.SchedulerInfo.waiting_cause:type_name -> bytebase.store.SchedulerInfo.WaitingCause
-	4,  // 6: bytebase.store.PriorBackupDetail.Item.source_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
-	4,  // 7: bytebase.store.PriorBackupDetail.Item.target_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
-	6,  // 8: bytebase.store.PriorBackupDetail.Item.start_position:type_name -> bytebase.store.Position
-	6,  // 9: bytebase.store.PriorBackupDetail.Item.end_position:type_name -> bytebase.store.Position
+	8,  // 0: bytebase.store.TaskRunResult.start_position:type_name -> bytebase.store.Position
+	8,  // 1: bytebase.store.TaskRunResult.end_position:type_name -> bytebase.store.Position
+	3,  // 2: bytebase.store.TaskRunResult.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
+	5,  // 3: bytebase.store.PriorBackupDetail.items:type_name -> bytebase.store.PriorBackupDetail.Item
+	9,  // 4: bytebase.store.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
+	7,  // 5: bytebase.store.SchedulerInfo.waiting_cause:type_name -> bytebase.store.SchedulerInfo.WaitingCause
+	6,  // 6: bytebase.store.PriorBackupDetail.Item.source_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
+	6,  // 7: bytebase.store.PriorBackupDetail.Item.target_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
+	8,  // 8: bytebase.store.PriorBackupDetail.Item.start_position:type_name -> bytebase.store.Position
+	8,  // 9: bytebase.store.PriorBackupDetail.Item.end_position:type_name -> bytebase.store.Position
 	10, // [10:10] is the sub-list for method output_type
 	10, // [10:10] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
@@ -525,7 +639,7 @@ func file_store_task_run_proto_init() {
 		return
 	}
 	file_store_common_proto_init()
-	file_store_task_run_proto_msgTypes[5].OneofWrappers = []any{
+	file_store_task_run_proto_msgTypes[6].OneofWrappers = []any{
 		(*SchedulerInfo_WaitingCause_ConnectionLimit)(nil),
 		(*SchedulerInfo_WaitingCause_TaskUid)(nil),
 		(*SchedulerInfo_WaitingCause_ParallelTasksLimit)(nil),
@@ -535,13 +649,14 @@ func file_store_task_run_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_task_run_proto_rawDesc), len(file_store_task_run_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   6,
+			NumEnums:      1,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_task_run_proto_goTypes,
 		DependencyIndexes: file_store_task_run_proto_depIdxs,
+		EnumInfos:         file_store_task_run_proto_enumTypes,
 		MessageInfos:      file_store_task_run_proto_msgTypes,
 	}.Build()
 	File_store_task_run_proto = out.File
