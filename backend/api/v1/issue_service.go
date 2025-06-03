@@ -456,7 +456,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		PlanUID:     planUID,
 		PipelineUID: rolloutUID,
 		Title:       request.Issue.Title,
-		Status:      base.IssueOpen,
+		Status:      storepb.IssueStatus_OPEN,
 		Type:        base.IssueDatabaseGeneral,
 		Description: request.Issue.Description,
 	}
@@ -533,7 +533,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		PlanUID:     nil,
 		PipelineUID: nil,
 		Title:       request.Issue.Title,
-		Status:      base.IssueOpen,
+		Status:      storepb.IssueStatus_OPEN,
 		Type:        base.IssueGrantRequest,
 		Description: request.Issue.Description,
 	}
@@ -640,7 +640,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		PlanUID:     planUID,
 		PipelineUID: rolloutUID,
 		Title:       request.Issue.Title,
-		Status:      base.IssueOpen,
+		Status:      storepb.IssueStatus_OPEN,
 		Type:        base.IssueDatabaseDataExport,
 		Description: request.Issue.Description,
 	}
@@ -868,7 +868,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, base.IssueDone, s.store.GetSystemBotUser(ctx), ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, storepb.IssueStatus_DONE, s.store.GetSystemBotUser(ctx), ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}

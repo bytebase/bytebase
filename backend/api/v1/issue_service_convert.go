@@ -98,7 +98,7 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 	if issue.Type != base.IssueDatabaseGeneral {
 		return nil, nil
 	}
-	if issue.Status != base.IssueOpen {
+	if issue.Status != storepb.IssueStatus_OPEN {
 		return nil, nil
 	}
 	if issue.PipelineUID == nil {
@@ -172,26 +172,26 @@ func convertToAPIIssueType(t v1pb.Issue_Type) (base.IssueType, error) {
 	}
 }
 
-func convertToAPIIssueStatus(status v1pb.IssueStatus) (base.IssueStatus, error) {
+func convertToAPIIssueStatus(status v1pb.IssueStatus) (storepb.IssueStatus, error) {
 	switch status {
 	case v1pb.IssueStatus_OPEN:
-		return base.IssueOpen, nil
+		return storepb.IssueStatus_OPEN, nil
 	case v1pb.IssueStatus_DONE:
-		return base.IssueDone, nil
+		return storepb.IssueStatus_DONE, nil
 	case v1pb.IssueStatus_CANCELED:
-		return base.IssueCanceled, nil
+		return storepb.IssueStatus_CANCELED, nil
 	default:
-		return base.IssueStatus(""), errors.Errorf("invalid issue status %v", status)
+		return storepb.IssueStatus_ISSUE_STATUS_UNSPECIFIED, errors.Errorf("invalid issue status %v", status)
 	}
 }
 
-func convertToIssueStatus(status base.IssueStatus) v1pb.IssueStatus {
+func convertToIssueStatus(status storepb.IssueStatus) v1pb.IssueStatus {
 	switch status {
-	case base.IssueOpen:
+	case storepb.IssueStatus_OPEN:
 		return v1pb.IssueStatus_OPEN
-	case base.IssueDone:
+	case storepb.IssueStatus_DONE:
 		return v1pb.IssueStatus_DONE
-	case base.IssueCanceled:
+	case storepb.IssueStatus_CANCELED:
 		return v1pb.IssueStatus_CANCELED
 	default:
 		return v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED

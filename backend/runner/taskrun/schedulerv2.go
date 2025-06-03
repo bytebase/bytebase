@@ -183,7 +183,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		return err
 	}
 	if issue != nil {
-		if issue.Status != base.IssueOpen {
+		if issue.Status != storepb.IssueStatus_OPEN {
 			return nil
 		}
 		approved, err := utils.CheckIssueApproved(issue)
@@ -876,7 +876,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							return nil
 						}
 
-						newStatus := base.IssueDone
+						newStatus := storepb.IssueStatus_DONE
 						updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
 						if err != nil {
 							return errors.Wrapf(err, "failed to update issue status")
