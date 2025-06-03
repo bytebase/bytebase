@@ -8,7 +8,7 @@ godebug x509negativeserial=1
 
 require (
 	cloud.google.com/go/bigquery v1.69.0
-	cloud.google.com/go/cloudsqlconn v1.16.0
+	cloud.google.com/go/cloudsqlconn v1.17.1
 	cloud.google.com/go/secretmanager v1.14.7
 	cloud.google.com/go/spanner v1.82.0
 	gitee.com/chunanyong/dm v1.8.20
@@ -102,7 +102,7 @@ require (
 	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/text v0.25.0
-	google.golang.org/api v0.232.0
+	google.golang.org/api v0.233.0
 	google.golang.org/genproto v0.0.0-20250311190419-81fb87f6b8bf
 	google.golang.org/genproto/googleapis/api v0.0.0-20250528174236-200df99c418a
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a
