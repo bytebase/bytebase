@@ -416,7 +416,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		return 0, errors.Errorf("failed to convert database metadata type")
 	}
 	metadata.LastSyncTime = timestamppb.New(time.Now())
-	metadata.BackupAvailable = s.hasBackupSchema(ctx, instance, databaseMetadata)
+	metadata.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
 	metadata.Datashare = databaseMetadata.Datashare
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
@@ -523,7 +523,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return errors.Errorf("failed to convert database metadata type")
 	}
 	metadata.LastSyncTime = timestamppb.New(time.Now())
-	metadata.BackupAvailable = s.hasBackupSchema(ctx, instance, databaseMetadata)
+	metadata.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
 	metadata.Datashare = databaseMetadata.Datashare
 	drifted, skipped, err := s.getSchemaDrifted(ctx, instance, database, string(rawDump))
 	if err != nil {
@@ -588,7 +588,10 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 	return changelog.Schema != latestSchema, false, nil
 }
 
-func (s *Syncer) hasBackupSchema(ctx context.Context, instance *store.InstanceMessage, dbSchema *storepb.DatabaseSchemaMetadata) bool {
+func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbSchema *storepb.DatabaseSchemaMetadata) bool {
+	if !base.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
+		return false
+	}
 	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES:
 		if dbSchema == nil {
