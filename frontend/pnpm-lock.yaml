@@ -152,8 +152,8 @@ importers:
         specifier: ^1.5.4
         version: 1.5.4
       qs:
-        specifier: 6.13.1
-        version: 6.13.1
+        specifier: 6.14.0
+        version: 6.14.0
       regenerator-runtime:
         specifier: ^0.14.1
         version: 0.14.1
@@ -279,8 +279,8 @@ importers:
         specifier: ^1.5.5
         version: 1.5.5
       '@types/qs':
-        specifier: 6.9.17
-        version: 6.9.17
+        specifier: 6.14.0
+        version: 6.14.0
       '@types/scrollparent':
         specifier: ^2.0.3
         version: 2.0.3
@@ -1982,8 +1982,8 @@ packages:
   '@types/qrcode@1.5.5':
     resolution: {integrity: sha512-CdfBi/e3Qk+3Z/fXYShipBT13OJ2fDO2Q2w5CIP5anLTLIndQG9z6P1cnm+8zCWSpm5dnxMFd/uREtb0EXuQzg==}
 
-  '@types/qs@6.9.17':
-    resolution: {integrity: sha512-rX4/bPcfmvxHDv0XjfJELTTr+iB+tn032nPILqHm5wbthUUUuVtNGGqzhya9XUxjTP8Fpr0qYgSZZKxGY++svQ==}
+  '@types/qs@6.14.0':
+    resolution: {integrity: sha512-eOunJqu0K1923aExK6y8p6fsihYEn/BYuQ4g0CxAAgFc4b/ZLN4CrsRZ55srTdqoiLzU2B2evC+apEIxprEzkQ==}
 
   '@types/scrollparent@2.0.3':
     resolution: {integrity: sha512-hnZEChVDSDCVngnl8j+Dq0/sOzRuoHyqqR5Wc1dF7TFsWO4uQtIKBkrzTb+lakIH+XrR8mlLMHfWR8hfjqc/WA==}
@@ -4051,8 +4051,8 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  qs@6.13.1:
-    resolution: {integrity: sha512-EJPeIn0CYrGu+hli1xilKAPXODtJ12T0sP63Ijx2/khC2JtuaN3JyNIpvmnkmaEtha9ocbG4A4cMcr+TvqvwQg==}
+  qs@6.14.0:
+    resolution: {integrity: sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==}
     engines: {node: '>=0.6'}
 
   quansync@0.2.10:
@@ -6794,7 +6794,7 @@ snapshots:
 
   '@types/markdown-it@12.2.3':
     dependencies:
-      '@types/linkify-it': 3.0.5
+      '@types/linkify-it': 5.0.0
       '@types/mdurl': 2.0.0
     optional: true
 
@@ -6916,7 +6916,7 @@ snapshots:
     dependencies:
       '@types/node': 22.15.29
 
-  '@types/qs@6.9.17': {}
+  '@types/qs@6.14.0': {}
 
   '@types/scrollparent@2.0.3': {}
 
@@ -7520,7 +7520,7 @@ snapshots:
   code-inspector-core@0.20.12:
     dependencies:
       '@vue/compiler-dom': 3.5.16
-      chalk: 4.1.1
+      chalk: 4.1.2
       dotenv: 16.5.0
       launch-ide: 1.0.7
       portfinder: 1.0.37
@@ -8432,7 +8432,7 @@ snapshots:
 
   launch-ide@1.0.7:
     dependencies:
-      chalk: 4.1.1
+      chalk: 4.1.2
       dotenv: 16.5.0
 
   level-codec@9.0.2:
@@ -9336,7 +9336,7 @@ snapshots:
       pngjs: 5.0.0
       yargs: 15.4.1
 
-  qs@6.13.1:
+  qs@6.14.0:
     dependencies:
       side-channel: 1.1.0
 
