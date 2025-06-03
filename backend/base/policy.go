@@ -6,9 +6,6 @@ type PolicyType string
 // PipelineApprovalValue is value for approval policy.
 type PipelineApprovalValue string
 
-// EnvironmentTierValue is the value for environment tier policy.
-type EnvironmentTierValue string
-
 // PolicyResourceType is the resource type for a policy.
 type PolicyResourceType string
 
@@ -46,11 +43,6 @@ const (
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
 	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by user to proceed.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
-
-	// EnvironmentTierValueProtected is PROTECTED environment tier value.
-	EnvironmentTierValueProtected EnvironmentTierValue = "PROTECTED"
-	// EnvironmentTierValueUnprotected is UNPROTECTED environment tier value.
-	EnvironmentTierValueUnprotected EnvironmentTierValue = "UNPROTECTED"
 
 	// PolicyResourceTypeUnknown is the unknown resource type.
 	PolicyResourceTypeUnknown PolicyResourceType = ""
