@@ -58,7 +58,7 @@
     "nice-grpc-web": "^3.3.6",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.15.0",
-    "pinia": "2.2.8",
+    "pinia": "2.3.1",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "pretty-print-json": "^3.0.4",
