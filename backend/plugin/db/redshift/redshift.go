@@ -31,7 +31,8 @@ var (
 	excludedDatabaseList = map[string]bool{
 		// Skip internal databases from cloud service providers
 		// aws
-		"padb_harvest": true,
+		"padb_harvest":   true,
+		"awsdatacatalog": true,
 		// system templates.
 		"template0": true,
 		"template1": true,
