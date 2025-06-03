@@ -201,6 +201,7 @@ export const providePreBackupSettingContext = (refs: {
     databases,
     events,
     toggle,
+    selectedSpec,
   };
 
   provide(KEY, context);

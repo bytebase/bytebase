@@ -994,6 +994,18 @@
       "applies-to-all-tasks": "すべてのタスクに適用",
       "applies-to-some-tasks": "一部のタスクに適用されます {count}/{total}",
       "split-into-multiple-issues-tip": "タスクごとに異なるオプションを設定する場合は、複数の問題に分割してください。"
+    },
+    "pre-backup": {
+      "only-some-databases-checked": "一部のデータベースのみがチェックされます",
+      "some-databases-not-meeting-requirements": "一部のデータベース ({databases}) は要件を満たしていません",
+      "some-databases-have-issues": "{count} データベースに問題があります | {count} データベースに問題があります",
+      "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります"
+    },
+    "ghost": {
+      "only-some-databases-checked": "一部のデータベースのみがチェックされます",
+      "some-databases-not-meeting-requirements": "一部のデータベース ({databases}) は要件を満たしていません",
+      "some-databases-have-issues": "{count} データベースに問題があります | {count} データベースに問題があります",
+      "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります"
     }
   },
   "quick-action": {
@@ -1487,7 +1499,8 @@
       "reference": "参照"
     },
     "checks": "チェック",
-    "create-target-database-or-schema-for-backup": "まずバックアップのターゲットデータベースまたはスキーマを作成してください",
+    "backup-unavailable-for-databases": "データベースのバックアップは利用できません: {databases}",
+    "engine-not-supported-for-backup": "以前のバックアップはサポートされていません: {databases}",
     "revision": {
       "self": "リビジョン",
       "applied-at": "申請先",
