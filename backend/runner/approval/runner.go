@@ -113,7 +113,7 @@ func (r *Runner) runOnce(ctx context.Context) {
 
 func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
 	issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
-		StatusList: []storepb.IssueStatus{storepb.IssueStatus_OPEN},
+		StatusList: []storepb.Issue_Status{storepb.Issue_OPEN},
 	})
 	if err != nil {
 		err := errors.Wrap(err, "failed to list issues")
@@ -180,7 +180,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
-		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, storepb.IssueStatus_DONE, r.store.GetSystemBotUser(ctx), ""); err != nil {
+		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, storepb.Issue_DONE, r.store.GetSystemBotUser(ctx), ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
@@ -753,7 +753,7 @@ func getRiskSourceFromPlan(config *storepb.PlanConfig) store.RiskSource {
 
 func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) error {
 	if _, err := s.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.IssuePayload{
+		PayloadUpsert: &storepb.Issue{
 			Approval: approval,
 		},
 	}); err != nil {
