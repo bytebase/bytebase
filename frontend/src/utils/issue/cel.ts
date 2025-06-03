@@ -352,6 +352,19 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             };
           }
           switch (left) {
+            case "resource.instance_id":
+            case "resource.database_name":
+            case "resource.database": {
+              // should parse for next database.
+              if (databaseResource.databaseFullName !== "") {
+                conditionExpression.databaseResources?.push(databaseResource);
+              }
+              databaseResource = {
+                databaseFullName: "",
+              };
+            }
+          }
+          switch (left) {
             case "resource.instance_id": {
               databaseResource.instanceResourceId = right;
               if (databaseResource.databaseResourceId) {
