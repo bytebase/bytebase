@@ -50,7 +50,7 @@
     "lucide-vue-next": "^0.462.0",
     "markdown-it": "^14.1.0",
     "match-sorter": "6.3.4",
-    "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@15.0.2",
+    "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@15.0.3",
     "monaco-languageclient": "9.5.0",
     "naive-ui": "2.40.1",
     "nice-grpc-common": "^2.0.2",
