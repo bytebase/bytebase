@@ -465,7 +465,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		// We don't close the issues because they might be open still.
 	} else {
 		// Return the open issue error first because that's more important than transferring out databases.
-		openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectIDs: &[]string{project.ResourceID}, StatusList: []storepb.IssueStatus{storepb.IssueStatus_OPEN}})
+		openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectIDs: &[]string{project.ResourceID}, StatusList: []storepb.Issue_Status{storepb.Issue_OPEN}})
 		if err != nil {
 			return nil, err
 		}
