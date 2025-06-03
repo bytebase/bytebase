@@ -23,8 +23,8 @@ importers:
         specifier: 15.0.3
         version: 15.0.3
       '@codingame/monaco-vscode-sql-default-extension':
-        specifier: 15.0.3
-        version: 15.0.3
+        specifier: 17.1.2
+        version: 17.1.2
       '@codingame/monaco-vscode-textmate-service-override':
         specifier: 15.0.3
         version: 15.0.3
@@ -1437,8 +1437,8 @@ packages:
   '@codingame/monaco-vscode-quickaccess-service-override@17.1.2':
     resolution: {integrity: sha512-g24QJmr7k7R2Q7fERGtsjYbC2nNijrtyy/YU+R7kI26G1aaPH03hliEeUXx4svz2DtwIjfkEixdz6HJV4t3aRQ==}
 
-  '@codingame/monaco-vscode-sql-default-extension@15.0.3':
-    resolution: {integrity: sha512-c11ZdKWxLbsyhJqRFeJLPN5bwJxHAJ0P4NaSWt9StCaRde0xe4Hd4oB0bGmNAK37oKLnV/t5DOuRiirsoNKqPQ==}
+  '@codingame/monaco-vscode-sql-default-extension@17.1.2':
+    resolution: {integrity: sha512-SSe0l3pv3KRXkT8a5uUT06OMgZkL9wMp4WXPL58YcyFnHgiDNIFDqOeBvAW2XEB0aTGeuFat7GlHhMkDuKpdLw==}
 
   '@codingame/monaco-vscode-textmate-service-override@15.0.3':
     resolution: {integrity: sha512-yh0bQFeA1jd+HN375fqMhoGa4OYuoTVtSHyun5pKttI3wAFeQONZFU9auvhfaZFQt4z8aKC6Q9vW7HNVEMz9Gg==}
@@ -6966,9 +6966,9 @@ snapshots:
       '@codingame/monaco-vscode-d609a7d3-bf87-551a-884f-550a8b327ec5-common': 17.1.2
       '@codingame/monaco-vscode-ea14e352-8f1c-5569-b79a-8a96a53e8abe-common': 17.1.2
 
-  '@codingame/monaco-vscode-sql-default-extension@15.0.3':
+  '@codingame/monaco-vscode-sql-default-extension@17.1.2':
     dependencies:
-      '@codingame/monaco-vscode-api': 15.0.3
+      '@codingame/monaco-vscode-api': 17.1.2
 
   '@codingame/monaco-vscode-textmate-service-override@15.0.3':
     dependencies:
