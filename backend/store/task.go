@@ -34,7 +34,7 @@ type TaskMessage struct {
 	Type    base.TaskType
 	Payload *storepb.TaskPayload
 
-	LatestTaskRunStatus base.TaskRunStatus
+	LatestTaskRunStatus storepb.TaskRun_Status
 }
 
 func (t *TaskMessage) GetDatabaseName() string {
@@ -61,7 +61,7 @@ type TaskFind struct {
 	// Domain specific fields
 	TypeList *[]base.TaskType
 
-	LatestTaskRunStatusList *[]base.TaskRunStatus
+	LatestTaskRunStatusList *[]storepb.TaskRun_Status
 }
 
 // TaskPatch is the API message for patching a task.
@@ -260,8 +260,12 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 		where, args = append(where, fmt.Sprintf("task.db_name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.LatestTaskRunStatusList; v != nil {
+		var statusStrings []string
+		for _, status := range *v {
+			statusStrings = append(statusStrings, status.String())
+		}
 		where = append(where, fmt.Sprintf("latest_task_run.status = ANY($%d)", len(args)+1))
-		args = append(args, *v)
+		args = append(args, statusStrings)
 	}
 	if v := find.TypeList; v != nil {
 		var list []string
@@ -272,7 +276,7 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 		where = append(where, fmt.Sprintf("task.type in (%s)", strings.Join(list, ",")))
 	}
 
-	args = append(args, base.TaskRunNotStarted)
+	args = append(args, storepb.TaskRun_NOT_STARTED.String())
 	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			task.id,
@@ -308,17 +312,23 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 	for rows.Next() {
 		task := &TaskMessage{}
 		var payload []byte
+		var latestTaskRunStatusString string
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
 			&task.StageID,
 			&task.InstanceID,
 			&task.DatabaseName,
-			&task.LatestTaskRunStatus,
+			&latestTaskRunStatusString,
 			&task.Type,
 			&payload,
 		); err != nil {
 			return nil, err
+		}
+		if statusValue, ok := storepb.TaskRun_Status_value[latestTaskRunStatusString]; ok {
+			task.LatestTaskRunStatus = storepb.TaskRun_Status(statusValue)
+		} else {
+			return nil, errors.Errorf("invalid task run status string: %s", latestTaskRunStatusString)
 		}
 		taskPayload := &storepb.TaskPayload{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, taskPayload); err != nil {

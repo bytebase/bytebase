@@ -12480,16 +12480,6 @@ components:
                     format: enum
                 comment:
                     type: string
-        SchedulerInfo_WaitingCause:
-            type: object
-            properties:
-                connectionLimit:
-                    type: boolean
-                taskUid:
-                    type: integer
-                    format: int32
-                parallelTasksLimit:
-                    type: boolean
         SchemaCatalog:
             type: object
             properties:
@@ -13477,72 +13467,7 @@ components:
                     type: string
         TaskRun:
             type: object
-            properties:
-                name:
-                    type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
-                creator:
-                    type: string
-                    description: 'Format: user/hello@world.com'
-                createTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
-                updateTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
-                status:
-                    enum:
-                        - STATUS_UNSPECIFIED
-                        - PENDING
-                        - RUNNING
-                        - DONE
-                        - FAILED
-                        - CANCELED
-                    type: string
-                    format: enum
-                detail:
-                    type: string
-                    description: Below are the results of a task run.
-                changelog:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The resource name of the changelog.
-                         Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-                schemaVersion:
-                    type: string
-                startTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
-                exportArchiveStatus:
-                    enum:
-                        - EXPORT_ARCHIVE_STATUS_UNSPECIFIED
-                        - READY
-                        - EXPORTED
-                    type: string
-                    format: enum
-                priorBackupDetail:
-                    allOf:
-                        - $ref: '#/components/schemas/TaskRun_PriorBackupDetail'
-                    description: The prior backup detail that will be used to rollback the task run.
-                schedulerInfo:
-                    readOnly: true
-                    allOf:
-                        - $ref: '#/components/schemas/TaskRun_SchedulerInfo'
-                sheet:
-                    readOnly: true
-                    type: string
-                    description: 'Format: projects/{project}/sheets/{sheet}'
-                runTime:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The task run should run after run_time.
-                         This can only be set when creating the task run calling BatchRunTasks.
-                    format: date-time
+            properties: {}
         TaskRunLog:
             type: object
             properties:
@@ -13702,21 +13627,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Postgres_Session'
                     description: '`blocked_sessions` are blocked by `session`.'
-        TaskRun_PriorBackupDetail:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/PriorBackupDetail_Item'
-        TaskRun_SchedulerInfo:
-            type: object
-            properties:
-                reportTime:
-                    type: string
-                    format: date-time
-                waitingCause:
-                    $ref: '#/components/schemas/SchedulerInfo_WaitingCause'
         Task_DatabaseCreate:
             type: object
             properties:
