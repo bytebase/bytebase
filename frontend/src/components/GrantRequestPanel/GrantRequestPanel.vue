@@ -42,6 +42,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { uniq } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -106,8 +107,10 @@ const doCreateIssue = async () => {
   const newIssue = Issue.fromPartial({
     title: generateIssueTitle(
       "bb.issue.grant.request",
-      formRef.value?.databaseResources?.map(
-        (databaseResource) => databaseResource.databaseFullName
+      uniq(
+        formRef.value?.databaseResources?.map(
+          (databaseResource) => databaseResource.databaseFullName
+        )
       ),
       t("issue.title.request-specific-role", {
         role: displayRoleTitle(state.binding.role),

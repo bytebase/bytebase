@@ -460,8 +460,8 @@ useEventListener(treeContainerElRef, "keydown", () => {
   padding: 0;
 }
 .schema-tree :deep(.n-tree-node-indent) {
-  width: 20px;
-  height: 20px;
+  width: 10px;
+  height: 10px;
 }
 .schema-tree :deep(.n-tree-node-switcher) {
   width: 20px !important;
