@@ -134,24 +134,24 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	case base.EventTypeTaskRunStatusUpdate:
 		u := e.TaskRunStatusUpdate
 		switch u.Status {
-		case base.TaskRunPending.String():
+		case storepb.TaskRun_PENDING.String():
 			title = "Task run started"
 			titleZh = "任务开始"
-		case base.TaskRunRunning.String():
+		case storepb.TaskRun_RUNNING.String():
 			title = "Task run is running"
 			titleZh = "任务运行中"
-		case base.TaskRunDone.String():
+		case storepb.TaskRun_DONE.String():
 			level = webhook.WebhookSuccess
 			title = "Task run completed"
 			titleZh = "任务完成"
-		case base.TaskRunFailed.String():
+		case storepb.TaskRun_FAILED.String():
 			level = webhook.WebhookError
 			title = "Task run failed"
 			titleZh = "任务失败"
-		case base.TaskRunCanceled.String():
+		case storepb.TaskRun_CANCELED.String():
 			title = "Task run is canceled"
 			titleZh = "任务取消"
-		case base.TaskRunSkipped.String():
+		case storepb.TaskRun_SKIPPED.String():
 			title = "Task is skipped"
 			titleZh = "任务跳过"
 		default:

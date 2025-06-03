@@ -523,19 +523,19 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 	}
 }
 
-func convertToTaskRunStatus(status base.TaskRunStatus) v1pb.TaskRun_Status {
+func convertToTaskRunStatus(status storepb.TaskRun_Status) v1pb.TaskRun_Status {
 	switch status {
-	case base.TaskRunUnknown:
+	case storepb.TaskRun_STATUS_UNSPECIFIED:
 		return v1pb.TaskRun_STATUS_UNSPECIFIED
-	case base.TaskRunPending:
+	case storepb.TaskRun_PENDING:
 		return v1pb.TaskRun_PENDING
-	case base.TaskRunRunning:
+	case storepb.TaskRun_RUNNING:
 		return v1pb.TaskRun_RUNNING
-	case base.TaskRunDone:
+	case storepb.TaskRun_DONE:
 		return v1pb.TaskRun_DONE
-	case base.TaskRunFailed:
+	case storepb.TaskRun_FAILED:
 		return v1pb.TaskRun_FAILED
-	case base.TaskRunCanceled:
+	case storepb.TaskRun_CANCELED:
 		return v1pb.TaskRun_CANCELED
 	default:
 		return v1pb.TaskRun_STATUS_UNSPECIFIED
@@ -757,22 +757,22 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	return v1pbTask, nil
 }
 
-func convertToTaskStatus(latestTaskRunStatus base.TaskRunStatus, skipped bool) v1pb.Task_Status {
+func convertToTaskStatus(latestTaskRunStatus storepb.TaskRun_Status, skipped bool) v1pb.Task_Status {
 	if skipped {
 		return v1pb.Task_SKIPPED
 	}
 	switch latestTaskRunStatus {
-	case base.TaskRunNotStarted:
+	case storepb.TaskRun_NOT_STARTED:
 		return v1pb.Task_NOT_STARTED
-	case base.TaskRunPending:
+	case storepb.TaskRun_PENDING:
 		return v1pb.Task_PENDING
-	case base.TaskRunRunning:
+	case storepb.TaskRun_RUNNING:
 		return v1pb.Task_RUNNING
-	case base.TaskRunDone:
+	case storepb.TaskRun_DONE:
 		return v1pb.Task_DONE
-	case base.TaskRunFailed:
+	case storepb.TaskRun_FAILED:
 		return v1pb.Task_FAILED
-	case base.TaskRunCanceled:
+	case storepb.TaskRun_CANCELED:
 		return v1pb.Task_CANCELED
 	default:
 		return v1pb.Task_STATUS_UNSPECIFIED
