@@ -92,7 +92,7 @@
     "@tailwindcss/forms": "0.5.10",
     "@tailwindcss/typography": "0.5.16",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
-    "@tsconfig/node22": "22.0.0",
+    "@tsconfig/node22": "22.0.2",
     "@types/crypto-js": "^4.2.2",
     "@types/d3-shape": "^3.1.7",
     "@types/downloadjs": "1.4.6",
