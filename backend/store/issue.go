@@ -520,7 +520,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		if statusValue, ok := storepb.IssueStatus_value[statusString]; ok {
 			issue.Status = storepb.IssueStatus(statusValue)
 		} else {
-			return nil, fmt.Errorf("invalid status string: %s", statusString)
+			return nil, errors.Errorf("invalid status string: %s", statusString)
 		}
 		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err
