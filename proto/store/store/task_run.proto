@@ -7,6 +7,19 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
+message TaskRun {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    RUNNING = 2;
+    DONE = 3;
+    FAILED = 4;
+    CANCELED = 5;
+    NOT_STARTED = 6;
+    SKIPPED = 7;
+  }
+}
+
 message TaskRunResult {
   string detail = 1;
   // Format: instances/{instance}/databases/{database}/changelogs/{changelog}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -22,7 +21,7 @@ func getPlanCheckRunsFromPlan(ctx context.Context, s *store.Store, plan *store.P
 		}
 		skippedSpecIDs = make(map[string]struct{})
 		for _, task := range tasks {
-			if task.LatestTaskRunStatus == base.TaskRunDone {
+			if task.LatestTaskRunStatus == storepb.TaskRun_DONE {
 				skippedSpecIDs[task.Payload.GetSpecId()] = struct{}{}
 			}
 		}
