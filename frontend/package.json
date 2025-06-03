@@ -29,7 +29,7 @@
     "@tanstack/vue-query": "^5.79.2",
     "@tanstack/vue-table": "8.21.3",
     "@vueuse/core": "12.8.2",
-    "axios": "1.8.2",
+    "axios": "1.9.0",
     "bootstrap": "5.3.6",
     "crypto-js": "^4.2.0",
     "d3-shape": "^3.2.0",
