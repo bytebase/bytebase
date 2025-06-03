@@ -1,10 +1,9 @@
 import Emittery from "emittery";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, unref } from "vue";
-import { databaseForSpec } from "@/components/Plan/logic";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
-import { useCurrentUserV1, extractUserId } from "@/store";
-import { unknownDatabase, type ComposedProject } from "@/types";
+import { targetsForSpec } from "@/components/Plan/logic";
+import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
+import { isValidDatabaseName, type ComposedProject } from "@/types";
 import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import {
@@ -17,11 +16,7 @@ import {
   hasProjectPermissionV2,
   isNullOrUndefined,
 } from "@/utils";
-import {
-  allowGhostForDatabase,
-  allowGhostForSpec,
-  getGhostEnabledForSpec,
-} from "./common";
+import { allowGhostForSpec, getGhostEnabledForSpec } from "./common";
 
 export const KEY = Symbol(
   "bb.plan.setting.gh-ost"
@@ -41,6 +36,8 @@ export const provideGhostSettingContext = (refs: {
   rollout?: Ref<Rollout | undefined>;
 }) => {
   const currentUser = useCurrentUserV1();
+  const databaseStore = useDatabaseV1Store();
+
   const {
     isCreating,
     project,
@@ -55,20 +52,19 @@ export const provideGhostSettingContext = (refs: {
     update: never;
   }>();
 
-  const database = computed(() => {
-    if (selectedTask?.value) {
-      return databaseForTask(project.value, selectedTask.value);
-    } else if (selectedSpec.value) {
-      return databaseForSpec(project.value, selectedSpec.value);
-    }
-    return unknownDatabase();
+  const databases = computed(() => {
+    const targets = selectedSpec.value
+      ? targetsForSpec(selectedSpec.value)
+      : [];
+    return targets
+      .map((target) => databaseStore.getDatabaseByName(target))
+      .filter((db) => isValidDatabaseName(db.name));
   });
 
   const shouldShow = computed(() => {
     return (
       selectedSpec.value &&
       allowGhostForSpec(selectedSpec.value) &&
-      allowGhostForDatabase(database.value) &&
       !isNullOrUndefined(getGhostEnabledForSpec(selectedSpec.value))
     );
   });
@@ -132,7 +128,7 @@ export const provideGhostSettingContext = (refs: {
     shouldShow,
     allowChange,
     enabled,
-    database,
+    databases,
     events,
   };
 
