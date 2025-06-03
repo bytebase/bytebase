@@ -1,5 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
-import { cloneDeep, orderBy, pullAt, uniq } from "lodash-es";
+import { cloneDeep, orderBy, pullAt, uniq, flatten } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
 import type {
@@ -19,8 +19,8 @@ import {
   LeafTreeNodeTypes,
   formatEnvironmentName,
 } from "@/types";
-import type { Environment } from "@/types/v1/environment";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import type { Environment } from "@/types/v1/environment";
 import { getSemanticLabelValue, groupBy, isDatabaseV1Queryable } from "@/utils";
 import {
   useAppFeature,
@@ -84,8 +84,17 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
       },
     }
   );
-  const nodeListMapById = reactive(new Map<string, TreeNode[]>());
+  const nodeListMapById = reactive(
+    new Map<
+      string /* node id by type and target */,
+      string[] /* node key list */
+    >()
+  );
   // states
+  const allNodeKeys = computed(() => {
+    return uniq(flatten([...nodeListMapById.values()]));
+  });
+
   // re-expose `databaseList`, `project`, `currentProject` from sqlEditor store for shortcuts
   const { databaseList, project } = storeToRefs(useSQLEditorStore());
   const factorList = ref<StatefulFactor[]>(
@@ -157,16 +166,16 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     const { type, target } = node.meta;
     const id = idForSQLEditorTreeNodeTarget(type, target);
     const nodeList = nodeListMapById.get(id) ?? [];
-    nodeList.push(node);
+    nodeList.push(node.key);
     nodeListMapById.set(id, nodeList);
   };
 
-  const nodesByTarget = <T extends NodeType>(
+  const nodeKeysByTarget = <T extends NodeType>(
     type: T,
     target: NodeTarget<T>
   ) => {
     const id = idForSQLEditorTreeNodeTarget(type, target);
-    return (nodeListMapById.get(id) ?? []) as TreeNode<T>[];
+    return (nodeListMapById.get(id) ?? []) as string[];
   };
 
   const buildTree = () => {
@@ -229,7 +238,8 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     state,
     tree,
     collectNode,
-    nodesByTarget,
+    nodeKeysByTarget,
+    allNodeKeys,
     buildTree,
     hasMissingQueryDatabases,
     showMissingQueryDatabases,
@@ -247,7 +257,7 @@ const keyForSQLEditorTreeNodeTarget = <T extends NodeType>(
   if (parent) {
     parts.unshift(parent.key);
   }
-  return JSON.stringify(parts);
+  return parts.join("/");
 };
 
 export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
@@ -255,12 +265,8 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
   target: NodeTarget<T>
 ) => {
   if (type === "instance" || type === "database") {
-    return (
-      target as
-        | ComposedProject
-        | InstanceResource
-        | ComposedDatabase
-    ).name;
+    return (target as ComposedProject | InstanceResource | ComposedDatabase)
+      .name;
   }
   if (type === "environment") {
     return formatEnvironmentName((target as Environment).id);
@@ -388,7 +394,6 @@ export const mapTreeNodeByType = <T extends NodeType>(
   const node: TreeNode<T> = {
     key,
     meta: { type, target },
-    parent,
     label: readableTargetByType(type, target),
     isLeaf: isLeafNodeType(type),
     ...overrides,
