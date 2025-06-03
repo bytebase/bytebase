@@ -287,8 +287,7 @@
       "error": {
         "nothing-changed": "変化なし",
         "not-applicable": {
-          "task-doesnt-meet-ghost-requirement": "タスクは gh-ost の要件を満たしていません",
-          "needs-database-for-saving-temp-data": "一時データを保存するにはデータベース({database})が必要です。"
+          "database-doesnt-meet-ghost-requirement": "データベース {database} は gh-ost の要件を満たしていません"
         }
       },
       "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行の問題に分割することをアドバイスします。"

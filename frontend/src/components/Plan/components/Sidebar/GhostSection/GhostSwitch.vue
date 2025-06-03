@@ -22,14 +22,8 @@ import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { planServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
-import { engineNameV1 } from "@/utils";
-import {
-  allowGhostForDatabase,
-  MIN_GHOST_SUPPORT_MARIADB_VERSION,
-  MIN_GHOST_SUPPORT_MYSQL_VERSION,
-} from "./common";
+import { allowGhostForDatabase } from "./common";
 import { useGhostSettingContext } from "./context";
 
 const { t } = useI18n();
@@ -39,39 +33,31 @@ const {
   selectedSpec,
   allowChange,
   enabled,
-  database,
   events,
+  databases,
 } = useGhostSettingContext();
 
 const errors = computed(() => {
   const errors: ErrorItem[] = [];
-  if (!database.value.instanceResource.activation) {
+  if (databases.value.some((db) => !db.instanceResource.activation)) {
     errors.push(
       t("subscription.instance-assignment.missing-license-attention")
     );
   }
-  // As we use the same database from backup to save temp tables in gh-ost, check if backup is available.
-  if (!database.value.backupAvailable) {
+  const backupUnavailableDatabases = databases.value.filter(
+    (db) => !db.backupAvailable || !allowGhostForDatabase(db)
+  );
+  if (backupUnavailableDatabases.length > 0) {
     errors.push(
       t(
-        "task.online-migration.error.not-applicable.needs-database-for-saving-temp-data",
+        "task.online-migration.error.not-applicable.database-doesnt-meet-ghost-requirement",
         {
-          // The same database name as backup.
-          database: "bbdataarchive",
+          database: backupUnavailableDatabases
+            .map((db) => db.databaseName)
+            .join(", "),
         }
       )
     );
-  }
-  if (!allowGhostForDatabase(database.value)) {
-    errors.push(
-      t(
-        "task.online-migration.error.not-applicable.task-doesnt-meet-ghost-requirement"
-      )
-    );
-    errors.push({
-      error: `${engineNameV1(Engine.MYSQL)} >= ${MIN_GHOST_SUPPORT_MYSQL_VERSION}, ${engineNameV1(Engine.MARIADB)} >= ${MIN_GHOST_SUPPORT_MARIADB_VERSION}`,
-      indent: 1,
-    });
   }
   return errors;
 });
@@ -103,7 +89,7 @@ const toggleChecked = async (on: boolean) => {
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;
     await planServiceClient.updatePlan({
       plan: planPatch,
-      updateMask: ["steps"],
+      updateMask: ["specs"],
     });
 
     pushNotification({
