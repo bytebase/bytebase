@@ -128,7 +128,7 @@ const shouldShowSpecFilter = computed(() => {
 });
 
 const shouldShowCurrentSpecView = computed(() => {
-  if (!state.index) {
+  if (state.index === 0) {
     return false;
   }
   // Only show the current spec view when the selected spec is not in the filtered list.

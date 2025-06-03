@@ -157,7 +157,7 @@ const shouldShowTaskFilter = computed(() => {
 });
 
 const shouldShowCurrentTaskView = computed(() => {
-  if (!stageState.value.index) {
+  if (stageState.value.index === 0) {
     return false;
   }
   // Only show the current task view when the selected task is not in the filtered task list.
