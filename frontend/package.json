@@ -146,7 +146,7 @@
     "unplugin-vue-components": "28.4.1",
     "vite": "6.1.6",
     "vite-bundle-visualizer": "^1.2.1",
-    "vitest": "3.0.7",
+    "vitest": "3.2.0",
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.2.0",
     "vue-component-type-helpers": "^2.2.8",
