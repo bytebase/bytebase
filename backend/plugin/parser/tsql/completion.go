@@ -527,6 +527,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	core := base.NewCodeCompletionCore(
+		ctx,
 		parser,
 		ignoredTokens,  /* IgnoredTokens */
 		preferredRules, /* PreferredRules */
@@ -557,6 +558,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
 	core := base.NewCodeCompletionCore(
+		ctx,
 		parser,
 		ignoredTokens,  /* IgnoredTokens */
 		preferredRules, /* PreferredRules */
