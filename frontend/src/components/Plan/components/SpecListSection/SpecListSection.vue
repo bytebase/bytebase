@@ -58,10 +58,7 @@ import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useVerticalScrollState } from "@/composables/useScrollState";
-import {
-  batchGetOrFetchDatabases,
-  useDBGroupStore,
-} from "@/store";
+import { batchGetOrFetchDatabases, useDBGroupStore } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, isValidDatabaseName } from "@/types";
 import type { Advice_Status } from "@/types/proto/v1/sql_service";
 import { isDev } from "@/utils";
@@ -131,6 +128,9 @@ const shouldShowSpecFilter = computed(() => {
 });
 
 const shouldShowCurrentSpecView = computed(() => {
+  if (state.index === 0) {
+    return false;
+  }
   // Only show the current spec view when the selected spec is not in the filtered list.
   const visibleSpecs = filteredSpecList.value.slice(0, state.index);
   return !visibleSpecs.some((spec) => spec.id === selectedSpec.value.id);
@@ -149,7 +149,7 @@ const loadMore = useDebounceFn(async () => {
       const targets = targetsForSpec(spec);
       targets.forEach((target) => dbGroupNames.add(target));
     }
-    
+
     await Promise.all(
       Array.from(dbGroupNames).map((name) =>
         dbGroupStore.getOrFetchDBGroupByName(name)
@@ -158,19 +158,17 @@ const loadMore = useDebounceFn(async () => {
   } else {
     const fromIndex = state.index;
     const toIndex = fromIndex + SPEC_PER_PAGE;
-    
+
     // Collect all database names from all targets in the visible specs
     const databaseNames = new Set<string>();
-    filteredSpecList.value
-      .slice(fromIndex, toIndex)
-      .forEach((spec) => {
-        const targets = targetsForSpec(spec);
-        targets.forEach((target) => {
-          if (isValidDatabaseName(target)) {
-            databaseNames.add(target);
-          }
-        });
+    filteredSpecList.value.slice(fromIndex, toIndex).forEach((spec) => {
+      const targets = targetsForSpec(spec);
+      targets.forEach((target) => {
+        if (isValidDatabaseName(target)) {
+          databaseNames.add(target);
+        }
       });
+    });
 
     state.isRequesting = true;
     try {
