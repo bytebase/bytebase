@@ -132,7 +132,7 @@
     "long": "^5.3.1",
     "micromark": "^4.0.2",
     "micromark-util-sanitize-uri": "^2.0.1",
-    "postcss": "8.4.47",
+    "postcss": "8.5.4",
     "prettier": "3.5.3",
     "protobufjs": "^7.4.0",
     "remark-gfm": "^4.0.1",
