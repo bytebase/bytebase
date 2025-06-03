@@ -225,7 +225,6 @@
     "summary": "Tóm tắt",
     "errors": "Lỗi",
     "removed": "LOẠI BỎ",
-    "options": "Tùy chọn",
     "submit": "Nộp"
   },
   "error-page": {
@@ -987,6 +986,14 @@
     "schema-drift-detected": {
       "self": "Đã phát hiện sự trôi dạt của sơ đồ",
       "description": "Cơ sở dữ liệu được chọn có sự trôi dạt lược đồ. Vui lòng đảm bảo rằng sự trôi dạt này được mong đợi và an toàn để áp dụng."
+    }
+  },
+  "plan": {
+    "options": {
+      "self": "Tùy chọn",
+      "applies-to-all-tasks": "Áp dụng cho tất cả các nhiệm vụ",
+      "applies-to-some-tasks": "Áp dụng cho một số tác vụ {count}/{total}",
+      "split-into-multiple-issues-tip": "Nếu bạn muốn cấu hình các tùy chọn khác nhau cho mỗi tác vụ, vui lòng chia thành nhiều vấn đề."
     }
   },
   "quick-action": {

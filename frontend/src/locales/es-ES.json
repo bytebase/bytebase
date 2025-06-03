@@ -225,7 +225,6 @@
     "summary": "Resumen",
     "errors": "Errores",
     "removed": "Remoto",
-    "options": "Opciones",
     "submit": "Entregar"
   },
   "error-page": {
@@ -987,6 +986,14 @@
     "schema-drift-detected": {
       "self": "Se detectó una desviación del esquema",
       "description": "Las bases de datos seleccionadas presentan una desviación de esquema. Asegúrese de que la desviación sea la esperada y de que sea segura para su aplicación."
+    }
+  },
+  "plan": {
+    "options": {
+      "self": "Opciones",
+      "applies-to-all-tasks": "Se aplica a todas las tareas.",
+      "applies-to-some-tasks": "Se aplica a algunas tareas {count}/{total}",
+      "split-into-multiple-issues-tip": "Si desea configurar diferentes opciones para cada tarea, divídala en varios problemas."
     }
   },
   "quick-action": {
