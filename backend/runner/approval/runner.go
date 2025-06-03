@@ -753,7 +753,7 @@ func getRiskSourceFromPlan(config *storepb.PlanConfig) store.RiskSource {
 
 func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) error {
 	if _, err := s.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.IssuePayload{
+		PayloadUpsert: &storepb.Issue{
 			Approval: approval,
 		},
 	}); err != nil {

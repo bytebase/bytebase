@@ -716,7 +716,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			if issue != nil && doUpdateSheet {
 				if err := func() error {
 					issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-						PayloadUpsert: &storepb.IssuePayload{
+						PayloadUpsert: &storepb.Issue{
 							Approval: &storepb.IssuePayloadApproval{
 								ApprovalFindingDone: false,
 							},
