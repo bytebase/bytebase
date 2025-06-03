@@ -649,7 +649,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					}
 					if issue != nil {
 						// Do not allow to update task if issue is done or canceled.
-						if issue.Status == base.IssueDone || issue.Status == base.IssueCanceled {
+						if issue.Status == storepb.IssueStatus_DONE || issue.Status == storepb.IssueStatus_CANCELED {
 							return nil, status.Errorf(codes.FailedPrecondition, "cannot update task because issue %q is %s", issue.Title, issue.Status)
 						}
 					}

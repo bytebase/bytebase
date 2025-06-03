@@ -151,6 +151,8 @@
     - [GrantRequest](#bytebase-store-GrantRequest)
     - [IssuePayload](#bytebase-store-IssuePayload)
   
+    - [IssueStatus](#bytebase-store-IssueStatus)
+  
 - [store/issue_comment.proto](#store_issue_comment-proto)
     - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
     - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
@@ -2586,6 +2588,20 @@ InstanceRole is the API message for instance role.
 
 
  
+
+
+<a name="bytebase-store-IssueStatus"></a>
+
+### IssueStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ISSUE_STATUS_UNSPECIFIED | 0 |  |
+| OPEN | 1 |  |
+| DONE | 2 |  |
+| CANCELED | 3 |  |
+
 
  
 
