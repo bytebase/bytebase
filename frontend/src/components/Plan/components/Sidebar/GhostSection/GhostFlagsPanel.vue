@@ -113,7 +113,7 @@ const trySave = async () => {
     spec.changeDatabaseConfig.ghostFlags = cloneDeep(flags.value);
     await planServiceClient.updatePlan({
       plan: planPatch,
-      updateMask: ["steps"],
+      updateMask: ["specs"],
     });
 
     pushNotification({
