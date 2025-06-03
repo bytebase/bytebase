@@ -225,7 +225,6 @@
     "summary": "Summary",
     "errors": "Errors",
     "removed": "Removed",
-    "options": "Options",
     "submit": "Submit"
   },
   "error-page": {
@@ -987,6 +986,14 @@
     "schema-drift-detected": {
       "self": "Schema drift detected",
       "description": "The selected database(s) has schema drift. Please make sure the drift is expected and safe to apply."
+    }
+  },
+  "plan": {
+    "options": {
+      "self": "Options",
+      "applies-to-all-tasks": "Applies to all tasks",
+      "applies-to-some-tasks": "Applies to some tasks {count}/{total}",
+      "split-into-multiple-issues-tip": "If you want to configure different options for each task, please split into multiple issues."
     }
   },
   "quick-action": {
