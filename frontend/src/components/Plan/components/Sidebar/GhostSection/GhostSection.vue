@@ -67,9 +67,10 @@ import { useGhostSettingContext } from "./context";
 
 const showFlagsPanel = ref(false);
 
-const { allowChange, enabled, database } = useGhostSettingContext();
+const { allowChange, enabled, databases } = useGhostSettingContext();
 
 const instance = computed(() => {
-  return database.value.instanceResource;
+  return databases.value.find((db) => !db.instanceResource.activation)
+    ?.instanceResource;
 });
 </script>

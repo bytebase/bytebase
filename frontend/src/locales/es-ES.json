@@ -287,8 +287,7 @@
       "error": {
         "nothing-changed": "nada ha cambiado",
         "not-applicable": {
-          "task-doesnt-meet-ghost-requirement": "La tarea no cumple con el requisito de gh-ost",
-          "needs-database-for-saving-temp-data": "Necesita la base de datos ({database}) para guardar tablas temporales."
+          "database-doesnt-meet-ghost-requirement": "La base de datos {database} no cumple con el requisito de gh-ost"
         }
       },
       "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea."

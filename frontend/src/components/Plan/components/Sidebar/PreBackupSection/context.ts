@@ -1,5 +1,5 @@
 import Emittery from "emittery";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import {
   computed,
   inject,
@@ -8,11 +8,10 @@ import {
   type InjectionKey,
   type Ref,
 } from "vue";
-import { databaseForSpec, isDatabaseChangeSpec } from "@/components/Plan/logic";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
+import { isDatabaseChangeSpec, targetsForSpec } from "@/components/Plan/logic";
 import { planServiceClient } from "@/grpcweb";
-import { useCurrentUserV1, extractUserId } from "@/store";
-import { unknownDatabase, type ComposedProject } from "@/types";
+import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
+import { isValidDatabaseName, type ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { IssueStatus, type Issue } from "@/types/proto/v1/issue_service";
 import {
@@ -32,7 +31,7 @@ import {
 } from "@/utils";
 import { getArchiveDatabase } from "./utils";
 
-const PRE_BACKUP_AVAILABLE_ENGINES = [
+export const PRE_BACKUP_AVAILABLE_ENGINES = [
   Engine.MYSQL,
   Engine.TIDB,
   Engine.MSSQL,
@@ -58,27 +57,20 @@ export const providePreBackupSettingContext = (refs: {
   rollout?: Ref<Rollout | undefined>;
 }) => {
   const currentUser = useCurrentUserV1();
-  const {
-    isCreating,
-    project,
-    plan,
-    selectedSpec,
-    selectedTask,
-    issue,
-    rollout,
-  } = refs;
+  const databaseStore = useDatabaseV1Store();
+  const { isCreating, project, plan, selectedSpec, issue, rollout } = refs;
 
   const events = new Emittery<{
     update: boolean;
   }>();
 
-  const database = computed(() => {
-    if (selectedTask?.value) {
-      return databaseForTask(project.value, selectedTask.value);
-    } else if (selectedSpec.value) {
-      return databaseForSpec(project.value, selectedSpec.value);
-    }
-    return unknownDatabase();
+  const databases = computed(() => {
+    const targets = selectedSpec.value
+      ? targetsForSpec(selectedSpec.value)
+      : [];
+    return targets
+      .map((target) => databaseStore.getDatabaseByName(target))
+      .filter((db) => isValidDatabaseName(db.name));
   });
 
   const shouldShow = computed((): boolean => {
@@ -93,19 +85,10 @@ export const providePreBackupSettingContext = (refs: {
     if (isDatabaseChangeSpec(selectedSpec.value)) {
       return true;
     }
-    const { engine } = database.value.instanceResource;
-    if (!PRE_BACKUP_AVAILABLE_ENGINES.includes(engine)) {
-      return false;
-    }
     return true;
   });
 
   const allowChange = computed((): boolean => {
-    // Disallow pre-backup if no backup available for the target database.
-    if (!database.value.backupAvailable) {
-      return false;
-    }
-
     // Allow toggle pre-backup when creating.
     if (isCreating.value) {
       return true;
@@ -152,17 +135,25 @@ export const providePreBackupSettingContext = (refs: {
     return !isNullOrUndefined(preBackupDatabase) && preBackupDatabase !== "";
   });
 
-  const archiveDatabase = computed((): string =>
-    getArchiveDatabase(database.value.instanceResource.engine)
-  );
+  // TODO(steven): remove me.
+  const archiveDatabase = computed((): string => {
+    const database = head(databases.value);
+    return getArchiveDatabase(
+      database?.instanceResource.engine || Engine.MYSQL
+    );
+  });
 
   const toggle = async (on: boolean) => {
     if (isCreating.value) {
       if (selectedSpec.value && selectedSpec.value.changeDatabaseConfig) {
         if (on) {
+          // TODO(steven): switch to boolean value.
+          const database = head(databases.value);
           selectedSpec.value.changeDatabaseConfig.preUpdateBackupDetail = {
             database:
-              database.value.instance + "/databases/" + archiveDatabase.value,
+              (database?.instance || "instances/UNKNOWN_INSTANCE") +
+              "/databases/" +
+              archiveDatabase.value,
           };
         } else {
           selectedSpec.value.changeDatabaseConfig.preUpdateBackupDetail =
@@ -181,9 +172,13 @@ export const providePreBackupSettingContext = (refs: {
         );
       }
       if (on) {
+        // TODO(steven): switch to boolean value.
+        const database = head(databases.value);
         spec.changeDatabaseConfig.preUpdateBackupDetail = {
           database:
-            database.value.instance + "/databases/" + archiveDatabase.value,
+            (database?.instance || "instances/UNKNOWN_INSTANCE") +
+            "/databases/" +
+            archiveDatabase.value,
         };
       } else {
         spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;
@@ -191,7 +186,7 @@ export const providePreBackupSettingContext = (refs: {
 
       await planServiceClient.updatePlan({
         plan: planPatch,
-        updateMask: ["steps"],
+        updateMask: ["specs"],
       });
     }
 
@@ -203,7 +198,7 @@ export const providePreBackupSettingContext = (refs: {
     shouldShow,
     enabled,
     allowChange,
-    database,
+    databases,
     events,
     toggle,
   };

@@ -287,8 +287,7 @@
       "error": {
         "nothing-changed": "Nothing changed",
         "not-applicable": {
-          "task-doesnt-meet-ghost-requirement": "Task doesn't meet gh-ost's requirement",
-          "needs-database-for-saving-temp-data": "Needs database {database} for saving temporary data."
+          "database-doesnt-meet-ghost-requirement": "Database {database} doesn't meet gh-ost's requirement"
         }
       },
       "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."

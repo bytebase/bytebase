@@ -142,7 +142,7 @@ const handleSaveEdit = async () => {
 
   const updatedPlan = await planServiceClient.updatePlan({
     plan: planPatch,
-    updateMask: ["steps"],
+    updateMask: ["specs"],
   });
   issue.value.planEntity = updatedPlan;
 
