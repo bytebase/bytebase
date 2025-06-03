@@ -176,8 +176,8 @@ importers:
         specifier: 3.2.0
         version: 3.2.0(vue@3.5.16(typescript@5.7.3))
       sql-formatter:
-        specifier: 15.4.7
-        version: 15.4.7
+        specifier: 15.6.2
+        version: 15.6.2
       string-width:
         specifier: ^7.2.0
         version: 7.2.0
@@ -3281,10 +3281,6 @@ packages:
     resolution: {integrity: sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==}
     engines: {node: '>= 0.4'}
 
-  get-stdin@8.0.0:
-    resolution: {integrity: sha512-sY22aA6xchAzprjyqmSEQv4UbAAzRN0L2dQB0NlN5acTTK9Don6nhoc3eAbUnpZiCANAMfd/+40kVdKfFygohg==}
-    engines: {node: '>=10'}
-
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
     engines: {node: '>= 6'}
@@ -4477,8 +4473,8 @@ packages:
     peerDependencies:
       vue: ^3.2.0
 
-  sql-formatter@15.4.7:
-    resolution: {integrity: sha512-gEXbtqN/fXmqlfjKbTO5d5kFj1X7fXyJzU/MD6wfFTCF2IXuIQXO21l2gnryZhtnYBhvQixBIMnFGYn4PZ8a9w==}
+  sql-formatter@15.6.2:
+    resolution: {integrity: sha512-ZjqOfJGuB97UeHzTJoTbadlM0h9ynehtSTHNUbGfXR4HZ4rCIoD2oIW91W+A5oE76k8hl0Uz5GD8Sx3Pt9Xa3w==}
     hasBin: true
 
   stackback@0.0.2:
@@ -8786,8 +8782,6 @@ snapshots:
       dunder-proto: 1.0.1
       es-object-atoms: 1.1.1
 
-  get-stdin@8.0.0: {}
-
   glob-parent@5.1.2:
     dependencies:
       is-glob: 4.0.3
@@ -10206,10 +10200,9 @@ snapshots:
     dependencies:
       vue: 3.5.16(typescript@5.7.3)
 
-  sql-formatter@15.4.7:
+  sql-formatter@15.6.2:
     dependencies:
       argparse: 2.0.1
-      get-stdin: 8.0.0
       nearley: 2.20.1
 
   stackback@0.0.2: {}
