@@ -27,9 +27,9 @@ func TestGetDatabaseMetadata(t *testing.T) {
 	a := require.New(t)
 	yamlFile, err := os.Open(filepath)
 	a.NoError(err)
+	defer yamlFile.Close()
 
 	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
 	a.NoError(err)
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
