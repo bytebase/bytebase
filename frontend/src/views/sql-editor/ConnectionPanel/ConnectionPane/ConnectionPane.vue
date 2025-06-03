@@ -166,7 +166,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { head, isEqual } from "lodash-es";
+import { isEqual } from "lodash-es";
 import { InfoIcon } from "lucide-vue-next";
 import {
   NTag,
@@ -546,6 +546,7 @@ watch(
 useEmitteryEventListener(editorEvents, "tree-ready", async () => {
   selectedKeys.value = await getSelectedKeys();
   if (!expandedState.value.initialized) {
+    // default expand all nodes.
     expandedState.value.expandedKeys = [...treeStore.allNodeKeys];
   }
 });
