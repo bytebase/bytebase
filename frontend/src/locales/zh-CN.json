@@ -287,8 +287,7 @@
       "error": {
         "nothing-changed": "无任何改变",
         "not-applicable": {
-          "task-doesnt-meet-ghost-requirement": "任务不符合 gh-ost 的要求",
-          "needs-database-for-saving-temp-data": "需要数据库 {database} 来保存临时数据。"
+          "database-doesnt-meet-ghost-requirement": "数据库 {database} 不符合 gh-ost 的要求"
         }
       },
       "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
