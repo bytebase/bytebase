@@ -9,6 +9,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { uniq } from "lodash-es";
 import { NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
@@ -60,8 +61,10 @@ watch(
   () => props.databaseResourceList,
   async () => {
     await batchGetOrFetchDatabases(
-      props.databaseResourceList.map(
-        (databaseResource) => databaseResource.databaseFullName
+      uniq(
+        props.databaseResourceList.map(
+          (databaseResource) => databaseResource.databaseFullName
+        )
       )
     );
   },

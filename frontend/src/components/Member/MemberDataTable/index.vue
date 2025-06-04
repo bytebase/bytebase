@@ -52,7 +52,7 @@ const columns = computed(
       {
         type: "selection",
         disabled: (memberBinding: MemberBinding) => {
-          return props.selectDisabled(memberBinding);
+          return !props.allowEdit || props.selectDisabled(memberBinding);
         },
       },
       {

@@ -699,11 +699,6 @@
       "json-format-example": "Ví dụ định dạng JSON",
       "view-example": "Xem ví dụ"
     },
-    "release": {
-      "new-version-available": "Phiên bản mới có sẵn",
-      "new-version-available-with-tag": "Phiên bản mới {tag} có sẵn",
-      "new-version-content": "Phiên bản mới {tag} hiện đã có! Vui lòng xem tài liệu của chúng tôi để cài đặt."
-    },
     "mail-delivery": {
       "description": "Định cấu hình thông tin SMTP sẽ cho phép người dùng nhận báo cáo cơ sở dữ liệu qua email, chẳng hạn như báo cáo truy vấn chậm hàng tuần.",
       "field": {
@@ -719,6 +714,19 @@
       },
       "updated-tip": "Đã cập nhật cài đặt gửi thư thành công",
       "tested-tip": "Gửi thành công, vui lòng kiểm tra hộp thư đến của {address}."
+    }
+  },
+  "remind": {
+    "release": {
+      "new-version-available": "Phiên bản mới có sẵn",
+      "new-version-available-with-tag": "Phiên bản mới {tag} có sẵn",
+      "new-version-content": "Phiên bản mới {tag} hiện đã có! Vui lòng xem tài liệu của chúng tôi để cài đặt."
+    },
+    "role-expire": {
+      "title": "Nhắc nhở hết hạn vai trò",
+      "content": "Các vai trò sau của bạn sắp hết hạn",
+      "checkbox": "Không nhắc nhở cho đến khi có bất kỳ cập nhật nào",
+      "go-to-project": "Đi đến trang dự án"
     }
   },
   "activity": {

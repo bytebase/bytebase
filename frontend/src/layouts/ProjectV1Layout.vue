@@ -54,6 +54,8 @@
     :project-name="project.name"
     @close="state.showRequestRolePanel = false"
   />
+
+  <IAMRemindModal :project-name="project.name" />
 </template>
 
 <script lang="ts" setup>
@@ -66,6 +68,7 @@ import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
+import IAMRemindModal from "@/components/IAMRemindModal.vue";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import {
