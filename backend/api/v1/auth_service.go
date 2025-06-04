@@ -126,7 +126,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
 	}
-	if !isWorkspaceAdmin && loginUser.Type == base.EndUser && !mfaSecondLogin {
+	if !isWorkspaceAdmin && loginUser.Type == storepb.PrincipalType_END_USER && !mfaSecondLogin {
 		// Disallow password signin for end users.
 		if setting.DisallowPasswordSignin && !loginViaIDP {
 			return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
@@ -151,13 +151,13 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 
 	switch loginUser.Type {
-	case base.EndUser:
+	case storepb.PrincipalType_END_USER:
 		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
 		response.Token = token
-	case base.ServiceAccount:
+	case storepb.PrincipalType_SERVICE_ACCOUNT:
 		token, err := auth.GenerateAPIToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
@@ -208,7 +208,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage) bool {
 	// Reset password restriction only works for end user with email & password login.
-	if user.Type != base.EndUser {
+	if user.Type != storepb.PrincipalType_END_USER {
 		return false
 	}
 	if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
@@ -225,7 +225,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		if !passwordRestriction.RequireResetPasswordForFirstLogin {
 			return false
 		}
-		count, err := s.store.CountUsers(ctx, base.EndUser)
+		count, err := s.store.CountUsers(ctx, storepb.PrincipalType_END_USER)
 		if err != nil {
 			slog.Error("failed to count end users", log.BBError(err))
 			return false
@@ -428,7 +428,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		Name:         userInfo.DisplayName,
 		Email:        email,
 		Phone:        userInfo.Phone,
-		Type:         base.EndUser,
+		Type:         storepb.PrincipalType_END_USER,
 		PasswordHash: string(passwordHash),
 	})
 	if err != nil {
