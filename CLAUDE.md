@@ -53,5 +53,8 @@ Always follow these guidelines to avoid common linting errors:
 - **Consistency**: Keep function signatures, naming, and patterns consistent with existing code
 - **Export Rules**: Only export (capitalize) functions and types that need to be used outside the package
 
+## Misc
+- The database JSONB columns store JSON marshalled by protojson.Marshal in go code. protojson.Marshal produces camelCased key rather than the snake_case key defined in the proto files. e.g. task_run becomes taskRun.
+
 ## Individual Preferences
 - @~/.claude/bytebase-instructions.md
