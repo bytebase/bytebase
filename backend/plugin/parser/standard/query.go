@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
@@ -20,13 +18,6 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_HIVE, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_BIGQUERY, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_CASSANDRA, ValidateSQLForEditor)
-
-	base.RegisterExtractResourceListFunc(storepb.Engine_CLICKHOUSE, ExtractResourceList)
-	base.RegisterExtractResourceListFunc(storepb.Engine_SQLITE, ExtractResourceList)
-	base.RegisterExtractResourceListFunc(storepb.Engine_SPANNER, ExtractResourceList)
-	base.RegisterExtractResourceListFunc(storepb.Engine_MONGODB, ExtractResourceList)
-	base.RegisterExtractResourceListFunc(storepb.Engine_REDIS, ExtractResourceList)
-	base.RegisterExtractResourceListFunc(storepb.Engine_HIVE, ExtractResourceList)
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.
@@ -74,11 +65,4 @@ func CheckStatementWithoutQuotedTextAndComment(statement string) bool {
 	}
 
 	return false
-}
-
-func ExtractResourceList(currentDatabase string, _ string, _ string) ([]base.SchemaResource, error) {
-	if currentDatabase == "" {
-		return nil, errors.Errorf("database must be specified")
-	}
-	return []base.SchemaResource{{Database: currentDatabase}}, nil
 }
