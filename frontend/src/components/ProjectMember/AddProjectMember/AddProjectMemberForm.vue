@@ -29,12 +29,15 @@
       />
     </div>
     <div class="w-full space-y-2">
-      <span>{{ $t("common.reason") }}</span>
+      <div class="flex items-center gap-x-1">
+        <span>{{ $t("common.reason") }}</span>
+        <RequiredStar v-if="requireReason" />
+      </div>
       <NInput
         v-model:value="state.reason"
         type="textarea"
         rows="2"
-        :placeholder="$t('project.members.assign-reason')"
+        :placeholder="`${$t('common.reason')} ${requireReason ? '' : `(${$t('common.optional')})`}`"
       />
     </div>
     <div
@@ -104,12 +107,14 @@ const props = withDefaults(
     projectName: string;
     binding: Binding;
     allowRemove: boolean;
+    requireReason?: boolean;
     disableMemberChange?: boolean;
     supportRoles?: string[];
     databaseResource?: DatabaseResource;
   }>(),
   {
     disableMemberChange: false,
+    requireReason: false,
     supportRoles: () => [],
     databaseResource: undefined,
   }
@@ -186,6 +191,7 @@ watch(
 );
 
 defineExpose({
+  reason: computed(() => state.reason),
   databaseResources: computed(() => state.databaseResources),
   expirationTimestampInMS: computed(() => state.expirationTimestampInMS),
   allowConfirm: computed(() => {
@@ -211,6 +217,9 @@ defineExpose({
       !isUndefined(state.databaseResources) &&
       state.databaseResources.length === 0
     ) {
+      return false;
+    }
+    if (props.requireReason && !state.reason.trim()) {
       return false;
     }
     return true;
