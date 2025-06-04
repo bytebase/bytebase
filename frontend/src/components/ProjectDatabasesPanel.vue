@@ -113,6 +113,7 @@ watch(
       query: "",
       scopes: [...readonlyScopes.value],
     };
+    state.selectedDatabaseNames = [];
   }
 );
 
