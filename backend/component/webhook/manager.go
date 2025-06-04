@@ -265,7 +265,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 
 	var mentionEndUsers []*store.UserMessage
 	for _, u := range mentionUsers {
-		if u.Type == base.EndUser {
+		if u.Type == storepb.PrincipalType_END_USER {
 			mentionEndUsers = append(mentionEndUsers, u)
 		}
 	}

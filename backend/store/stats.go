@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/metric"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -20,7 +19,7 @@ type CountInstanceMessage struct {
 }
 
 // CountUsers counts the principal.
-func (s *Store) CountUsers(ctx context.Context, userType base.PrincipalType) (int, error) {
+func (s *Store) CountUsers(ctx context.Context, userType storepb.PrincipalType) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
@@ -33,7 +32,7 @@ func (s *Store) CountUsers(ctx context.Context, userType base.PrincipalType) (in
 	SELECT COUNT(*)
 	FROM principal
 	WHERE principal.type = $1`,
-		userType).Scan(&count); err != nil {
+		userType.String()).Scan(&count); err != nil {
 		return 0, err
 	}
 
@@ -86,7 +85,7 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 		FROM principal
 		WHERE principal.deleted = $1 AND (principal.type = $2 OR principal.type = $3)`
 	var count int
-	if err := tx.QueryRowContext(ctx, query, false, base.EndUser, base.ServiceAccount).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, false, storepb.PrincipalType_END_USER.String(), storepb.PrincipalType_SERVICE_ACCOUNT.String()).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}

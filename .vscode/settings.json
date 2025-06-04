@@ -6,6 +6,8 @@
     "typescriptreact",
     "vue"
   ],
+  "git.openRepositoryInParentFolders": "always",
+  "diffEditor.useInlineViewWhenSpaceIsLimited": false,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
@@ -38,11 +40,17 @@
   "i18n-ally.editor.preferEditor": true,
   "i18n-ally.enabledFrameworks": ["vue"],
   "i18n-ally.parserOptions": {},
-  "go.lintOnSave": "workspace",
+  "go.lintOnSave": "off",
   "go.lintTool": "staticcheck",
+  "go.languageServerFlags": [
+      "-rpc.trace"
+  ],
+  "go.toolsManagement.checkForUpdates": "off",
   "gopls": {
-    "formatting.local": "github.com/bytebase/bytebase"
   },
   "go.testTimeout": "300s",
-  "workbench.editor.enablePreview": false
+  "workbench.editor.enablePreview": false,
+  "go.survey.prompt": false,
+  "go.vetOnSave": "off",
+  "eslint.codeActionsOnSave.mode": "problems"
 }

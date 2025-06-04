@@ -66,7 +66,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 				Name:          aadUser.DisplayName,
 				Email:         aadUser.UserName,
-				Type:          base.EndUser,
+				Type:          storepb.PrincipalType_END_USER,
 				MemberDeleted: !aadUser.Active,
 				PasswordHash:  string(passwordHash),
 				Profile: &storepb.UserProfile{

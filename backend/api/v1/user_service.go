@@ -345,7 +345,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.InvalidArgument, "support user and service account only")
 	}
 
-	count, err := s.store.CountUsers(ctx, base.EndUser)
+	count, err := s.store.CountUsers(ctx, storepb.PrincipalType_END_USER)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to count users, error: %v", err)
 	}
@@ -357,7 +357,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.User.Email, principalType == base.ServiceAccount, false); err != nil {
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.User.Email, principalType == storepb.PrincipalType_SERVICE_ACCOUNT, false); err != nil {
 		return nil, err
 	}
 	existingUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
@@ -503,7 +503,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "email":
-			if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.User.Email, user.Type == base.ServiceAccount, false); err != nil {
+			if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.User.Email, user.Type == storepb.PrincipalType_SERVICE_ACCOUNT, false); err != nil {
 				return nil, err
 			}
 			existedUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
@@ -517,7 +517,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		case "title":
 			patch.Name = &request.User.Title
 		case "password":
-			if user.Type != base.EndUser {
+			if user.Type != storepb.PrincipalType_END_USER {
 				return nil, status.Errorf(codes.InvalidArgument, "password can be mutated for end users only")
 			}
 			if err := s.validatePassword(ctx, request.User.Password); err != nil {
@@ -525,7 +525,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			}
 			passwordPatch = &request.User.Password
 		case "service_key":
-			if user.Type != base.ServiceAccount {
+			if user.Type != storepb.PrincipalType_SERVICE_ACCOUNT {
 				return nil, status.Errorf(codes.InvalidArgument, "service key can be mutated for service accounts only")
 			}
 			val, err := common.RandomString(20)
@@ -692,7 +692,7 @@ func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
 	}
 	activeEndUserCount := 0
 	for _, stat := range userStat {
-		if !stat.Deleted && stat.Type == base.EndUser {
+		if !stat.Deleted && stat.Type == storepb.PrincipalType_END_USER {
 			activeEndUserCount = stat.Count
 			break
 		}
@@ -721,7 +721,7 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 			}
 			users := utils.GetUsersByMember(ctx, s.store, member)
 			for _, user := range users {
-				if !user.MemberDeleted && user.Type == base.EndUser {
+				if !user.MemberDeleted && user.Type == storepb.PrincipalType_END_USER {
 					return true, nil
 				}
 			}
@@ -770,13 +770,13 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	return convertToUser(user), nil
 }
 
-func convertToV1UserType(userType base.PrincipalType) v1pb.UserType {
+func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
 	switch userType {
-	case base.EndUser:
+	case storepb.PrincipalType_END_USER:
 		return v1pb.UserType_USER
-	case base.SystemBot:
+	case storepb.PrincipalType_SYSTEM_BOT:
 		return v1pb.UserType_SYSTEM_BOT
-	case base.ServiceAccount:
+	case storepb.PrincipalType_SERVICE_ACCOUNT:
 		return v1pb.UserType_SERVICE_ACCOUNT
 	default:
 		return v1pb.UserType_USER_TYPE_UNSPECIFIED
@@ -806,15 +806,15 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	return convertedUser
 }
 
-func convertToPrincipalType(userType v1pb.UserType) (base.PrincipalType, error) {
-	var t base.PrincipalType
+func convertToPrincipalType(userType v1pb.UserType) (storepb.PrincipalType, error) {
+	var t storepb.PrincipalType
 	switch userType {
 	case v1pb.UserType_USER:
-		t = base.EndUser
+		t = storepb.PrincipalType_END_USER
 	case v1pb.UserType_SYSTEM_BOT:
-		t = base.SystemBot
+		t = storepb.PrincipalType_SYSTEM_BOT
 	case v1pb.UserType_SERVICE_ACCOUNT:
-		t = base.ServiceAccount
+		t = storepb.PrincipalType_SERVICE_ACCOUNT
 	default:
 		return t, status.Errorf(codes.InvalidArgument, "invalid user type %s", userType)
 	}
