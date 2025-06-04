@@ -3,6 +3,7 @@
     v-bind="$attrs"
     class="text-sm"
     :text="text"
+    :size="size"
     :class="[!hideIcon && 'btn-icon']"
     @click.prevent.stop="
       () => {
@@ -59,6 +60,7 @@ const props = withDefaults(
     confirmTitle?: string;
     confirmDescription?: string;
     hideIcon?: boolean;
+    size?: "tiny" | "small" | "medium" | "large";
   }>(),
   {
     type: "DELETE",
@@ -69,6 +71,7 @@ const props = withDefaults(
     confirmTitle: "",
     confirmDescription: "",
     hideIcon: false,
+    size: "medium",
   }
 );
 

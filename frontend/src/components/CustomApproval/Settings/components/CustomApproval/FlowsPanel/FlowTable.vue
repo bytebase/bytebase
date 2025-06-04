@@ -25,10 +25,10 @@ import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
+import { SpinnerButton } from "@/components/v2/Form";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
 import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
-import { SpinnerButton } from "../../common";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
 
@@ -84,14 +84,15 @@ const columns = computed((): DataTableColumn<LocalApprovalRule>[] => {
           <NButton size="small" onClick={() => editApprovalTemplate(rule)}>
             {allowAdmin.value ? t("common.edit") : t("common.view")}
           </NButton>
-          <SpinnerButton
-            size="small"
-            tooltip={t("custom-approval.approval-flow.delete")}
-            disabled={!allowAdmin.value}
-            onConfirm={() => deleteRule(rule)}
-          >
-            {t("common.delete")}
-          </SpinnerButton>
+          {allowAdmin.value && (
+            <SpinnerButton
+              size="small"
+              tooltip={t("custom-approval.approval-flow.delete")}
+              onConfirm={() => deleteRule(rule)}
+            >
+              {t("common.delete")}
+            </SpinnerButton>
+          )}
         </div>
       ),
     },

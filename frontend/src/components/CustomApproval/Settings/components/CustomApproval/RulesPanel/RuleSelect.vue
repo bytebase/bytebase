@@ -35,9 +35,9 @@ import type { SelectOption } from "naive-ui";
 import { NButton, type SelectProps } from "naive-ui";
 import { computed, useAttrs } from "vue";
 import { useI18n } from "vue-i18n";
+import { SpinnerSelect } from "@/components/v2/Form";
 import { useWorkspaceApprovalSettingStore } from "@/store";
 import type { VueClass, VueStyle } from "@/utils";
-import { SpinnerSelect } from "../../common";
 import { useCustomApprovalContext } from "../context";
 
 export interface ApprovalTemplateSelectorProps

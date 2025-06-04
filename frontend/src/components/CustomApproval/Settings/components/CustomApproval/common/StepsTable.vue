@@ -25,6 +25,7 @@ import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { RoleSelect } from "@/components/v2";
+import { SpinnerButton } from "@/components/v2/Form";
 import { PresetRoleType } from "@/types";
 import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
 import {
@@ -33,7 +34,6 @@ import {
   ApprovalStep_Type,
 } from "@/types/proto/v1/issue_service";
 import { approvalNodeText } from "@/utils";
-import { SpinnerButton } from "../../common";
 import { useCustomApprovalContext } from "../context";
 
 const props = defineProps<{
@@ -106,14 +106,15 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
           >
             <ArrowDownIcon />
           </NButton>
-          <SpinnerButton
-            size="tiny"
-            tooltip={t("custom-approval.approval-flow.node.delete")}
-            disabled={!allowAdmin.value}
-            onConfirm={() => removeStep(step, index)}
-          >
-            <TrashIcon />
-          </SpinnerButton>
+          {allowAdmin.value && (
+            <SpinnerButton
+              size="tiny"
+              tooltip={t("custom-approval.approval-flow.node.delete")}
+              onConfirm={() => removeStep(step, index)}
+            >
+              <TrashIcon />
+            </SpinnerButton>
+          )}
         </div>
       ),
     });

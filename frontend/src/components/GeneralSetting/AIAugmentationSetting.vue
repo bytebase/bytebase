@@ -48,6 +48,7 @@
               style="width: 12rem"
               v-model:value="state.provider"
               :options="providerOptions"
+              :disabled="!allowEdit || !hasAIFeature"
               :consistent-menu-width="true"
             />
           </div>

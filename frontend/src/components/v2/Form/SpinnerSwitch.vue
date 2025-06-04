@@ -3,12 +3,13 @@
 </template>
 
 <script lang="ts" setup>
-import { NSwitch } from "naive-ui";
+import { type SwitchProps, NSwitch } from "naive-ui";
 import { ref } from "vue";
 
-const props = defineProps<{
+export interface SpinnerSwitchProps extends /* @vue-ignore */ SwitchProps {
   onToggle: (on: boolean) => Promise<any>;
-}>();
+}
+const props = defineProps<SpinnerSwitchProps>();
 
 const loading = ref(false);
 

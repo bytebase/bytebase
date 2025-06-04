@@ -8,7 +8,10 @@
       </div>
     </div>
     <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
-      <WorkspaceMode v-model:mode="state.databaseChangeMode" />
+      <WorkspaceMode
+        v-model:mode="state.databaseChangeMode"
+        :disabled="!allowEdit"
+      />
     </div>
 
     <BBModal
