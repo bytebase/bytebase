@@ -37,7 +37,7 @@ type CodeCompletionCore struct {
 	callStack                  *RuleList
 	lastQueryRuleContext       *RuleContext
 	lastShadowQueryRuleContext *RuleContext
-	
+
 	// Context for cancellation support
 	ctx context.Context
 }
@@ -406,7 +406,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 		return RuleEndStatus{}
 	default:
 	}
-	
+
 	if len(c.callStack.rules) > maxRecursionDepth {
 		return RuleEndStatus{}
 	}
@@ -496,7 +496,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 			return RuleEndStatus{}
 		default:
 		}
-		
+
 		currentEntry = statePipeline[len(statePipeline)-1]
 		statePipeline = statePipeline[:len(statePipeline)-1]
 		c.statesProcessed++
