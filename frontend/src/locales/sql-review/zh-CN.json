@@ -257,7 +257,7 @@
     },
     "column-required": {
       "title": "强制表中包含特定列",
-      "description": "某些通用列有助于更好的维护应用，例如增加 \"ID\" 作为业务无关的通用主键避免了业务变化（如业务合并）导致的主键冲突，某些场景还能带来更好的数据插入性能。建议错误等级：警告",
+      "description": "部分通用列有助于更好的维护应用，例如增加 \"ID\" 作为业务无关的通用主键避免了业务变化（如业务合并）导致的主键冲突，部分场景还能带来更好的数据插入性能。建议错误等级：警告",
       "component": {
         "list": {
           "title": "必须包含的字段名"
@@ -291,7 +291,7 @@
     },
     "column-disallow-changing-order": {
       "title": "禁止修改表中的列顺序",
-      "description": "修改列顺序可能导致某些依赖原表默认顺序的应用或视图出现不符合预期的结果，例如 \"SELECT * \"。建议错误等级：警告"
+      "description": "修改列顺序可能导致部分依赖原表默认顺序的应用或视图出现不符合预期的结果，例如 \"SELECT * \"。建议错误等级：警告"
     },
     "column-disallow-drop": {
       "title": "禁止删除列",
@@ -402,11 +402,11 @@
     },
     "statement-disallow-commit": {
       "title": "禁止显式 \"COMMIT\"",
-      "description": "某些情况要求多条语句包含在一个事务中由系统提交，只允许同时成功或同时失败，以便部分出错时快速重跑，因此不允许出现显式的 \"COMMIT\"。建议错误等级：警告"
+      "description": "部分情况要求多条语句包含在一个事务中由系统提交，只允许同时成功或同时失败，以便部分出错时快速重跑，因此不允许出现显式的 \"COMMIT\"。建议错误等级：警告"
     },
     "statement-disallow-limit": {
       "title": "禁止在 DML 语句中使用 \"LIMIT\"",
-      "description": "如果 DML 语句中使用 LIMIT 不伴随 ORDER BY，影响的行是不确定的，在某些复制模式下可能导致主库与从库变更了不同的行，造成数据不一致。建议错误等级：错误"
+      "description": "如果 DML 语句中使用 LIMIT 不伴随 ORDER BY，影响的行是不确定的，在部分复制模式下可能导致主库与从库变更了不同的行，造成数据不一致。建议错误等级：错误"
     },
     "statement-disallow-order-by": {
       "title": "禁止在 \"UPDATE\",\"DELETE\" 语句中使用 \"ORDER BY\"",
@@ -553,7 +553,7 @@
     },
     "statement-add-column-without-position": {
       "title": "禁止在指定位置加列",
-      "description": "某些情况下，使用 FIRST/AFTER 在指定位置加列将引起数据重整（把原来的数据重写一遍）。建议错误级别：警告"
+      "description": "部分情况下，使用 FIRST/AFTER 在指定位置加列将引起数据重整（把原来的数据重写一遍）。建议错误级别：警告"
     },
     "statement-disallow-offline-ddl": {
       "title": "禁止离线 DDL",
@@ -565,7 +565,7 @@
     },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",
-      "description": "某些变更可能影响现有应用功能，例如修改数据库对象名，增加新的约束等，此规范可避免不谨慎变更导致现有应用运行失败。建议错误等级：警告"
+      "description": "部分变更可能影响现有应用功能，例如修改数据库对象名，增加新的约束等，此规范可避免不谨慎变更导致现有应用运行失败。建议错误等级：警告"
     },
     "statement-max-execution-time": {
       "title": "强制设置最大执行时间参数",
@@ -649,7 +649,7 @@
     },
     "system-charset-allowlist": {
       "title": "允许使用的字符集（Charset）列表",
-      "description": "字符集决定了表中可以存储哪些字符，使用错误的字符集可能导致应用中的某些字符无法正确存储与显示，例如中文与 Emoji 表情。建议错误等级：错误",
+      "description": "字符集决定了表中可以存储哪些字符，使用错误的字符集可能导致应用中的部分字符无法正确存储与显示，例如中文与 Emoji 表情。建议错误等级：错误",
       "component": {
         "list": {
           "title": "允许的字符集"
