@@ -14,7 +14,7 @@
     <div class="w-full flex flex-col gap-2 mt-2">
       <NInput
         v-model:value="state.domain"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         :placeholder="
           $t(
             'settings.general.workspace.domain-restriction.domain-input-placeholder'
@@ -26,8 +26,7 @@
       <div class="w-full flex flex-row justify-between items-center">
         <NCheckbox
           v-model:checked="state.enableRestriction"
-          :disabled="!state.domain || !hasFeature"
-          :readonly="!allowEdit"
+          :disabled="!state.domain || !hasFeature || !allowEdit"
         >
           <div class="font-medium flex items-center gap-x-2">
             {{

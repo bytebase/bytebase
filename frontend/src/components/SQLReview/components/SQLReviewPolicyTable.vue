@@ -37,7 +37,7 @@
           />
         </div>
         <div class="flex items-center gap-x-2 mt-4">
-          <NButton @click.prevent="handleClickEdit(review)">
+          <NButton size="small" @click.prevent="handleClickEdit(review)">
             {{
               hasUpdatePolicyPermission ? $t("common.edit") : $t("common.view")
             }}
@@ -48,6 +48,7 @@
             :text="false"
             :disabled="!hasUpdatePolicyPermission"
             :type="'DELETE'"
+            size="small"
             :hide-icon="true"
             :button-text="$t('common.delete')"
             :ok-text="$t('common.delete')"

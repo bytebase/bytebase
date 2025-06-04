@@ -236,14 +236,15 @@ const columns = computed((): DataTableColumn<Secret>[] => {
           >
             {t("common.edit")}
           </NButton>
-          <SpinnerButton
-            size="tiny"
-            disabled={!props.allowDelete}
-            tooltip={t("database.secret.delete-tips")}
-            onConfirm={() => handleDelete(secret)}
-          >
-            {t("common.delete")}
-          </SpinnerButton>
+          {props.allowDelete && (
+            <SpinnerButton
+              size="tiny"
+              tooltip={t("database.secret.delete-tips")}
+              onConfirm={() => handleDelete(secret)}
+            >
+              {t("common.delete")}
+            </SpinnerButton>
+          )}
         </div>
       ),
     },
