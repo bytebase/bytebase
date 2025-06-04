@@ -367,9 +367,9 @@ type PlanConfig_ChangeDatabaseConfig struct {
 	Type       PlanConfig_ChangeDatabaseConfig_Type `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.PlanConfig_ChangeDatabaseConfig_Type" json:"type,omitempty"`
 	GhostFlags map[string]string                    `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
-	PreUpdateBackupDetail *PreUpdateBackupDetail `protobuf:"bytes,8,opt,name=pre_update_backup_detail,json=preUpdateBackupDetail,proto3,oneof" json:"pre_update_backup_detail,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	EnablePriorBackup bool `protobuf:"varint,8,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *PlanConfig_ChangeDatabaseConfig) Reset() {
@@ -437,11 +437,11 @@ func (x *PlanConfig_ChangeDatabaseConfig) GetGhostFlags() map[string]string {
 	return nil
 }
 
-func (x *PlanConfig_ChangeDatabaseConfig) GetPreUpdateBackupDetail() *PreUpdateBackupDetail {
+func (x *PlanConfig_ChangeDatabaseConfig) GetEnablePriorBackup() bool {
 	if x != nil {
-		return x.PreUpdateBackupDetail
+		return x.EnablePriorBackup
 	}
-	return nil
+	return false
 }
 
 type PlanConfig_ExportDataConfig struct {
@@ -632,7 +632,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\xda\r\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\x88\r\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
@@ -653,7 +653,7 @@ const file_store_plan_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tcollation\x12\x1e\n" +
 	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
 	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xa6\x04\n" +
+	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xd4\x03\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
 	" \x03(\tR\atargets\x12\x14\n" +
@@ -661,8 +661,8 @@ const file_store_plan_proto_rawDesc = "" +
 	"\arelease\x18\t \x01(\tR\arelease\x12H\n" +
 	"\x04type\x18\x03 \x01(\x0e24.bytebase.store.PlanConfig.ChangeDatabaseConfig.TypeR\x04type\x12`\n" +
 	"\vghost_flags\x18\a \x03(\v2?.bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
-	"ghostFlags\x12c\n" +
-	"\x18pre_update_backup_detail\x18\b \x01(\v2%.bytebase.store.PreUpdateBackupDetailH\x00R\x15preUpdateBackupDetail\x88\x01\x01\x1a=\n" +
+	"ghostFlags\x12.\n" +
+	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"W\n" +
@@ -671,8 +671,7 @@ const file_store_plan_proto_rawDesc = "" +
 	"\aMIGRATE\x10\x02\x12\x0f\n" +
 	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
 	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
-	"\x04DATA\x10\x06B\x1b\n" +
-	"\x19_pre_update_backup_detail\x1a\xa6\x01\n" +
+	"\x04DATA\x10\x06\x1a\xa6\x01\n" +
 	"\x10ExportDataConfig\x12\x18\n" +
 	"\atargets\x18\x05 \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x124\n" +
@@ -711,25 +710,23 @@ var file_store_plan_proto_goTypes = []any{
 	(*PlanConfig_Deployment)(nil),                      // 6: bytebase.store.PlanConfig.Deployment
 	nil,                                                // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
 	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 8: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	(*PreUpdateBackupDetail)(nil),                      // 9: bytebase.store.PreUpdateBackupDetail
-	(ExportFormat)(0),                                  // 10: bytebase.store.ExportFormat
+	(ExportFormat)(0),                                  // 9: bytebase.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
-	2,  // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
-	6,  // 1: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
-	3,  // 2: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
-	4,  // 3: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
-	5,  // 4: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
-	0,  // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	7,  // 6: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	9,  // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
-	10, // 8: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	8,  // 9: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	2, // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
+	6, // 1: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
+	3, // 2: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
+	4, // 3: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
+	5, // 4: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
+	0, // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
+	7, // 6: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	9, // 7: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
+	8, // 8: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_proto_init() }
@@ -738,13 +735,11 @@ func file_store_plan_proto_init() {
 		return
 	}
 	file_store_common_proto_init()
-	file_store_plan_check_run_proto_init()
 	file_store_plan_proto_msgTypes[1].OneofWrappers = []any{
 		(*PlanConfig_Spec_CreateDatabaseConfig)(nil),
 		(*PlanConfig_Spec_ChangeDatabaseConfig)(nil),
 		(*PlanConfig_Spec_ExportDataConfig)(nil),
 	}
-	file_store_plan_proto_msgTypes[3].OneofWrappers = []any{}
 	file_store_plan_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

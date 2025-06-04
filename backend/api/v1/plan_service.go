@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -485,7 +484,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						return nil, err
 					}
 
-					// PreUpdateBackupDetail
+					// Prior Backup
 					if err := func() error {
 						if newTaskType != base.TaskDatabaseDataUpdate {
 							return nil
@@ -495,54 +494,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							return nil
 						}
 
-						// The target backup database name.
-						// Format: instances/{instance}/databases/{database}
-						var backupDatabaseName *string
-						if config.ChangeDatabaseConfig.PreUpdateBackupDetail == nil {
-							if task.Payload.GetPreUpdateBackupDetail().GetDatabase() != "" {
-								emptyValue := ""
-								backupDatabaseName = &emptyValue
-							}
-						} else {
-							if config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database != task.Payload.GetPreUpdateBackupDetail().GetDatabase() {
-								backupDatabaseName = &config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database
-							}
-						}
-						if backupDatabaseName != nil {
-							if *backupDatabaseName != "" {
-								// If backup is enabled, we need to check if the backup is available for the source database. AKA, the task's target database.
-								// Construct the source database name from the task's instance and database
-								sourceDatabaseName := fmt.Sprintf("instances/%s/databases/%s", task.InstanceID, task.GetDatabaseName())
-								instanceID, databaseName, err := common.GetInstanceDatabaseID(sourceDatabaseName)
-								if err != nil {
-									return errors.Wrapf(err, "failed to get instance database id from %q", sourceDatabaseName)
-								}
-								instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-								if err != nil {
-									return errors.Wrapf(err, "failed to get instance %s", instanceID)
-								}
-								if instance == nil {
-									return status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-								}
-								database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-									InstanceID:      &instanceID,
-									DatabaseName:    &databaseName,
-									IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-								})
-								if err != nil {
-									return errors.Wrapf(err, "failed to get database %s", databaseName)
-								}
-								if database == nil {
-									return status.Errorf(codes.NotFound, "database %q not found", databaseName)
-								}
-								if database.Metadata == nil || !database.Metadata.GetBackupAvailable() {
-									return status.Errorf(codes.FailedPrecondition, "backup is not available for database %q", databaseName)
-								}
-							}
-
-							taskPatch.PreUpdateBackupDetail = &storepb.PreUpdateBackupDetail{
-								Database: *backupDatabaseName,
-							}
+						// Check if backup setting has changed.
+						planEnableBackup := config.ChangeDatabaseConfig.GetEnablePriorBackup()
+						taskEnableBackup := task.Payload.GetEnablePriorBackup()
+						if planEnableBackup != taskEnableBackup {
+							taskPatch.EnablePriorBackup = &planEnableBackup
 							doUpdate = true
 						}
 						return nil
@@ -667,8 +623,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 
 			var doUpdateSheet bool
 			for _, taskPatch := range taskPatchList {
-				// If pre-backup detail has been updated, we need to rerun the plan check runs.
-				if taskPatch.PreUpdateBackupDetail != nil {
+				// If backup setting has been updated, we need to rerun the plan check runs.
+				if taskPatch.EnablePriorBackup != nil {
 					planCheckRunsTrigger = true
 				}
 				if taskPatch.SheetID != nil {

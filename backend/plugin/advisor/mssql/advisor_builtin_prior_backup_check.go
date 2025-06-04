@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
@@ -34,7 +34,7 @@ type StatementPriorBackupCheckAdvisor struct {
 }
 
 func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	if checkCtx.PreUpdateBackupDetail == nil || checkCtx.ChangeType != storepb.PlanCheckRunConfig_DML {
+	if !checkCtx.EnablePriorBackup || checkCtx.ChangeType != storepb.PlanCheckRunConfig_DML {
 		return nil, nil
 	}
 
@@ -60,12 +60,12 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		})
 	}
 
-	databaseName := extractDatabaseName(checkCtx.PreUpdateBackupDetail.Database)
+	databaseName := base.BackupDatabaseNameOfEngine(storepb.Engine_MSSQL)
 	if !advisor.DatabaseExists(ctx, checkCtx, databaseName) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Title:         title,
-			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", checkCtx.PreUpdateBackupDetail.Database),
+			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", databaseName),
 			Code:          advisor.DatabaseNotExists.Int32(),
 			StartPosition: common.ConvertANTLRLineToPosition(1),
 		})
@@ -342,9 +342,4 @@ func (l *statementDisallowMixDMLChecker) EnterDelete_statement(ctx *parser.Delet
 	if tsqlparser.IsTopLevel(ctx.GetParent()) {
 		l.deleteStatements = append(l.deleteStatements, ctx)
 	}
-}
-
-func extractDatabaseName(databaseUID string) string {
-	segments := strings.Split(databaseUID, "/")
-	return segments[len(segments)-1]
 }

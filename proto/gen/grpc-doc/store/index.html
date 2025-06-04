@@ -839,53 +839,6 @@
         
           
           <li>
-            <a href="#store%2fplan_check_run.proto">store/plan_check_run.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunConfig"><span class="badge">M</span>PlanCheckRunConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunConfig.GhostFlagsEntry"><span class="badge">M</span>PlanCheckRunConfig.GhostFlagsEntry</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunResult"><span class="badge">M</span>PlanCheckRunResult</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunResult.Result"><span class="badge">M</span>PlanCheckRunResult.Result</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunResult.Result.SqlReviewReport"><span class="badge">M</span>PlanCheckRunResult.Result.SqlReviewReport</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport"><span class="badge">M</span>PlanCheckRunResult.Result.SqlSummaryReport</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PreUpdateBackupDetail"><span class="badge">M</span>PreUpdateBackupDetail</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunConfig.ChangeDatabaseType"><span class="badge">E</span>PlanCheckRunConfig.ChangeDatabaseType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunResult.Result.Status"><span class="badge">E</span>PlanCheckRunResult.Result.Status</a>
-                </li>
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fplan.proto">store/plan.proto</a>
             <ul>
               
@@ -924,6 +877,49 @@
               
                 <li>
                   <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2fplan_check_run.proto">store/plan_check_run.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunConfig"><span class="badge">M</span>PlanCheckRunConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunConfig.GhostFlagsEntry"><span class="badge">M</span>PlanCheckRunConfig.GhostFlagsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunResult"><span class="badge">M</span>PlanCheckRunResult</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunResult.Result"><span class="badge">M</span>PlanCheckRunResult.Result</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunResult.Result.SqlReviewReport"><span class="badge">M</span>PlanCheckRunResult.Result.SqlReviewReport</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport"><span class="badge">M</span>PlanCheckRunResult.Result.SqlSummaryReport</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunConfig.ChangeDatabaseType"><span class="badge">E</span>PlanCheckRunConfig.ChangeDatabaseType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunResult.Result.Status"><span class="badge">E</span>PlanCheckRunResult.Result.Status</a>
                 </li>
               
               
@@ -7956,419 +7952,6 @@ Format: users/{userUID}. </p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/plan_check_run.proto">store/plan_check_run.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.PlanCheckRunConfig">PlanCheckRunConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sheet_uid</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>change_database_type</td>
-                  <td><a href="#bytebase.store.PlanCheckRunConfig.ChangeDatabaseType">PlanCheckRunConfig.ChangeDatabaseType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>instance_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_group_uid</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td>optional</td>
-                  <td><p><strong>Deprecated.</strong>  </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ghost_flags</td>
-                  <td><a href="#bytebase.store.PlanCheckRunConfig.GhostFlagsEntry">PlanCheckRunConfig.GhostFlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
-                  <td>optional</td>
-                  <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-            
-            
-            <h4>Fields with deprecated option</h4>
-            <table>
-              <thead>
-                <tr>
-                  <td>Name</td>
-                  <td>Option</td>
-                </tr>
-              </thead>
-              <tbody>
-              
-                <tr>
-                  <td>database_group_uid</td>
-                  <td><p>true</p></td>
-                </tr>
-              
-              </tbody>
-            </table>
-            
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanCheckRunConfig.GhostFlagsEntry">PlanCheckRunConfig.GhostFlagsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanCheckRunResult">PlanCheckRunResult</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>results</td>
-                  <td><a href="#bytebase.store.PlanCheckRunResult.Result">PlanCheckRunResult.Result</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanCheckRunResult.Result">PlanCheckRunResult.Result</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#bytebase.store.PlanCheckRunResult.Result.Status">PlanCheckRunResult.Result.Status</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>content</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>code</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sql_summary_report</td>
-                  <td><a href="#bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport">PlanCheckRunResult.Result.SqlSummaryReport</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sql_review_report</td>
-                  <td><a href="#bytebase.store.PlanCheckRunResult.Result.SqlReviewReport">PlanCheckRunResult.Result.SqlReviewReport</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanCheckRunResult.Result.SqlReviewReport">PlanCheckRunResult.Result.SqlReviewReport</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>line</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>start_position</td>
-                  <td><a href="#bytebase.store.Position">Position</a></td>
-                  <td></td>
-                  <td><p>1-based Position of the SQL statement.
-To supersede `line` and `column` above. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>end_position</td>
-                  <td><a href="#bytebase.store.Position">Position</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport">PlanCheckRunResult.Result.SqlSummaryReport</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>statement_types</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>statement_types are the types of statements that are found in the sql. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>affected_rows</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>changed_resources</td>
-                  <td><a href="#bytebase.store.ChangedResources">ChangedResources</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database for keeping the backup data.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.PlanCheckRunConfig.ChangeDatabaseType">PlanCheckRunConfig.ChangeDatabaseType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>CHANGE_DATABASE_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DDL</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DML</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SDL</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DDL_GHOST</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SQL_EDITOR</td>
-                <td>5</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.PlanCheckRunResult.Result.Status">PlanCheckRunResult.Result.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ERROR</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WARNING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SUCCESS</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/plan.proto">store/plan.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -8455,9 +8038,9 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
-                  <td>optional</td>
+                  <td>enable_prior_backup</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
                 </tr>
               
@@ -8769,6 +8352,394 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                 <td>DATA</td>
                 <td>6</td>
                 <td><p>Used for DML change.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/plan_check_run.proto">store/plan_check_run.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.PlanCheckRunConfig">PlanCheckRunConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sheet_uid</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>change_database_type</td>
+                  <td><a href="#bytebase.store.PlanCheckRunConfig.ChangeDatabaseType">PlanCheckRunConfig.ChangeDatabaseType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instance_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_group_uid</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td>optional</td>
+                  <td><p><strong>Deprecated.</strong>  </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ghost_flags</td>
+                  <td><a href="#bytebase.store.PlanCheckRunConfig.GhostFlagsEntry">PlanCheckRunConfig.GhostFlagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_prior_backup</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>database_group_uid</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanCheckRunConfig.GhostFlagsEntry">PlanCheckRunConfig.GhostFlagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanCheckRunResult">PlanCheckRunResult</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>results</td>
+                  <td><a href="#bytebase.store.PlanCheckRunResult.Result">PlanCheckRunResult.Result</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanCheckRunResult.Result">PlanCheckRunResult.Result</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#bytebase.store.PlanCheckRunResult.Result.Status">PlanCheckRunResult.Result.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_summary_report</td>
+                  <td><a href="#bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport">PlanCheckRunResult.Result.SqlSummaryReport</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_review_report</td>
+                  <td><a href="#bytebase.store.PlanCheckRunResult.Result.SqlReviewReport">PlanCheckRunResult.Result.SqlReviewReport</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanCheckRunResult.Result.SqlReviewReport">PlanCheckRunResult.Result.SqlReviewReport</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>line</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>column</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p>1-based Position of the SQL statement.
+To supersede `line` and `column` above. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport">PlanCheckRunResult.Result.SqlSummaryReport</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>statement_types</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>statement_types are the types of statements that are found in the sql. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>changed_resources</td>
+                  <td><a href="#bytebase.store.ChangedResources">ChangedResources</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.PlanCheckRunConfig.ChangeDatabaseType">PlanCheckRunConfig.ChangeDatabaseType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CHANGE_DATABASE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SDL</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL_GHOST</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SQL_EDITOR</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.PlanCheckRunResult.Result.Status">PlanCheckRunResult.Result.Status</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SUCCESS</td>
+                <td>3</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -11912,8 +11883,8 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
+                  <td>enable_prior_backup</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
