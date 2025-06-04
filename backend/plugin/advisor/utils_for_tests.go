@@ -222,15 +222,15 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		}
 
 		checkCtx := SQLReviewCheckContext{
-			Charset:           "",
-			Collation:         "",
-			DBType:            dbType,
-			Catalog:           &testCatalog{finder: finder},
-			Driver:            nil,
-			CurrentDatabase:   curDB,
-			DBSchema:          schemaMetadata,
-			ChangeType:        tc.ChangeType,
-			EnablePriorBackup: true, // Enable backup for testing
+			Charset:                  "",
+			Collation:                "",
+			DBType:                   dbType,
+			Catalog:                  &testCatalog{finder: finder},
+			Driver:                   nil,
+			CurrentDatabase:          curDB,
+			DBSchema:                 schemaMetadata,
+			ChangeType:               tc.ChangeType,
+			EnablePriorBackup:        true, // Enable backup for testing
 			NoAppendBuiltin:          true,
 			UsePostgresDatabaseOwner: true,
 		}
