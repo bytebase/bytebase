@@ -20,7 +20,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-
 var (
 	_ advisor.Advisor = (*OnlineMigrationAdvisor)(nil)
 )
