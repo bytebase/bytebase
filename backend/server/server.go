@@ -151,7 +151,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 	}
 	if err := migrator.MigrateSchema(ctx, pgURL); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to migrate schema")
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
@@ -164,7 +164,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	s.stateCfg, err = state.New()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to create state config")
 	}
 
 	if err := s.store.BackfillIssueTSVector(ctx); err != nil {
@@ -183,11 +183,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 	secret, err := s.store.GetSecret(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get secret")
 	}
 	s.iamManager, err = iam.NewManager(stores, s.licenseService)
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to reload iam cache")
 	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
@@ -290,7 +290,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.lspServer = lsp.NewServer(s.store, profile)
 
 	if err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
@@ -300,7 +300,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Configure grpc prometheus metrics.
 	if err := prometheus.DefaultRegisterer.Register(srvMetrics); err != nil {
 		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to register prometheus metrics")
 		}
 	}
 	srvMetrics.InitializeMetrics(s.grpcServer)
