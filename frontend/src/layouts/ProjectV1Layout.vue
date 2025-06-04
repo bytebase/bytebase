@@ -1,48 +1,46 @@
 <template>
   <template v-if="initialized">
     <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
-    <div class="px-4 h-full overflow-auto">
-      <template v-if="!hideDefaultProject && isDefaultProject">
-        <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
-          {{ $t("database.unassigned-databases") }}
-        </h1>
-        <BBAttention class="mb-4" type="info">
-          {{ $t("project.overview.info-slot-content") }}
-        </BBAttention>
-      </template>
+    <template v-if="!hideDefaultProject && isDefaultProject">
+      <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
+        {{ $t("database.unassigned-databases") }}
+      </h1>
+      <BBAttention class="mb-4" type="info">
+        {{ $t("project.overview.info-slot-content") }}
+      </BBAttention>
+    </template>
 
-      <div
-        v-if="!hideQuickActionPanel"
-        class="overflow-hidden grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch mb-4"
+    <div
+      v-if="!hideQuickActionPanel"
+      class="overflow-hidden grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch mb-4"
+    >
+      <NButton
+        v-for="(quickAction, index) in quickActionList"
+        :key="index"
+        @click="quickAction.action"
       >
-        <NButton
-          v-for="(quickAction, index) in quickActionList"
-          :key="index"
-          @click="quickAction.action"
-        >
-          <template #icon>
-            <component :is="quickAction.icon" class="h-4 w-4" />
-          </template>
-          <NEllipsis>
-            {{ quickAction.title }}
-          </NEllipsis>
-        </NButton>
-      </div>
-
-      <router-view
-        v-if="hasPermission"
-        :project-id="projectId"
-        :allow-edit="allowEdit"
-        v-bind="$attrs"
-      />
-      <NoPermissionPlaceholder v-else class="py-6">
-        <template v-if="hasCreateIssuePermission" #extra>
-          <NButton type="primary" @click="state.showRequestRolePanel = true">
-            {{ $t("issue.title.request-role") }}
-          </NButton>
+        <template #icon>
+          <component :is="quickAction.icon" class="h-4 w-4" />
         </template>
-      </NoPermissionPlaceholder>
+        <NEllipsis>
+          {{ quickAction.title }}
+        </NEllipsis>
+      </NButton>
     </div>
+
+    <router-view
+      v-if="hasPermission"
+      :project-id="projectId"
+      :allow-edit="allowEdit"
+      v-bind="$attrs"
+    />
+    <NoPermissionPlaceholder v-else class="py-6">
+      <template v-if="hasCreateIssuePermission" #extra>
+        <NButton type="primary" @click="state.showRequestRolePanel = true">
+          {{ $t("issue.title.request-role") }}
+        </NButton>
+      </template>
+    </NoPermissionPlaceholder>
   </template>
   <div
     v-else
@@ -92,6 +90,7 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
+import { useBodyLayoutContext } from "./common";
 
 interface LocalState {
   showRequestRolePanel: boolean;
@@ -223,4 +222,8 @@ const quickActionList = computed(() => {
 const hideQuickActionPanel = computed(() => {
   return hideQuickAction.value || quickActionList.value.length === 0;
 });
+
+const { overrideMainContainerClass } = useBodyLayoutContext();
+
+overrideMainContainerClass("px-4");
 </script>

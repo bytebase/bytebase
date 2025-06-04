@@ -7,7 +7,7 @@
 
     <template v-if="selectedSpec">
       <div class="border-t -mx-3" />
-      <NTooltip :arrow="false">
+      <NTooltip :showArrow="false">
         <template #trigger>
           <p class="textinfolabel -mb-2">
             {{ $t("plan.options.self") }}
