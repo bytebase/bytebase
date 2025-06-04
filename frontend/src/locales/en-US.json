@@ -919,8 +919,7 @@
         "selected-stage": "Selected stage",
         "all-tasks": "All tasks"
       },
-      "current-change-will-apply-to-all-tasks-in-batch-mode": "In batch mode, current change will be applied to all tasks.",
-      "current-change-will-apply-to-all-tasks": "Current change will be applied to all tasks."
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "In batch mode, current change will be applied to all tasks."
     },
     "action-anyway": "{action} anyway",
     "sql-check": {
