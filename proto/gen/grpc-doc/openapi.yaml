@@ -8589,14 +8589,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Content_Part'
                     description: parts is used for a result content with multiple parts.
-        ChangeDatabaseConfig_PreUpdateBackupDetail:
-            type: object
-            properties:
-                database:
-                    type: string
-                    description: |-
-                        The database for keeping the backup data.
-                         Format: instances/{instance}/databases/{database}
         ChangedResourceDatabase:
             type: object
             properties:
@@ -11387,9 +11379,8 @@ components:
                     type: object
                     additionalProperties:
                         type: string
-                preUpdateBackupDetail:
-                    allOf:
-                        - $ref: '#/components/schemas/ChangeDatabaseConfig_PreUpdateBackupDetail'
+                enablePriorBackup:
+                    type: boolean
                     description: If set, a backup of the modified data will be created automatically before any changes are applied.
         Plan_CreateDatabaseConfig:
             required:

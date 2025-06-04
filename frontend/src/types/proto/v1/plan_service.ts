@@ -228,7 +228,7 @@ export interface Plan_ChangeDatabaseConfig {
   type: Plan_ChangeDatabaseConfig_Type;
   ghostFlags: { [key: string]: string };
   /** If set, a backup of the modified data will be created automatically before any changes are applied. */
-  preUpdateBackupDetail?: Plan_ChangeDatabaseConfig_PreUpdateBackupDetail | undefined;
+  enablePriorBackup: boolean;
 }
 
 /** Type is the database change type. */
@@ -308,14 +308,6 @@ export function plan_ChangeDatabaseConfig_TypeToNumber(object: Plan_ChangeDataba
 export interface Plan_ChangeDatabaseConfig_GhostFlagsEntry {
   key: string;
   value: string;
-}
-
-export interface Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-  /**
-   * The database for keeping the backup data.
-   * Format: instances/{instance}/databases/{database}
-   */
-  database: string;
 }
 
 export interface Plan_ExportDataConfig {
@@ -1820,7 +1812,7 @@ function createBasePlan_ChangeDatabaseConfig(): Plan_ChangeDatabaseConfig {
     release: "",
     type: Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED,
     ghostFlags: {},
-    preUpdateBackupDetail: undefined,
+    enablePriorBackup: false,
   };
 }
 
@@ -1841,9 +1833,8 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
     Object.entries(message.ghostFlags).forEach(([key, value]) => {
       Plan_ChangeDatabaseConfig_GhostFlagsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).join();
     });
-    if (message.preUpdateBackupDetail !== undefined) {
-      Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.encode(message.preUpdateBackupDetail, writer.uint32(66).fork())
-        .join();
+    if (message.enablePriorBackup !== false) {
+      writer.uint32(64).bool(message.enablePriorBackup);
     }
     return writer;
   },
@@ -1899,14 +1890,11 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
           continue;
         }
         case 8: {
-          if (tag !== 66) {
+          if (tag !== 64) {
             break;
           }
 
-          message.preUpdateBackupDetail = Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.enablePriorBackup = reader.bool();
           continue;
         }
       }
@@ -1941,8 +1929,8 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
         });
       }
     }
-    if (message.preUpdateBackupDetail !== undefined) {
-      obj.preUpdateBackupDetail = Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.toJSON(message.preUpdateBackupDetail);
+    if (message.enablePriorBackup !== false) {
+      obj.enablePriorBackup = message.enablePriorBackup;
     }
     return obj;
   },
@@ -1965,10 +1953,7 @@ export const Plan_ChangeDatabaseConfig: MessageFns<Plan_ChangeDatabaseConfig> = 
       },
       {},
     );
-    message.preUpdateBackupDetail =
-      (object.preUpdateBackupDetail !== undefined && object.preUpdateBackupDetail !== null)
-        ? Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.fromPartial(object.preUpdateBackupDetail)
-        : undefined;
+    message.enablePriorBackup = object.enablePriorBackup ?? false;
     return message;
   },
 };
@@ -2040,69 +2025,6 @@ export const Plan_ChangeDatabaseConfig_GhostFlagsEntry: MessageFns<Plan_ChangeDa
     const message = createBasePlan_ChangeDatabaseConfig_GhostFlagsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
-    return message;
-  },
-};
-
-function createBasePlan_ChangeDatabaseConfig_PreUpdateBackupDetail(): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-  return { database: "" };
-}
-
-export const Plan_ChangeDatabaseConfig_PreUpdateBackupDetail: MessageFns<
-  Plan_ChangeDatabaseConfig_PreUpdateBackupDetail
-> = {
-  encode(
-    message: Plan_ChangeDatabaseConfig_PreUpdateBackupDetail,
-    writer: BinaryWriter = new BinaryWriter(),
-  ): BinaryWriter {
-    if (message.database !== "") {
-      writer.uint32(10).string(message.database);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_ChangeDatabaseConfig_PreUpdateBackupDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.database = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  toJSON(message: Plan_ChangeDatabaseConfig_PreUpdateBackupDetail): unknown {
-    const obj: any = {};
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    return obj;
-  },
-
-  create(
-    base?: DeepPartial<Plan_ChangeDatabaseConfig_PreUpdateBackupDetail>,
-  ): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    return Plan_ChangeDatabaseConfig_PreUpdateBackupDetail.fromPartial(base ?? {});
-  },
-  fromPartial(
-    object: DeepPartial<Plan_ChangeDatabaseConfig_PreUpdateBackupDetail>,
-  ): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    const message = createBasePlan_ChangeDatabaseConfig_PreUpdateBackupDetail();
-    message.database = object.database ?? "";
     return message;
   },
 };

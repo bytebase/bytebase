@@ -336,19 +336,15 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		preUpdateBackupDetail := &storepb.PreUpdateBackupDetail{}
-		if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
-			preUpdateBackupDetail.Database = c.GetPreUpdateBackupDetail().GetDatabase()
-		}
 		taskCreate := &store.TaskMessage{
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
 			Type:          storepb.Task_DATABASE_DATA_UPDATE,
 			Payload: &storepb.Task{
-				SpecId:                spec.Id,
-				SheetId:               int32(sheetUID),
-				PreUpdateBackupDetail: preUpdateBackupDetail,
+				SpecId:            spec.Id,
+				SheetId:           int32(sheetUID),
+				EnablePriorBackup: c.EnablePriorBackup,
 			},
 		}
 		return []*store.TaskMessage{taskCreate}, nil
@@ -435,11 +431,8 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 				payload.Flags = c.GhostFlags
 			}
 
-			// Add pre-update backup detail for DML
-			if taskType == storepb.Task_DATABASE_DATA_UPDATE && c.GetPreUpdateBackupDetail().GetDatabase() != "" {
-				payload.PreUpdateBackupDetail = &storepb.PreUpdateBackupDetail{
-					Database: c.GetPreUpdateBackupDetail().GetDatabase(),
-				}
+			if taskType == storepb.Task_DATABASE_DATA_UPDATE {
+				payload.EnablePriorBackup = c.EnablePriorBackup
 			}
 
 			taskCreate := &store.TaskMessage{

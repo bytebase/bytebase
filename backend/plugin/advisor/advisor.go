@@ -37,7 +37,7 @@ func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRuleLevel) (storepb.Ad
 type Context struct {
 	DBSchema              *storepb.DatabaseSchemaMetadata
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
-	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
+	EnablePriorBackup     bool
 	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
 	ListDatabaseNamesFunc base.ListDatabaseNamesFunc
 	InstanceID            string

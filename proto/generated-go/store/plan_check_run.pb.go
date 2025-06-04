@@ -76,7 +76,7 @@ func (x PlanCheckRunConfig_ChangeDatabaseType) Number() protoreflect.EnumNumber 
 
 // Deprecated: Use PlanCheckRunConfig_ChangeDatabaseType.Descriptor instead.
 func (PlanCheckRunConfig_ChangeDatabaseType) EnumDescriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0, 0}
 }
 
 type PlanCheckRunResult_Result_Status int32
@@ -128,53 +128,7 @@ func (x PlanCheckRunResult_Result_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PlanCheckRunResult_Result_Status.Descriptor instead.
 func (PlanCheckRunResult_Result_Status) EnumDescriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 0, 0}
-}
-
-type PreUpdateBackupDetail struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The database for keeping the backup data.
-	// Format: instances/{instance}/databases/{database}
-	Database      string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PreUpdateBackupDetail) Reset() {
-	*x = PreUpdateBackupDetail{}
-	mi := &file_store_plan_check_run_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PreUpdateBackupDetail) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PreUpdateBackupDetail) ProtoMessage() {}
-
-func (x *PreUpdateBackupDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PreUpdateBackupDetail.ProtoReflect.Descriptor instead.
-func (*PreUpdateBackupDetail) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *PreUpdateBackupDetail) GetDatabase() string {
-	if x != nil {
-		return x.Database
-	}
-	return ""
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 0}
 }
 
 type PlanCheckRunConfig struct {
@@ -187,14 +141,14 @@ type PlanCheckRunConfig struct {
 	DatabaseGroupUid *int64            `protobuf:"varint,5,opt,name=database_group_uid,json=databaseGroupUid,proto3,oneof" json:"database_group_uid,omitempty"`
 	GhostFlags       map[string]string `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
-	PreUpdateBackupDetail *PreUpdateBackupDetail `protobuf:"bytes,7,opt,name=pre_update_backup_detail,json=preUpdateBackupDetail,proto3,oneof" json:"pre_update_backup_detail,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	EnablePriorBackup bool `protobuf:"varint,7,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *PlanCheckRunConfig) Reset() {
 	*x = PlanCheckRunConfig{}
-	mi := &file_store_plan_check_run_proto_msgTypes[1]
+	mi := &file_store_plan_check_run_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -206,7 +160,7 @@ func (x *PlanCheckRunConfig) String() string {
 func (*PlanCheckRunConfig) ProtoMessage() {}
 
 func (x *PlanCheckRunConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[1]
+	mi := &file_store_plan_check_run_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -219,7 +173,7 @@ func (x *PlanCheckRunConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanCheckRunConfig.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunConfig) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *PlanCheckRunConfig) GetSheetUid() int32 {
@@ -265,11 +219,11 @@ func (x *PlanCheckRunConfig) GetGhostFlags() map[string]string {
 	return nil
 }
 
-func (x *PlanCheckRunConfig) GetPreUpdateBackupDetail() *PreUpdateBackupDetail {
+func (x *PlanCheckRunConfig) GetEnablePriorBackup() bool {
 	if x != nil {
-		return x.PreUpdateBackupDetail
+		return x.EnablePriorBackup
 	}
-	return nil
+	return false
 }
 
 type PlanCheckRunResult struct {
@@ -282,7 +236,7 @@ type PlanCheckRunResult struct {
 
 func (x *PlanCheckRunResult) Reset() {
 	*x = PlanCheckRunResult{}
-	mi := &file_store_plan_check_run_proto_msgTypes[2]
+	mi := &file_store_plan_check_run_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -294,7 +248,7 @@ func (x *PlanCheckRunResult) String() string {
 func (*PlanCheckRunResult) ProtoMessage() {}
 
 func (x *PlanCheckRunResult) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[2]
+	mi := &file_store_plan_check_run_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -307,7 +261,7 @@ func (x *PlanCheckRunResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanCheckRunResult.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunResult) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *PlanCheckRunResult) GetResults() []*PlanCheckRunResult_Result {
@@ -341,7 +295,7 @@ type PlanCheckRunResult_Result struct {
 
 func (x *PlanCheckRunResult_Result) Reset() {
 	*x = PlanCheckRunResult_Result{}
-	mi := &file_store_plan_check_run_proto_msgTypes[4]
+	mi := &file_store_plan_check_run_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -353,7 +307,7 @@ func (x *PlanCheckRunResult_Result) String() string {
 func (*PlanCheckRunResult_Result) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[4]
+	mi := &file_store_plan_check_run_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -366,7 +320,7 @@ func (x *PlanCheckRunResult_Result) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanCheckRunResult_Result.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunResult_Result) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 0}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0}
 }
 
 func (x *PlanCheckRunResult_Result) GetStatus() PlanCheckRunResult_Result_Status {
@@ -450,7 +404,7 @@ type PlanCheckRunResult_Result_SqlSummaryReport struct {
 
 func (x *PlanCheckRunResult_Result_SqlSummaryReport) Reset() {
 	*x = PlanCheckRunResult_Result_SqlSummaryReport{}
-	mi := &file_store_plan_check_run_proto_msgTypes[5]
+	mi := &file_store_plan_check_run_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -462,7 +416,7 @@ func (x *PlanCheckRunResult_Result_SqlSummaryReport) String() string {
 func (*PlanCheckRunResult_Result_SqlSummaryReport) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result_SqlSummaryReport) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[5]
+	mi := &file_store_plan_check_run_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -475,7 +429,7 @@ func (x *PlanCheckRunResult_Result_SqlSummaryReport) ProtoReflect() protoreflect
 
 // Deprecated: Use PlanCheckRunResult_Result_SqlSummaryReport.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunResult_Result_SqlSummaryReport) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 0, 0}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 0}
 }
 
 func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetStatementTypes() []string {
@@ -513,7 +467,7 @@ type PlanCheckRunResult_Result_SqlReviewReport struct {
 
 func (x *PlanCheckRunResult_Result_SqlReviewReport) Reset() {
 	*x = PlanCheckRunResult_Result_SqlReviewReport{}
-	mi := &file_store_plan_check_run_proto_msgTypes[6]
+	mi := &file_store_plan_check_run_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -525,7 +479,7 @@ func (x *PlanCheckRunResult_Result_SqlReviewReport) String() string {
 func (*PlanCheckRunResult_Result_SqlReviewReport) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result_SqlReviewReport) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[6]
+	mi := &file_store_plan_check_run_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -538,7 +492,7 @@ func (x *PlanCheckRunResult_Result_SqlReviewReport) ProtoReflect() protoreflect.
 
 // Deprecated: Use PlanCheckRunResult_Result_SqlReviewReport.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunResult_Result_SqlReviewReport) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2, 0, 1}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 1}
 }
 
 func (x *PlanCheckRunResult_Result_SqlReviewReport) GetLine() int32 {
@@ -573,9 +527,7 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"3\n" +
-	"\x15PreUpdateBackupDetail\x12\x1a\n" +
-	"\bdatabase\x18\x01 \x01(\tR\bdatabase\"\xba\x05\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\xe8\x04\n" +
 	"\x12PlanCheckRunConfig\x12\x1b\n" +
 	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12g\n" +
 	"\x14change_database_type\x18\x02 \x01(\x0e25.bytebase.store.PlanCheckRunConfig.ChangeDatabaseTypeR\x12changeDatabaseType\x12\x1f\n" +
@@ -584,8 +536,8 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x125\n" +
 	"\x12database_group_uid\x18\x05 \x01(\x03B\x02\x18\x01H\x00R\x10databaseGroupUid\x88\x01\x01\x12S\n" +
 	"\vghost_flags\x18\x06 \x03(\v22.bytebase.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
-	"ghostFlags\x12c\n" +
-	"\x18pre_update_backup_detail\x18\a \x01(\v2%.bytebase.store.PreUpdateBackupDetailH\x01R\x15preUpdateBackupDetail\x88\x01\x01\x1a=\n" +
+	"ghostFlags\x12.\n" +
+	"\x13enable_prior_backup\x18\a \x01(\bR\x11enablePriorBackup\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"t\n" +
@@ -597,8 +549,7 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\tDDL_GHOST\x10\x04\x12\x0e\n" +
 	"\n" +
 	"SQL_EDITOR\x10\x05B\x15\n" +
-	"\x13_database_group_uidB\x1b\n" +
-	"\x19_pre_update_backup_detail\"\xb0\a\n" +
+	"\x13_database_group_uid\"\xb0\a\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xbe\x06\n" +
@@ -638,36 +589,34 @@ func file_store_plan_check_run_proto_rawDescGZIP() []byte {
 }
 
 var file_store_plan_check_run_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_plan_check_run_proto_goTypes = []any{
 	(PlanCheckRunConfig_ChangeDatabaseType)(0),         // 0: bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
 	(PlanCheckRunResult_Result_Status)(0),              // 1: bytebase.store.PlanCheckRunResult.Result.Status
-	(*PreUpdateBackupDetail)(nil),                      // 2: bytebase.store.PreUpdateBackupDetail
-	(*PlanCheckRunConfig)(nil),                         // 3: bytebase.store.PlanCheckRunConfig
-	(*PlanCheckRunResult)(nil),                         // 4: bytebase.store.PlanCheckRunResult
-	nil,                                                // 5: bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	(*PlanCheckRunResult_Result)(nil),                  // 6: bytebase.store.PlanCheckRunResult.Result
-	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 7: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 8: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	(*ChangedResources)(nil),                           // 9: bytebase.store.ChangedResources
-	(*Position)(nil),                                   // 10: bytebase.store.Position
+	(*PlanCheckRunConfig)(nil),                         // 2: bytebase.store.PlanCheckRunConfig
+	(*PlanCheckRunResult)(nil),                         // 3: bytebase.store.PlanCheckRunResult
+	nil,                                                // 4: bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
+	(*PlanCheckRunResult_Result)(nil),                  // 5: bytebase.store.PlanCheckRunResult.Result
+	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 6: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 7: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	(*ChangedResources)(nil),                           // 8: bytebase.store.ChangedResources
+	(*Position)(nil),                                   // 9: bytebase.store.Position
 }
 var file_store_plan_check_run_proto_depIdxs = []int32{
-	0,  // 0: bytebase.store.PlanCheckRunConfig.change_database_type:type_name -> bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
-	5,  // 1: bytebase.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	2,  // 2: bytebase.store.PlanCheckRunConfig.pre_update_backup_detail:type_name -> bytebase.store.PreUpdateBackupDetail
-	6,  // 3: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
-	1,  // 4: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.PlanCheckRunResult.Result.Status
-	7,  // 5: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	8,  // 6: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	9,  // 7: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
-	10, // 8: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
-	10, // 9: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	0, // 0: bytebase.store.PlanCheckRunConfig.change_database_type:type_name -> bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
+	4, // 1: bytebase.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
+	5, // 2: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
+	1, // 3: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.PlanCheckRunResult.Result.Status
+	6, // 4: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	7, // 5: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	8, // 6: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
+	9, // 7: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
+	9, // 8: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_check_run_proto_init() }
@@ -677,8 +626,8 @@ func file_store_plan_check_run_proto_init() {
 	}
 	file_store_changelog_proto_init()
 	file_store_common_proto_init()
-	file_store_plan_check_run_proto_msgTypes[1].OneofWrappers = []any{}
-	file_store_plan_check_run_proto_msgTypes[4].OneofWrappers = []any{
+	file_store_plan_check_run_proto_msgTypes[0].OneofWrappers = []any{}
+	file_store_plan_check_run_proto_msgTypes[3].OneofWrappers = []any{
 		(*PlanCheckRunResult_Result_SqlSummaryReport_)(nil),
 		(*PlanCheckRunResult_Result_SqlReviewReport_)(nil),
 	}
@@ -688,7 +637,7 @@ func file_store_plan_check_run_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_check_run_proto_rawDesc), len(file_store_plan_check_run_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   7,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

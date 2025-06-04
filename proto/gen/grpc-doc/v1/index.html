@@ -1879,10 +1879,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail"><span class="badge">M</span>Plan.ChangeDatabaseConfig.PreUpdateBackupDetail</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Plan.CreateDatabaseConfig"><span class="badge">M</span>Plan.CreateDatabaseConfig</a>
                 </li>
               
@@ -20483,9 +20479,9 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail">Plan.ChangeDatabaseConfig.PreUpdateBackupDetail</a></td>
-                  <td>optional</td>
+                  <td>enable_prior_backup</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
                 </tr>
               
@@ -20518,31 +20514,6 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail">Plan.ChangeDatabaseConfig.PreUpdateBackupDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database for keeping the backup data.
-Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
             </tbody>
