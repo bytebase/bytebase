@@ -1,5 +1,5 @@
 <template>
-  <div class="-mx-4 relative overflow-x-hidden">
+  <div class="relative overflow-x-hidden">
     <template v-if="ready">
       <GrantRequestIssueDetailPage v-if="isGrantRequestIssue(issue)" />
       <DataExportIssueDetailPage v-else-if="isDatabaseDataExportIssue(issue)" />
@@ -106,7 +106,7 @@ providePlanCheckRunContext(
 
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
-overrideMainContainerClass("!py-0");
+overrideMainContainerClass("!py-0 !px-0");
 
 onMounted(() => {
   if (!uiStateStore.getIntroStateByKey("issue.visit")) {

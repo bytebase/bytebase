@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center">
-    <NTooltip :disabled="!tooltipMessage" :arrow="false">
+    <NTooltip :disabled="!tooltipMessage" :showArrow="false">
       <template #trigger>
         <NSwitch
           :value="enabled"
