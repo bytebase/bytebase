@@ -1682,7 +1682,6 @@
       "view-by-roles": "Xem theo vai trò",
       "cannot-remove-last-owner": "Không thể xóa chủ sở hữu cuối cùng của một dự án",
       "revoke-role-from-user": "Thu hồi '{role}' từ '{user}'",
-      "assign-reason": "(Tùy chọn) Lý do",
       "never-expires": "Không bao giờ",
       "role-description": "Mô tả vai trò",
       "role-never-expires": "Vai trò này không bao giờ hết hạn.",

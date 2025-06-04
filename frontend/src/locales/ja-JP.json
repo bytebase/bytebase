@@ -1682,7 +1682,6 @@
       "view-by-roles": "役割ごとに表示",
       "cannot-remove-last-owner": "プロジェクトの最後の所有者を削除できません",
       "revoke-role-from-user": "「{user}」{role} のロールを削除します",
-      "assign-reason": "(オプション) 理由",
       "never-expires": "有効期限が切れることはありません",
       "role-description": "役割の説明",
       "role-never-expires": "この役割には有効期限はありません。",

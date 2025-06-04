@@ -18,6 +18,7 @@
           :binding="state.binding"
           :allow-remove="false"
           :disable-member-change="true"
+          :require-reason="project.enforceIssueTitle"
           :support-roles="supportRoles"
           :database-resource="databaseResource"
         />
@@ -49,7 +50,7 @@ import { useI18n } from "vue-i18n";
 import AddProjectMemberForm from "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { getUserEmailInBinding } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
@@ -87,6 +88,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
+const projectStore = useProjectV1Store();
+
 const state = reactive<LocalState>({
   binding: Binding.fromPartial({
     role: props.role,
@@ -94,6 +97,10 @@ const state = reactive<LocalState>({
   }),
 });
 const formRef = ref<InstanceType<typeof AddProjectMemberForm>>();
+
+const project = computed(() =>
+  projectStore.getProjectByName(props.projectName)
+);
 
 const allowCreate = computed(() => {
   return formRef.value?.allowConfirm;
@@ -105,17 +112,19 @@ const doCreateIssue = async () => {
   }
 
   const newIssue = Issue.fromPartial({
-    title: generateIssueTitle(
-      "bb.issue.grant.request",
-      uniq(
-        formRef.value?.databaseResources?.map(
-          (databaseResource) => databaseResource.databaseFullName
-        )
-      ),
-      t("issue.title.request-specific-role", {
-        role: displayRoleTitle(state.binding.role),
-      })
-    ),
+    title: project.value.enforceIssueTitle
+      ? `[${t("issue.title.request-role")}] ${formRef.value?.reason}`
+      : generateIssueTitle(
+          "bb.issue.grant.request",
+          uniq(
+            formRef.value?.databaseResources?.map(
+              (databaseResource) => databaseResource.databaseFullName
+            )
+          ),
+          t("issue.title.request-specific-role", {
+            role: displayRoleTitle(state.binding.role),
+          })
+        ),
     description: state.binding.condition?.description,
     type: Issue_Type.GRANT_REQUEST,
     grantRequest: {},
