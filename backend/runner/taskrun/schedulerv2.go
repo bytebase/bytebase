@@ -872,7 +872,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				if issue.Project.Setting.AutoResolveIssue && pipelineDone {
 					if err := func() error {
 						// For those database data export issues, we don't resolve them automatically.
-						if issue.Type == base.IssueDatabaseDataExport {
+						if issue.Type == storepb.Issue_DATABASE_EXPORT {
 							return nil
 						}
 

@@ -152,6 +152,7 @@
     - [Issue](#bytebase-store-Issue)
   
     - [Issue.Status](#bytebase-store-Issue-Status)
+    - [Issue.Type](#bytebase-store-Issue-Type)
   
 - [store/issue_comment.proto](#store_issue_comment-proto)
     - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
@@ -2606,6 +2607,20 @@ InstanceRole is the API message for instance role.
 | OPEN | 1 |  |
 | DONE | 2 |  |
 | CANCELED | 3 |  |
+
+
+
+<a name="bytebase-store-Issue-Type"></a>
+
+### Issue.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ISSUE_TYPE_UNSPECIFIED | 0 |  |
+| DATABASE_CHANGE | 1 |  |
+| GRANT_REQUEST | 2 |  |
+| DATABASE_EXPORT | 3 |  |
 
 
  
