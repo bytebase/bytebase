@@ -23,9 +23,12 @@
 </template>
 
 <script lang="tsx" setup>
-import { reactive } from "vue";
+import { reactive, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
+import { isValidProjectName } from "@/types";
 import ProjectDashboard from "@/views/ProjectDashboard.vue";
 import Detail from "./Detail.vue";
 
@@ -33,11 +36,30 @@ interface LocalState {
   project: ComposedProject | undefined;
 }
 
+const route = useRoute();
 const state = reactive<LocalState>({
   project: undefined,
 });
+const projectStore = useProjectV1Store();
 
 const handleClick = (project: ComposedProject) => {
   state.project = project;
 };
+
+onMounted(async () => {
+  const projectName = route.hash.slice(1);
+  if (!isValidProjectName(projectName)) {
+    return;
+  }
+
+  try {
+    const project = await projectStore.getOrFetchProjectByName(
+      projectName,
+      true
+    );
+    handleClick(project);
+  } catch {
+    // nothing
+  }
+});
 </script>

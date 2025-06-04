@@ -699,11 +699,6 @@
       "json-format-example": "Ejemplo de formato JSON",
       "view-example": "Ver ejemplo"
     },
-    "release": {
-      "new-version-available": "Nueva versión disponible",
-      "new-version-available-with-tag": "La nueva versión {tag} está disponible",
-      "new-version-content": "¡La nueva versión {tag} está disponible ahora! Consulte nuestra documentación para la instalación."
-    },
     "mail-delivery": {
       "description": "Habilita la entrega de correo para recibir notificaciones por correo electrónico configurando la información del servidor SMTP.",
       "field": {
@@ -719,6 +714,19 @@
       },
       "updated-tip": "Se ha actualizado correctamente la configuración de entrega de correo",
       "tested-tip": "Envío realizado con éxito, por favor revise la bandeja de entrada de {address}."
+    }
+  },
+  "remind": {
+    "release": {
+      "new-version-available": "Nueva versión disponible",
+      "new-version-available-with-tag": "La nueva versión {tag} está disponible",
+      "new-version-content": "¡La nueva versión {tag} está disponible ahora! Consulte nuestra documentación para la instalación."
+    },
+    "role-expire": {
+      "title": "Recordatorio de expiración del rol",
+      "content": "Tus siguientes roles expirarán",
+      "checkbox": "No recordar hasta que haya actualizaciones",
+      "go-to-project": "Ir a la página del proyecto"
     }
   },
   "activity": {

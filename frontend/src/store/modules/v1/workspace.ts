@@ -5,7 +5,7 @@ import { workspaceServiceClient } from "@/grpcweb";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { groupBindingPrefix, ALL_USERS_USER_EMAIL } from "@/types";
 import { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
-import { roleListInIAM, getUserEmailListInBinding } from "@/utils";
+import { bindingListInIAM, getUserEmailListInBinding } from "@/utils";
 import { extractUserId } from "./common";
 import { extractGroupEmail } from "./group";
 
@@ -133,11 +133,11 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     } else {
       email = extractUserId(member);
     }
-    return roleListInIAM({
+    return bindingListInIAM({
       policy: workspaceIamPolicy.value,
       email,
       ignoreGroup,
-    });
+    }).map((binding) => binding.role);
   };
 
   const getWorkspaceRolesByEmail = (email: string) => {

@@ -64,7 +64,7 @@
         >
           <Volume2Icon class="h-4 w-4" />
           {{
-            $t("settings.release.new-version-available-with-tag", {
+            $t("remind.release.new-version-available-with-tag", {
               tag: actuatorStore.releaseInfo.latest?.tag_name,
             })
           }}
