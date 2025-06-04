@@ -6,13 +6,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
 	parser "github.com/bytebase/postgresql-parser"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -39,7 +39,7 @@ type BuiltinPriorBackupCheckAdvisor struct {
 
 // Check checks for disallow mix DDL and DML.
 func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	if checkCtx.PreUpdateBackupDetail == nil || checkCtx.ChangeType != storepb.PlanCheckRunConfig_DML {
+	if !checkCtx.EnablePriorBackup || checkCtx.ChangeType != storepb.PlanCheckRunConfig_DML {
 		return nil, nil
 	}
 	var adviceList []*storepb.Advice
@@ -66,12 +66,12 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 		}
 	}
 
-	name := extractDatabaseName(checkCtx.PreUpdateBackupDetail.Database)
-	if !checkCtx.Catalog.Origin.HasSchema(name) {
+	schemaName := base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
+	if !checkCtx.Catalog.Origin.HasSchema(schemaName) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Title:         title,
-			Content:       fmt.Sprintf("Need schema %q to do prior backup but it does not exist", name),
+			Content:       fmt.Sprintf("Need schema %q to do prior backup but it does not exist", schemaName),
 			Code:          advisor.SchemaNotExists.Int32(),
 			StartPosition: common.FirstLinePosition,
 		})
@@ -239,9 +239,4 @@ func extractTableReference(ctx parser.IRelation_expr_opt_aliasContext) *TableRef
 		table.Alias = pg.NormalizePostgreSQLColid(ctx.Colid())
 	}
 	return &table
-}
-
-func extractDatabaseName(databaseUID string) string {
-	segments := strings.Split(databaseUID, "/")
-	return segments[len(segments)-1]
 }

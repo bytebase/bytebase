@@ -501,7 +501,7 @@ type SQLReviewCheckContext struct {
 	DBType                storepb.Engine
 	Catalog               catalogInterface
 	Driver                *sql.DB
-	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
+	EnablePriorBackup     bool
 	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
 	ListDatabaseNamesFunc base.ListDatabaseNamesFunc
 	InstanceID            string
@@ -577,7 +577,7 @@ func SQLReviewCheck(
 			Context{
 				DBSchema:                 checkContext.DBSchema,
 				ChangeType:               checkContext.ChangeType,
-				PreUpdateBackupDetail:    checkContext.PreUpdateBackupDetail,
+				EnablePriorBackup:        checkContext.EnablePriorBackup,
 				AST:                      asts,
 				Statements:               statements,
 				Rule:                     rule,

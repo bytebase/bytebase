@@ -76,11 +76,11 @@ type TaskPatch struct {
 	DatabaseName *string
 	Type         *base.TaskType
 
-	SheetID               *int
-	SchemaVersion         *string
-	ExportFormat          *storepb.ExportFormat
-	ExportPassword        *string
-	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
+	SheetID           *int
+	SchemaVersion     *string
+	ExportFormat      *storepb.ExportFormat
+	ExportPassword    *string
+	EnablePriorBackup *bool
 
 	// Flags for gh-ost.
 	Flags *map[string]string
@@ -385,12 +385,8 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 	if v := patch.ExportPassword; v != nil {
 		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('password', $%d::TEXT)`, len(args)+1)), append(args, *v)
 	}
-	if v := patch.PreUpdateBackupDetail; v != nil {
-		jsonb, err := json.Marshal(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal preUpdateBackupDetail")
-		}
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('preUpdateBackupDetail', $%d::JSONB)`, len(args)+1)), append(args, jsonb)
+	if v := patch.EnablePriorBackup; v != nil {
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('enablePriorBackup', $%d::BOOLEAN)`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.Flags; v != nil {
 		jsonb, err := json.Marshal(v)
