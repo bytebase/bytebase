@@ -59,7 +59,7 @@ const columns = computed((): DataTableColumn<Change>[] => {
     {
       title: t("changelist.change-source.source"),
       key: "source",
-      width: 120,
+      width: 160,
       render: (change) => <Source change={change} />,
     },
     {
