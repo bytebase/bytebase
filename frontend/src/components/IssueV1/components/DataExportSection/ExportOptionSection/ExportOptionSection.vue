@@ -105,11 +105,7 @@ const optionsEditable = computed(() => {
 });
 
 const denyEditTaskReasons = computed(() =>
-  allowUserToEditStatementForTask(
-    issue.value,
-    selectedTask.value,
-    context.getPlanCheckRunsForTask(selectedTask.value)
-  )
+  allowUserToEditStatementForTask(issue.value, selectedTask.value)
 );
 
 const handleCancelEdit = () => {
