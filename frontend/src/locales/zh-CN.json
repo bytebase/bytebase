@@ -937,7 +937,7 @@
       "you-are-not-allowed-to-perform-this-action": "您无权执行此操作",
       "cannot-close-issue-with-running-tasks": "无法关闭还存在运行中任务的工单"
     },
-    "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
+    "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
     "missing-sql-statement": "SQL 语句缺失。",
     "task-summary-tooltip": "{failed} 个任务失败",
@@ -1000,18 +1000,18 @@
     "options": {
       "self": "配置项",
       "applies-to-all-tasks": "适用于所有任务",
-      "applies-to-some-tasks": "适用于某些任务 {count}/{total}",
+      "applies-to-some-tasks": "适用于部分任务 {count}/{total}",
       "split-into-multiple-issues-tip": "如果您想为每个任务设置不同的配置项，请拆分成多个工单。"
     },
     "pre-backup": {
       "only-some-databases-checked": "仅检查部分数据库",
-      "some-databases-not-meeting-requirements": "某些数据库（{databases}）不符合要求",
+      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
       "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
       "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题"
     },
     "ghost": {
       "only-some-databases-checked": "仅检查部分数据库",
-      "some-databases-not-meeting-requirements": "某些数据库（{databases}）不符合要求",
+      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
       "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
       "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题"
     }
@@ -1395,7 +1395,7 @@
     "edit-labels": "编辑标签",
     "edit-environment": "编辑环境",
     "mixed-values-for-label": "该标签拥有不同的值",
-    "mixed-label-values-warning": "某些标签拥有不同的值，编辑标签将会批量应用",
+    "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用",
     "change-data": "变更数据",
     "table-detail": "表详情",
     "batch-action-not-support-alter-schema": "一些数据库不支持修改表结构",
