@@ -919,8 +919,7 @@
         "selected-stage": "选中的阶段",
         "all-tasks": "所有任务"
       },
-      "current-change-will-apply-to-all-tasks-in-batch-mode": "在批量模式下，当前更改将应用​​于所有任务。",
-      "current-change-will-apply-to-all-tasks": "当前更改将应用​​于所有任务。"
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "在批量模式下，当前更改将应用​​于所有任务。"
     },
     "action-anyway": "仍要{action}",
     "sql-check": {

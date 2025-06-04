@@ -919,8 +919,7 @@
         "selected-stage": "選択したステージ",
         "all-tasks": "すべてのタスク"
       },
-      "current-change-will-apply-to-all-tasks-in-batch-mode": "バッチ モードでは、現在の変更がすべてのタスクに適用されます。",
-      "current-change-will-apply-to-all-tasks": "現在の変更はすべてのタスクに適用されます。"
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "バッチ モードでは、現在の変更がすべてのタスクに適用されます。"
     },
     "action-anyway": "まだ {action} が必要です",
     "sql-check": {
