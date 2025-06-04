@@ -632,7 +632,7 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITable_constraintC
 }
 
 // extractIndexColumns extracts column information for indexes
-func (e *metadataExtractor) extractIndexColumns(ctx parser.IColumn_name_list_with_orderContext, index *storepb.IndexMetadata) {
+func (*metadataExtractor) extractIndexColumns(ctx parser.IColumn_name_list_with_orderContext, index *storepb.IndexMetadata) {
 	if ctx == nil {
 		return
 	}
@@ -674,7 +674,7 @@ func extractDataType(ctx parser.IData_typeContext) string {
 }
 
 // normalizeFuncProcNameSeparated extracts schema and name from func_proc_name_schema context
-func (e *metadataExtractor) normalizeFuncProcNameSeparated(ctx parser.IFunc_proc_name_schemaContext, defaultSchema string) (string, string) {
+func (*metadataExtractor) normalizeFuncProcNameSeparated(ctx parser.IFunc_proc_name_schemaContext, defaultSchema string) (string, string) {
 	schema := defaultSchema
 	name := ""
 
@@ -693,7 +693,7 @@ func (e *metadataExtractor) normalizeFuncProcNameSeparated(ctx parser.IFunc_proc
 }
 
 // normalizeTableNameSeparated extracts database, schema and table from table_name context
-func (e *metadataExtractor) normalizeTableNameSeparated(ctx parser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, string, string) {
+func (*metadataExtractor) normalizeTableNameSeparated(ctx parser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, string, string) {
 	database := fallbackDatabaseName
 	schema := fallbackSchemaName
 	table := ""
@@ -716,7 +716,7 @@ func (e *metadataExtractor) normalizeTableNameSeparated(ctx parser.ITable_nameCo
 }
 
 // normalizeSimpleNameSeparated extracts schema and name from simple_name context
-func (e *metadataExtractor) normalizeSimpleNameSeparated(ctx parser.ISimple_nameContext, fallbackSchemaName string) (string, string) {
+func (*metadataExtractor) normalizeSimpleNameSeparated(ctx parser.ISimple_nameContext, fallbackSchemaName string) (string, string) {
 	schema := fallbackSchemaName
 	name := ""
 	if s := ctx.GetSchema(); s != nil {
