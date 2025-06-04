@@ -253,7 +253,7 @@ func (s *ActuatorService) generateInstance(
 }
 
 func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
-	count, err := s.store.CountUsers(ctx, base.EndUser)
+	count, err := s.store.CountUsers(ctx, storepb.PrincipalType_END_USER)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

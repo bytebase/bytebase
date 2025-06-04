@@ -328,6 +328,8 @@
     - [MFAConfig](#bytebase-store-MFAConfig)
     - [UserProfile](#bytebase-store-UserProfile)
   
+    - [PrincipalType](#bytebase-store-PrincipalType)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -5090,6 +5092,20 @@ MFAConfig is the MFA configuration for a user.
 
 
  
+
+
+<a name="bytebase-store-PrincipalType"></a>
+
+### PrincipalType
+PrincipalType is the type of a principal.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PRINCIPAL_TYPE_UNSPECIFIED | 0 |  |
+| END_USER | 1 | END_USER represents the human being using Bytebase. |
+| SERVICE_ACCOUNT | 2 | SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI. |
+| SYSTEM_BOT | 3 | SYSTEM_BOT represents the internal system bot performing operations. |
+
 
  
 
