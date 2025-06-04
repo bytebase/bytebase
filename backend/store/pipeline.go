@@ -16,7 +16,7 @@ import (
 type PipelineMessage struct {
 	ProjectID string
 	Name      string
-	Stages    []*StageMessage
+	Tasks     []*TaskMessage
 	// Output only.
 	ID         int
 	CreatorUID int
@@ -33,8 +33,7 @@ type PipelineFind struct {
 	Offset *int
 }
 
-// targetStage == nil means deploy all stages.
-// targetStage == "" means deploy no stages.
+// CreatePipelineAIO creates a pipeline with tasks all in one.
 func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *PipelineMessage, creatorUID int) (createdPipelineUID int, err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -62,92 +61,53 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 		createdPipelineUID = *pipelineUIDMaybe
 	}
 
-	stages, err := s.listStages(ctx, tx, createdPipelineUID)
+	// Check existing tasks to avoid duplicates
+	existingTasks, err := s.listTasksTx(ctx, tx, &TaskFind{
+		PipelineID: &createdPipelineUID,
+	})
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to list stages")
-	}
-	oldCreatedStages := map[string]*StageMessage{}
-	for _, stage := range stages {
-		oldCreatedStages[stage.Environment] = stage
+		return 0, errors.Wrapf(err, "failed to list existing tasks")
 	}
 
-	var stagesToCreate []*StageMessage
-	for _, stage := range pipeline.Stages {
-		if createdStage, ok := oldCreatedStages[stage.Environment]; ok {
-			// The stage was created, but we could have tasks to create.
-			tasks, err := s.listTasksTx(ctx, tx, &TaskFind{
-				PipelineID: &createdPipelineUID,
-				StageID:    &createdStage.ID,
-			})
-			if err != nil {
-				return 0, errors.Wrapf(err, "failed to list tasks in a created stage")
-			}
+	type taskKey struct {
+		instance string
+		database string
+		sheet    int
+	}
 
-			type taskKey struct {
-				instance string
-				database string
-				sheet    int
-			}
-
-			createdTasks := map[taskKey]struct{}{}
-			for _, task := range tasks {
-				k := taskKey{
-					instance: task.InstanceID,
-					sheet:    int(task.Payload.GetSheetId()),
-				}
-				if task.DatabaseName != nil {
-					k.database = *task.DatabaseName
-				}
-				createdTasks[k] = struct{}{}
-			}
-
-			var taskCreateList []*TaskMessage
-
-			for _, taskCreate := range stage.TaskList {
-				k := taskKey{
-					instance: taskCreate.InstanceID,
-					sheet:    int(taskCreate.Payload.GetSheetId()),
-				}
-				if taskCreate.DatabaseName != nil {
-					k.database = *taskCreate.DatabaseName
-				}
-
-				if _, ok := createdTasks[k]; ok {
-					continue
-				}
-				taskCreate.PipelineID = createdPipelineUID
-				taskCreate.StageID = createdStage.ID
-				taskCreateList = append(taskCreateList, taskCreate)
-			}
-
-			if len(taskCreateList) > 0 {
-				if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
-					return 0, errors.Wrap(err, "failed to create tasks")
-				}
-			}
-		} else {
-			// Create the stage and the tasks.
-			stagesToCreate = append(stagesToCreate, stage)
+	createdTasks := map[taskKey]struct{}{}
+	for _, task := range existingTasks {
+		k := taskKey{
+			instance: task.InstanceID,
+			sheet:    int(task.Payload.GetSheetId()),
 		}
-	}
-
-	createdStages, err := s.createStages(ctx, tx, stagesToCreate, createdPipelineUID)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to create stages")
-	}
-
-	for _, stage := range createdStages {
-		var taskCreateList []*TaskMessage
-		for _, taskCreate := range stage.TaskList {
-			c := taskCreate
-			c.PipelineID = createdPipelineUID
-			c.StageID = stage.ID
-			taskCreateList = append(taskCreateList, c)
+		if task.DatabaseName != nil {
+			k.database = *task.DatabaseName
 		}
-		if len(taskCreateList) > 0 {
-			if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
-				return 0, errors.Wrap(err, "failed to create tasks")
-			}
+		createdTasks[k] = struct{}{}
+	}
+
+	var taskCreateList []*TaskMessage
+
+	for _, taskCreate := range pipeline.Tasks {
+		k := taskKey{
+			instance: taskCreate.InstanceID,
+			sheet:    int(taskCreate.Payload.GetSheetId()),
+		}
+		if taskCreate.DatabaseName != nil {
+			k.database = *taskCreate.DatabaseName
+		}
+
+		if _, ok := createdTasks[k]; ok {
+			continue
+		}
+		taskCreate.PipelineID = createdPipelineUID
+		taskCreateList = append(taskCreateList, taskCreate)
+	}
+
+	if len(taskCreateList) > 0 {
+		if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
+			return 0, errors.Wrap(err, "failed to create tasks")
 		}
 	}
 

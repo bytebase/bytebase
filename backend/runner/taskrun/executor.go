@@ -122,7 +122,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		database:    database,
 		task:        task,
 		version:     schemaVersion,
-		taskRunName: common.FormatTaskRun(pipeline.ProjectID, task.PipelineID, task.StageID, task.ID, taskRunUID),
+		taskRunName: common.FormatTaskRun(pipeline.ProjectID, task.PipelineID, task.Environment, task.ID, taskRunUID),
 		taskRunUID:  taskRunUID,
 		migrateType: migrationType,
 	}

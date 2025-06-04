@@ -219,14 +219,20 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if issue.PipelineUID == nil {
 			return nil
 		}
-		stages, err := r.store.ListStageV2(ctx, *issue.PipelineUID)
+		tasks, err := r.store.ListTasks(ctx, &store.TaskFind{PipelineID: issue.PipelineUID})
 		if err != nil {
-			return errors.Wrapf(err, "failed to list stages")
+			return errors.Wrapf(err, "failed to list tasks")
 		}
-		if len(stages) == 0 {
+		if len(tasks) == 0 {
 			return nil
 		}
-		policy, err := apiv1.GetValidRolloutPolicyForStage(ctx, r.store, stages[0])
+		// Get the first environment from tasks
+		var firstEnvironment string
+		for _, task := range tasks {
+			firstEnvironment = task.Environment
+			break
+		}
+		policy, err := apiv1.GetValidRolloutPolicyForEnvironment(ctx, r.store, firstEnvironment)
 		if err != nil {
 			return err
 		}
@@ -238,7 +244,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			Project: webhook.NewProject(issue.Project),
 			IssueRolloutReady: &webhook.EventIssueRolloutReady{
 				RolloutPolicy: policy,
-				StageName:     stages[0].Environment,
+				StageName:     firstEnvironment,
 			},
 		})
 		return nil
@@ -411,17 +417,16 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 	}
 
 	var maxRiskLevel int32
-	for _, stage := range pipelineCreate.Stages {
-		for _, task := range stage.TaskList {
-			instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-				ResourceID: &task.InstanceID,
-			})
-			if err != nil {
-				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
-			}
-			if instance.Deleted {
-				continue
-			}
+	for _, task := range pipelineCreate.Tasks {
+		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+			ResourceID: &task.InstanceID,
+		})
+		if err != nil {
+			return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
+		}
+		if instance.Deleted {
+			continue
+		}
 
 			taskStatement := ""
 			sheetUID := int(task.Payload.GetSheetId())
@@ -491,7 +496,6 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				return maxRiskLevel, riskSource, true, nil
 			}
 		}
-	}
 
 	return maxRiskLevel, riskSource, true, nil
 }
@@ -597,7 +601,6 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 				return maxRiskLevel, riskSource, true, nil
 			}
 		}
-	}
 
 	return maxRiskLevel, riskSource, true, nil
 }

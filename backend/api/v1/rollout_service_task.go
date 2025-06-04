@@ -164,7 +164,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		v := &store.TaskMessage{
 			InstanceID:    instance.ResourceID,
 			DatabaseName:  &databaseName,
-			EnvironmentID: effectiveEnvironmentID,
+			Environment: effectiveEnvironmentID,
 			Type:          storepb.Task_DATABASE_CREATE,
 			Payload: &storepb.Task{
 				SpecId:        spec.Id,
@@ -279,7 +279,7 @@ func getTaskCreatesFromExportDataConfig(
 		tasks = append(tasks, &store.TaskMessage{
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
+			Environment: database.EffectiveEnvironmentID,
 			Type:          storepb.Task_DATABASE_EXPORT,
 			Payload:       payload,
 		})
@@ -301,7 +301,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		taskCreate := &store.TaskMessage{
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
+			Environment: database.EffectiveEnvironmentID,
 			Type:          storepb.Task_DATABASE_SCHEMA_UPDATE,
 			Payload: &storepb.Task{
 				SpecId:  spec.Id,
@@ -321,7 +321,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		taskCreate := &store.TaskMessage{
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
+			Environment: database.EffectiveEnvironmentID,
 			Type:          storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
 			Payload: &storepb.Task{
 				SpecId:  spec.Id,
@@ -339,7 +339,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		taskCreate := &store.TaskMessage{
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
+			Environment: database.EffectiveEnvironmentID,
 			Type:          storepb.Task_DATABASE_DATA_UPDATE,
 			Payload: &storepb.Task{
 				SpecId:            spec.Id,
@@ -438,7 +438,7 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 			taskCreate := &store.TaskMessage{
 				InstanceID:    database.InstanceID,
 				DatabaseName:  &database.DatabaseName,
-				EnvironmentID: database.EffectiveEnvironmentID,
+				Environment: database.EffectiveEnvironmentID,
 				Type:          taskType,
 				Payload:       payload,
 			}

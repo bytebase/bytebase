@@ -750,7 +750,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 }
 
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
-	_, rolloutID, stageID, err := common.GetProjectIDRolloutIDMaybeStageID(requestName)
+	_, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(requestName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to parse rollout ID: %v", err)
 	}
@@ -762,7 +762,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		return nil, status.Errorf(codes.NotFound, "rollout %d not found", rolloutID)
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rollout.ID, StageID: stageID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rollout.ID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get tasks: %v", err)
 	}

@@ -551,7 +551,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 									Payload: &storepb.IssueCommentPayload{
 										Event: &storepb.IssueCommentPayload_TaskUpdate_{
 											TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
-												Tasks:     []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
+												Tasks:     []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)},
 												FromSheet: &oldSheet,
 												ToSheet:   &newSheet,
 											},
