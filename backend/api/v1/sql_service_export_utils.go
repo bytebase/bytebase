@@ -294,8 +294,8 @@ func convertValueValueToBytes(value *structpb.Value) []byte {
 	}
 }
 
-// extractResourceList extracts the resource list from the statement for exporting results as SQL.
-func extractResourceList(ctx context.Context, storeInstance *store.Store, engine storepb.Engine, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
+// getResources extracts the resource list from the statement for exporting results as SQL.
+func getResources(ctx context.Context, storeInstance *store.Store, engine storepb.Engine, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{

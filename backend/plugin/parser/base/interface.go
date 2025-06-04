@@ -33,7 +33,6 @@ var (
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
 type ExtractChangedResourcesFunc func(string, string, *model.DatabaseSchema, any, string) (*ChangeSummary, error)
-type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
 type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
