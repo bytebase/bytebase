@@ -724,7 +724,7 @@
     },
     "role-expire": {
       "title": "Nhắc nhở hết hạn vai trò",
-      "content": "Vai trò theo dõi của bạn sắp hết hạn",
+      "content": "Các vai trò sau của bạn sắp hết hạn",
       "checkbox": "Không nhắc nhở cho đến khi có bất kỳ cập nhật nào",
       "go-to-project": "Đi đến trang dự án"
     }

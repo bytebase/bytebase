@@ -724,7 +724,7 @@
     },
     "role-expire": {
       "title": "Role expiration remind",
-      "content": "Your follow roles are going to expire",
+      "content": "Your following roles are going to expire",
       "checkbox": "Do not remind until any updates",
       "go-to-project": "Go to the project page"
     }

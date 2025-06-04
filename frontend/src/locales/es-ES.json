@@ -724,7 +724,7 @@
     },
     "role-expire": {
       "title": "Recordatorio de expiración del rol",
-      "content": "Tus roles de seguimiento expirarán",
+      "content": "Tus siguientes roles expirarán",
       "checkbox": "No recordar hasta que haya actualizaciones",
       "go-to-project": "Ir a la página del proyecto"
     }
