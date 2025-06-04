@@ -117,7 +117,7 @@ var (
 				},
 			},
 			{
-				Name: "bbdataarchive",
+				Name: "bbdataarchive", // MySQL backup database for testing
 			},
 		},
 	}
@@ -231,7 +231,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			DBSchema:        schemaMetadata,
 			ChangeType:      tc.ChangeType,
 			PreUpdateBackupDetail: &storepb.PreUpdateBackupDetail{
-				Database: "instances/instanceName/databases/bbdataarchive",
+				Database: "instances/instanceName/databases/bbdataarchive", // MySQL backup database for testing
 			},
 			NoAppendBuiltin:          true,
 			UsePostgresDatabaseOwner: true,
