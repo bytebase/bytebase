@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -450,9 +449,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						return nil, status.Errorf(codes.Internal, "failed to get task type from spec, err: %v", err)
 					}
 					if newTaskType != task.Type {
-						taskTypes := []base.TaskType{
-							base.TaskDatabaseSchemaUpdate,
-							base.TaskDatabaseSchemaUpdateGhost,
+						taskTypes := []storepb.Task_Type{
+							storepb.Task_DATABASE_SCHEMA_UPDATE,
+							storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
 						}
 						if !slices.Contains(taskTypes, newTaskType) || !slices.Contains(taskTypes, task.Type) {
 							return nil, status.Errorf(codes.InvalidArgument, "task types in %v are allowed to updated, and they are allowed to be changed to %v", taskTypes, taskTypes)
@@ -464,7 +463,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// Flags for gh-ost.
 					if err := func() error {
 						switch newTaskType {
-						case base.TaskDatabaseSchemaUpdateGhost:
+						case storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
 						default:
 							return nil
 						}
@@ -486,7 +485,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 
 					// Prior Backup
 					if err := func() error {
-						if newTaskType != base.TaskDatabaseDataUpdate {
+						if newTaskType != storepb.Task_DATABASE_DATA_UPDATE {
 							return nil
 						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
@@ -509,9 +508,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// Sheet
 					if err := func() error {
 						switch newTaskType {
-						case base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost, base.TaskDatabaseDataUpdate, base.TaskDatabaseDataExport:
+						case storepb.Task_DATABASE_SCHEMA_UPDATE, storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, storepb.Task_DATABASE_DATA_UPDATE, storepb.Task_DATABASE_EXPORT:
 							var oldSheetName string
-							if newTaskType == base.TaskDatabaseDataExport {
+							if newTaskType == storepb.Task_DATABASE_EXPORT {
 								config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
 								if !ok {
 									return nil
@@ -568,7 +567,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 
 					// ExportDataConfig
 					if err := func() error {
-						if newTaskType != base.TaskDatabaseDataExport {
+						if newTaskType != storepb.Task_DATABASE_EXPORT {
 							return nil
 						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
@@ -1106,21 +1105,21 @@ func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
 	return false
 }
 
-func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (base.TaskType, error) {
+func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
 	switch s := spec.Config.(type) {
 	case *v1pb.Plan_Spec_CreateDatabaseConfig:
-		return base.TaskDatabaseCreate, nil
+		return storepb.Task_DATABASE_CREATE, nil
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 		switch s.ChangeDatabaseConfig.Type {
 		case v1pb.Plan_ChangeDatabaseConfig_DATA:
-			return base.TaskDatabaseDataUpdate, nil
+			return storepb.Task_DATABASE_DATA_UPDATE, nil
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE:
-			return base.TaskDatabaseSchemaUpdate, nil
+			return storepb.Task_DATABASE_SCHEMA_UPDATE, nil
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
-			return base.TaskDatabaseSchemaUpdateGhost, nil
+			return storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, nil
 		}
 	case *v1pb.Plan_Spec_ExportDataConfig:
-		return base.TaskDatabaseDataExport, nil
+		return storepb.Task_DATABASE_EXPORT, nil
 	}
-	return "", errors.Errorf("unknown spec config type")
+	return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unknown spec config type")
 }

@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/store"
@@ -613,13 +612,13 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 
 func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	switch task.Type {
-	case base.TaskDatabaseCreate:
+	case storepb.Task_DATABASE_CREATE:
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
-	case base.TaskDatabaseSchemaUpdate, base.TaskDatabaseSchemaUpdateGhost:
+	case storepb.Task_DATABASE_SCHEMA_UPDATE, storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
-	case base.TaskDatabaseDataUpdate:
+	case storepb.Task_DATABASE_DATA_UPDATE:
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
-	case base.TaskDatabaseDataExport:
+	case storepb.Task_DATABASE_EXPORT:
 		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
 	default:
 		return nil, errors.Errorf("task type %v is not supported", task.Type)
@@ -771,18 +770,18 @@ func convertToTaskStatus(latestTaskRunStatus storepb.TaskRun_Status, skipped boo
 	}
 }
 
-func convertToTaskType(taskType base.TaskType) v1pb.Task_Type {
+func convertToTaskType(taskType storepb.Task_Type) v1pb.Task_Type {
 	switch taskType {
-	case base.TaskDatabaseCreate:
+	case storepb.Task_DATABASE_CREATE:
 		return v1pb.Task_DATABASE_CREATE
-	case base.TaskDatabaseSchemaUpdate:
+	case storepb.Task_DATABASE_SCHEMA_UPDATE:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE
-	case base.TaskDatabaseSchemaUpdateGhost:
+	case storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST
-	case base.TaskDatabaseDataUpdate:
+	case storepb.Task_DATABASE_DATA_UPDATE:
 		return v1pb.Task_DATABASE_DATA_UPDATE
-	case base.TaskDatabaseDataExport:
-		return v1pb.Task_DATABASE_DATA_EXPORT
+	case storepb.Task_DATABASE_EXPORT:
+		return v1pb.Task_DATABASE_EXPORT
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED
 	}

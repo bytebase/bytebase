@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -31,8 +30,8 @@ type TaskMessage struct {
 	TaskRunRawList []*TaskRunMessage
 
 	// Domain specific fields
-	Type    base.TaskType
-	Payload *storepb.TaskPayload
+	Type    storepb.Task_Type
+	Payload *storepb.Task
 
 	LatestTaskRunStatus storepb.TaskRun_Status
 }
@@ -59,7 +58,7 @@ type TaskFind struct {
 	DatabaseName *string
 
 	// Domain specific fields
-	TypeList *[]base.TaskType
+	TypeList *[]storepb.Task_Type
 
 	LatestTaskRunStatusList *[]storepb.TaskRun_Status
 }
@@ -74,7 +73,7 @@ type TaskPatch struct {
 
 	// Domain specific fields
 	DatabaseName *string
-	Type         *base.TaskType
+	Type         *storepb.Task_Type
 
 	SheetID           *int
 	SchemaVersion     *string
@@ -184,7 +183,7 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 	)
 	for _, create := range creates {
 		if create.Payload == nil {
-			create.Payload = &storepb.TaskPayload{}
+			create.Payload = &storepb.Task{}
 		}
 		payload, err := protojson.Marshal(create.Payload)
 		if err != nil {
@@ -194,7 +193,7 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 		stageIDs = append(stageIDs, create.StageID)
 		instances = append(instances, create.InstanceID)
 		databases = append(databases, create.DatabaseName)
-		types = append(types, string(create.Type))
+		types = append(types, create.Type.String())
 		payloads = append(payloads, payload)
 	}
 
@@ -214,18 +213,24 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 	for rows.Next() {
 		task := &TaskMessage{}
 		var payload []byte
+		var typeString string
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
 			&task.StageID,
 			&task.InstanceID,
 			&task.DatabaseName,
-			&task.Type,
+			&typeString,
 			&payload,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")
 		}
-		taskPayload := &storepb.TaskPayload{}
+		if typeValue, ok := storepb.Task_Type_value[typeString]; ok {
+			task.Type = storepb.Task_Type(typeValue)
+		} else {
+			return nil, errors.Errorf("invalid task type string: %s", typeString)
+		}
+		taskPayload := &storepb.Task{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, taskPayload); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")
 		}
@@ -271,7 +276,7 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 		var list []string
 		for _, taskType := range *v {
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
-			args = append(args, taskType)
+			args = append(args, taskType.String())
 		}
 		where = append(where, fmt.Sprintf("task.type in (%s)", strings.Join(list, ",")))
 	}
@@ -313,6 +318,7 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 		task := &TaskMessage{}
 		var payload []byte
 		var latestTaskRunStatusString string
+		var typeString string
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
@@ -320,17 +326,22 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 			&task.InstanceID,
 			&task.DatabaseName,
 			&latestTaskRunStatusString,
-			&task.Type,
+			&typeString,
 			&payload,
 		); err != nil {
 			return nil, err
+		}
+		if typeValue, ok := storepb.Task_Type_value[typeString]; ok {
+			task.Type = storepb.Task_Type(typeValue)
+		} else {
+			return nil, errors.Errorf("invalid task type string: %s", typeString)
 		}
 		if statusValue, ok := storepb.TaskRun_Status_value[latestTaskRunStatusString]; ok {
 			task.LatestTaskRunStatus = storepb.TaskRun_Status(statusValue)
 		} else {
 			return nil, errors.Errorf("invalid task run status string: %s", latestTaskRunStatusString)
 		}
-		taskPayload := &storepb.TaskPayload{}
+		taskPayload := &storepb.Task{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, taskPayload); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")
 		}
@@ -370,7 +381,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 		set, args = append(set, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Type; v != nil {
-		set, args = append(set, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("type = $%d", len(args)+1)), append(args, v.String())
 	}
 	var payloadSet []string
 	if v := patch.SheetID; v != nil {
@@ -408,6 +419,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 
 	task := &TaskMessage{}
 	var payload []byte
+	var typeString string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
@@ -421,7 +433,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 		&task.StageID,
 		&task.InstanceID,
 		&task.DatabaseName,
-		&task.Type,
+		&typeString,
 		&payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -429,8 +441,13 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 		}
 		return nil, err
 	}
+	if typeValue, ok := storepb.Task_Type_value[typeString]; ok {
+		task.Type = storepb.Task_Type(typeValue)
+	} else {
+		return nil, errors.Errorf("invalid task type string: %s", typeString)
+	}
 
-	taskPayload := &storepb.TaskPayload{}
+	taskPayload := &storepb.Task{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, taskPayload); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal plan config")
 	}
@@ -475,7 +492,7 @@ func (s *Store) ListTasksToAutoRollout(ctx context.Context, environments []strin
 	LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
 	LEFT JOIN issue ON issue.pipeline_id = pipeline.id
 	WHERE NOT EXISTS (SELECT 1 FROM task_run WHERE task_run.task_id = task.id)
-	AND task.type != 'bb.task.database.data.export'
+	AND task.type != 'DATABASE_EXPORT'
 	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
 	AND COALESCE(issue.status, 'OPEN') = 'OPEN'
 	AND stage.environment = ANY($1)

@@ -10625,7 +10625,7 @@ Read from `pg_stat_activity`
 | DATABASE_SCHEMA_UPDATE_SDL | 5 | use payload DatabaseSchemaUpdate |
 | DATABASE_SCHEMA_UPDATE_GHOST | 9 | use payload DatabaseSchemaUpdate |
 | DATABASE_DATA_UPDATE | 8 | use payload DatabaseDataUpdate |
-| DATABASE_DATA_EXPORT | 12 | use payload DatabaseDataExport |
+| DATABASE_EXPORT | 12 | use payload DatabaseDataExport |
 
 
 
