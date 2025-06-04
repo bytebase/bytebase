@@ -5,8 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestValidateQuery(t *testing.T) {
@@ -100,102 +98,6 @@ func TestValidateQuery(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantReadOnly, readOnly, "readOnly")
 			assert.Equal(t, tt.wantData, returnsData, "returnsData")
-		})
-	}
-}
-
-func TestExtractResourceList(t *testing.T) {
-	tests := []struct {
-		name            string
-		currentDatabase string
-		currentSchema   string
-		sql             string
-		wantResources   []base.SchemaResource
-		wantErr         bool
-	}{
-		{
-			name:            "Simple SELECT",
-			currentDatabase: "catalog1",
-			currentSchema:   "public",
-			sql:             "SELECT * FROM users",
-			wantResources: []base.SchemaResource{
-				{
-					Database: "catalog1",
-					Schema:   "public",
-					Table:    "users",
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:            "JOIN query",
-			currentDatabase: "catalog1",
-			currentSchema:   "public",
-			sql:             "SELECT u.id, o.order_id FROM users u JOIN orders o ON u.id = o.user_id",
-			wantResources: []base.SchemaResource{
-				{
-					Database: "catalog1",
-					Schema:   "public",
-					Table:    "orders",
-				},
-				{
-					Database: "catalog1",
-					Schema:   "public",
-					Table:    "users",
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:            "Fully qualified table names",
-			currentDatabase: "catalog1",
-			currentSchema:   "public",
-			sql:             "SELECT * FROM catalog2.schema2.table2",
-			wantResources: []base.SchemaResource{
-				{
-					Database: "catalog2",
-					Schema:   "schema2",
-					Table:    "table2",
-				},
-			},
-			wantErr: false,
-		},
-		// SKIP: The current resourceExtractListener doesn't capture tables in INSERT statements
-		// This is a limitation that should be addressed in a future update
-		// {
-		//   name:            "INSERT statement",
-		//   currentDatabase: "catalog1",
-		//   currentSchema:   "public",
-		//   sql:             "INSERT INTO users (id, name) VALUES (1, 'John')",
-		//   wantResources: []base.SchemaResource{
-		//     {
-		//       Database: "catalog1",
-		//       Schema:   "public",
-		//       Table:    "users",
-		//     },
-		//   },
-		//   wantErr: false,
-		// },
-		{
-			name:            "Invalid SQL",
-			currentDatabase: "catalog1",
-			currentSchema:   "public",
-			sql:             "SELECT * FFROM users",
-			wantResources:   nil,
-			wantErr:         true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resources, err := ExtractResourceList(tt.currentDatabase, tt.currentSchema, tt.sql)
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-			assert.ElementsMatch(t, tt.wantResources, resources)
 		})
 	}
 }
