@@ -36,9 +36,6 @@ const (
 	// defaultSyncInterval means never sync.
 	defaultSyncInterval = 0 * time.Second
 	MaximumOutstanding  = 100
-
-	backupDatabaseName       = "bbdataarchive"
-	oracleBackupDatabaseName = "BBDATAARCHIVE"
 )
 
 // NewSyncer creates a schema syncer.
@@ -598,12 +595,12 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 			return false
 		}
 		for _, schema := range dbSchema.Schemas {
-			if schema.GetName() == backupDatabaseName {
+			if schema.GetName() == base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES) {
 				return true
 			}
 		}
 	case storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_TIDB:
-		dbName := backupDatabaseName
+		dbName := base.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
 		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &dbName,
@@ -614,7 +611,7 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 		}
 		return backupDB != nil
 	case storepb.Engine_ORACLE:
-		dbName := oracleBackupDatabaseName
+		dbName := base.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
 		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &dbName,
