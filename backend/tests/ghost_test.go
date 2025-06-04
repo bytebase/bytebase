@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -74,7 +76,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, "bbdataarchive", "")
+	// Create backup database for MySQL.
+	backupDBName := base.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, backupDBName, "")
 	a.NoError(err)
 
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
