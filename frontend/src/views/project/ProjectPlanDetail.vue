@@ -1,5 +1,5 @@
 <template>
-  <div class="-mx-4 relative overflow-x-hidden h-full">
+  <div class="relative overflow-x-hidden h-full">
     <template v-if="ready">
       <PlanDetailPage />
     </template>
@@ -93,7 +93,7 @@ providePlanCheckRunContext(
 
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
-overrideMainContainerClass("!py-0");
+overrideMainContainerClass("!py-0 !px-0");
 
 const documentTitle = computed(() => {
   if (isCreating.value) {

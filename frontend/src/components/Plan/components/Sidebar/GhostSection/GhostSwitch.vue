@@ -1,5 +1,5 @@
 <template>
-  <NTooltip :disabled="!tooltipMessage" :arrow="false">
+  <NTooltip :disabled="!tooltipMessage" :showArrow="false">
     <template #trigger>
       <NSwitch
         :value="enabled"
