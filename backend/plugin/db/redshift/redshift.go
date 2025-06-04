@@ -33,6 +33,7 @@ var (
 		// aws
 		"padb_harvest":   true,
 		"awsdatacatalog": true,
+		"sys:internal":   true,
 		// system templates.
 		"template0": true,
 		"template1": true,
