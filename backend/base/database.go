@@ -15,6 +15,7 @@ func BackupDatabaseNameOfEngine(e storepb.Engine) string {
 		storepb.Engine_ORACLE:
 		return "BBDATAARCHIVE"
 	default:
-		return ""
+		// Fallback to the default name for other engines.
+		return "bbdataarchive"
 	}
 }
