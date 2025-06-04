@@ -158,7 +158,7 @@ func (exec *DataUpdateExecutor) backupData(
 	ctx context.Context,
 	driverCtx context.Context,
 	originStatement string,
-	payload *storepb.TaskPayload,
+	payload *storepb.Task,
 	task *store.TaskMessage,
 	issueN *store.IssueMessage,
 	instance *store.InstanceMessage,

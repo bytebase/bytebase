@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -86,7 +85,7 @@ type FindIssueMessage struct {
 	Types           *[]storepb.Issue_Type
 
 	StatusList []storepb.Issue_Status
-	TaskTypes  *[]base.TaskType
+	TaskTypes  *[]storepb.Task_Type
 	// Any of the task in the issue changes the instance with InstanceResourceID.
 	InstanceResourceID *string
 	// Any of the task in the issue changes the database with InstanceID and DatabaseName.
@@ -420,8 +419,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where = append(where, fmt.Sprintf("issue.status IN (%s)", strings.Join(list, ", ")))
 	}
 	if v := find.TaskTypes; v != nil {
+		taskTypeStrings := make([]string, 0, len(*v))
+		for _, t := range *v {
+			taskTypeStrings = append(taskTypeStrings, t.String())
+		}
 		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY($%d))", len(args)+1))
-		args = append(args, *v)
+		args = append(args, taskTypeStrings)
 	}
 	limitOffsetClause := ""
 	if v := find.Limit; v != nil {

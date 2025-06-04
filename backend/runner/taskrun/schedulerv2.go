@@ -38,7 +38,7 @@ type SchedulerV2 struct {
 	store          *store.Store
 	stateCfg       *state.State
 	webhookManager *webhook.Manager
-	executorMap    map[base.TaskType]Executor
+	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
 	licenseService enterprise.LicenseService
 }
@@ -56,18 +56,18 @@ func NewSchedulerV2(
 		stateCfg:       stateCfg,
 		webhookManager: webhookManager,
 		profile:        profile,
-		executorMap:    map[base.TaskType]Executor{},
+		executorMap:    map[storepb.Task_Type]Executor{},
 		licenseService: licenseService,
 	}
 }
 
 // Register will register a task executor factory.
-func (s *SchedulerV2) Register(taskType base.TaskType, executorGetter Executor) {
+func (s *SchedulerV2) Register(taskType storepb.Task_Type, executorGetter Executor) {
 	if executorGetter == nil {
-		panic("scheduler: Register executor is nil for task type: " + taskType)
+		panic("scheduler: Register executor is nil for task type: " + taskType.String())
 	}
 	if _, dup := s.executorMap[taskType]; dup {
-		panic("scheduler: Register called twice for task type: " + taskType)
+		panic("scheduler: Register called twice for task type: " + taskType.String())
 	}
 	s.executorMap[taskType] = executorGetter
 }
@@ -370,7 +370,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		}
 
 		databaseKey := getDatabaseKey(task.InstanceID, *task.DatabaseName)
-		if task.Type.Sequential() {
+		if isSequentialTask(task.Type) {
 			if _, ok := minTaskIDForDatabase[databaseKey]; !ok {
 				minTaskIDForDatabase[databaseKey] = task.ID
 			} else if minTaskIDForDatabase[databaseKey] > task.ID {
@@ -397,7 +397,7 @@ func (s *SchedulerV2) scheduleRunningTaskRun(ctx context.Context, taskRun *store
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
-	if task.DatabaseName != nil && task.Type.Sequential() {
+	if task.DatabaseName != nil && isSequentialTask(task.Type) {
 		// Skip the task run if there is an ongoing migration on the database.
 		if taskUIDAny, ok := s.stateCfg.RunningDatabaseMigration.Load(getDatabaseKey(task.InstanceID, *task.DatabaseName)); ok {
 			if taskUID, ok := taskUIDAny.(int); ok {
@@ -971,4 +971,19 @@ func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+// isSequentialTask returns whether the task should be executed sequentially.
+func isSequentialTask(taskType storepb.Task_Type) bool {
+	switch taskType {
+	case storepb.Task_DATABASE_SCHEMA_UPDATE,
+		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
+		return true
+	case storepb.Task_DATABASE_CREATE,
+		storepb.Task_DATABASE_DATA_UPDATE,
+		storepb.Task_DATABASE_EXPORT:
+		return false
+	default:
+		return false
+	}
 }
