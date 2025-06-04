@@ -3805,7 +3805,7 @@ ANY means approving any node will proceed.
 | TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CHANGE | 1 |  |
 | GRANT_REQUEST | 2 |  |
-| DATABASE_DATA_EXPORT | 3 |  |
+| DATABASE_EXPORT | 3 |  |
 
 
 

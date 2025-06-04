@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -95,7 +94,7 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 }
 
 func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store.IssueMessage) ([]string, error) {
-	if issue.Type != base.IssueDatabaseGeneral {
+	if issue.Type != storepb.Issue_DATABASE_CHANGE {
 		return nil, nil
 	}
 	if issue.Status != storepb.Issue_OPEN {
@@ -146,29 +145,29 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 	return releasers, nil
 }
 
-func convertToIssueType(t base.IssueType) v1pb.Issue_Type {
+func convertToIssueType(t storepb.Issue_Type) v1pb.Issue_Type {
 	switch t {
-	case base.IssueDatabaseGeneral:
+	case storepb.Issue_DATABASE_CHANGE:
 		return v1pb.Issue_DATABASE_CHANGE
-	case base.IssueGrantRequest:
+	case storepb.Issue_GRANT_REQUEST:
 		return v1pb.Issue_GRANT_REQUEST
-	case base.IssueDatabaseDataExport:
-		return v1pb.Issue_DATABASE_DATA_EXPORT
+	case storepb.Issue_DATABASE_EXPORT:
+		return v1pb.Issue_DATABASE_EXPORT
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
 	}
 }
 
-func convertToAPIIssueType(t v1pb.Issue_Type) (base.IssueType, error) {
+func convertToAPIIssueType(t v1pb.Issue_Type) (storepb.Issue_Type, error) {
 	switch t {
 	case v1pb.Issue_DATABASE_CHANGE:
-		return base.IssueDatabaseGeneral, nil
+		return storepb.Issue_DATABASE_CHANGE, nil
 	case v1pb.Issue_GRANT_REQUEST:
-		return base.IssueGrantRequest, nil
-	case v1pb.Issue_DATABASE_DATA_EXPORT:
-		return base.IssueDatabaseDataExport, nil
+		return storepb.Issue_GRANT_REQUEST, nil
+	case v1pb.Issue_DATABASE_EXPORT:
+		return storepb.Issue_DATABASE_EXPORT, nil
 	default:
-		return base.IssueType(""), errors.Errorf("invalid issue type %v", t)
+		return storepb.Issue_ISSUE_TYPE_UNSPECIFIED, errors.Errorf("invalid issue type %v", t)
 	}
 }
 

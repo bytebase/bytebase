@@ -278,7 +278,7 @@ const emitIssueCreateWindowEvent = (issue: Issue) => {
 const runSQLCheckForIssue = async () => {
   if (
     !isCreating.value ||
-    ![Issue_Type.DATABASE_CHANGE, Issue_Type.DATABASE_DATA_EXPORT].includes(
+    ![Issue_Type.DATABASE_CHANGE, Issue_Type.DATABASE_EXPORT].includes(
       issue.value.type
     )
   ) {

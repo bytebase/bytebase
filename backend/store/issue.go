@@ -37,7 +37,7 @@ type IssueMessage struct {
 	Project         *ProjectMessage
 	Title           string
 	Status          storepb.Issue_Status
-	Type            base.IssueType
+	Type            storepb.Issue_Type
 	Description     string
 	Payload         *storepb.Issue
 	Subscribers     []*UserMessage
@@ -83,7 +83,7 @@ type FindIssueMessage struct {
 	SubscriberID    *int
 	CreatedAtBefore *time.Time
 	CreatedAtAfter  *time.Time
-	Types           *[]base.IssueType
+	Types           *[]storepb.Issue_Type
 
 	StatusList []storepb.Issue_Status
 	TaskTypes  *[]base.TaskType
@@ -179,7 +179,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.PlanUID,
 		create.Title,
 		create.Status.String(),
-		create.Type,
+		create.Type.String(),
 		create.Description,
 		payload,
 		tsVector,
@@ -396,8 +396,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.Types; v != nil {
+		typeStrings := make([]string, 0, len(*v))
+		for _, t := range *v {
+			typeStrings = append(typeStrings, t.String())
+		}
 		where = append(where, fmt.Sprintf("issue.type = ANY($%d)", len(args)+1))
-		args = append(args, *v)
+		args = append(args, typeStrings)
 	}
 	if v := find.Query; v != nil && *v != "" {
 		if tsQuery := getTSQuery(*v); tsQuery != "" {
@@ -499,6 +503,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		var subscriberUIDs pgtype.Int4Array
 		var taskRunStatusCount []byte
 		var statusString string
+		var typeString string
 		if err := rows.Scan(
 			&issue.UID,
 			&issue.creatorUID,
@@ -509,7 +514,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.PlanUID,
 			&issue.Title,
 			&statusString,
-			&issue.Type,
+			&typeString,
 			&issue.Description,
 			&payload,
 			&subscriberUIDs,
@@ -521,6 +526,11 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			issue.Status = storepb.Issue_Status(statusValue)
 		} else {
 			return nil, errors.Errorf("invalid status string: %s", statusString)
+		}
+		if typeValue, ok := storepb.Issue_Type_value[typeString]; ok {
+			issue.Type = storepb.Issue_Type(typeValue)
+		} else {
+			return nil, errors.Errorf("invalid type string: %s", typeString)
 		}
 		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err

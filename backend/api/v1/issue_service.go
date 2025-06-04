@@ -154,7 +154,7 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					if err != nil {
 						return "", status.Errorf(codes.InvalidArgument, "failed to convert to issue type, err: %v", err)
 					}
-					issueFind.Types = &[]base.IssueType{issueType}
+					issueFind.Types = &[]storepb.Issue_Type{issueType}
 				case "task_type":
 					taskType, ok := value.(string)
 					if !ok {
@@ -220,7 +220,7 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 						issueFind.StatusList = append(issueFind.StatusList, newStatus)
 					}
 				case "type":
-					types := []base.IssueType{}
+					types := []storepb.Issue_Type{}
 					for _, raw := range rawList {
 						issueType, err := convertToAPIIssueType(v1pb.Issue_Type(v1pb.Issue_Type_value[raw.(string)]))
 						if err != nil {
@@ -392,7 +392,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 		return s.createIssueGrantRequest(ctx, request)
 	case v1pb.Issue_DATABASE_CHANGE:
 		return s.createIssueDatabaseChange(ctx, request)
-	case v1pb.Issue_DATABASE_DATA_EXPORT:
+	case v1pb.Issue_DATABASE_EXPORT:
 		return s.createIssueDatabaseDataExport(ctx, request)
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unknown issue type %q", request.Issue.Type)
@@ -457,7 +457,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		PipelineUID: rolloutUID,
 		Title:       request.Issue.Title,
 		Status:      storepb.Issue_OPEN,
-		Type:        base.IssueDatabaseGeneral,
+		Type:        storepb.Issue_DATABASE_CHANGE,
 		Description: request.Issue.Description,
 	}
 
@@ -534,7 +534,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		PipelineUID: nil,
 		Title:       request.Issue.Title,
 		Status:      storepb.Issue_OPEN,
-		Type:        base.IssueGrantRequest,
+		Type:        storepb.Issue_GRANT_REQUEST,
 		Description: request.Issue.Description,
 	}
 
@@ -641,7 +641,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		PipelineUID: rolloutUID,
 		Title:       request.Issue.Title,
 		Status:      storepb.Issue_OPEN,
-		Type:        base.IssueDatabaseDataExport,
+		Type:        storepb.Issue_DATABASE_EXPORT,
 		Description: request.Issue.Description,
 	}
 
@@ -759,7 +759,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	}
 
 	// Grant the privilege if the issue is approved.
-	if approved && issue.Type == base.IssueGrantRequest {
+	if approved && issue.Type == storepb.Issue_GRANT_REQUEST {
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, s.store, issue, payload.GrantRequest); err != nil {
 			return nil, err
 		}
@@ -860,7 +860,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	}()
 
 	// If the issue is a grant request and approved, we will always auto close it.
-	if issue.Type == base.IssueGrantRequest {
+	if issue.Type == storepb.Issue_GRANT_REQUEST {
 		if err := func() error {
 			payload := issue.Payload
 			approved, err := utils.CheckApprovalApproved(payload.Approval)
