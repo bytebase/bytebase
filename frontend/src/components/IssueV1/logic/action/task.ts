@@ -1,5 +1,3 @@
-import { head } from "lodash-es";
-import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
@@ -12,6 +10,8 @@ import {
   hasWorkspacePermissionV2,
   isUserIncludedInList,
 } from "@/utils";
+import { head } from "lodash-es";
+import type { ButtonProps } from "naive-ui";
 import { projectOfIssue } from "../utils";
 
 export type TaskRolloutAction =
@@ -136,7 +136,7 @@ export const allowUserToApplyTaskRolloutAction = (
 ) => {
   const me = useCurrentUserV1();
   // For data export issues, only the creator can take actions.
-  if (issue.type === Issue_Type.DATABASE_DATA_EXPORT) {
+  if (issue.type === Issue_Type.DATABASE_EXPORT) {
     return issue.creator === `${userNamePrefix}${me.value.email}`;
   }
 

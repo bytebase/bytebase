@@ -1,8 +1,8 @@
 import type { ComposedTaskRun } from "@/types";
 import {
   EMPTY_PROJECT_NAME,
-  UNKNOWN_PROJECT_NAME,
   EMPTY_ROLLOUT_NAME,
+  UNKNOWN_PROJECT_NAME,
   UNKNOWN_ROLLOUT_NAME,
 } from "@/types";
 import type { Rollout } from "@/types//proto/v1/rollout_service";
@@ -63,7 +63,7 @@ export interface IssueFilter {
   statusList?: IssueStatus[];
   createdTsAfter?: number;
   createdTsBefore?: number;
-  // type is the issue type, for example: GRANT_REQUEST, DATABASE_DATA_EXPORT
+  // type is the issue type, for example: GRANT_REQUEST, DATABASE_EXPORT
   type?: Issue_Type;
   // taskType is the task type, for example: DDL, DML
   taskType?: string;
