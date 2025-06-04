@@ -72,7 +72,9 @@
 
         <PlanCheckRunBar
           v-if="
-            (action === 'ROLLOUT' || action === 'RETRY') &&
+            (action === 'ROLLOUT' ||
+              action === 'RETRY' ||
+              action === 'RESTART') &&
             planCheckRunList.length > 0
           "
           class="shrink-0 flex-col gap-y-1"
@@ -310,7 +312,11 @@ const planCheckRunList = computed(() => {
 
 const planCheckErrors = computed(() => {
   const errors: string[] = [];
-  if (props.action === "ROLLOUT" || props.action === "RETRY") {
+  if (
+    props.action === "ROLLOUT" ||
+    props.action === "RETRY" ||
+    props.action === "RESTART"
+  ) {
     const summary = planCheckRunSummaryForCheckRunList(planCheckRunList.value);
     if (summary.errorCount > 0 || summary.warnCount) {
       errors.push(
