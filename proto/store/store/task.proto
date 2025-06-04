@@ -23,7 +23,7 @@ message TaskPayload {
 
   // Update database fields.
   string schema_version = 10;
-  PreUpdateBackupDetail pre_update_backup_detail = 11;
+  bool enable_prior_backup = 11;
   // ghost flags.
   map<string, string> flags = 12;
   TaskReleaseSource task_release_source = 13;

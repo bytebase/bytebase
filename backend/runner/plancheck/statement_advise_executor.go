@@ -91,7 +91,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, err
 	}
 	changeType := config.ChangeDatabaseType
-	preUpdateBackupDetail := config.PreUpdateBackupDetail
+	enablePriorBackup := config.EnablePriorBackup
 
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
 	if err != nil {
@@ -119,7 +119,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
-	results, err := e.runReview(ctx, instance, database, changeType, statement, preUpdateBackupDetail)
+	results, err := e.runReview(ctx, instance, database, changeType, statement, enablePriorBackup)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (e *StatementAdviseExecutor) runReview(
 	database *store.DatabaseMessage,
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
 	statement string,
-	preUpdateBackupDetail *storepb.PreUpdateBackupDetail,
+	enablePriorBackup bool,
 ) ([]*storepb.PlanCheckRunResult_Result, error) {
 	dbSchema, err := e.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
@@ -199,7 +199,7 @@ func (e *StatementAdviseExecutor) runReview(
 		DBType:                   instance.Metadata.GetEngine(),
 		Catalog:                  catalog,
 		Driver:                   connection,
-		PreUpdateBackupDetail:    preUpdateBackupDetail,
+		EnablePriorBackup:        enablePriorBackup,
 		ClassificationConfig:     classificationConfig,
 		UsePostgresDatabaseOwner: useDatabaseOwner,
 		ListDatabaseNamesFunc:    e.buildListDatabaseNamesFunc(),

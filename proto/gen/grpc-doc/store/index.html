@@ -866,10 +866,6 @@
                   <a href="#bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport"><span class="badge">M</span>PlanCheckRunResult.Result.SqlSummaryReport</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.PreUpdateBackupDetail"><span class="badge">M</span>PreUpdateBackupDetail</a>
-                </li>
-              
               
                 <li>
                   <a href="#bytebase.store.PlanCheckRunConfig.ChangeDatabaseType"><span class="badge">E</span>PlanCheckRunConfig.ChangeDatabaseType</a>
@@ -8014,9 +8010,9 @@ Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
-                  <td>optional</td>
+                  <td>enable_prior_backup</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
                 </tr>
               
@@ -8253,31 +8249,6 @@ To supersede `line` and `column` above. </p></td>
 
         
       
-        <h3 id="bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database for keeping the backup data.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
 
       
         <h3 id="bytebase.store.PlanCheckRunConfig.ChangeDatabaseType">PlanCheckRunConfig.ChangeDatabaseType</h3>
@@ -8455,9 +8426,9 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
-                  <td>optional</td>
+                  <td>enable_prior_backup</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
                 </tr>
               
@@ -11912,8 +11883,8 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
+                  <td>enable_prior_backup</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
