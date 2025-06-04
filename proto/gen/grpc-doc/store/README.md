@@ -167,18 +167,6 @@
     - [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus)
     - [IssueCommentPayload.TaskUpdate.Status](#bytebase-store-IssueCommentPayload-TaskUpdate-Status)
   
-- [store/plan_check_run.proto](#store_plan_check_run-proto)
-    - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
-    - [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry)
-    - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
-    - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
-    - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
-    - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
-    - [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail)
-  
-    - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
-    - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
-  
 - [store/plan.proto](#store_plan-proto)
     - [PlanConfig](#bytebase-store-PlanConfig)
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
@@ -190,6 +178,17 @@
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
+  
+- [store/plan_check_run.proto](#store_plan_check_run-proto)
+    - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
+    - [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry)
+    - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
+    - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
+    - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
+    - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
+  
+    - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
+    - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
@@ -2817,175 +2816,6 @@ InstanceRole is the API message for instance role.
 
 
 
-<a name="store_plan_check_run-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/plan_check_run.proto
-
-
-
-<a name="bytebase-store-PlanCheckRunConfig"></a>
-
-### PlanCheckRunConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet_uid | [int32](#int32) |  |  |
-| change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
-| instance_id | [string](#string) |  |  |
-| database_name | [string](#string) |  |  |
-| database_group_uid | [int64](#int64) | optional | **Deprecated.**  |
-| ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
-| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunConfig-GhostFlagsEntry"></a>
-
-### PlanCheckRunConfig.GhostFlagsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunResult"></a>
-
-### PlanCheckRunResult
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| results | [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result) | repeated |  |
-| error | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunResult-Result"></a>
-
-### PlanCheckRunResult.Result
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status) |  |  |
-| title | [string](#string) |  |  |
-| content | [string](#string) |  |  |
-| code | [int32](#int32) |  |  |
-| sql_summary_report | [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport) |  |  |
-| sql_review_report | [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunResult-Result-SqlReviewReport"></a>
-
-### PlanCheckRunResult.Result.SqlReviewReport
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  |  |
-| column | [int32](#int32) |  |  |
-| start_position | [Position](#bytebase-store-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
-| end_position | [Position](#bytebase-store-Position) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport"></a>
-
-### PlanCheckRunResult.Result.SqlSummaryReport
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
-| affected_rows | [int32](#int32) |  |  |
-| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PreUpdateBackupDetail"></a>
-
-### PreUpdateBackupDetail
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-PlanCheckRunConfig-ChangeDatabaseType"></a>
-
-### PlanCheckRunConfig.ChangeDatabaseType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| SDL | 3 |  |
-| DDL_GHOST | 4 |  |
-| SQL_EDITOR | 5 |  |
-
-
-
-<a name="bytebase-store-PlanCheckRunResult-Result-Status"></a>
-
-### PlanCheckRunResult.Result.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| ERROR | 1 |  |
-| WARNING | 2 |  |
-| SUCCESS | 3 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="store_plan-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3022,7 +2852,7 @@ InstanceRole is the API message for instance role.
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
 | type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
 | ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
-| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
+| enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
 
 
@@ -3149,6 +2979,160 @@ Type is the database change type.
 | MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
 | MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
 | DATA | 6 | Used for DML change. |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_plan_check_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/plan_check_run.proto
+
+
+
+<a name="bytebase-store-PlanCheckRunConfig"></a>
+
+### PlanCheckRunConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet_uid | [int32](#int32) |  |  |
+| change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
+| instance_id | [string](#string) |  |  |
+| database_name | [string](#string) |  |  |
+| database_group_uid | [int64](#int64) | optional | **Deprecated.**  |
+| ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
+| enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunConfig-GhostFlagsEntry"></a>
+
+### PlanCheckRunConfig.GhostFlagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResult"></a>
+
+### PlanCheckRunResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result) | repeated |  |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result"></a>
+
+### PlanCheckRunResult.Result
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status) |  |  |
+| title | [string](#string) |  |  |
+| content | [string](#string) |  |  |
+| code | [int32](#int32) |  |  |
+| sql_summary_report | [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport) |  |  |
+| sql_review_report | [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result-SqlReviewReport"></a>
+
+### PlanCheckRunResult.Result.SqlReviewReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
+| start_position | [Position](#bytebase-store-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| end_position | [Position](#bytebase-store-Position) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport"></a>
+
+### PlanCheckRunResult.Result.SqlSummaryReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
+| affected_rows | [int32](#int32) |  |  |
+| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-PlanCheckRunConfig-ChangeDatabaseType"></a>
+
+### PlanCheckRunConfig.ChangeDatabaseType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+| SDL | 3 |  |
+| DDL_GHOST | 4 |  |
+| SQL_EDITOR | 5 |  |
+
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result-Status"></a>
+
+### PlanCheckRunResult.Result.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| SUCCESS | 3 |  |
 
 
  
@@ -4617,7 +4601,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | character_set | [string](#string) |  |  |
 | collation | [string](#string) |  |  |
 | schema_version | [string](#string) |  | Update database fields. |
-| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) |  |  |
+| enable_prior_backup | [bool](#bool) |  |  |
 | flags | [TaskPayload.FlagsEntry](#bytebase-store-TaskPayload-FlagsEntry) | repeated | ghost flags. |
 | task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  |  |
 | password | [string](#string) |  | Export data fields. |

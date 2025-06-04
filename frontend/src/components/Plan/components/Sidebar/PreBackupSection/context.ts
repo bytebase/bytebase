@@ -1,5 +1,5 @@
 import Emittery from "emittery";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import {
   computed,
   inject,
@@ -24,12 +24,7 @@ import {
   Task_Status,
   type Rollout,
 } from "@/types/proto/v1/rollout_service";
-import {
-  flattenTaskV1List,
-  hasProjectPermissionV2,
-  isNullOrUndefined,
-} from "@/utils";
-import { getArchiveDatabase } from "./utils";
+import { flattenTaskV1List, hasProjectPermissionV2 } from "@/utils";
 
 export const PRE_BACKUP_AVAILABLE_ENGINES = [
   Engine.MYSQL,
@@ -130,34 +125,16 @@ export const providePreBackupSettingContext = (refs: {
   });
 
   const enabled = computed((): boolean => {
-    const preBackupDatabase =
-      selectedSpec.value?.changeDatabaseConfig?.preUpdateBackupDetail?.database;
-    return !isNullOrUndefined(preBackupDatabase) && preBackupDatabase !== "";
-  });
-
-  // TODO(steven): remove me.
-  const archiveDatabase = computed((): string => {
-    const database = head(databases.value);
-    return getArchiveDatabase(
-      database?.instanceResource.engine || Engine.MYSQL
-    );
+    return Boolean(selectedSpec.value?.changeDatabaseConfig?.enablePriorBackup);
   });
 
   const toggle = async (on: boolean) => {
     if (isCreating.value) {
       if (selectedSpec.value && selectedSpec.value.changeDatabaseConfig) {
         if (on) {
-          // TODO(steven): switch to boolean value.
-          const database = head(databases.value);
-          selectedSpec.value.changeDatabaseConfig.preUpdateBackupDetail = {
-            database:
-              (database?.instance || "instances/UNKNOWN_INSTANCE") +
-              "/databases/" +
-              archiveDatabase.value,
-          };
+          selectedSpec.value.changeDatabaseConfig.enablePriorBackup = true;
         } else {
-          selectedSpec.value.changeDatabaseConfig.preUpdateBackupDetail =
-            undefined;
+          selectedSpec.value.changeDatabaseConfig.enablePriorBackup = false;
         }
       }
     } else {
@@ -172,16 +149,9 @@ export const providePreBackupSettingContext = (refs: {
         );
       }
       if (on) {
-        // TODO(steven): switch to boolean value.
-        const database = head(databases.value);
-        spec.changeDatabaseConfig.preUpdateBackupDetail = {
-          database:
-            (database?.instance || "instances/UNKNOWN_INSTANCE") +
-            "/databases/" +
-            archiveDatabase.value,
-        };
+        spec.changeDatabaseConfig.enablePriorBackup = true;
       } else {
-        spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;
+        spec.changeDatabaseConfig.enablePriorBackup = false;
       }
 
       await planServiceClient.updatePlan({

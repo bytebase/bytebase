@@ -104,14 +104,12 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 	c := config.ChangeDatabaseConfig
 	return &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Targets:    c.Targets,
-			Sheet:      c.Sheet,
-			Release:    c.Release,
-			Type:       convertToPlanSpecChangeDatabaseConfigType(c.Type),
-			GhostFlags: c.GhostFlags,
-			PreUpdateBackupDetail: &v1pb.Plan_ChangeDatabaseConfig_PreUpdateBackupDetail{
-				Database: c.PreUpdateBackupDetail.GetDatabase(),
-			},
+			Targets:           c.Targets,
+			Sheet:             c.Sheet,
+			Release:           c.Release,
+			Type:              convertToPlanSpecChangeDatabaseConfigType(c.Type),
+			GhostFlags:        c.GhostFlags,
+			EnablePriorBackup: c.EnablePriorBackup,
 		},
 	}
 }
@@ -232,20 +230,14 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 
 func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseConfig) *storepb.PlanConfig_Spec_ChangeDatabaseConfig {
 	c := config.ChangeDatabaseConfig
-	var preUpdateBackupDetail *storepb.PreUpdateBackupDetail
-	if c.PreUpdateBackupDetail != nil && c.GetPreUpdateBackupDetail().GetDatabase() != "" {
-		preUpdateBackupDetail = &storepb.PreUpdateBackupDetail{
-			Database: c.GetPreUpdateBackupDetail().GetDatabase(),
-		}
-	}
 	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
-			Targets:               c.Targets,
-			Sheet:                 c.Sheet,
-			Release:               c.Release,
-			Type:                  storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
-			GhostFlags:            c.GhostFlags,
-			PreUpdateBackupDetail: preUpdateBackupDetail,
+			Targets:           c.Targets,
+			Sheet:             c.Sheet,
+			Release:           c.Release,
+			Type:              storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
+			GhostFlags:        c.GhostFlags,
+			EnablePriorBackup: c.EnablePriorBackup,
 		},
 	}
 }
