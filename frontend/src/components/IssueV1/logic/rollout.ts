@@ -1,10 +1,8 @@
-import { head } from "lodash-es";
-import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
+import { head, includes } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1, extractUserId } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import {
   Task_Status,
@@ -26,8 +24,7 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
 
 export const allowUserToEditStatementForTask = (
   issue: ComposedIssue,
-  task: Task,
-  planCheckRuns: PlanCheckRun[]
+  task: Task
 ): string[] => {
   const user = useCurrentUserV1();
   const denyReasons: string[] = [];
@@ -55,7 +52,9 @@ export const allowUserToEditStatementForTask = (
   // if not creating, we are allowed to edit sql statement only when:
   // - user is the creator
   // - OR user has plans.update permission in the project
-  denyReasons.push(...isTaskEditable(task, planCheckRuns));
+  if (!isTaskEditable(task)) {
+    denyReasons.push(`${task_StatusToJSON(task.status)} task is not editable`);
+  }
 
   if (extractUserId(issue.creator) !== user.value.email) {
     const project = projectOfIssue(issue);
@@ -68,32 +67,16 @@ export const allowUserToEditStatementForTask = (
   return denyReasons;
 };
 
-export const isTaskEditable = (
-  task: Task,
-  planCheckRuns: PlanCheckRun[]
-): string[] => {
+export const isTaskEditable = (task: Task): boolean => {
   if (
-    task.status === Task_Status.NOT_STARTED ||
-    task.status === Task_Status.FAILED ||
-    task.status === Task_Status.CANCELED
+    includes(
+      [Task_Status.NOT_STARTED, Task_Status.FAILED, Task_Status.CANCELED],
+      task.status
+    )
   ) {
-    return [];
+    return true;
   }
-  if (task.status === Task_Status.PENDING) {
-    // If a task's status is "PENDING", its statement is editable if there
-    // are at least ONE ERROR task checks.
-    // Since once all its task checks are fulfilled, it might be queued by
-    // the scheduler.
-    // Editing a queued task's SQL statement is dangerous with kinds of race
-    // condition risks.
-    const summary = planCheckRunSummaryForCheckRunList(planCheckRuns);
-    if (summary.errorCount > 0) {
-      return [];
-    }
-    return [`Task is pending to run`];
-  }
-
-  return [`${task_StatusToJSON(task.status)} task is not editable`];
+  return false;
 };
 
 export const isTaskFinished = (task: Task): boolean => {
