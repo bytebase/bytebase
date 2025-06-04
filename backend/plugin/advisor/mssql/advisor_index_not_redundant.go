@@ -117,8 +117,8 @@ type IndexMap = map[FindIndexesKey][]*storepb.IndexMetadata
 // Return the name of the index if redundant prefixes are found.
 func containRedundantPrefix(metaIdxList []*storepb.IndexMetadata, statColumnList *parser.IColumn_name_list_with_orderContext) string {
 	for _, metaIndex := range metaIdxList {
-		if statColumnList != nil && len((*statColumnList).AllId_()) != 0 && len(metaIdxList) != 0 {
-			statIdxCol, _ := tsql.NormalizeTSQLIdentifier((*statColumnList).AllId_()[0])
+		if statColumnList != nil && len((*statColumnList).AllColumn_name_with_order()) != 0 && len(metaIdxList) != 0 {
+			statIdxCol, _ := tsql.NormalizeTSQLIdentifier((*statColumnList).AllColumn_name_with_order()[0].Id_())
 			if metaIndex.Expressions[0] == statIdxCol {
 				return metaIndex.Name
 			}
