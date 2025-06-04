@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/github/gh-ost/go/base"
+	ghostbase "github.com/github/gh-ost/go/base"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/base"
 	secretcomp "github.com/bytebase/bytebase/backend/component/secret"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var defaultConfig = struct {
@@ -98,7 +98,7 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 	}
 
 	if v, ok := flags["max-load"]; ok {
-		if _, err := base.ParseLoadMap(v); err != nil {
+		if _, err := ghostbase.ParseLoadMap(v); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse max-load %q", v)
 		}
 		f.maxLoad = &v
@@ -201,13 +201,13 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
+func NewMigrationContext(ctx context.Context, taskID int, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, error) {
 	password, err := secretcomp.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err
 	}
 
-	migrationContext := base.NewMigrationContext()
+	migrationContext := ghostbase.NewMigrationContext()
 	migrationContext.Log = newGhostLogger()
 	migrationContext.InspectorConnectionConfig.Key.Hostname = dataSource.GetHost()
 	port := 3306
@@ -232,7 +232,8 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	migrationContext.CliUser = dataSource.GetUsername()
 	migrationContext.CliPassword = password
 	// GhostDatabaseName is our homemade parameter to allow creating temporary tables under another database.
-	migrationContext.GhostDatabaseName = "bbdataarchive"
+	// Use MySQL/TiDB backup database name for gh-ost
+	migrationContext.GhostDatabaseName = base.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
 	migrationContext.DatabaseName = database.DatabaseName
 	migrationContext.OriginalTableName = tableName
 	migrationContext.AlterStatement = strings.Join(strings.Fields(statement), " ")
@@ -249,7 +250,7 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	migrationContext.AllowedRunningOnMaster = defaultConfig.allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = defaultConfig.concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = defaultConfig.hooksStatusIntervalSec
-	migrationContext.CutOverType = base.CutOverAtomic
+	migrationContext.CutOverType = ghostbase.CutOverAtomic
 	migrationContext.ThrottleHTTPIntervalMillis = defaultConfig.throttleHTTPIntervalMillis
 	migrationContext.ThrottleHTTPTimeoutMillis = defaultConfig.throttleHTTPTimeoutMillis
 

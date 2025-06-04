@@ -49,11 +49,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-const (
-	backupDatabaseName       = "bbdataarchive"
-	oracleBackupDatabaseName = "BBDATAARCHIVE"
-)
-
 // SQLService is the service for SQL.
 type SQLService struct {
 	v1pb.UnimplementedSQLServiceServer
@@ -302,7 +297,7 @@ func extractSourceTable(comment string) (string, string, string, error) {
 func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DatabaseSchema) *model.SchemaMetadata {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		return dbSchema.GetDatabaseMetadata().GetSchema(backupDatabaseName)
+		return dbSchema.GetDatabaseMetadata().GetSchema(base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES))
 	case storepb.Engine_MSSQL:
 		return dbSchema.GetDatabaseMetadata().GetSchema("dbo")
 	default:
@@ -316,11 +311,11 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 		// Don't need to check the database name for postgres here.
 		// We backup the table to the same database with bbdataarchive schema for Postgres.
 	case storepb.Engine_ORACLE:
-		if database.DatabaseName != oracleBackupDatabaseName {
+		if database.DatabaseName != base.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE) {
 			return nil
 		}
 	default:
-		if database.DatabaseName != backupDatabaseName {
+		if database.DatabaseName != base.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine()) {
 			return nil
 		}
 	}
@@ -390,11 +385,11 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 func isBackupTable(engine storepb.Engine, column parserbase.ColumnResource) bool {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		return column.Schema == backupDatabaseName
+		return column.Schema == base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
 	case storepb.Engine_ORACLE:
-		return column.Database == oracleBackupDatabaseName
+		return column.Database == base.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
 	default:
-		return column.Database == backupDatabaseName
+		return column.Database == base.BackupDatabaseNameOfEngine(engine)
 	}
 }
 

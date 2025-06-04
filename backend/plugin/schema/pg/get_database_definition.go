@@ -6,7 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -29,7 +30,6 @@ SET row_security = off;
 `
 
 	setDefaultTableSpace = "SET default_tablespace = '';\n\n"
-	backupSchemaName     = "bbdataarchive"
 )
 
 func init() {
@@ -87,7 +87,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 	}
 
 	// Build the graph for topological sort.
-	graph := base.NewGraph()
+	graph := parserbase.NewGraph()
 	functionMap := make(map[string]*storepb.FunctionMetadata)
 	tableMap := make(map[string]*storepb.TableMetadata)
 	viewMap := make(map[string]*storepb.ViewMetadata)
@@ -272,7 +272,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 	}
 
 	// Build the graph for topological sort.
-	graph := base.NewGraph()
+	graph := parserbase.NewGraph()
 	functionMap := make(map[string]*storepb.FunctionMetadata)
 	tableMap := make(map[string]*storepb.TableMetadata)
 	viewMap := make(map[string]*storepb.ViewMetadata)
@@ -512,7 +512,7 @@ func filterBackupSchemaIfNecessary(ctx schema.GetDefinitionContext, metadata *st
 		Extensions: metadata.Extensions,
 	}
 	for _, schema := range metadata.Schemas {
-		if schema.Name == backupSchemaName {
+		if schema.Name == base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES) {
 			continue
 		}
 		filtered.Schemas = append(filtered.Schemas, schema)
