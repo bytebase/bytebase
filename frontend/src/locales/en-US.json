@@ -699,11 +699,6 @@
       "json-format-example": "JSON format example",
       "view-example": "View example"
     },
-    "release": {
-      "new-version-available": "New version is available",
-      "new-version-available-with-tag": "New version {tag} is available",
-      "new-version-content": "The new version {tag} is available now! Please check our docs for installation."
-    },
     "mail-delivery": {
       "description": "Configuring SMTP information will enable users to receive database reports via email, such as slow query weekly reports.",
       "field": {
@@ -719,6 +714,19 @@
       },
       "updated-tip": "Successfully updated the mail delivery setting",
       "tested-tip": "Send successfully, please check the inbox of {address}."
+    }
+  },
+  "remind": {
+    "release": {
+      "new-version-available": "New version is available",
+      "new-version-available-with-tag": "New version {tag} is available",
+      "new-version-content": "The new version {tag} is available now! Please check our docs for installation."
+    },
+    "role-expire": {
+      "title": "Role expiration remind",
+      "content": "Your following roles are going to expire",
+      "checkbox": "Do not remind until any updates",
+      "go-to-project": "Go to the project page"
     }
   },
   "activity": {

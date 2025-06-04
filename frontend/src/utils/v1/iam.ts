@@ -102,7 +102,7 @@ export const memberMapToRolesInProjectIAM = (
   return rolesMapByName;
 };
 
-export const roleListInIAM = ({
+export const bindingListInIAM = ({
   policy,
   email,
   ignoreGroup,
@@ -110,18 +110,14 @@ export const roleListInIAM = ({
   policy: IamPolicy;
   email: string;
   ignoreGroup: boolean;
-}) => {
-  const roles = policy.bindings
-    .filter((binding) => {
-      if (isBindingPolicyExpired(binding)) {
-        return false;
-      }
-      const emailList = getUserEmailListInBinding({ binding, ignoreGroup });
-      return (
-        emailList.includes(ALL_USERS_USER_EMAIL) || emailList.includes(email)
-      );
-    })
-    .map((binding) => binding.role);
-
-  return roles;
+}): Binding[] => {
+  return policy.bindings.filter((binding) => {
+    if (isBindingPolicyExpired(binding)) {
+      return false;
+    }
+    const emailList = getUserEmailListInBinding({ binding, ignoreGroup });
+    return (
+      emailList.includes(ALL_USERS_USER_EMAIL) || emailList.includes(email)
+    );
+  });
 };

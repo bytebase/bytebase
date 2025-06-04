@@ -699,11 +699,6 @@
       "json-format-example": "JSON形式の例",
       "view-example": "サンプルを見る"
     },
-    "release": {
-      "new-version-available": "更新する新しいバージョンがあります",
-      "new-version-available-with-tag": "新しいバージョン {tag} が利用可能です",
-      "new-version-content": "新しいバージョン {tag} が正式にリリースされました。新しいバージョンを入手するには、ドキュメントに従ってください。"
-    },
     "mail-delivery": {
       "description": "電子メール情報を設定すると、ユーザーはスロー クエリの週次レポートなど、データベース関連のレポートを電子メールで受信できるようになります。",
       "field": {
@@ -719,6 +714,19 @@
       },
       "updated-tip": "メールトランスポート設定が正常に更新されました",
       "tested-tip": "正常に送信されました。{address} の受信箱を確認してください。"
+    }
+  },
+  "remind": {
+    "release": {
+      "new-version-available": "更新する新しいバージョンがあります",
+      "new-version-available-with-tag": "新しいバージョン {tag} が利用可能です",
+      "new-version-content": "新しいバージョン {tag} が正式にリリースされました。新しいバージョンを入手するには、ドキュメントに従ってください。"
+    },
+    "role-expire": {
+      "title": "ロールの有効期限通知",
+      "content": "次の役割は期限切れになります",
+      "checkbox": "更新があるまで通知しない",
+      "go-to-project": "プロジェクトページへ"
     }
   },
   "activity": {

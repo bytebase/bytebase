@@ -300,7 +300,7 @@ const getDataTableColumns = (
       render: (singleBinding) => {
         const content = extractExpiration(singleBinding.expiration);
         if (checkRoleExpired(singleBinding)) {
-          return <RoleExpiredTip>{content}</RoleExpiredTip>;
+          return <RoleExpiredTip content={content} />;
         }
         return content;
       },
@@ -317,7 +317,7 @@ const getDataTableColumns = (
       key: "operations",
       width: 32,
       render: (singleBinding) => (
-        <div class="flex justify-end pr-2">
+        <div class="flex justify-end pr-2 space-x-2">
           <NButton
             text
             class="cursor-pointer opacity-60 hover:opacity-100"
