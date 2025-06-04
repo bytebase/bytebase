@@ -21,7 +21,65 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type TaskPayload struct {
+type Task_Type int32
+
+const (
+	Task_TASK_TYPE_UNSPECIFIED        Task_Type = 0
+	Task_DATABASE_CREATE              Task_Type = 1
+	Task_DATABASE_SCHEMA_UPDATE       Task_Type = 2
+	Task_DATABASE_SCHEMA_UPDATE_GHOST Task_Type = 3
+	Task_DATABASE_DATA_UPDATE         Task_Type = 4
+	Task_DATABASE_EXPORT              Task_Type = 5
+)
+
+// Enum value maps for Task_Type.
+var (
+	Task_Type_name = map[int32]string{
+		0: "TASK_TYPE_UNSPECIFIED",
+		1: "DATABASE_CREATE",
+		2: "DATABASE_SCHEMA_UPDATE",
+		3: "DATABASE_SCHEMA_UPDATE_GHOST",
+		4: "DATABASE_DATA_UPDATE",
+		5: "DATABASE_EXPORT",
+	}
+	Task_Type_value = map[string]int32{
+		"TASK_TYPE_UNSPECIFIED":        0,
+		"DATABASE_CREATE":              1,
+		"DATABASE_SCHEMA_UPDATE":       2,
+		"DATABASE_SCHEMA_UPDATE_GHOST": 3,
+		"DATABASE_DATA_UPDATE":         4,
+		"DATABASE_EXPORT":              5,
+	}
+)
+
+func (x Task_Type) Enum() *Task_Type {
+	p := new(Task_Type)
+	*p = x
+	return p
+}
+
+func (x Task_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Task_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_task_proto_enumTypes[0].Descriptor()
+}
+
+func (Task_Type) Type() protoreflect.EnumType {
+	return &file_store_task_proto_enumTypes[0]
+}
+
+func (x Task_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Task_Type.Descriptor instead.
+func (Task_Type) EnumDescriptor() ([]byte, []int) {
+	return file_store_task_proto_rawDescGZIP(), []int{0, 0}
+}
+
+type Task struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// common fields
 	Skipped       bool   `protobuf:"varint,1,opt,name=skipped,proto3" json:"skipped,omitempty"`
@@ -47,20 +105,20 @@ type TaskPayload struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TaskPayload) Reset() {
-	*x = TaskPayload{}
+func (x *Task) Reset() {
+	*x = Task{}
 	mi := &file_store_task_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TaskPayload) String() string {
+func (x *Task) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TaskPayload) ProtoMessage() {}
+func (*Task) ProtoMessage() {}
 
-func (x *TaskPayload) ProtoReflect() protoreflect.Message {
+func (x *Task) ProtoReflect() protoreflect.Message {
 	mi := &file_store_task_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -72,110 +130,110 @@ func (x *TaskPayload) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TaskPayload.ProtoReflect.Descriptor instead.
-func (*TaskPayload) Descriptor() ([]byte, []int) {
+// Deprecated: Use Task.ProtoReflect.Descriptor instead.
+func (*Task) Descriptor() ([]byte, []int) {
 	return file_store_task_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *TaskPayload) GetSkipped() bool {
+func (x *Task) GetSkipped() bool {
 	if x != nil {
 		return x.Skipped
 	}
 	return false
 }
 
-func (x *TaskPayload) GetSkippedReason() string {
+func (x *Task) GetSkippedReason() string {
 	if x != nil {
 		return x.SkippedReason
 	}
 	return ""
 }
 
-func (x *TaskPayload) GetSpecId() string {
+func (x *Task) GetSpecId() string {
 	if x != nil {
 		return x.SpecId
 	}
 	return ""
 }
 
-func (x *TaskPayload) GetSheetId() int32 {
+func (x *Task) GetSheetId() int32 {
 	if x != nil {
 		return x.SheetId
 	}
 	return 0
 }
 
-func (x *TaskPayload) GetEnvironmentId() string {
+func (x *Task) GetEnvironmentId() string {
 	if x != nil {
 		return x.EnvironmentId
 	}
 	return ""
 }
 
-func (x *TaskPayload) GetDatabaseName() string {
+func (x *Task) GetDatabaseName() string {
 	if x != nil {
 		return x.DatabaseName
 	}
 	return ""
 }
 
-func (x *TaskPayload) GetTableName() string {
+func (x *Task) GetTableName() string {
 	if x != nil {
 		return x.TableName
 	}
 	return ""
 }
 
-func (x *TaskPayload) GetCharacterSet() string {
+func (x *Task) GetCharacterSet() string {
 	if x != nil {
 		return x.CharacterSet
 	}
 	return ""
 }
 
-func (x *TaskPayload) GetCollation() string {
+func (x *Task) GetCollation() string {
 	if x != nil {
 		return x.Collation
 	}
 	return ""
 }
 
-func (x *TaskPayload) GetSchemaVersion() string {
+func (x *Task) GetSchemaVersion() string {
 	if x != nil {
 		return x.SchemaVersion
 	}
 	return ""
 }
 
-func (x *TaskPayload) GetEnablePriorBackup() bool {
+func (x *Task) GetEnablePriorBackup() bool {
 	if x != nil {
 		return x.EnablePriorBackup
 	}
 	return false
 }
 
-func (x *TaskPayload) GetFlags() map[string]string {
+func (x *Task) GetFlags() map[string]string {
 	if x != nil {
 		return x.Flags
 	}
 	return nil
 }
 
-func (x *TaskPayload) GetTaskReleaseSource() *TaskReleaseSource {
+func (x *Task) GetTaskReleaseSource() *TaskReleaseSource {
 	if x != nil {
 		return x.TaskReleaseSource
 	}
 	return nil
 }
 
-func (x *TaskPayload) GetPassword() string {
+func (x *Task) GetPassword() string {
 	if x != nil {
 		return x.Password
 	}
 	return ""
 }
 
-func (x *TaskPayload) GetFormat() ExportFormat {
+func (x *Task) GetFormat() ExportFormat {
 	if x != nil {
 		return x.Format
 	}
@@ -231,8 +289,8 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xa4\x05\n" +
-	"\vTaskPayload\x12\x18\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xbc\x06\n" +
+	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
 	"\aspec_id\x18\x03 \x01(\tR\x06specId\x12\x19\n" +
@@ -245,15 +303,22 @@ const file_store_task_proto_rawDesc = "" +
 	"\tcollation\x18\t \x01(\tR\tcollation\x12%\n" +
 	"\x0eschema_version\x18\n" +
 	" \x01(\tR\rschemaVersion\x12.\n" +
-	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\x12<\n" +
-	"\x05flags\x18\f \x03(\v2&.bytebase.store.TaskPayload.FlagsEntryR\x05flags\x12Q\n" +
+	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\x125\n" +
+	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12Q\n" +
 	"\x13task_release_source\x18\r \x01(\v2!.bytebase.store.TaskReleaseSourceR\x11taskReleaseSource\x12\x1a\n" +
 	"\bpassword\x18\x0e \x01(\tR\bpassword\x124\n" +
 	"\x06format\x18\x0f \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x1a8\n" +
 	"\n" +
 	"FlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"'\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa3\x01\n" +
+	"\x04Type\x12\x19\n" +
+	"\x15TASK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fDATABASE_CREATE\x10\x01\x12\x1a\n" +
+	"\x16DATABASE_SCHEMA_UPDATE\x10\x02\x12 \n" +
+	"\x1cDATABASE_SCHEMA_UPDATE_GHOST\x10\x03\x12\x18\n" +
+	"\x14DATABASE_DATA_UPDATE\x10\x04\x12\x13\n" +
+	"\x0fDATABASE_EXPORT\x10\x05\"'\n" +
 	"\x11TaskReleaseSource\x12\x12\n" +
 	"\x04file\x18\x01 \x01(\tR\x04fileB\x14Z\x12generated-go/storeb\x06proto3"
 
@@ -269,17 +334,19 @@ func file_store_task_proto_rawDescGZIP() []byte {
 	return file_store_task_proto_rawDescData
 }
 
+var file_store_task_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_task_proto_goTypes = []any{
-	(*TaskPayload)(nil),       // 0: bytebase.store.TaskPayload
-	(*TaskReleaseSource)(nil), // 1: bytebase.store.TaskReleaseSource
-	nil,                       // 2: bytebase.store.TaskPayload.FlagsEntry
-	(ExportFormat)(0),         // 3: bytebase.store.ExportFormat
+	(Task_Type)(0),            // 0: bytebase.store.Task.Type
+	(*Task)(nil),              // 1: bytebase.store.Task
+	(*TaskReleaseSource)(nil), // 2: bytebase.store.TaskReleaseSource
+	nil,                       // 3: bytebase.store.Task.FlagsEntry
+	(ExportFormat)(0),         // 4: bytebase.store.ExportFormat
 }
 var file_store_task_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.TaskPayload.flags:type_name -> bytebase.store.TaskPayload.FlagsEntry
-	1, // 1: bytebase.store.TaskPayload.task_release_source:type_name -> bytebase.store.TaskReleaseSource
-	3, // 2: bytebase.store.TaskPayload.format:type_name -> bytebase.store.ExportFormat
+	3, // 0: bytebase.store.Task.flags:type_name -> bytebase.store.Task.FlagsEntry
+	2, // 1: bytebase.store.Task.task_release_source:type_name -> bytebase.store.TaskReleaseSource
+	4, // 2: bytebase.store.Task.format:type_name -> bytebase.store.ExportFormat
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -298,13 +365,14 @@ func file_store_task_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_task_proto_rawDesc), len(file_store_task_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_task_proto_goTypes,
 		DependencyIndexes: file_store_task_proto_depIdxs,
+		EnumInfos:         file_store_task_proto_enumTypes,
 		MessageInfos:      file_store_task_proto_msgTypes,
 	}.Build()
 	File_store_task_proto = out.File

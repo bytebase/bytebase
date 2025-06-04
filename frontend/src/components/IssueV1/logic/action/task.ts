@@ -82,7 +82,7 @@ export const taskRolloutActionDisplayName = (
 ) => {
   switch (action) {
     case "ROLLOUT":
-      return task?.type === Task_Type.DATABASE_DATA_EXPORT
+      return task?.type === Task_Type.DATABASE_EXPORT
         ? t("common.export")
         : t("common.rollout");
     case "CANCEL":

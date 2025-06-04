@@ -202,7 +202,7 @@ CREATE TABLE task (
     stage_id integer NOT NULL REFERENCES stage(id),
     instance text NOT NULL REFERENCES instance(resource_id),
     db_name text,
-    type text NOT NULL CHECK (type LIKE 'bb.task.%'),
+    type text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}'
 );
 

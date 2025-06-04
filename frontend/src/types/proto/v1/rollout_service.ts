@@ -362,8 +362,8 @@ export enum Task_Type {
   DATABASE_SCHEMA_UPDATE_GHOST = "DATABASE_SCHEMA_UPDATE_GHOST",
   /** DATABASE_DATA_UPDATE - use payload DatabaseDataUpdate */
   DATABASE_DATA_UPDATE = "DATABASE_DATA_UPDATE",
-  /** DATABASE_DATA_EXPORT - use payload DatabaseDataExport */
-  DATABASE_DATA_EXPORT = "DATABASE_DATA_EXPORT",
+  /** DATABASE_EXPORT - use payload DatabaseDataExport */
+  DATABASE_EXPORT = "DATABASE_EXPORT",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -391,8 +391,8 @@ export function task_TypeFromJSON(object: any): Task_Type {
     case "DATABASE_DATA_UPDATE":
       return Task_Type.DATABASE_DATA_UPDATE;
     case 12:
-    case "DATABASE_DATA_EXPORT":
-      return Task_Type.DATABASE_DATA_EXPORT;
+    case "DATABASE_EXPORT":
+      return Task_Type.DATABASE_EXPORT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -416,8 +416,8 @@ export function task_TypeToJSON(object: Task_Type): string {
       return "DATABASE_SCHEMA_UPDATE_GHOST";
     case Task_Type.DATABASE_DATA_UPDATE:
       return "DATABASE_DATA_UPDATE";
-    case Task_Type.DATABASE_DATA_EXPORT:
-      return "DATABASE_DATA_EXPORT";
+    case Task_Type.DATABASE_EXPORT:
+      return "DATABASE_EXPORT";
     case Task_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -440,7 +440,7 @@ export function task_TypeToNumber(object: Task_Type): number {
       return 9;
     case Task_Type.DATABASE_DATA_UPDATE:
       return 8;
-    case Task_Type.DATABASE_DATA_EXPORT:
+    case Task_Type.DATABASE_EXPORT:
       return 12;
     case Task_Type.UNRECOGNIZED:
     default:

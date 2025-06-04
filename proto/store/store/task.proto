@@ -6,7 +6,16 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
-message TaskPayload {
+message Task {
+  enum Type {
+    TASK_TYPE_UNSPECIFIED = 0;
+    DATABASE_CREATE = 1;
+    DATABASE_SCHEMA_UPDATE = 2;
+    DATABASE_SCHEMA_UPDATE_GHOST = 3;
+    DATABASE_DATA_UPDATE = 4;
+    DATABASE_EXPORT = 5;
+  }
+
   // common fields
   bool skipped = 1;
   string skipped_reason = 2;

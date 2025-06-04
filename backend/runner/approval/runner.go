@@ -435,7 +435,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 
 			var environmentID string
 			var databaseName string
-			if task.Type == base.TaskDatabaseCreate {
+			if task.Type == storepb.Task_DATABASE_CREATE {
 				databaseName = task.Payload.GetDatabaseName()
 				environmentID = task.Payload.GetEnvironmentId()
 			} else {
@@ -523,7 +523,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 	var maxRiskLevel int32
 	for _, stage := range pipelineCreate.Stages {
 		for _, task := range stage.TaskList {
-			if task.Type != base.TaskDatabaseDataExport {
+			if task.Type != storepb.Task_DATABASE_EXPORT {
 				continue
 			}
 			instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
