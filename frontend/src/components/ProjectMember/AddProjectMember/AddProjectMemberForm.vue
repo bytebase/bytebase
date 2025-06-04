@@ -37,7 +37,7 @@
         v-model:value="state.reason"
         type="textarea"
         rows="2"
-        :placeholder="`${$t('project.members.reason')} ${requireReason ? '' : `(${$t('common.optional')})`}`"
+        :placeholder="`${$t('common.reason')} ${requireReason ? '' : `(${$t('common.optional')})`}`"
       />
     </div>
     <div
