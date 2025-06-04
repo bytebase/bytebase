@@ -239,6 +239,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
 	core := base.NewCodeCompletionCore(
+		ctx,
 		parser,
 		newIgnoredTokens(),
 		newPreferredRules(),
@@ -270,6 +271,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
 	core := base.NewCodeCompletionCore(
+		ctx,
 		parser,
 		newIgnoredTokens(),
 		newPreferredRules(),
