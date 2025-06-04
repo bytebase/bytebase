@@ -1,6 +1,6 @@
 <template>
   <div v-if="shouldShow" class="flex flex-col gap-y-3 py-2 px-3">
-    <NTooltip :arrow="false">
+    <NTooltip :showArrow="false">
       <template #trigger>
         <p class="textinfolabel -mb-1">
           {{ $t("plan.options.self") }}

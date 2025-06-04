@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -89,7 +90,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 
 func containsActiveEndUser(users []*store.UserMessage) bool {
 	for _, user := range users {
-		if user.Type == base.EndUser && !user.MemberDeleted {
+		if user.Type == storepb.PrincipalType_END_USER && !user.MemberDeleted {
 			return true
 		}
 	}

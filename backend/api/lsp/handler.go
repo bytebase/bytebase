@@ -72,6 +72,7 @@ type Handler struct {
 
 	shutDown bool
 	profile  *config.Profile
+	cancelF  sync.Map // map[jsonrpc2.ID]context.CancelFunc
 }
 
 // ShutDown shuts down the handler.
@@ -245,7 +246,28 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 		h.ShutDown()
 		return nil, nil
 	case LSPMethodCancelRequest:
-		// Do nothing for now.
+		var params lsp.CancelParams
+		if err := json.Unmarshal(*req.Params, &params); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal cancel request")
+		}
+		var id jsonrpc2.ID
+		if v, ok := params.ID.(string); ok {
+			id = jsonrpc2.ID{
+				Str:      v,
+				IsString: true,
+			}
+		} else if v, ok := params.ID.(float64); ok {
+			// handle json number
+			id = jsonrpc2.ID{
+				Num: uint64(v),
+			}
+		}
+		cancelFAny, loaded := h.cancelF.LoadAndDelete(id)
+		if loaded {
+			if cancelF, ok := cancelFAny.(context.CancelFunc); ok {
+				cancelF()
+			}
+		}
 		return nil, nil
 	case LSPMethodSetTrace:
 		// Do nothing for now.
@@ -281,7 +303,13 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 		if err := json.Unmarshal(*req.Params, &params); err != nil {
 			return nil, err
 		}
-		return h.handleTextDocumentCompletion(ctx, conn, req, params)
+		childCtx, cancel := context.WithCancel(ctx)
+		h.cancelF.Store(req.ID, cancel)
+		defer func() {
+			cancel()
+			h.cancelF.Delete(req.ID)
+		}()
+		return h.handleTextDocumentCompletion(childCtx, conn, req, params)
 	default:
 		if isFileSystemRequest(req.Method) {
 			_, _, err := h.handleFileSystemRequest(ctx, conn, req)
