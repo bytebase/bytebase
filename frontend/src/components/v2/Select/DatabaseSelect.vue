@@ -207,7 +207,7 @@ const renderLabel = (database: ComposedDatabase) => {
 // might not exist in the new list. In such case, we need to invalidate the selection
 // and emit the event.
 const resetInvalidSelection = () => {
-  if (!props.autoReset) return;
+  if (!props.autoReset || props.multiple) return;
   if (
     !state.loading &&
     props.databaseName &&
