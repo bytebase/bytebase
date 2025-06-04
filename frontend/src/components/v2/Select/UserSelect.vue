@@ -205,7 +205,12 @@ const filterByEmail = (pattern: string, user: User) => {
 // might not exist in the new list. In such case, we need to invalidate the selection
 // and emit the event.
 const resetInvalidSelection = () => {
-  if (!props.autoReset) return;
+  if (!props.autoReset || props.multiple) {
+    return;
+  }
+  if (state.loading) {
+    return;
+  }
   if (
     props.user &&
     !state.rawUserList.find((user) => extractUserId(user.name) === props.user)
@@ -215,7 +220,7 @@ const resetInvalidSelection = () => {
 };
 
 watch(
-  [() => props.user, () => props.users, state.rawUserList],
+  [() => state.loading, () => props.user, state.rawUserList],
   resetInvalidSelection,
   {
     immediate: true,
