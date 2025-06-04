@@ -1682,7 +1682,6 @@
       "view-by-roles": "按角色查看",
       "cannot-remove-last-owner": "无法移除项目的最后一个所有者",
       "revoke-role-from-user": "删除'{user}'{role}的角色",
-      "assign-reason": "（可选）理由",
       "never-expires": "永不过期",
       "role-description": "角色描述",
       "role-never-expires": "此角色没有过期时间。",
