@@ -22,6 +22,62 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// PrincipalType is the type of a principal.
+type PrincipalType int32
+
+const (
+	PrincipalType_PRINCIPAL_TYPE_UNSPECIFIED PrincipalType = 0
+	// END_USER represents the human being using Bytebase.
+	PrincipalType_END_USER PrincipalType = 1
+	// SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI.
+	PrincipalType_SERVICE_ACCOUNT PrincipalType = 2
+	// SYSTEM_BOT represents the internal system bot performing operations.
+	PrincipalType_SYSTEM_BOT PrincipalType = 3
+)
+
+// Enum value maps for PrincipalType.
+var (
+	PrincipalType_name = map[int32]string{
+		0: "PRINCIPAL_TYPE_UNSPECIFIED",
+		1: "END_USER",
+		2: "SERVICE_ACCOUNT",
+		3: "SYSTEM_BOT",
+	}
+	PrincipalType_value = map[string]int32{
+		"PRINCIPAL_TYPE_UNSPECIFIED": 0,
+		"END_USER":                   1,
+		"SERVICE_ACCOUNT":            2,
+		"SYSTEM_BOT":                 3,
+	}
+)
+
+func (x PrincipalType) Enum() *PrincipalType {
+	p := new(PrincipalType)
+	*p = x
+	return p
+}
+
+func (x PrincipalType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PrincipalType) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_user_proto_enumTypes[0].Descriptor()
+}
+
+func (PrincipalType) Type() protoreflect.EnumType {
+	return &file_store_user_proto_enumTypes[0]
+}
+
+func (x PrincipalType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PrincipalType.Descriptor instead.
+func (PrincipalType) EnumDescriptor() ([]byte, []int) {
+	return file_store_user_proto_rawDescGZIP(), []int{0}
+}
+
 // MFAConfig is the MFA configuration for a user.
 type MFAConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -170,7 +226,13 @@ const file_store_user_proto_rawDesc = "" +
 	"\vUserProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
-	"\x06source\x18\x03 \x01(\tR\x06sourceB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x06source\x18\x03 \x01(\tR\x06source*b\n" +
+	"\rPrincipalType\x12\x1e\n" +
+	"\x1aPRINCIPAL_TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
+	"\bEND_USER\x10\x01\x12\x13\n" +
+	"\x0fSERVICE_ACCOUNT\x10\x02\x12\x0e\n" +
+	"\n" +
+	"SYSTEM_BOT\x10\x03B\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_user_proto_rawDescOnce sync.Once
@@ -184,15 +246,17 @@ func file_store_user_proto_rawDescGZIP() []byte {
 	return file_store_user_proto_rawDescData
 }
 
+var file_store_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_user_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_user_proto_goTypes = []any{
-	(*MFAConfig)(nil),             // 0: bytebase.store.MFAConfig
-	(*UserProfile)(nil),           // 1: bytebase.store.UserProfile
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(PrincipalType)(0),            // 0: bytebase.store.PrincipalType
+	(*MFAConfig)(nil),             // 1: bytebase.store.MFAConfig
+	(*UserProfile)(nil),           // 2: bytebase.store.UserProfile
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_store_user_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
-	2, // 1: bytebase.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
+	3, // 0: bytebase.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
+	3, // 1: bytebase.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -210,13 +274,14 @@ func file_store_user_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_user_proto_rawDesc), len(file_store_user_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_user_proto_goTypes,
 		DependencyIndexes: file_store_user_proto_depIdxs,
+		EnumInfos:         file_store_user_proto_enumTypes,
 		MessageInfos:      file_store_user_proto_msgTypes,
 	}.Build()
 	File_store_user_proto = out.File
