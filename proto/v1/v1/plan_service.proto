@@ -307,13 +307,8 @@ message Plan {
 
     map<string, string> ghost_flags = 7;
 
-    message PreUpdateBackupDetail {
-      // The database for keeping the backup data.
-      // Format: instances/{instance}/databases/{database}
-      string database = 1;
-    }
     // If set, a backup of the modified data will be created automatically before any changes are applied.
-    optional PreUpdateBackupDetail pre_update_backup_detail = 8;
+    bool enable_prior_backup = 8;
   }
 
   message ExportDataConfig {

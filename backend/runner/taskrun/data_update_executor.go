@@ -158,19 +158,20 @@ func (exec *DataUpdateExecutor) backupData(
 	ctx context.Context,
 	driverCtx context.Context,
 	originStatement string,
-	payload *storepb.TaskPayload,
+	payload *storepb.Task,
 	task *store.TaskMessage,
 	issueN *store.IssueMessage,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 ) (*storepb.PriorBackupDetail, error) {
-	if payload.GetPreUpdateBackupDetail().GetDatabase() == "" {
+	if !payload.GetEnablePriorBackup() {
 		return nil, nil
 	}
 
 	sourceDatabaseName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
 	// Format: instances/{instance}/databases/{database}
-	targetDatabaseName := payload.PreUpdateBackupDetail.Database
+	backupDBName := base.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
+	targetDatabaseName := common.FormatDatabase(database.InstanceID, backupDBName)
 	var backupDatabase *store.DatabaseMessage
 	var backupDriver db.Driver
 
@@ -331,7 +332,7 @@ func (exec *DataUpdateExecutor) backupData(
 	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase); err != nil {
 			slog.Error("failed to sync backup database schema",
-				slog.String("database", payload.PreUpdateBackupDetail.Database),
+				slog.String("database", targetDatabaseName),
 				log.BBError(err),
 			)
 		}

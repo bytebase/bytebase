@@ -18,8 +18,6 @@ const (
 
 	// PolicyTypeRollout is the rollout policy type.
 	PolicyTypeRollout PolicyType = "bb.policy.rollout"
-	// PolicyTypeEnvironmentTier is the tier of an environment.
-	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
 	// PolicyTypeMaskingException is the masking exception policy type.
 	PolicyTypeMaskingException PolicyType = "bb.policy.masking-exception"
 	// PolicyTypeDisableCopyData is the disable copy data policy type.
@@ -63,7 +61,6 @@ var (
 	// AllowedResourceTypes includes allowed resource types for each policy type.
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
 		PolicyTypeRollout:                           {PolicyResourceTypeEnvironment},
-		PolicyTypeEnvironmentTier:                   {PolicyResourceTypeEnvironment},
 		PolicyTypeTag:                               {PolicyResourceTypeEnvironment, PolicyResourceTypeProject},
 		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment, PolicyResourceTypeProject},
 		PolicyTypeExportData:                        {PolicyResourceTypeWorkspace},

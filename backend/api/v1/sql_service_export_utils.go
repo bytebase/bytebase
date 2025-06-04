@@ -294,14 +294,30 @@ func convertValueValueToBytes(value *structpb.Value) []byte {
 	}
 }
 
-// extractResourceList extracts the resource list from the statement for exporting results as SQL.
-func extractResourceList(ctx context.Context, storeInstance *store.Store, engine storepb.Engine, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
+// getResources extracts the resource list from the statement for exporting results as SQL.
+func getResources(ctx context.Context, storeInstance *store.Store, engine storepb.Engine, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		list, err := base.ExtractResourceList(engine, databaseName, "", statement)
+		spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(storeInstance),
+			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(storeInstance),
+			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(storeInstance, instance.Metadata.GetEngine()),
+		}, engine, statement, databaseName, "", !store.IsObjectCaseSensitive(instance))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+			return nil, err
 		} else if databaseName == "" {
+			var list []base.SchemaResource
+			for _, span := range spans {
+				for sourceColumn := range span.SourceColumns {
+					list = append(list, base.SchemaResource{
+						Database:     sourceColumn.Database,
+						Schema:       sourceColumn.Schema,
+						Table:        sourceColumn.Table,
+						LinkedServer: sourceColumn.Server,
+					})
+				}
+			}
 			return list, nil
 		}
 
@@ -327,42 +343,55 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		}
 
 		var result []base.SchemaResource
-		for _, resource := range list {
-			if resource.Database != dbSchema.GetMetadata().Name {
-				// MySQL allows cross-database query, we should check the corresponding database.
-				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:      &instance.ResourceID,
-					DatabaseName:    &resource.Database,
-					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-				})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+		for _, span := range spans {
+			for sourceColumn := range span.SourceColumns {
+				sr := base.SchemaResource{
+					Database:     sourceColumn.Database,
+					Schema:       sourceColumn.Schema,
+					Table:        sourceColumn.Table,
+					LinkedServer: sourceColumn.Server,
 				}
-				if resourceDB == nil {
+				if sourceColumn.Database != dbSchema.GetMetadata().Name {
+					// MySQL allows cross-database query, we should check the corresponding database.
+					resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+						InstanceID:      &instance.ResourceID,
+						DatabaseName:    &sourceColumn.Database,
+						IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+					})
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", sourceColumn.Database, instance.ResourceID, err)
+					}
+					if resourceDB == nil {
+						continue
+					}
+					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", sourceColumn.Database, instance.ResourceID, err)
+					}
+					if !resourceExists(resourceDBSchema, sr) {
+						// If table not found, we regard it as a CTE/alias/... and skip.
+						continue
+					}
+					result = append(result, sr)
 					continue
 				}
-				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
-				}
-				if !resourceExists(resourceDBSchema, resource) {
-					// If table not found, we regard it as a CTE/alias/... and skip.
+				if !resourceExists(dbSchema, sr) {
+					// If table not found, skip.
 					continue
 				}
-				result = append(result, resource)
-				continue
+				result = append(result, sr)
 			}
-			if !resourceExists(dbSchema, resource) {
-				// If table not found, skip.
-				continue
-			}
-			result = append(result, resource)
 		}
 		return result, nil
 	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
-		list, err := base.ExtractResourceList(engine, databaseName, "public", statement)
+		spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(storeInstance),
+			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(storeInstance),
+			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(storeInstance, instance.Metadata.GetEngine()),
+		}, engine, statement, databaseName, "public", !store.IsObjectCaseSensitive(instance))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+			return nil, err
 		}
 
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -383,25 +412,39 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		}
 
 		var result []base.SchemaResource
-		for _, resource := range list {
-			if resource.Database != dbSchema.GetMetadata().Name {
-				// Should not happen.
-				continue
-			}
+		for _, span := range spans {
+			for sourceColumn := range span.SourceColumns {
+				sr := base.SchemaResource{
+					Database:     sourceColumn.Database,
+					Schema:       sourceColumn.Schema,
+					Table:        sourceColumn.Table,
+					LinkedServer: sourceColumn.Server,
+				}
 
-			if !resourceExists(dbSchema, resource) {
-				// If table not found, skip.
-				continue
-			}
+				if sourceColumn.Database != dbSchema.GetMetadata().Name {
+					// Should not happen.
+					continue
+				}
 
-			result = append(result, resource)
+				if !resourceExists(dbSchema, sr) {
+					// If table not found, skip.
+					continue
+				}
+
+				result = append(result, sr)
+			}
 		}
 
 		return result, nil
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-		list, err := base.ExtractResourceList(engine, databaseName, databaseName, statement)
+		spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(storeInstance),
+			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(storeInstance),
+			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(storeInstance, instance.Metadata.GetEngine()),
+		}, engine, statement, databaseName, databaseName, !store.IsObjectCaseSensitive(instance))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+			return nil, err
 		}
 
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -422,37 +465,45 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		}
 
 		var result []base.SchemaResource
-		for _, resource := range list {
-			if resource.Database != dbSchema.GetMetadata().Name {
-				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:      &instance.ResourceID,
-					DatabaseName:    &resource.Database,
-					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-				})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+		for _, span := range spans {
+			for sourceColumn := range span.SourceColumns {
+				sr := base.SchemaResource{
+					Database:     sourceColumn.Database,
+					Schema:       sourceColumn.Schema,
+					Table:        sourceColumn.Table,
+					LinkedServer: sourceColumn.Server,
 				}
-				if resourceDB == nil {
+				if sr.Database != dbSchema.GetMetadata().Name {
+					resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+						InstanceID:      &instance.ResourceID,
+						DatabaseName:    &sr.Database,
+						IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+					})
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+					}
+					if resourceDB == nil {
+						continue
+					}
+					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+					}
+					if !resourceExists(resourceDBSchema, sr) {
+						// If table not found, we regard it as a CTE/alias/... and skip.
+						continue
+					}
+					result = append(result, sr)
 					continue
 				}
-				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
-				}
-				if !resourceExists(resourceDBSchema, resource) {
-					// If table not found, we regard it as a CTE/alias/... and skip.
+
+				if !resourceExists(dbSchema, sr) {
+					// If table not found, skip.
 					continue
 				}
-				result = append(result, resource)
-				continue
-			}
 
-			if !resourceExists(dbSchema, resource) {
-				// If table not found, skip.
-				continue
+				result = append(result, sr)
 			}
-
-			result = append(result, resource)
 		}
 
 		return result, nil
@@ -466,9 +517,14 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		if dataSource == nil {
 			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
 		}
-		list, err := base.ExtractResourceList(engine, databaseName, "PUBLIC", statement)
+		spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(storeInstance),
+			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(storeInstance),
+			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(storeInstance, instance.Metadata.GetEngine()),
+		}, engine, statement, databaseName, "PUBLIC", !store.IsObjectCaseSensitive(instance))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+			return nil, err
 		}
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:      &instance.ResourceID,
@@ -492,37 +548,46 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		}
 
 		var result []base.SchemaResource
-		for _, resource := range list {
-			if resource.Database != dbSchema.GetMetadata().Name {
-				// Snowflake allows cross-database query, we should check the corresponding database.
-				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:      &instance.ResourceID,
-					DatabaseName:    &resource.Database,
-					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-				})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+		for _, span := range spans {
+			for sourceColumn := range span.SourceColumns {
+				sr := base.SchemaResource{
+					Database:     sourceColumn.Database,
+					Schema:       sourceColumn.Schema,
+					Table:        sourceColumn.Table,
+					LinkedServer: sourceColumn.Server,
 				}
-				if resourceDB == nil {
+				if sr.Database != dbSchema.GetMetadata().Name {
+					// Snowflake allows cross-database query, we should check the corresponding database.
+					resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+						InstanceID:      &instance.ResourceID,
+						DatabaseName:    &sr.Database,
+						IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+					})
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+					}
+					if resourceDB == nil {
+						continue
+					}
+					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+					}
+					if !resourceExists(resourceDBSchema, sr) {
+						// If table not found, we regard it as a CTE/alias/... and skip.
+						continue
+					}
+					result = append(result, sr)
 					continue
 				}
-				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
-				}
-				if !resourceExists(resourceDBSchema, resource) {
-					// If table not found, we regard it as a CTE/alias/... and skip.
+				if !resourceExists(dbSchema, sr) {
+					// If table not found, skip.
 					continue
 				}
-				result = append(result, resource)
-				continue
+				result = append(result, sr)
 			}
-			if !resourceExists(dbSchema, resource) {
-				// If table not found, skip.
-				continue
-			}
-			result = append(result, resource)
 		}
+
 		return result, nil
 	case storepb.Engine_MSSQL:
 		dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_READ_ONLY)
@@ -534,9 +599,14 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		if dataSource == nil {
 			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
 		}
-		list, err := base.ExtractResourceList(engine, databaseName, "dbo", statement)
+		spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(storeInstance),
+			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(storeInstance),
+			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(storeInstance, instance.Metadata.GetEngine()),
+		}, engine, statement, databaseName, "dbo", !store.IsObjectCaseSensitive(instance))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+			return nil, err
 		}
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:      &instance.ResourceID,
@@ -560,43 +630,56 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		}
 
 		var result []base.SchemaResource
-		for _, resource := range list {
-			if resource.LinkedServer != "" {
-				continue
-			}
-			if resource.Database != dbSchema.GetMetadata().Name {
-				// MSSQL allows cross-database query, we should check the corresponding database.
-				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:      &instance.ResourceID,
-					DatabaseName:    &resource.Database,
-					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-				})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
+		for _, span := range spans {
+			for sourceColumn := range span.SourceColumns {
+				sr := base.SchemaResource{
+					Database:     sourceColumn.Database,
+					Schema:       sourceColumn.Schema,
+					Table:        sourceColumn.Table,
+					LinkedServer: sourceColumn.Server,
 				}
-				if resourceDB == nil {
+
+				if sr.LinkedServer != "" {
 					continue
 				}
-				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
-				}
-				if !resourceExists(resourceDBSchema, resource) {
-					// If table not found, we regard it as a CTE/alias/... and skip.
+				if sr.Database != dbSchema.GetMetadata().Name {
+					// MSSQL allows cross-database query, we should check the corresponding database.
+					resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+						InstanceID:      &instance.ResourceID,
+						DatabaseName:    &sr.Database,
+						IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+					})
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+					}
+					if resourceDB == nil {
+						continue
+					}
+					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+					}
+					if !resourceExists(resourceDBSchema, sr) {
+						// If table not found, we regard it as a CTE/alias/... and skip.
+						continue
+					}
+					result = append(result, sr)
 					continue
 				}
-				result = append(result, resource)
-				continue
+				if !resourceExists(dbSchema, sr) {
+					// If table not found, skip.
+					continue
+				}
+				result = append(result, sr)
 			}
-			if !resourceExists(dbSchema, resource) {
-				// If table not found, skip.
-				continue
-			}
-			result = append(result, resource)
 		}
+
 		return result, nil
 	default:
-		return base.ExtractResourceList(engine, databaseName, "", statement)
+		if databaseName == "" {
+			return nil, errors.Errorf("database must be specified")
+		}
+		return []base.SchemaResource{{Database: databaseName}}, nil
 	}
 }
 

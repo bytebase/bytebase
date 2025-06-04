@@ -21,7 +21,6 @@ var (
 	mux                     sync.Mutex
 	queryValidators         = make(map[storepb.Engine]ValidateSQLForEditorFunc)
 	changedResourcesGetters = make(map[storepb.Engine]ExtractChangedResourcesFunc)
-	resourcesGetters        = make(map[storepb.Engine]ExtractResourceListFunc)
 	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
 	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
 	completers              = make(map[storepb.Engine]CompletionFunc)
@@ -34,7 +33,6 @@ var (
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
 type ExtractChangedResourcesFunc func(string, string, *model.DatabaseSchema, any, string) (*ChangeSummary, error)
-type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
 type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
@@ -70,23 +68,6 @@ func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, bool, 
 		return true, true, nil
 	}
 	return f(statement)
-}
-
-func RegisterExtractResourceListFunc(engine storepb.Engine, f ExtractResourceListFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := resourcesGetters[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	resourcesGetters[engine] = f
-}
-
-func ExtractResourceList(engine storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
-	f, ok := resourcesGetters[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(currentDatabase, currentSchema, sql)
 }
 
 func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChangedResourcesFunc) {

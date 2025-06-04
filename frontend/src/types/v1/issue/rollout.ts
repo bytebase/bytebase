@@ -48,7 +48,7 @@ export const TaskTypeListWithStatement: Task_Type[] = [
   Task_Type.DATABASE_SCHEMA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
-  Task_Type.DATABASE_DATA_EXPORT,
+  Task_Type.DATABASE_EXPORT,
 ];
 
 export interface ComposedTaskRun extends TaskRun {

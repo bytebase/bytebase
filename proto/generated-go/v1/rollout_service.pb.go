@@ -103,7 +103,7 @@ const (
 	// use payload DatabaseDataUpdate
 	Task_DATABASE_DATA_UPDATE Task_Type = 8
 	// use payload DatabaseDataExport
-	Task_DATABASE_DATA_EXPORT Task_Type = 12
+	Task_DATABASE_EXPORT Task_Type = 12
 )
 
 // Enum value maps for Task_Type.
@@ -116,7 +116,7 @@ var (
 		5:  "DATABASE_SCHEMA_UPDATE_SDL",
 		9:  "DATABASE_SCHEMA_UPDATE_GHOST",
 		8:  "DATABASE_DATA_UPDATE",
-		12: "DATABASE_DATA_EXPORT",
+		12: "DATABASE_EXPORT",
 	}
 	Task_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":             0,
@@ -126,7 +126,7 @@ var (
 		"DATABASE_SCHEMA_UPDATE_SDL":   5,
 		"DATABASE_SCHEMA_UPDATE_GHOST": 9,
 		"DATABASE_DATA_UPDATE":         8,
-		"DATABASE_DATA_EXPORT":         12,
+		"DATABASE_EXPORT":              12,
 	}
 )
 
@@ -3563,7 +3563,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x02id\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\x02id\x12 \n" +
 	"\venvironment\x18\x04 \x01(\tR\venvironment\x12'\n" +
 	"\x05tasks\x18\x05 \x03(\v2\x11.bytebase.v1.TaskR\x05tasks:M\xeaAJ\n" +
-	"\x12bytebase.com/Stage\x124projects/{project}/rollouts/{rollout}/stages/{stage}J\x04\b\x02\x10\x03\"\x96\f\n" +
+	"\x12bytebase.com/Stage\x124projects/{project}/rollouts/{rollout}/stages/{stage}J\x04\b\x02\x10\x03\"\x91\f\n" +
 	"\x04Task\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
 	"\aspec_id\x18\x04 \x01(\tR\x06specId\x120\n" +
@@ -3604,7 +3604,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06FAILED\x10\x05\x12\f\n" +
 	"\bCANCELED\x10\x06\x12\v\n" +
-	"\aSKIPPED\x10\a\"\xd0\x01\n" +
+	"\aSKIPPED\x10\a\"\xcb\x01\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aGENERAL\x10\x01\x12\x13\n" +
@@ -3612,8 +3612,8 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x16DATABASE_SCHEMA_UPDATE\x10\x04\x12\x1e\n" +
 	"\x1aDATABASE_SCHEMA_UPDATE_SDL\x10\x05\x12 \n" +
 	"\x1cDATABASE_SCHEMA_UPDATE_GHOST\x10\t\x12\x18\n" +
-	"\x14DATABASE_DATA_UPDATE\x10\b\x12\x18\n" +
-	"\x14DATABASE_DATA_EXPORT\x10\f:Y\xeaAV\n" +
+	"\x14DATABASE_DATA_UPDATE\x10\b\x12\x13\n" +
+	"\x0fDATABASE_EXPORT\x10\f:Y\xeaAV\n" +
 	"\x11bytebase.com/Task\x12Aprojects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}B\t\n" +
 	"\apayloadJ\x04\b\x02\x10\x03\"\xb9\x0f\n" +
 	"\aTaskRun\x12\x12\n" +

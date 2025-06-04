@@ -168,7 +168,7 @@ const overrideSearchScopeIdList = computed(() => {
 
 const mergedIssueFilter = computed(() => {
   return buildIssueFilterBySearchParams(dataExportIssueSearchParams.value, {
-    type: Issue_Type.DATABASE_DATA_EXPORT,
+    type: Issue_Type.DATABASE_EXPORT,
   });
 });
 

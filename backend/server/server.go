@@ -29,7 +29,6 @@ import (
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
@@ -51,6 +50,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -151,7 +151,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 	}
 	if err := migrator.MigrateSchema(ctx, pgURL); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to migrate schema")
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
@@ -164,7 +164,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	s.stateCfg, err = state.New()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to create state config")
 	}
 
 	if err := s.store.BackfillIssueTSVector(ctx); err != nil {
@@ -183,11 +183,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 	secret, err := s.store.GetSecret(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get secret")
 	}
 	s.iamManager, err = iam.NewManager(stores, s.licenseService)
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to reload iam cache")
 	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
@@ -228,11 +228,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
 	s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
-	s.taskSchedulerV2.Register(base.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
-	s.taskSchedulerV2.Register(base.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(base.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(base.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(base.TaskDatabaseSchemaUpdateGhost, taskrun.NewSchemaUpdateGhostExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
+	s.taskSchedulerV2.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
+	s.taskSchedulerV2.Register(storepb.Task_DATABASE_SCHEMA_UPDATE, taskrun.NewSchemaUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(storepb.Task_DATABASE_DATA_UPDATE, taskrun.NewDataUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, taskrun.NewSchemaUpdateGhostExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
 
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
 	databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(stores, s.dbFactory)
@@ -290,7 +290,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.lspServer = lsp.NewServer(s.store, profile)
 
 	if err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
@@ -300,7 +300,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Configure grpc prometheus metrics.
 	if err := prometheus.DefaultRegisterer.Register(srvMetrics); err != nil {
 		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to register prometheus metrics")
 		}
 	}
 	srvMetrics.InitializeMetrics(s.grpcServer)

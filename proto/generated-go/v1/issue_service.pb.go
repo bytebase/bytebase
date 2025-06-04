@@ -81,10 +81,10 @@ func (IssueStatus) EnumDescriptor() ([]byte, []int) {
 type Issue_Type int32
 
 const (
-	Issue_TYPE_UNSPECIFIED     Issue_Type = 0
-	Issue_DATABASE_CHANGE      Issue_Type = 1
-	Issue_GRANT_REQUEST        Issue_Type = 2
-	Issue_DATABASE_DATA_EXPORT Issue_Type = 3
+	Issue_TYPE_UNSPECIFIED Issue_Type = 0
+	Issue_DATABASE_CHANGE  Issue_Type = 1
+	Issue_GRANT_REQUEST    Issue_Type = 2
+	Issue_DATABASE_EXPORT  Issue_Type = 3
 )
 
 // Enum value maps for Issue_Type.
@@ -93,13 +93,13 @@ var (
 		0: "TYPE_UNSPECIFIED",
 		1: "DATABASE_CHANGE",
 		2: "GRANT_REQUEST",
-		3: "DATABASE_DATA_EXPORT",
+		3: "DATABASE_EXPORT",
 	}
 	Issue_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED":     0,
-		"DATABASE_CHANGE":      1,
-		"GRANT_REQUEST":        2,
-		"DATABASE_DATA_EXPORT": 3,
+		"TYPE_UNSPECIFIED": 0,
+		"DATABASE_CHANGE":  1,
+		"GRANT_REQUEST":    2,
+		"DATABASE_EXPORT":  3,
 	}
 )
 
@@ -2624,7 +2624,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x13RequestIssueRequest\x12/\n" +
 	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
-	"\acomment\x18\x02 \x01(\tR\acomment\"\x91\v\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"\x8c\v\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
@@ -2660,12 +2660,12 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\bREJECTED\x10\x03\x1aB\n" +
 	"\x14TaskStatusCountEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"^\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"Y\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CHANGE\x10\x01\x12\x11\n" +
-	"\rGRANT_REQUEST\x10\x02\x12\x18\n" +
-	"\x14DATABASE_DATA_EXPORT\x10\x03\"H\n" +
+	"\rGRANT_REQUEST\x10\x02\x12\x13\n" +
+	"\x0fDATABASE_EXPORT\x10\x03\"H\n" +
 	"\tRiskLevel\x12\x1a\n" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +

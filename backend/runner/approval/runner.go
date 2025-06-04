@@ -176,7 +176,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 
 	// Grant privilege and close issue similar to actions on issue approval.
-	if issue.Type == base.IssueGrantRequest && approvalTemplate == nil {
+	if issue.Type == storepb.Issue_GRANT_REQUEST && approvalTemplate == nil {
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
@@ -312,11 +312,11 @@ func (r *Runner) getIssueRisk(ctx context.Context, issue *store.IssueMessage, ri
 	})
 
 	switch issue.Type {
-	case base.IssueGrantRequest:
+	case storepb.Issue_GRANT_REQUEST:
 		return r.getGrantRequestIssueRisk(ctx, issue, risks)
-	case base.IssueDatabaseGeneral:
+	case storepb.Issue_DATABASE_CHANGE:
 		return r.getDatabaseGeneralIssueRisk(ctx, issue, risks)
-	case base.IssueDatabaseDataExport:
+	case storepb.Issue_DATABASE_EXPORT:
 		return r.getDatabaseDataExportIssueRisk(ctx, issue, risks)
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
@@ -435,7 +435,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 
 			var environmentID string
 			var databaseName string
-			if task.Type == base.TaskDatabaseCreate {
+			if task.Type == storepb.Task_DATABASE_CREATE {
 				databaseName = task.Payload.GetDatabaseName()
 				environmentID = task.Payload.GetEnvironmentId()
 			} else {
@@ -523,7 +523,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 	var maxRiskLevel int32
 	for _, stage := range pipelineCreate.Stages {
 		for _, task := range stage.TaskList {
-			if task.Type != base.TaskDatabaseDataExport {
+			if task.Type != storepb.Task_DATABASE_EXPORT {
 				continue
 			}
 			instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{

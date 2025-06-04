@@ -1074,7 +1074,7 @@ func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, sta
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
 func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, stage *store.StageMessage, creatorUID int) (bool, error) {
 	// For data export issues, only the creator can run tasks.
-	if issue != nil && issue.Type == base.IssueDatabaseDataExport {
+	if issue != nil && issue.Type == storepb.Issue_DATABASE_EXPORT {
 		return issue.Creator.ID == user.ID, nil
 	}
 

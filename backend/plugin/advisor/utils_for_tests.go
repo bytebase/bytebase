@@ -117,7 +117,7 @@ var (
 				},
 			},
 			{
-				Name: "bbdataarchive",
+				Name: "bbdataarchive", // MySQL backup database for testing
 			},
 		},
 	}
@@ -222,17 +222,15 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		}
 
 		checkCtx := SQLReviewCheckContext{
-			Charset:         "",
-			Collation:       "",
-			DBType:          dbType,
-			Catalog:         &testCatalog{finder: finder},
-			Driver:          nil,
-			CurrentDatabase: curDB,
-			DBSchema:        schemaMetadata,
-			ChangeType:      tc.ChangeType,
-			PreUpdateBackupDetail: &storepb.PreUpdateBackupDetail{
-				Database: "instances/instanceName/databases/bbdataarchive",
-			},
+			Charset:                  "",
+			Collation:                "",
+			DBType:                   dbType,
+			Catalog:                  &testCatalog{finder: finder},
+			Driver:                   nil,
+			CurrentDatabase:          curDB,
+			DBSchema:                 schemaMetadata,
+			ChangeType:               tc.ChangeType,
+			EnablePriorBackup:        true, // Enable backup for testing
 			NoAppendBuiltin:          true,
 			UsePostgresDatabaseOwner: true,
 		}

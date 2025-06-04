@@ -11,18 +11,13 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-)
-
-const (
-	// The database name to save temporary data for gh-ost.
-	// Use backup database name for now.
-	ghostDatabaseName = "bbdataarchive"
 )
 
 var (
@@ -60,6 +55,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 
 	// Check gh-ost database existence first if the change type is gh-ost.
 	if checkCtx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
+		ghostDatabaseName := base.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
 		if !advisor.DatabaseExists(ctx, checkCtx, ghostDatabaseName) {
 			return []*storepb.Advice{
 				{
@@ -78,7 +74,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	for _, stmt := range stmtList {
 		checker := &useGhostChecker{
 			currentDatabase:  checkCtx.CurrentDatabase,
-			changedResources: make(map[string]base.SchemaResource),
+			changedResources: make(map[string]parserbase.SchemaResource),
 			baseline:         int32(stmt.BaseLine),
 			checkCtx:         checkCtx,
 		}
@@ -153,7 +149,7 @@ type useGhostChecker struct {
 	checkCtx advisor.Context
 
 	currentDatabase  string
-	changedResources map[string]base.SchemaResource
+	changedResources map[string]parserbase.SchemaResource
 	ghostCompatible  bool
 
 	baseline int32
@@ -185,7 +181,7 @@ func (c *useGhostChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	resource := base.SchemaResource{
+	resource := parserbase.SchemaResource{
 		Database: c.currentDatabase,
 	}
 	db, table := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
