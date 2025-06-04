@@ -1,0 +1,1769 @@
+- input: |
+    CREATE TABLE dbo.users (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(255) NOT NULL,
+        email NVARCHAR(255) UNIQUE
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "name",
+                  "DefaultValue": null,
+                  "type": "NVARCHAR(255)"
+                },
+                {
+                  "name": "email",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(255)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_users_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UQ_users_2",
+                  "expressions": [
+                    "email"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.departments (
+        dept_id INT PRIMARY KEY,
+        dept_name NVARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE dbo.employees (
+        emp_id INT PRIMARY KEY,
+        emp_name NVARCHAR(100) NOT NULL,
+        dept_id INT,
+        CONSTRAINT FK_employees_departments FOREIGN KEY (dept_id)
+            REFERENCES dbo.departments(dept_id) ON DELETE CASCADE
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "departments",
+              "columns": [
+                {
+                  "name": "dept_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "dept_name",
+                  "DefaultValue": null,
+                  "type": "NVARCHAR(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_departments_1",
+                  "expressions": [
+                    "dept_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            },
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "emp_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "emp_name",
+                  "DefaultValue": null,
+                  "type": "NVARCHAR(100)"
+                },
+                {
+                  "name": "dept_id",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "INT"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_employees_2",
+                  "expressions": [
+                    "emp_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "FK_employees_departments",
+                  "columns": [
+                    "dept_id"
+                  ],
+                  "referenced_schema": "dbo",
+                  "referenced_table": "departments",
+                  "referenced_columns": [
+                    "dept_id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.products (
+        product_id INT PRIMARY KEY,
+        price DECIMAL(10,2),
+        CONSTRAINT CK_price_positive CHECK (price > 0)
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "product_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "price",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DECIMAL(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_products_1",
+                  "expressions": [
+                    "product_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "CK_price_positive",
+                  "expression": "price \u003e 0"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.products (
+        id INT PRIMARY KEY,
+        name NVARCHAR(255),
+        category NVARCHAR(50)
+    );
+
+    CREATE INDEX IX_products_category ON dbo.products (category);
+    CREATE UNIQUE INDEX UX_products_name ON dbo.products (name);
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "name",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(255)"
+                },
+                {
+                  "name": "category",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(50)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_products_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "IX_products_category",
+                  "expressions": [
+                    "category"
+                  ],
+                  "descending": [
+                    false
+                  ]
+                },
+                {
+                  "name": "UX_products_name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.orders (
+        order_id INT,
+        customer_id INT,
+        order_date DATETIME,
+        CONSTRAINT PK_orders PRIMARY KEY CLUSTERED (order_id)
+    );
+
+    CREATE NONCLUSTERED INDEX IX_orders_customer ON dbo.orders (customer_id);
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "order_id",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "INT"
+                },
+                {
+                  "name": "customer_id",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "INT"
+                },
+                {
+                  "name": "order_date",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DATETIME"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_orders",
+                  "expressions": [
+                    "order_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "CLUSTERED",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "IX_orders_customer",
+                  "expressions": [
+                    "customer_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE VIEW dbo.active_users AS
+    SELECT id, name, email
+    FROM users
+    WHERE is_active = 1;
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "views": [
+            {
+              "name": "active_users",
+              "definition": "CREATE VIEW dbo.active_users AS\nSELECT id, name, email\nFROM users\nWHERE is_active = 1;"
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE PROCEDURE dbo.GetUserById
+        @UserId INT
+    AS
+    BEGIN
+        SELECT * FROM users WHERE id = @UserId;
+    END;
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "procedures": [
+            {
+              "name": "GetUserById",
+              "definition": "CREATE PROCEDURE dbo.GetUserById\n    @UserId INT\nAS\nBEGIN\n    SELECT * FROM users WHERE id = @UserId;\nEND;"
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE FUNCTION dbo.GetFullName
+    (
+        @FirstName NVARCHAR(50),
+        @LastName NVARCHAR(50)
+    )
+    RETURNS NVARCHAR(101)
+    AS
+    BEGIN
+        RETURN @FirstName + ' ' + @LastName;
+    END;
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "functions": [
+            {
+              "name": "GetFullName",
+              "definition": "CREATE FUNCTION dbo.GetFullName\n(\n    @FirstName NVARCHAR(50),\n    @LastName NVARCHAR(50)\n)\nRETURNS NVARCHAR(101)\nAS\nBEGIN\n    RETURN @FirstName + ' ' + @LastName;\nEND;"
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE SEQUENCE dbo.OrderNumberSeq
+        AS INT
+        START WITH 1000
+        INCREMENT BY 1;
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "sequences": [
+            {
+              "name": "OrderNumberSeq",
+              "data_type": "INT"
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE SCHEMA sales;
+    CREATE SCHEMA hr;
+
+    CREATE TABLE sales.orders (
+        order_id INT PRIMARY KEY,
+        amount DECIMAL(10,2)
+    );
+
+    CREATE TABLE hr.employees (
+        emp_id INT PRIMARY KEY,
+        name NVARCHAR(100)
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "hr",
+          "tables": [
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "emp_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "name",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_employees_2",
+                  "expressions": [
+                    "emp_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "sales",
+          "tables": [
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "order_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "amount",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DECIMAL(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_orders_1",
+                  "expressions": [
+                    "order_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.settings (
+        id INT PRIMARY KEY,
+        created_at DATETIME DEFAULT GETDATE(),
+        is_active BIT DEFAULT 1,
+        status NVARCHAR(20) DEFAULT N'pending'
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "settings",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "created_at",
+                  "DefaultValue": {
+                    "DefaultExpression": "GETDATE()"
+                  },
+                  "nullable": true,
+                  "type": "DATETIME"
+                },
+                {
+                  "name": "is_active",
+                  "DefaultValue": {
+                    "DefaultExpression": "1"
+                  },
+                  "nullable": true,
+                  "type": "BIT"
+                },
+                {
+                  "name": "status",
+                  "DefaultValue": {
+                    "DefaultExpression": "N'pending'"
+                  },
+                  "nullable": true,
+                  "type": "NVARCHAR(20)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_settings_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.logs (
+        id INT PRIMARY KEY,
+        user_id INT,
+        action NVARCHAR(50),
+        timestamp DATETIME
+    );
+
+    CREATE INDEX IX_logs_user_action ON dbo.logs (user_id ASC, action DESC, timestamp DESC);
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "logs",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "user_id",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "INT"
+                },
+                {
+                  "name": "action",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(50)"
+                },
+                {
+                  "name": "timestamp",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DATETIME"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_logs_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "IX_logs_user_action",
+                  "expressions": [
+                    "user_id",
+                    "action",
+                    "timestamp"
+                  ],
+                  "descending": [
+                    false,
+                    true,
+                    true
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.test (
+        id INT NOT NULL PRIMARY KEY CLUSTERED,
+        email NVARCHAR(255) UNIQUE NONCLUSTERED
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "email",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(255)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_test_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "CLUSTERED",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UQ_test_2",
+                  "expressions": [
+                    "email"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED",
+                  "unique": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.test (
+        id INT CONSTRAINT PK_test_id PRIMARY KEY,
+        email NVARCHAR(255) CONSTRAINT UQ_test_email UNIQUE
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "email",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(255)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_test_id",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UQ_test_email",
+                  "expressions": [
+                    "email"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.customers (
+        customer_id INT IDENTITY(1,1) NOT NULL,
+        first_name VARCHAR(50) NOT NULL,
+        last_name VARCHAR(50) NOT NULL,
+        email VARCHAR(100),
+        phone VARCHAR(20),
+        address NVARCHAR(200),
+        city NVARCHAR(50),
+        state CHAR(2),
+        zip_code VARCHAR(10),
+        country VARCHAR(50) DEFAULT 'USA',
+        created_date DATETIME DEFAULT GETDATE(),
+        modified_date DATETIME,
+        is_active BIT DEFAULT 1,
+        credit_limit DECIMAL(10,2) DEFAULT 0.00,
+        CONSTRAINT PK_customers PRIMARY KEY CLUSTERED (customer_id),
+        CONSTRAINT UQ_customers_email UNIQUE (email),
+        CONSTRAINT CK_customers_credit_limit CHECK (credit_limit >= 0)
+    );
+
+    CREATE NONCLUSTERED INDEX IX_customers_name ON dbo.customers (last_name, first_name);
+    CREATE NONCLUSTERED INDEX IX_customers_email ON dbo.customers (email) WHERE email IS NOT NULL;
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "customers",
+              "columns": [
+                {
+                  "name": "customer_id",
+                  "DefaultValue": null,
+                  "type": "INT",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "first_name",
+                  "DefaultValue": null,
+                  "type": "VARCHAR(50)"
+                },
+                {
+                  "name": "last_name",
+                  "DefaultValue": null,
+                  "type": "VARCHAR(50)"
+                },
+                {
+                  "name": "email",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(100)"
+                },
+                {
+                  "name": "phone",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(20)"
+                },
+                {
+                  "name": "address",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(200)"
+                },
+                {
+                  "name": "city",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(50)"
+                },
+                {
+                  "name": "state",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "CHAR(2)"
+                },
+                {
+                  "name": "zip_code",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(10)"
+                },
+                {
+                  "name": "country",
+                  "DefaultValue": {
+                    "DefaultExpression": "'USA'"
+                  },
+                  "nullable": true,
+                  "type": "VARCHAR(50)"
+                },
+                {
+                  "name": "created_date",
+                  "DefaultValue": {
+                    "DefaultExpression": "GETDATE()"
+                  },
+                  "nullable": true,
+                  "type": "DATETIME"
+                },
+                {
+                  "name": "modified_date",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DATETIME"
+                },
+                {
+                  "name": "is_active",
+                  "DefaultValue": {
+                    "DefaultExpression": "1"
+                  },
+                  "nullable": true,
+                  "type": "BIT"
+                },
+                {
+                  "name": "credit_limit",
+                  "DefaultValue": {
+                    "DefaultExpression": "0.00"
+                  },
+                  "nullable": true,
+                  "type": "DECIMAL(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_customers",
+                  "expressions": [
+                    "customer_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "CLUSTERED",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UQ_customers_email",
+                  "expressions": [
+                    "email"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "IX_customers_name",
+                  "expressions": [
+                    "last_name",
+                    "first_name"
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "NONCLUSTERED"
+                },
+                {
+                  "name": "IX_customers_email",
+                  "expressions": [
+                    "email"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED"
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "CK_customers_credit_limit",
+                  "expression": "credit_limit \u003e= 0"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.inventory (
+        product_id INT NOT NULL,
+        warehouse_id INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 0,
+        last_updated DATETIME2 DEFAULT SYSDATETIME(),
+        CONSTRAINT PK_inventory PRIMARY KEY (product_id, warehouse_id),
+        CONSTRAINT CK_inventory_quantity CHECK (quantity >= 0)
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "inventory",
+              "columns": [
+                {
+                  "name": "product_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "warehouse_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "quantity",
+                  "DefaultValue": {
+                    "DefaultExpression": "0"
+                  },
+                  "type": "INT"
+                },
+                {
+                  "name": "last_updated",
+                  "DefaultValue": {
+                    "DefaultExpression": "SYSDATETIME()"
+                  },
+                  "nullable": true,
+                  "type": "DATETIME2"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_inventory",
+                  "expressions": [
+                    "product_id",
+                    "warehouse_id"
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "CK_inventory_quantity",
+                  "expression": "quantity \u003e= 0"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.audit_log (
+        log_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+        table_name SYSNAME NOT NULL,
+        operation CHAR(1) NOT NULL,
+        user_name NVARCHAR(128) DEFAULT SUSER_SNAME(),
+        timestamp DATETIME2 DEFAULT SYSDATETIME(),
+        old_values NVARCHAR(MAX),
+        new_values NVARCHAR(MAX),
+        CONSTRAINT CK_operation CHECK (operation IN ('I', 'U', 'D'))
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "audit_log",
+              "columns": [
+                {
+                  "name": "log_id",
+                  "DefaultValue": null,
+                  "type": "BIGINT",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "table_name",
+                  "DefaultValue": null,
+                  "type": "SYSNAME"
+                },
+                {
+                  "name": "operation",
+                  "DefaultValue": null,
+                  "type": "CHAR(1)"
+                },
+                {
+                  "name": "user_name",
+                  "DefaultValue": {
+                    "DefaultExpression": "SUSER_SNAME()"
+                  },
+                  "nullable": true,
+                  "type": "NVARCHAR(128)"
+                },
+                {
+                  "name": "timestamp",
+                  "DefaultValue": {
+                    "DefaultExpression": "SYSDATETIME()"
+                  },
+                  "nullable": true,
+                  "type": "DATETIME2"
+                },
+                {
+                  "name": "old_values",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(MAX)"
+                },
+                {
+                  "name": "new_values",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(MAX)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_audit_log_1",
+                  "expressions": [
+                    "log_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "CK_operation",
+                  "expression": "operation IN ('I', 'U', 'D')"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.documents (
+        doc_id UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
+        title NVARCHAR(200) NOT NULL,
+        content NVARCHAR(MAX),
+        file_data VARBINARY(MAX),
+        file_name NVARCHAR(255),
+        file_size BIGINT,
+        mime_type VARCHAR(100),
+        created_by INT NOT NULL,
+        created_date DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
+        version INT DEFAULT 1,
+        is_published BIT DEFAULT 0
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "documents",
+              "columns": [
+                {
+                  "name": "doc_id",
+                  "DefaultValue": {
+                    "DefaultExpression": "NEWID()"
+                  },
+                  "type": "UNIQUEIDENTIFIER"
+                },
+                {
+                  "name": "title",
+                  "DefaultValue": null,
+                  "type": "NVARCHAR(200)"
+                },
+                {
+                  "name": "content",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(MAX)"
+                },
+                {
+                  "name": "file_data",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARBINARY(MAX)"
+                },
+                {
+                  "name": "file_name",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(255)"
+                },
+                {
+                  "name": "file_size",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "BIGINT"
+                },
+                {
+                  "name": "mime_type",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(100)"
+                },
+                {
+                  "name": "created_by",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "created_date",
+                  "DefaultValue": {
+                    "DefaultExpression": "SYSDATETIMEOFFSET()"
+                  },
+                  "nullable": true,
+                  "type": "DATETIMEOFFSET"
+                },
+                {
+                  "name": "version",
+                  "DefaultValue": {
+                    "DefaultExpression": "1"
+                  },
+                  "nullable": true,
+                  "type": "INT"
+                },
+                {
+                  "name": "is_published",
+                  "DefaultValue": {
+                    "DefaultExpression": "0"
+                  },
+                  "nullable": true,
+                  "type": "BIT"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_documents_1",
+                  "expressions": [
+                    "doc_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.hierarchical_data (
+        node_id INT IDENTITY(1,1) PRIMARY KEY,
+        parent_id INT NULL,
+        node_name NVARCHAR(100) NOT NULL,
+        node_path HIERARCHYID,
+        level AS node_path.GetLevel(),
+        CONSTRAINT FK_hierarchical_self FOREIGN KEY (parent_id)
+            REFERENCES dbo.hierarchical_data(node_id)
+    );
+
+    CREATE INDEX IX_hierarchical_path ON dbo.hierarchical_data (node_path);
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "hierarchical_data",
+              "columns": [
+                {
+                  "name": "node_id",
+                  "DefaultValue": null,
+                  "type": "INT",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "parent_id",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "INT"
+                },
+                {
+                  "name": "node_name",
+                  "DefaultValue": null,
+                  "type": "NVARCHAR(100)"
+                },
+                {
+                  "name": "node_path",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "HIERARCHYID"
+                },
+                {
+                  "name": "level",
+                  "DefaultValue": null,
+                  "nullable": true
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_hierarchical_data_1",
+                  "expressions": [
+                    "node_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "IX_hierarchical_path",
+                  "expressions": [
+                    "node_path"
+                  ],
+                  "descending": [
+                    false
+                  ]
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "FK_hierarchical_self",
+                  "columns": [
+                    "parent_id"
+                  ],
+                  "referenced_schema": "dbo",
+                  "referenced_table": "hierarchical_data",
+                  "referenced_columns": [
+                    "node_id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.edge_cases (
+        [Column With Spaces] INT,
+        [Column-With-Dashes] NVARCHAR(50),
+        [Column.With.Dots] VARCHAR(100),
+        [列名] NVARCHAR(50),
+        [SELECT] INT,
+        [FROM] VARCHAR(50),
+        [WHERE] BIT
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "edge_cases",
+              "columns": [
+                {
+                  "name": "Column With Spaces",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "INT"
+                },
+                {
+                  "name": "Column-With-Dashes",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(50)"
+                },
+                {
+                  "name": "Column.With.Dots",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(100)"
+                },
+                {
+                  "name": "列名",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(50)"
+                },
+                {
+                  "name": "SELECT",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "INT"
+                },
+                {
+                  "name": "FROM",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(50)"
+                },
+                {
+                  "name": "WHERE",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "BIT"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.all_data_types (
+        -- Exact numerics
+        col_bit BIT,
+        col_tinyint TINYINT,
+        col_smallint SMALLINT,
+        col_int INT,
+        col_bigint BIGINT,
+        col_decimal DECIMAL(18,4),
+        col_numeric NUMERIC(15,2),
+        col_smallmoney SMALLMONEY,
+        col_money MONEY,
+
+        -- Approximate numerics
+        col_float FLOAT,
+        col_real REAL,
+
+        -- Date and time
+        col_date DATE,
+        col_time TIME,
+        col_datetime DATETIME,
+        col_datetime2 DATETIME2,
+        col_smalldatetime SMALLDATETIME,
+        col_datetimeoffset DATETIMEOFFSET,
+
+        -- Character strings
+        col_char CHAR(10),
+        col_varchar VARCHAR(50),
+        col_varchar_max VARCHAR(MAX),
+        col_text TEXT,
+
+        -- Unicode character strings
+        col_nchar NCHAR(10),
+        col_nvarchar NVARCHAR(50),
+        col_nvarchar_max NVARCHAR(MAX),
+        col_ntext NTEXT,
+
+        -- Binary strings
+        col_binary BINARY(10),
+        col_varbinary VARBINARY(50),
+        col_varbinary_max VARBINARY(MAX),
+        col_image IMAGE,
+
+        -- Other data types
+        col_uniqueidentifier UNIQUEIDENTIFIER,
+        col_xml XML,
+        col_timestamp TIMESTAMP,
+        col_hierarchyid HIERARCHYID,
+        col_geography GEOGRAPHY,
+        col_geometry GEOMETRY,
+        col_sql_variant SQL_VARIANT
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "all_data_types",
+              "columns": [
+                {
+                  "name": "col_bit",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "BIT"
+                },
+                {
+                  "name": "col_tinyint",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "TINYINT"
+                },
+                {
+                  "name": "col_smallint",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "SMALLINT"
+                },
+                {
+                  "name": "col_int",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "INT"
+                },
+                {
+                  "name": "col_bigint",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "BIGINT"
+                },
+                {
+                  "name": "col_decimal",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DECIMAL(18,4)"
+                },
+                {
+                  "name": "col_numeric",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NUMERIC(15,2)"
+                },
+                {
+                  "name": "col_smallmoney",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "SMALLMONEY"
+                },
+                {
+                  "name": "col_money",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "MONEY"
+                },
+                {
+                  "name": "col_float",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "FLOAT"
+                },
+                {
+                  "name": "col_real",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "REAL"
+                },
+                {
+                  "name": "col_date",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DATE"
+                },
+                {
+                  "name": "col_time",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "TIME"
+                },
+                {
+                  "name": "col_datetime",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DATETIME"
+                },
+                {
+                  "name": "col_datetime2",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DATETIME2"
+                },
+                {
+                  "name": "col_smalldatetime",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "SMALLDATETIME"
+                },
+                {
+                  "name": "col_datetimeoffset",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DATETIMEOFFSET"
+                },
+                {
+                  "name": "col_char",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "CHAR(10)"
+                },
+                {
+                  "name": "col_varchar",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(50)"
+                },
+                {
+                  "name": "col_varchar_max",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(MAX)"
+                },
+                {
+                  "name": "col_text",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "TEXT"
+                },
+                {
+                  "name": "col_nchar",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NCHAR(10)"
+                },
+                {
+                  "name": "col_nvarchar",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(50)"
+                },
+                {
+                  "name": "col_nvarchar_max",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(MAX)"
+                },
+                {
+                  "name": "col_ntext",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NTEXT"
+                },
+                {
+                  "name": "col_binary",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "BINARY(10)"
+                },
+                {
+                  "name": "col_varbinary",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARBINARY(50)"
+                },
+                {
+                  "name": "col_varbinary_max",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARBINARY(MAX)"
+                },
+                {
+                  "name": "col_image",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "IMAGE"
+                },
+                {
+                  "name": "col_uniqueidentifier",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "UNIQUEIDENTIFIER"
+                },
+                {
+                  "name": "col_xml",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "XML"
+                },
+                {
+                  "name": "col_timestamp",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "TIMESTAMP"
+                },
+                {
+                  "name": "col_hierarchyid",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "HIERARCHYID"
+                },
+                {
+                  "name": "col_geography",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "GEOGRAPHY"
+                },
+                {
+                  "name": "col_geometry",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "GEOMETRY"
+                },
+                {
+                  "name": "col_sql_variant",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "SQL_VARIANT"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.collation_test (
+        id INT PRIMARY KEY,
+        case_sensitive VARCHAR(50) COLLATE Latin1_General_CS_AS,
+        case_insensitive VARCHAR(50) COLLATE Latin1_General_CI_AS,
+        accent_sensitive NVARCHAR(50) COLLATE Latin1_General_CI_AS,
+        accent_insensitive NVARCHAR(50) COLLATE Latin1_General_CI_AI,
+        binary_sort VARCHAR(50) COLLATE Latin1_General_BIN2
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "collation_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "case_sensitive",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(50)",
+                  "collation": "Latin1_General_CS_AS"
+                },
+                {
+                  "name": "case_insensitive",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(50)",
+                  "collation": "Latin1_General_CI_AS"
+                },
+                {
+                  "name": "accent_sensitive",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(50)",
+                  "collation": "Latin1_General_CI_AS"
+                },
+                {
+                  "name": "accent_insensitive",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "NVARCHAR(50)",
+                  "collation": "Latin1_General_CI_AI"
+                },
+                {
+                  "name": "binary_sort",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "VARCHAR(50)",
+                  "collation": "Latin1_General_BIN2"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_collation_test_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
