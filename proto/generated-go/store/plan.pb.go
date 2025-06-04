@@ -632,7 +632,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\x1a\x1astore/plan_check_run.proto\"\x88\r\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\x88\r\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
@@ -735,7 +735,6 @@ func file_store_plan_proto_init() {
 		return
 	}
 	file_store_common_proto_init()
-	file_store_plan_check_run_proto_init()
 	file_store_plan_proto_msgTypes[1].OneofWrappers = []any{
 		(*PlanConfig_Spec_CreateDatabaseConfig)(nil),
 		(*PlanConfig_Spec_ChangeDatabaseConfig)(nil),
