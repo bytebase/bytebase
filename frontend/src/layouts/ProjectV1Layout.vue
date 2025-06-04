@@ -74,6 +74,7 @@ import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.v
 import {
   PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_MEMBERS,
 } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
@@ -217,6 +218,7 @@ const quickActionListForDatabase = computed(() => {
 const quickActionList = computed(() => {
   switch (route.name) {
     case PROJECT_V1_ROUTE_DATABASES:
+    case PROJECT_V1_ROUTE_MEMBERS:
       return quickActionListForDatabase.value;
   }
   return [];
