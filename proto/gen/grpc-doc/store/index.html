@@ -1351,17 +1351,21 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.TaskPayload"><span class="badge">M</span>TaskPayload</a>
+                  <a href="#bytebase.store.Task"><span class="badge">M</span>Task</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.TaskPayload.FlagsEntry"><span class="badge">M</span>TaskPayload.FlagsEntry</a>
+                  <a href="#bytebase.store.Task.FlagsEntry"><span class="badge">M</span>Task.FlagsEntry</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.TaskReleaseSource"><span class="badge">M</span>TaskReleaseSource</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.Task.Type"><span class="badge">E</span>Task.Type</a>
+                </li>
               
               
               
@@ -11802,7 +11806,7 @@ Default to this mode.</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.store.TaskPayload">TaskPayload</h3>
+        <h3 id="bytebase.store.Task">Task</h3>
         <p></p>
 
         
@@ -11891,7 +11895,7 @@ Default to this mode.</p></td>
               
                 <tr>
                   <td>flags</td>
-                  <td><a href="#bytebase.store.TaskPayload.FlagsEntry">TaskPayload.FlagsEntry</a></td>
+                  <td><a href="#bytebase.store.Task.FlagsEntry">Task.FlagsEntry</a></td>
                   <td>repeated</td>
                   <td><p>ghost flags. </p></td>
                 </tr>
@@ -11924,7 +11928,7 @@ Default to this mode.</p></td>
 
         
       
-        <h3 id="bytebase.store.TaskPayload.FlagsEntry">TaskPayload.FlagsEntry</h3>
+        <h3 id="bytebase.store.Task.FlagsEntry">Task.FlagsEntry</h3>
         <p></p>
 
         
@@ -11980,6 +11984,53 @@ Default to this mode.</p></td>
         
       
 
+      
+        <h3 id="bytebase.store.Task.Type">Task.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TASK_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_CREATE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_SCHEMA_UPDATE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_SCHEMA_UPDATE_GHOST</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_DATA_UPDATE</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_EXPORT</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       

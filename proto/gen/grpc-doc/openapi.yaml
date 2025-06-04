@@ -13604,7 +13604,7 @@ components:
                         - DATABASE_SCHEMA_UPDATE_SDL
                         - DATABASE_SCHEMA_UPDATE_GHOST
                         - DATABASE_DATA_UPDATE
-                        - DATABASE_DATA_EXPORT
+                        - DATABASE_EXPORT
                     type: string
                     format: enum
                 target:

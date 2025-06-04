@@ -165,8 +165,8 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			InstanceID:    instance.ResourceID,
 			DatabaseName:  &databaseName,
 			EnvironmentID: effectiveEnvironmentID,
-			Type:          base.TaskDatabaseCreate,
-			Payload: &storepb.TaskPayload{
+			Type:          storepb.Task_DATABASE_CREATE,
+			Payload: &storepb.Task{
 				SpecId:        spec.Id,
 				CharacterSet:  c.CharacterSet,
 				TableName:     c.Table,
@@ -265,7 +265,7 @@ func getTaskCreatesFromExportDataConfig(
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 	}
-	payload := &storepb.TaskPayload{
+	payload := &storepb.Task{
 		SpecId:  spec.Id,
 		SheetId: int32(sheetUID),
 		Format:  c.Format,
@@ -280,7 +280,7 @@ func getTaskCreatesFromExportDataConfig(
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          base.TaskDatabaseDataExport,
+			Type:          storepb.Task_DATABASE_EXPORT,
 			Payload:       payload,
 		})
 	}
@@ -302,8 +302,8 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          base.TaskDatabaseSchemaUpdate,
-			Payload: &storepb.TaskPayload{
+			Type:          storepb.Task_DATABASE_SCHEMA_UPDATE,
+			Payload: &storepb.Task{
 				SpecId:  spec.Id,
 				SheetId: int32(sheetUID),
 			},
@@ -322,8 +322,8 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          base.TaskDatabaseSchemaUpdateGhost,
-			Payload: &storepb.TaskPayload{
+			Type:          storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
+			Payload: &storepb.Task{
 				SpecId:  spec.Id,
 				SheetId: int32(sheetUID),
 				Flags:   c.GhostFlags,
@@ -340,8 +340,8 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          base.TaskDatabaseDataUpdate,
-			Payload: &storepb.TaskPayload{
+			Type:          storepb.Task_DATABASE_DATA_UPDATE,
+			Payload: &storepb.Task{
 				SpecId:            spec.Id,
 				SheetId:           int32(sheetUID),
 				EnablePriorBackup: c.EnablePriorBackup,
@@ -408,31 +408,30 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 			}
 
 			// Determine task type based on file change type
-			var taskType base.TaskType
+			var taskType storepb.Task_Type
 			switch file.ChangeType {
 			case storepb.ReleasePayload_File_DDL, storepb.ReleasePayload_File_CHANGE_TYPE_UNSPECIFIED:
-				taskType = base.TaskDatabaseSchemaUpdate
+				taskType = storepb.Task_DATABASE_SCHEMA_UPDATE
 			case storepb.ReleasePayload_File_DDL_GHOST:
-				taskType = base.TaskDatabaseSchemaUpdateGhost
+				taskType = storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST
 			case storepb.ReleasePayload_File_DML:
-				taskType = base.TaskDatabaseDataUpdate
+				taskType = storepb.Task_DATABASE_DATA_UPDATE
 			default:
 				return nil, errors.Errorf("unsupported release file change type %q", file.ChangeType)
 			}
 
 			// Create task payload
-			payload := &storepb.TaskPayload{
+			payload := &storepb.Task{
 				SpecId:  spec.Id,
 				SheetId: int32(sheetUID),
 			}
 
 			// Add ghost flags if this is a ghost migration
-			if taskType == base.TaskDatabaseSchemaUpdateGhost && c.GhostFlags != nil {
+			if taskType == storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST && c.GhostFlags != nil {
 				payload.Flags = c.GhostFlags
 			}
 
-			// Add pre-update backup detail for DML
-			if taskType == base.TaskDatabaseDataUpdate {
+			if taskType == storepb.Task_DATABASE_DATA_UPDATE {
 				payload.EnablePriorBackup = c.EnablePriorBackup
 			}
 

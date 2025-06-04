@@ -291,9 +291,11 @@
     - [SheetPayload](#bytebase-store-SheetPayload)
   
 - [store/task.proto](#store_task-proto)
-    - [TaskPayload](#bytebase-store-TaskPayload)
-    - [TaskPayload.FlagsEntry](#bytebase-store-TaskPayload-FlagsEntry)
+    - [Task](#bytebase-store-Task)
+    - [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry)
     - [TaskReleaseSource](#bytebase-store-TaskReleaseSource)
+  
+    - [Task.Type](#bytebase-store-Task-Type)
   
 - [store/task_run.proto](#store_task_run-proto)
     - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
@@ -4583,9 +4585,9 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
-<a name="bytebase-store-TaskPayload"></a>
+<a name="bytebase-store-Task"></a>
 
-### TaskPayload
+### Task
 
 
 
@@ -4602,7 +4604,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | collation | [string](#string) |  |  |
 | schema_version | [string](#string) |  | Update database fields. |
 | enable_prior_backup | [bool](#bool) |  |  |
-| flags | [TaskPayload.FlagsEntry](#bytebase-store-TaskPayload-FlagsEntry) | repeated | ghost flags. |
+| flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | ghost flags. |
 | task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  |  |
 | password | [string](#string) |  | Export data fields. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  |  |
@@ -4612,9 +4614,9 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
-<a name="bytebase-store-TaskPayload-FlagsEntry"></a>
+<a name="bytebase-store-Task-FlagsEntry"></a>
 
-### TaskPayload.FlagsEntry
+### Task.FlagsEntry
 
 
 
@@ -4643,6 +4645,22 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
  
+
+
+<a name="bytebase-store-Task-Type"></a>
+
+### Task.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TASK_TYPE_UNSPECIFIED | 0 |  |
+| DATABASE_CREATE | 1 |  |
+| DATABASE_SCHEMA_UPDATE | 2 |  |
+| DATABASE_SCHEMA_UPDATE_GHOST | 3 |  |
+| DATABASE_DATA_UPDATE | 4 |  |
+| DATABASE_EXPORT | 5 |  |
+
 
  
 

@@ -1,5 +1,3 @@
-import { NButton } from "naive-ui";
-import { h } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   useDatabaseV1Store,
@@ -9,11 +7,11 @@ import {
 } from "@/store";
 import type { ComposedDatabase, ComposedIssue, ComposedProject } from "@/types";
 import {
+  isValidDatabaseName,
+  isValidInstanceName,
   unknownDatabase,
   unknownEnvironment,
   unknownInstance,
-  isValidDatabaseName,
-  isValidInstanceName,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -25,6 +23,8 @@ import {
   flattenTaskV1List,
   isValidIssueName,
 } from "@/utils";
+import { NButton } from "naive-ui";
+import { h } from "vue";
 import type { IssueContext } from "./context";
 
 export const projectOfIssue = (issue: ComposedIssue): ComposedProject =>
@@ -40,7 +40,7 @@ export const useInstanceForTask = (task: Task) => {
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
     case Task_Type.DATABASE_DATA_UPDATE:
-    case Task_Type.DATABASE_DATA_EXPORT:
+    case Task_Type.DATABASE_EXPORT:
       instanceName = extractDatabaseResourceName(task.target).instance;
       break;
     default:

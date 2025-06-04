@@ -18,7 +18,7 @@ export const databaseForTask = (project: ComposedProject, task: Task) => {
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
     case Task_Type.DATABASE_DATA_UPDATE:
-    case Task_Type.DATABASE_DATA_EXPORT:
+    case Task_Type.DATABASE_EXPORT:
       const db = useDatabaseV1Store().getDatabaseByName(task.target);
       if (!isValidDatabaseName(db.name)) {
         return mockDatabase(project, task.target);

@@ -388,7 +388,7 @@ message Task {
     // use payload DatabaseDataUpdate
     DATABASE_DATA_UPDATE = 8;
     // use payload DatabaseDataExport
-    DATABASE_DATA_EXPORT = 12;
+    DATABASE_EXPORT = 12;
   }
   Type type = 6;
 
