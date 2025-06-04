@@ -15,7 +15,11 @@
       </div>
     </div>
     <div class="w-full flex flex-col gap-8">
-      <NRadioGroup :value="mode" @update:value="$emit('update:mode', $event)">
+      <NRadioGroup
+        :disabled="disabled"
+        :value="mode"
+        @update:value="$emit('update:mode', $event)"
+      >
         <NSpace vertical size="large">
           <NRadio :value="DatabaseChangeMode.PIPELINE">
             <div class="flex flex-col gap-1">
@@ -64,9 +68,13 @@ import { NRadio, NRadioGroup, NSpace } from "naive-ui";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 
-defineProps<{
-  mode: DatabaseChangeMode;
-}>();
+withDefaults(
+  defineProps<{
+    mode: DatabaseChangeMode;
+    disabled?: boolean;
+  }>(),
+  { disabled: false }
+);
 
 defineEmits<{
   (event: "update:mode", mode: DatabaseChangeMode): void;

@@ -357,11 +357,13 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             case "resource.database": {
               // should parse for next database.
               if (databaseResource.databaseFullName !== "") {
-                conditionExpression.databaseResources?.push(databaseResource);
+                conditionExpression.databaseResources?.push({
+                  ...databaseResource,
+                });
+                databaseResource = {
+                  databaseFullName: "",
+                };
               }
-              databaseResource = {
-                databaseFullName: "",
-              };
             }
           }
           switch (left) {

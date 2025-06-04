@@ -159,7 +159,7 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
               <NTooltip>
                 {{
                   trigger: () => <InfoIcon class="w-4 text-red-600" />,
-                  default: t("database.not-found"),
+                  default: () => t("database.not-found"),
                 }}
               </NTooltip>
             )}
