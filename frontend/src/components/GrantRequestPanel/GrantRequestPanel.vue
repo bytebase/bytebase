@@ -13,7 +13,7 @@
       <div class="w-full mx-auto space-y-4">
         <AddProjectMemberForm
           ref="formRef"
-          class="w-full border-b mb-4 pb-4"
+          class="w-full"
           :project-name="projectName"
           :binding="state.binding"
           :allow-remove="false"

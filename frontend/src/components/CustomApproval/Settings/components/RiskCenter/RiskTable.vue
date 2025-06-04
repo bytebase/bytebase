@@ -13,10 +13,11 @@ import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { SpinnerButton, SpinnerSwitch } from "@/components/v2/Form";
 import { pushNotification, useRiskStore } from "@/store";
 import type { Risk } from "@/types/proto/v1/risk_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { SpinnerButton, SpinnerSwitch, levelText } from "../common";
+import { levelText } from "../common";
 import { useRiskCenterContext } from "./context";
 
 defineProps<{
@@ -62,14 +63,15 @@ const columns = computed((): DataTableColumn<Risk>[] => {
           <NButton size="small" onClick={() => editRisk(risk)}>
             {allowUpdateRisk.value ? t("common.edit") : t("common.view")}
           </NButton>
-          <SpinnerButton
-            size="small"
-            tooltip={t("custom-approval.risk-rule.delete")}
-            disabled={!allowDeleteRisk.value}
-            onConfirm={() => deleteRisk(risk)}
-          >
-            {t("common.delete")}
-          </SpinnerButton>
+          {allowDeleteRisk.value && (
+            <SpinnerButton
+              size="small"
+              tooltip={t("custom-approval.risk-rule.delete")}
+              onConfirm={() => deleteRisk(risk)}
+            >
+              {t("common.delete")}
+            </SpinnerButton>
+          )}
         </div>
       ),
     },

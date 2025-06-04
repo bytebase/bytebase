@@ -124,7 +124,7 @@ const columns = computed(
         render: (review: SQLReviewPolicy) => {
           return (
             <div class="flex items-center gap-x-2">
-              <NButton onClick={() => emit("edit", review)}>
+              <NButton size="small" onClick={() => emit("edit", review)}>
                 {hasUpdatePolicyPermission.value
                   ? t("common.edit")
                   : t("common.view")}
@@ -132,6 +132,7 @@ const columns = computed(
               {hasDeletePolicyPermission.value && (
                 <BBButtonConfirm
                   text={false}
+                  size={"small"}
                   type={"DELETE"}
                   hideIcon={true}
                   buttonText={t("common.delete")}
