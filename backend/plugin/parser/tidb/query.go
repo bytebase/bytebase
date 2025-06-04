@@ -1,8 +1,6 @@
 package tidb
 
 import (
-	"sort"
-
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/model"
 
@@ -12,7 +10,6 @@ import (
 
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_TIDB, validateQuery)
-	base.RegisterExtractResourceListFunc(storepb.Engine_TIDB, ExtractResourceList)
 }
 
 // validateQuery validates the SQL statement for SQL editor.
@@ -43,42 +40,6 @@ func validateQuery(statement string) (bool, bool, error) {
 		}
 	}
 	return readOnly, !hasExecute, nil
-}
-
-func ExtractResourceList(currentDatabase string, _, sql string) ([]base.SchemaResource, error) {
-	nodes, err := ParseTiDB(sql, "", "")
-	if err != nil {
-		return nil, err
-	}
-
-	resourceMap := make(map[string]base.SchemaResource)
-
-	for _, node := range nodes {
-		tableList := ExtractMySQLTableList(node, false /* asName */)
-		for _, table := range tableList {
-			resource := base.SchemaResource{
-				Database: table.Schema.O,
-				Schema:   "",
-				Table:    table.Name.O,
-			}
-			if resource.Database == "" {
-				resource.Database = currentDatabase
-			}
-			if _, ok := resourceMap[resource.String()]; !ok {
-				resourceMap[resource.String()] = resource
-			}
-		}
-	}
-
-	resourceList := make([]base.SchemaResource, 0, len(resourceMap))
-	for _, resource := range resourceMap {
-		resourceList = append(resourceList, resource)
-	}
-	sort.Slice(resourceList, func(i, j int) bool {
-		return resourceList[i].String() < resourceList[j].String()
-	})
-
-	return resourceList, nil
 }
 
 // ExtractMySQLTableList extracts all the TableNames from node.
