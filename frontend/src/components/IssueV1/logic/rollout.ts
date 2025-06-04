@@ -1,9 +1,8 @@
-import { head } from "lodash-es";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { t } from "@/plugins/i18n";
-import { useCurrentUserV1, extractUserId } from "@/store";
+import { extractUserId, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import { Issue_Type, IssueStatus } from "@/types/proto/v1/issue_service";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import {
@@ -12,7 +11,8 @@ import {
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import { extractDatabaseGroupName, hasProjectPermissionV2 } from "@/utils";
-import { specForTask, projectOfIssue } from ".";
+import { head } from "lodash-es";
+import { projectOfIssue, specForTask } from ".";
 
 export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   const spec = specForTask(issue.planEntity, task);
@@ -34,7 +34,7 @@ export const allowUserToEditStatementForTask = (
 
   if (
     issue.type !== Issue_Type.DATABASE_CHANGE &&
-    issue.type !== Issue_Type.DATABASE_DATA_EXPORT
+    issue.type !== Issue_Type.DATABASE_EXPORT
   ) {
     denyReasons.push("Only database related issue type can be changed");
   }

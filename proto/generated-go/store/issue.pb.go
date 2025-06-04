@@ -23,6 +23,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Issue_Type int32
+
+const (
+	Issue_ISSUE_TYPE_UNSPECIFIED Issue_Type = 0
+	Issue_DATABASE_CHANGE        Issue_Type = 1
+	Issue_GRANT_REQUEST          Issue_Type = 2
+	Issue_DATABASE_EXPORT        Issue_Type = 3
+)
+
+// Enum value maps for Issue_Type.
+var (
+	Issue_Type_name = map[int32]string{
+		0: "ISSUE_TYPE_UNSPECIFIED",
+		1: "DATABASE_CHANGE",
+		2: "GRANT_REQUEST",
+		3: "DATABASE_EXPORT",
+	}
+	Issue_Type_value = map[string]int32{
+		"ISSUE_TYPE_UNSPECIFIED": 0,
+		"DATABASE_CHANGE":        1,
+		"GRANT_REQUEST":          2,
+		"DATABASE_EXPORT":        3,
+	}
+)
+
+func (x Issue_Type) Enum() *Issue_Type {
+	p := new(Issue_Type)
+	*p = x
+	return p
+}
+
+func (x Issue_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Issue_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_issue_proto_enumTypes[0].Descriptor()
+}
+
+func (Issue_Type) Type() protoreflect.EnumType {
+	return &file_store_issue_proto_enumTypes[0]
+}
+
+func (x Issue_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Issue_Type.Descriptor instead.
+func (Issue_Type) EnumDescriptor() ([]byte, []int) {
+	return file_store_issue_proto_rawDescGZIP(), []int{0, 0}
+}
+
 type Issue_Status int32
 
 const (
@@ -59,11 +111,11 @@ func (x Issue_Status) String() string {
 }
 
 func (Issue_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_issue_proto_enumTypes[0].Descriptor()
+	return file_store_issue_proto_enumTypes[1].Descriptor()
 }
 
 func (Issue_Status) Type() protoreflect.EnumType {
-	return &file_store_issue_proto_enumTypes[0]
+	return &file_store_issue_proto_enumTypes[1]
 }
 
 func (x Issue_Status) Number() protoreflect.EnumNumber {
@@ -72,7 +124,7 @@ func (x Issue_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Issue_Status.Descriptor instead.
 func (Issue_Status) EnumDescriptor() ([]byte, []int) {
-	return file_store_issue_proto_rawDescGZIP(), []int{0, 0}
+	return file_store_issue_proto_rawDescGZIP(), []int{0, 1}
 }
 
 type Issue struct {
@@ -211,11 +263,16 @@ var File_store_issue_proto protoreflect.FileDescriptor
 
 const file_store_issue_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\"\xee\x01\n" +
+	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\"\xcf\x02\n" +
 	"\x05Issue\x12@\n" +
 	"\bapproval\x18\x01 \x01(\v2$.bytebase.store.IssuePayloadApprovalR\bapproval\x12A\n" +
 	"\rgrant_request\x18\x02 \x01(\v2\x1c.bytebase.store.GrantRequestR\fgrantRequest\x12\x16\n" +
-	"\x06labels\x18\x03 \x03(\tR\x06labels\"H\n" +
+	"\x06labels\x18\x03 \x03(\tR\x06labels\"_\n" +
+	"\x04Type\x12\x1a\n" +
+	"\x16ISSUE_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fDATABASE_CHANGE\x10\x01\x12\x11\n" +
+	"\rGRANT_REQUEST\x10\x02\x12\x13\n" +
+	"\x0fDATABASE_EXPORT\x10\x03\"H\n" +
 	"\x06Status\x12\x1c\n" +
 	"\x18ISSUE_STATUS_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04OPEN\x10\x01\x12\b\n" +
@@ -241,21 +298,22 @@ func file_store_issue_proto_rawDescGZIP() []byte {
 	return file_store_issue_proto_rawDescData
 }
 
-var file_store_issue_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_issue_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_issue_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_issue_proto_goTypes = []any{
-	(Issue_Status)(0),            // 0: bytebase.store.Issue.Status
-	(*Issue)(nil),                // 1: bytebase.store.Issue
-	(*GrantRequest)(nil),         // 2: bytebase.store.GrantRequest
-	(*IssuePayloadApproval)(nil), // 3: bytebase.store.IssuePayloadApproval
-	(*expr.Expr)(nil),            // 4: google.type.Expr
-	(*durationpb.Duration)(nil),  // 5: google.protobuf.Duration
+	(Issue_Type)(0),              // 0: bytebase.store.Issue.Type
+	(Issue_Status)(0),            // 1: bytebase.store.Issue.Status
+	(*Issue)(nil),                // 2: bytebase.store.Issue
+	(*GrantRequest)(nil),         // 3: bytebase.store.GrantRequest
+	(*IssuePayloadApproval)(nil), // 4: bytebase.store.IssuePayloadApproval
+	(*expr.Expr)(nil),            // 5: google.type.Expr
+	(*durationpb.Duration)(nil),  // 6: google.protobuf.Duration
 }
 var file_store_issue_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.Issue.approval:type_name -> bytebase.store.IssuePayloadApproval
-	2, // 1: bytebase.store.Issue.grant_request:type_name -> bytebase.store.GrantRequest
-	4, // 2: bytebase.store.GrantRequest.condition:type_name -> google.type.Expr
-	5, // 3: bytebase.store.GrantRequest.expiration:type_name -> google.protobuf.Duration
+	4, // 0: bytebase.store.Issue.approval:type_name -> bytebase.store.IssuePayloadApproval
+	3, // 1: bytebase.store.Issue.grant_request:type_name -> bytebase.store.GrantRequest
+	5, // 2: bytebase.store.GrantRequest.condition:type_name -> google.type.Expr
+	6, // 3: bytebase.store.GrantRequest.expiration:type_name -> google.protobuf.Duration
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
@@ -274,7 +332,7 @@ func file_store_issue_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_issue_proto_rawDesc), len(file_store_issue_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,

@@ -294,7 +294,7 @@ CREATE TABLE issue (
     pipeline_id integer REFERENCES pipeline(id),
     name text NOT NULL,
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
-    type text NOT NULL CHECK (type LIKE 'bb.issue.%'),
+    type text NOT NULL,
     description text NOT NULL DEFAULT '',
     payload jsonb NOT NULL DEFAULT '{}',
     ts_vector tsvector

@@ -9,6 +9,13 @@ import "store/approval.proto";
 option go_package = "generated-go/store";
 
 message Issue {
+  enum Type {
+    ISSUE_TYPE_UNSPECIFIED = 0;
+    DATABASE_CHANGE = 1;
+    GRANT_REQUEST = 2;
+    DATABASE_EXPORT = 3;
+  }
+
   enum Status {
     ISSUE_STATUS_UNSPECIFIED = 0;
     OPEN = 1;

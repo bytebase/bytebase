@@ -1,5 +1,3 @@
-import { reactive } from "vue";
-import { useRoute } from "vue-router";
 import {
   buildPlan,
   extractInitialSQLFromQuery,
@@ -11,7 +9,7 @@ import { useCurrentUserV1, useProjectV1Store, useSheetV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { IssueType } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement } from "@/types";
-import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import { Issue_Type, IssueStatus } from "@/types/proto/v1/issue_service";
 import { Plan } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { Rollout } from "@/types/proto/v1/rollout_service";
@@ -22,6 +20,8 @@ import {
   hasProjectPermissionV2,
   sheetNameOfTaskV1,
 } from "@/utils";
+import { reactive } from "vue";
+import { useRoute } from "vue-router";
 import { nextUID } from "../base";
 
 export const createIssueSkeleton = async (
@@ -77,7 +77,7 @@ const buildIssue = async (params: CreatePlanParams) => {
 
   const template = query.template as IssueType | undefined;
   if (template === "bb.issue.database.data.export") {
-    issue.type = Issue_Type.DATABASE_DATA_EXPORT;
+    issue.type = Issue_Type.DATABASE_EXPORT;
   } else {
     issue.type = Issue_Type.DATABASE_CHANGE;
   }
