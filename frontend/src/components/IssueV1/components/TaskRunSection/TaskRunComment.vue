@@ -69,7 +69,7 @@ const comment = computed(() => {
   if (taskRun.status === TaskRun_Status.PENDING) {
     if (earliestAllowedTime.value) {
       return t("task-run.status.enqueued-with-rollout-time", {
-        time: new Date(earliestAllowedTime.value).toISOString(),
+        time: new Date(earliestAllowedTime.value).toLocaleString(),
       });
     }
     if (taskRun.schedulerInfo) {
@@ -78,7 +78,7 @@ const comment = computed(() => {
         return t("task-run.status.waiting-task", {
           time: getDateForPbTimestamp(
             taskRun.schedulerInfo.reportTime
-          )?.toISOString(),
+          )?.toLocaleString(),
         });
       }
     }
@@ -90,21 +90,21 @@ const comment = computed(() => {
         return t("task-run.status.waiting-connection", {
           time: getDateForPbTimestamp(
             taskRun.schedulerInfo.reportTime
-          )?.toISOString(),
+          )?.toLocaleString(),
         });
       }
       if (cause?.task) {
         return t("task-run.status.waiting-task", {
           time: getDateForPbTimestamp(
             taskRun.schedulerInfo.reportTime
-          )?.toISOString(),
+          )?.toLocaleString(),
         });
       }
       if (cause?.parallelTasksLimit) {
         return t("task-run.status.waiting-max-tasks-per-rollout", {
           time: getDateForPbTimestamp(
             taskRun.schedulerInfo.reportTime
-          )?.toISOString(),
+          )?.toLocaleString(),
         });
       }
     }
