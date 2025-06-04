@@ -161,6 +161,13 @@ func (e *metadataExtractor) EnterCreate_table(ctx *parser.Create_tableContext) {
 	if columnDefList := ctx.Column_def_table_constraints(); columnDefList != nil {
 		e.extractTableElements(columnDefList, tableMetadata, schema)
 	}
+
+	// Extract table indices (including columnstore indexes)
+	if tableIndices := ctx.AllTable_indices(); tableIndices != nil {
+		for _, tableIndex := range tableIndices {
+			e.extractTableIndex(tableIndex, tableMetadata)
+		}
+	}
 }
 
 // EnterCreate_index is called when entering a create index parse tree node
@@ -290,6 +297,73 @@ func (e *metadataExtractor) EnterCreate_or_alter_function(ctx *parser.Create_or_
 		schemaMetadata.Functions = []*storepb.FunctionMetadata{}
 	}
 	schemaMetadata.Functions = append(schemaMetadata.Functions, functionMetadata)
+}
+
+// EnterCreate_columnstore_index is called when entering a create clustered columnstore index parse tree node
+func (e *metadataExtractor) EnterCreate_columnstore_index(ctx *parser.Create_columnstore_indexContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Extract table reference
+	if ctx.Table_name() == nil {
+		return
+	}
+
+	_, schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
+
+	tableMetadata := e.getOrCreateTable(schema, table)
+
+	// Extract index metadata
+	index := &storepb.IndexMetadata{
+		Type:         "CLUSTERED COLUMNSTORE",
+		Expressions:  []string{}, // Clustered columnstore indexes don't have specific columns
+		Descending:   []bool{},
+		IsConstraint: false,
+	}
+
+	// Index name
+	if ctx.Id_(0) != nil {
+		index.Name, _ = tsql.NormalizeTSQLIdentifier(ctx.Id_(0))
+	}
+
+	tableMetadata.Indexes = append(tableMetadata.Indexes, index)
+}
+
+// EnterCreate_nonclustered_columnstore_index is called when entering a create nonclustered columnstore index parse tree node
+func (e *metadataExtractor) EnterCreate_nonclustered_columnstore_index(ctx *parser.Create_nonclustered_columnstore_indexContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Extract table reference
+	if ctx.Table_name() == nil {
+		return
+	}
+
+	_, schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
+
+	tableMetadata := e.getOrCreateTable(schema, table)
+
+	// Extract index metadata
+	index := &storepb.IndexMetadata{
+		Type:         "NONCLUSTERED COLUMNSTORE",
+		Expressions:  []string{},
+		Descending:   []bool{},
+		IsConstraint: false,
+	}
+
+	// Index name
+	if ctx.Id_(0) != nil {
+		index.Name, _ = tsql.NormalizeTSQLIdentifier(ctx.Id_(0))
+	}
+
+	// Extract columns
+	if columnList := ctx.Column_name_list_with_order(); columnList != nil {
+		e.extractIndexColumns(columnList, index)
+	}
+
+	tableMetadata.Indexes = append(tableMetadata.Indexes, index)
 }
 
 // EnterCreate_sequence is called when entering a create sequence parse tree node
@@ -649,6 +723,80 @@ func (*metadataExtractor) extractIndexColumns(ctx parser.IColumn_name_list_with_
 			} else {
 				index.Descending = append(index.Descending, false)
 			}
+		}
+	}
+}
+
+// extractTableIndex extracts index information from table_indices context
+func (e *metadataExtractor) extractTableIndex(ctx parser.ITable_indicesContext, table *storepb.TableMetadata) {
+	if ctx == nil {
+		return
+	}
+
+	index := &storepb.IndexMetadata{
+		Expressions:  []string{},
+		Descending:   []bool{},
+		IsConstraint: false,
+	}
+
+	// Index name
+	idList := ctx.AllId_()
+	if len(idList) > 0 {
+		index.Name, _ = tsql.NormalizeTSQLIdentifier(idList[0])
+	}
+
+	// Check for UNIQUE
+	if ctx.UNIQUE() != nil {
+		index.Unique = true
+	}
+
+	// Check for index type
+	if ctx.CLUSTERED() != nil && ctx.COLUMNSTORE() != nil {
+		index.Type = "CLUSTERED COLUMNSTORE"
+		// Clustered columnstore indexes don't have specific columns
+	} else if ctx.NONCLUSTERED() != nil && ctx.COLUMNSTORE() != nil {
+		index.Type = "NONCLUSTERED COLUMNSTORE"
+		// Extract columns for nonclustered columnstore
+		if columnList := ctx.Column_name_list(); columnList != nil {
+			e.extractColumnNameList(columnList, index)
+		}
+	} else if ctx.COLUMNSTORE() != nil {
+		// COLUMNSTORE without NONCLUSTERED means nonclustered by default
+		index.Type = "NONCLUSTERED COLUMNSTORE"
+		// Extract columns
+		if columnList := ctx.Column_name_list(); columnList != nil {
+			e.extractColumnNameList(columnList, index)
+		}
+	} else {
+		// Regular index
+		if clustered := ctx.Clustered(); clustered != nil {
+			if clustered.CLUSTERED() != nil {
+				index.Type = "CLUSTERED"
+			} else if clustered.NONCLUSTERED() != nil {
+				index.Type = "NONCLUSTERED"
+			}
+		}
+		// Extract columns
+		if columnList := ctx.Column_name_list_with_order(); columnList != nil {
+			e.extractIndexColumns(columnList, index)
+		}
+	}
+
+	table.Indexes = append(table.Indexes, index)
+}
+
+// extractColumnNameList extracts column names without order for columnstore indexes
+func (*metadataExtractor) extractColumnNameList(ctx parser.IColumn_name_listContext, index *storepb.IndexMetadata) {
+	if ctx == nil {
+		return
+	}
+
+	if idList := ctx.AllId_(); idList != nil {
+		for _, id := range idList {
+			colName, _ := tsql.NormalizeTSQLIdentifier(id)
+			index.Expressions = append(index.Expressions, colName)
+			// Columnstore indexes don't have DESC/ASC specification
+			index.Descending = append(index.Descending, false)
 		}
 	}
 }

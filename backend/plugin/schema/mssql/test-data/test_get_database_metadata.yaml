@@ -1767,3 +1767,286 @@
         }
       ]
     }
+- input: |
+    CREATE TABLE dbo.sales_data (
+        sale_id INT IDENTITY(1,1) PRIMARY KEY,
+        product_id INT NOT NULL,
+        sale_date DATE NOT NULL,
+        quantity INT NOT NULL,
+        amount DECIMAL(10,2) NOT NULL
+    );
+
+    CREATE CLUSTERED COLUMNSTORE INDEX CCI_sales_data ON dbo.sales_data;
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "sales_data",
+              "columns": [
+                {
+                  "name": "sale_id",
+                  "DefaultValue": null,
+                  "type": "INT",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "product_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "sale_date",
+                  "DefaultValue": null,
+                  "type": "DATE"
+                },
+                {
+                  "name": "quantity",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "amount",
+                  "DefaultValue": null,
+                  "type": "DECIMAL(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_sales_data_1",
+                  "expressions": [
+                    "sale_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "CCI_sales_data",
+                  "type": "CLUSTERED COLUMNSTORE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.analytics_data (
+        id INT NOT NULL,
+        year INT NOT NULL,
+        month INT NOT NULL,
+        revenue DECIMAL(15,2),
+        expenses DECIMAL(15,2)
+    );
+
+    CREATE NONCLUSTERED COLUMNSTORE INDEX NCCI_analytics ON dbo.analytics_data (year, month, revenue, expenses);
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "analytics_data",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "year",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "month",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "revenue",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DECIMAL(15,2)"
+                },
+                {
+                  "name": "expenses",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DECIMAL(15,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "NCCI_analytics",
+                  "expressions": [
+                    "year",
+                    "month",
+                    "revenue",
+                    "expenses"
+                  ],
+                  "descending": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ],
+                  "type": "NONCLUSTERED COLUMNSTORE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.fact_sales (
+        sale_id INT NOT NULL,
+        product_id INT NOT NULL,
+        customer_id INT NOT NULL,
+        sale_date DATE NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        INDEX IX_fact_sales CLUSTERED COLUMNSTORE
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "fact_sales",
+              "columns": [
+                {
+                  "name": "sale_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "product_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "customer_id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "sale_date",
+                  "DefaultValue": null,
+                  "type": "DATE"
+                },
+                {
+                  "name": "amount",
+                  "DefaultValue": null,
+                  "type": "DECIMAL(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "IX_fact_sales",
+                  "type": "CLUSTERED COLUMNSTORE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE dbo.hybrid_table (
+        id INT PRIMARY KEY NONCLUSTERED,
+        category VARCHAR(50) NOT NULL,
+        value DECIMAL(10,2),
+        created_date DATETIME,
+        INDEX IX_hybrid_columnstore NONCLUSTERED COLUMNSTORE (category, value, created_date),
+        INDEX IX_hybrid_regular NONCLUSTERED (category, created_date DESC)
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "hybrid_table",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT"
+                },
+                {
+                  "name": "category",
+                  "DefaultValue": null,
+                  "type": "VARCHAR(50)"
+                },
+                {
+                  "name": "value",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DECIMAL(10,2)"
+                },
+                {
+                  "name": "created_date",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DATETIME"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_hybrid_table_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "IX_hybrid_columnstore",
+                  "expressions": [
+                    "category",
+                    "value",
+                    "created_date"
+                  ],
+                  "descending": [
+                    false,
+                    false,
+                    false
+                  ],
+                  "type": "NONCLUSTERED COLUMNSTORE"
+                },
+                {
+                  "name": "IX_hybrid_regular",
+                  "expressions": [
+                    "category",
+                    "created_date"
+                  ],
+                  "descending": [
+                    false,
+                    true
+                  ],
+                  "type": "NONCLUSTERED"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
