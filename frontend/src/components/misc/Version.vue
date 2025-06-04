@@ -43,7 +43,7 @@
       <template #default>
         <div class="flex flex-col gap-y-1">
           <div v-if="canUpgrade" class="whitespace-nowrap">
-            {{ $t("settings.release.new-version-available") }}
+            {{ $t("remind.release.new-version-available") }}
           </div>
           <div>BE Git hash: {{ gitCommitBE }}</div>
           <div>FE Git hash: {{ gitCommitFE }}</div>
@@ -63,6 +63,10 @@
 </template>
 
 <script lang="ts" setup>
+import { Volume2Icon } from "lucide-vue-next";
+import { NTooltip, type TooltipProps } from "naive-ui";
+import { storeToRefs } from "pinia";
+import { computed, reactive } from "vue";
 import {
   useActuatorV1Store,
   useAppFeature,
@@ -70,10 +74,6 @@ import {
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
-import { Volume2Icon } from "lucide-vue-next";
-import { NTooltip, type TooltipProps } from "naive-ui";
-import { storeToRefs } from "pinia";
-import { computed, reactive } from "vue";
 import ReleaseRemindModal from "../ReleaseRemindModal.vue";
 import TrialModal from "../TrialModal.vue";
 

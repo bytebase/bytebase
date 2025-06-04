@@ -699,11 +699,6 @@
       "json-format-example": "JSON 格式样例",
       "view-example": "查看样例"
     },
-    "release": {
-      "new-version-available": "有新版本可更新",
-      "new-version-available-with-tag": "新版本 {tag} 已推出",
-      "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。"
-    },
     "mail-delivery": {
       "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮件，如慢查询周报。",
       "field": {
@@ -719,6 +714,19 @@
       },
       "updated-tip": "邮件传输配置更新成功",
       "tested-tip": "发送成功，请检查 {address} 的收件箱。"
+    }
+  },
+  "remind": {
+    "release": {
+      "new-version-available": "有新版本可更新",
+      "new-version-available-with-tag": "新版本 {tag} 已推出",
+      "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。"
+    },
+    "role-expire": {
+      "title": "角色到期提醒",
+      "content": "您的角色即将到期",
+      "checkbox": "直到有更新再提醒",
+      "go-to-project": "前往项目页面"
     }
   },
   "activity": {

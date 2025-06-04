@@ -8,7 +8,7 @@ import {
   type Permission,
 } from "@/types";
 import { type User } from "@/types/proto/v1/user_service";
-import { roleListInIAM } from "@/utils";
+import { bindingListInIAM } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { useRoleStore } from "../role";
 import { useWorkspaceV1Store } from "./workspace";
@@ -53,14 +53,14 @@ export const usePermissionStore = defineStore("permission", () => {
     ].filter((role) => !PRESET_WORKSPACE_ROLES.includes(role));
 
     const { iamPolicy } = project;
-    const projectBindingRoles = roleListInIAM({
+    const projectBindings = bindingListInIAM({
       policy: iamPolicy,
       email: currentUser.value.email,
       ignoreGroup: false,
     });
 
     const result = uniq([
-      ...projectBindingRoles,
+      ...projectBindings.map((binding) => binding.role),
       ...workspaceLevelProjectRoles,
     ]);
     projectRoleListCache.set(key, result);
