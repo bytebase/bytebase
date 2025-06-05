@@ -184,3 +184,54 @@ func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
 		},
 	}
 }
+
+func TestGetAccessTables(t *testing.T) {
+	tests := []struct {
+		statement string
+		expected  []base.SchemaResource
+	}{
+		{
+			statement: "SELECT * FROM t1 WHERE c1 = 1",
+			expected: []base.SchemaResource{
+				{
+					Database: "DB",
+					Table:    "T1",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM schema1.t1 JOIN schema2.t2 ON t1.c1 = t2.c1;",
+			expected: []base.SchemaResource{
+				{
+					Database: "SCHEMA1",
+					Table:    "T1",
+				},
+				{
+					Database: "SCHEMA2",
+					Table:    "T2",
+				},
+			},
+		},
+		{
+			statement: "SELECT a > (select max(a) from t1) FROM t2;",
+			expected: []base.SchemaResource{
+				{
+					Database: "DB",
+					Table:    "T1",
+				},
+				{
+					Database: "DB",
+					Table:    "T2",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		r, _, err := ParsePLSQL(test.statement)
+		require.NoError(t, err)
+		resources, err := getAccessTables("DB", r)
+		require.NoError(t, err)
+		require.Equal(t, test.expected, resources, test.statement)
+	}
+}

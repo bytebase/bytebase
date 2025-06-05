@@ -2,10 +2,11 @@ package mysql
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/mysql-parser"
+	parser "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
@@ -134,7 +135,7 @@ func (q *querySpanExtractor) extractContext(ctx antlr.ParserRuleContext) (*base.
 	}
 
 	switch ctx := ctx.(type) {
-	case mysql.ISelectStatementContext:
+	case parser.ISelectStatementContext:
 		return q.extractSelectStatement(ctx)
 	default:
 		return nil, nil
@@ -143,7 +144,7 @@ func (q *querySpanExtractor) extractContext(ctx antlr.ParserRuleContext) (*base.
 
 // extractSelectStatement extracts the table source from the select statement.
 // It regards the result of the select statement as the pseudo table.
-func (q *querySpanExtractor) extractSelectStatement(ctx mysql.ISelectStatementContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractSelectStatement(ctx parser.ISelectStatementContext) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return base.NewPseudoTable("", []base.QuerySpanResult{}), nil
 	}
@@ -160,7 +161,7 @@ func (q *querySpanExtractor) extractSelectStatement(ctx mysql.ISelectStatementCo
 	panic("unreachable")
 }
 
-func (q *querySpanExtractor) extractQueryExpression(ctx mysql.IQueryExpressionContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractQueryExpression(ctx parser.IQueryExpressionContext) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return base.NewPseudoTable("", []base.QuerySpanResult{}), nil
 	}
@@ -190,7 +191,7 @@ func (q *querySpanExtractor) extractQueryExpression(ctx mysql.IQueryExpressionCo
 	panic("unreachable")
 }
 
-func (q *querySpanExtractor) extractQueryExpressionParens(ctx mysql.IQueryExpressionParensContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractQueryExpressionParens(ctx parser.IQueryExpressionParensContext) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -205,12 +206,12 @@ func (q *querySpanExtractor) extractQueryExpressionParens(ctx mysql.IQueryExpres
 	return nil, nil
 }
 
-func (q *querySpanExtractor) extractQueryExpressionBody(ctx mysql.IQueryExpressionBodyContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractQueryExpressionBody(ctx parser.IQueryExpressionBodyContext) (*base.PseudoTable, error) {
 	var result base.TableSource
 	unionNum := 0
 	for _, child := range ctx.GetChildren() {
 		switch child := child.(type) {
-		case *mysql.QueryPrimaryContext:
+		case *parser.QueryPrimaryContext:
 			unionNum++
 			ts, err := q.extractQueryPrimary(child)
 			if err != nil {
@@ -237,7 +238,7 @@ func (q *querySpanExtractor) extractQueryExpressionBody(ctx mysql.IQueryExpressi
 					Columns: newQuerySpanResults,
 				}
 			}
-		case *mysql.QueryExpressionParensContext:
+		case *parser.QueryExpressionParensContext:
 			ts, err := q.extractQueryExpressionParens(child)
 			if err != nil {
 				return nil, err
@@ -272,7 +273,7 @@ func (q *querySpanExtractor) extractQueryExpressionBody(ctx mysql.IQueryExpressi
 	}, nil
 }
 
-func (q *querySpanExtractor) extractQueryPrimary(ctx mysql.IQueryPrimaryContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractQueryPrimary(ctx parser.IQueryPrimaryContext) (base.TableSource, error) {
 	switch {
 	case ctx.QuerySpecification() != nil:
 		return q.extractQuerySpecification(ctx.QuerySpecification())
@@ -285,7 +286,7 @@ func (q *querySpanExtractor) extractQueryPrimary(ctx mysql.IQueryPrimaryContext)
 	panic("unreachable")
 }
 
-func (q *querySpanExtractor) extractExplicitTable(ctx mysql.IExplicitTableContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractExplicitTable(ctx parser.IExplicitTableContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -299,7 +300,7 @@ func (q *querySpanExtractor) extractExplicitTable(ctx mysql.IExplicitTableContex
 	return tableSource, nil
 }
 
-func (q *querySpanExtractor) extractTableValueConstructor(ctx mysql.ITableValueConstructorContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableValueConstructor(ctx parser.ITableValueConstructorContext) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -321,7 +322,7 @@ func (q *querySpanExtractor) extractTableValueConstructor(ctx mysql.ITableValueC
 
 	for _, child := range values.GetChildren() {
 		switch child := child.(type) {
-		case *mysql.ExprContext:
+		case *parser.ExprContext:
 			_, sourceColumns, isPlain, err := q.extractSourceColumnSetFromExpr(child)
 			if err != nil {
 				return nil, err
@@ -332,7 +333,7 @@ func (q *querySpanExtractor) extractTableValueConstructor(ctx mysql.ITableValueC
 				IsPlainField:  isPlain,
 			})
 		case antlr.TerminalNode:
-			if child.GetSymbol().GetTokenType() == mysql.MySQLParserDEFAULT_SYMBOL {
+			if child.GetSymbol().GetTokenType() == parser.MySQLParserDEFAULT_SYMBOL {
 				columns = append(columns, base.QuerySpanResult{
 					Name:          "DEFAULT",
 					SourceColumns: make(base.SourceColumnSet),
@@ -348,7 +349,7 @@ func (q *querySpanExtractor) extractTableValueConstructor(ctx mysql.ITableValueC
 	}, nil
 }
 
-func (q *querySpanExtractor) extractQuerySpecification(ctx mysql.IQuerySpecificationContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractQuerySpecification(ctx parser.IQuerySpecificationContext) (*base.PseudoTable, error) {
 	var fromSources []base.TableSource
 	var err error
 	if ctx.FromClause() != nil {
@@ -377,7 +378,7 @@ func (q *querySpanExtractor) extractQuerySpecification(ctx mysql.IQuerySpecifica
 	}, nil
 }
 
-func (q *querySpanExtractor) extractSelectItemList(ctx mysql.ISelectItemListContext, fromSpanResult []base.TableSource) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractSelectItemList(ctx parser.ISelectItemListContext, fromSpanResult []base.TableSource) ([]base.QuerySpanResult, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -401,7 +402,7 @@ func (q *querySpanExtractor) extractSelectItemList(ctx mysql.ISelectItemListCont
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractSelectItem(ctx mysql.ISelectItemContext) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractSelectItem(ctx parser.ISelectItemContext) ([]base.QuerySpanResult, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -439,7 +440,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 
 	// The closure of expr rules.
 	switch ctx := ctx.(type) {
-	case mysql.ISubqueryContext:
+	case parser.ISubqueryContext:
 		baseSet := make(base.SourceColumnSet)
 		// Subquery in SELECT fields is special.
 		// It can be the non-associated or associated subquery.
@@ -468,7 +469,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 			baseSet, _ = base.MergeSourceColumnSet(field.SourceColumns, field.SourceColumns)
 		}
 		return "", baseSet, isPlain, nil
-	case mysql.IColumnRefContext:
+	case parser.IColumnRefContext:
 		databaseName, tableName, fieldName := NormalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
 		sourceColumnSet, err := q.getFieldColumnSource(databaseName, tableName, fieldName)
 		if err != nil {
@@ -513,7 +514,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExprList(ctxs []antlr.Par
 	return fieldName, baseSet, plain, nil
 }
 
-func (q *querySpanExtractor) extractTableWild(ctx mysql.ITableWildContext) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractTableWild(ctx parser.ITableWildContext) ([]base.QuerySpanResult, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -538,7 +539,7 @@ func (q *querySpanExtractor) extractTableWild(ctx mysql.ITableWildContext) ([]ba
 
 // extractTableSourcesFromFromClause extracts the table sources from the from clause.
 // The result can be empty while the from clause is dual.
-func (q *querySpanExtractor) extractTableSourcesFromFromClause(ctx mysql.IFromClauseContext) ([]base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourcesFromFromClause(ctx parser.IFromClauseContext) ([]base.TableSource, error) {
 	// DUAL is purely for the convenience of people who require that all SELECT statements should have FROM and possibly other clauses.
 	// MySQL may ignore the clauses. MySQL does not require FROM DUAL if no tables are referenced.
 	if ctx.DUAL_SYMBOL() != nil {
@@ -548,7 +549,7 @@ func (q *querySpanExtractor) extractTableSourcesFromFromClause(ctx mysql.IFromCl
 	return q.extractTableReferenceList(ctx.TableReferenceList())
 }
 
-func (q *querySpanExtractor) extractTableReferenceList(ctx mysql.ITableReferenceListContext) ([]base.TableSource, error) {
+func (q *querySpanExtractor) extractTableReferenceList(ctx parser.ITableReferenceListContext) ([]base.TableSource, error) {
 	var result []base.TableSource
 	for _, tableReference := range ctx.AllTableReference() {
 		tableResource, err := q.extractTableReference(tableReference)
@@ -562,7 +563,7 @@ func (q *querySpanExtractor) extractTableReferenceList(ctx mysql.ITableReference
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractTableReference(ctx mysql.ITableReferenceContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableReference(ctx parser.ITableReferenceContext) (base.TableSource, error) {
 	if ctx.TableFactor() == nil {
 		return nil, errors.Errorf("MySQL table reference should have table factor")
 	}
@@ -589,7 +590,7 @@ func (q *querySpanExtractor) extractTableReference(ctx mysql.ITableReferenceCont
 }
 
 // extractJoinedTable extracts the joined table from the left and right table sources.
-func (q *querySpanExtractor) extractJoinedTable(l base.TableSource, r mysql.IJoinedTableContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractJoinedTable(l base.TableSource, r parser.IJoinedTableContext) (base.TableSource, error) {
 	rightTableSource, err := q.extractTableReference(r.TableReference())
 	if err != nil {
 		return nil, err
@@ -713,7 +714,7 @@ func joinTableSources(l, r base.TableSource, tp joinType, using []string) (base.
 	return nil, nil
 }
 
-func (q *querySpanExtractor) extractTableFactor(ctx mysql.ITableFactorContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableFactor(ctx parser.ITableFactorContext) (base.TableSource, error) {
 	switch {
 	case ctx.SingleTable() != nil:
 		return q.extractSingleTable(ctx.SingleTable())
@@ -751,7 +752,7 @@ func (q *querySpanExtractor) extractTableFactor(ctx mysql.ITableFactorContext) (
 	panic("unreachable")
 }
 
-func (q *querySpanExtractor) extractTableFunction(ctx mysql.ITableFunctionContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableFunction(ctx parser.ITableFunctionContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -784,7 +785,7 @@ func (q *querySpanExtractor) extractTableFunction(ctx mysql.ITableFunctionContex
 	}, nil
 }
 
-func (q *querySpanExtractor) extractTableReferenceListParens(ctx mysql.ITableReferenceListParensContext) ([]base.TableSource, error) {
+func (q *querySpanExtractor) extractTableReferenceListParens(ctx parser.ITableReferenceListParensContext) ([]base.TableSource, error) {
 	switch {
 	case ctx.TableReferenceList() != nil:
 		return q.extractTableReferenceList(ctx.TableReferenceList())
@@ -795,11 +796,11 @@ func (q *querySpanExtractor) extractTableReferenceListParens(ctx mysql.ITableRef
 	panic("unreachable")
 }
 
-func (q *querySpanExtractor) extractSubquery(ctx mysql.ISubqueryContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractSubquery(ctx parser.ISubqueryContext) (*base.PseudoTable, error) {
 	return q.extractQueryExpressionParens(ctx.QueryExpressionParens())
 }
 
-func (q *querySpanExtractor) extractDerivedTable(ctx mysql.IDerivedTableContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractDerivedTable(ctx parser.IDerivedTableContext) (base.TableSource, error) {
 	tableSource, err := q.extractSubquery(ctx.Subquery())
 	if err != nil {
 		return nil, err
@@ -829,7 +830,7 @@ func (q *querySpanExtractor) extractDerivedTable(ctx mysql.IDerivedTableContext)
 	return tableSource, nil
 }
 
-func extractColumnInternalRefList(ctx mysql.IColumnInternalRefListContext) []string {
+func extractColumnInternalRefList(ctx parser.IColumnInternalRefListContext) []string {
 	if ctx == nil {
 		return nil
 	}
@@ -841,7 +842,7 @@ func extractColumnInternalRefList(ctx mysql.IColumnInternalRefListContext) []str
 	return result
 }
 
-func (q *querySpanExtractor) extractSingleTable(ctx mysql.ISingleTableContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractSingleTable(ctx parser.ISingleTableContext) (base.TableSource, error) {
 	databaseName, tableName := NormalizeMySQLTableRef(ctx.TableRef())
 	tableSource, err := q.findTableSchema(databaseName, tableName)
 	if err != nil {
@@ -862,7 +863,7 @@ func (q *querySpanExtractor) extractSingleTable(ctx mysql.ISingleTableContext) (
 	return tableSource, nil
 }
 
-func (q *querySpanExtractor) extractSingleTableParens(ctx mysql.ISingleTableParensContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractSingleTableParens(ctx parser.ISingleTableParensContext) (base.TableSource, error) {
 	switch {
 	case ctx.SingleTable() != nil:
 		return q.extractSingleTable(ctx.SingleTable())
@@ -874,7 +875,7 @@ func (q *querySpanExtractor) extractSingleTableParens(ctx mysql.ISingleTablePare
 }
 
 // extractCommonTableExpression extracts the pseudo table from the common table expression.
-func (q *querySpanExtractor) extractCommonTableExpression(ctx mysql.ICommonTableExpressionContext, recursive bool) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractCommonTableExpression(ctx parser.ICommonTableExpressionContext, recursive bool) (*base.PseudoTable, error) {
 	if recursive {
 		return q.extractRecursiveCTE(ctx)
 	}
@@ -882,7 +883,7 @@ func (q *querySpanExtractor) extractCommonTableExpression(ctx mysql.ICommonTable
 }
 
 // extractRecursiveCTE extracts the pseudo table from the recursive common table expression.
-func (q *querySpanExtractor) extractRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractRecursiveCTE(ctx parser.ICommonTableExpressionContext) (*base.PseudoTable, error) {
 	cteName := NormalizeMySQLIdentifier(ctx.Identifier())
 	l := &recursiveCTEExtractListener{
 		extractor: q,
@@ -912,7 +913,7 @@ func (q *querySpanExtractor) extractRecursiveCTE(ctx mysql.ICommonTableExpressio
 }
 
 // extractNonRecursiveCTE extracts the pseudo table from the non-recursive common table expression.
-func (q *querySpanExtractor) extractNonRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractNonRecursiveCTE(ctx parser.ICommonTableExpressionContext) (*base.PseudoTable, error) {
 	tableSource, err := q.extractSubquery(ctx.Subquery())
 	if err != nil {
 		return nil, err
@@ -936,19 +937,19 @@ func (q *querySpanExtractor) extractNonRecursiveCTE(ctx mysql.ICommonTableExpres
 }
 
 type recursiveCTEExtractListener struct {
-	*mysql.BaseMySQLParserListener
+	*parser.BaseMySQLParserListener
 
 	extractor                     *querySpanExtractor
 	cteInfo                       *base.PseudoTable
 	selfName                      string
-	outerCTEs                     []mysql.IWithClauseContext
+	outerCTEs                     []parser.IWithClauseContext
 	foundFirstQueryExpressionBody bool
 	inCTE                         bool
 	err                           error
 }
 
 // EnterQueryExpression is called when production queryExpression is entered.
-func (l *recursiveCTEExtractListener) EnterQueryExpression(ctx *mysql.QueryExpressionContext) {
+func (l *recursiveCTEExtractListener) EnterQueryExpression(ctx *parser.QueryExpressionContext) {
 	if l.foundFirstQueryExpressionBody || l.inCTE || l.err != nil {
 		return
 	}
@@ -958,17 +959,17 @@ func (l *recursiveCTEExtractListener) EnterQueryExpression(ctx *mysql.QueryExpre
 }
 
 // EnterWithClause is called when production commonTableExpression is entered.
-func (l *recursiveCTEExtractListener) EnterWithClause(_ *mysql.WithClauseContext) {
+func (l *recursiveCTEExtractListener) EnterWithClause(_ *parser.WithClauseContext) {
 	l.inCTE = true
 }
 
 // ExitWithClause is called when production commonTableExpression is exited.
-func (l *recursiveCTEExtractListener) ExitWithClause(_ *mysql.WithClauseContext) {
+func (l *recursiveCTEExtractListener) ExitWithClause(_ *parser.WithClauseContext) {
 	l.inCTE = false
 }
 
 // EnterQueryExpressionBody is called when production queryExpressionBody is entered.
-func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressionBodyContext) {
+func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *parser.QueryExpressionBodyContext) {
 	if l.err != nil {
 		return
 	}
@@ -1004,9 +1005,9 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *mysql.QueryE
 	findRecursivePart := false
 	for _, child := range ctx.GetChildren() {
 		switch child := child.(type) {
-		case *mysql.QueryPrimaryContext:
+		case *parser.QueryPrimaryContext:
 			if !findRecursivePart {
-				resource, err := ExtractResourceList("", "", child.GetParser().GetTokenStream().GetTextFromRuleContext(child))
+				resource, err := extractTableRefs("", child)
 				if err != nil {
 					l.err = err
 					return
@@ -1040,7 +1041,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *mysql.QueryE
 					}
 				}
 			}
-		case *mysql.QueryExpressionParensContext:
+		case *parser.QueryExpressionParensContext:
 			queryExpression := extractQueryExpression(child)
 			if queryExpression == nil {
 				// Never happen.
@@ -1049,7 +1050,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *mysql.QueryE
 			}
 
 			if !findRecursivePart {
-				resource, err := ExtractResourceList("", "", queryExpression.GetParser().GetTokenStream().GetTextFromRuleContext(queryExpression))
+				resource, err := extractTableRefs("", queryExpression)
 				if err != nil {
 					l.err = err
 					return
@@ -1126,7 +1127,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *mysql.QueryE
 		for _, item := range recursivePart {
 			var itemFields []base.QuerySpanResult
 			switch item := item.(type) {
-			case *mysql.QueryPrimaryContext:
+			case *parser.QueryPrimaryContext:
 				var err error
 				tableSource, err := l.extractor.extractQueryPrimary(item)
 				if err != nil {
@@ -1134,7 +1135,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *mysql.QueryE
 					return
 				}
 				itemFields = tableSource.GetQuerySpanResult()
-			case *mysql.QueryExpressionContext:
+			case *parser.QueryExpressionContext:
 				var err error
 				tableSource, err := l.extractor.extractQueryExpression(item)
 				if err != nil {
@@ -1444,7 +1445,7 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 
 // selectOnlyListener is the listener to listen the top level select statement only.
 type selectOnlyListener struct {
-	*mysql.BaseMySQLParserListener
+	*parser.BaseMySQLParserListener
 
 	// The only misson of the listener is the find the precise select statement.
 	// All the eval work will be handled by the querySpanExtractor.
@@ -1463,13 +1464,13 @@ func newSelectOnlyListener(extractor *querySpanExtractor) *selectOnlyListener {
 	}
 }
 
-func (s *selectOnlyListener) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+func (s *selectOnlyListener) EnterSelectStatement(ctx *parser.SelectStatementContext) {
 	parent := ctx.GetParent()
 	if parent == nil {
 		return
 	}
 
-	if _, ok := parent.(*mysql.SimpleStatementContext); !ok {
+	if _, ok := parent.(*parser.SimpleStatementContext); !ok {
 		return
 	}
 
@@ -1493,7 +1494,7 @@ func getAccessTables(currentDatabase string, tree antlr.Tree) base.SourceColumnS
 }
 
 type accessTableListener struct {
-	*mysql.BaseMySQLParserListener
+	*parser.BaseMySQLParserListener
 
 	currentDatabase string
 	sourceColumnSet base.SourceColumnSet
@@ -1507,7 +1508,7 @@ func newAccessTableListener(currentDatabase string) *accessTableListener {
 }
 
 // EnterTableRef is called when production tableRef is entered.
-func (l *accessTableListener) EnterTableRef(ctx *mysql.TableRefContext) {
+func (l *accessTableListener) EnterTableRef(ctx *parser.TableRefContext) {
 	sourceColumn := base.ColumnResource{
 		Database: l.currentDatabase,
 	}
@@ -1555,7 +1556,7 @@ func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bo
 	return systemDatabases[database]
 }
 
-func mysqlExtractColumnsClause(ctx mysql.IColumnsClauseContext) []string {
+func mysqlExtractColumnsClause(ctx parser.IColumnsClauseContext) []string {
 	if ctx == nil {
 		return nil
 	}
@@ -1568,7 +1569,7 @@ func mysqlExtractColumnsClause(ctx mysql.IColumnsClauseContext) []string {
 	return result
 }
 
-func mysqlExtractColumnInternalRefList(ctx mysql.IColumnInternalRefListContext) []string {
+func mysqlExtractColumnInternalRefList(ctx parser.IColumnInternalRefListContext) []string {
 	if ctx == nil {
 		return nil
 	}
@@ -1580,7 +1581,7 @@ func mysqlExtractColumnInternalRefList(ctx mysql.IColumnInternalRefListContext) 
 	return result
 }
 
-func extractQueryExpression(ctx mysql.IQueryExpressionParensContext) mysql.IQueryExpressionContext {
+func extractQueryExpression(ctx parser.IQueryExpressionParensContext) parser.IQueryExpressionContext {
 	if ctx == nil {
 		return nil
 	}
@@ -1595,7 +1596,7 @@ func extractQueryExpression(ctx mysql.IQueryExpressionParensContext) mysql.IQuer
 	return nil
 }
 
-func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
+func mysqlExtractJtColumn(ctx parser.IJtColumnContext) []string {
 	if ctx == nil {
 		return []string{}
 	}
@@ -1608,4 +1609,44 @@ func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
 	}
 
 	return []string{}
+}
+
+func extractTableRefs(database string, ctx antlr.ParserRuleContext) ([]base.SchemaResource, error) {
+	l := &resourceExtractListener{
+		currentDatabase: database,
+		resourceMap:     make(map[string]base.SchemaResource),
+	}
+
+	var result []base.SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, ctx)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+type resourceExtractListener struct {
+	*parser.BaseMySQLParserListener
+
+	currentDatabase string
+	resourceMap     map[string]base.SchemaResource
+}
+
+// EnterTableRef is called when production tableRef is entered.
+func (l *resourceExtractListener) EnterTableRef(ctx *parser.TableRefContext) {
+	resource := base.SchemaResource{Database: l.currentDatabase}
+	if ctx.DotIdentifier() != nil {
+		resource.Table = NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+	}
+	db, table := normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	if db != "" {
+		resource.Database = db
+	}
+	resource.Table = table
+	l.resourceMap[resource.String()] = resource
 }

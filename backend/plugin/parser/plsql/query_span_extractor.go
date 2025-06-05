@@ -2,12 +2,13 @@ package plsql
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	plsql "github.com/bytebase/plsql-parser"
+	parser "github.com/bytebase/plsql-parser"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 
@@ -64,12 +65,12 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, nil
 	}
 
-	resources, err := ExtractResourceList(q.defaultDatabase, "", statement)
+	accessTables, err := getAccessTables(q.defaultDatabase, tree)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract resource list from statement: %s", statement)
 	}
 
-	allSystem, mixed := isMixedQuery(resources)
+	allSystem, mixed := isMixedQuery(accessTables)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
@@ -89,7 +90,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}
 
 	columnSet := make(base.SourceColumnSet)
-	for _, resource := range resources {
+	for _, resource := range accessTables {
 		if !q.existsTableMetadata(resource) {
 			continue
 		}
@@ -162,14 +163,14 @@ func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) b
 }
 
 type selectListener struct {
-	*plsql.BasePlSqlParserListener
+	*parser.BasePlSqlParserListener
 
 	q      *querySpanExtractor
 	result *base.QuerySpan
 	err    error
 }
 
-func (l *selectListener) EnterSelect_statement(ctx *plsql.Select_statementContext) {
+func (l *selectListener) EnterSelect_statement(ctx *parser.Select_statementContext) {
 	if l.err != nil {
 		return // Skip if there is already an error.
 	}
@@ -178,8 +179,8 @@ func (l *selectListener) EnterSelect_statement(ctx *plsql.Select_statementContex
 		return
 	}
 
-	if _, ok := parent.(*plsql.Data_manipulation_language_statementsContext); ok {
-		if _, ok := parent.GetParent().(*plsql.Unit_statementContext); ok {
+	if _, ok := parent.(*parser.Data_manipulation_language_statementsContext); ok {
+		if _, ok := parent.GetParent().(*parser.Unit_statementContext); ok {
 			if l.result != nil {
 				l.err = errors.New("multiple select statements")
 				return
@@ -205,14 +206,14 @@ func (q *querySpanExtractor) plsqlExtractContext(ctx antlr.ParserRuleContext) (b
 	}
 
 	switch ctx := ctx.(type) {
-	case *plsql.Select_statementContext:
+	case *parser.Select_statementContext:
 		return q.plsqlExtractSelect(ctx)
 	default:
 		return nil, errors.Errorf("unsupported context type: %T", ctx)
 	}
 }
 
-func (q *querySpanExtractor) plsqlExtractSelect(ctx plsql.ISelect_statementContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractSelect(ctx parser.ISelect_statementContext) (base.TableSource, error) {
 	selectOnlyStatement := ctx.Select_only_statement()
 	if selectOnlyStatement == nil {
 		return nil, nil
@@ -221,7 +222,7 @@ func (q *querySpanExtractor) plsqlExtractSelect(ctx plsql.ISelect_statementConte
 	return q.plsqlExtractSelectOnlyStatement(selectOnlyStatement)
 }
 
-func (q *querySpanExtractor) plsqlExtractSelectOnlyStatement(ctx plsql.ISelect_only_statementContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractSelectOnlyStatement(ctx parser.ISelect_only_statementContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -234,7 +235,7 @@ func (q *querySpanExtractor) plsqlExtractSelectOnlyStatement(ctx plsql.ISelect_o
 	return q.plsqlExtractSubquery(subquery)
 }
 
-func (q *querySpanExtractor) plsqlExtractSubquery(ctx plsql.ISubqueryContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractSubquery(ctx parser.ISubqueryContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -281,7 +282,7 @@ func (q *querySpanExtractor) plsqlExtractSubquery(ctx plsql.ISubqueryContext) (b
 	}, nil
 }
 
-func (q *querySpanExtractor) plsqlExtractSubqueryBasicElements(ctx plsql.ISubquery_basic_elementsContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractSubqueryBasicElements(ctx parser.ISubquery_basic_elementsContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -297,7 +298,7 @@ func (q *querySpanExtractor) plsqlExtractSubqueryBasicElements(ctx plsql.ISubque
 	return nil, nil
 }
 
-func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx parser.IQuery_blockContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -401,27 +402,27 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 	}
 
 	switch rule := ctx.(type) {
-	case plsql.IColumn_nameContext:
+	case parser.IColumn_nameContext:
 		schemaName, tableName, columnName, err := plsqlNormalizeColumnName("", rule)
 		if err != nil {
 			return "", nil, err
 		}
 		return columnName, q.getFieldColumnSource(schemaName, tableName, columnName), nil
-	case plsql.IIdentifierContext:
+	case parser.IIdentifierContext:
 		id := NormalizeIdentifierContext(rule)
 		return id, q.getFieldColumnSource("", "", id), nil
-	case plsql.IConstantContext:
+	case parser.IConstantContext:
 		list := rule.AllQuoted_string()
 		if len(list) == 1 && rule.DATE() == nil && rule.TIMESTAMP() == nil && rule.INTERVAL() == nil {
 			// This case may be a column name...
 			return q.plsqlExtractSourceColumnSetFromExpression(list[0])
 		}
-	case plsql.IQuoted_stringContext:
+	case parser.IQuoted_stringContext:
 		if rule.Variable_name() != nil {
 			return q.plsqlExtractSourceColumnSetFromExpression(rule.Variable_name())
 		}
 		return "", nil, nil
-	case plsql.IVariable_nameContext:
+	case parser.IVariable_nameContext:
 		if rule.Bind_variable() != nil {
 			// TODO: handle bind variable
 			return "", nil, nil
@@ -440,7 +441,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		default:
 			return "", nil, nil
 		}
-	case plsql.IGeneral_elementContext:
+	case parser.IGeneral_elementContext:
 		parts := rule.AllGeneral_element_part()
 
 		// This case is for functions, such as CONCAT(a, b)
@@ -463,15 +464,15 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		default:
 			return "", nil, nil
 		}
-	case plsql.IExpressionContext:
+	case parser.IExpressionContext:
 		if rule.Logical_expression() != nil {
 			return q.plsqlExtractSourceColumnSetFromExpression(rule.Logical_expression())
 		}
 
 		return q.plsqlExtractSourceColumnSetFromExpression(rule.Cursor_expression())
-	case plsql.ICursor_expressionContext:
+	case parser.ICursor_expressionContext:
 		return q.plsqlExtractSourceColumnSetFromExpression(rule.Subquery())
-	case plsql.IQuery_blockContext:
+	case parser.IQuery_blockContext:
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
@@ -494,7 +495,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			sourceColumnSet, _ = base.MergeSourceColumnSet(sourceColumnSet, field.SourceColumns)
 		}
 		return "", sourceColumnSet, nil
-	case plsql.ISubqueryContext:
+	case parser.ISubqueryContext:
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
@@ -517,7 +518,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			sourceColumnSet, _ = base.MergeSourceColumnSet(sourceColumnSet, field.SourceColumns)
 		}
 		return "", sourceColumnSet, nil
-	case plsql.ILogical_expressionContext:
+	case parser.ILogical_expressionContext:
 		if rule.Unary_logical_expression() != nil {
 			return q.plsqlExtractSourceColumnSetFromExpression(rule.Unary_logical_expression())
 		}
@@ -526,9 +527,9 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IUnary_logical_expressionContext:
+	case parser.IUnary_logical_expressionContext:
 		return q.plsqlExtractSourceColumnSetFromExpression(rule.Multiset_expression())
-	case plsql.IMultiset_expressionContext:
+	case parser.IMultiset_expressionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Relational_expression() != nil {
 			list = append(list, rule.Relational_expression())
@@ -537,7 +538,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Concatenation())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IRelational_expressionContext:
+	case parser.IRelational_expressionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllRelational_expression() {
 			list = append(list, item)
@@ -546,7 +547,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Compound_expression())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.ICompound_expressionContext:
+	case parser.ICompound_expressionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllConcatenation() {
 			list = append(list, item)
@@ -558,7 +559,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Between_elements())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IIn_elementsContext:
+	case parser.IIn_elementsContext:
 		var list []antlr.ParserRuleContext
 		if rule.Subquery() != nil {
 			list = append(list, rule.Subquery())
@@ -567,13 +568,13 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IBetween_elementsContext:
+	case parser.IBetween_elementsContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllConcatenation() {
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IConcatenationContext:
+	case parser.IConcatenationContext:
 		var list []antlr.ParserRuleContext
 		if rule.Model_expression() != nil {
 			list = append(list, rule.Model_expression())
@@ -585,7 +586,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IModel_expressionContext:
+	case parser.IModel_expressionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Unary_expression() != nil {
 			list = append(list, rule.Unary_expression())
@@ -594,13 +595,13 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Model_expression_element())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IInterval_expressionContext:
+	case parser.IInterval_expressionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllConcatenation() {
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IUnary_expressionContext:
+	case parser.IUnary_expressionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Unary_expression() != nil {
 			list = append(list, rule.Unary_expression())
@@ -618,7 +619,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Atom())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.ICase_statementContext:
+	case parser.ICase_statementContext:
 		var list []antlr.ParserRuleContext
 		if rule.Simple_case_statement() != nil {
 			list = append(list, rule.Simple_case_statement())
@@ -627,7 +628,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Searched_case_statement())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.ISimple_case_statementContext:
+	case parser.ISimple_case_statementContext:
 		var list []antlr.ParserRuleContext
 		if rule.Expression() != nil {
 			list = append(list, rule.Expression())
@@ -639,17 +640,17 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Case_else_part())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.ISimple_case_when_partContext:
+	case parser.ISimple_case_when_partContext:
 		// not handle seq_of_statements
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.ICase_else_partContext:
+	case parser.ICase_else_partContext:
 		// not handle seq_of_statements
 		return q.plsqlExtractSourceColumnSetFromExpressionList([]antlr.ParserRuleContext{rule.Expression()})
-	case plsql.ISearched_case_statementContext:
+	case parser.ISearched_case_statementContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllSearched_case_when_part() {
 			list = append(list, item)
@@ -658,14 +659,14 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Case_else_part())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.ISearched_case_when_partContext:
+	case parser.ISearched_case_when_partContext:
 		// not handle seq_of_statements
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IQuantified_expressionContext:
+	case parser.IQuantified_expressionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Expression() != nil {
 			list = append(list, rule.Expression())
@@ -674,7 +675,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Select_only_statement())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.ISelect_only_statementContext:
+	case parser.ISelect_only_statementContext:
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
@@ -697,7 +698,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			sourceColumnSet, _ = base.MergeSourceColumnSet(sourceColumnSet, field.SourceColumns)
 		}
 		return "", sourceColumnSet, nil
-	case plsql.IStandard_functionContext:
+	case parser.IStandard_functionContext:
 		var list []antlr.ParserRuleContext
 		if rule.String_function() != nil {
 			list = append(list, rule.String_function())
@@ -712,7 +713,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Other_function())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IString_functionContext:
+	case parser.IString_functionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
@@ -727,7 +728,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Concatenation())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.INumeric_function_wrapperContext:
+	case parser.INumeric_function_wrapperContext:
 		var list []antlr.ParserRuleContext
 		if rule.Numeric_function() != nil {
 			list = append(list, rule.Numeric_function())
@@ -739,7 +740,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Multi_column_for_loop())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.INumeric_functionContext:
+	case parser.INumeric_functionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Expression() != nil {
 			list = append(list, rule.Expression())
@@ -753,13 +754,13 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		// TODO(rebelice): handle over_clause
 		_, sensitive, err := q.plsqlExtractSourceColumnSetFromExpressionList(list)
 		return "", sensitive, err
-	case plsql.IExpressionsContext:
+	case parser.IExpressionsContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.ISingle_column_for_loopContext:
+	case parser.ISingle_column_for_loopContext:
 		var list []antlr.ParserRuleContext
 		if rule.Column_name() != nil {
 			list = append(list, rule.Column_name())
@@ -768,7 +769,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IMulti_column_for_loopContext:
+	case parser.IMulti_column_for_loopContext:
 		var list []antlr.ParserRuleContext
 		if rule.Paren_column_list() != nil {
 			list = append(list, rule.Paren_column_list())
@@ -780,7 +781,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Expressions())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IJson_functionContext:
+	case parser.IJson_functionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllJson_array_element() {
 			list = append(list, item)
@@ -792,7 +793,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Json_object_content())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IJson_array_elementContext:
+	case parser.IJson_array_elementContext:
 		var list []antlr.ParserRuleContext
 		if rule.Expression() != nil {
 			list = append(list, rule.Expression())
@@ -801,13 +802,13 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Json_function())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IJson_object_contentContext:
+	case parser.IJson_object_contentContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllJson_object_entry() {
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IJson_object_entryContext:
+	case parser.IJson_object_entryContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
@@ -816,7 +817,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Identifier())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IOther_functionContext:
+	case parser.IOther_functionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Function_argument_analytic() != nil {
 			list = append(list, rule.Function_argument_analytic())
@@ -847,18 +848,18 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		}
 		// TODO: handle xmltable
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IFunction_argument_analyticContext:
+	case parser.IFunction_argument_analyticContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllArgument() {
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IArgumentContext:
+	case parser.IArgumentContext:
 		return q.plsqlExtractSourceColumnSetFromExpression(rule.Expression())
-	case plsql.IFunction_argument_modelingContext:
+	case parser.IFunction_argument_modelingContext:
 		// TODO(rebelice): implement standard function with USING
 		return "", nil, nil
-	case plsql.ITable_elementContext:
+	case parser.ITable_elementContext:
 		// handled as column name
 		var str []string
 		for _, item := range rule.AllId_expression() {
@@ -874,13 +875,13 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		default:
 			return "", nil, nil
 		}
-	case plsql.IFunction_argumentContext:
+	case parser.IFunction_argumentContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllArgument() {
 			list = append(list, item)
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IAtomContext:
+	case parser.IAtomContext:
 		var list []antlr.ParserRuleContext
 		if rule.Table_element() != nil {
 			list = append(list, rule.Table_element())
@@ -901,15 +902,15 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.General_element())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IConstant_without_variableContext:
+	case parser.IConstant_without_variableContext:
 		list := rule.AllQuoted_string()
 		if len(list) == 1 && rule.DATE() == nil && rule.TIMESTAMP() == nil && rule.INTERVAL() == nil {
 			// This case may be a column name...
 			return q.plsqlExtractSourceColumnSetFromExpression(list[0])
 		}
-	case plsql.ISubquery_operation_partContext:
+	case parser.ISubquery_operation_partContext:
 		return q.plsqlExtractSourceColumnSetFromExpression(rule.Subquery_basic_elements())
-	case plsql.ISubquery_basic_elementsContext:
+	case parser.ISubquery_basic_elementsContext:
 		var list []antlr.ParserRuleContext
 		if rule.Query_block() != nil {
 			list = append(list, rule.Query_block())
@@ -918,7 +919,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Subquery())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
-	case plsql.IModel_expression_elementContext:
+	case parser.IModel_expression_elementContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
@@ -1028,7 +1029,7 @@ func (q *querySpanExtractor) getAllTableColumnSources(schemaName string, tableNa
 	return []base.QuerySpanResult{}, false
 }
 
-func (q *querySpanExtractor) plsqlExtractFromClause(ctx plsql.IFrom_clauseContext) ([]base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractFromClause(ctx parser.IFrom_clauseContext) ([]base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1049,7 +1050,7 @@ func (q *querySpanExtractor) plsqlExtractFromClause(ctx plsql.IFrom_clauseContex
 	return result, nil
 }
 
-func (q *querySpanExtractor) plsqlExtractTableRef(ctx plsql.ITable_refContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractTableRef(ctx parser.ITable_refContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1085,7 +1086,7 @@ func (q *querySpanExtractor) plsqlExtractTableRef(ctx plsql.ITable_refContext) (
 	return leftTableSource, nil
 }
 
-func (q *querySpanExtractor) mergeJoinTableSource(ctx plsql.IJoin_clauseContext, leftTableSource, rightTableSource base.TableSource) (base.TableSource, error) {
+func (q *querySpanExtractor) mergeJoinTableSource(ctx parser.IJoin_clauseContext, leftTableSource, rightTableSource base.TableSource) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1149,7 +1150,7 @@ func (q *querySpanExtractor) mergeJoinTableSource(ctx plsql.IJoin_clauseContext,
 	return result, nil
 }
 
-func (q *querySpanExtractor) plsqlExtractJoin(ctx plsql.IJoin_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractJoin(ctx parser.IJoin_clauseContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1162,7 +1163,7 @@ func (q *querySpanExtractor) plsqlExtractJoin(ctx plsql.IJoin_clauseContext) (ba
 	return q.plsqlExtractTableRefAux(tableRefAux)
 }
 
-func (q *querySpanExtractor) plsqlExtractTableRefAux(ctx plsql.ITable_ref_auxContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractTableRefAux(ctx parser.ITable_ref_auxContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1185,15 +1186,15 @@ func (q *querySpanExtractor) plsqlExtractTableRefAux(ctx plsql.ITable_ref_auxCon
 	}, nil
 }
 
-func (q *querySpanExtractor) plsqlExtractTableRefAuxInternal(ctx plsql.ITable_ref_aux_internalContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractTableRefAuxInternal(ctx parser.ITable_ref_aux_internalContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
 	switch rule := ctx.(type) {
-	case *plsql.Table_ref_aux_internal_oneContext:
+	case *parser.Table_ref_aux_internal_oneContext:
 		return q.plsqlExtractDmlTableExpressionClause(rule.Dml_table_expression_clause())
-	case *plsql.Table_ref_aux_internal_twoContext:
+	case *parser.Table_ref_aux_internal_twoContext:
 		if len(rule.AllSubquery_operation_part()) == 0 {
 			return q.plsqlExtractTableRef(rule.Table_ref())
 		}
@@ -1227,14 +1228,14 @@ func (q *querySpanExtractor) plsqlExtractTableRefAuxInternal(ctx plsql.ITable_re
 			Name:    "",
 			Columns: leftQuerySpanResult,
 		}, nil
-	case *plsql.Table_ref_aux_internal_threeContext:
+	case *parser.Table_ref_aux_internal_threeContext:
 		return q.plsqlExtractDmlTableExpressionClause(rule.Dml_table_expression_clause())
 	default:
 		return nil, errors.Errorf("unknown table_ref_aux_internal rule: %T", rule)
 	}
 }
 
-func (q *querySpanExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml_table_expression_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractDmlTableExpressionClause(ctx parser.IDml_table_expression_clauseContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1415,7 +1416,7 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(instanceID, defaultDa
 	return span.Results, nil
 }
 
-func (q *querySpanExtractor) plsqlExtractFactoringElement(ctx plsql.IFactoring_elementContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) plsqlExtractFactoringElement(ctx parser.IFactoring_elementContext) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1499,7 +1500,7 @@ func (q *querySpanExtractor) plsqlExtractFactoringElement(ctx plsql.IFactoring_e
 	return q.plsqlExtractNonRecursiveCTE(ctx)
 }
 
-func (q *querySpanExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactoring_elementContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) plsqlExtractNonRecursiveCTE(ctx parser.IFactoring_elementContext) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1535,7 +1536,7 @@ func (q *querySpanExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactoring_el
 	}, nil
 }
 
-func (q *querySpanExtractor) plsqlExtractSubqueryExceptLastPart(ctx plsql.ISubqueryContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractSubqueryExceptLastPart(ctx parser.ISubqueryContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1581,7 +1582,7 @@ func (q *querySpanExtractor) plsqlExtractSubqueryExceptLastPart(ctx plsql.ISubqu
 	}, nil
 }
 
-func (q *querySpanExtractor) plsqlExtractSubqueryOperationPart(ctx plsql.ISubquery_operation_partContext) (base.TableSource, error) {
+func (q *querySpanExtractor) plsqlExtractSubqueryOperationPart(ctx parser.ISubquery_operation_partContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1589,7 +1590,7 @@ func (q *querySpanExtractor) plsqlExtractSubqueryOperationPart(ctx plsql.ISubque
 	return q.plsqlExtractSubqueryBasicElements(ctx.Subquery_basic_elements())
 }
 
-func (*querySpanExtractor) plsqlIsRecursiveCTE(ctx plsql.IFactoring_elementContext) (bool, plsql.ISubquery_operation_partContext) {
+func (*querySpanExtractor) plsqlIsRecursiveCTE(ctx parser.IFactoring_elementContext) (bool, parser.ISubquery_operation_partContext) {
 	subquery := ctx.Subquery()
 	allParts := subquery.AllSubquery_operation_part()
 	if len(allParts) == 0 {
@@ -1666,4 +1667,53 @@ var systemSchemaMap = map[string]bool{
 	"SYSMAN":                 true,
 	"WMSYS":                  true,
 	"OJVMSYS":                true,
+}
+
+func getAccessTables(currentDatabase string, tree antlr.Tree) ([]base.SchemaResource, error) {
+	l := &resourceExtractListener{
+		currentDatabase: currentDatabase,
+		resourceMap:     make(map[string]base.SchemaResource),
+	}
+
+	var result []base.SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+type resourceExtractListener struct {
+	*parser.BasePlSqlParserListener
+
+	currentDatabase string
+	resourceMap     map[string]base.SchemaResource
+}
+
+func (l *resourceExtractListener) EnterTableview_name(ctx *parser.Tableview_nameContext) {
+	if ctx.Identifier() == nil {
+		return
+	}
+
+	var schema, tableOrView string
+	if ctx.Id_expression() == nil {
+		tableOrView = NormalizeIdentifierContext(ctx.Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(ctx.Identifier())
+		tableOrView = NormalizeIDExpression(ctx.Id_expression())
+	}
+	if schema == "" {
+		schema = l.currentDatabase
+	}
+
+	resource := base.SchemaResource{
+		Database: schema,
+		Table:    tableOrView,
+	}
+	l.resourceMap[resource.String()] = resource
 }
