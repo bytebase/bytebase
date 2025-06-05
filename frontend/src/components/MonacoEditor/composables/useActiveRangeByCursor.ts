@@ -1,7 +1,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import { orderBy } from "lodash-es";
 import * as monaco from "monaco-editor";
-import { computed, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 
 interface WebSocketMessage {
   method: string;
@@ -102,37 +102,43 @@ export const useActiveRangeByCursor = (
   });
 
   import("../lsp-client").then(async ({ connectionWebSocket }) => {
-    connectionWebSocket.value?.then((ws) => {
-      ws.addEventListener("message", (msg) => {
-        try {
-          if (!msg || !msg.data) {
-            return;
+    watchEffect(() => {
+      if (!connectionWebSocket.value) {
+        return;
+      }
+
+      connectionWebSocket.value?.then((ws) => {
+        ws.addEventListener("message", (msg) => {
+          try {
+            if (!msg || !msg.data) {
+              return;
+            }
+            const data = JSON.parse(msg.data) as WebSocketMessage;
+            if (data.method !== "$/textDocument/statementRanges") {
+              return;
+            }
+            const rangeMessage = data.params as StatementRangeMessage;
+            if (!rangeMessage.uri || !Array.isArray(rangeMessage.ranges)) {
+              return;
+            }
+            statementRangeByUri.value.set(
+              rangeMessage.uri,
+              orderBy(rangeMessage.ranges, (range) => range.start, "asc").map(
+                (range) => {
+                  // The position starts from 1 in the editor.
+                  return {
+                    startLineNumber: range.start.line + 1,
+                    endLineNumber: range.end.line + 1,
+                    startColumn: range.start.character + 1,
+                    endColumn: range.end.character + 1,
+                  };
+                }
+              )
+            );
+          } catch {
+            // nothing
           }
-          const data = JSON.parse(msg.data) as WebSocketMessage;
-          if (data.method !== "$/textDocument/statementRanges") {
-            return;
-          }
-          const rangeMessage = data.params as StatementRangeMessage;
-          if (!rangeMessage.uri || !Array.isArray(rangeMessage.ranges)) {
-            return;
-          }
-          statementRangeByUri.value.set(
-            rangeMessage.uri,
-            orderBy(rangeMessage.ranges, (range) => range.start, "asc").map(
-              (range) => {
-                // The position starts from 1 in the editor.
-                return {
-                  startLineNumber: range.start.line + 1,
-                  endLineNumber: range.end.line + 1,
-                  startColumn: range.start.character + 1,
-                  endColumn: range.end.character + 1,
-                };
-              }
-            )
-          );
-        } catch {
-          // nothing
-        }
+        });
       });
     });
   });
