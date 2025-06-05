@@ -1958,8 +1958,8 @@ func checkAndGetDataSourceQueriable(
 	if environment == nil {
 		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
-	dataSourceQueryPolicyType := storepb.PolicyType_DATA_SOURCE_QUERY
-	environmentResourceType := base.PolicyResourceTypeEnvironment
+	dataSourceQueryPolicyType := storepb.Policy_DATA_SOURCE_QUERY
+	environmentResourceType := storepb.Policy_ENVIRONMENT
 	environmentResource := common.FormatEnvironment(environment.Id)
 	environmentPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &environmentResourceType,
@@ -1977,7 +1977,7 @@ func checkAndGetDataSourceQueriable(
 		envAdminDataSourceRestriction = envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
 	}
 
-	projectResourceType := base.PolicyResourceTypeProject
+	projectResourceType := storepb.Policy_PROJECT
 	projectResource := common.FormatProject(database.ProjectID)
 	projectPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &projectResourceType,
@@ -2016,9 +2016,9 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 	if environment == nil {
 		return status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
-	resourceType := base.PolicyResourceTypeEnvironment
+	resourceType := storepb.Policy_ENVIRONMENT
 	environmentResource := common.FormatEnvironment(environment.Id)
-	policyType := storepb.PolicyType_DATA_SOURCE_QUERY
+	policyType := storepb.Policy_DATA_SOURCE_QUERY
 	dataSourceQueryPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &environmentResource,

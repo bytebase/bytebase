@@ -201,6 +201,7 @@
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
+    - [Policy](#bytebase-store-Policy)
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
@@ -211,7 +212,8 @@
     - [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction)
     - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
-    - [PolicyType](#bytebase-store-PolicyType)
+    - [Policy.Resource](#bytebase-store-Policy-Resource)
+    - [Policy.Type](#bytebase-store-Policy-Type)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
@@ -3315,6 +3317,16 @@ Format: users/{userUID} or groups/{group email} |
 
 
 
+<a name="bytebase-store-Policy"></a>
+
+### Policy
+
+
+
+
+
+
+
 <a name="bytebase-store-QueryDataPolicy"></a>
 
 ### QueryDataPolicy
@@ -3453,14 +3465,28 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 
 
-<a name="bytebase-store-PolicyType"></a>
+<a name="bytebase-store-Policy-Resource"></a>
 
-### PolicyType
+### Policy.Resource
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| POLICY_TYPE_UNSPECIFIED | 0 |  |
+| RESOURCE_UNSPECIFIED | 0 |  |
+| WORKSPACE | 1 |  |
+| ENVIRONMENT | 2 |  |
+| PROJECT | 3 |  |
+
+
+
+<a name="bytebase-store-Policy-Type"></a>
+
+### Policy.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
 | ROLLOUT | 1 |  |
 | MASKING_EXCEPTION | 2 |  |
 | DISABLE_COPY_DATA | 3 |  |

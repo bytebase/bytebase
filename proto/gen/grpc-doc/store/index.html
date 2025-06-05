@@ -973,6 +973,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.Policy"><span class="badge">M</span>Policy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.QueryDataPolicy"><span class="badge">M</span>QueryDataPolicy</a>
                 </li>
               
@@ -1010,7 +1014,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PolicyType"><span class="badge">E</span>PolicyType</a>
+                  <a href="#bytebase.store.Policy.Resource"><span class="badge">E</span>Policy.Resource</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Policy.Type"><span class="badge">E</span>Policy.Type</a>
                 </li>
               
                 <li>
@@ -9080,6 +9088,13 @@ Format: users/{userUID} or groups/{group email} </p></td>
 
         
       
+        <h3 id="bytebase.store.Policy">Policy</h3>
+        <p></p>
+
+        
+
+        
+      
         <h3 id="bytebase.store.QueryDataPolicy">QueryDataPolicy</h3>
         <p>QueryDataPolicy is the policy configuration for querying data.</p>
 
@@ -9364,7 +9379,7 @@ for example, the environment resource can have the sql review config tag, like &
           </tbody>
         </table>
       
-        <h3 id="bytebase.store.PolicyType">PolicyType</h3>
+        <h3 id="bytebase.store.Policy.Resource">Policy.Resource</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -9373,7 +9388,42 @@ for example, the environment resource can have the sql review config tag, like &
           <tbody>
             
               <tr>
-                <td>POLICY_TYPE_UNSPECIFIED</td>
+                <td>RESOURCE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WORKSPACE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ENVIRONMENT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PROJECT</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.Policy.Type">Policy.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
