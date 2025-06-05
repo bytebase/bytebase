@@ -209,7 +209,7 @@ import {
   SchemaTemplateSetting_TableTemplate,
   type SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
-import { SchemaTemplateSetting } from "@/types/proto/v1/setting_service";
+import { SchemaTemplateSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
@@ -347,7 +347,7 @@ const onSubmit = async () => {
     tableCatalog: tableCatalog.value ?? TableCatalog.fromPartial({}),
   });
   const setting = await settingStore.fetchSettingByName(
-    "bb.workspace.schema-template"
+    Setting_SettingName.SCHEMA_TEMPLATE
   );
 
   const settingValue = SchemaTemplateSetting.fromPartial({});
@@ -368,7 +368,7 @@ const onSubmit = async () => {
   }
 
   await settingStore.upsertSetting({
-    name: "bb.workspace.schema-template",
+    name: Setting_SettingName.SCHEMA_TEMPLATE,
     value: {
       schemaTemplateSettingValue: settingValue,
     },

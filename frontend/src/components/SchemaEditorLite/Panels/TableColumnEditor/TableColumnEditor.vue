@@ -70,6 +70,7 @@ import { useSettingV1Store, hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -236,7 +237,7 @@ const markColumnStatus = (
 
 const semanticTypeList = computed(() => {
   return (
-    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
+    settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)?.value
       ?.semanticTypeSettingValue?.types ?? []
   );
 });
@@ -622,7 +623,7 @@ const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
 };
 
 const schemaTemplateColumnTypes = computed(() => {
-  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
   const columnTypes = setting?.value?.schemaTemplateSettingValue?.columnTypes;
   if (columnTypes && columnTypes.length > 0) {
     const columnType = columnTypes.find(

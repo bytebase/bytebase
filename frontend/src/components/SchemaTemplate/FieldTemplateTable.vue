@@ -22,7 +22,7 @@ import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells"
 import { useSettingV1Store } from "@/store";
 import type { Engine } from "@/types/proto/v1/common";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import { SchemaTemplateSetting } from "@/types/proto/v1/setting_service";
+import { SchemaTemplateSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { EngineIcon } from "../Icon";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import { classificationConfig } from "./utils";
@@ -166,7 +166,7 @@ const rowProps = (row: SchemaTemplateSetting_FieldTemplate) => {
 
 const deleteTemplate = async (id: string) => {
   const setting = await settingStore.fetchSettingByName(
-    "bb.workspace.schema-template"
+    Setting_SettingName.SCHEMA_TEMPLATE
   );
 
   const settingValue = SchemaTemplateSetting.fromPartial({});
@@ -179,7 +179,7 @@ const deleteTemplate = async (id: string) => {
     pullAt(settingValue.fieldTemplates, index);
 
     await settingStore.upsertSetting({
-      name: "bb.workspace.schema-template",
+      name: Setting_SettingName.SCHEMA_TEMPLATE,
       value: {
         schemaTemplateSettingValue: settingValue,
       },
@@ -189,7 +189,7 @@ const deleteTemplate = async (id: string) => {
 
 const semanticTypeList = computed(() => {
   return (
-    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
+    settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)?.value
       ?.semanticTypeSettingValue?.types ?? []
   );
 });

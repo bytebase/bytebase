@@ -13,7 +13,7 @@ import (
 func (ctl *controller) getEnvironment(ctx context.Context, id string) (*v1pb.EnvironmentSetting_Environment, error) {
 	setting, err := ctl.settingServiceClient.GetSetting(ctx,
 		&v1pb.GetSettingRequest{
-			Name: "settings/bb.workspace.environment",
+			Name: "settings/" + v1pb.Setting_ENVIRONMENT.String(),
 		})
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func (ctl *controller) getEnvironment(ctx context.Context, id string) (*v1pb.Env
 func (ctl *controller) createEnvironment(ctx context.Context, id, title string) (*v1pb.EnvironmentSetting_Environment, error) {
 	setting, err := ctl.settingServiceClient.GetSetting(ctx,
 		&v1pb.GetSettingRequest{
-			Name: "settings/bb.workspace.environment",
+			Name: "settings/" + v1pb.Setting_ENVIRONMENT.String(),
 		})
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (ctl *controller) createEnvironment(ctx context.Context, id, title string) 
 	_, err = ctl.settingServiceClient.UpdateSetting(ctx,
 		&v1pb.UpdateSettingRequest{
 			Setting: &v1pb.Setting{
-				Name: "settings/bb.workspace.environment",
+				Name: "settings/" + v1pb.Setting_ENVIRONMENT.String(),
 				Value: &v1pb.Value{
 					Value: &v1pb.Value_EnvironmentSetting{
 						EnvironmentSetting: &v1pb.EnvironmentSetting{

@@ -31,7 +31,7 @@ type Store struct {
 	issueCache           *lru.Cache[int, *IssueMessage]
 	issueByPipelineCache *lru.Cache[int, *IssueMessage]
 	pipelineCache        *lru.Cache[int, *PipelineMessage]
-	settingCache         *lru.Cache[base.SettingName, *SettingMessage]
+	settingCache         *lru.Cache[storepb.SettingName, *SettingMessage]
 	idpCache             *lru.Cache[string, *IdentityProviderMessage]
 	risksCache           *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
 	databaseGroupCache   *lru.Cache[string, *DatabaseGroupMessage]
@@ -82,7 +82,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	settingCache, err := lru.New[base.SettingName, *SettingMessage](64)
+	settingCache, err := lru.New[storepb.SettingName, *SettingMessage](64)
 	if err != nil {
 		return nil, err
 	}

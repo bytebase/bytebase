@@ -28,6 +28,7 @@ import Long from "long";
 import { NInputNumber } from "naive-ui";
 import { ref, computed } from "vue";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 
 defineProps<{
   allowEdit: boolean;
@@ -38,7 +39,7 @@ const timing = ref<ReturnType<typeof setTimeout>>();
 
 const initialState = () => {
   const limit =
-    settingV1Store.getSettingByName("bb.workspace.maximum-sql-result-size")
+    settingV1Store.getSettingByName(Setting_SettingName.SQL_RESULT_SIZE_LIMIT)
       ?.value?.maximumSqlResultSizeSetting?.limit ??
     Long.fromNumber(100 * 1024 * 1024);
 
@@ -57,7 +58,7 @@ const updateChange = async () => {
   }
   clearTimeout(timing.value);
   await settingV1Store.upsertSetting({
-    name: "bb.workspace.maximum-sql-result-size",
+    name: Setting_SettingName.SQL_RESULT_SIZE_LIMIT,
     value: {
       maximumSqlResultSizeSetting: {
         limit: Long.fromNumber(maximumSQLResultLimit.value * 1024 * 1024),

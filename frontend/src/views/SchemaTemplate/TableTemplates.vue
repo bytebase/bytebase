@@ -80,6 +80,7 @@ import { Engine } from "@/types/proto/v1/common";
 import { TableMetadata } from "@/types/proto/v1/database_service";
 import { TableCatalog } from "@/types/proto/v1/database_catalog_service";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
   template: SchemaTemplateSetting_TableTemplate;
@@ -144,7 +145,7 @@ const toggleEngineCheck = (engine: Engine) => {
 const settingStore = useSettingV1Store();
 
 const schemaTemplateList = computed(() => {
-  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
   return setting?.value?.schemaTemplateSettingValue?.tableTemplates ?? [];
 });
 

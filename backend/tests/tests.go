@@ -28,7 +28,6 @@ import (
 	// init() in pgx/v5/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	component "github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/server"
@@ -184,7 +183,7 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 	_, err := ctl.settingServiceClient.UpdateSetting(ctx, &v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
-			Name: fmt.Sprintf("settings/%s", base.SettingWorkspaceProfile),
+			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_WorkspaceProfileSettingValue{
 					WorkspaceProfileSettingValue: &v1pb.WorkspaceProfileSetting{

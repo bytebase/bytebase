@@ -17,13 +17,14 @@ import {
 import {
   SchemaTemplateSetting_TableTemplate,
   DataClassificationSetting_DataClassificationConfig,
+  Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
 
 export const engineList = [Engine.MYSQL, Engine.POSTGRES];
 
 export const categoryList = computed(() => {
   const settingStore = useSettingV1Store();
-  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
   const fieldTemplateList =
     setting?.value?.schemaTemplateSettingValue?.fieldTemplates ?? [];
   const tableTemplateList =

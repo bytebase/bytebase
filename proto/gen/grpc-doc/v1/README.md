@@ -271,6 +271,7 @@
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
+    - [Setting.SettingName](#bytebase-v1-Setting-SettingName)
   
     - [SettingService](#bytebase-v1-SettingService)
   
@@ -4946,6 +4947,36 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ENCRYPTION_NONE | 1 |  |
 | ENCRYPTION_STARTTLS | 2 |  |
 | ENCRYPTION_SSL_TLS | 3 |  |
+
+
+
+<a name="bytebase-v1-Setting-SettingName"></a>
+
+### Setting.SettingName
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SETTING_NAME_UNSPECIFIED | 0 |  |
+| AUTH_SECRET | 1 |  |
+| BRANDING_LOGO | 2 |  |
+| WORKSPACE_ID | 3 |  |
+| WORKSPACE_PROFILE | 4 |  |
+| WORKSPACE_APPROVAL | 5 |  |
+| WORKSPACE_EXTERNAL_APPROVAL | 6 |  |
+| ENTERPRISE_LICENSE | 7 |  |
+| APP_IM | 8 |  |
+| WATERMARK | 9 |  |
+| AI | 10 |  |
+| PLUGIN_AGENT | 11 |  |
+| WORKSPACE_MAIL_DELIVERY | 12 |  |
+| SCHEMA_TEMPLATE | 13 |  |
+| DATA_CLASSIFICATION | 14 |  |
+| SEMANTIC_TYPES | 15 |  |
+| SQL_RESULT_SIZE_LIMIT | 16 |  |
+| SCIM | 17 |  |
+| PASSWORD_RESTRICTION | 18 |  |
+| ENVIRONMENT | 19 |  |
 
 
  

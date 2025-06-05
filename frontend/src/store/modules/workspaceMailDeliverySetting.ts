@@ -5,8 +5,9 @@ import type {
   SMTPMailDeliverySettingValue,
   Setting,
 } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 
-const SETTING_NAME = "settings/bb.workspace.mail-delivery";
+const SETTING_NAME = `settings/${Setting_SettingName.WORKSPACE_MAIL_DELIVERY}`;
 
 export const useWorkspaceMailDeliverySettingStore = defineStore(
   "workspaceMailDeliverySetting",
