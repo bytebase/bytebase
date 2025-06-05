@@ -306,7 +306,6 @@
     "license-expired": "Your license for {plan} has expired on {expireAt}.",
     "license-expires": "Your license for {plan} will expires in {days} days on {expireAt}.",
     "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
-    "trial-expired": "Your free trial for {plan} has expired.",
     "deploy": "Self Host",
     "cloud": "Cloud",
     "request-demo": "Book a 30-minute product demo.",
