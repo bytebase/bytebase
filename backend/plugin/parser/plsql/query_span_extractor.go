@@ -2,11 +2,13 @@ package plsql
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	parser "github.com/bytebase/plsql-parser"
 	plsql "github.com/bytebase/plsql-parser"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
@@ -64,12 +66,12 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, nil
 	}
 
-	resources, err := ExtractResourceList(q.defaultDatabase, "", statement)
+	accessTables, err := getAccessTables(q.defaultDatabase, tree)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract resource list from statement: %s", statement)
 	}
 
-	allSystem, mixed := isMixedQuery(resources)
+	allSystem, mixed := isMixedQuery(accessTables)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
@@ -89,7 +91,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}
 
 	columnSet := make(base.SourceColumnSet)
-	for _, resource := range resources {
+	for _, resource := range accessTables {
 		if !q.existsTableMetadata(resource) {
 			continue
 		}
@@ -1666,4 +1668,53 @@ var systemSchemaMap = map[string]bool{
 	"SYSMAN":                 true,
 	"WMSYS":                  true,
 	"OJVMSYS":                true,
+}
+
+func getAccessTables(currentDatabase string, tree antlr.Tree) ([]base.SchemaResource, error) {
+	l := &plsqlResourceExtractListener{
+		currentDatabase: currentDatabase,
+		resourceMap:     make(map[string]base.SchemaResource),
+	}
+
+	var result []base.SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+type plsqlResourceExtractListener struct {
+	*parser.BasePlSqlParserListener
+
+	currentDatabase string
+	resourceMap     map[string]base.SchemaResource
+}
+
+func (l *plsqlResourceExtractListener) EnterTableview_name(ctx *parser.Tableview_nameContext) {
+	if ctx.Identifier() == nil {
+		return
+	}
+
+	var schema, tableOrView string
+	if ctx.Id_expression() == nil {
+		tableOrView = NormalizeIdentifierContext(ctx.Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(ctx.Identifier())
+		tableOrView = NormalizeIDExpression(ctx.Id_expression())
+	}
+	if schema == "" {
+		schema = l.currentDatabase
+	}
+
+	resource := base.SchemaResource{
+		Database: schema,
+		Table:    tableOrView,
+	}
+	l.resourceMap[resource.String()] = resource
 }
