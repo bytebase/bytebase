@@ -355,6 +355,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.BatchUpdateInstancesRequest"><span class="badge">M</span>BatchUpdateInstancesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchUpdateInstancesResponse"><span class="badge">M</span>BatchUpdateInstancesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateInstanceRequest"><span class="badge">M</span>CreateInstanceRequest</a>
                 </li>
               
@@ -4160,6 +4168,54 @@ A maximum of 1000 instances can be synced in a batch. </p></td>
 
         
       
+        <h3 id="bytebase.v1.BatchUpdateInstancesRequest">BatchUpdateInstancesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>requests</td>
+                  <td><a href="#bytebase.v1.UpdateInstanceRequest">UpdateInstanceRequest</a></td>
+                  <td>repeated</td>
+                  <td><p>The request message specifying the resources to update. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchUpdateInstancesResponse">BatchUpdateInstancesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>instances</td>
+                  <td><a href="#bytebase.v1.Instance">Instance</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateInstanceRequest">CreateInstanceRequest</h3>
         <p></p>
 
@@ -5664,6 +5720,13 @@ Format: instances/{instance} </p></td>
               </tr>
             
               <tr>
+                <td>BatchUpdateInstances</td>
+                <td><a href="#bytebase.v1.BatchUpdateInstancesRequest">BatchUpdateInstancesRequest</a></td>
+                <td><a href="#bytebase.v1.BatchUpdateInstancesResponse">BatchUpdateInstancesResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>AddDataSource</td>
                 <td><a href="#bytebase.v1.AddDataSourceRequest">AddDataSourceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
@@ -5788,6 +5851,16 @@ Format: instances/{instance} </p></td>
                 <td>BatchSyncInstances</td>
                 <td>POST</td>
                 <td>/v1/instances:batchSync</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchUpdateInstances</td>
+                <td>POST</td>
+                <td>/v1/instances:batchUpdate</td>
                 <td>*</td>
               </tr>
               

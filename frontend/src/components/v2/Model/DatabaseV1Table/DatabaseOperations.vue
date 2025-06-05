@@ -57,9 +57,8 @@
     @apply="onLabelsApply($event)"
   />
 
-  <DatabaseEditEnvironmentDrawer
+  <EditEnvironmentDrawer
     :show="state.showEditEnvironmentDrawer"
-    :databases="databases"
     @dismiss="state.showEditEnvironmentDrawer = false"
     @update="onEnvironmentUpdate($event)"
   />
@@ -120,7 +119,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
-import DatabaseEditEnvironmentDrawer from "@/components/DatabaseEditEnvironmentDrawer.vue";
+import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
@@ -187,7 +186,7 @@ const state = reactive<LocalState>({
 
 const emit = defineEmits<{
   (event: "refresh"): void;
-  (event: "update-cache", databases: ComposedDatabase[]): void;
+  (event: "update", databases: ComposedDatabase[]): void;
 }>();
 
 const { t } = useI18n();
@@ -623,7 +622,7 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
       });
     })
   );
-  emit("update-cache", updatedDatabases);
+  emit("update", updatedDatabases);
 
   pushNotification({
     module: "bytebase",
@@ -645,7 +644,7 @@ const onEnvironmentUpdate = async (environment: string) => {
       });
     }),
   });
-  emit("update-cache", updatedDatabases);
+  emit("update", updatedDatabases);
 
   pushNotification({
     module: "bytebase",

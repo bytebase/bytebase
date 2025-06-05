@@ -11,7 +11,11 @@ import {
 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import { State, stateToJSON, engineToJSON } from "@/types/proto/v1/common";
-import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
+import type {
+  DataSource,
+  Instance,
+  UpdateInstanceRequest,
+} from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { useEnvironmentV1Store } from "./environment";
 
@@ -130,6 +134,15 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       requests: instanceNameList.map((name) => ({ name, enableFullSync })),
     });
   };
+
+  const batchUpdateInstances = async (requests: UpdateInstanceRequest[]) => {
+    const response = await instanceServiceClient.batchUpdateInstances({
+      requests,
+    });
+    const composed = await upsertInstances(response.instances);
+    return composed;
+  };
+
   const fetchInstanceByName = async (name: string, silent = false) => {
     const instance = await instanceServiceClient.getInstance(
       {
@@ -233,6 +246,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     restoreInstance,
     syncInstance,
     batchSyncInstances,
+    batchUpdateInstances,
     getInstanceByName,
     getOrFetchInstanceByName,
     createDataSource,
