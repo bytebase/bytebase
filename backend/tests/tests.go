@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Import pg driver.
 	// init() in pgx/v5/stdlib will register it's pgx driver.
@@ -184,7 +185,7 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 	_, err := ctl.settingServiceClient.UpdateSetting(ctx, &v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
-			Name: fmt.Sprintf("settings/%s", base.SettingWorkspaceProfile),
+			Name: fmt.Sprintf("settings/%s", storepb.SettingName_WORKSPACE_PROFILE.String()),
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_WorkspaceProfileSettingValue{
 					WorkspaceProfileSettingValue: &v1pb.WorkspaceProfileSetting{

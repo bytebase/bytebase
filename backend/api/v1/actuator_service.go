@@ -81,12 +81,12 @@ func (s *ActuatorService) DeleteCache(_ context.Context, _ *v1pb.DeleteCacheRequ
 
 // GetResourcePackage gets the theme resources.
 func (s *ActuatorService) GetResourcePackage(ctx context.Context, _ *v1pb.GetResourcePackageRequest) (*v1pb.ResourcePackage, error) {
-	brandingSetting, err := s.store.GetSettingV2(ctx, base.SettingBrandingLogo)
+	brandingSetting, err := s.store.GetSettingV2(ctx, storepb.SettingName_BRANDING_LOGO)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace branding: %v", err)
 	}
 	if brandingSetting == nil {
-		return nil, errors.Errorf("cannot find setting %v", base.SettingBrandingLogo)
+		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_BRANDING_LOGO)
 	}
 
 	return &v1pb.ResourcePackage{
@@ -346,7 +346,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureTy
 	}
 
 	// setting
-	brandingLogo, err := s.store.GetSettingV2(ctx, base.SettingBrandingLogo)
+	brandingLogo, err := s.store.GetSettingV2(ctx, storepb.SettingName_BRANDING_LOGO)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get branding logo setting")
 	}
@@ -354,7 +354,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureTy
 		features = append(features, base.FeatureBranding)
 	}
 
-	watermark, err := s.store.GetSettingV2(ctx, base.SettingWatermark)
+	watermark, err := s.store.GetSettingV2(ctx, storepb.SettingName_WATERMARK)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get watermark setting")
 	}
