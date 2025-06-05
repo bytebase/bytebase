@@ -23,6 +23,79 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type PolicyType int32
+
+const (
+	PolicyType_POLICY_TYPE_UNSPECIFIED                PolicyType = 0
+	PolicyType_ROLLOUT                                PolicyType = 1
+	PolicyType_MASKING_EXCEPTION                      PolicyType = 2
+	PolicyType_DISABLE_COPY_DATA                      PolicyType = 3
+	PolicyType_EXPORT_DATA                            PolicyType = 4
+	PolicyType_QUERY_DATA                             PolicyType = 5
+	PolicyType_MASKING_RULE                           PolicyType = 6
+	PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW PolicyType = 7
+	PolicyType_IAM                                    PolicyType = 8
+	PolicyType_TAG                                    PolicyType = 9
+	PolicyType_DATA_SOURCE_QUERY                      PolicyType = 10
+)
+
+// Enum value maps for PolicyType.
+var (
+	PolicyType_name = map[int32]string{
+		0:  "POLICY_TYPE_UNSPECIFIED",
+		1:  "ROLLOUT",
+		2:  "MASKING_EXCEPTION",
+		3:  "DISABLE_COPY_DATA",
+		4:  "EXPORT_DATA",
+		5:  "QUERY_DATA",
+		6:  "MASKING_RULE",
+		7:  "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW",
+		8:  "IAM",
+		9:  "TAG",
+		10: "DATA_SOURCE_QUERY",
+	}
+	PolicyType_value = map[string]int32{
+		"POLICY_TYPE_UNSPECIFIED":                0,
+		"ROLLOUT":                                1,
+		"MASKING_EXCEPTION":                      2,
+		"DISABLE_COPY_DATA":                      3,
+		"EXPORT_DATA":                            4,
+		"QUERY_DATA":                             5,
+		"MASKING_RULE":                           6,
+		"RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW": 7,
+		"IAM":                                    8,
+		"TAG":                                    9,
+		"DATA_SOURCE_QUERY":                      10,
+	}
+)
+
+func (x PolicyType) Enum() *PolicyType {
+	p := new(PolicyType)
+	*p = x
+	return p
+}
+
+func (x PolicyType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PolicyType) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_policy_proto_enumTypes[0].Descriptor()
+}
+
+func (PolicyType) Type() protoreflect.EnumType {
+	return &file_store_policy_proto_enumTypes[0]
+}
+
+func (x PolicyType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PolicyType.Descriptor instead.
+func (PolicyType) EnumDescriptor() ([]byte, []int) {
+	return file_store_policy_proto_rawDescGZIP(), []int{0}
+}
+
 type SQLReviewRuleLevel int32
 
 const (
@@ -59,11 +132,11 @@ func (x SQLReviewRuleLevel) String() string {
 }
 
 func (SQLReviewRuleLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[0].Descriptor()
+	return file_store_policy_proto_enumTypes[1].Descriptor()
 }
 
 func (SQLReviewRuleLevel) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[0]
+	return &file_store_policy_proto_enumTypes[1]
 }
 
 func (x SQLReviewRuleLevel) Number() protoreflect.EnumNumber {
@@ -72,7 +145,7 @@ func (x SQLReviewRuleLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SQLReviewRuleLevel.Descriptor instead.
 func (SQLReviewRuleLevel) EnumDescriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{0}
+	return file_store_policy_proto_rawDescGZIP(), []int{1}
 }
 
 type MaskingExceptionPolicy_MaskingException_Action int32
@@ -108,11 +181,11 @@ func (x MaskingExceptionPolicy_MaskingException_Action) String() string {
 }
 
 func (MaskingExceptionPolicy_MaskingException_Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[1].Descriptor()
+	return file_store_policy_proto_enumTypes[2].Descriptor()
 }
 
 func (MaskingExceptionPolicy_MaskingException_Action) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[1]
+	return &file_store_policy_proto_enumTypes[2]
 }
 
 func (x MaskingExceptionPolicy_MaskingException_Action) Number() protoreflect.EnumNumber {
@@ -157,11 +230,11 @@ func (x EnvironmentTierPolicy_EnvironmentTier) String() string {
 }
 
 func (EnvironmentTierPolicy_EnvironmentTier) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[2].Descriptor()
+	return file_store_policy_proto_enumTypes[3].Descriptor()
 }
 
 func (EnvironmentTierPolicy_EnvironmentTier) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[2]
+	return &file_store_policy_proto_enumTypes[3]
 }
 
 func (x EnvironmentTierPolicy_EnvironmentTier) Number() protoreflect.EnumNumber {
@@ -208,11 +281,11 @@ func (x DataSourceQueryPolicy_Restriction) String() string {
 }
 
 func (DataSourceQueryPolicy_Restriction) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[3].Descriptor()
+	return file_store_policy_proto_enumTypes[4].Descriptor()
 }
 
 func (DataSourceQueryPolicy_Restriction) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[3]
+	return &file_store_policy_proto_enumTypes[4]
 }
 
 func (x DataSourceQueryPolicy_Restriction) Number() protoreflect.EnumNumber {
@@ -1100,7 +1173,22 @@ const file_store_policy_proto_rawDesc = "" +
 	"\vRestriction\x12\x1b\n" +
 	"\x17RESTRICTION_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bFALLBACK\x10\x01\x12\f\n" +
-	"\bDISALLOW\x10\x02*Q\n" +
+	"\bDISALLOW\x10\x02*\xec\x01\n" +
+	"\n" +
+	"PolicyType\x12\x1b\n" +
+	"\x17POLICY_TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aROLLOUT\x10\x01\x12\x15\n" +
+	"\x11MASKING_EXCEPTION\x10\x02\x12\x15\n" +
+	"\x11DISABLE_COPY_DATA\x10\x03\x12\x0f\n" +
+	"\vEXPORT_DATA\x10\x04\x12\x0e\n" +
+	"\n" +
+	"QUERY_DATA\x10\x05\x12\x10\n" +
+	"\fMASKING_RULE\x10\x06\x12*\n" +
+	"&RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW\x10\a\x12\a\n" +
+	"\x03IAM\x10\b\x12\a\n" +
+	"\x03TAG\x10\t\x12\x15\n" +
+	"\x11DATA_SOURCE_QUERY\x10\n" +
+	"*Q\n" +
 	"\x12SQLReviewRuleLevel\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
@@ -1119,47 +1207,48 @@ func file_store_policy_proto_rawDescGZIP() []byte {
 	return file_store_policy_proto_rawDescData
 }
 
-var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_store_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_store_policy_proto_goTypes = []any{
-	(SQLReviewRuleLevel)(0),                             // 0: bytebase.store.SQLReviewRuleLevel
-	(MaskingExceptionPolicy_MaskingException_Action)(0), // 1: bytebase.store.MaskingExceptionPolicy.MaskingException.Action
-	(EnvironmentTierPolicy_EnvironmentTier)(0),          // 2: bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	(DataSourceQueryPolicy_Restriction)(0),              // 3: bytebase.store.DataSourceQueryPolicy.Restriction
-	(*RolloutPolicy)(nil),                               // 4: bytebase.store.RolloutPolicy
-	(*MaskingExceptionPolicy)(nil),                      // 5: bytebase.store.MaskingExceptionPolicy
-	(*MaskingRulePolicy)(nil),                           // 6: bytebase.store.MaskingRulePolicy
-	(*SQLReviewRule)(nil),                               // 7: bytebase.store.SQLReviewRule
-	(*TagPolicy)(nil),                                   // 8: bytebase.store.TagPolicy
-	(*Binding)(nil),                                     // 9: bytebase.store.Binding
-	(*IamPolicy)(nil),                                   // 10: bytebase.store.IamPolicy
-	(*EnvironmentTierPolicy)(nil),                       // 11: bytebase.store.EnvironmentTierPolicy
-	(*DisableCopyDataPolicy)(nil),                       // 12: bytebase.store.DisableCopyDataPolicy
-	(*ExportDataPolicy)(nil),                            // 13: bytebase.store.ExportDataPolicy
-	(*QueryDataPolicy)(nil),                             // 14: bytebase.store.QueryDataPolicy
-	(*RestrictIssueCreationForSQLReviewPolicy)(nil),     // 15: bytebase.store.RestrictIssueCreationForSQLReviewPolicy
-	(*DataSourceQueryPolicy)(nil),                       // 16: bytebase.store.DataSourceQueryPolicy
-	(*MaskingExceptionPolicy_MaskingException)(nil),     // 17: bytebase.store.MaskingExceptionPolicy.MaskingException
-	(*MaskingRulePolicy_MaskingRule)(nil),               // 18: bytebase.store.MaskingRulePolicy.MaskingRule
-	nil,                                                 // 19: bytebase.store.TagPolicy.TagsEntry
-	(Engine)(0),                                         // 20: bytebase.store.Engine
-	(*expr.Expr)(nil),                                   // 21: google.type.Expr
-	(*durationpb.Duration)(nil),                         // 22: google.protobuf.Duration
+	(PolicyType)(0),         // 0: bytebase.store.PolicyType
+	(SQLReviewRuleLevel)(0), // 1: bytebase.store.SQLReviewRuleLevel
+	(MaskingExceptionPolicy_MaskingException_Action)(0), // 2: bytebase.store.MaskingExceptionPolicy.MaskingException.Action
+	(EnvironmentTierPolicy_EnvironmentTier)(0),          // 3: bytebase.store.EnvironmentTierPolicy.EnvironmentTier
+	(DataSourceQueryPolicy_Restriction)(0),              // 4: bytebase.store.DataSourceQueryPolicy.Restriction
+	(*RolloutPolicy)(nil),                               // 5: bytebase.store.RolloutPolicy
+	(*MaskingExceptionPolicy)(nil),                      // 6: bytebase.store.MaskingExceptionPolicy
+	(*MaskingRulePolicy)(nil),                           // 7: bytebase.store.MaskingRulePolicy
+	(*SQLReviewRule)(nil),                               // 8: bytebase.store.SQLReviewRule
+	(*TagPolicy)(nil),                                   // 9: bytebase.store.TagPolicy
+	(*Binding)(nil),                                     // 10: bytebase.store.Binding
+	(*IamPolicy)(nil),                                   // 11: bytebase.store.IamPolicy
+	(*EnvironmentTierPolicy)(nil),                       // 12: bytebase.store.EnvironmentTierPolicy
+	(*DisableCopyDataPolicy)(nil),                       // 13: bytebase.store.DisableCopyDataPolicy
+	(*ExportDataPolicy)(nil),                            // 14: bytebase.store.ExportDataPolicy
+	(*QueryDataPolicy)(nil),                             // 15: bytebase.store.QueryDataPolicy
+	(*RestrictIssueCreationForSQLReviewPolicy)(nil),     // 16: bytebase.store.RestrictIssueCreationForSQLReviewPolicy
+	(*DataSourceQueryPolicy)(nil),                       // 17: bytebase.store.DataSourceQueryPolicy
+	(*MaskingExceptionPolicy_MaskingException)(nil),     // 18: bytebase.store.MaskingExceptionPolicy.MaskingException
+	(*MaskingRulePolicy_MaskingRule)(nil),               // 19: bytebase.store.MaskingRulePolicy.MaskingRule
+	nil,                                                 // 20: bytebase.store.TagPolicy.TagsEntry
+	(Engine)(0),                                         // 21: bytebase.store.Engine
+	(*expr.Expr)(nil),                                   // 22: google.type.Expr
+	(*durationpb.Duration)(nil),                         // 23: google.protobuf.Duration
 }
 var file_store_policy_proto_depIdxs = []int32{
-	17, // 0: bytebase.store.MaskingExceptionPolicy.masking_exceptions:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException
-	18, // 1: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
-	0,  // 2: bytebase.store.SQLReviewRule.level:type_name -> bytebase.store.SQLReviewRuleLevel
-	20, // 3: bytebase.store.SQLReviewRule.engine:type_name -> bytebase.store.Engine
-	19, // 4: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
-	21, // 5: bytebase.store.Binding.condition:type_name -> google.type.Expr
-	9,  // 6: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
-	2,  // 7: bytebase.store.EnvironmentTierPolicy.environment_tier:type_name -> bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	22, // 8: bytebase.store.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
-	3,  // 9: bytebase.store.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.store.DataSourceQueryPolicy.Restriction
-	1,  // 10: bytebase.store.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException.Action
-	21, // 11: bytebase.store.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
-	21, // 12: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	18, // 0: bytebase.store.MaskingExceptionPolicy.masking_exceptions:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException
+	19, // 1: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
+	1,  // 2: bytebase.store.SQLReviewRule.level:type_name -> bytebase.store.SQLReviewRuleLevel
+	21, // 3: bytebase.store.SQLReviewRule.engine:type_name -> bytebase.store.Engine
+	20, // 4: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
+	22, // 5: bytebase.store.Binding.condition:type_name -> google.type.Expr
+	10, // 6: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
+	3,  // 7: bytebase.store.EnvironmentTierPolicy.environment_tier:type_name -> bytebase.store.EnvironmentTierPolicy.EnvironmentTier
+	23, // 8: bytebase.store.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
+	4,  // 9: bytebase.store.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.store.DataSourceQueryPolicy.Restriction
+	2,  // 10: bytebase.store.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException.Action
+	22, // 11: bytebase.store.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
+	22, // 12: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
 	13, // [13:13] is the sub-list for method output_type
 	13, // [13:13] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name
@@ -1178,7 +1267,7 @@ func file_store_policy_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_policy_proto_rawDesc), len(file_store_policy_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,

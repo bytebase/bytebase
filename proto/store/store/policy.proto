@@ -8,6 +8,20 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
+enum PolicyType {
+  POLICY_TYPE_UNSPECIFIED = 0;
+  ROLLOUT = 1;
+  MASKING_EXCEPTION = 2;
+  DISABLE_COPY_DATA = 3;
+  EXPORT_DATA = 4;
+  QUERY_DATA = 5;
+  MASKING_RULE = 6;
+  RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 7;
+  IAM = 8;
+  TAG = 9;
+  DATA_SOURCE_QUERY = 10;
+}
+
 message RolloutPolicy {
   bool automatic = 1;
   repeated string roles = 2;

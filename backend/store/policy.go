@@ -85,7 +85,7 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 	if _, err := s.CreatePolicyV2(ctx, &PolicyMessage{
 		ResourceType:      base.PolicyResourceTypeWorkspace,
 		Payload:           string(policyPayload),
-		Type:              base.PolicyTypeIAM,
+		Type:              storepb.PolicyType_IAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
@@ -106,7 +106,7 @@ func (s *Store) GetProjectIamPolicy(ctx context.Context, projectID string) (*Iam
 }
 
 func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*IamPolicyMessage, error) {
-	pType := base.PolicyTypeIAM
+	pType := storepb.PolicyType_IAM
 	find.Type = &pType
 	policy, err := s.GetPolicyV2(ctx, find)
 	if err != nil {
@@ -132,7 +132,7 @@ func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*Iam
 func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*storepb.RolloutPolicy, error) {
 	resource := common.FormatEnvironment(environment)
 	resourceType := base.PolicyResourceTypeEnvironment
-	pType := base.PolicyTypeRollout
+	pType := storepb.PolicyType_ROLLOUT
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
@@ -156,7 +156,7 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 func (s *Store) GetExportDataPolicy(ctx context.Context) (*storepb.ExportDataPolicy, error) {
 	resourceType := base.PolicyResourceTypeWorkspace
 	resource := ""
-	pType := base.PolicyTypeExportData
+	pType := storepb.PolicyType_EXPORT_DATA
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
@@ -182,7 +182,7 @@ func (s *Store) GetExportDataPolicy(ctx context.Context) (*storepb.ExportDataPol
 func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolicy, error) {
 	resourceType := base.PolicyResourceTypeWorkspace
 	resource := ""
-	pType := base.PolicyTypeQueryData
+	pType := storepb.PolicyType_QUERY_DATA
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
@@ -235,7 +235,7 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *Databa
 }
 
 func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType base.PolicyResourceType, resource string) (*storepb.ReviewConfigPayload, error) {
-	pType := base.PolicyTypeTag
+	pType := storepb.PolicyType_TAG
 
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
@@ -282,7 +282,7 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType base
 
 // GetMaskingRulePolicy will get the masking rule policy.
 func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRulePolicy, error) {
-	pType := base.PolicyTypeMaskingRule
+	pType := storepb.PolicyType_MASKING_RULE
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		Type: &pType,
 	})
@@ -306,7 +306,7 @@ func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRuleP
 func (s *Store) GetMaskingExceptionPolicyByProject(ctx context.Context, projectID string) (*storepb.MaskingExceptionPolicy, error) {
 	resourceType := base.PolicyResourceTypeProject
 	resource := common.FormatProject(projectID)
-	pType := base.PolicyTypeMaskingException
+	pType := storepb.PolicyType_MASKING_EXCEPTION
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
@@ -334,7 +334,7 @@ type PolicyMessage struct {
 	ResourceType      base.PolicyResourceType
 	Payload           string
 	InheritFromParent bool
-	Type              base.PolicyType
+	Type              storepb.PolicyType
 	Enforce           bool
 
 	UpdatedAt time.Time
@@ -344,7 +344,7 @@ type PolicyMessage struct {
 type FindPolicyMessage struct {
 	ResourceType *base.PolicyResourceType
 	Resource     *string
-	Type         *base.PolicyType
+	Type         *storepb.PolicyType
 	// ShowAll will show all policies regardless of the enforce status.
 	ShowAll bool
 }
@@ -353,7 +353,7 @@ type FindPolicyMessage struct {
 type UpdatePolicyMessage struct {
 	ResourceType      base.PolicyResourceType
 	Resource          string
-	Type              base.PolicyType
+	Type              storepb.PolicyType
 	InheritFromParent *bool
 	Payload           *string
 	Enforce           *bool
@@ -458,7 +458,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	if v := patch.Enforce; v != nil {
 		set, args = append(set, fmt.Sprintf(`enforce = $%d`, len(args)+1)), append(args, *v)
 	}
-	args = append(args, patch.ResourceType, patch.Resource, patch.Type)
+	args = append(args, patch.ResourceType, patch.Resource, patch.Type.String())
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -516,7 +516,7 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 		`DELETE FROM policy WHERE resource_type = $1 AND resource = $2 AND type = $3`,
 		policy.ResourceType,
 		policy.Resource,
-		policy.Type,
+		policy.Type.String(),
 	); err != nil {
 		return err
 	}
@@ -551,7 +551,7 @@ func upsertPolicyV2Impl(ctx context.Context, txn *sql.Tx, create *PolicyMessage)
 		create.ResourceType,
 		create.Resource,
 		create.InheritFromParent,
-		create.Type,
+		create.Type.String(),
 		create.Payload,
 		create.Enforce,
 		create.UpdatedAt,
@@ -570,7 +570,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, txn *sql.Tx, find *FindPolic
 		where, args = append(where, fmt.Sprintf("resource = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
-		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, v.String())
 	}
 	if !find.ShowAll {
 		where, args = append(where, fmt.Sprintf("enforce = $%d", len(args)+1)), append(args, true)
@@ -597,17 +597,23 @@ func (*Store) listPolicyImplV2(ctx context.Context, txn *sql.Tx, find *FindPolic
 	var policyList []*PolicyMessage
 	for rows.Next() {
 		var policyMessage PolicyMessage
+		var typeString string
 		if err := rows.Scan(
 			&policyMessage.UpdatedAt,
 			&policyMessage.ResourceType,
 			&policyMessage.Resource,
 			&policyMessage.InheritFromParent,
-			&policyMessage.Type,
+			&typeString,
 			&policyMessage.Payload,
 			&policyMessage.Enforce,
 		); err != nil {
 			return nil, err
 		}
+		value, ok := storepb.PolicyType_value[typeString]
+		if !ok {
+			return nil, errors.Errorf("invalid policy type string: %s", typeString)
+		}
+		policyMessage.Type = storepb.PolicyType(value)
 		policyList = append(policyList, &policyMessage)
 	}
 	if err := rows.Err(); err != nil {
