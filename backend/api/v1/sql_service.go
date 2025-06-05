@@ -1958,7 +1958,7 @@ func checkAndGetDataSourceQueriable(
 	if environment == nil {
 		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
-	dataSourceQueryPolicyType := base.PolicyTypeDataSourceQuery
+	dataSourceQueryPolicyType := storepb.PolicyType_DATA_SOURCE_QUERY
 	environmentResourceType := base.PolicyResourceTypeEnvironment
 	environmentResource := common.FormatEnvironment(environment.Id)
 	environmentPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
@@ -2018,7 +2018,7 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 	}
 	resourceType := base.PolicyResourceTypeEnvironment
 	environmentResource := common.FormatEnvironment(environment.Id)
-	policyType := base.PolicyTypeDataSourceQuery
+	policyType := storepb.PolicyType_DATA_SOURCE_QUERY
 	dataSourceQueryPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &environmentResource,

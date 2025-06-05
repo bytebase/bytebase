@@ -211,6 +211,7 @@
     - [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction)
     - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
+    - [PolicyType](#bytebase-store-PolicyType)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
@@ -3448,6 +3449,27 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | ACTION_UNSPECIFIED | 0 |  |
 | QUERY | 1 |  |
 | EXPORT | 2 |  |
+
+
+
+<a name="bytebase-store-PolicyType"></a>
+
+### PolicyType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| POLICY_TYPE_UNSPECIFIED | 0 |  |
+| ROLLOUT | 1 |  |
+| MASKING_EXCEPTION | 2 |  |
+| DISABLE_COPY_DATA | 3 |  |
+| EXPORT_DATA | 4 |  |
+| QUERY_DATA | 5 |  |
+| MASKING_RULE | 6 |  |
+| RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 7 |  |
+| IAM | 8 |  |
+| TAG | 9 |  |
+| DATA_SOURCE_QUERY | 10 |  |
 
 
 
