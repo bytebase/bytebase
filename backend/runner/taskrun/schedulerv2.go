@@ -820,12 +820,12 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						Actor:   s.store.GetSystemBotUser(ctx),
 						Type:    base.EventTypeStageStatusUpdate,
 						Comment: "",
-						// Issue:   webhook.NewIssue(issue),
+						Issue:   webhook.NewIssue(issue),
 						Rollout: webhook.NewRollout(pipeline),
 						Project: webhook.NewProject(project),
 						StageStatusUpdate: &webhook.EventStageStatusUpdate{
 							StageTitle: currentEnvironment,
-							StageUID:   0, // TODO: Remove StageUID from webhook event
+							StageID:    currentEnvironment,
 						},
 					})
 					return nil
