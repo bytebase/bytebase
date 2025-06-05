@@ -181,7 +181,7 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 }
 
 func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, reviewConfigMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
-	policyType := storepb.PolicyType_TAG
+	policyType := storepb.Policy_TAG
 	tagPolicies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
 		Type:    &policyType,
 		ShowAll: false,
@@ -207,7 +207,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		}
 
 		switch policy.ResourceType {
-		case base.PolicyResourceTypeEnvironment:
+		case storepb.Policy_ENVIRONMENT:
 			environmentID, err := common.GetEnvironmentID(policy.Resource)
 			if err != nil {
 				return nil, err
@@ -220,7 +220,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 				continue
 			}
 			config.Resources = append(config.Resources, common.FormatEnvironment(environment.Id))
-		case base.PolicyResourceTypeProject:
+		case storepb.Policy_PROJECT:
 			projectID, err := common.GetProjectID(policy.Resource)
 			if err != nil {
 				return nil, err

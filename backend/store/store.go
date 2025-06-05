@@ -10,7 +10,6 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -179,7 +178,7 @@ func getInstanceCacheKey(instanceID string) string {
 	return instanceID
 }
 
-func getPolicyCacheKey(resourceType base.PolicyResourceType, resource string, policyType storepb.PolicyType) string {
+func getPolicyCacheKey(resourceType storepb.Policy_Resource, resource string, policyType storepb.Policy_Type) string {
 	return fmt.Sprintf("policies/%s/%s/%s", resourceType, resource, policyType)
 }
 

@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -160,9 +159,9 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	}
 	if _, err := stores.CreatePolicyV2(ctx, &store.PolicyMessage{
 		Resource:          common.FormatProject(issue.Project.ResourceID),
-		ResourceType:      base.PolicyResourceTypeProject,
+		ResourceType:      storepb.Policy_PROJECT,
 		Payload:           string(policyPayload),
-		Type:              storepb.PolicyType_IAM,
+		Type:              storepb.Policy_IAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
