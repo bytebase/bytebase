@@ -136,7 +136,7 @@ func (s *RevisionService) CreateRevision(ctx context.Context, request *v1pb.Crea
 		}
 		if taskRun.ProjectID != projectID ||
 			taskRun.PipelineUID != rolloutID ||
-			taskRun.StageUID != stageID ||
+			taskRun.Environment != stageID ||
 			taskRun.TaskUID != taskID {
 			return nil, status.Errorf(codes.NotFound, "taskRun %q not found", request.Revision.TaskRun)
 		}

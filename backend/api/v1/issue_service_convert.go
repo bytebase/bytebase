@@ -103,21 +103,22 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 	if issue.PipelineUID == nil {
 		return nil, nil
 	}
-	stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: issue.PipelineUID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list issue stages")
+		return nil, errors.Wrapf(err, "failed to list issue tasks")
 	}
-	var activeStage *store.StageMessage
-	for _, stage := range stages {
-		if stage.Active {
-			activeStage = stage
+	// Find the active environment (first environment with non-completed tasks)
+	var activeEnvironment string
+	for _, task := range tasks {
+		if task.LatestTaskRunStatus != storepb.TaskRun_DONE && task.LatestTaskRunStatus != storepb.TaskRun_SKIPPED {
+			activeEnvironment = task.Environment
 			break
 		}
 	}
-	if activeStage == nil {
+	if activeEnvironment == "" {
 		return nil, nil
 	}
-	policy, err := GetValidRolloutPolicyForStage(ctx, s.store, activeStage)
+	policy, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, activeEnvironment)
 	if err != nil {
 		return nil, err
 	}

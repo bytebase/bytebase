@@ -162,10 +162,10 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 
 		v := &store.TaskMessage{
-			InstanceID:    instance.ResourceID,
-			DatabaseName:  &databaseName,
-			EnvironmentID: effectiveEnvironmentID,
-			Type:          storepb.Task_DATABASE_CREATE,
+			InstanceID:   instance.ResourceID,
+			DatabaseName: &databaseName,
+			Environment:  effectiveEnvironmentID,
+			Type:         storepb.Task_DATABASE_CREATE,
 			Payload: &storepb.Task{
 				SpecId:        spec.Id,
 				CharacterSet:  c.CharacterSet,
@@ -277,11 +277,11 @@ func getTaskCreatesFromExportDataConfig(
 	tasks := []*store.TaskMessage{}
 	for _, database := range databases {
 		tasks = append(tasks, &store.TaskMessage{
-			InstanceID:    database.InstanceID,
-			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          storepb.Task_DATABASE_EXPORT,
-			Payload:       payload,
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Environment:  database.EffectiveEnvironmentID,
+			Type:         storepb.Task_DATABASE_EXPORT,
+			Payload:      payload,
 		})
 	}
 	return tasks, nil
@@ -299,10 +299,10 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
 		taskCreate := &store.TaskMessage{
-			InstanceID:    database.InstanceID,
-			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          storepb.Task_DATABASE_SCHEMA_UPDATE,
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Environment:  database.EffectiveEnvironmentID,
+			Type:         storepb.Task_DATABASE_SCHEMA_UPDATE,
 			Payload: &storepb.Task{
 				SpecId:  spec.Id,
 				SheetId: int32(sheetUID),
@@ -319,10 +319,10 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 			return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
 		}
 		taskCreate := &store.TaskMessage{
-			InstanceID:    database.InstanceID,
-			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Environment:  database.EffectiveEnvironmentID,
+			Type:         storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
 			Payload: &storepb.Task{
 				SpecId:  spec.Id,
 				SheetId: int32(sheetUID),
@@ -337,10 +337,10 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
 		taskCreate := &store.TaskMessage{
-			InstanceID:    database.InstanceID,
-			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          storepb.Task_DATABASE_DATA_UPDATE,
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Environment:  database.EffectiveEnvironmentID,
+			Type:         storepb.Task_DATABASE_DATA_UPDATE,
 			Payload: &storepb.Task{
 				SpecId:            spec.Id,
 				SheetId:           int32(sheetUID),
@@ -436,11 +436,11 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 			}
 
 			taskCreate := &store.TaskMessage{
-				InstanceID:    database.InstanceID,
-				DatabaseName:  &database.DatabaseName,
-				EnvironmentID: database.EffectiveEnvironmentID,
-				Type:          taskType,
-				Payload:       payload,
+				InstanceID:   database.InstanceID,
+				DatabaseName: &database.DatabaseName,
+				Environment:  database.EffectiveEnvironmentID,
+				Type:         taskType,
+				Payload:      payload,
 			}
 			taskCreates = append(taskCreates, taskCreate)
 		}
