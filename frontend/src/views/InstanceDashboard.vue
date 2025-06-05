@@ -24,8 +24,12 @@
       </NButton>
     </div>
     <div class="space-y-2">
-      <InstanceOperations :instance-list="selectedInstanceList" />
+      <InstanceOperations
+        :instance-list="selectedInstanceList"
+        @update="(instances) => pagedInstanceTableRef?.updateCache(instances)"
+      />
       <PagedInstanceTable
+        ref="pagedInstanceTableRef"
         session-key="bb.instance-table"
         :bordered="false"
         :filter="filter"
@@ -68,7 +72,7 @@
 <script lang="tsx" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
@@ -112,6 +116,7 @@ const instanceV1Store = useInstanceV1Store();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
 const router = useRouter();
+const pagedInstanceTableRef = ref<InstanceType<typeof PagedInstanceTable>>();
 
 const state = reactive<LocalState>({
   params: {

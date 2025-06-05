@@ -1,17 +1,16 @@
 <template>
   <NDropdown
-    v-if="allowSyncInstance"
     :trigger="'click'"
     :options="syncInstnceOptions"
     :render-label="renderDropdownLabel"
-    :disabled="disabled || syncingSchema"
+    :disabled="!allowSyncInstance || disabled || syncingSchema"
     @select="syncSchema"
   >
     <NButton
       icon-placement="right"
       :loading="syncingSchema"
       :quaternary="quaternary"
-      :disabled="disabled"
+      :disabled="!allowSyncInstance || disabled"
       :size="size"
       :type="type"
     >
