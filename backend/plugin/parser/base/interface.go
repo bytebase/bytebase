@@ -170,6 +170,8 @@ func RegisterStatementRangesFunc(engine storepb.Engine, f StatementRangeFunc) {
 	statementRanges[engine] = f
 }
 
+// GetStatementRanges returns a list of ranges for the statement.
+// Start is inclusive and end is exclusive. Character is 0-based UTF-16 code unit offset, Line is 0-based line number.
 func GetStatementRanges(ctx context.Context, sCtx StatementRangeContext, engine storepb.Engine, statement string) ([]Range, error) {
 	f, ok := statementRanges[engine]
 	if !ok {
