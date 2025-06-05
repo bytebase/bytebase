@@ -442,7 +442,7 @@ const actions = computed((): DatabaseAction[] => {
         resp.push({
           icon: h(DownloadIcon),
           text: t("custom-approval.risk-rule.risk.namespace.data_export"),
-          disabled: !allowExportData.value || props.databases.length !== 1,
+          disabled: !allowExportData.value,
           click: () => generateMultiDb("bb.issue.database.data.export"),
           tooltip: (action) => {
             if (!allowExportData.value) {
