@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -592,7 +591,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 
 	// Get environment order from plan deployment config or global settings
 	var environmentOrder []string
-	if plan != nil && plan.Config != nil && plan.Config.Deployment != nil && len(plan.Config.Deployment.GetEnvironments()) > 0 {
+	if plan != nil && len(plan.Config.GetDeployment().GetEnvironments()) > 0 {
 		environmentOrder = plan.Config.Deployment.GetEnvironments()
 	} else {
 		// Use global environment setting order
@@ -605,21 +604,16 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		}
 	}
 
-	// Create environment index for ordering
-	environmentIndex := make(map[string]int)
-	for i, env := range environmentOrder {
-		environmentIndex[env] = i
+	environmentExists := make(map[string]bool)
+	for _, env := range environmentOrder {
+		environmentExists[env] = true
 	}
 
-	// Group tasks by environment to create stages
-	taskIDToName := map[int]string{}
-	stagesByEnv := map[string]*v1pb.Stage{}
-	stageIDByEnv := map[string]int{}
-	nextStageID := 1
-
+	// Group tasks by environment.
+	tasksByEnv := map[string][]*v1pb.Task{}
 	for _, task := range rollout.Tasks {
 		// Skip tasks with environments not in the deployment list
-		if _, ok := environmentIndex[task.Environment]; !ok {
+		if !environmentExists[task.Environment] {
 			continue
 		}
 
@@ -627,43 +621,24 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert task, error: %v", err)
 		}
-		taskIDToName[task.ID] = rolloutTask.Name
 
-		// Get or create stage for this environment
-		if _, exists := stagesByEnv[task.Environment]; !exists {
-			stageID := nextStageID
-			nextStageID++
-			stageIDByEnv[task.Environment] = stageID
-			stagesByEnv[task.Environment] = &v1pb.Stage{
-				Name:        common.FormatStage(project.ResourceID, rollout.ID, task.Environment),
-				Environment: common.FormatEnvironment(task.Environment),
-				Tasks:       []*v1pb.Task{},
-			}
+		tasksByEnv[task.Environment] = append(tasksByEnv[task.Environment], rolloutTask)
+	}
+
+	var stages []*v1pb.Stage
+	for _, environment := range environmentOrder {
+		tasks := tasksByEnv[environment]
+		if len(tasks) > 0 {
+			stages = append(stages, &v1pb.Stage{
+				Name:        common.FormatStage(project.ResourceID, rollout.ID, environment),
+				Id:          environment,
+				Environment: environment,
+				Tasks:       tasks,
+			})
 		}
-		stagesByEnv[task.Environment].Tasks = append(stagesByEnv[task.Environment].Tasks, rolloutTask)
 	}
 
-	// Sort environments according to the deployment config order
-	type envStage struct {
-		env   string
-		stage *v1pb.Stage
-		order int
-	}
-	var sortedStages []envStage
-	for env, stage := range stagesByEnv {
-		// All environments should be in the index since we filtered above
-		order := environmentIndex[env]
-		sortedStages = append(sortedStages, envStage{env: env, stage: stage, order: order})
-	}
-	sort.Slice(sortedStages, func(i, j int) bool {
-		return sortedStages[i].order < sortedStages[j].order
-	})
-
-	// Add stages to rollout in the correct order
-	for _, es := range sortedStages {
-		rolloutV1.Stages = append(rolloutV1.Stages, es.stage)
-	}
-
+	rolloutV1.Stages = stages
 	return rolloutV1, nil
 }
 
