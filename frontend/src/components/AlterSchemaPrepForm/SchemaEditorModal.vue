@@ -483,9 +483,15 @@ const handlePreviewIssue = async () => {
     }
 
     query.databaseList = databaseList.value.map((db) => db.name).join(",");
-    const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-    useStorageStore().put(sqlStorageKey, statementList.join("\n\n"));
-    query.sqlStorageKey = sqlStorageKey;
+
+    const sqlMap: Record<string, string> = {};
+    databaseList.value.forEach((db, i) => {
+      const sql = statementList[i];
+      sqlMap[db.name] = sql;
+    });
+    const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
+    useStorageStore().put(sqlMapStorageKey, sqlMap);
+    query.sqlMapStorageKey = sqlMapStorageKey;
     const databaseNameList = databaseList.value.map((db) => db.databaseName);
     query.name = generateIssueTitle(
       "bb.issue.database.schema.update",
