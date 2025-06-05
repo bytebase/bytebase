@@ -1,0 +1,144 @@
+- statement: SELECT * FROM t;
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 16
+- statement: SELECT * FROM t; SELECT * FROM t;
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 16
+    - start:
+        line: 0
+        character: 17
+      end:
+        line: 0
+        character: 33
+- statement: |-
+    SELECT id, name FROM users WHERE status = 'active'; -- Get active users
+    /*
+      This is a
+      multi-line comment
+      with a semicolon; that should be ignored.
+    */
+    INSERT INTO logs (message) VALUES ('Operation completed successfully.');
+    UPDATE products SET price = 100 WHERE category = 'electronics';
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 51
+    - start:
+        line: 0
+        character: 52
+      end:
+        line: 6
+        character: 72
+    - start:
+        line: 7
+        character: 0
+      end:
+        line: 7
+        character: 63
+- statement: |-
+    SELECT 'User: Smith; ID: 123' AS user_info, "column_with_semicolon;" FROM data_table;
+    CREATE OR REPLACE TABLE my_new_table (
+      id INT,
+      description VARCHAR(255) DEFAULT 'No description provided; please update.'
+    );
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 85
+    - start:
+        line: 1
+        character: 0
+      end:
+        line: 4
+        character: 2
+- statement: |-
+    CREATE OR REPLACE FUNCTION my_udf(x NUMBER)
+    RETURNS NUMBER
+    LANGUAGE JAVASCRIPT
+    AS
+    $$
+      var result = x * 2;
+      // This is a JavaScript comment; it contains a semicolon.
+      return result;
+    $$;
+
+    SELECT my_udf(10) AS result;
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 8
+        character: 3
+    - start:
+        line: 10
+        character: 0
+      end:
+        line: 10
+        character: 28
+- statement: |-
+    -- A complex query
+    SELECT
+      c.customer_name,
+      o.order_id,
+      SUM(li.quantity * li.price) AS total_amount,
+      'Order processed; Check details.' AS status_msg -- A string with semicolon
+    FROM
+      customers c
+    JOIN
+      orders o ON c.customer_id = o.customer_id
+    JOIN
+      order_items li ON o.order_id = li.order_id
+    GROUP BY
+      c.customer_name, o.order_id
+    HAVING
+      total_amount > 1000; /* End of a query */
+
+    -- Another statement
+    GRANT SELECT ON ALL TABLES IN SCHEMA public TO ROLE reporter_role;
+
+    CREATE PROCEDURE my_proc()
+    RETURNS VARCHAR
+    LANGUAGE SQL
+    AS
+    $$
+      BEGIN
+        INSERT INTO audit_log (event_type, event_details) VALUES ('Procedure call', 'my_proc executed;');
+        RETURN 'Success; Procedure finished.';
+      END;
+    $$;
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 15
+        character: 22
+    - start:
+        line: 15
+        character: 23
+      end:
+        line: 18
+        character: 66
+    - start:
+        line: 20
+        character: 0
+      end:
+        line: 29
+        character: 3
