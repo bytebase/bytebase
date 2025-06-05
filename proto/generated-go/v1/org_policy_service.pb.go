@@ -103,8 +103,6 @@ const (
 	PolicyResourceType_WORKSPACE                 PolicyResourceType = 1
 	PolicyResourceType_ENVIRONMENT               PolicyResourceType = 2
 	PolicyResourceType_PROJECT                   PolicyResourceType = 3
-	PolicyResourceType_INSTANCE                  PolicyResourceType = 4
-	PolicyResourceType_DATABASE                  PolicyResourceType = 5
 )
 
 // Enum value maps for PolicyResourceType.
@@ -114,16 +112,12 @@ var (
 		1: "WORKSPACE",
 		2: "ENVIRONMENT",
 		3: "PROJECT",
-		4: "INSTANCE",
-		5: "DATABASE",
 	}
 	PolicyResourceType_value = map[string]int32{
 		"RESOURCE_TYPE_UNSPECIFIED": 0,
 		"WORKSPACE":                 1,
 		"ENVIRONMENT":               2,
 		"PROJECT":                   3,
-		"INSTANCE":                  4,
-		"DATABASE":                  5,
 	}
 )
 
@@ -1716,14 +1710,12 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x11DATA_SOURCE_QUERY\x10\x0e\x12\x0f\n" +
 	"\vDATA_EXPORT\x10\x0f\x12\x0e\n" +
 	"\n" +
-	"DATA_QUERY\x10\x10\"\x04\b\x02\x10\x02\"\x04\b\x04\x10\x04\"\x04\b\x06\x10\x06\"\x04\b\x05\x10\x05\"\x04\b\a\x10\a*|\n" +
+	"DATA_QUERY\x10\x10\"\x04\b\x02\x10\x02\"\x04\b\x04\x10\x04\"\x04\b\x06\x10\x06\"\x04\b\x05\x10\x05\"\x04\b\a\x10\a*`\n" +
 	"\x12PolicyResourceType\x12\x1d\n" +
 	"\x19RESOURCE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\v\n" +
-	"\aPROJECT\x10\x03\x12\f\n" +
-	"\bINSTANCE\x10\x04\x12\f\n" +
-	"\bDATABASE\x10\x05*Q\n" +
+	"\aPROJECT\x10\x03*Q\n" +
 	"\x12SQLReviewRuleLevel\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +

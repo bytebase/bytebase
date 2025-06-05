@@ -11529,8 +11529,6 @@ components:
                         - WORKSPACE
                         - ENVIRONMENT
                         - PROJECT
-                        - INSTANCE
-                        - DATABASE
                     type: string
                     description: The resource type for the policy.
                     format: enum
