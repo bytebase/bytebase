@@ -305,8 +305,9 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) 
 	defer tx.Rollback()
 
 	var setting SettingMessage
+	var nameString string
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
-		&setting.Name,
+		&nameString,
 		&setting.Value,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -314,6 +315,11 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) 
 		}
 		return nil, err
 	}
+	value, ok := storepb.SettingName_value[nameString]
+	if !ok {
+		return nil, errors.Errorf("invalid setting name string: %s", nameString)
+	}
+	setting.Name = storepb.SettingName(value)
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
