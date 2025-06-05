@@ -210,7 +210,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	if !ok {
 		return nil, policyParent, status.Errorf(codes.InvalidArgument, "invalid policy type %v", tokens[1])
 	}
-	
+
 	policyType, err := convertV1PBToStorePBPolicyType(v1pb.PolicyType(v1PolicyType))
 	if err != nil {
 		return nil, policyParent, status.Error(codes.InvalidArgument, err.Error())
