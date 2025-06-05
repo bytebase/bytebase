@@ -243,7 +243,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	}
 
 	if issue != nil {
-		tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, taskUID)}
+		tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, taskUID)}
 		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, base.SystemBotID, ""); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
@@ -660,7 +660,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			if issue == nil {
 				return nil
 			}
-			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)}
+			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)}
 			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_FAILED, base.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
@@ -707,7 +707,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			if issue == nil {
 				return nil
 			}
-			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)}
+			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)}
 			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_DONE, base.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
@@ -734,7 +734,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 		}
 	}()
 	slog.Info("TaskSkippedOrDoneListener started")
-	stageDoneConfirmed := map[int]bool{}
+	environmentDoneConfirmed := map[string]bool{}
 
 	for {
 		select {
@@ -744,16 +744,16 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				if err != nil {
 					return errors.Wrapf(err, "failed to get task")
 				}
-				if stageDoneConfirmed[task.StageID] {
+				if environmentDoneConfirmed[task.Environment] {
 					return nil
 				}
 
-				stageTasks, err := s.store.ListTasks(ctx, &store.TaskFind{StageID: &task.StageID})
+				environmentTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &task.PipelineID, Environment: &task.Environment})
 				if err != nil {
 					return errors.Wrapf(err, "failed to list tasks")
 				}
 
-				skippedOrDone, err := tasksSkippedOrDone(stageTasks)
+				skippedOrDone, err := tasksSkippedOrDone(environmentTasks)
 				if err != nil {
 					return errors.Wrapf(err, "failed to check if tasks are skipped or done")
 				}
@@ -761,30 +761,37 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					return nil
 				}
 
-				stageDoneConfirmed[task.StageID] = true
+				environmentDoneConfirmed[task.Environment] = true
 
-				stages, err := s.store.ListStageV2(ctx, task.PipelineID)
+				// Get all tasks to determine environments and their order
+				allTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &task.PipelineID})
 				if err != nil {
-					return errors.Wrapf(err, "failed to list stages")
+					return errors.Wrapf(err, "failed to list tasks")
 				}
 
-				var taskStage *store.StageMessage
-				var nextStage *store.StageMessage
+				// Group tasks by environment to determine order
+				environmentMap := make(map[string]bool)
+				var environmentOrder []string
+				for _, t := range allTasks {
+					if !environmentMap[t.Environment] {
+						environmentMap[t.Environment] = true
+						environmentOrder = append(environmentOrder, t.Environment)
+					}
+				}
+
+				currentEnvironment := task.Environment
+				var nextEnvironment string
 				var pipelineDone bool
-				for i, stage := range stages {
-					if stage.ID == task.StageID {
-						taskStage = stages[i]
-						if i < len(stages)-1 {
-							nextStage = stages[i+1]
+				for i, env := range environmentOrder {
+					if env == currentEnvironment {
+						if i < len(environmentOrder)-1 {
+							nextEnvironment = environmentOrder[i+1]
 						}
-						if i == len(stages)-1 {
+						if i == len(environmentOrder)-1 {
 							pipelineDone = true
 						}
 						break
 					}
-				}
-				if taskStage == nil {
-					return errors.Errorf("failed to find stage")
 				}
 
 				issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
@@ -817,8 +824,8 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						Rollout: webhook.NewRollout(pipeline),
 						Project: webhook.NewProject(project),
 						StageStatusUpdate: &webhook.EventStageStatusUpdate{
-							StageTitle: taskStage.Environment,
-							StageUID:   taskStage.ID,
+							StageTitle: currentEnvironment,
+							StageUID:   0, // TODO: Remove StageUID from webhook event
 						},
 					})
 					return nil
@@ -830,7 +837,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					p := &storepb.IssueCommentPayload{
 						Event: &storepb.IssueCommentPayload_StageEnd_{
 							StageEnd: &storepb.IssueCommentPayload_StageEnd{
-								Stage: common.FormatStage(issue.Project.ResourceID, taskStage.PipelineID, taskStage.ID),
+								Stage: common.FormatStage(issue.Project.ResourceID, task.PipelineID, task.Environment),
 							},
 						},
 					}
@@ -845,10 +852,10 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 
 				// create "notify pipeline rollout" activity.
 				if err := func() error {
-					if nextStage == nil {
+					if nextEnvironment == "" {
 						return nil
 					}
-					policy, err := s.store.GetRolloutPolicy(ctx, nextStage.Environment)
+					policy, err := s.store.GetRolloutPolicy(ctx, nextEnvironment)
 					if err != nil {
 						return errors.Wrapf(err, "failed to get rollout policy")
 					}
@@ -860,7 +867,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						Project: webhook.NewProject(issue.Project),
 						IssueRolloutReady: &webhook.EventIssueRolloutReady{
 							RolloutPolicy: policy,
-							StageName:     nextStage.Environment,
+							StageName:     nextEnvironment,
 						},
 					})
 					return nil

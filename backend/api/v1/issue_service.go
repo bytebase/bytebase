@@ -830,15 +830,17 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			if issue.PipelineUID == nil {
 				return nil
 			}
-			stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
+			tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: issue.PipelineUID})
 			if err != nil {
-				return errors.Wrapf(err, "failed to list stages")
+				return errors.Wrapf(err, "failed to list tasks")
 			}
-			if len(stages) == 0 {
+			if len(tasks) == 0 {
 				return nil
 			}
 
-			policy, err := GetValidRolloutPolicyForStage(ctx, s.store, stages[0])
+			// Get the first environment from tasks
+			firstEnvironment := tasks[0].Environment
+			policy, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, firstEnvironment)
 			if err != nil {
 				return err
 			}
@@ -850,7 +852,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				Project: webhook.NewProject(issue.Project),
 				IssueRolloutReady: &webhook.EventIssueRolloutReady{
 					RolloutPolicy: policy,
-					StageName:     stages[0].Environment,
+					StageName:     firstEnvironment,
 				},
 			})
 			return nil

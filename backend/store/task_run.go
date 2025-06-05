@@ -17,7 +17,7 @@ import (
 // TaskRunMessage is message for task run.
 type TaskRunMessage struct {
 	TaskUID     int
-	StageUID    int
+	Environment string // The environment ID (was stage_id)
 	PipelineUID int
 	Status      storepb.TaskRun_Status
 	Code        common.Code
@@ -41,7 +41,7 @@ type FindTaskRunMessage struct {
 	UID         *int
 	UIDs        *[]int
 	TaskUID     *int
-	StageUID    *int
+	Environment *string
 	PipelineUID *int
 	Status      *[]storepb.TaskRun_Status
 }
@@ -49,9 +49,9 @@ type FindTaskRunMessage struct {
 // TaskRunFind is the API message for finding task runs.
 type TaskRunFind struct {
 	// Related fields
-	TaskID     *int
-	StageID    *int
-	PipelineID *int
+	TaskID      *int
+	Environment *string
+	PipelineID  *int
 
 	// Domain specific fields
 	StatusList *[]storepb.TaskRun_Status
@@ -82,8 +82,8 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 	if v := find.TaskUID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.StageUID; v != nil {
-		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.Environment; v != nil {
+		where, args = append(where, fmt.Sprintf("task.environment = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PipelineUID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
@@ -111,7 +111,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			task_run.result,
 			task_run.sheet_id,
 			task.pipeline_id,
-			task.stage_id,
+			task.environment,
 			project.resource_id
 		FROM task_run
 		LEFT JOIN task ON task.id = task_run.task_id
@@ -144,7 +144,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.Result,
 			&taskRun.SheetUID,
 			&taskRun.PipelineUID,
-			&taskRun.StageUID,
+			&taskRun.Environment,
 			&taskRun.ProjectID,
 		); err != nil {
 			return nil, err
@@ -441,8 +441,8 @@ func (*Store) findTaskRunImpl(ctx context.Context, txn *sql.Tx, find *TaskRunFin
 	if v := find.TaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("task_run.task_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.StageID; v != nil {
-		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.Environment; v != nil {
+		where, args = append(where, fmt.Sprintf("task.environment = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
@@ -468,7 +468,7 @@ func (*Store) findTaskRunImpl(ctx context.Context, txn *sql.Tx, find *TaskRunFin
 			task_run.code,
 			task_run.result,
 			task.pipeline_id,
-			task.stage_id
+			task.environment
 		FROM task_run
 		JOIN task ON task.id = task_run.task_id
 		WHERE %s
@@ -493,7 +493,7 @@ func (*Store) findTaskRunImpl(ctx context.Context, txn *sql.Tx, find *TaskRunFin
 			&taskRun.Code,
 			&taskRun.Result,
 			&taskRun.PipelineUID,
-			&taskRun.StageUID,
+			&taskRun.Environment,
 		); err != nil {
 			return nil, err
 		}

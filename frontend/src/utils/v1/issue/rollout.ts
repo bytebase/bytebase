@@ -1,6 +1,5 @@
 import { last } from "lodash-es";
 import { stringify } from "qs";
-import slug from "slug";
 import type { ComposedIssue } from "@/types";
 import {
   EMPTY_TASK_NAME,
@@ -61,7 +60,8 @@ export const extractTaskRunUID = (name: string) => {
 };
 
 export const stageV1Slug = (stage: Stage): string => {
-  return [slug(stage.environment), extractStageUID(stage.name)].join("-");
+  // Stage UID is now the environment ID
+  return extractStageUID(stage.name);
 };
 
 export const taskV1Slug = (task: Task): string => {
@@ -186,7 +186,8 @@ export const buildIssueV1LinkWithTask = (
   const issueSlug = simple ? extractIssueUID(issue.name) : issueV1Slug(issue);
   const query: Record<string, string> = {};
   if (stage) {
-    query.stage = simple ? extractStageUID(stage.name) : stageV1Slug(stage);
+    // Stage UID is now always the environment ID
+    query.stage = extractStageUID(stage.name);
   }
   query.task = simple ? extractTaskUID(task.name) : taskV1Slug(task);
 

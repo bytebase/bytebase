@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 
@@ -23,9 +22,8 @@ type TaskMessage struct {
 
 	// Related fields
 	PipelineID     int
-	StageID        int
 	InstanceID     string
-	EnvironmentID  string // This is the stage.
+	Environment    string
 	DatabaseName   *string
 	TaskRunRawList []*TaskRunMessage
 
@@ -53,7 +51,7 @@ type TaskFind struct {
 
 	// Related fields
 	PipelineID   *int
-	StageID      *int
+	Environment  *string
 	InstanceID   *string
 	DatabaseName *string
 
@@ -159,27 +157,27 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, 
 func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
 	query := `INSERT INTO task (
 			pipeline_id,
-			stage_id,
 			instance,
 			db_name,
+			environment,
 			type,
 			payload
 		) SELECT
 			unnest(CAST($1 AS INTEGER[])),
-			unnest(CAST($2 AS INTEGER[])),
+			unnest(CAST($2 AS TEXT[])),
 			unnest(CAST($3 AS TEXT[])),
 			unnest(CAST($4 AS TEXT[])),
 			unnest(CAST($5 AS TEXT[])),
 			unnest(CAST($6 AS JSONB[]))
-		RETURNING id, pipeline_id, stage_id, instance, db_name, type, payload`
+		RETURNING id, pipeline_id, instance, db_name, environment, type, payload`
 
 	var (
-		pipelineIDs []int
-		stageIDs    []int
-		instances   []string
-		databases   []*string
-		types       []string
-		payloads    [][]byte
+		pipelineIDs  []int
+		instances    []string
+		databases    []*string
+		environments []string
+		types        []string
+		payloads     [][]byte
 	)
 	for _, create := range creates {
 		if create.Payload == nil {
@@ -190,19 +188,19 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 			return nil, errors.Wrapf(err, "failed to marshal payload")
 		}
 		pipelineIDs = append(pipelineIDs, create.PipelineID)
-		stageIDs = append(stageIDs, create.StageID)
 		instances = append(instances, create.InstanceID)
 		databases = append(databases, create.DatabaseName)
 		types = append(types, create.Type.String())
+		environments = append(environments, create.Environment)
 		payloads = append(payloads, payload)
 	}
 
 	var tasks []*TaskMessage
 	rows, err := txn.QueryContext(ctx, query,
 		pipelineIDs,
-		stageIDs,
 		instances,
 		databases,
+		environments,
 		types,
 		payloads,
 	)
@@ -217,9 +215,9 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
-			&task.StageID,
 			&task.InstanceID,
 			&task.DatabaseName,
+			&task.Environment,
 			&typeString,
 			&payload,
 		); err != nil {
@@ -255,8 +253,8 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.StageID; v != nil {
-		where, args = append(where, fmt.Sprintf("task.stage_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.Environment; v != nil {
+		where, args = append(where, fmt.Sprintf("task.environment = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.instance = $%d", len(args)+1)), append(args, *v)
@@ -286,9 +284,9 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 		SELECT
 			task.id,
 			task.pipeline_id,
-			task.stage_id,
 			task.instance,
 			task.db_name,
+			task.environment,
 			latest_task_run.status AS latest_task_run_status,
 			task.type,
 			task.payload
@@ -322,9 +320,9 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
-			&task.StageID,
 			&task.InstanceID,
 			&task.DatabaseName,
+			&task.Environment,
 			&latestTaskRunStatusString,
 			&typeString,
 			&payload,
@@ -424,15 +422,15 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, pipeline_id, stage_id, instance, db_name, type, payload
+		RETURNING id, pipeline_id, instance, db_name, environment, type, payload
 	`, len(args)),
 		args...,
 	).Scan(
 		&task.ID,
 		&task.PipelineID,
-		&task.StageID,
 		&task.InstanceID,
 		&task.DatabaseName,
+		&task.Environment,
 		&typeString,
 		&payload,
 	); err != nil {
@@ -479,40 +477,45 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 // 2. are not skipped
 // 3. are associated with an open issue or no issue
 // 4. are in an environment that has auto rollout enabled
-// 5. are in the stage that is the first among the selected stages in the pipeline
+// 5. are the first task in the pipeline for their environment
 // 6. are not data export tasks.
 func (s *Store) ListTasksToAutoRollout(ctx context.Context, environments []string) ([]int, error) {
 	rows, err := s.db.QueryContext(ctx, `
 	SELECT
 		task.pipeline_id,
-		task.stage_id,
+		task.environment,
 		task.id
 	FROM task
-	LEFT JOIN stage ON stage.id = task.stage_id
 	LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
 	LEFT JOIN issue ON issue.pipeline_id = pipeline.id
 	WHERE NOT EXISTS (SELECT 1 FROM task_run WHERE task_run.task_id = task.id)
 	AND task.type != 'DATABASE_EXPORT'
 	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
 	AND COALESCE(issue.status, 'OPEN') = 'OPEN'
-	AND stage.environment = ANY($1)
-	`, environments)
+	AND task.environment = ANY($1)
+	ORDER BY task.pipeline_id, task.id`, environments)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	pipelineStageTasks := map[int]map[int][]int{}
+	// Group tasks by pipeline and environment, keeping only the first task per environment
+	pipelineEnvFirstTask := map[int]map[string]int{}
 	for rows.Next() {
-		var pipeline, stage, task int
-		if err := rows.Scan(&pipeline, &stage, &task); err != nil {
+		var pipeline int
+		var environment string
+		var task int
+		if err := rows.Scan(&pipeline, &environment, &task); err != nil {
 			return nil, err
 		}
 
-		if _, ok := pipelineStageTasks[pipeline]; !ok {
-			pipelineStageTasks[pipeline] = map[int][]int{}
+		if _, ok := pipelineEnvFirstTask[pipeline]; !ok {
+			pipelineEnvFirstTask[pipeline] = map[string]int{}
 		}
-		pipelineStageTasks[pipeline][stage] = append(pipelineStageTasks[pipeline][stage], task)
+		// Keep only the first task for each environment
+		if _, exists := pipelineEnvFirstTask[pipeline][environment]; !exists {
+			pipelineEnvFirstTask[pipeline][environment] = task
+		}
 	}
 
 	if err := rows.Err(); err != nil {
@@ -520,17 +523,10 @@ func (s *Store) ListTasksToAutoRollout(ctx context.Context, environments []strin
 	}
 
 	var ids []int
-	for pipeline := range pipelineStageTasks {
-		minStage := math.MaxInt32
-		for stage := range pipelineStageTasks[pipeline] {
-			if stage < minStage {
-				minStage = stage
-			}
+	for _, envTasks := range pipelineEnvFirstTask {
+		for _, taskID := range envTasks {
+			ids = append(ids, taskID)
 		}
-		if minStage == math.MaxInt32 {
-			continue
-		}
-		ids = append(ids, pipelineStageTasks[pipeline][minStage]...)
 	}
 
 	sort.Slice(ids, func(i, j int) bool {

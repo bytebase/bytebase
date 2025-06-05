@@ -87,7 +87,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
-	if len(rollout.Stages) == 0 {
+	if len(rollout.Tasks) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "plan has no stage created, hint: check deployment config setting that the target database is in a stage")
 	}
 
@@ -235,7 +235,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
-	if len(pipelineCreate.Stages) == 0 {
+	if len(pipelineCreate.Tasks) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting that the target database is in a stage")
 	}
 	if isChangeDatabasePlan(plan.Config.GetSpecs()) {
@@ -292,7 +292,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTas
 
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
 		PipelineUID: &rolloutID,
-		StageUID:    maybeStageID,
+		Environment: maybeStageID,
 		TaskUID:     maybeTaskID,
 	})
 	if err != nil {
@@ -504,42 +504,30 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
 	}
 
-	stages, err := s.store.ListStageV2(ctx, rolloutID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list stages, error: %v", err)
-	}
-	if len(stages) == 0 {
-		return nil, status.Errorf(codes.NotFound, "no stages found for rollout %v", rolloutID)
-	}
-
-	stageTasks := map[int][]int{}
+	// Parse requested task IDs and group by their environment
+	taskEnvironments := map[string][]int{}
 	taskIDsToRunMap := map[int]bool{}
 	for _, task := range request.Tasks {
 		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		stageTasks[stageID] = append(stageTasks[stageID], taskID)
+		taskEnvironments[stageID] = append(taskEnvironments[stageID], taskID)
 		taskIDsToRunMap[taskID] = true
 	}
-	if len(stageTasks) > 1 {
-		return nil, status.Errorf(codes.InvalidArgument, "tasks should be in the same stage")
-	}
-	var stageToRun *store.StageMessage
-	for stageID := range stageTasks {
-		for _, stage := range stages {
-			if stage.ID == stageID {
-				stageToRun = stage
-				break
-			}
-		}
-		break
-	}
-	if stageToRun == nil {
-		return nil, status.Errorf(codes.Internal, "failed to find the stage to run")
+	if len(taskEnvironments) > 1 {
+		return nil, status.Errorf(codes.InvalidArgument, "tasks should be in the same environment")
 	}
 
-	stageToRunTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rolloutID, StageID: &stageToRun.ID})
+	// Get the environment for the tasks to run
+	var environmentToRun string
+	for env := range taskEnvironments {
+		environmentToRun = env
+		break
+	}
+
+	// Get all tasks in the same environment
+	stageToRunTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rolloutID, Environment: &environmentToRun})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
 	}
@@ -552,7 +540,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	ok, err = s.canUserRunStageTasks(ctx, user, project, issueN, stageToRun, rollout.CreatorUID)
+	ok, err = s.canUserRunEnvironmentTasks(ctx, user, project, issueN, environmentToRun, rollout.CreatorUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -673,40 +661,28 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 	}
 	var taskUIDs []int
 	var tasksToSkip []*store.TaskMessage
-	stageIDSet := map[int]struct{}{}
+	environmentSet := map[string]struct{}{}
 	for _, task := range request.Tasks {
-		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
+		_, _, _, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		if _, ok := taskByID[taskID]; !ok {
+		taskMsg, ok := taskByID[taskID]
+		if !ok {
 			return nil, status.Errorf(codes.NotFound, "task %v not found in the rollout", taskID)
 		}
 		taskUIDs = append(taskUIDs, taskID)
-		tasksToSkip = append(tasksToSkip, taskByID[taskID])
-		stageIDSet[stageID] = struct{}{}
+		tasksToSkip = append(tasksToSkip, taskMsg)
+		environmentSet[taskMsg.Environment] = struct{}{}
 	}
 
-	stages, err := s.store.ListStageV2(ctx, rolloutID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list stages, error: %v", err)
-	}
-	stageMap := map[int]*store.StageMessage{}
-	for _, stage := range stages {
-		stageMap[stage.ID] = stage
-	}
-
-	for stageID := range stageIDSet {
-		stage, ok := stageMap[stageID]
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "stage ID %v not found in stages of rollout %v", stageID, rolloutID)
-		}
-		ok, err = s.canUserSkipStageTasks(ctx, user, project, issueN, stage, rollout.CreatorUID)
+	for environment := range environmentSet {
+		ok, err = s.canUserSkipEnvironmentTasks(ctx, user, project, issueN, environment, rollout.CreatorUID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can skip tasks, error: %v", err)
 		}
 		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "not allowed to skip tasks in stage %q", stage.Environment)
+			return nil, status.Errorf(codes.PermissionDenied, "not allowed to skip tasks in environment %q", environment)
 		}
 	}
 
@@ -773,38 +749,22 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
 	}
 
-	stages, err := s.store.ListStageV2(ctx, rolloutID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list stages, error: %v", err)
-	}
-	if len(stages) == 0 {
-		return nil, status.Errorf(codes.NotFound, "no stages found for rollout %v", rolloutID)
-	}
-
-	var stage *store.StageMessage
-	for i := range stages {
-		if stages[i].ID == stageID {
-			stage = stages[i]
-			break
+	for _, taskRun := range request.TaskRuns {
+		_, _, taskRunStageID, _, _, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if taskRunStageID != stageID {
+			return nil, status.Errorf(codes.InvalidArgument, "task run %v is not in the specified stage %v", taskRun, stageID)
 		}
 	}
-	if stage == nil {
-		return nil, status.Errorf(codes.NotFound, "stage %v not found in rollout %v", stageID, rolloutID)
-	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	user, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
-	}
-	if user == nil {
-		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	ok, err = s.canUserCancelStageTaskRun(ctx, user, project, issueN, stage, rollout.CreatorUID)
+	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, stageID, rollout.CreatorUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -989,44 +949,28 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		return nil, errors.Errorf("there is no tasks created from the plan")
 	}
 
-	// Step 4 - construct all environment stages.
-	var stages []*store.StageMessage
-	for _, environmentID := range snapshotEnvironments {
-		stages = append(stages, &store.StageMessage{
-			Environment: environmentID,
-		})
+	// Filter out tasks not in deployment environments
+	filteredTasks := []*store.TaskMessage{}
+	for _, task := range taskCreates {
+		if _, ok := environmentIndex[task.Environment]; ok {
+			filteredTasks = append(filteredTasks, task)
+		}
 	}
 
-	// Step 5 - build tasks for each stage.
-	for _, spec := range transformedSpecs {
-		tc, err := getTaskCreatesFromSpec(ctx, s, sheetManager, dbFactory, spec, project)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get task creates from spec")
-		}
-		for _, t := range tc {
-			environmentIndex, ok := environmentIndex[t.EnvironmentID]
-			if !ok {
-				continue
-			}
-			stages[environmentIndex].TaskList = append(stages[environmentIndex].TaskList, t)
-		}
-	}
 	return &store.PipelineMessage{
 		Name:      rolloutTitle,
 		ProjectID: project.ResourceID,
-		Stages: slices.DeleteFunc(stages, func(stage *store.StageMessage) bool {
-			return len(stage.TaskList) == 0
-		}),
+		Tasks:     filteredTasks,
 	}, nil
 }
 
-// filter pipelineCreate.Stages using targetEnvironmentID.
+// filter pipelineCreate.Tasks using targetEnvironmentID.
 func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshotEnvironments []string, pipelineCreate *store.PipelineMessage, targetEnvironment *string) (*store.PipelineMessage, error) {
 	if targetEnvironment == nil {
 		return pipelineCreate, nil
 	}
 	if *targetEnvironment == "" {
-		pipelineCreate.Stages = nil
+		pipelineCreate.Tasks = nil
 		return pipelineCreate, nil
 	}
 	targetEnvironmentID, err := common.GetEnvironmentID(*targetEnvironment)
@@ -1043,36 +987,40 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapsho
 		}
 	}
 
-	foundID := false
-	var stageCreates []*store.StageMessage
-	i := 0
+	// Build a set of allowed environments up to and including the target
+	allowedEnvironments := make(map[string]bool)
 	for _, environmentID := range snapshotEnvironments {
-		if i < len(pipelineCreate.Stages) && pipelineCreate.Stages[i].Environment == environmentID {
-			stageCreates = append(stageCreates, pipelineCreate.Stages[i])
-			i++
-		}
+		allowedEnvironments[environmentID] = true
 		if environmentID == targetEnvironmentID {
-			foundID = true
 			break
 		}
 	}
-	if !foundID {
+
+	if !allowedEnvironments[targetEnvironmentID] {
 		return nil, errors.Errorf("environment %q not found", targetEnvironmentID)
 	}
-	pipelineCreate.Stages = stageCreates
+
+	// Filter tasks to only include those in allowed environments
+	filteredTasks := []*store.TaskMessage{}
+	for _, task := range pipelineCreate.Tasks {
+		if allowedEnvironments[task.Environment] {
+			filteredTasks = append(filteredTasks, task)
+		}
+	}
+	pipelineCreate.Tasks = filteredTasks
 	return pipelineCreate, nil
 }
 
-func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, stage *store.StageMessage) (*storepb.RolloutPolicy, error) {
-	policy, err := stores.GetRolloutPolicy(ctx, stage.Environment)
+func GetValidRolloutPolicyForEnvironment(ctx context.Context, stores *store.Store, environment string) (*storepb.RolloutPolicy, error) {
+	policy, err := stores.GetRolloutPolicy(ctx, environment)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get rollout policy for stageEnvironmentID %s", stage.Environment)
+		return nil, errors.Wrapf(err, "failed to get rollout policy for environment %s", environment)
 	}
 	return policy, nil
 }
 
-// canUserRunStageTasks returns if a user can run the tasks in a stage.
-func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, stage *store.StageMessage, creatorUID int) (bool, error) {
+// canUserRunEnvironmentTasks returns if a user can run the tasks in an environment.
+func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creatorUID int) (bool, error) {
 	// For data export issues, only the creator can run tasks.
 	if issue != nil && issue.Type == storepb.Issue_DATABASE_EXPORT {
 		return issue.Creator.ID == user.ID, nil
@@ -1087,7 +1035,7 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 		return true, nil
 	}
 
-	p, err := GetValidRolloutPolicyForStage(ctx, s.store, stage)
+	p, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, environment)
 	if err != nil {
 		return false, err
 	}
@@ -1133,13 +1081,12 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 	return false, nil
 }
 
-// canUserCancelStageTaskRun returns if a user can cancel the task runs in a stage.
-func (s *RolloutService) canUserCancelStageTaskRun(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, stage *store.StageMessage, creatorUID int) (bool, error) {
-	return s.canUserRunStageTasks(ctx, user, project, issue, stage, creatorUID)
+func (s *RolloutService) canUserCancelEnvironmentTaskRun(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creatorUID int) (bool, error) {
+	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creatorUID)
 }
 
-func (s *RolloutService) canUserSkipStageTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, stage *store.StageMessage, creatorUID int) (bool, error) {
-	return s.canUserRunStageTasks(ctx, user, project, issue, stage, creatorUID)
+func (s *RolloutService) canUserSkipEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creatorUID int) (bool, error) {
+	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creatorUID)
 }
 
 func getLastApproverUID(approval *storepb.IssuePayloadApproval) *int {

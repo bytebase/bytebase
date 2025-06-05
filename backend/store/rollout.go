@@ -12,27 +12,15 @@ func (s *Store) GetRollout(ctx context.Context, rolloutID int) (*PipelineMessage
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", rolloutID)
 	}
-	stages, err := s.ListStageV2(ctx, rolloutID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find stage list")
-	}
-	pipline, err := s.GetPipelineV2ByID(ctx, rolloutID)
+	pipeline, err := s.GetPipelineV2ByID(ctx, rolloutID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get pipeline")
 	}
-	if pipline == nil {
+	if pipeline == nil {
 		return nil, nil
 	}
-	rollout := *pipline
-	rollout.Stages = stages
-
-	for _, stage := range stages {
-		for _, task := range tasks {
-			if task.StageID == stage.ID {
-				stage.TaskList = append(stage.TaskList, task)
-			}
-		}
-	}
+	rollout := *pipeline
+	rollout.Tasks = tasks
 
 	return &rollout, nil
 }
