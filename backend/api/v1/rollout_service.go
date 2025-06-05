@@ -721,7 +721,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.InvalidArgument, "task runs cannot be empty")
 	}
 
-	projectID, rolloutID, _, _, err := common.GetProjectIDRolloutIDStageIDMaybeTaskID(request.Parent)
+	projectID, rolloutID, stageID, _, err := common.GetProjectIDRolloutIDStageIDMaybeTaskID(request.Parent)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -749,43 +749,22 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
 	}
 
-	// Get all tasks for the rollout to determine the environment
-	// For now, we'll use the first task's environment since all task runs in a batch should be from the same environment
-	var environment string
-	if len(request.TaskRuns) > 0 {
-		// Parse the first task run to get its task ID and then find its environment
-		_, _, _, taskID, _, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.TaskRuns[0])
+	for _, taskRun := range request.TaskRuns {
+		_, _, taskRunStageID, _, _, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rolloutID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
+		if taskRunStageID != stageID {
+			return nil, status.Errorf(codes.InvalidArgument, "task run %v is not in the specified stage %v", taskRun, stageID)
 		}
-		for _, task := range tasks {
-			if task.ID == taskID {
-				environment = task.Environment
-				break
-			}
-		}
-	}
-	if environment == "" {
-		return nil, status.Errorf(codes.NotFound, "could not determine environment for task runs")
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	user, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
-	}
-	if user == nil {
-		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, environment, rollout.CreatorUID)
+	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, stageID, rollout.CreatorUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
