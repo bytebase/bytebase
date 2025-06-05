@@ -306,7 +306,6 @@
     "license-expired": "Su licencia para {plan} ha expirado el {expireAt}.",
     "license-expires": "Su licencia para {plan} ha caducado el {expireAt}.",
     "trial-expires": "Su prueba gratuita para {plan} caducará en {days} días el {expireAt}.",
-    "trial-expired": "Su prueba gratuita de {plan} ha caducado.",
     "deploy": "Auto Hospedaje",
     "cloud": "Cloud",
     "request-demo": "Reserva una demo de producto de 30 minutos.",
