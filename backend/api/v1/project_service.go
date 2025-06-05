@@ -613,9 +613,9 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
 		Resource:          common.FormatProject(project.ResourceID),
-		ResourceType:      base.PolicyResourceTypeProject,
+		ResourceType:      storepb.Policy_PROJECT,
 		Payload:           string(policyPayload),
-		Type:              storepb.PolicyType_IAM,
+		Type:              storepb.Policy_IAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,

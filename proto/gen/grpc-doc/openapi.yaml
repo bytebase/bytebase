@@ -9362,23 +9362,6 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
-        DataSourceQueryPolicy:
-            type: object
-            properties:
-                adminDataSourceRestriction:
-                    enum:
-                        - RESTRICTION_UNSPECIFIED
-                        - FALLBACK
-                        - DISALLOW
-                    type: string
-                    format: enum
-                disallowDdl:
-                    type: boolean
-                    description: Disallow running DDL statements in the SQL editor.
-                disallowDml:
-                    type: boolean
-                    description: Disallow running DML statements in the SQL editor.
-            description: DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
         DataSource_Address:
             type: object
             properties:
@@ -9651,11 +9634,6 @@ components:
             properties:
                 diff:
                     type: string
-        DisableCopyDataPolicy:
-            type: object
-            properties:
-                active:
-                    type: boolean
         EnvironmentSetting:
             type: object
             properties:
@@ -9736,11 +9714,6 @@ components:
                         A token to retrieve next page of log entities.
                          Pass this value in the page_token field in the subsequent call
                          to retrieve the next page of log entities.
-        ExportDataPolicy:
-            type: object
-            properties:
-                disable:
-                    type: boolean
         ExportRequest:
             required:
                 - name
@@ -11067,52 +11040,6 @@ components:
         LogoutRequest:
             type: object
             properties: {}
-        MaskingExceptionPolicy:
-            type: object
-            properties:
-                maskingExceptions:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/MaskingExceptionPolicy_MaskingException'
-            description: MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-        MaskingExceptionPolicy_MaskingException:
-            type: object
-            properties:
-                action:
-                    enum:
-                        - ACTION_UNSPECIFIED
-                        - QUERY
-                        - EXPORT
-                    type: string
-                    description: action is the action that the user can access sensitive data.
-                    format: enum
-                member:
-                    type: string
-                    description: |-
-                        Member is the principal who bind to this exception policy instance.
-
-                         Format: users/{userUID} or groups/{group email}
-                condition:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: The condition that is associated with this exception policy instance.
-        MaskingRulePolicy:
-            type: object
-            properties:
-                rules:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/MaskingRulePolicy_MaskingRule'
-        MaskingRulePolicy_MaskingRule:
-            type: object
-            properties:
-                id:
-                    type: string
-                    description: A unique identifier for a node in UUID format.
-                condition:
-                    $ref: '#/components/schemas/Expr'
-                semanticType:
-                    type: string
         MaximumSQLResultSizeSetting:
             type: object
             properties:
@@ -11517,62 +11444,7 @@ components:
                     $ref: '#/components/schemas/Plan_ExportDataConfig'
         Policy:
             type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the policy.
-                         Format: {resource name}/policies/{policy type}
-                         Workspace resource name: "".
-                         Environment resource name: environments/environment-id.
-                         Instance resource name: instances/instance-id.
-                         Database resource name: instances/instance-id/databases/database-name.
-                inheritFromParent:
-                    type: boolean
-                type:
-                    enum:
-                        - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
-                        - MASKING_RULE
-                        - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
-                        - TAG
-                        - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
-                        - DATA_QUERY
-                    type: string
-                    format: enum
-                rolloutPolicy:
-                    $ref: '#/components/schemas/RolloutPolicy'
-                disableCopyDataPolicy:
-                    $ref: '#/components/schemas/DisableCopyDataPolicy'
-                maskingRulePolicy:
-                    $ref: '#/components/schemas/MaskingRulePolicy'
-                maskingExceptionPolicy:
-                    $ref: '#/components/schemas/MaskingExceptionPolicy'
-                restrictIssueCreationForSqlReviewPolicy:
-                    $ref: '#/components/schemas/RestrictIssueCreationForSQLReviewPolicy'
-                tagPolicy:
-                    $ref: '#/components/schemas/TagPolicy'
-                dataSourceQueryPolicy:
-                    $ref: '#/components/schemas/DataSourceQueryPolicy'
-                exportDataPolicy:
-                    $ref: '#/components/schemas/ExportDataPolicy'
-                queryDataPolicy:
-                    $ref: '#/components/schemas/QueryDataPolicy'
-                enforce:
-                    type: boolean
-                resourceType:
-                    readOnly: true
-                    enum:
-                        - RESOURCE_TYPE_UNSPECIFIED
-                        - WORKSPACE
-                        - ENVIRONMENT
-                        - PROJECT
-                    type: string
-                    description: The resource type for the policy.
-                    format: enum
+            properties: {}
         Position:
             type: object
             properties:
@@ -11783,14 +11655,6 @@ components:
                     type: integer
                     description: The maximum number of retries for the lock timeout issue.
                     format: int32
-        QueryDataPolicy:
-            type: object
-            properties:
-                timeout:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The query timeout duration.
-            description: QueryDataPolicy is the policy configuration for querying data.
         QueryHistory:
             type: object
             properties:
@@ -12189,11 +12053,6 @@ components:
                     description: The branding logo.
                     format: bytes
             description: The theme resources.
-        RestrictIssueCreationForSQLReviewPolicy:
-            type: object
-            properties:
-                disallow:
-                    type: boolean
         Result_SqlReviewReport:
             type: object
             properties:
@@ -12463,22 +12322,6 @@ components:
                     description: |-
                         The issue associated with the rollout. Could be empty.
                          Format: projects/{project}/issues/{issue}
-        RolloutPolicy:
-            type: object
-            properties:
-                automatic:
-                    type: boolean
-                roles:
-                    type: array
-                    items:
-                        type: string
-                issueRoles:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        roles/LAST_APPROVER
-                         roles/CREATOR
         RowValue:
             type: object
             properties:
@@ -13596,16 +13439,6 @@ components:
                     items:
                         $ref: '#/components/schemas/CheckConstraintMetadata'
             description: TablePartitionMetadata is the metadata for table partitions.
-        TagPolicy:
-            type: object
-            properties:
-                tags:
-                    type: object
-                    additionalProperties:
-                        type: string
-                    description: |-
-                        tags is the key - value map for resources.
-                         for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
         Task:
             type: object
             properties:
