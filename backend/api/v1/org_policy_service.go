@@ -259,18 +259,6 @@ func getPolicyResourceTypeAndResource(requestName string) (base.PolicyResourceTy
 		return base.PolicyResourceTypeEnvironment, &requestName, nil
 	}
 
-	if strings.HasPrefix(requestName, common.InstanceNamePrefix) {
-		// instance policy request name should be instances/{instance id}
-		instanceID, err := common.GetInstanceID(requestName)
-		if err != nil {
-			return base.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		if instanceID == "-" {
-			return base.PolicyResourceTypeInstance, nil, nil
-		}
-		return base.PolicyResourceTypeInstance, &requestName, nil
-	}
-
 	return base.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, "unknown request name %s", requestName)
 }
 
@@ -501,8 +489,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		resourceType = v1pb.PolicyResourceType_ENVIRONMENT
 	case base.PolicyResourceTypeProject:
 		resourceType = v1pb.PolicyResourceType_PROJECT
-	case base.PolicyResourceTypeInstance:
-		resourceType = v1pb.PolicyResourceType_INSTANCE
 	}
 	policy := &v1pb.Policy{
 		InheritFromParent: policyMessage.InheritFromParent,
