@@ -27,6 +27,7 @@ func getSQLStatementRangesUTF16Position(statement string) []base.Range {
 	lexer := parser.NewSnowflakeLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	stream.Fill()
+
 	var ranges []base.Range
 	var buf []antlr.Token
 	beginLine, beginUTF16CodePointOffset := 0, 0
@@ -40,18 +41,20 @@ func getSQLStatementRangesUTF16Position(statement string) []base.Range {
 			if r == '\n' {
 				endLine++
 				endUTF16CodePointOffset = 0
-				continue
-			}
-			if r <= 0xFFFF {
-				endUTF16CodePointOffset++
 			} else {
-				// For non-BMP characters, we count as 2 UTF-16 code units.
-				endUTF16CodePointOffset += 2
+				if r <= 0xFFFF {
+					endUTF16CodePointOffset++
+				} else {
+					// For non-BMP characters, we count as 2 UTF-16 code units.
+					endUTF16CodePointOffset += 2
+				}
 			}
 		}
 
 		// Ignore heading spaces to provide more accurate range.
 		if len(buf) == 0 && len(strings.TrimSpace(tokenText)) == 0 {
+			beginLine = endLine
+			beginUTF16CodePointOffset = endUTF16CodePointOffset
 			continue
 		}
 
@@ -81,7 +84,7 @@ func getSQLStatementRangesUTF16Position(statement string) []base.Range {
 
 		// Set the next begin position to the next token after SEMI.
 		beginLine = endLine
-		beginUTF16CodePointOffset = endUTF16CodePointOffset + 1
+		beginUTF16CodePointOffset = endUTF16CodePointOffset
 	}
 
 	// If there are remaining token in the buffer, it means the last statement does not end with SEMI.
@@ -98,18 +101,5 @@ func getSQLStatementRangesUTF16Position(statement string) []base.Range {
 		})
 	}
 
-	// test
-	ranges = []base.Range{
-		{
-			Start: protocol.Position{
-				Line:      0,
-				Character: 0,
-			},
-			End: protocol.Position{
-				Line:      0,
-				Character: 10,
-			},
-		},
-	}
 	return ranges
 }

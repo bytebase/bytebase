@@ -19,7 +19,7 @@ func TestGetStatementRange(t *testing.T) {
 	}
 
 	const (
-		record      = true
+		record      = false
 		testDataDir = "test-data/statement-ranges"
 	)
 	a := require.New(t)
