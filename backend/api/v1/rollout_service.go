@@ -504,30 +504,15 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
 	}
 
-	// Get all tasks for the rollout
-	allTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rolloutID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
-	}
-	if len(allTasks) == 0 {
-		return nil, status.Errorf(codes.NotFound, "no tasks found for rollout %v", rolloutID)
-	}
-
 	// Parse requested task IDs and group by their environment
 	taskEnvironments := map[string][]int{}
 	taskIDsToRunMap := map[int]bool{}
 	for _, task := range request.Tasks {
-		_, _, _, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
+		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		// Find the task to get its environment
-		for _, t := range allTasks {
-			if t.ID == taskID {
-				taskEnvironments[t.Environment] = append(taskEnvironments[t.Environment], taskID)
-				break
-			}
-		}
+		taskEnvironments[stageID] = append(taskEnvironments[stageID], taskID)
 		taskIDsToRunMap[taskID] = true
 	}
 	if len(taskEnvironments) > 1 {
