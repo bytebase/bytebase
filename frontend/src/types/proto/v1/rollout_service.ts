@@ -223,9 +223,15 @@ export interface Rollout {
 export interface Stage {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage} */
   name: string;
-  /** id is the environment id of the stage. */
+  /**
+   * id is the environment id of the stage.
+   * e.g. "prod".
+   */
   id: string;
-  /** environment is the environment of the stage. */
+  /**
+   * environment is the environment of the stage.
+   * Format: environments/{environment}.
+   */
   environment: string;
   tasks: Task[];
 }
