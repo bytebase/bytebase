@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -21,6 +22,7 @@ var _ enterprise.LicenseService = (*LicenseService)(nil)
 type LicenseService struct {
 	store              *store.Store
 	cachedSubscription *enterprise.Subscription
+	mu                 sync.RWMutex
 
 	provider plugin.LicenseProvider
 }
@@ -53,17 +55,30 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterprise.Sub
 
 // LoadSubscription will load subscription.
 func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subscription {
-	if s.cachedSubscription != nil {
-		if s.cachedSubscription.Plan == base.FREE || s.cachedSubscription.IsExpired() {
+	s.mu.RLock()
+	cached := s.cachedSubscription
+	s.mu.RUnlock()
+
+	if cached != nil {
+		if cached.Plan == base.FREE || cached.IsExpired() {
 			// refresh expired subscription
+			s.mu.Lock()
 			s.cachedSubscription = nil
+			s.mu.Unlock()
+			cached = nil
 		}
 	}
-	if s.cachedSubscription != nil {
-		return s.cachedSubscription
+	if cached != nil {
+		return cached
 	}
 
 	// Cache the subscription.
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	// Double-check after acquiring write lock
+	if s.cachedSubscription != nil && s.cachedSubscription.Plan != base.FREE && !s.cachedSubscription.IsExpired() {
+		return s.cachedSubscription
+	}
 	s.cachedSubscription = s.provider.LoadSubscription(ctx)
 	return s.cachedSubscription
 }
@@ -151,6 +166,8 @@ func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.
 
 // RefreshCache will invalidate and refresh the subscription cache.
 func (s *LicenseService) RefreshCache(ctx context.Context) {
+	s.mu.Lock()
 	s.cachedSubscription = nil
+	s.mu.Unlock()
 	s.LoadSubscription(ctx)
 }
