@@ -13,7 +13,7 @@ import (
 func (ctl *controller) getEnvironment(ctx context.Context, id string) (*v1pb.EnvironmentSetting_Environment, error) {
 	setting, err := ctl.settingServiceClient.GetSetting(ctx,
 		&v1pb.GetSettingRequest{
-			Name: "settings/bb.workspace.environment",
+			Name: "settings/ENVIRONMENT",
 		})
 	if err != nil {
 		return nil, err

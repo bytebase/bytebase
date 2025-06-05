@@ -21,7 +21,7 @@ import {
 import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
 import type { LoginRequest } from "@/types/proto/v1/auth_service";
 import { LoginResponse } from "@/types/proto/v1/auth_service";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { User, UserType } from "@/types/proto/v1/user_service";
 
 export const useAuthStore = defineStore("auth_v1", () => {
@@ -86,7 +86,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     setRequireResetPassword(data.requireResetPassword);
 
     await useSettingV1Store().getOrFetchSettingByName(
-      "bb.workspace.profile",
+      Setting_SettingName.WORKSPACE_PROFILE,
       true // silent
     );
 

@@ -678,7 +678,7 @@ func convertProtoToProto(inputPB, outputPB protoreflect.ProtoMessage) error {
 }
 
 func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, error) {
-	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, setting.Name.String())
+	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, convertStoreSettingNameToV1(setting.Name).String())
 	switch setting.Name {
 	case storepb.SettingName_WORKSPACE_MAIL_DELIVERY:
 		storeValue := new(storepb.SMTPMailDeliverySetting)
@@ -997,12 +997,114 @@ func settingInWhitelist(name storepb.SettingName) bool {
 }
 
 // convertStringToSettingName converts a string to storepb.SettingName.
+// It first converts to v1pb.Setting_SettingName, then to storepb.SettingName.
 func convertStringToSettingName(name string) (storepb.SettingName, error) {
-	value, ok := storepb.SettingName_value[name]
+	// First try to convert string to v1pb.Setting_SettingName
+	v1Value, ok := v1pb.Setting_SettingName_value[name]
 	if !ok {
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED, errors.Errorf("invalid setting name: %s", name)
 	}
-	return storepb.SettingName(value), nil
+	v1SettingName := v1pb.Setting_SettingName(v1Value)
+
+	// Then convert v1pb to storepb
+	return convertV1SettingNameToStore(v1SettingName), nil
+}
+
+// convertStoreSettingNameToV1 converts storepb.SettingName to v1pb.Setting_SettingName.
+func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_SettingName {
+	//exhaustive:enforce
+	switch storeName {
+	case storepb.SettingName_SETTING_NAME_UNSPECIFIED:
+		return v1pb.Setting_SETTING_NAME_UNSPECIFIED
+	case storepb.SettingName_AUTH_SECRET:
+		return v1pb.Setting_AUTH_SECRET
+	case storepb.SettingName_BRANDING_LOGO:
+		return v1pb.Setting_BRANDING_LOGO
+	case storepb.SettingName_WORKSPACE_ID:
+		return v1pb.Setting_WORKSPACE_ID
+	case storepb.SettingName_WORKSPACE_PROFILE:
+		return v1pb.Setting_WORKSPACE_PROFILE
+	case storepb.SettingName_WORKSPACE_APPROVAL:
+		return v1pb.Setting_WORKSPACE_APPROVAL
+	case storepb.SettingName_WORKSPACE_EXTERNAL_APPROVAL:
+		return v1pb.Setting_WORKSPACE_EXTERNAL_APPROVAL
+	case storepb.SettingName_ENTERPRISE_LICENSE:
+		return v1pb.Setting_ENTERPRISE_LICENSE
+	case storepb.SettingName_APP_IM:
+		return v1pb.Setting_APP_IM
+	case storepb.SettingName_WATERMARK:
+		return v1pb.Setting_WATERMARK
+	case storepb.SettingName_AI:
+		return v1pb.Setting_AI
+	case storepb.SettingName_PLUGIN_AGENT:
+		return v1pb.Setting_PLUGIN_AGENT
+	case storepb.SettingName_WORKSPACE_MAIL_DELIVERY:
+		return v1pb.Setting_WORKSPACE_MAIL_DELIVERY
+	case storepb.SettingName_SCHEMA_TEMPLATE:
+		return v1pb.Setting_SCHEMA_TEMPLATE
+	case storepb.SettingName_DATA_CLASSIFICATION:
+		return v1pb.Setting_DATA_CLASSIFICATION
+	case storepb.SettingName_SEMANTIC_TYPES:
+		return v1pb.Setting_SEMANTIC_TYPES
+	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
+		return v1pb.Setting_SQL_RESULT_SIZE_LIMIT
+	case storepb.SettingName_SCIM:
+		return v1pb.Setting_SCIM
+	case storepb.SettingName_PASSWORD_RESTRICTION:
+		return v1pb.Setting_PASSWORD_RESTRICTION
+	case storepb.SettingName_ENVIRONMENT:
+		return v1pb.Setting_ENVIRONMENT
+	}
+	return v1pb.Setting_SETTING_NAME_UNSPECIFIED
+}
+
+// convertV1SettingNameToStore converts v1pb.Setting_SettingName to storepb.SettingName.
+func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.SettingName {
+	//exhaustive:enforce
+	switch v1Name {
+	case v1pb.Setting_SETTING_NAME_UNSPECIFIED:
+		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
+	case v1pb.Setting_AUTH_SECRET:
+		return storepb.SettingName_AUTH_SECRET
+	case v1pb.Setting_BRANDING_LOGO:
+		return storepb.SettingName_BRANDING_LOGO
+	case v1pb.Setting_WORKSPACE_ID:
+		return storepb.SettingName_WORKSPACE_ID
+	case v1pb.Setting_WORKSPACE_PROFILE:
+		return storepb.SettingName_WORKSPACE_PROFILE
+	case v1pb.Setting_WORKSPACE_APPROVAL:
+		return storepb.SettingName_WORKSPACE_APPROVAL
+	case v1pb.Setting_WORKSPACE_EXTERNAL_APPROVAL:
+		return storepb.SettingName_WORKSPACE_EXTERNAL_APPROVAL
+	case v1pb.Setting_ENTERPRISE_LICENSE:
+		return storepb.SettingName_ENTERPRISE_LICENSE
+	case v1pb.Setting_APP_IM:
+		return storepb.SettingName_APP_IM
+	case v1pb.Setting_WATERMARK:
+		return storepb.SettingName_WATERMARK
+	case v1pb.Setting_AI:
+		return storepb.SettingName_AI
+	case v1pb.Setting_PLUGIN_AGENT:
+		return storepb.SettingName_PLUGIN_AGENT
+	case v1pb.Setting_WORKSPACE_MAIL_DELIVERY:
+		return storepb.SettingName_WORKSPACE_MAIL_DELIVERY
+	case v1pb.Setting_SCHEMA_TEMPLATE:
+		return storepb.SettingName_SCHEMA_TEMPLATE
+	case v1pb.Setting_DATA_CLASSIFICATION:
+		return storepb.SettingName_DATA_CLASSIFICATION
+	case v1pb.Setting_SEMANTIC_TYPES:
+		return storepb.SettingName_SEMANTIC_TYPES
+	case v1pb.Setting_SQL_RESULT_SIZE_LIMIT:
+		return storepb.SettingName_SQL_RESULT_SIZE_LIMIT
+	case v1pb.Setting_SCIM:
+		return storepb.SettingName_SCIM
+	case v1pb.Setting_PASSWORD_RESTRICTION:
+		return storepb.SettingName_PASSWORD_RESTRICTION
+	case v1pb.Setting_ENVIRONMENT:
+		return storepb.SettingName_ENVIRONMENT
+	default:
+		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
+	}
 }
 
 func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {
