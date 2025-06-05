@@ -50,7 +50,7 @@
           <DatabaseOperations
             :databases="selectedDatabases"
             @refresh="() => pagedDatabaseTableRef?.refresh()"
-            @update-cache="
+            @update="
               (databases) => pagedDatabaseTableRef?.updateCache(databases)
             "
           />

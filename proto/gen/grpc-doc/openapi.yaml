@@ -3056,6 +3056,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances:batchUpdate:
+        post:
+            tags:
+                - InstanceService
+            operationId: InstanceService_BatchUpdateInstances
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchUpdateInstancesRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchUpdateInstancesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/policies:
         get:
             tags:
@@ -8507,6 +8531,23 @@ components:
                     items:
                         $ref: '#/components/schemas/Database'
                     description: Databases updated.
+        BatchUpdateInstancesRequest:
+            required:
+                - requests
+            type: object
+            properties:
+                requests:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UpdateInstanceRequest'
+                    description: The request message specifying the resources to update.
+        BatchUpdateInstancesResponse:
+            type: object
+            properties:
+                instances:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Instance'
         BatchUpdateIssuesStatusRequest:
             required:
                 - parent
@@ -13979,6 +14020,23 @@ components:
 
                          The database's `name` field is used to identify the database to update.
                          Format: instances/{instance}/databases/{database}
+                updateMask:
+                    type: string
+                    description: The list of fields to update.
+                    format: field-mask
+        UpdateInstanceRequest:
+            required:
+                - instance
+            type: object
+            properties:
+                instance:
+                    allOf:
+                        - $ref: '#/components/schemas/Instance'
+                    description: |-
+                        The instance to update.
+
+                         The instance's `name` field is used to identify the instance to update.
+                         Format: instances/{instance}
                 updateMask:
                     type: string
                     description: The list of fields to update.
