@@ -86,7 +86,7 @@ type EventIssueRolloutReady struct {
 
 type EventStageStatusUpdate struct {
 	StageTitle string
-	StageUID   int
+	StageID    string
 }
 
 type EventTaskRunStatusUpdate struct {
