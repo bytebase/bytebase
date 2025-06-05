@@ -7099,8 +7099,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | WORKSPACE | 1 |  |
 | ENVIRONMENT | 2 |  |
 | PROJECT | 3 |  |
-| INSTANCE | 4 |  |
-| DATABASE | 5 |  |
 
 
 

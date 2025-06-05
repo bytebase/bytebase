@@ -129,8 +129,6 @@ export enum PolicyResourceType {
   WORKSPACE = "WORKSPACE",
   ENVIRONMENT = "ENVIRONMENT",
   PROJECT = "PROJECT",
-  INSTANCE = "INSTANCE",
-  DATABASE = "DATABASE",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -148,12 +146,6 @@ export function policyResourceTypeFromJSON(object: any): PolicyResourceType {
     case 3:
     case "PROJECT":
       return PolicyResourceType.PROJECT;
-    case 4:
-    case "INSTANCE":
-      return PolicyResourceType.INSTANCE;
-    case 5:
-    case "DATABASE":
-      return PolicyResourceType.DATABASE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -171,10 +163,6 @@ export function policyResourceTypeToJSON(object: PolicyResourceType): string {
       return "ENVIRONMENT";
     case PolicyResourceType.PROJECT:
       return "PROJECT";
-    case PolicyResourceType.INSTANCE:
-      return "INSTANCE";
-    case PolicyResourceType.DATABASE:
-      return "DATABASE";
     case PolicyResourceType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -191,10 +179,6 @@ export function policyResourceTypeToNumber(object: PolicyResourceType): number {
       return 2;
     case PolicyResourceType.PROJECT:
       return 3;
-    case PolicyResourceType.INSTANCE:
-      return 4;
-    case PolicyResourceType.DATABASE:
-      return 5;
     case PolicyResourceType.UNRECOGNIZED:
     default:
       return -1;
