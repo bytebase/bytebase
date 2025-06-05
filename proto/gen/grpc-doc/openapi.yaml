@@ -13329,12 +13329,10 @@ components:
                 id:
                     readOnly: true
                     type: string
-                    description: |-
-                        The id comes from the deployment config.
-                         Format: UUID
-                         Empty for legacy stages.
+                    description: id is the environment id of the stage.
                 environment:
                     type: string
+                    description: environment is the environment of the stage.
                 tasks:
                     type: array
                     items:
