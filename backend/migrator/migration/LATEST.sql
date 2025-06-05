@@ -58,7 +58,7 @@ CREATE TABLE policy (
     id serial PRIMARY KEY,
     enforce boolean NOT NULL DEFAULT TRUE,
     updated_at timestamptz NOT NULL DEFAULT now(),
-    resource_type text NOT NULL CHECK (resource_type IN ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTANCE')),
+    resource_type text NOT NULL,
     resource TEXT NOT NULL,
     type text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}',

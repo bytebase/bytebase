@@ -1,0 +1,1 @@
+ALTER TABLE policy DROP CONSTRAINT IF EXISTS policy_resource_type_check;

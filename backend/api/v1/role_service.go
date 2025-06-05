@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -220,7 +221,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 			}
 			if usedResource.Resource != "" {
 				usedBy = append(usedBy, usedResource.Resource)
-			} else if usedResource.ResourceType == base.PolicyResourceTypeWorkspace {
+			} else if usedResource.ResourceType == storepb.Policy_WORKSPACE {
 				usedBy = append(usedBy, "workspace")
 			}
 		}
