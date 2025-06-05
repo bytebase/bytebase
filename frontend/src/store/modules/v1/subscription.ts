@@ -144,6 +144,9 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       );
       return daysBeforeExpire / total < 0.5;
     },
+    existTrialLicense(): boolean {
+      return false;
+    },
     canTrial(state): boolean {
       if (!this.isSelfHostLicense) {
         return false;
