@@ -217,8 +217,8 @@ func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMess
 			&task.PipelineID,
 			&task.InstanceID,
 			&task.DatabaseName,
-			&typeString,
 			&task.Environment,
+			&typeString,
 			&payload,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")

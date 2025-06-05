@@ -779,7 +779,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 				}
 
-				var currentEnvironment string = task.Environment
+				currentEnvironment := task.Environment
 				var nextEnvironment string
 				var pipelineDone bool
 				for i, env := range environmentOrder {
