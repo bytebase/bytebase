@@ -48,6 +48,7 @@ import { NButton } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import InstanceSyncButton from "@/components/Instance/InstanceSyncButton.vue";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import {
