@@ -88,6 +88,7 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
@@ -140,7 +141,7 @@ const { policy: exportDataPolicy } = usePolicyByParentAndType(
 const getInitialState = (): LocalState => {
   return {
     enableWatermark:
-      settingV1Store.getSettingByName("bb.workspace.watermark")?.value
+      settingV1Store.getSettingByName(Setting_SettingName.WATERMARK)?.value
         ?.stringValue === "1",
     enableDataExport: !exportDataPolicy.value?.exportDataPolicy?.disable,
   };
@@ -173,7 +174,7 @@ const handleDataExportToggle = async () => {
 const handleWatermarkToggle = async () => {
   const value = state.enableWatermark ? "1" : "0";
   await settingV1Store.upsertSetting({
-    name: "bb.workspace.watermark",
+    name: Setting_SettingName.WATERMARK,
     value: {
       stringValue: value,
     },

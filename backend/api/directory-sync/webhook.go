@@ -583,7 +583,7 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
 	}
 
-	scimSetting, err := s.store.GetSettingV2(ctx, base.SettingSCIM)
+	scimSetting, err := s.store.GetSettingV2(ctx, storepb.SettingName_SCIM)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find scim setting")
 	}

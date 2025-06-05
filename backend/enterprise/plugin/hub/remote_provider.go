@@ -12,7 +12,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	"github.com/bytebase/bytebase/backend/store"
@@ -64,7 +63,7 @@ func (p *remoteLicenseProvider) FetchLicense(ctx context.Context) (string, error
 		return "", nil
 	}
 
-	setting, err := p.store.GetSettingV2(ctx, base.SettingPluginAgent)
+	setting, err := p.store.GetSettingV2(ctx, storepb.SettingName_PLUGIN_AGENT)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to find the hub token from settings")
 	}

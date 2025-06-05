@@ -8,8 +8,7 @@ import type {
   WorkspaceProfileSetting,
   DataClassificationSetting_DataClassificationConfig,
 } from "@/types/proto/v1/setting_service";
-import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
-import type { SettingName } from "@/types/setting";
+import { PasswordRestrictionSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { useActuatorV1Store } from "./actuator";
 
 interface SettingState {
@@ -23,25 +22,25 @@ export const useSettingV1Store = defineStore("setting_v1", {
   getters: {
     workspaceProfileSetting(state): WorkspaceProfileSetting | undefined {
       const setting = state.settingMapByName.get(
-        `${settingNamePrefix}bb.workspace.profile`
+        `${settingNamePrefix}${Setting_SettingName.WORKSPACE_PROFILE}`
       );
       return setting?.value?.workspaceProfileSettingValue;
     },
     brandingLogo(state): string | undefined {
       const setting = state.settingMapByName.get(
-        `${settingNamePrefix}bb.branding.logo`
+        `${settingNamePrefix}${Setting_SettingName.BRANDING_LOGO}`
       );
       return setting?.value?.stringValue;
     },
     classification(): DataClassificationSetting_DataClassificationConfig[] {
       const setting = this.settingMapByName.get(
-        `${settingNamePrefix}bb.workspace.data-classification`
+        `${settingNamePrefix}${Setting_SettingName.DATA_CLASSIFICATION}`
       );
       return setting?.value?.dataClassificationSettingValue?.configs ?? [];
     },
     passwordRestriction(): PasswordRestrictionSetting {
       const setting = this.settingMapByName.get(
-        `${settingNamePrefix}bb.workspace.password-restriction`
+        `${settingNamePrefix}${Setting_SettingName.PASSWORD_RESTRICTION}`
       );
       return (
         setting?.value?.passwordRestrictionSetting ??
@@ -57,13 +56,13 @@ export const useSettingV1Store = defineStore("setting_v1", {
       classificationId: string
     ): DataClassificationSetting_DataClassificationConfig | undefined {
       const setting = this.settingMapByName.get(
-        `${settingNamePrefix}bb.workspace.data-classification`
+        `${settingNamePrefix}${Setting_SettingName.DATA_CLASSIFICATION}`
       );
       return setting?.value?.dataClassificationSettingValue?.configs.find(
         (config) => config.id === classificationId
       );
     },
-    async fetchSettingByName(name: SettingName, silent = false) {
+    async fetchSettingByName(name: Setting_SettingName, silent = false) {
       try {
         const setting = await settingServiceClient.getSetting(
           {
@@ -77,14 +76,14 @@ export const useSettingV1Store = defineStore("setting_v1", {
         return;
       }
     },
-    getOrFetchSettingByName(name: SettingName, silent = false) {
+    getOrFetchSettingByName(name: Setting_SettingName, silent = false) {
       const setting = this.getSettingByName(name);
       if (setting) {
         return setting;
       }
       return this.fetchSettingByName(name, silent);
     },
-    getSettingByName(name: SettingName) {
+    getSettingByName(name: Setting_SettingName) {
       return this.settingMapByName.get(`${settingNamePrefix}${name}`);
     },
     async fetchSettingList() {
@@ -99,7 +98,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
       validateOnly = false,
       updateMask,
     }: {
-      name: SettingName;
+      name: Setting_SettingName;
       value: SettingValue;
       validateOnly?: boolean;
       updateMask?: string[] | undefined;
@@ -131,7 +130,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
         ...payload,
       };
       await this.upsertSetting({
-        name: "bb.workspace.profile",
+        name: Setting_SettingName.WORKSPACE_PROFILE,
         value: {
           workspaceProfileSettingValue: profileSetting,
         },
@@ -143,7 +142,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
   },
 });
 
-export const useSettingByName = (name: SettingName) => {
+export const useSettingByName = (name: Setting_SettingName) => {
   const store = useSettingV1Store();
   const setting = computed(() => store.getSettingByName(name));
   store.getOrFetchSettingByName(name, /* silent */ true);
