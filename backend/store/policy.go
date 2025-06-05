@@ -548,7 +548,7 @@ func upsertPolicyV2Impl(ctx context.Context, txn *sql.Tx, create *PolicyMessage)
 			enforce = EXCLUDED.enforce,
 			updated_at = EXCLUDED.updated_at
 		`,
-		create.ResourceType,
+		create.ResourceType.String(),
 		create.Resource,
 		create.InheritFromParent,
 		create.Type.String(),
@@ -564,7 +564,7 @@ func upsertPolicyV2Impl(ctx context.Context, txn *sql.Tx, create *PolicyMessage)
 func (*Store) listPolicyImplV2(ctx context.Context, txn *sql.Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ResourceType; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, v.String())
 	}
 	if v := find.Resource; v != nil {
 		where, args = append(where, fmt.Sprintf("resource = $%d", len(args)+1)), append(args, *v)
@@ -597,10 +597,10 @@ func (*Store) listPolicyImplV2(ctx context.Context, txn *sql.Tx, find *FindPolic
 	var policyList []*PolicyMessage
 	for rows.Next() {
 		var policyMessage PolicyMessage
-		var typeString string
+		var resourceTypeString, typeString string
 		if err := rows.Scan(
 			&policyMessage.UpdatedAt,
-			&policyMessage.ResourceType,
+			&resourceTypeString,
 			&policyMessage.Resource,
 			&policyMessage.InheritFromParent,
 			&typeString,
@@ -609,6 +609,11 @@ func (*Store) listPolicyImplV2(ctx context.Context, txn *sql.Tx, find *FindPolic
 		); err != nil {
 			return nil, err
 		}
+		resourceTypeValue, ok := storepb.Policy_Resource_value[resourceTypeString]
+		if !ok {
+			return nil, errors.Errorf("invalid policy resource type string: %s", resourceTypeString)
+		}
+		policyMessage.ResourceType = storepb.Policy_Resource(resourceTypeValue)
 		value, ok := storepb.Policy_Type_value[typeString]
 		if !ok {
 			return nil, errors.Errorf("invalid policy type string: %s", typeString)
