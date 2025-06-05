@@ -60,7 +60,7 @@ CREATE TABLE policy (
     updated_at timestamptz NOT NULL DEFAULT now(),
     resource_type text NOT NULL CHECK (resource_type IN ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTANCE')),
     resource TEXT NOT NULL,
-    type text NOT NULL CHECK (type LIKE 'bb.policy.%'),
+    type text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}',
     inherit_from_parent boolean NOT NULL DEFAULT TRUE
 );
