@@ -1,4 +1,4 @@
-import { cloneDeep, includes } from "lodash-es";
+import { cloneDeep, head, includes } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { useRoute } from "vue-router";
 import {
@@ -22,7 +22,7 @@ import {
   getSheetStatement,
   setSheetStatement,
 } from "@/utils";
-import { sheetNameForSpec } from "../plan";
+import { sheetNameForSpec, targetsForSpec } from "../plan";
 import { getLocalSheetByName } from "../sheet";
 import { extractInitialSQLFromQuery } from "./util";
 
@@ -70,6 +70,21 @@ export const createPlanSkeleton = async (
 };
 
 export const buildPlan = async (params: CreatePlanParams) => {
+  if (
+    !includes(
+      [
+        "bb.issue.database.data.update",
+        "bb.issue.database.schema.update",
+        "bb.issue.database.data.export",
+      ],
+      params.template
+    )
+  ) {
+    throw new Error(
+      "Unsupported template for plan creation: " + params.template
+    );
+  }
+
   const { project, query } = params;
   const databaseNameList = (query.databaseList ?? "").split(",");
   const plan = Plan.fromPartial({
@@ -87,34 +102,24 @@ export const buildPlan = async (params: CreatePlanParams) => {
     const targets = query.databaseGroupName
       ? [query.databaseGroupName]
       : databaseNameList;
-    const sheetUID = hasInitialSQL(params.initialSQL) ? undefined : nextUID();
-    plan.specs = await buildSpecs(targets, params, sheetUID);
+    // If initialSQL.sqlMap is provided, we will use it to build multiple specs.
+    // Mainly used for sync schema.
+    const shouldUseMultiSpecs =
+      params.initialSQL.sqlMap &&
+      Object.keys(params.initialSQL.sqlMap).length > 0;
+    if (shouldUseMultiSpecs) {
+      for (const target of targets) {
+        const spec = await buildSpecForTargetsV1([target], params);
+        maybeSetInitialSQLForSpec(spec, params);
+        plan.specs.push(spec);
+      }
+    } else {
+      const spec = await buildSpecForTargetsV1(targets, params);
+      maybeSetInitialSQLForSpec(spec, params);
+      plan.specs = [spec];
+    }
   }
   return await composePlan(plan);
-};
-
-const buildSpecs = async (
-  targets: string[],
-  params: CreatePlanParams,
-  sheetUID?: string // if specified, all specs will share the same sheet
-) => {
-  if (
-    !includes(
-      [
-        "bb.issue.database.data.update",
-        "bb.issue.database.schema.update",
-        "bb.issue.database.data.export",
-      ],
-      params.template
-    )
-  ) {
-    throw new Error(
-      "Unsupported template for plan creation: " + params.template
-    );
-  }
-  const spec = await buildSpecForTargetsV1(targets, params, sheetUID);
-  maybeSetInitialSQLForSpec(spec, params);
-  return [spec];
 };
 
 const buildSpecForTargetsV1 = async (
@@ -204,24 +209,12 @@ const maybeSetInitialSQLForSpec = (
     // If the sheet is a remote sheet, ignore initial SQL in URL query
     return;
   }
+  const target = head(targetsForSpec(spec));
   // Priority: sqlMap[key] -> sql -> nothing
   const sql =
-    params.initialSQL.sqlMap?.[spec.id] ?? params.initialSQL.sql ?? "";
+    params.initialSQL.sqlMap?.[target || ""] ?? params.initialSQL.sql ?? "";
   if (sql) {
     const sheetEntity = getLocalSheetByName(sheet);
     setSheetStatement(sheetEntity, sql);
   }
-};
-
-const hasInitialSQL = (initialSQL?: InitialSQL) => {
-  if (!initialSQL) {
-    return false;
-  }
-  if (typeof initialSQL.sql === "string") {
-    return true;
-  }
-  if (typeof initialSQL.sqlMap === "object") {
-    return true;
-  }
-  return false;
 };
