@@ -6,12 +6,13 @@ import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
 import type { Algorithm } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { extractInstanceResourceName } from "@/utils";
 
 export const getClassificationLevelOptions = () => {
   const settingStore = useSettingV1Store();
   const setting = settingStore.getSettingByName(
-    "bb.workspace.data-classification"
+    Setting_SettingName.DATA_CLASSIFICATION
   );
   if (!setting) {
     return [];

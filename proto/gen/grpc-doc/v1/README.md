@@ -50,6 +50,8 @@
     - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
     - [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest)
     - [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse)
+    - [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest)
+    - [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse)
     - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
     - [DataSource](#bytebase-v1-DataSource)
     - [DataSource.Address](#bytebase-v1-DataSource-Address)
@@ -269,6 +271,7 @@
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
+    - [Setting.SettingName](#bytebase-v1-Setting-SettingName)
   
     - [SettingService](#bytebase-v1-SettingService)
   
@@ -1261,6 +1264,36 @@ When paginating, all other parameters provided to `ListInstanceRoles` must match
 
 
 
+<a name="bytebase-v1-BatchUpdateInstancesRequest"></a>
+
+### BatchUpdateInstancesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| requests | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | repeated | The request message specifying the resources to update. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateInstancesResponse"></a>
+
+### BatchUpdateInstancesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instances | [Instance](#bytebase-v1-Instance) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateInstanceRequest"></a>
 
 ### CreateInstanceRequest
@@ -1807,6 +1840,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) |  |
 | ListInstanceDatabase | [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest) | [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse) |  |
 | BatchSyncInstances | [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest) | [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse) |  |
+| BatchUpdateInstances | [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest) | [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse) |  |
 | AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
@@ -4913,6 +4947,36 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ENCRYPTION_NONE | 1 |  |
 | ENCRYPTION_STARTTLS | 2 |  |
 | ENCRYPTION_SSL_TLS | 3 |  |
+
+
+
+<a name="bytebase-v1-Setting-SettingName"></a>
+
+### Setting.SettingName
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SETTING_NAME_UNSPECIFIED | 0 |  |
+| AUTH_SECRET | 1 |  |
+| BRANDING_LOGO | 2 |  |
+| WORKSPACE_ID | 3 |  |
+| WORKSPACE_PROFILE | 4 |  |
+| WORKSPACE_APPROVAL | 5 |  |
+| WORKSPACE_EXTERNAL_APPROVAL | 6 |  |
+| ENTERPRISE_LICENSE | 7 |  |
+| APP_IM | 8 |  |
+| WATERMARK | 9 |  |
+| AI | 10 |  |
+| PLUGIN_AGENT | 11 |  |
+| WORKSPACE_MAIL_DELIVERY | 12 |  |
+| SCHEMA_TEMPLATE | 13 |  |
+| DATA_CLASSIFICATION | 14 |  |
+| SEMANTIC_TYPES | 15 |  |
+| SQL_RESULT_SIZE_LIMIT | 16 |  |
+| SCIM | 17 |  |
+| PASSWORD_RESTRICTION | 18 |  |
+| ENVIRONMENT | 19 |  |
 
 
  

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Architecture
 - The database schema is defined in `./backend/migrator/migration/LATEST.sql`
-- The database migration files are in `./backend/migrator/<<version>>/`. `TestLatestVersion` in `./backend/migrator/migrator_test.go` and `./backend/migrator/migration/LATEST.sql` needs update after new migration files are added.
+- The database migration files are in `./backend/migrator/<<version>>/`. `TestLatestVersion` in `./backend/migrator/migrator_test.go` needs update after new migration files are added. `./backend/migrator/migration/LATEST.sql` should updated for DDL migrations.
 - Files in `./backend/store` are mappings to the database tables.
 
 ## Build/Test Commands

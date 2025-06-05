@@ -146,6 +146,195 @@ export interface Setting {
   value: Value | undefined;
 }
 
+export enum Setting_SettingName {
+  SETTING_NAME_UNSPECIFIED = "SETTING_NAME_UNSPECIFIED",
+  AUTH_SECRET = "AUTH_SECRET",
+  BRANDING_LOGO = "BRANDING_LOGO",
+  WORKSPACE_ID = "WORKSPACE_ID",
+  WORKSPACE_PROFILE = "WORKSPACE_PROFILE",
+  WORKSPACE_APPROVAL = "WORKSPACE_APPROVAL",
+  WORKSPACE_EXTERNAL_APPROVAL = "WORKSPACE_EXTERNAL_APPROVAL",
+  ENTERPRISE_LICENSE = "ENTERPRISE_LICENSE",
+  APP_IM = "APP_IM",
+  WATERMARK = "WATERMARK",
+  AI = "AI",
+  PLUGIN_AGENT = "PLUGIN_AGENT",
+  WORKSPACE_MAIL_DELIVERY = "WORKSPACE_MAIL_DELIVERY",
+  SCHEMA_TEMPLATE = "SCHEMA_TEMPLATE",
+  DATA_CLASSIFICATION = "DATA_CLASSIFICATION",
+  SEMANTIC_TYPES = "SEMANTIC_TYPES",
+  SQL_RESULT_SIZE_LIMIT = "SQL_RESULT_SIZE_LIMIT",
+  SCIM = "SCIM",
+  PASSWORD_RESTRICTION = "PASSWORD_RESTRICTION",
+  ENVIRONMENT = "ENVIRONMENT",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function setting_SettingNameFromJSON(object: any): Setting_SettingName {
+  switch (object) {
+    case 0:
+    case "SETTING_NAME_UNSPECIFIED":
+      return Setting_SettingName.SETTING_NAME_UNSPECIFIED;
+    case 1:
+    case "AUTH_SECRET":
+      return Setting_SettingName.AUTH_SECRET;
+    case 2:
+    case "BRANDING_LOGO":
+      return Setting_SettingName.BRANDING_LOGO;
+    case 3:
+    case "WORKSPACE_ID":
+      return Setting_SettingName.WORKSPACE_ID;
+    case 4:
+    case "WORKSPACE_PROFILE":
+      return Setting_SettingName.WORKSPACE_PROFILE;
+    case 5:
+    case "WORKSPACE_APPROVAL":
+      return Setting_SettingName.WORKSPACE_APPROVAL;
+    case 6:
+    case "WORKSPACE_EXTERNAL_APPROVAL":
+      return Setting_SettingName.WORKSPACE_EXTERNAL_APPROVAL;
+    case 7:
+    case "ENTERPRISE_LICENSE":
+      return Setting_SettingName.ENTERPRISE_LICENSE;
+    case 8:
+    case "APP_IM":
+      return Setting_SettingName.APP_IM;
+    case 9:
+    case "WATERMARK":
+      return Setting_SettingName.WATERMARK;
+    case 10:
+    case "AI":
+      return Setting_SettingName.AI;
+    case 11:
+    case "PLUGIN_AGENT":
+      return Setting_SettingName.PLUGIN_AGENT;
+    case 12:
+    case "WORKSPACE_MAIL_DELIVERY":
+      return Setting_SettingName.WORKSPACE_MAIL_DELIVERY;
+    case 13:
+    case "SCHEMA_TEMPLATE":
+      return Setting_SettingName.SCHEMA_TEMPLATE;
+    case 14:
+    case "DATA_CLASSIFICATION":
+      return Setting_SettingName.DATA_CLASSIFICATION;
+    case 15:
+    case "SEMANTIC_TYPES":
+      return Setting_SettingName.SEMANTIC_TYPES;
+    case 16:
+    case "SQL_RESULT_SIZE_LIMIT":
+      return Setting_SettingName.SQL_RESULT_SIZE_LIMIT;
+    case 17:
+    case "SCIM":
+      return Setting_SettingName.SCIM;
+    case 18:
+    case "PASSWORD_RESTRICTION":
+      return Setting_SettingName.PASSWORD_RESTRICTION;
+    case 19:
+    case "ENVIRONMENT":
+      return Setting_SettingName.ENVIRONMENT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Setting_SettingName.UNRECOGNIZED;
+  }
+}
+
+export function setting_SettingNameToJSON(object: Setting_SettingName): string {
+  switch (object) {
+    case Setting_SettingName.SETTING_NAME_UNSPECIFIED:
+      return "SETTING_NAME_UNSPECIFIED";
+    case Setting_SettingName.AUTH_SECRET:
+      return "AUTH_SECRET";
+    case Setting_SettingName.BRANDING_LOGO:
+      return "BRANDING_LOGO";
+    case Setting_SettingName.WORKSPACE_ID:
+      return "WORKSPACE_ID";
+    case Setting_SettingName.WORKSPACE_PROFILE:
+      return "WORKSPACE_PROFILE";
+    case Setting_SettingName.WORKSPACE_APPROVAL:
+      return "WORKSPACE_APPROVAL";
+    case Setting_SettingName.WORKSPACE_EXTERNAL_APPROVAL:
+      return "WORKSPACE_EXTERNAL_APPROVAL";
+    case Setting_SettingName.ENTERPRISE_LICENSE:
+      return "ENTERPRISE_LICENSE";
+    case Setting_SettingName.APP_IM:
+      return "APP_IM";
+    case Setting_SettingName.WATERMARK:
+      return "WATERMARK";
+    case Setting_SettingName.AI:
+      return "AI";
+    case Setting_SettingName.PLUGIN_AGENT:
+      return "PLUGIN_AGENT";
+    case Setting_SettingName.WORKSPACE_MAIL_DELIVERY:
+      return "WORKSPACE_MAIL_DELIVERY";
+    case Setting_SettingName.SCHEMA_TEMPLATE:
+      return "SCHEMA_TEMPLATE";
+    case Setting_SettingName.DATA_CLASSIFICATION:
+      return "DATA_CLASSIFICATION";
+    case Setting_SettingName.SEMANTIC_TYPES:
+      return "SEMANTIC_TYPES";
+    case Setting_SettingName.SQL_RESULT_SIZE_LIMIT:
+      return "SQL_RESULT_SIZE_LIMIT";
+    case Setting_SettingName.SCIM:
+      return "SCIM";
+    case Setting_SettingName.PASSWORD_RESTRICTION:
+      return "PASSWORD_RESTRICTION";
+    case Setting_SettingName.ENVIRONMENT:
+      return "ENVIRONMENT";
+    case Setting_SettingName.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function setting_SettingNameToNumber(object: Setting_SettingName): number {
+  switch (object) {
+    case Setting_SettingName.SETTING_NAME_UNSPECIFIED:
+      return 0;
+    case Setting_SettingName.AUTH_SECRET:
+      return 1;
+    case Setting_SettingName.BRANDING_LOGO:
+      return 2;
+    case Setting_SettingName.WORKSPACE_ID:
+      return 3;
+    case Setting_SettingName.WORKSPACE_PROFILE:
+      return 4;
+    case Setting_SettingName.WORKSPACE_APPROVAL:
+      return 5;
+    case Setting_SettingName.WORKSPACE_EXTERNAL_APPROVAL:
+      return 6;
+    case Setting_SettingName.ENTERPRISE_LICENSE:
+      return 7;
+    case Setting_SettingName.APP_IM:
+      return 8;
+    case Setting_SettingName.WATERMARK:
+      return 9;
+    case Setting_SettingName.AI:
+      return 10;
+    case Setting_SettingName.PLUGIN_AGENT:
+      return 11;
+    case Setting_SettingName.WORKSPACE_MAIL_DELIVERY:
+      return 12;
+    case Setting_SettingName.SCHEMA_TEMPLATE:
+      return 13;
+    case Setting_SettingName.DATA_CLASSIFICATION:
+      return 14;
+    case Setting_SettingName.SEMANTIC_TYPES:
+      return 15;
+    case Setting_SettingName.SQL_RESULT_SIZE_LIMIT:
+      return 16;
+    case Setting_SettingName.SCIM:
+      return 17;
+    case Setting_SettingName.PASSWORD_RESTRICTION:
+      return 18;
+    case Setting_SettingName.ENVIRONMENT:
+      return 19;
+    case Setting_SettingName.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /** The data in setting value. */
 export interface Value {
   /** Defines this value as being a string value. */

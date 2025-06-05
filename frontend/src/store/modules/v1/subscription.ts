@@ -1,7 +1,3 @@
-import dayjs from "dayjs";
-import { defineStore } from "pinia";
-import type { Ref } from "vue";
-import { computed } from "vue";
 import { subscriptionServiceClient } from "@/grpcweb";
 import type { FeatureType } from "@/types";
 import { PLANS, getDateForPbTimestamp, instanceLimitFeature } from "@/types";
@@ -15,7 +11,10 @@ import {
   planTypeFromJSON,
   planTypeToNumber,
 } from "@/types/proto/v1/subscription_service";
-import { useSettingV1Store } from "./setting";
+import dayjs from "dayjs";
+import { defineStore } from "pinia";
+import type { Ref } from "vue";
+import { computed } from "vue";
 
 // The threshold of days before the license expiration date to show the warning.
 // Default is 7 days.
@@ -146,14 +145,10 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       return daysBeforeExpire / total < 0.5;
     },
     existTrialLicense(): boolean {
-      const settingStore = useSettingV1Store();
-      return !!settingStore.getSettingByName("bb.enterprise.trial");
+      return false;
     },
     canTrial(state): boolean {
       if (!this.isSelfHostLicense) {
-        return false;
-      }
-      if (this.existTrialLicense) {
         return false;
       }
       if (!state.subscription || this.isFreePlan) {

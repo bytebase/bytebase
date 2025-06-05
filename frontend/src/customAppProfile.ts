@@ -2,10 +2,10 @@ import { computed } from "vue";
 import i18n from "./plugins/i18n";
 import { useActuatorV1Store, useSettingByName } from "./store";
 import { defaultAppProfile } from "./types";
-import { DatabaseChangeMode } from "./types/proto/v1/setting_service";
+import { DatabaseChangeMode, Setting_SettingName } from "./types/proto/v1/setting_service";
 
 export const overrideAppProfile = () => {
-  const setting = useSettingByName("bb.workspace.profile");
+  const setting = useSettingByName(Setting_SettingName.WORKSPACE_PROFILE);
   const databaseChangeMode = computed(() => {
     const mode =
       setting.value?.value?.workspaceProfileSettingValue?.databaseChangeMode;

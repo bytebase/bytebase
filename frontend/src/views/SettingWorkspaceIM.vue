@@ -64,6 +64,7 @@ import {
   AppIMSetting_Lark,
   AppIMSetting_Wecom,
   AppIMSetting_DingTalk,
+  Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
@@ -87,7 +88,7 @@ const settingStore = useSettingV1Store();
 
 const imSetting = computed(
   () =>
-    settingStore.getSettingByName("bb.app.im")?.value?.appImSettingValue ??
+    settingStore.getSettingByName(Setting_SettingName.APP_IM)?.value?.appImSettingValue ??
     AppIMSetting.fromPartial({})
 );
 
@@ -418,7 +419,7 @@ const onSave = async () => {
 
   try {
     const setting = await settingStore.upsertSetting({
-      name: "bb.app.im",
+      name: Setting_SettingName.APP_IM,
       value: {
         appImSettingValue: data,
       },
