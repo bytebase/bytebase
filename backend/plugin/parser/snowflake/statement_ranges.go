@@ -6,10 +6,13 @@ import (
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+
 	protocol "github.com/bytebase/lsp-protocol"
 	parser "github.com/bytebase/snowsql-parser"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
