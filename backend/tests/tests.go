@@ -22,14 +22,13 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	// Import pg driver.
 	// init() in pgx/v5/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	component "github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/server"
