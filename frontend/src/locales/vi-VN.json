@@ -306,7 +306,6 @@
     "license-expired": "Giấy phép {plan} của bạn đã hết hạn vào {expireAt}.",
     "license-expires": "Giấy phép {plan} của bạn sẽ hết hạn sau {days} ngày vào {expireAt}.",
     "trial-expires": "Bản dùng thử miễn phí {plan} của bạn sẽ hết hạn trong {days} ngày nữa vào {expireAt}.",
-    "trial-expired": "Bản dùng thử miễn phí {plan} của bạn đã hết hạn.",
     "deploy": "Tự lưu trữ",
     "cloud": "Đám mây",
     "request-demo": "Đặt lịch giới thiệu sản phẩm 30 phút.",

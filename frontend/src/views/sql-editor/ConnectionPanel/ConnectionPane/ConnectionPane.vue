@@ -2,7 +2,7 @@
   <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
     <div class="w-full px-4 mt-4">
       <div
-        class="textinfolabel mb-2 w-full leading-4 flex flex-col lg:flex-row items-start lg:items-center gap-x-1"
+        class="textinfolabel mb-2 w-full leading-4 flex flex-col 2xl:flex-row items-start 2xl:items-center gap-x-1"
       >
         <div class="flex items-center gap-x-1">
           <FeatureBadge feature="bb.feature.batch-query" />
