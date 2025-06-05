@@ -1,16 +1,11 @@
-import { Status, type ServerError } from "nice-grpc-common";
-import { defineStore } from "pinia";
-import { computed, unref, watchEffect, ref } from "vue";
 import { policyServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
-import { Policy } from "@/types/proto/v1/org_policy_service";
-import {
-  PolicyType,
-  PolicyResourceType,
-  policyTypeToJSON,
-} from "@/types/proto/v1/org_policy_service";
+import { Policy, PolicyResourceType, PolicyType, policyTypeToJSON } from "@/types/proto/v1/org_policy_service";
+import { Status, type ServerError } from "nice-grpc-common";
+import { defineStore } from "pinia";
+import { computed, ref, unref, watchEffect } from "vue";
 import { useCurrentUserV1 } from "../auth";
 
 interface PolicyState {
@@ -39,10 +34,6 @@ const getPolicyParentByResourceType = (
       return "projects/-";
     case PolicyResourceType.ENVIRONMENT:
       return "environments/-";
-    case PolicyResourceType.INSTANCE:
-      return "instances/-";
-    case PolicyResourceType.DATABASE:
-      return "instances/-/databases/-";
     default:
       return "";
   }
