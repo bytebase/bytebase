@@ -422,8 +422,12 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 
 			// Create task payload
 			payload := &storepb.Task{
-				SpecId:  spec.Id,
-				SheetId: int32(sheetUID),
+				SpecId:        spec.Id,
+				SheetId:       int32(sheetUID),
+				SchemaVersion: file.Version,
+				TaskReleaseSource: &storepb.TaskReleaseSource{
+					File: common.FormatReleaseFile(c.Release, file.Id),
+				},
 			}
 
 			// Add ghost flags if this is a ghost migration
