@@ -35,7 +35,6 @@ func TestGetStatementType(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, test := range tests {
-		t.Log(test.Statement)
 		asts, err := ParseTiDB(test.Statement, "", "")
 		a.NoError(err)
 
