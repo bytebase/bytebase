@@ -43,7 +43,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
-import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import { SemanticTypeSetting_SemanticType, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
 import type { SemanticItem } from "./components/SemanticTypesTable.vue";
@@ -70,7 +70,7 @@ const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
 const semanticTypeSettingValue = computed(() => {
   const semanticTypeSetting = settingStore.getSettingByName(
-    "bb.workspace.semantic-types"
+    Setting_SettingName.SEMANTIC_TYPES
   );
   return semanticTypeSetting?.value?.semanticTypeSettingValue?.types ?? [];
 });
@@ -108,7 +108,7 @@ const onRemove = async (index: number) => {
   }
 
   await settingStore.upsertSetting({
-    name: "bb.workspace.semantic-types",
+    name: Setting_SettingName.SEMANTIC_TYPES,
     value: {
       semanticTypeSettingValue: {
         types: state.semanticItemList
@@ -146,7 +146,7 @@ const onUpsert = async (
   notification: string
 ) => {
   await settingStore.upsertSetting({
-    name: "bb.workspace.semantic-types",
+    name: Setting_SettingName.SEMANTIC_TYPES,
     value: {
       semanticTypeSettingValue: {
         types: semanticItemList,
@@ -168,7 +168,7 @@ const onCancel = (index: number) => {
     state.semanticItemList.splice(index, 1);
   } else {
     const semanticTypeSetting = settingStore.getSettingByName(
-      "bb.workspace.semantic-types"
+      Setting_SettingName.SEMANTIC_TYPES
     );
     const origin = (
       semanticTypeSetting?.value?.semanticTypeSettingValue?.types ?? []

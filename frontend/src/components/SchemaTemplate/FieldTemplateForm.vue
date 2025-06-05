@@ -266,6 +266,7 @@ import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
+  Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
 import {
   getDataTypeSuggestionList,
@@ -311,7 +312,7 @@ const settingStore = useSettingV1Store();
 
 const semanticTypeList = computed(() => {
   return (
-    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
+    settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)?.value
       ?.semanticTypeSettingValue?.types ?? []
   );
 });
@@ -380,7 +381,7 @@ const defaultValueOptions = computed(() => {
 });
 
 const schemaTemplateColumnTypes = computed(() => {
-  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
   const columnTypes = setting?.value?.schemaTemplateSettingValue?.columnTypes;
   if (columnTypes && columnTypes.length > 0) {
     const columnType = columnTypes.find(
@@ -422,7 +423,7 @@ const submit = async () => {
     }),
   });
   const setting = await settingStore.fetchSettingByName(
-    "bb.workspace.schema-template"
+    Setting_SettingName.SCHEMA_TEMPLATE
   );
 
   const settingValue = SchemaTemplateSetting.fromPartial({});
@@ -443,7 +444,7 @@ const submit = async () => {
   }
 
   await settingStore.upsertSetting({
-    name: "bb.workspace.schema-template",
+    name: Setting_SettingName.SCHEMA_TEMPLATE,
     value: {
       schemaTemplateSettingValue: settingValue,
     },

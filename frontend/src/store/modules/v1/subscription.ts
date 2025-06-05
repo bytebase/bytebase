@@ -15,6 +15,7 @@ import {
   planTypeFromJSON,
   planTypeToNumber,
 } from "@/types/proto/v1/subscription_service";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { useSettingV1Store } from "./setting";
 
 // The threshold of days before the license expiration date to show the warning.
@@ -147,7 +148,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     },
     existTrialLicense(): boolean {
       const settingStore = useSettingV1Store();
-      return !!settingStore.getSettingByName("bb.enterprise.trial");
+      return !!settingStore.getSettingByName(Setting_SettingName.ENTERPRISE_TRIAL);
     },
     canTrial(state): boolean {
       if (!this.isSelfHostLicense) {

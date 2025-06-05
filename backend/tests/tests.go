@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	// Import pg driver.
@@ -184,7 +183,7 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 	_, err := ctl.settingServiceClient.UpdateSetting(ctx, &v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
-			Name: fmt.Sprintf("settings/%s", storepb.SettingName_WORKSPACE_PROFILE.String()),
+			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_WorkspaceProfileSettingValue{
 					WorkspaceProfileSettingValue: &v1pb.WorkspaceProfileSetting{

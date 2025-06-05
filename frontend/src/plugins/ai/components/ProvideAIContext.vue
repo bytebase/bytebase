@@ -10,7 +10,7 @@ import {
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { AISetting } from "@/types/proto/v1/setting_service";
+import { AISetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { wrapRefAsPromise } from "@/utils";
 import Emittery from "emittery";
 import { storeToRefs } from "pinia";
@@ -28,7 +28,7 @@ const state = reactive<LocalState>({
 });
 
 const settingV1Store = useSettingV1Store();
-const aiSetting = computed(() => settingV1Store.getSettingByName("bb.ai")?.value?.aiSetting ?? AISetting.create());
+const aiSetting = computed(() => settingV1Store.getSettingByName(Setting_SettingName.AI)?.value?.aiSetting ?? AISetting.create());
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
 const databaseMetadata = useMetadata(

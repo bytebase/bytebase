@@ -174,6 +174,7 @@ import {
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -219,7 +220,7 @@ const workspaceIdField = ref<HTMLInputElement | null>(null);
 
 const workspaceId = computed(() => {
   return (
-    settingV1Store.getSettingByName("bb.workspace.id")?.value?.stringValue ?? ""
+    settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID)?.value?.stringValue ?? ""
   );
 });
 

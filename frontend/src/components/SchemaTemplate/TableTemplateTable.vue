@@ -20,7 +20,7 @@ import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import type { Engine } from "@/types/proto/v1/common";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
-import { SchemaTemplateSetting } from "@/types/proto/v1/setting_service";
+import { SchemaTemplateSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { EngineIcon } from "../Icon";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import { classificationConfig } from "./utils";
@@ -133,7 +133,7 @@ const rowProps = (row: SchemaTemplateSetting_TableTemplate) => {
 
 const deleteTemplate = async (id: string) => {
   const setting = await settingStore.fetchSettingByName(
-    "bb.workspace.schema-template"
+    Setting_SettingName.SCHEMA_TEMPLATE
   );
 
   const settingValue = SchemaTemplateSetting.fromPartial({});
@@ -146,7 +146,7 @@ const deleteTemplate = async (id: string) => {
     pullAt(settingValue.tableTemplates, index);
 
     await settingStore.upsertSetting({
-      name: "bb.workspace.schema-template",
+      name: Setting_SettingName.SCHEMA_TEMPLATE,
       value: {
         schemaTemplateSettingValue: settingValue,
       },
