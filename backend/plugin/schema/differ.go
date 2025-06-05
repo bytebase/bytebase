@@ -41,6 +41,7 @@ type MetadataDiff struct {
 	SequenceChanges []*SequenceDiff
 }
 
+// nolint
 // SchemaDiff represents changes to a schema.
 type SchemaDiff struct {
 	Action     MetadataDiffAction
@@ -831,7 +832,6 @@ func compareMaterializedViews(diff *MetadataDiff, schemaName string, oldSchema, 
 func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
 	// Functions can have overloading, so we need to handle them carefully
 	// Group functions by signature to properly match overloaded functions
-	
 	// Build map of old functions by signature
 	oldFuncsBySignature := make(map[string]*model.FunctionMetadata)
 	for _, fn := range oldSchema.ListFunctions() {
@@ -841,7 +841,7 @@ func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 		}
 		oldFuncsBySignature[sig] = fn
 	}
-	
+
 	// Build map of new functions by signature
 	newFuncsBySignature := make(map[string]*model.FunctionMetadata)
 	for _, fn := range newSchema.ListFunctions() {
@@ -851,7 +851,7 @@ func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 		}
 		newFuncsBySignature[sig] = fn
 	}
-	
+
 	// Check for dropped functions
 	for sig, oldFunc := range oldFuncsBySignature {
 		if _, exists := newFuncsBySignature[sig]; !exists {
@@ -863,7 +863,7 @@ func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 			})
 		}
 	}
-	
+
 	// Check for new and modified functions
 	for sig, newFunc := range newFuncsBySignature {
 		oldFunc, exists := oldFuncsBySignature[sig]
