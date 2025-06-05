@@ -2,10 +2,12 @@ package mysql
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
+	parser "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
@@ -1006,7 +1008,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *mysql.QueryE
 		switch child := child.(type) {
 		case *mysql.QueryPrimaryContext:
 			if !findRecursivePart {
-				resource, err := ExtractResourceList("", "", child.GetParser().GetTokenStream().GetTextFromRuleContext(child))
+				resource, err := extractTableRefs("", child)
 				if err != nil {
 					l.err = err
 					return
@@ -1049,7 +1051,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *mysql.QueryE
 			}
 
 			if !findRecursivePart {
-				resource, err := ExtractResourceList("", "", queryExpression.GetParser().GetTokenStream().GetTextFromRuleContext(queryExpression))
+				resource, err := extractTableRefs("", queryExpression)
 				if err != nil {
 					l.err = err
 					return
@@ -1608,4 +1610,45 @@ func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
 	}
 
 	return []string{}
+}
+
+func extractTableRefs(database string, ctx antlr.ParserRuleContext) ([]base.SchemaResource, error) {
+
+	l := &resourceExtractListener{
+		currentDatabase: database,
+		resourceMap:     make(map[string]base.SchemaResource),
+	}
+
+	var result []base.SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, ctx)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+type resourceExtractListener struct {
+	*parser.BaseMySQLParserListener
+
+	currentDatabase string
+	resourceMap     map[string]base.SchemaResource
+}
+
+// EnterTableRef is called when production tableRef is entered.
+func (l *resourceExtractListener) EnterTableRef(ctx *parser.TableRefContext) {
+	resource := base.SchemaResource{Database: l.currentDatabase}
+	if ctx.DotIdentifier() != nil {
+		resource.Table = NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+	}
+	db, table := normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	if db != "" {
+		resource.Database = db
+	}
+	resource.Table = table
+	l.resourceMap[resource.String()] = resource
 }

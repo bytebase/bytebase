@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestValidateSQLForEditor(t *testing.T) {
@@ -132,58 +130,5 @@ func TestValidateSQLForEditor(t *testing.T) {
 			require.Equal(t, test.valid, gotValid, test.statement)
 			require.Equal(t, test.gotAllQuery, gotAllQuery, test.statement)
 		}
-	}
-}
-
-func TestExtractMySQLResourceList(t *testing.T) {
-	tests := []struct {
-		statement string
-		expected  []base.SchemaResource
-	}{
-		{
-			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
-			expected: []base.SchemaResource{
-				{
-					Database: "db",
-					Table:    "t1",
-				},
-				{
-					Database: "db",
-					Table:    "t2",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM db1.t1 JOIN db2.t2 ON t1.c1 = t2.c1;",
-			expected: []base.SchemaResource{
-				{
-					Database: "db1",
-					Table:    "t1",
-				},
-				{
-					Database: "db2",
-					Table:    "t2",
-				},
-			},
-		},
-		{
-			statement: "SELECT a > (select max(a) from t1) FROM t2;",
-			expected: []base.SchemaResource{
-				{
-					Database: "db",
-					Table:    "t1",
-				},
-				{
-					Database: "db",
-					Table:    "t2",
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		resources, err := ExtractResourceList("db", "", test.statement)
-		require.NoError(t, err)
-		require.Equal(t, test.expected, resources, test.statement)
 	}
 }

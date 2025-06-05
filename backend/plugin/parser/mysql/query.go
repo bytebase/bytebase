@@ -1,8 +1,6 @@
 package mysql
 
 import (
-	"sort"
-
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
 
@@ -93,54 +91,4 @@ func (l *queryValidateListener) EnterUtilityStatement(ctx *parser.UtilityStateme
 			return
 		}
 	}
-}
-
-func ExtractResourceList(currentDatabase string, _, statement string) ([]base.SchemaResource, error) {
-	treeList, err := ParseMySQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	l := &resourceExtractListener{
-		currentDatabase: currentDatabase,
-		resourceMap:     make(map[string]base.SchemaResource),
-	}
-
-	var result []base.SchemaResource
-	for _, tree := range treeList {
-		if tree == nil {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
-	}
-	for _, resource := range l.resourceMap {
-		result = append(result, resource)
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].String() < result[j].String()
-	})
-
-	return result, nil
-}
-
-type resourceExtractListener struct {
-	*parser.BaseMySQLParserListener
-
-	currentDatabase string
-	resourceMap     map[string]base.SchemaResource
-}
-
-// EnterTableRef is called when production tableRef is entered.
-func (l *resourceExtractListener) EnterTableRef(ctx *parser.TableRefContext) {
-	resource := base.SchemaResource{Database: l.currentDatabase}
-	if ctx.DotIdentifier() != nil {
-		resource.Table = NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
-	}
-	db, table := normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
-	if db != "" {
-		resource.Database = db
-	}
-	resource.Table = table
-	l.resourceMap[resource.String()] = resource
 }
