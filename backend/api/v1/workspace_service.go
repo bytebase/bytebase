@@ -68,7 +68,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 	payloadStr := string(payloadBytes)
 	patch := &store.UpdatePolicyMessage{
 		ResourceType: base.PolicyResourceTypeWorkspace,
-		Type:         base.PolicyTypeIAM,
+		Type:         storepb.PolicyType_IAM,
 		Payload:      &payloadStr,
 	}
 

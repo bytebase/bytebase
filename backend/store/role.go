@@ -45,7 +45,7 @@ func (s *Store) GetResourcesUsedByRole(ctx context.Context, role string) ([]*Rol
 			binding->>'role' = $2
 		GROUP BY resource, resource_type;
 	`
-	rows, err := s.db.QueryContext(ctx, query, base.PolicyTypeIAM, role)
+	rows, err := s.db.QueryContext(ctx, query, storepb.PolicyType_IAM.String(), role)
 	if err != nil {
 		return nil, err
 	}
