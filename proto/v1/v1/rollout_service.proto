@@ -335,11 +335,10 @@ message Stage {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   string name = 1;
 
-  // The id comes from the deployment config.
-  // Format: UUID
-  // Empty for legacy stages.
+  // id is the environment id of the stage.
   string id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // environment is the environment of the stage.
   string environment = 4;
 
   repeated Task tasks = 5;

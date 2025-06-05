@@ -10186,8 +10186,8 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
-| id | [string](#string) |  | The id comes from the deployment config. Format: UUID Empty for legacy stages. |
-| environment | [string](#string) |  |  |
+| id | [string](#string) |  | id is the environment id of the stage. |
+| environment | [string](#string) |  | environment is the environment of the stage. |
 | tasks | [Task](#bytebase-v1-Task) | repeated |  |
 
 

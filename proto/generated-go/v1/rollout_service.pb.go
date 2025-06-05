@@ -1370,10 +1370,9 @@ type Stage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The id comes from the deployment config.
-	// Format: UUID
-	// Empty for legacy stages.
-	Id            string  `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
+	// id is the environment id of the stage.
+	Id string `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
+	// environment is the environment of the stage.
 	Environment   string  `protobuf:"bytes,4,opt,name=environment,proto3" json:"environment,omitempty"`
 	Tasks         []*Task `protobuf:"bytes,5,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	unknownFields protoimpl.UnknownFields
