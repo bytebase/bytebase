@@ -632,7 +632,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 			stages = append(stages, &v1pb.Stage{
 				Name:        common.FormatStage(project.ResourceID, rollout.ID, environment),
 				Id:          environment,
-				Environment: environment,
+				Environment: common.FormatEnvironment(environment),
 				Tasks:       tasks,
 			})
 		}

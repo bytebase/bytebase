@@ -1371,8 +1371,10 @@ type Stage struct {
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// id is the environment id of the stage.
+	// e.g. "prod".
 	Id string `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
 	// environment is the environment of the stage.
+	// Format: environments/{environment}.
 	Environment   string  `protobuf:"bytes,4,opt,name=environment,proto3" json:"environment,omitempty"`
 	Tasks         []*Task `protobuf:"bytes,5,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	unknownFields protoimpl.UnknownFields
