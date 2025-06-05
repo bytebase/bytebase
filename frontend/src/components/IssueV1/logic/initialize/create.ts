@@ -19,6 +19,7 @@ import {
   getSheetStatement,
   hasProjectPermissionV2,
   sheetNameOfTaskV1,
+  extractEnvironmentResourceName,
 } from "@/utils";
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
@@ -103,7 +104,9 @@ const generateRolloutFromPlan = async (
   rollout.plan = plan.name;
   rollout.name = `${params.project.name}/rollouts/${nextUID()}`;
   rollout.stages.forEach((stage) => {
-    stage.name = `${rollout.name}/stages/${nextUID()}`;
+    // Use environment ID as stage ID
+    const environmentID = extractEnvironmentResourceName(stage.environment);
+    stage.name = `${rollout.name}/stages/${environmentID}`;
     stage.tasks.forEach((task) => {
       task.name = `${stage.name}/tasks/${nextUID()}`;
     });

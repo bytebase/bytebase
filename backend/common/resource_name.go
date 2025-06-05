@@ -325,7 +325,8 @@ func GetProjectIDRolloutID(name string) (string, int, error) {
 }
 
 // GetProjectIDRolloutIDMaybeStageID returns the project ID, rollout ID, and maybe stage ID from a resource name.
-func GetProjectIDRolloutIDMaybeStageID(name string) (string, int, *int, error) {
+func GetProjectIDRolloutIDMaybeStageID(name string) (string, int, *string, error) {
+	// stageID is now environmentID
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix)
 	if err != nil {
 		return "", 0, nil, err
@@ -334,36 +335,30 @@ func GetProjectIDRolloutIDMaybeStageID(name string) (string, int, *int, error) {
 	if err != nil {
 		return "", 0, nil, errors.Errorf("invalid rollout ID %q", tokens[1])
 	}
-	var maybeStageID *int
+	var maybeStageID *string
 	if tokens[2] != "-" {
-		stageID, err := strconv.Atoi(tokens[2])
-		if err != nil {
-			return "", 0, nil, errors.Errorf("invalid stage ID %q", tokens[2])
-		}
-		maybeStageID = &stageID
+		maybeStageID = &tokens[2]
 	}
 	return tokens[0], rolloutID, maybeStageID, nil
 }
 
 // GetProjectIDRolloutIDStageIDMaybeTaskID returns the project ID, rollout ID, and maybe stage ID and maybe task ID from a resource name.
-func GetProjectIDRolloutIDStageIDMaybeTaskID(name string) (string, int, int, *int, error) {
+func GetProjectIDRolloutIDStageIDMaybeTaskID(name string) (string, int, string, *int, error) {
+	// stageID is now environmentID
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix, TaskPrefix)
 	if err != nil {
-		return "", 0, 0, nil, err
+		return "", 0, "", nil, err
 	}
 	rolloutID, err := strconv.Atoi(tokens[1])
 	if err != nil {
-		return "", 0, 0, nil, errors.Errorf("invalid rollout ID %q", tokens[1])
+		return "", 0, "", nil, errors.Errorf("invalid rollout ID %q", tokens[1])
 	}
-	stageID, err := strconv.Atoi(tokens[2])
-	if err != nil {
-		return "", 0, 0, nil, errors.Errorf("invalid stage ID %q", tokens[2])
-	}
+	stageID := tokens[2]
 	var maybeTaskID *int
 	if tokens[3] != "-" {
 		taskID, err := strconv.Atoi(tokens[3])
 		if err != nil {
-			return "", 0, 0, nil, errors.Errorf("invalid task ID %q", tokens[3])
+			return "", 0, "", nil, errors.Errorf("invalid task ID %q", tokens[3])
 		}
 		maybeTaskID = &taskID
 	}
@@ -371,7 +366,8 @@ func GetProjectIDRolloutIDStageIDMaybeTaskID(name string) (string, int, int, *in
 }
 
 // GetProjectIDRolloutIDMaybeStageIDMaybeTaskID returns the project ID, rollout ID, and maybe stage ID and maybe task ID from a resource name.
-func GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(name string) (string, int, *int, *int, error) {
+func GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(name string) (string, int, *string, *int, error) {
+	// stageID is now environmentID
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix, TaskPrefix)
 	if err != nil {
 		return "", 0, nil, nil, err
@@ -380,13 +376,10 @@ func GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(name string) (string, int, *in
 	if err != nil {
 		return "", 0, nil, nil, errors.Errorf("invalid rollout ID %q", tokens[1])
 	}
-	var maybeStageID, maybeTaskID *int
+	var maybeStageID *string
+	var maybeTaskID *int
 	if tokens[2] != "-" {
-		stageID, err := strconv.Atoi(tokens[2])
-		if err != nil {
-			return "", 0, nil, nil, errors.Errorf("invalid stage ID %q", tokens[2])
-		}
-		maybeStageID = &stageID
+		maybeStageID = &tokens[2]
 	}
 	if tokens[3] != "-" {
 		taskID, err := strconv.Atoi(tokens[3])
@@ -399,49 +392,45 @@ func GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(name string) (string, int, *in
 }
 
 // GetProjectIDRolloutIDStageIDTaskID returns the project ID, rollout ID, stage ID, and task ID from a resource name.
-func GetProjectIDRolloutIDStageIDTaskID(name string) (string, int, int, int, error) {
+func GetProjectIDRolloutIDStageIDTaskID(name string) (string, int, string, int, error) {
+	// stageID is now environmentID
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix, TaskPrefix)
 	if err != nil {
-		return "", 0, 0, 0, err
+		return "", 0, "", 0, err
 	}
 	rolloutID, err := strconv.Atoi(tokens[1])
 	if err != nil {
-		return "", 0, 0, 0, errors.Errorf("invalid rollout ID %q", tokens[1])
+		return "", 0, "", 0, errors.Errorf("invalid rollout ID %q", tokens[1])
 	}
-	stageID, err := strconv.Atoi(tokens[2])
-	if err != nil {
-		return "", 0, 0, 0, errors.Errorf("invalid stage ID %q", tokens[2])
-	}
+	stageID := tokens[2]
 
 	taskID, err := strconv.Atoi(tokens[3])
 	if err != nil {
-		return "", 0, 0, 0, errors.Errorf("invalid task ID %q", tokens[3])
+		return "", 0, "", 0, errors.Errorf("invalid task ID %q", tokens[3])
 	}
 	return tokens[0], rolloutID, stageID, taskID, nil
 }
 
 // GetProjectIDRolloutIDStageIDTaskIDTaskRunID returns the project ID, rollout ID, stage ID, task ID and task run ID from a resource name.
-func GetProjectIDRolloutIDStageIDTaskIDTaskRunID(name string) (string, int, int, int, int, error) {
+func GetProjectIDRolloutIDStageIDTaskIDTaskRunID(name string) (string, int, string, int, int, error) {
+	// stageID is now environmentID
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix, StagePrefix, TaskPrefix, TaskRunPrefix)
 	if err != nil {
-		return "", 0, 0, 0, 0, err
+		return "", 0, "", 0, 0, err
 	}
 	rolloutID, err := strconv.Atoi(tokens[1])
 	if err != nil {
-		return "", 0, 0, 0, 0, errors.Errorf("invalid rollout ID %q", tokens[1])
+		return "", 0, "", 0, 0, errors.Errorf("invalid rollout ID %q", tokens[1])
 	}
-	stageID, err := strconv.Atoi(tokens[2])
-	if err != nil {
-		return "", 0, 0, 0, 0, errors.Errorf("invalid stage ID %q", tokens[2])
-	}
+	stageID := tokens[2]
 
 	taskID, err := strconv.Atoi(tokens[3])
 	if err != nil {
-		return "", 0, 0, 0, 0, errors.Errorf("invalid task ID %q", tokens[3])
+		return "", 0, "", 0, 0, errors.Errorf("invalid task ID %q", tokens[3])
 	}
 	taskRunID, err := strconv.Atoi(tokens[4])
 	if err != nil {
-		return "", 0, 0, 0, 0, errors.Errorf("invalid task run ID %q", tokens[4])
+		return "", 0, "", 0, 0, errors.Errorf("invalid task run ID %q", tokens[4])
 	}
 	return tokens[0], rolloutID, stageID, taskID, taskRunID, nil
 }
@@ -600,16 +589,20 @@ func FormatRollout(projectID string, pipelineUID int) string {
 	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), RolloutPrefix, pipelineUID)
 }
 
-func FormatStage(projectID string, pipelineUID, stageUID int) string {
-	return fmt.Sprintf("%s/%s%d", FormatRollout(projectID, pipelineUID), StagePrefix, stageUID)
+// stageID is task environmentID.
+func FormatStage(projectID string, pipelineUID int, stageID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatRollout(projectID, pipelineUID), StagePrefix, stageID)
 }
 
-func FormatTask(projectID string, pipelineUID, stageUID, taskUID int) string {
-	return fmt.Sprintf("%s/%s%d", FormatStage(projectID, pipelineUID, stageUID), TaskPrefix, taskUID)
+// stageID is task environmentID.
+func FormatTask(projectID string, pipelineUID int, stageID string, taskUID int) string {
+	// stageUID is now environmentID
+	return fmt.Sprintf("%s/%s%d", FormatStage(projectID, pipelineUID, stageID), TaskPrefix, taskUID)
 }
 
-func FormatTaskRun(projectID string, pipelineUID, stageUID, taskUID, taskRunUID int) string {
-	return fmt.Sprintf("%s/%s%d", FormatTask(projectID, pipelineUID, stageUID, taskUID), TaskRunPrefix, taskRunUID)
+// stageID is task environmentID.
+func FormatTaskRun(projectID string, pipelineUID int, stageID string, taskUID, taskRunUID int) string {
+	return fmt.Sprintf("%s/%s%d", FormatTask(projectID, pipelineUID, stageID, taskUID), TaskRunPrefix, taskRunUID)
 }
 
 func FormatReleaseName(projectID string, releaseUID int64) string {

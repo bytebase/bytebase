@@ -184,29 +184,18 @@ CREATE TABLE pipeline (
 
 ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 
--- stage table stores the stage for the pipeline
-CREATE TABLE stage (
-    id serial PRIMARY KEY,
-    pipeline_id integer NOT NULL REFERENCES pipeline(id),
-    environment text
-);
-
-CREATE INDEX idx_stage_pipeline_id ON stage(pipeline_id);
-
-ALTER SEQUENCE stage_id_seq RESTART WITH 101;
-
--- task table stores the task for the stage
+-- task table stores the task for the pipeline
 CREATE TABLE task (
     id serial PRIMARY KEY,
     pipeline_id integer NOT NULL REFERENCES pipeline(id),
-    stage_id integer NOT NULL REFERENCES stage(id),
     instance text NOT NULL REFERENCES instance(resource_id),
+    environment text,
     db_name text,
     type text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
+CREATE INDEX idx_task_pipeline_id_environment ON task(pipeline_id, environment);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 

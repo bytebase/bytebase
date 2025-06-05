@@ -101,7 +101,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 					Payload: &storepb.IssueCommentPayload{
 						Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
 							TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-								Task:  common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+								Task:  common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.Environment, task.ID),
 								Error: backupErr.Error(),
 							},
 						},
@@ -312,7 +312,7 @@ func (exec *DataUpdateExecutor) backupData(
 				Payload: &storepb.IssueCommentPayload{
 					Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
 						TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-							Task:     common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+							Task:     common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.Environment, task.ID),
 							Database: backupDatabaseName,
 							Tables: []*storepb.IssueCommentPayload_TaskPriorBackup_Table{
 								{
