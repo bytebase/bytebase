@@ -30,11 +30,9 @@
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { Drawer, DrawerContent, EnvironmentSelect } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
 
 defineProps<{
   show: boolean;
-  databases: ComposedDatabase[];
 }>();
 
 const emit = defineEmits<{

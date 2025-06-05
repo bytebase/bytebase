@@ -50,6 +50,8 @@
     - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
     - [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest)
     - [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse)
+    - [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest)
+    - [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse)
     - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
     - [DataSource](#bytebase-v1-DataSource)
     - [DataSource.Address](#bytebase-v1-DataSource-Address)
@@ -1261,6 +1263,36 @@ When paginating, all other parameters provided to `ListInstanceRoles` must match
 
 
 
+<a name="bytebase-v1-BatchUpdateInstancesRequest"></a>
+
+### BatchUpdateInstancesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| requests | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | repeated | The request message specifying the resources to update. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchUpdateInstancesResponse"></a>
+
+### BatchUpdateInstancesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instances | [Instance](#bytebase-v1-Instance) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateInstanceRequest"></a>
 
 ### CreateInstanceRequest
@@ -1807,6 +1839,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) |  |
 | ListInstanceDatabase | [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest) | [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse) |  |
 | BatchSyncInstances | [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest) | [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse) |  |
+| BatchUpdateInstances | [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest) | [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse) |  |
 | AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |

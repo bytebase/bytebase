@@ -599,7 +599,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 	return response, nil
 }
 
-// SyncInstance syncs the instance.
+// BatchSyncInstances syncs multiple instances.
 func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.BatchSyncInstancesRequest) (*v1pb.BatchSyncInstancesResponse, error) {
 	for _, r := range request.Requests {
 		instance, err := getInstanceMessage(ctx, s.store, r.Name)
@@ -623,6 +623,19 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.
 	}
 
 	return &v1pb.BatchSyncInstancesResponse{}, nil
+}
+
+// BatchUpdateInstances update multiple instances.
+func (s *InstanceService) BatchUpdateInstances(ctx context.Context, request *v1pb.BatchUpdateInstancesRequest) (*v1pb.BatchUpdateInstancesResponse, error) {
+	response := &v1pb.BatchUpdateInstancesResponse{}
+	for _, req := range request.GetRequests() {
+		updated, err := s.UpdateInstance(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		response.Instances = append(response.Instances, updated)
+	}
+	return response, nil
 }
 
 // AddDataSource adds a data source to an instance.
