@@ -949,16 +949,6 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		return nil, errors.Errorf("there is no tasks created from the plan")
 	}
 
-	// Step 4 - assign environment to each task.
-	for _, task := range taskCreates {
-		// EnvironmentID was already set in the task from getTaskCreatesFromSpec
-		// Just validate that the environment exists in our snapshot
-		if _, ok := environmentIndex[task.Environment]; !ok {
-			// Skip tasks for environments not in the deployment
-			continue
-		}
-	}
-
 	// Filter out tasks not in deployment environments
 	filteredTasks := []*store.TaskMessage{}
 	for _, task := range taskCreates {
