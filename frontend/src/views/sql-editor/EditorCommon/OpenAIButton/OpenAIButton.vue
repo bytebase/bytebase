@@ -65,7 +65,7 @@ import {
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";
@@ -87,7 +87,7 @@ const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const openAIEnabled = computed(
   () =>
-    settingV1Store.getSettingByName("bb.ai")?.value?.aiSetting?.enabled ?? false
+    settingV1Store.getSettingByName(Setting_SettingName.AI)?.value?.aiSetting?.enabled ?? false
 );
 
 const { showAIPanel } = useSQLEditorContext();

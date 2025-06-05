@@ -180,7 +180,7 @@ import { computed, ref, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
+import { PasswordRestrictionSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 const DEFAULT_MIN_LENGTH = 8;
@@ -195,7 +195,7 @@ const hasPasswordFeature = featureToRef("bb.feature.password-restriction");
 
 const passwordRestrictionSetting = computed(
   () =>
-    settingV1Store.getSettingByName("bb.workspace.password-restriction")?.value
+    settingV1Store.getSettingByName(Setting_SettingName.PASSWORD_RESTRICTION)?.value
       ?.passwordRestrictionSetting ?? PasswordRestrictionSetting.fromPartial({})
 );
 
@@ -215,7 +215,7 @@ defineExpose({
   isDirty: computed(() => !isEqual(passwordRestrictionSetting.value, state)),
   update: async () => {
     await settingV1Store.upsertSetting({
-      name: "bb.workspace.password-restriction",
+      name: Setting_SettingName.PASSWORD_RESTRICTION,
       value: {
         passwordRestrictionSetting: {
           ...state,

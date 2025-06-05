@@ -47,6 +47,7 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
   password: string;
@@ -81,7 +82,7 @@ onMounted(async () => {
     return;
   }
   await settingV1Store.getOrFetchSettingByName(
-    "bb.workspace.password-restriction"
+    Setting_SettingName.PASSWORD_RESTRICTION
   );
 });
 

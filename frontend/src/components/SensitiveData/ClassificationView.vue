@@ -102,8 +102,9 @@ import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
 import {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
+  DataClassificationSetting_DataClassificationConfig,
+  Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
-import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import ClassificationTree from "../SchemaTemplate/ClassificationTree.vue";
@@ -193,7 +194,7 @@ const saveChanges = async () => {
 
 const upsertSetting = async () => {
   await settingStore.upsertSetting({
-    name: "bb.workspace.data-classification",
+    name: Setting_SettingName.DATA_CLASSIFICATION,
     value: {
       dataClassificationSettingValue: {
         configs: [state.classification],

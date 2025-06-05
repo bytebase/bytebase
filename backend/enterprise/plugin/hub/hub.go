@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var _ plugin.LicenseProvider = (*Provider)(nil)
@@ -61,7 +62,7 @@ func (p *Provider) StoreLicense(ctx context.Context, patch *enterprise.Subscript
 		}
 	}
 	if _, err := p.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
-		Name:  base.SettingEnterpriseLicense,
+		Name:  storepb.SettingName_ENTERPRISE_LICENSE,
 		Value: patch.License,
 	}); err != nil {
 		return err
@@ -110,7 +111,7 @@ func (p *Provider) fetchLicense(ctx context.Context) (*enterprise.License, error
 	}
 
 	if _, err := p.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
-		Name:  base.SettingEnterpriseLicense,
+		Name:  storepb.SettingName_ENTERPRISE_LICENSE,
 		Value: license,
 	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to store the license")
@@ -154,7 +155,7 @@ func (p *Provider) parseLicense(ctx context.Context, license string) (*enterpris
 
 func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.License, error) {
 	// Find enterprise license.
-	setting, err := p.store.GetSettingV2(ctx, base.SettingEnterpriseLicense)
+	setting, err := p.store.GetSettingV2(ctx, storepb.SettingName_ENTERPRISE_LICENSE)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load enterprise license from settings")
 	}

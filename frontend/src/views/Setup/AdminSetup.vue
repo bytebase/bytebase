@@ -114,7 +114,7 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { emptyProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto/v1/setting_service";
 import WorkspaceMode from "./WorkspaceMode.vue";
 
 interface LocalState {
@@ -226,7 +226,7 @@ const tryFinishSetup = async () => {
 onMounted(async () => {
   if (!actuatorV1Store.onboardingState.isOnboarding) {
     const profileSetting = await settingStore.fetchSettingByName(
-      "bb.workspace.profile"
+      Setting_SettingName.WORKSPACE_PROFILE
     );
     return onCancel(
       getHomePageByMode(

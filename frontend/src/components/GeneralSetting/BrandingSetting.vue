@@ -67,6 +67,7 @@ import { computed, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import SingleFileSelector from "../SingleFileSelector.vue";
 
@@ -114,7 +115,7 @@ const doUpdate = async (content: string) => {
   state.loading = true;
   try {
     await settingV1Store.upsertSetting({
-      name: "bb.branding.logo",
+      name: Setting_SettingName.BRANDING_LOGO,
       value: {
         stringValue: content,
       },

@@ -106,7 +106,7 @@ func TestSensitiveData(t *testing.T) {
 
 	_, err = ctl.settingServiceClient.UpdateSetting(ctx, &v1pb.UpdateSettingRequest{
 		Setting: &v1pb.Setting{
-			Name: "settings/bb.workspace.semantic-types",
+			Name: "settings/" + v1pb.Setting_SEMANTIC_TYPES.String(),
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_SemanticTypeSettingValue{
 					SemanticTypeSettingValue: &v1pb.SemanticTypeSetting{

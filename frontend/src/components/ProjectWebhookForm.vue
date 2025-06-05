@@ -265,6 +265,7 @@ import {
   type Activity_Type,
   type Webhook,
 } from "@/types/proto/v1/project_service";
+import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { projectWebhookV1Slug } from "../utils";
 import WebhookTypeIcon from "./Project/WebhookTypeIcon.vue";
 
@@ -335,7 +336,7 @@ const selectedWebhook = computed(() => {
 });
 
 const imSetting = computed(
-  () => settingStore.getSettingByName("bb.app.im")?.value?.appImSettingValue
+  () => settingStore.getSettingByName(Setting_SettingName.APP_IM)?.value?.appImSettingValue
 );
 
 const imApp = computed(() => {

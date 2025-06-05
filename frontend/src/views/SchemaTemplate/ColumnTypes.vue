@@ -126,6 +126,7 @@ import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setti
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_ColumnType,
+  Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
 import { getDataTypeSuggestionList } from "@/utils";
 import ColumnTypesUpdateFailedModal from "./ColumnTypesUpdateFailedModal.vue";
@@ -153,7 +154,7 @@ const allowToUpdateColumnTypeTemplateForMySQL = computed(() => {
   if (props.readonly) {
     return false;
   }
-  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
   const columnTypes =
     setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
   const originTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
@@ -183,7 +184,7 @@ const allowToUpdateColumnTypeTemplateForPostgreSQL = computed(() => {
   if (props.readonly) {
     return false;
   }
-  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
   const columnTypes =
     setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
   const originTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
@@ -211,7 +212,7 @@ const allowToUpdateColumnTypeTemplateForPostgreSQL = computed(() => {
 
 const getOrFetchSchemaTemplate = async () => {
   const setting = await settingStore.getOrFetchSettingByName(
-    "bb.workspace.schema-template"
+    Setting_SettingName.SCHEMA_TEMPLATE
   );
   const columnTypes =
     setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
@@ -415,7 +416,7 @@ const upsertSchemaTemplateSetting = async (
   columnType: SchemaTemplateSetting_ColumnType
 ) => {
   const setting = await settingStore.getOrFetchSettingByName(
-    "bb.workspace.schema-template"
+    Setting_SettingName.SCHEMA_TEMPLATE
   );
   const schemaTemplateSettingValue = SchemaTemplateSetting.fromPartial({
     ...setting?.value?.schemaTemplateSettingValue,
@@ -428,7 +429,7 @@ const upsertSchemaTemplateSetting = async (
     ),
   });
   await settingStore.upsertSetting({
-    name: "bb.workspace.schema-template",
+    name: Setting_SettingName.SCHEMA_TEMPLATE,
     value: {
       schemaTemplateSettingValue,
     },
