@@ -68,22 +68,10 @@ const content = computed(() => {
         expireAt: expireAt.value,
       });
     }
-  } else {
-    if (existTrialLicense.value) {
-      return t("banner.trial-expired", {
-        plan: t("subscription.plan.enterprise.title"),
-      });
-    }
   }
   return "";
 });
 
-const {
-  expireAt,
-  isExpired,
-  isTrialing,
-  daysBeforeExpire,
-  existTrialLicense,
-  currentPlan,
-} = storeToRefs(subscriptionStore);
+const { expireAt, isExpired, isTrialing, daysBeforeExpire, currentPlan } =
+  storeToRefs(subscriptionStore);
 </script>
