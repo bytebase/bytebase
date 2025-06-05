@@ -6,7 +6,7 @@ This is the demo data for https://demo.bytebase.com.
 
 # How to update demo data
 
-1. Build and start Bytebase backend with `--demo` on a release branch (e.g. release/3.6.2).
+1. Build and start Bytebase backend with `--demo` on a release branch (current demo data is based on release/3.7.0).
 
    ```bash
    # Make sure to use the local pg binary
