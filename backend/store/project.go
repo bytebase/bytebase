@@ -170,7 +170,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		ResourceType:      base.PolicyResourceTypeProject,
 		Resource:          common.FormatProject(project.ResourceID),
 		Payload:           string(policyPayload),
-		Type:              base.PolicyTypeIAM,
+		Type:              storepb.PolicyType_IAM,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,

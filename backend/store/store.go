@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/store/model"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Store provides database access to all raw objects.
@@ -178,7 +179,7 @@ func getInstanceCacheKey(instanceID string) string {
 	return instanceID
 }
 
-func getPolicyCacheKey(resourceType base.PolicyResourceType, resource string, policyType base.PolicyType) string {
+func getPolicyCacheKey(resourceType base.PolicyResourceType, resource string, policyType storepb.PolicyType) string {
 	return fmt.Sprintf("policies/%s/%s/%s", resourceType, resource, policyType)
 }
 

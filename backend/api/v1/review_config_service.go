@@ -181,7 +181,7 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 }
 
 func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, reviewConfigMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
-	policyType := base.PolicyTypeTag
+	policyType := storepb.PolicyType_TAG
 	tagPolicies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
 		Type:    &policyType,
 		ShowAll: false,
