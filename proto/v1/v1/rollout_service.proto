@@ -336,9 +336,11 @@ message Stage {
   string name = 1;
 
   // id is the environment id of the stage.
+  // e.g. "prod".
   string id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // environment is the environment of the stage.
+  // Format: environments/{environment}.
   string environment = 4;
 
   repeated Task tasks = 5;

@@ -13172,10 +13172,14 @@ components:
                 id:
                     readOnly: true
                     type: string
-                    description: id is the environment id of the stage.
+                    description: |-
+                        id is the environment id of the stage.
+                         e.g. "prod".
                 environment:
                     type: string
-                    description: environment is the environment of the stage.
+                    description: |-
+                        environment is the environment of the stage.
+                         Format: environments/{environment}.
                 tasks:
                     type: array
                     items:
