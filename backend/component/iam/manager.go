@@ -144,7 +144,7 @@ func check(userID int, p Permission, policy *storepb.IamPolicy, rolePermissions 
 			continue
 		}
 		for _, member := range binding.GetMembers() {
-			if member == base.AllUsers {
+			if member == common.AllUsers {
 				return true
 			}
 			if member == userName {

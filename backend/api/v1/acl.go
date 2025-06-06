@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -298,7 +297,7 @@ func getResourceFromRequest(request any, method string) ([]*common.Resource, err
 				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject())
 			}
 			// Allow to transfer databases to the default project.
-			if projectID == base.DefaultProjectID {
+			if projectID == common.DefaultProjectID {
 				continue
 			}
 			resources = append(resources, &common.Resource{Name: r.GetDatabase().GetProject()})

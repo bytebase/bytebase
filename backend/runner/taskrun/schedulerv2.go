@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -230,7 +229,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	}
 
 	create := &store.TaskRunMessage{
-		CreatorID: base.SystemBotID,
+		CreatorID: common.SystemBotID,
 		TaskUID:   task.ID,
 	}
 	if task.Payload.GetSheetId() != 0 {
@@ -244,13 +243,13 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 
 	if issue != nil {
 		tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, taskUID)}
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, base.SystemBotID, ""); err != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, common.SystemBotID, ""); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
 	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   s.store.GetSystemBotUser(ctx),
-		Type:    base.EventTypeTaskRunStatusUpdate,
+		Type:    common.EventTypeTaskRunStatusUpdate,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
 		Rollout: webhook.NewRollout(pipeline),
@@ -331,7 +330,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
 		ID:        taskRun.ID,
-		UpdaterID: base.SystemBotID,
+		UpdaterID: common.SystemBotID,
 		Status:    storepb.TaskRun_RUNNING,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update task run status to running")
@@ -440,7 +439,7 @@ func (s *SchedulerV2) scheduleRunningTaskRun(ctx context.Context, taskRun *store
 	// Check max connections per instance.
 	maximumConnections := int(instance.Metadata.GetMaximumConnections())
 	if maximumConnections <= 0 {
-		maximumConnections = base.DefaultInstanceMaximumConnections
+		maximumConnections = common.DefaultInstanceMaximumConnections
 	}
 	if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
 		s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
@@ -588,7 +587,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRun.ID,
-			UpdaterID: base.SystemBotID,
+			UpdaterID: common.SystemBotID,
 			Status:    storepb.TaskRun_CANCELED,
 			Code:      &code,
 			Result:    &result,
@@ -636,7 +635,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRun.ID,
-			UpdaterID: base.SystemBotID,
+			UpdaterID: common.SystemBotID,
 			Status:    storepb.TaskRun_FAILED,
 			Code:      &code,
 			Result:    &result,
@@ -661,7 +660,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 				return nil
 			}
 			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_FAILED, base.SystemBotID, "")
+			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_FAILED, common.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
@@ -684,7 +683,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRun.ID,
-			UpdaterID: base.SystemBotID,
+			UpdaterID: common.SystemBotID,
 			Status:    storepb.TaskRun_DONE,
 			Code:      &code,
 			Result:    &result,
@@ -708,7 +707,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 				return nil
 			}
 			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_DONE, base.SystemBotID, "")
+			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_DONE, common.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
@@ -818,7 +817,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 					s.webhookManager.CreateEvent(ctx, &webhook.Event{
 						Actor:   s.store.GetSystemBotUser(ctx),
-						Type:    base.EventTypeStageStatusUpdate,
+						Type:    common.EventTypeStageStatusUpdate,
 						Comment: "",
 						Issue:   webhook.NewIssue(issue),
 						Rollout: webhook.NewRollout(pipeline),
@@ -844,7 +843,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 						IssueUID: issue.UID,
 						Payload:  p,
-					}, base.SystemBotID)
+					}, common.SystemBotID)
 					return err
 				}(); err != nil {
 					slog.Warn("failed to create issue comment", log.BBError(err))
@@ -861,7 +860,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 					s.webhookManager.CreateEvent(ctx, &webhook.Event{
 						Actor:   s.store.GetSystemBotUser(ctx),
-						Type:    base.EventTypeIssueRolloutReady,
+						Type:    common.EventTypeIssueRolloutReady,
 						Comment: "",
 						Issue:   webhook.NewIssue(issue),
 						Project: webhook.NewProject(issue.Project),
@@ -901,13 +900,13 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 									},
 								},
 							},
-						}, base.SystemBotID); err != nil {
+						}, common.SystemBotID); err != nil {
 							return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 						}
 
 						s.webhookManager.CreateEvent(ctx, &webhook.Event{
 							Actor:   s.store.GetSystemBotUser(ctx),
-							Type:    base.EventTypeIssueStatusUpdate,
+							Type:    common.EventTypeIssueStatusUpdate,
 							Comment: "",
 							Issue:   webhook.NewIssue(updatedIssue),
 							Project: webhook.NewProject(updatedIssue.Project),
@@ -952,7 +951,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 		}
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   s.store.GetSystemBotUser(ctx),
-			Type:    base.EventTypeTaskRunStatusUpdate,
+			Type:    common.EventTypeTaskRunStatusUpdate,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Rollout: webhook.NewRollout(rollout),

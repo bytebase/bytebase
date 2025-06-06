@@ -12,14 +12,13 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var systemBotUser = &UserMessage{
-	ID:    base.SystemBotID,
+	ID:    common.SystemBotID,
 	Name:  "Bytebase",
 	Email: "support@bytebase.com",
 	Type:  storepb.PrincipalType_SYSTEM_BOT,
@@ -73,9 +72,9 @@ type UserStat struct {
 
 // GetSystemBotUser gets the system bot.
 func (s *Store) GetSystemBotUser(ctx context.Context) *UserMessage {
-	user, err := s.GetUserByID(ctx, base.SystemBotID)
+	user, err := s.GetUserByID(ctx, common.SystemBotID)
 	if err != nil {
-		slog.Error("failed to find system bot", slog.Int("id", base.SystemBotID), log.BBError(err))
+		slog.Error("failed to find system bot", slog.Int("id", common.SystemBotID), log.BBError(err))
 		return systemBotUser
 	}
 	if user == nil {
@@ -209,7 +208,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Email; v != nil {
-		if *v == base.AllUsers {
+		if *v == common.AllUsers {
 			where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
 		} else {
 			where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, strings.ToLower(*v))
@@ -234,7 +233,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role LIKE 'roles/project%'
 		)`
-		join = `INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR '` + base.AllUsers + `' = ANY(project_members.members))`
+		join = `INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR '` + common.AllUsers + `' = ANY(project_members.members))`
 	}
 
 	query := with + `
@@ -373,7 +372,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 
 // UpdateUser updates a user.
 func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch *UpdateUserMessage) (*UserMessage, error) {
-	if currentUser.ID == base.SystemBotID {
+	if currentUser.ID == common.SystemBotID {
 		return nil, errors.Errorf("cannot update system bot")
 	}
 

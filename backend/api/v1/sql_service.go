@@ -169,7 +169,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 
 	// Validate the request.
 	// New query ACL experience.
-	if !request.Explain && !base.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
+	if !request.Explain && !common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 		if err := validateQueryRequest(instance, statement); err != nil {
 			return nil, err
 		}
@@ -297,7 +297,7 @@ func extractSourceTable(comment string) (string, string, string, error) {
 func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DatabaseSchema) *model.SchemaMetadata {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		return dbSchema.GetDatabaseMetadata().GetSchema(base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES))
+		return dbSchema.GetDatabaseMetadata().GetSchema(common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES))
 	case storepb.Engine_MSSQL:
 		return dbSchema.GetDatabaseMetadata().GetSchema("dbo")
 	default:
@@ -311,11 +311,11 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 		// Don't need to check the database name for postgres here.
 		// We backup the table to the same database with bbdataarchive schema for Postgres.
 	case storepb.Engine_ORACLE:
-		if database.DatabaseName != base.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE) {
+		if database.DatabaseName != common.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE) {
 			return nil
 		}
 	default:
-		if database.DatabaseName != base.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine()) {
+		if database.DatabaseName != common.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine()) {
 			return nil
 		}
 	}
@@ -385,11 +385,11 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 func isBackupTable(engine storepb.Engine, column parserbase.ColumnResource) bool {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		return column.Schema == base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
+		return column.Schema == common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
 	case storepb.Engine_ORACLE:
-		return column.Database == base.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
+		return column.Database == common.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
 	default:
-		return column.Database == base.BackupDatabaseNameOfEngine(engine)
+		return column.Database == common.BackupDatabaseNameOfEngine(engine)
 	}
 }
 
@@ -1323,7 +1323,7 @@ func (s *SQLService) accessCheck(
 
 	for _, span := range spans {
 		// New query ACL experience.
-		if base.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
+		if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 			var permission iam.Permission
 			switch span.Type {
 			case parserbase.QueryTypeUnknown:
@@ -1629,7 +1629,7 @@ func (s *SQLService) SQLReviewCheck(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	if !base.EngineSupportSQLReview(instance.Metadata.GetEngine()) || database == nil {
+	if !common.EngineSupportSQLReview(instance.Metadata.GetEngine()) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 

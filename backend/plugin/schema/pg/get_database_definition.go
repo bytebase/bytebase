@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
+	"github.com/bytebase/bytebase/backend/common"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -512,7 +512,7 @@ func filterBackupSchemaIfNecessary(ctx schema.GetDefinitionContext, metadata *st
 		Extensions: metadata.Extensions,
 	}
 	for _, schema := range metadata.Schemas {
-		if schema.Name == base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES) {
+		if schema.Name == common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES) {
 			continue
 		}
 		filtered.Schemas = append(filtered.Schemas, schema)

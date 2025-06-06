@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/base"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -56,7 +56,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 	if err != nil {
 		return nil, err
 	}
-	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, base.WorkspaceAdmin, iamPolicy)
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, common.WorkspaceAdmin, iamPolicy)
 	if !containsActiveEndUser(users) {
 		return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
 	}
