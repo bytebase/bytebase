@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -79,7 +78,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if instance == nil {
 		return nil, errors.Errorf("instance %s not found", config.InstanceId)
 	}
-	if !base.EngineSupportStatementReport(instance.Metadata.GetEngine()) {
+	if !common.EngineSupportStatementReport(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,

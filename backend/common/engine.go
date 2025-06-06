@@ -1,4 +1,4 @@
-package base
+package common
 
 import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"

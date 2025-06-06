@@ -17,7 +17,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -586,7 +585,7 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 }
 
 func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbSchema *storepb.DatabaseSchemaMetadata) bool {
-	if !base.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
+	if !common.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
 		return false
 	}
 	switch instance.Metadata.GetEngine() {
@@ -595,12 +594,12 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 			return false
 		}
 		for _, schema := range dbSchema.Schemas {
-			if schema.GetName() == base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES) {
+			if schema.GetName() == common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES) {
 				return true
 			}
 		}
 	case storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_TIDB:
-		dbName := base.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
+		dbName := common.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
 		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &dbName,
@@ -611,7 +610,7 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 		}
 		return backupDB != nil
 	case storepb.Engine_ORACLE:
-		dbName := base.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
+		dbName := common.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
 		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &dbName,

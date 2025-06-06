@@ -9,7 +9,6 @@ import (
 
 	plsql "github.com/bytebase/plsql-parser"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -54,7 +53,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		})
 	}
 
-	databaseName := base.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
+	databaseName := common.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
 	if !advisor.DatabaseExists(ctx, checkCtx, databaseName) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,

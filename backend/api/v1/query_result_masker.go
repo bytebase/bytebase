@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/masker"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
@@ -111,7 +111,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 			maskers = append(maskers, masker.NewNoneMasker())
 		case 1:
 			// If there is only one source column, and comes from the expression, we fall back to the default full masker.
-			if !spanResult.IsPlainField && base.EngineSupportQuerySpanPlainField(instance.Metadata.GetEngine()) {
+			if !spanResult.IsPlainField && common.EngineSupportQuerySpanPlainField(instance.Metadata.GetEngine()) {
 				maskers = append(maskers, masker.NewDefaultFullMasker())
 			} else {
 				maskers = append(maskers, effectiveMaskers[0])
@@ -134,7 +134,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 	currentPrincipal *store.UserMessage,
 ) (masker.Masker, error) {
-	if instance != nil && !base.EngineSupportMasking(instance.Metadata.GetEngine()) {
+	if instance != nil && !common.EngineSupportMasking(instance.Metadata.GetEngine()) {
 		return masker.NewNoneMasker(), nil
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{

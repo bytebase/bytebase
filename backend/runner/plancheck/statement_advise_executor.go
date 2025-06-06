@@ -100,7 +100,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if instance == nil {
 		return nil, errors.Errorf("instance %s not found", config.InstanceId)
 	}
-	if !base.EngineSupportStatementAdvise(instance.Metadata.GetEngine()) {
+	if !common.EngineSupportStatementAdvise(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,

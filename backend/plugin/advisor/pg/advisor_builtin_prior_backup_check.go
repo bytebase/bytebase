@@ -12,7 +12,6 @@ import (
 
 	parser "github.com/bytebase/postgresql-parser"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -66,7 +65,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 		}
 	}
 
-	schemaName := base.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
+	schemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
 	if !checkCtx.Catalog.Origin.HasSchema(schemaName) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
