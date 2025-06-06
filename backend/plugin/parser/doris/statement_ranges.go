@@ -1,4 +1,4 @@
-package snowflake
+package doris
 
 import (
 	"context"
@@ -7,20 +7,21 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
-	parser "github.com/bytebase/snowsql-parser"
+	parser "github.com/bytebase/doris-parser"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	base.RegisterStatementRangesFunc(storepb.Engine_SNOWFLAKE, GetStatementRanges)
+	base.RegisterStatementRangesFunc(storepb.Engine_DORIS, GetStatementRanges)
+	base.RegisterStatementRangesFunc(storepb.Engine_STARROCKS, GetStatementRanges)
 }
 
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
 	createLexer := func(input antlr.CharStream) antlr.Lexer {
-		return parser.NewSnowflakeLexer(input)
+		return parser.NewDorisSQLLexer(input)
 	}
 	stream := base.PrepareANTLRTokenStream(statement, createLexer)
-	ranges := base.GetANTLRStatementRangesUTF16Position(stream, parser.SnowflakeParserEOF, parser.SnowflakeParserSEMI)
+	ranges := base.GetANTLRStatementRangesUTF16Position(stream, parser.DorisSQLParserEOF, parser.DorisSQLParserSEMICOLON)
 	return ranges, nil
 }
