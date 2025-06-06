@@ -37,6 +37,14 @@ var (
 		Targets              []string
 		FilePattern          string
 
+		// bytebase-action check flags
+		// An enum to determine should we fail on warning or error.
+		// Valid values:
+		// - SKIP
+		// - FAIL_ON_WARNING
+		// - FAIL_ON_ERROR
+		CheckRelease string
+
 		// bytebase-action rollout flags
 		ReleaseTitle string // The title of the release
 		RolloutTitle string // The title of the rollout
@@ -75,9 +83,11 @@ func init() {
 		Use:               "check",
 		Short:             "Check the release files",
 		Args:              cobra.NoArgs,
-		PersistentPreRunE: nil,
+		PersistentPreRunE: validateCheckFlags,
 		RunE:              runCheck,
 	}
+	cmdCheck.Flags().StringVar(&Config.CheckRelease, "check-release", "SKIP", "Whether to fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
+
 	cmd.AddCommand(cmdCheck)
 
 	// bytebase-action rollout flags
@@ -122,6 +132,16 @@ func validateSharedFlags(*cobra.Command, []string) error {
 		if !strings.HasPrefix(target, "instances/") || !strings.Contains(target, "/databases/") {
 			return errors.Errorf("invalid target format, must be instances/{instance}/databases/{database}: %s", target)
 		}
+	}
+
+	return nil
+}
+
+func validateCheckFlags(*cobra.Command, []string) error {
+	switch Config.CheckRelease {
+	case "SKIP", "FAIL_ON_WARNING", "FAIL_ON_ERROR":
+	default:
+		return errors.Errorf("invalid check-release value: %s. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR", Config.CheckRelease)
 	}
 
 	return nil
@@ -174,6 +194,7 @@ func writeOutputJSON(*cobra.Command, []string) error {
 
 func runCheck(*cobra.Command, []string) error {
 	platform := getJobPlatform()
+	slog.Info("running on platform", "platform", platform.String())
 	client, err := NewClient(Config.URL, Config.ServiceAccount, Config.ServiceAccountSecret)
 	if err != nil {
 		return err
@@ -193,6 +214,7 @@ func runCheck(*cobra.Command, []string) error {
 
 	slog.Info("check release response", "resultCount", len(checkReleaseResponse.Results))
 
+	// Generate platform-specific outputs
 	switch platform {
 	case GitHub:
 		if err := github.CreateCommentAndAnnotation(checkReleaseResponse); err != nil {
@@ -211,6 +233,31 @@ func runCheck(*cobra.Command, []string) error {
 			return err
 		}
 	}
+
+	// Evaluate check results and return errors based on CheckRelease flag
+	if Config.CheckRelease == "SKIP" {
+		return nil
+	}
+
+	var errorCount, warningCount int
+	for _, result := range checkReleaseResponse.Results {
+		for _, advice := range result.Advices {
+			switch advice.Status {
+			case v1pb.Advice_ERROR:
+				errorCount++
+			case v1pb.Advice_WARNING:
+				warningCount++
+			}
+		}
+	}
+
+	if errorCount > 0 {
+		return errors.Errorf("found %d error(s) in release check. view on Bytebase", errorCount)
+	}
+	if warningCount > 0 && Config.CheckRelease == "FAIL_ON_WARNING" {
+		return errors.Errorf("found %d warning(s) in release check. view on Bytebase", warningCount)
+	}
+
 	return nil
 }
 
