@@ -1,7 +1,7 @@
 <template>
   <div class="w-full flex items-start gap-x-4 flex-wrap">
     <div
-      class="textlabel h-[26px] inline-flex items-center"
+      class="text-base font-medium inline-flex items-center"
       :class="labelClass"
     >
       {{ $t("task.task-checks") }}

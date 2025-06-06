@@ -10,6 +10,11 @@
 </template>
 
 <script lang="ts" setup>
+import { useTitle } from "@vueuse/core";
+import Emittery from "emittery";
+import { NSpin } from "naive-ui";
+import { computed, toRef } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   providePlanContext,
   useBasePlanContext,
@@ -22,11 +27,6 @@ import {
 } from "@/components/PlanCheckRun/context";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { isValidPlanName } from "@/utils";
-import { useTitle } from "@vueuse/core";
-import Emittery from "emittery";
-import { NSpin } from "naive-ui";
-import { computed, toRef } from "vue";
-import { useI18n } from "vue-i18n";
 
 defineOptions({
   inheritAttrs: false,
@@ -39,7 +39,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
-const { isCreating, plan, isInitializing, reInitialize } = useInitializePlan(
+const { isCreating, plan, isInitializing } = useInitializePlan(
   toRef(props, "planSlug"),
   toRef(props, "projectId")
 );
@@ -57,7 +57,6 @@ providePlanContext(
     isCreating,
     plan,
     ready,
-    reInitialize,
     ...planBaseContext,
   },
   true /* root */

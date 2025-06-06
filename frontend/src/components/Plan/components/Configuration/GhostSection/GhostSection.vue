@@ -1,8 +1,7 @@
 <template>
   <div class="flex flex-col items-start gap-1">
-    <div
-      class="w-full flex flex-row items-center justify-between whitespace-nowrap"
-    >
+    <div class="w-full flex flex-row items-center gap-2 whitespace-nowrap">
+      <GhostSwitch />
       <div class="textlabel flex items-center gap-x-1 whitespace-nowrap">
         <NTooltip>
           <template #trigger>
@@ -26,23 +25,21 @@
           </template>
         </NTooltip>
       </div>
-      <GhostSwitch />
+      <NButton
+        v-if="enabled && allowChange"
+        tag="div"
+        size="tiny"
+        style="--n-padding: 0 5px"
+        @click="showFlagsPanel = true"
+      >
+        <template #icon>
+          <WrenchIcon class="w-4 h-4" />
+        </template>
+        <template #default>
+          {{ $t("task.online-migration.configure") }}
+        </template>
+      </NButton>
     </div>
-
-    <NButton
-      v-if="enabled && allowChange"
-      tag="div"
-      size="small"
-      style="--n-padding: 0 5px"
-      @click="showFlagsPanel = true"
-    >
-      <template #icon>
-        <WrenchIcon class="w-4 h-4" />
-      </template>
-      <template #default>
-        {{ $t("task.online-migration.configure") }}
-      </template>
-    </NButton>
 
     <GhostFlagsPanel
       :show="showFlagsPanel"

@@ -995,6 +995,62 @@
     }
   },
   "plan": {
+    "add-spec": "Thêm thông số kỹ thuật",
+    "change-type": "Thay đổi loại",
+    "schema-migration": "Di chuyển lược đồ",
+    "schema-migration-description": "Sửa đổi lược đồ cơ sở dữ liệu (DDL)",
+    "data-change": "Thay đổi dữ liệu",
+    "data-change-description": "Sửa đổi dữ liệu (DML)",
+    "select-targets": "Chọn mục tiêu",
+    "overview": {
+      "title": "Tổng quan về kế hoạch",
+      "description": "Xem và quản lý tất cả các thông số kỹ thuật trong kế hoạch này",
+      "total-specs": "Tổng số thông số kỹ thuật",
+      "total-targets": "Tổng số mục tiêu",
+      "check-status": "Kiểm tra trạng thái",
+      "no-checks": "Không kiểm tra",
+      "affected-resources": "Tài nguyên bị ảnh hưởng"
+    },
+    "navigator": {
+      "overview": "Tổng quan",
+      "specifications": "Thông số kỹ thuật",
+      "spec-number": "Đặc điểm kỹ thuật {number}",
+      "no-specifications": "Không có thông số kỹ thuật",
+      "statement-empty": "Câu lệnh trống rỗng"
+    },
+    "spec": {
+      "type": {
+        "create-database": "Tạo cơ sở dữ liệu",
+        "schema-change": "Thay đổi sơ đồ",
+        "data-change": "Thay đổi dữ liệu",
+        "ghost-migration": "Di cư của ma",
+        "database-change": "Thay đổi cơ sở dữ liệu",
+        "export-data": "Xuất dữ liệu",
+        "unknown": "Không rõ"
+      },
+      "status": {
+        "pass": "Vượt qua",
+        "warn": "Cảnh báo",
+        "error": "Lỗi"
+      }
+    },
+    "targets": {
+      "title": "Mục tiêu",
+      "no-targets-found": "Không tìm thấy mục tiêu",
+      "no-targets": "Không có mục tiêu",
+      "one-target": "1 mục tiêu",
+      "multiple-targets": "{count} mục tiêu",
+      "one-database": "1 cơ sở dữ liệu",
+      "multiple-databases": "{count} cơ sở dữ liệu",
+      "database-group": "Nhóm cơ sở dữ liệu",
+      "database-not-found": "Không tìm thấy cơ sở dữ liệu",
+      "environment": "Môi trường: {environment}",
+      "type": {
+        "instance": "Ví dụ",
+        "database": "Cơ sở dữ liệu",
+        "database-group": "Nhóm cơ sở dữ liệu"
+      }
+    },
     "options": {
       "self": "Tùy chọn",
       "applies-to-all-tasks": "Áp dụng cho tất cả các nhiệm vụ",

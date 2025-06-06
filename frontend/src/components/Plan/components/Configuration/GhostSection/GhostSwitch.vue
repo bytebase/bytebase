@@ -2,6 +2,7 @@
   <NTooltip :disabled="!tooltipMessage" :showArrow="false">
     <template #trigger>
       <NSwitch
+        size="small"
         :value="enabled"
         :disabled="!allowChange || errors.length > 0"
         @update:value="toggleChecked"

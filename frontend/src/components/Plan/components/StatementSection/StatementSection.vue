@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { ref } from "vue";
-import { EMPTY_ID } from "@/types";
 import { usePlanContext } from "../..";
 import EditorView from "./EditorView";
 
@@ -15,7 +14,7 @@ const { selectedSpec } = usePlanContext();
 const editorViewRef = ref<InstanceType<typeof EditorView>>();
 
 const viewMode = computed((): "NONE" | "EDITOR" => {
-  if (selectedSpec.value.id !== String(EMPTY_ID)) {
+  if (selectedSpec.value) {
     return "EDITOR";
   }
   return "NONE";

@@ -1,5 +1,4 @@
 import type Emittery from "emittery";
-import type { useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import type { InjectionKey, Ref } from "vue";
 import { inject, provide } from "vue";
@@ -19,16 +18,10 @@ export type PlanContext = {
   plan: Ref<ComposedPlan>;
   // TODO(steven): save related issue/rollout for checking if the plan is changable.
 
-  selectedSpec: Ref<Plan_Spec>;
-  selectedTarget: Ref<string>;
-  formatOnSave: Ref<boolean>;
+  selectedSpec: Ref<Plan_Spec | undefined>;
 
   // UI events
   events: PlanEvents;
-
-  // misc
-  dialog: ReturnType<typeof useDialog>;
-  reInitialize: (overrides?: Record<string, string>) => Promise<void>;
 };
 
 const KEY = Symbol(`bb.plan.context.${uuidv4()}`) as InjectionKey<PlanContext>;
