@@ -30,6 +30,10 @@ linters:
           msg: Please use slices\.SortStableFunc instead
         - pattern: sort\.SliceIsSorted
           msg: Please use slices\.IsSortedFunc instead
+        - pattern: sort\.Strings
+          msg: Please use slices\.Sort instead
+        - pattern: sort\.Ints
+          msg: Please use slices\.Sort instead
     gocritic:
       disabled-checks:
         - ifElseChain
