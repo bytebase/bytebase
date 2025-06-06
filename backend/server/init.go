@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/metric"
 	metriccollector "github.com/bytebase/bytebase/backend/metric/collector"
@@ -181,9 +180,9 @@ func (s *Server) initializeSetting(ctx context.Context) error {
 	if firstTimeOnboarding {
 		// Only grant workspace member role to allUsers at the first time.
 		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-			Member: base.AllUsers,
+			Member: common.AllUsers,
 			Roles: []string{
-				common.FormatRole(base.WorkspaceMember.String()),
+				common.FormatRole(common.WorkspaceMember),
 			},
 		}); err != nil {
 			return err

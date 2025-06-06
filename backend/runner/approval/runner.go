@@ -238,7 +238,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   r.store.GetSystemBotUser(ctx),
-			Type:    base.EventTypeIssueRolloutReady,
+			Type:    common.EventTypeIssueRolloutReady,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
@@ -262,7 +262,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   r.store.GetSystemBotUser(ctx),
-			Type:    base.EventTypeIssueApprovalCreate,
+			Type:    common.EventTypeIssueApprovalCreate,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),

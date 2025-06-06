@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/base"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -169,9 +170,9 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 		subscriptionEndDate = time.Unix(subscription.ExpiresTS, 0).Format(time.RFC3339)
 	}
 
-	user, err := m.store.GetUserByID(ctx, base.PrincipalIDForFirstUser)
+	user, err := m.store.GetUserByID(ctx, common.PrincipalIDForFirstUser)
 	if err != nil {
-		slog.Debug("unable to get the first principal user", slog.Int("id", base.PrincipalIDForFirstUser), log.BBError(err))
+		slog.Debug("unable to get the first principal user", slog.Int("id", common.PrincipalIDForFirstUser), log.BBError(err))
 	}
 	email := ""
 	name := ""

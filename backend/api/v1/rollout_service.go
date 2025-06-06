@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -601,7 +600,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    base.EventTypeTaskRunStatusUpdate,
+		Type:    common.EventTypeTaskRunStatusUpdate,
 		Comment: request.Reason,
 		Issue:   webhook.NewIssue(issueN),
 		Project: webhook.NewProject(project),
@@ -701,7 +700,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    base.EventTypeTaskRunStatusUpdate,
+		Type:    common.EventTypeTaskRunStatusUpdate,
 		Comment: request.Reason,
 		Issue:   webhook.NewIssue(issueN),
 		Project: webhook.NewProject(project),
@@ -818,7 +817,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    base.EventTypeTaskRunStatusUpdate,
+		Type:    common.EventTypeTaskRunStatusUpdate,
 		Comment: request.Reason,
 		Issue:   webhook.NewIssue(issueN),
 		Rollout: webhook.NewRollout(rollout),

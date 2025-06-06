@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/bytebase/bytebase/backend/base"
+	"github.com/bytebase/bytebase/backend/common"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -114,7 +114,7 @@ func TestDeleteUser(t *testing.T) {
 	// Test: check allUser in the binding
 	for _, binding := range newPolicy.Bindings {
 		if binding.Role == "roles/workspaceAdmin" {
-			binding.Members = []string{base.AllUsers}
+			binding.Members = []string{common.AllUsers}
 			break
 		}
 	}

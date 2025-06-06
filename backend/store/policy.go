@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -257,7 +256,7 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType stor
 		return nil, errors.Wrapf(err, "failed to unmarshal tag policy payload")
 	}
 
-	reviewConfigName, ok := payload.Tags[string(base.ReservedTagReviewConfig)]
+	reviewConfigName, ok := payload.Tags[string(common.ReservedTagReviewConfig)]
 	if !ok {
 		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config tag for resource %v/%s not found", resourceType, resource)}
 	}
