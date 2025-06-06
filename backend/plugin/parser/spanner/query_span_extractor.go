@@ -2,7 +2,7 @@ package spanner
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -536,8 +536,13 @@ func (q *querySpanExtractor) starModify(fields []base.QuerySpanResult, starModif
 	for _, fieldItem := range fieldItemMap {
 		fieldItems = append(fieldItems, fieldItem)
 	}
-	sort.Slice(fieldItems, func(i, j int) bool {
-		return fieldItems[i].id < fieldItems[j].id
+	slices.SortFunc(fieldItems, func(x, y fieldItem) int {
+		if x.id < y.id {
+			return -1
+		} else if x.id > y.id {
+			return 1
+		}
+		return 0
 	})
 
 	var result []base.QuerySpanResult

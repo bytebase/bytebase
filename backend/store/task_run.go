@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -237,8 +237,8 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 		return nil
 	}
 
-	sort.Slice(creates, func(i, j int) bool {
-		return creates[i].TaskUID < creates[j].TaskUID
+	slices.SortFunc(creates, func(a, b *TaskRunMessage) int {
+		return a.TaskUID - b.TaskUID
 	})
 
 	var taskIDs []int

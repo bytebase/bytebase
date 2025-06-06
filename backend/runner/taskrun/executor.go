@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -165,8 +165,13 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to list plan check runs")
 		}
-		sort.Slice(runs, func(i, j int) bool {
-			return runs[i].UID > runs[j].UID
+		slices.SortFunc(runs, func(a, b *store.PlanCheckRunMessage) int {
+			if a.UID > b.UID {
+				return -1
+			} else if a.UID < b.UID {
+				return 1
+			}
+			return 0
 		})
 		foundChangedResources := false
 		for _, run := range runs {

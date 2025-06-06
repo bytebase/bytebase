@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -428,18 +428,33 @@ func (r *expressionRewriter) appendDNFPart() error {
 				}
 				schema.Tables = append(schema.Tables, table)
 			}
-			sort.Slice(schema.Tables, func(i, j int) bool {
-				return schema.Tables[i].Name < schema.Tables[j].Name
+			slices.SortFunc(schema.Tables, func(a, b *storepb.ChangedResourceTable) int {
+				if a.Name < b.Name {
+					return -1
+				} else if a.Name > b.Name {
+					return 1
+				}
+				return 0
 			})
 			db.Schemas = append(db.Schemas, schema)
 		}
-		sort.Slice(db.Schemas, func(i, j int) bool {
-			return db.Schemas[i].Name < db.Schemas[j].Name
+		slices.SortFunc(db.Schemas, func(a, b *storepb.ChangedResourceSchema) int {
+			if a.Name < b.Name {
+				return -1
+			} else if a.Name > b.Name {
+				return 1
+			}
+			return 0
 		})
 		meta.Databases = append(meta.Databases, db)
 	}
-	sort.Slice(meta.Databases, func(i, j int) bool {
-		return meta.Databases[i].Name < meta.Databases[j].Name
+	slices.SortFunc(meta.Databases, func(a, b *storepb.ChangedResourceDatabase) int {
+		if a.Name < b.Name {
+			return -1
+		} else if a.Name > b.Name {
+			return 1
+		}
+		return 0
 	})
 
 	text, err := protojson.Marshal(&storepb.InstanceChangeHistoryPayload{
