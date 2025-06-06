@@ -1,10 +1,10 @@
-package mysql
+package oceanbase
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
@@ -21,15 +21,14 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
 }
 
-// NamingTableConventionAdvisor is the advisor checking for table naming convention.
+// InsertRowLimitAdvisor is the advisor checking for insert row limit.
 type InsertRowLimitAdvisor struct {
 }
 
-// Check checks for table naming convention.
+// Check checks for insert row limit.
 func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	list, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
@@ -105,7 +104,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 	}
 
 	checker.explainCount++
-	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", checker.text))
+	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_OCEANBASE, fmt.Sprintf("EXPLAIN format=json %s", checker.text))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
@@ -116,7 +115,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 		})
 		return
 	}
-	rowCount, err := getInsertRows(res)
+	rowCount, err := getInsertRowsFromJSON(res)
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
@@ -159,69 +158,45 @@ func (checker *insertRowLimitChecker) handleNoInsertQueryExpression(ctx mysql.II
 	}
 }
 
-func getInsertRows(res []any) (int64, error) {
-	// the res struct is []any{columnName, columnTable, rowDataList}
-	if len(res) != 3 {
-		return 0, errors.Errorf("expected 3 but got %d", len(res))
+func getInsertRowsFromJSON(res []any) (int64, error) {
+	// For EXPLAIN format=json, OceanBase returns JSON data
+	// The res struct is []any{columnName, columnTable, rowDataList}
+	if len(res) < 3 {
+		return 0, errors.Errorf("expected at least 3 elements but got %d", len(res))
 	}
-	columns, ok := res[0].([]string)
-	if !ok {
-		return 0, errors.Errorf("expected []string but got %t", res[0])
-	}
+
 	rowList, ok := res[2].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", res[2])
+		return 0, errors.Errorf("expected []any for row data but got %T", res[2])
 	}
-	if len(rowList) < 1 {
-		return 0, errors.Errorf("not found any data")
-	}
-
-	// MySQL EXPLAIN statement result has 12 columns.
-	// the column 9 is the data 'rows'.
-	// the first not-NULL value of column 9 is the affected rows count.
-	//
-	// mysql> explain delete from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// |  1 | DELETE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | NULL  |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	//
-	// mysql> explain insert into td select * from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
-	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-
-	rowsIndex, err := getColumnIndex(columns, "rows")
-	if err != nil {
-		return 0, errors.Errorf("failed to find rows column")
+	if len(rowList) == 0 {
+		return 0, errors.Errorf("no data returned from EXPLAIN")
 	}
 
+	// OceanBase might return JSON data split across multiple elements
+	// We need to concatenate them to form a valid JSON string
+	var jsonStr string
 	for _, rowAny := range rowList {
 		row, ok := rowAny.([]any)
 		if !ok {
-			return 0, errors.Errorf("expected []any but got %t", row)
+			return 0, errors.Errorf("expected []any for row but got %T", rowAny)
 		}
-		switch col := row[rowsIndex].(type) {
-		case int:
-			return int64(col), nil
-		case int32:
-			return int64(col), nil
-		case int64:
-			return col, nil
-		case string:
-			v, err := strconv.ParseInt(col, 10, 64)
-			if err != nil {
-				return 0, errors.Errorf("expected int or int64 but got string(%s)", col)
+		for _, cellAny := range row {
+			if cell, ok := cellAny.(string); ok {
+				jsonStr += cell
 			}
-			return v, nil
-		default:
-			continue
 		}
 	}
 
-	return 0, nil
+	if jsonStr == "" {
+		return 0, errors.Errorf("no JSON data found in EXPLAIN result")
+	}
+
+	var explainData ExplainJSON
+	if err := json.Unmarshal([]byte(jsonStr), &explainData); err != nil {
+		return 0, errors.Errorf("failed to parse JSON: %v", err)
+	}
+
+	// Return the estimated rows from the JSON response
+	return explainData.EstRows, nil
 }
