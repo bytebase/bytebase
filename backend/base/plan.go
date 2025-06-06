@@ -138,8 +138,6 @@ const (
 	// FeatureReadReplicaConnection allows user to set a read replica connection
 	// including host and port to data source.
 	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
-	// FeatureInstanceSSHConnection provides SSH connection for instances.
-	FeatureInstanceSSHConnection FeatureType = "bb.feature.instance-ssh-connection"
 	// FeatureCustomInstanceSynchronization allows user to customize the synchronization for instance.
 	FeatureCustomInstanceSynchronization FeatureType = "bb.feature.custom-instance-synchronization"
 	// FeatureSyncSchemaAllVersions allows user to sync the base database schema all versions into target database.
@@ -247,8 +245,6 @@ func (e FeatureType) Name() string {
 	// Database management
 	case FeatureReadReplicaConnection:
 		return "Read replica connection"
-	case FeatureInstanceSSHConnection:
-		return "Instance SSH connection"
 	case FeatureCustomInstanceSynchronization:
 		return "Custom synchronization for instance"
 	case FeatureSyncSchemaAllVersions:
@@ -330,7 +326,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureIssueProjectSetting: {false, true, true},
 	// Database management
 	FeatureReadReplicaConnection:         {false, false, true},
-	FeatureInstanceSSHConnection:         {false, false, true},
 	FeatureCustomInstanceSynchronization: {false, false, true},
 	FeatureSyncSchemaAllVersions:         {false, true, true},
 	FeatureIndexAdvisor:                  {true, true, true},
@@ -359,7 +354,6 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureOnlineMigration:  true,
 	// Database management
 	FeatureReadReplicaConnection:         true,
-	FeatureInstanceSSHConnection:         true,
 	FeatureCustomInstanceSynchronization: true,
 	FeatureDatabaseGrouping:              true,
 	FeatureSyncSchemaAllVersions:         true,
