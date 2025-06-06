@@ -995,7 +995,7 @@
     }
   },
   "plan": {
-    "add-spec": "添加规范",
+    "add-spec": "添加变更项",
     "change-type": "变更类型",
     "schema-migration": "Schema 变更",
     "schema-migration-description": "修改数据库 Schema (DDL)",
