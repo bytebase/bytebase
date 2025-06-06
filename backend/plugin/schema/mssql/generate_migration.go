@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -845,7 +847,7 @@ func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 
 	parseResult, err := tsql.ParseTSQL(viewDef)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse view definition: %w", err)
+		return nil, errors.Wrapf(err, "failed to parse view definition")
 	}
 
 	// Extract the query part after the CREATE VIEW statement
@@ -861,7 +863,7 @@ func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 	span, err := tsql.GetQuerySpan(
 		context.Background(),
 		base.GetQuerySpanContext{
-			GetDatabaseMetadataFunc: func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
+			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 				// Return minimal metadata - we only need table references, not column info
 				metadata := &storepb.DatabaseSchemaMetadata{
 					Name: databaseName,
@@ -875,7 +877,7 @@ func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 				dbMetadata := model.NewDatabaseMetadata(metadata, false, false)
 				return databaseName, dbMetadata, nil
 			},
-			ListDatabaseNamesFunc: func(ctx context.Context, instanceID string) ([]string, error) {
+			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
 				// Return empty list - we don't need actual database names for dependency extraction
 				return []string{}, nil
 			},
@@ -886,9 +888,10 @@ func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 		false, // case sensitive
 	)
 
-	// If error, return empty dependencies
+	// If error parsing query span, return empty dependencies to allow migration to proceed
+	// This is intentional - we prefer to proceed with no dependencies rather than block the migration
 	if err != nil {
-		return []string{}, nil
+		return []string{}, nil // nolint:nilerr
 	}
 
 	// Collect unique dependencies
