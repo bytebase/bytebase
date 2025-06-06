@@ -105,16 +105,6 @@ const (
 	// - Developers can't create database.
 	// - Developers can't query and export data directly. They must request corresponding permissions first.
 	FeatureDBAWorkflow FeatureType = "bb.feature.dba-workflow"
-	// FeatureMultiTenancy allows user to enable batch mode for the project.
-	//
-	// Batch mode allows user to track a group of homogeneous database changes together.
-	// e.g. A game studio may deploy many servers, each server is fully isolated with its
-	// own database. When a new game version is released, it may require to upgrade the
-	// underlying database schema, then batch mode will help the studio to track the
-	// schema change across all databases.
-	FeatureMultiTenancy FeatureType = "bb.feature.multi-tenancy"
-	// FeatureOnlineMigration allows user to perform online-migration.
-	FeatureOnlineMigration FeatureType = "bb.feature.online-migration"
 	// FeatureSchemaDrift detects if there occurs schema drift.
 	// See https://bytebase.com/docs/features/drift-detection
 	FeatureSchemaDrift FeatureType = "bb.feature.schema-drift"
@@ -123,7 +113,6 @@ const (
 	// e.g. One can configure rules for database schema or SQL query.
 	FeatureSQLReview FeatureType = "bb.feature.sql-review"
 	// FeatureTaskScheduleTime allows user to run task at a scheduled time.
-	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
 	// FeatureEncryptedSecrets is a feature that allows user to setting the encrypted secrets for the database.
 	FeatureEncryptedSecrets FeatureType = "bb.feature.encrypted-secrets"
 	// FeatureDatabaseGrouping allows user to create database/schema groups.
@@ -222,16 +211,10 @@ func (e FeatureType) Name() string {
 	// Change Workflow
 	case FeatureDBAWorkflow:
 		return "DBA workflow"
-	case FeatureMultiTenancy:
-		return "Multi-tenancy"
-	case FeatureOnlineMigration:
-		return "Online schema migration"
 	case FeatureSchemaDrift:
 		return "Schema drift"
 	case FeatureSQLReview:
 		return "SQL review"
-	case FeatureTaskScheduleTime:
-		return "Task schedule time"
 	case FeatureEncryptedSecrets:
 		return "Encrypted secrets"
 	case FeatureDatabaseGrouping:
@@ -311,11 +294,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureBranding: {false, false, true},
 	// Change Workflow
 	FeatureDBAWorkflow:         {false, false, true},
-	FeatureMultiTenancy:        {false, false, true},
-	FeatureOnlineMigration:     {false, true, true},
 	FeatureSchemaDrift:         {false, false, true},
 	FeatureSQLReview:           {true, true, true},
-	FeatureTaskScheduleTime:    {false, true, true},
 	FeatureEncryptedSecrets:    {false, true, true},
 	FeatureDatabaseGrouping:    {false, true, true},
 	FeatureSchemaTemplate:      {false, false, true},
@@ -345,16 +325,12 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	// Change Workflow
 	FeatureSchemaDrift:      true,
 	FeatureEncryptedSecrets: true,
-	FeatureTaskScheduleTime: true,
-	FeatureOnlineMigration:  true,
 	// Database management
 	FeatureReadReplicaConnection:         true,
 	FeatureCustomInstanceSynchronization: true,
-	FeatureDatabaseGrouping:              true,
 	FeatureSyncSchemaAllVersions:         true,
 	// Policy Control
 	FeatureSensitiveData: true,
-	FeatureRolloutPolicy: true,
 }
 
 // Feature returns whether a particular feature is available in a particular plan.

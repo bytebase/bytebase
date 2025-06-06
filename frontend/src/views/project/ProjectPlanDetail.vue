@@ -7,20 +7,14 @@
       <NSpin />
     </div>
   </div>
-  <FeatureModal
-    :open="state.showFeatureModal"
-    feature="bb.feature.multi-tenancy"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import Emittery from "emittery";
 import { NSpin } from "naive-ui";
-import { computed, reactive, toRef } from "vue";
+import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
-import { FeatureModal } from "@/components/FeatureGuard";
 import {
   providePlanContext,
   useBasePlanContext,
@@ -34,10 +28,6 @@ import {
 import { useBodyLayoutContext } from "@/layouts/common";
 import { isValidPlanName } from "@/utils";
 
-interface LocalState {
-  showFeatureModal: boolean;
-}
-
 defineOptions({
   inheritAttrs: false,
 });
@@ -48,10 +38,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-
-const state = reactive<LocalState>({
-  showFeatureModal: false,
-});
 
 const { isCreating, plan, isInitializing } = useInitializePlan(
   toRef(props, "planSlug"),

@@ -40,6 +40,7 @@ jobs:
             bytebase/bytebase-action:${{ env.IMAGE_TAG }}
             bytebase/bytebase-action:latest
           build-args: |
+            VERSION=${{ env.IMAGE_TAG }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
   build-debian:
     runs-on: ubuntu-latest
@@ -70,4 +71,5 @@ jobs:
             bytebase/bytebase-action:${{ env.IMAGE_TAG }}-debian
             bytebase/bytebase-action:latest-debian
           build-args: |
+            VERSION=${{ env.IMAGE_TAG }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
