@@ -1,0 +1,214 @@
+- statement: SELECT * FROM tbl;
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 18
+- statement: SELECT * FROM tbl; SELECT count(*) FROM tbl;
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 18
+    - start:
+        line: 0
+        character: 19
+      end:
+        line: 0
+        character: 44
+- statement: |-
+    -- Basic Doris queries
+    SELECT id, name FROM users WHERE status = 'active';
+    INSERT INTO logs (timestamp, message) VALUES (NOW(), 'User login');
+    UPDATE settings SET value = 'true' WHERE key = 'enable_feature';
+    DELETE FROM temp_data WHERE created_at < '2024-01-01';
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 1
+        character: 51
+    - start:
+        line: 2
+        character: 0
+      end:
+        line: 2
+        character: 67
+    - start:
+        line: 3
+        character: 0
+      end:
+        line: 3
+        character: 64
+    - start:
+        line: 4
+        character: 0
+      end:
+        line: 4
+        character: 54
+- statement: |-
+    -- Doris specific DDL statements
+    CREATE TABLE IF NOT EXISTS orders_partition (
+        order_id BIGINT,
+        order_date DATE,
+        customer_id BIGINT,
+        amount DECIMAL(10, 2)
+    )
+    PARTITION BY RANGE(order_date) (
+        PARTITION p202301 VALUES LESS THAN ('2023-02-01'),
+        PARTITION p202302 VALUES LESS THAN ('2023-03-01')
+    )
+    DISTRIBUTED BY HASH(order_id) BUCKETS 32
+    PROPERTIES (
+        "replication_allocation" = "tag.location.default: 3"
+    );
+
+    -- Alter table to add rollup
+    ALTER TABLE orders_partition ADD ROLLUP rollup_customer (customer_id, order_date, amount);
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 14
+        character: 2
+    - start:
+        line: 16
+        character: 0
+      end:
+        line: 17
+        character: 90
+- statement: "-- Doris aggregate materialized view\nCREATE MATERIALIZED VIEW orders_mv AS\nSELECT \n    customer_id,\n    DATE_FORMAT(order_date, '%Y-%m') as order_month,\n    SUM(amount) as total_amount,\n    COUNT(*) as order_count\nFROM orders_partition\nGROUP BY customer_id, order_month;\n\n-- Refresh materialized view\nREFRESH MATERIALIZED VIEW orders_mv;"
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 8
+        character: 34
+    - start:
+        line: 10
+        character: 0
+      end:
+        line: 11
+        character: 36
+- statement: "-- Complex query with window functions\nWITH monthly_sales AS (\n    SELECT \n        customer_id,\n        DATE_FORMAT(order_date, '%Y-%m') as month,\n        SUM(amount) as monthly_total,\n        ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY SUM(amount) DESC) as rn\n    FROM orders_partition\n    WHERE order_date >= '2023-01-01'\n    GROUP BY customer_id, month\n)\nSELECT \n    customer_id,\n    month,\n    monthly_total,\n    LAG(monthly_total, 1) OVER (PARTITION BY customer_id ORDER BY month) as prev_month_total\nFROM monthly_sales\nWHERE rn <= 3;\n\n-- Load data using stream load syntax comment\n-- curl --location-trusted -u root: -T data.csv -H \"column_separator:,\" http://localhost:8030/api/db/orders/_stream_load;"
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 17
+        character: 14
+    - start:
+        line: 19
+        character: 0
+      end:
+        line: 20
+        character: 121
+- statement: "-- Doris HLL (HyperLogLog) functions\nCREATE TABLE IF NOT EXISTS user_visits (\n    date DATE,\n    user_id_hll HLL HLL_UNION\n)\nAGGREGATE KEY(date)\nDISTRIBUTED BY HASH(date) BUCKETS 10;\n\nSELECT \n    date,\n    HLL_CARDINALITY(user_id_hll) as unique_users\nFROM user_visits\nWHERE date >= '2024-01-01';"
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 6
+        character: 37
+    - start:
+        line: 8
+        character: 0
+      end:
+        line: 12
+        character: 27
+- statement: "-- Bitmap index and operations\nCREATE TABLE page_views (\n    user_id INT,\n    page_id INT,\n    visit_time DATETIME,\n    INDEX idx_user_bitmap (user_id) USING BITMAP\n) DISTRIBUTED BY HASH(user_id) BUCKETS 10;\n\nSELECT \n    page_id,\n    BITMAP_COUNT(BITMAP_UNION(TO_BITMAP(user_id))) as unique_visitors\nFROM page_views\nWHERE visit_time >= '2024-01-01 00:00:00'\nGROUP BY page_id;"
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 6
+        character: 42
+    - start:
+        line: 8
+        character: 0
+      end:
+        line: 13
+        character: 17
+- statement: "-- JSON operations in Doris\nCREATE TABLE json_data (\n    id INT,\n    properties JSON\n) DISTRIBUTED BY HASH(id) BUCKETS 10;\n\nSELECT \n    id,\n    JSON_EXTRACT(properties, '$.name') as name,\n    JSON_EXTRACT(properties, '$.tags[0]') as first_tag\nFROM json_data\nWHERE JSON_EXTRACT(properties, '$.active') = 'true';"
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 4
+        character: 37
+    - start:
+        line: 6
+        character: 0
+      end:
+        line: 11
+        character: 52
+- statement: |-
+    SHOW TABLES;
+    SHOW CREATE TABLE orders_partition;
+    DESC orders_partition;
+    SHOW PARTITIONS FROM orders_partition;
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 12
+    - start:
+        line: 1
+        character: 0
+      end:
+        line: 1
+        character: 35
+    - start:
+        line: 2
+        character: 0
+      end:
+        line: 2
+        character: 22
+    - start:
+        line: 3
+        character: 0
+      end:
+        line: 3
+        character: 38
+- statement: SELECT * FROM tbl
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 17
+- statement: |-
+    /* Multi-line comment with semicolon;
+       This should be ignored */
+    SELECT * FROM users;
+    -- Single line comment with semicolon; ignored
+    INSERT INTO logs VALUES (1, 'test');
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 2
+        character: 20
+    - start:
+        line: 3
+        character: 0
+      end:
+        line: 4
+        character: 36
+- statement: ;
+- statement: ;;

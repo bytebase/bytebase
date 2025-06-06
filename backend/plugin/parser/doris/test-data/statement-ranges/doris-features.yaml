@@ -1,0 +1,162 @@
+- statement: |-
+    -- External table creation in Doris
+    CREATE EXTERNAL TABLE hdfs_table (
+        id INT,
+        name STRING,
+        age INT
+    )
+    ENGINE=BROKER
+    PROPERTIES (
+        "broker.name" = "hdfs_broker",
+        "path" = "hdfs://namenode:9000/path/to/data",
+        "format" = "parquet"
+    );
+
+    -- Query external table
+    SELECT * FROM hdfs_table WHERE age > 25;
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 11
+        character: 2
+    - start:
+        line: 13
+        character: 0
+      end:
+        line: 14
+        character: 40
+- statement: |-
+    -- Doris ROUTINE LOAD for Kafka streaming
+    CREATE ROUTINE LOAD example_db.kafka_load_job ON orders
+    COLUMNS TERMINATED BY ","
+    PROPERTIES
+    (
+        "desired_concurrent_number"="3",
+        "max_batch_interval" = "20",
+        "max_batch_rows" = "300000",
+        "max_batch_size" = "209715200",
+        "strict_mode" = "false"
+    )
+    FROM KAFKA
+    (
+        "kafka_broker_list" = "broker1:9092,broker2:9092",
+        "kafka_topic" = "order_topic",
+        "property.group.id" = "doris_consumer_group",
+        "property.kafka_default_offsets" = "OFFSET_BEGINNING"
+    );
+
+    -- Show routine load status
+    SHOW ROUTINE LOAD FOR kafka_load_job;
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 17
+        character: 2
+    - start:
+        line: 19
+        character: 0
+      end:
+        line: 20
+        character: 37
+- statement: |-
+    -- Doris dynamic partition
+    CREATE TABLE dynamic_partition_table (
+        event_date DATE,
+        event_id BIGINT,
+        event_type VARCHAR(50)
+    )
+    PARTITION BY RANGE(event_date)()
+    DISTRIBUTED BY HASH(event_id) BUCKETS 10
+    PROPERTIES(
+        "dynamic_partition.enable" = "true",
+        "dynamic_partition.time_unit" = "DAY",
+        "dynamic_partition.start" = "-7",
+        "dynamic_partition.end" = "3",
+        "dynamic_partition.prefix" = "p",
+        "dynamic_partition.buckets" = "10"
+    );
+
+    -- Cancel decommission backend
+    CANCEL DECOMMISSION BACKEND "host:port";
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 15
+        character: 2
+    - start:
+        line: 17
+        character: 0
+      end:
+        line: 18
+        character: 40
+- statement: "-- Doris OUTFILE export\nSELECT * FROM orders \nINTO OUTFILE \"s3://bucket/export/\"\nFORMAT AS PARQUET\nPROPERTIES(\n    \"s3.endpoint\" = \"s3.amazonaws.com\",\n    \"s3.access_key\" = \"key\",\n    \"s3.secret_key\" = \"secret\",\n    \"s3.region\" = \"us-east-1\"\n);\n\n-- Admin commands\nADMIN SHOW REPLICA DISTRIBUTION FROM tbl;\nADMIN REPAIR TABLE tbl;"
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 9
+        character: 2
+    - start:
+        line: 11
+        character: 0
+      end:
+        line: 12
+        character: 41
+    - start:
+        line: 13
+        character: 0
+      end:
+        line: 13
+        character: 23
+- statement: "-- Doris array and struct operations\nCREATE TABLE complex_types (\n    id INT,\n    tags ARRAY<STRING>,\n    info STRUCT<name:STRING, age:INT>\n) DISTRIBUTED BY HASH(id) BUCKETS 10;\n\nSELECT \n    id,\n    ARRAY_LENGTH(tags) as tag_count,\n    info.name as user_name\nFROM complex_types\nWHERE ARRAY_CONTAINS(tags, 'premium');"
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 5
+        character: 37
+    - start:
+        line: 7
+        character: 0
+      end:
+        line: 12
+        character: 38
+- statement: "-- Backup and restore operations\nBACKUP SNAPSHOT example_db.snapshot_1 \nTO `repository_name`\nON (orders, customers)\nPROPERTIES (\"type\" = \"full\");\n\nRESTORE SNAPSHOT example_db.snapshot_1\nFROM `repository_name`\nON (orders, customers);"
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 4
+        character: 29
+    - start:
+        line: 6
+        character: 0
+      end:
+        line: 8
+        character: 23
+- statement: |-
+    -- S3 table function
+    SELECT * FROM s3(
+        "s3.endpoint" = "s3.amazonaws.com",
+        "s3.region" = "us-east-1",
+        "s3.access_key" = "key",
+        "s3.secret_key" = "secret",
+        "uri" = "s3://bucket/path/to/file.parquet",
+        "format" = "parquet"
+    );
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 8
+        character: 2
