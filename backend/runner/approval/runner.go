@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"sort"
+	"slices"
 	"sync"
 	"time"
 
@@ -313,8 +313,13 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 
 func (r *Runner) getIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	// sort by level DESC, higher risks go first.
-	sort.Slice(risks, func(i, j int) bool {
-		return risks[i].Level > risks[j].Level
+	slices.SortFunc(risks, func(a, b *store.RiskMessage) int {
+		if a.Level > b.Level {
+			return -1
+		} else if a.Level < b.Level {
+			return 1
+		}
+		return 0
 	})
 
 	switch issue.Type {

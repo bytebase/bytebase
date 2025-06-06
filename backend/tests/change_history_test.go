@@ -3,7 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -124,12 +124,17 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 		a.Equal(len(tt.wantStatements), len(resp.Changelogs), tt.filter)
 		for i, wantStatement := range tt.wantStatements {
 			// Sort by changelog UID.
-			sort.Slice(resp.Changelogs, func(i, j int) bool {
-				_, _, id1, err := common.GetInstanceDatabaseChangelogUID(resp.Changelogs[i].Name)
+			slices.SortFunc(resp.Changelogs, func(x, y *v1pb.Changelog) int {
+				_, _, id1, err := common.GetInstanceDatabaseChangelogUID(x.Name)
 				a.NoError(err)
-				_, _, id2, err := common.GetInstanceDatabaseChangelogUID(resp.Changelogs[j].Name)
+				_, _, id2, err := common.GetInstanceDatabaseChangelogUID(y.Name)
 				a.NoError(err)
-				return id1 < id2
+				if id1 < id2 {
+					return -1
+				} else if id1 > id2 {
+					return 1
+				}
+				return 0
 			})
 			a.Equal(wantStatement, string(resp.Changelogs[i].Statement), tt.filter)
 		}

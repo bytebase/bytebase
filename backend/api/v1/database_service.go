@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"unicode"
 
@@ -915,18 +914,33 @@ func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResourc
 					Ranges: ranges,
 				})
 			}
-			sort.Slice(v1Schema.Tables, func(i, j int) bool {
-				return v1Schema.Tables[i].Name < v1Schema.Tables[j].Name
+			slices.SortFunc(v1Schema.Tables, func(a, b *v1pb.ChangedResourceTable) int {
+				if a.Name < b.Name {
+					return -1
+				} else if a.Name > b.Name {
+					return 1
+				}
+				return 0
 			})
 			v1Database.Schemas = append(v1Database.Schemas, v1Schema)
 		}
-		sort.Slice(v1Database.Schemas, func(i, j int) bool {
-			return v1Database.Schemas[i].Name < v1Database.Schemas[j].Name
+		slices.SortFunc(v1Database.Schemas, func(a, b *v1pb.ChangedResourceSchema) int {
+			if a.Name < b.Name {
+				return -1
+			} else if a.Name > b.Name {
+				return 1
+			}
+			return 0
 		})
 		result.Databases = append(result.Databases, v1Database)
 	}
-	sort.Slice(result.Databases, func(i, j int) bool {
-		return result.Databases[i].Name < result.Databases[j].Name
+	slices.SortFunc(result.Databases, func(a, b *v1pb.ChangedResourceDatabase) int {
+		if a.Name < b.Name {
+			return -1
+		} else if a.Name > b.Name {
+			return 1
+		}
+		return 0
 	})
 	return result
 }
