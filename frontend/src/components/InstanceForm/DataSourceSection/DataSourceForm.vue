@@ -826,10 +826,7 @@ MIIEvQ...
     />
   </div>
 
-  <div 
-    v-if="hasExtraParameters"
-    class="mt-4 sm:col-span-3 sm:col-start-1"
-  >
+  <div v-if="hasExtraParameters" class="mt-4 sm:col-span-3 sm:col-start-1">
     <div class="flex flex-row items-center justify-between">
       <label class="textlabel block">
         {{ $t("data-source.extra-params.self") }}
@@ -838,9 +835,12 @@ MIIEvQ...
     <div class="text-gray-400 text-sm mt-1 mb-2">
       {{ $t("data-source.extra-params.description") }}
     </div>
-    
+
     <!-- Add parameter form -->
-    <div v-if="allowEdit" class="flex mt-2 mb-4 space-x-2 bg-gray-50 p-3 rounded-md">
+    <div
+      v-if="allowEdit"
+      class="flex mt-2 mb-4 space-x-2 bg-gray-50 p-3 rounded-md"
+    >
       <NInput
         v-model:value="newParam.key"
         class="w-full"
@@ -851,8 +851,8 @@ MIIEvQ...
         class="w-full"
         :placeholder="$t('instance.parameter-value-placeholder')"
       />
-      <NButton 
-        type="primary" 
+      <NButton
+        type="primary"
         ghost
         size="small"
         :disabled="!newParam.key.trim()"
@@ -861,11 +861,11 @@ MIIEvQ...
         Add
       </NButton>
     </div>
-    
+
     <!-- Existing parameters -->
-    <div 
-      v-for="(param, index) in extraConnectionParamsList" 
-      :key="param.key" 
+    <div
+      v-for="(param, index) in extraConnectionParamsList"
+      :key="param.key"
       class="flex mt-2 space-x-2"
     >
       <NInput
@@ -882,24 +882,28 @@ MIIEvQ...
         placeholder="Parameter value"
         @update:value="(v) => updateExtraConnectionParamValue(index, v)"
       />
-      <NButton 
+      <NButton
         v-if="allowEdit"
-        type="error" 
+        type="error"
         secondary
-        size="small" 
+        size="small"
         @click="removeExtraConnectionParam(index)"
         title="Remove parameter"
       >
         Remove
       </NButton>
     </div>
-    
+
     <!-- Show a message when there are no parameters -->
-    <div 
-      v-if="extraConnectionParamsList.length === 0" 
+    <div
+      v-if="extraConnectionParamsList.length === 0"
       class="text-gray-500 text-sm mt-2 italic"
     >
-      {{ allowEdit ? $t('instance.no-params-yet-add-above') : $t('instance.no-extra-params-configured') }}
+      {{
+        allowEdit
+          ? $t("instance.no-params-yet-add-above")
+          : $t("instance.no-extra-params-configured")
+      }}
     </div>
   </div>
 
@@ -968,33 +972,12 @@ MIIEvQ...
         :instance="instance"
       />
     </div>
-    <template v-if="dataSource.pendingCreate">
-      <SshConnectionForm
-        :value="dataSource"
-        :instance="instance"
-        :disabled="!allowEdit"
-        @change="handleSSHChange"
-      />
-    </template>
-    <template v-else>
-      <template v-if="dataSource.updateSsh">
-        <SshConnectionForm
-          :value="dataSource"
-          :instance="instance"
-          :disabled="!allowEdit"
-          @change="handleSSHChange"
-        />
-      </template>
-      <template v-else>
-        <NButton
-          class="!mt-2"
-          :disabled="!allowEdit"
-          @click.prevent="handleEditSSH"
-        >
-          {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-        </NButton>
-      </template>
-    </template>
+    <SshConnectionForm
+      :value="dataSource"
+      :instance="instance"
+      :disabled="!allowEdit"
+      @change="handleSSHChange"
+    />
   </div>
 </template>
 
@@ -1095,10 +1078,9 @@ const newParam = reactive({ key: "", value: "" });
 const extraConnectionParamsList = computed<ExtraConnectionParam[]>(() => {
   // Ensure we're using a non-null object for the params
   const params = props.dataSource.extraConnectionParameters || {};
-  
+
   // Convert to plain entries for display
-  return Object.entries(params)
-    .map(([key, value]) => ({ key, value }));
+  return Object.entries(params).map(([key, value]) => ({ key, value }));
 });
 const { t } = useI18n();
 
@@ -1306,17 +1288,6 @@ const handleEditSSL = () => {
   ds.updateSsl = true;
 };
 
-const handleEditSSH = () => {
-  const ds = props.dataSource;
-  if (!ds) return;
-  ds.sshHost = "";
-  ds.sshPort = "";
-  ds.sshUser = "";
-  ds.sshPassword = "";
-  ds.sshPrivateKey = "";
-  ds.updateSsh = true;
-};
-
 const handleSSLChange = (
   value: Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey">>
 ) => {
@@ -1335,7 +1306,6 @@ const handleSSHChange = (
 ) => {
   const ds = props.dataSource;
   Object.assign(ds, value);
-  ds.updateSsh = true;
 };
 
 watch(
@@ -1396,41 +1366,43 @@ const resetIAMExtension = () => {
 const addNewParameter = () => {
   // Skip if key is empty
   if (!newParam.key.trim()) return;
-  
+
   const ds = props.dataSource;
-  
+
   // Get plain params object using our helper
   const plainParams = createPlainParamsObject(ds.extraConnectionParameters);
-  
+
   // Add the new parameter
   const trimmedKey = newParam.key.trim();
   plainParams[trimmedKey] = newParam.value;
-  
+
   // Create a fresh object to ensure we're using a plain JS object
   const freshParams: Record<string, string> = {};
-  Object.keys(plainParams).forEach(key => {
+  Object.keys(plainParams).forEach((key) => {
     freshParams[key] = plainParams[key];
   });
-  
+
   // Set the object directly using a brand new object
   ds.extraConnectionParameters = freshParams;
-  
+
   // Clear the form
   newParam.key = "";
   newParam.value = "";
 };
 
 // Helper function to create plain parameters object from existing parameters
-const createPlainParamsObject = (existingParams: Record<string, string> | undefined): Record<string, string> => {
+const createPlainParamsObject = (
+  existingParams: Record<string, string> | undefined
+): Record<string, string> => {
   const plainParams: Record<string, string> = {};
-  
+
   if (existingParams) {
     // Copy all properties from the potentially proxied object
     Object.entries(existingParams).forEach(([key, value]) => {
       plainParams[key] = value;
     });
   }
-  
+
   return plainParams;
 };
 
@@ -1438,24 +1410,24 @@ const updateExtraConnectionParamKey = (index: number, newKey: string) => {
   const ds = props.dataSource;
   const params = extraConnectionParamsList.value;
   if (index >= params.length) return;
-  
+
   // Get plain params object
   const plainParams = createPlainParamsObject(ds.extraConnectionParameters);
-  
+
   const oldKey = params[index].key;
   const value = params[index].value;
-  
+
   // Skip if the key hasn't changed
   if (oldKey === newKey) return;
-  
+
   // Delete the old key
   delete plainParams[oldKey];
-  
+
   // Only add if the key is not empty
   if (newKey.trim()) {
     plainParams[newKey] = value;
   }
-  
+
   // Set the object directly
   ds.extraConnectionParameters = plainParams;
 };
@@ -1464,15 +1436,15 @@ const updateExtraConnectionParamValue = (index: number, newValue: string) => {
   const ds = props.dataSource;
   const params = extraConnectionParamsList.value;
   if (index >= params.length) return;
-  
+
   const key = params[index].key;
-  
+
   // Get plain params object
   const plainParams = createPlainParamsObject(ds.extraConnectionParameters);
-  
+
   // Update the value
   plainParams[key] = newValue;
-  
+
   // Set the object directly
   ds.extraConnectionParameters = plainParams;
 };
@@ -1481,13 +1453,13 @@ const removeExtraConnectionParam = (index: number) => {
   const ds = props.dataSource;
   const params = extraConnectionParamsList.value;
   if (index >= params.length) return;
-  
+
   // Get plain params object
   const plainParams = createPlainParamsObject(ds.extraConnectionParameters);
-  
+
   // Remove the parameter
   delete plainParams[params[index].key];
-  
+
   // Set the object directly
   ds.extraConnectionParameters = plainParams;
 };
