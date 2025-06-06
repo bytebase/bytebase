@@ -141,7 +141,7 @@ func (s *ActuatorService) generateOnboardingData(ctx context.Context, user *stor
 	instanceMessages := []*store.InstanceMessage{
 		{
 			ResourceID:    "test-sample-instance",
-			EnvironmentID: base.DefaultTestEnvironmentID,
+			EnvironmentID: common.DefaultTestEnvironmentID,
 			Metadata: &storepb.Instance{
 				Title: "Test Sample Instance",
 				DataSources: []*storepb.DataSource{
@@ -154,7 +154,7 @@ func (s *ActuatorService) generateOnboardingData(ctx context.Context, user *stor
 		},
 		{
 			ResourceID:    "prod-sample-instance",
-			EnvironmentID: base.DefaultProdEnvironmentID,
+			EnvironmentID: common.DefaultProdEnvironmentID,
 			Metadata: &storepb.Instance{
 				Title: "Prod Sample Instance",
 				DataSources: []*storepb.DataSource{

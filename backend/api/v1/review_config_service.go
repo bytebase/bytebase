@@ -202,7 +202,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal tag policy, error %v", err)
 		}
-		if p.Tags[string(base.ReservedTagReviewConfig)] != config.Name {
+		if p.Tags[string(common.ReservedTagReviewConfig)] != config.Name {
 			continue
 		}
 

@@ -106,7 +106,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 							},
 						},
 					},
-				}, base.SystemBotID); err != nil {
+				}, common.SystemBotID); err != nil {
 					slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
 				}
 			}
@@ -323,7 +323,7 @@ func (exec *DataUpdateExecutor) backupData(
 						},
 					},
 				},
-			}, base.SystemBotID); err != nil {
+			}, common.SystemBotID); err != nil {
 				slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err))
 			}
 		}

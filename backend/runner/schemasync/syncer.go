@@ -112,7 +112,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 					maximumConnections := int(instance.Metadata.GetMaximumConnections())
 					if maximumConnections <= 0 {
-						maximumConnections = base.DefaultInstanceMaximumConnections
+						maximumConnections = common.DefaultInstanceMaximumConnections
 					}
 					if s.stateCfg.InstanceOutstandingConnections.Increment(instance.ResourceID, maximumConnections) {
 						return true
@@ -324,7 +324,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 			newDatabase, err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: databaseMetadata.Name,
-				ProjectID:    base.DefaultProjectID,
+				ProjectID:    common.DefaultProjectID,
 			})
 			if err != nil {
 				return nil, nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)

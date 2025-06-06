@@ -374,7 +374,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate access key for service account.")
 		}
-		password = fmt.Sprintf("%s%s", base.ServiceAccountAccessKeyPrefix, pwd)
+		password = fmt.Sprintf("%s%s", common.ServiceAccountAccessKeyPrefix, pwd)
 	} else {
 		if password != "" {
 			if err := s.validatePassword(ctx, password); err != nil {
@@ -409,14 +409,14 @@ func (s *UserService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		// The first end user should be workspace admin.
 		updateRole := &store.PatchIamPolicyMessage{
 			Member: common.FormatUserUID(user.ID),
-			Roles:  []string{common.FormatRole(base.WorkspaceAdmin.String())},
+			Roles:  []string{common.FormatRole(common.WorkspaceAdmin)},
 		}
 		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, updateRole); err != nil {
 			return nil, err
 		}
 	}
 
-	isFirstUser := user.ID == base.PrincipalIDForFirstUser
+	isFirstUser := user.ID == common.PrincipalIDForFirstUser
 	s.metricReporter.Report(ctx, &metric.Metric{
 		Name:  metricapi.PrincipalRegistrationMetricName,
 		Value: 1,
@@ -532,7 +532,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to generate access key for service account.")
 			}
-			password := fmt.Sprintf("%s%s", base.ServiceAccountAccessKeyPrefix, val)
+			password := fmt.Sprintf("%s%s", common.ServiceAccountAccessKeyPrefix, val)
 			passwordPatch = &password
 		case "mfa_enabled":
 			if request.User.MfaEnabled {
@@ -701,7 +701,7 @@ func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
 }
 
 func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, userID int) (bool, error) {
-	workspaceAdminRole := common.FormatRole(base.WorkspaceAdmin.String())
+	workspaceAdminRole := common.FormatRole(common.WorkspaceAdmin)
 	userMember := common.FormatUserUID(userID)
 
 	for _, binding := range policy.GetBindings() {
@@ -712,7 +712,7 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 			if member == userMember {
 				continue
 			}
-			if member == base.AllUsers {
+			if member == common.AllUsers {
 				activeEndUserCount, err := s.getActiveUserCount(ctx)
 				if err != nil {
 					return false, err
@@ -940,5 +940,5 @@ func isUserWorkspaceAdmin(ctx context.Context, stores *store.Store, user *store.
 		return false, err
 	}
 	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, workspacePolicy.Policy)
-	return roles[common.FormatRole(base.WorkspaceAdmin.String())], nil
+	return roles[common.FormatRole(common.WorkspaceAdmin)], nil
 }
