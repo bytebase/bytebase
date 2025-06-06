@@ -750,7 +750,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		}
 	}
 
-	hasSSH := false
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "username":
@@ -779,19 +778,14 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.ServiceName = request.DataSource.ServiceName
 		case "ssh_host":
 			dataSource.SshHost = request.DataSource.SshHost
-			hasSSH = true
 		case "ssh_port":
 			dataSource.SshPort = request.DataSource.SshPort
-			hasSSH = true
 		case "ssh_user":
 			dataSource.SshUser = request.DataSource.SshUser
-			hasSSH = true
 		case "ssh_password":
 			dataSource.SshPassword = request.DataSource.SshPassword
-			hasSSH = true
 		case "ssh_private_key":
 			dataSource.SshPrivateKey = request.DataSource.SshPrivateKey
-			hasSSH = true
 		case "authentication_private_key":
 			dataSource.AuthenticationPrivateKey = request.DataSource.AuthenticationPrivateKey
 		case "external_secret":
@@ -846,11 +840,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 
 	if err := s.checkDataSource(instance, dataSource); err != nil {
 		return nil, err
-	}
-	if hasSSH {
-		if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureInstanceSSHConnection, instance); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
-		}
 	}
 
 	// Test connection.
