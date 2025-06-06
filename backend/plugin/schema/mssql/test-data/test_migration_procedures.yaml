@@ -1,0 +1,126 @@
+- description: Create simple procedure
+  oldSchema: ""
+  newSchema: |
+    CREATE PROCEDURE [dbo].[GetUserById]
+      @UserId int
+    AS
+    BEGIN
+      SELECT * FROM Users WHERE Id = @UserId
+    END
+  expected: |
+    CREATE PROCEDURE [dbo].[GetUserById]
+      @UserId int
+    AS
+    BEGIN
+      SELECT * FROM Users WHERE Id = @UserId
+    END;
+    GO
+- description: Drop procedure
+  oldSchema: |
+    CREATE PROCEDURE [dbo].[GetUserById]
+      @UserId int
+    AS
+    BEGIN
+      SELECT * FROM Users WHERE Id = @UserId
+    END
+  newSchema: ""
+  expected: |+
+    DROP PROCEDURE [dbo].[GetUserById];
+    GO
+
+- description: Create procedure with output parameters
+  oldSchema: ""
+  newSchema: |
+    CREATE PROCEDURE [dbo].[GetUserCount]
+      @DepartmentId int,
+      @UserCount int OUTPUT
+    AS
+    BEGIN
+      SELECT @UserCount = COUNT(*)
+      FROM Users
+      WHERE DepartmentId = @DepartmentId
+    END
+  expected: |
+    CREATE PROCEDURE [dbo].[GetUserCount]
+      @DepartmentId int,
+      @UserCount int OUTPUT
+    AS
+    BEGIN
+      SELECT @UserCount = COUNT(*)
+      FROM Users
+      WHERE DepartmentId = @DepartmentId
+    END;
+    GO
+- description: Alter procedure
+  oldSchema: |
+    CREATE PROCEDURE [dbo].[UpdateUser]
+      @UserId int,
+      @Name nvarchar(100)
+    AS
+    BEGIN
+      UPDATE Users SET Name = @Name WHERE Id = @UserId
+    END
+  newSchema: |
+    CREATE PROCEDURE [dbo].[UpdateUser]
+      @UserId int,
+      @Name nvarchar(100),
+      @Email nvarchar(255)
+    AS
+    BEGIN
+      UPDATE Users
+      SET Name = @Name, Email = @Email
+      WHERE Id = @UserId
+    END
+  expected: |
+    DROP PROCEDURE [dbo].[UpdateUser];
+    GO
+    CREATE PROCEDURE [dbo].[UpdateUser]
+      @UserId int,
+      @Name nvarchar(100),
+      @Email nvarchar(255)
+    AS
+    BEGIN
+      UPDATE Users
+      SET Name = @Name, Email = @Email
+      WHERE Id = @UserId
+    END;
+    GO
+- description: Create procedure with transaction
+  oldSchema: ""
+  newSchema: |
+    CREATE PROCEDURE [dbo].[TransferFunds]
+      @FromAccount int,
+      @ToAccount int,
+      @Amount decimal(10,2)
+    AS
+    BEGIN
+      BEGIN TRANSACTION
+      BEGIN TRY
+        UPDATE Accounts SET Balance = Balance - @Amount WHERE Id = @FromAccount
+        UPDATE Accounts SET Balance = Balance + @Amount WHERE Id = @ToAccount
+        COMMIT TRANSACTION
+      END TRY
+      BEGIN CATCH
+        ROLLBACK TRANSACTION
+        THROW
+      END CATCH
+    END
+  expected: |
+    CREATE PROCEDURE [dbo].[TransferFunds]
+      @FromAccount int,
+      @ToAccount int,
+      @Amount decimal(10,2)
+    AS
+    BEGIN
+      BEGIN TRANSACTION
+      BEGIN TRY
+        UPDATE Accounts SET Balance = Balance - @Amount WHERE Id = @FromAccount
+        UPDATE Accounts SET Balance = Balance + @Amount WHERE Id = @ToAccount
+        COMMIT TRANSACTION
+      END TRY
+      BEGIN CATCH
+        ROLLBACK TRANSACTION
+        THROW
+      END CATCH
+    END;
+    GO
