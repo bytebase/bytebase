@@ -1,0 +1,120 @@
+- description: Add foreign key constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_departments] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [department_id] int NOT NULL,
+      CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_departments] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [department_id] int NOT NULL,
+      CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id])
+    );
+  expected: |
+    ALTER TABLE [dbo].[employees] ADD CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+- description: Drop foreign key constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_departments] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [department_id] int NOT NULL,
+      CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_departments] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [department_id] int NOT NULL,
+      CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[employees] DROP CONSTRAINT [FK_employees_departments];
+    GO
+
+- description: Add check constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [CK_products_price] CHECK ([price] > 0)
+    );
+  expected: |
+    ALTER TABLE [dbo].[products] ADD CONSTRAINT [CK_products_price] CHECK ([price] > 0);
+- description: Drop check constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [CK_products_price] CHECK ([price] > 0)
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[products] DROP CONSTRAINT [CK_products_price];
+
+- description: Add primary key to existing table
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |
+    ALTER TABLE [dbo].[users] ADD CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id]);
+- description: Drop primary key constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] DROP CONSTRAINT [PK_users];
+
