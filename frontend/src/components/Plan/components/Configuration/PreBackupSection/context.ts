@@ -25,6 +25,7 @@ import {
   type Rollout,
 } from "@/types/proto/v1/rollout_service";
 import { flattenTaskV1List, hasProjectPermissionV2 } from "@/utils";
+import { BACKUP_AVAILABLE_ENGINES } from "./common";
 
 export const PRE_BACKUP_AVAILABLE_ENGINES = [
   Engine.MYSQL,
@@ -76,9 +77,15 @@ export const providePreBackupSettingContext = (refs: {
     ) {
       return false;
     }
-    // Always show pre-backup for database change spec.
     if (isDatabaseChangeSpec(selectedSpec.value)) {
-      return true;
+      // If any of the databases in the spec is not supported, do not show.
+      if (
+        !databases.value.some((db) =>
+          BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
+        )
+      ) {
+        return false;
+      }
     }
     return true;
   });

@@ -995,6 +995,62 @@
     }
   },
   "plan": {
+    "add-spec": "Agregar especificación",
+    "change-type": "Cambiar tipo",
+    "schema-migration": "Migración de esquemas",
+    "schema-migration-description": "Modificar el esquema de la base de datos (DDL)",
+    "data-change": "Cambio de datos",
+    "data-change-description": "Modificar datos (DML)",
+    "select-targets": "Seleccionar objetivos",
+    "overview": {
+      "title": "Descripción general del plan",
+      "description": "Ver y administrar todas las especificaciones de este plan",
+      "total-specs": "Especificaciones totales",
+      "total-targets": "Objetivos totales",
+      "check-status": "Verificar estado",
+      "no-checks": "Sin controles",
+      "affected-resources": "Recursos afectados"
+    },
+    "navigator": {
+      "overview": "Descripción general",
+      "specifications": "Presupuesto",
+      "spec-number": "Especificación {number}",
+      "no-specifications": "Sin especificaciones",
+      "statement-empty": "La declaración está vacía"
+    },
+    "spec": {
+      "type": {
+        "create-database": "Crear base de datos",
+        "schema-change": "Cambio de esquema",
+        "data-change": "Cambio de datos",
+        "ghost-migration": "Migración fantasma",
+        "database-change": "Cambio de base de datos",
+        "export-data": "Exportar datos",
+        "unknown": "Desconocido"
+      },
+      "status": {
+        "pass": "Aprobar",
+        "warn": "Advertir",
+        "error": "Error"
+      }
+    },
+    "targets": {
+      "title": "Objetivos",
+      "no-targets-found": "No se encontraron objetivos",
+      "no-targets": "Sin objetivos",
+      "one-target": "1 objetivo",
+      "multiple-targets": "{count} objetivos",
+      "one-database": "1 base de datos",
+      "multiple-databases": "{count} bases de datos",
+      "database-group": "Grupo de bases de datos",
+      "database-not-found": "Base de datos no encontrada",
+      "environment": "Entorno: {environment}",
+      "type": {
+        "instance": "Instancia",
+        "database": "Base de datos",
+        "database-group": "Grupo de bases de datos"
+      }
+    },
     "options": {
       "self": "Opciones",
       "applies-to-all-tasks": "Se aplica a todas las tareas.",

@@ -970,7 +970,6 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 	if len(specs) == 0 {
 		return errors.Errorf("the plan has zero spec")
 	}
-	var databaseTarget, databaseGroupTarget int
 	configTypeCount := map[string]int{}
 	seenID := map[string]bool{}
 
@@ -988,26 +987,26 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 		case *v1pb.Plan_Spec_CreateDatabaseConfig:
 			configTypeCount["create_database"]++
 		case *v1pb.Plan_Spec_ChangeDatabaseConfig:
+			configTypeCount["change_database"]++
+			var databaseTarget, databaseGroupTarget int
 			for _, target := range config.ChangeDatabaseConfig.Targets {
 				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
 					databaseTarget++
-					configTypeCount["change_database"]++
 				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 					databaseGroupTarget++
-					configTypeCount["change_database_group"]++
 				} else {
 					return errors.Errorf("invalid target %v", target)
 				}
+			}
+			// Disallow mixing database and database group targets in the same spec.
+			if databaseTarget > 0 && databaseGroupTarget > 0 {
+				return errors.Errorf("found databaseTarget and databaseGroupTarget, expect only one kind")
 			}
 		case *v1pb.Plan_Spec_ExportDataConfig:
 			configTypeCount["export_data"]++
 		default:
 			return errors.Errorf("invalid spec type")
 		}
-	}
-
-	if databaseTarget > 0 && databaseGroupTarget > 0 {
-		return errors.Errorf("found databaseGroupTarget and databaseTarget, expect only one kind")
 	}
 	if len(configTypeCount) > 1 {
 		return errors.Errorf("plan contains multiple types of spec configurations (%v), but each plan must contain only one type", len(configTypeCount))

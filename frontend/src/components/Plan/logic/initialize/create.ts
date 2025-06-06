@@ -23,7 +23,7 @@ import {
   setSheetStatement,
 } from "@/utils";
 import { sheetNameForSpec, targetsForSpec } from "../plan";
-import { getLocalSheetByName } from "../sheet";
+import { getLocalSheetByName, getNextLocalSheetUID } from "../sheet";
 import { extractInitialSQLFromQuery } from "./util";
 
 export type InitialSQL = {
@@ -127,7 +127,7 @@ const buildSpecForTargetsV1 = async (
   { project, template, query }: CreatePlanParams,
   sheetUID?: string
 ) => {
-  let sheet = `${project.name}/sheets/${sheetUID ?? nextUID()}`;
+  let sheet = `${project.name}/sheets/${sheetUID ?? getNextLocalSheetUID()}`;
   if (query.sheetId) {
     const remoteSheet = await useSheetV1Store().getOrFetchSheetByUID(
       query.sheetId,
@@ -187,7 +187,7 @@ const buildSpecsViaChangelist = async (
   for (const db of databaseNameList) {
     for (const change of changes) {
       const statement = await generateSQLForChangeToDatabase(change);
-      const sheetUID = nextUID();
+      const sheetUID = getNextLocalSheetUID();
       const sheetName = `${params.project.name}/sheets/${sheetUID}`;
       const sheet = getLocalSheetByName(sheetName);
       setSheetStatement(sheet, statement);

@@ -18,29 +18,22 @@ import {
   usePlanContext,
 } from "@/components/Plan/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
-import {
-  useCurrentUserV1,
-  extractUserId,
-  useCurrentProjectV1,
-  useDatabaseV1Store,
-} from "@/store";
-import { EMPTY_ID } from "@/types";
+import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
+import { unknownDatabase } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { plan, selectedSpec, selectedTarget } = usePlanContext();
+const { plan, selectedSpec } = usePlanContext();
 
 const show = computed(() => {
-  if (selectedSpec.value.id === String(EMPTY_ID)) {
+  if (!selectedSpec.value) {
     return false;
   }
   return planSpecHasPlanChecks(selectedSpec.value);
 });
 
-const database = computed(() =>
-  useDatabaseV1Store().getDatabaseByName(selectedTarget.value)
-);
+const database = computed(() => unknownDatabase());
 
 const allowRunChecks = computed(() => {
   // Allowing below users to run plan checks

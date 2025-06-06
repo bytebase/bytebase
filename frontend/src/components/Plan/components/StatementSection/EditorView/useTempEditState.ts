@@ -1,6 +1,7 @@
 import { computed, nextTick, ref, watch } from "vue";
 import { UNKNOWN_ID } from "@/types";
 import { usePlanContext } from "../../../logic";
+import useSelectedSpec from "../../common/useSelectedSpec";
 import { useSpecSheet } from "../useSpecSheet";
 
 export type EditState = {
@@ -9,7 +10,8 @@ export type EditState = {
 };
 
 export const useTempEditState = (state: EditState) => {
-  const { isCreating, selectedSpec } = usePlanContext();
+  const { isCreating } = usePlanContext();
+  const selectedSpec = useSelectedSpec();
   const { sheet, sheetName, sheetReady, sheetStatement } = useSpecSheet(
     selectedSpec.value
   );

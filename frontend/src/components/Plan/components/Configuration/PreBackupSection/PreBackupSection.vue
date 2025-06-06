@@ -1,7 +1,8 @@
 <template>
   <div
-    class="w-full flex items-center justify-between gap-x-2 gap-y-1 flex-wrap min-h-[34px] whitespace-nowrap"
+    class="w-full flex items-center justify-start gap-x-2 flex-wrap min-h-[34px] whitespace-nowrap"
   >
+    <PreBackupSwitch />
     <NTooltip>
       <template #trigger>
         <div class="textlabel flex items-center">
@@ -14,9 +15,6 @@
         </div>
       </template>
     </NTooltip>
-    <div class="flex items-center">
-      <PreBackupSwitch />
-    </div>
   </div>
 </template>
 

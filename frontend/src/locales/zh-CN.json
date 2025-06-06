@@ -995,6 +995,62 @@
     }
   },
   "plan": {
+    "add-spec": "添加变更项",
+    "change-type": "变更类型",
+    "schema-migration": "Schema 变更",
+    "schema-migration-description": "修改数据库 Schema (DDL)",
+    "data-change": "数据变更",
+    "data-change-description": "修改数据（DML）",
+    "select-targets": "选择目标",
+    "overview": {
+      "title": "变更计划概述",
+      "description": "查看和管理此变更计划中的所有变更项",
+      "total-specs": "变更项",
+      "total-targets": "变更目标",
+      "check-status": "检查状态",
+      "no-checks": "没有检查",
+      "affected-resources": "受影响的资源"
+    },
+    "navigator": {
+      "overview": "概述",
+      "specifications": "变更项",
+      "spec-number": "变更项 {number}",
+      "no-specifications": "无变更项",
+      "statement-empty": "变更语句为空"
+    },
+    "spec": {
+      "type": {
+        "create-database": "创建数据库",
+        "schema-change": "Schema 变更",
+        "data-change": "数据变更",
+        "ghost-migration": "在线大表变更",
+        "database-change": "数据库变更",
+        "export-data": "导出数据",
+        "unknown": "未知"
+      },
+      "status": {
+        "pass": "通过",
+        "warn": "警告",
+        "error": "错误"
+      }
+    },
+    "targets": {
+      "title": "目标",
+      "no-targets-found": "未找到目标",
+      "no-targets": "没有目标",
+      "one-target": "1 个目标",
+      "multiple-targets": "{count} 个目标",
+      "one-database": "1 个数据库",
+      "multiple-databases": "{count} 个数据库",
+      "database-group": "数据库组",
+      "database-not-found": "未找到数据库",
+      "environment": "环境：{environment}",
+      "type": {
+        "instance": "实例",
+        "database": "数据库",
+        "database-group": "数据库组"
+      }
+    },
     "options": {
       "self": "配置项",
       "applies-to-all-tasks": "适用于所有任务",
