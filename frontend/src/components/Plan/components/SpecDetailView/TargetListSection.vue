@@ -2,7 +2,7 @@
   <div class="px-4 py-3 flex flex-col gap-y-2">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1">
-        <h3 class="text-base font-medium">Targets</h3>
+        <h3 class="text-base font-medium">{{ $t("plan.targets.title") }}</h3>
         <span class="text-control-light">({{ targets.length }})</span>
       </div>
       <!-- TODO(claude): allow to update targets when no rollout is created by plan -->
@@ -67,7 +67,11 @@
                 <span>{{ item.instance }}</span>
               </div>
               <div v-if="item.environment">
-                Environment: {{ item.environment }}
+                {{
+                  $t("plan.targets.environment", {
+                    environment: item.environment,
+                  })
+                }}
               </div>
               <div v-if="item.description" class="pt-1 text-control-light">
                 {{ item.description }}
@@ -77,7 +81,7 @@
         </NTooltip>
       </div>
       <div v-else class="text-center text-control-light py-8">
-        No targets found
+        {{ $t("plan.targets.no-targets-found") }}
       </div>
     </div>
 
@@ -99,6 +103,7 @@ import {
 } from "lucide-vue-next";
 import { NEllipsis, NTooltip, NButton } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import {
   useInstanceV1Store,
@@ -126,6 +131,7 @@ interface TargetRow {
   description?: string;
 }
 
+const { t } = useI18n();
 const { plan, selectedSpec, isCreating } = usePlanContext();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
@@ -237,7 +243,7 @@ const tableData = computed((): TargetRow[] => {
           icon: DatabaseIcon,
           name: databaseName,
           instance: instanceId,
-          description: "Database not found",
+          description: t("plan.targets.database-not-found"),
         };
       }
     }
@@ -257,9 +263,9 @@ const tableData = computed((): TargetRow[] => {
 
 const getTypeLabel = (type: TargetRow["type"]) => {
   const typeLabels = {
-    instance: "Instance",
-    database: "Database",
-    databaseGroup: "Database Group",
+    instance: t("plan.targets.type.instance"),
+    database: t("plan.targets.type.database"),
+    databaseGroup: t("plan.targets.type.database-group"),
   };
   return typeLabels[type];
 };

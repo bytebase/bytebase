@@ -30,7 +30,7 @@
                   : 'text-control group-hover:text-main',
               ]"
             >
-              Overview
+              {{ $t("plan.navigator.overview") }}
             </span>
           </div>
         </div>
@@ -42,7 +42,7 @@
               <span
                 class="text-xs font-medium uppercase tracking-wider text-control-light"
               >
-                Specifications
+                {{ $t("plan.navigator.specifications") }}
               </span>
               <NBadge
                 v-if="specs.length > 10"
@@ -88,11 +88,13 @@
                         : 'text-control',
                     ]"
                   >
-                    Spec {{ index + 1 }}
+                    {{
+                      $t("plan.navigator.spec-number", { number: index + 1 })
+                    }}
                     <span
                       v-if="isSpecEmpty(spec)"
                       class="text-error ml-0.5"
-                      title="Statement is empty"
+                      :title="$t('plan.navigator.statement-empty')"
                     >
                       *
                     </span>
@@ -128,7 +130,7 @@
           v-if="specs.length === 0"
           class="text-sm text-control-light text-center py-8 px-4"
         >
-          No specifications
+          {{ $t("plan.navigator.no-specifications") }}
         </div>
       </div>
     </NScrollbar>
@@ -149,6 +151,7 @@ import {
 } from "lucide-vue-next";
 import { NButton, NScrollbar, NBadge } from "naive-ui";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import {
   Plan_ChangeDatabaseConfig_Type,
@@ -162,6 +165,7 @@ import { useSpecsValidation } from "./common/validateSpec";
 
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 const { plan, selectedSpec, isCreating, events } = usePlanContext();
 
 const specs = computed(() => plan.value.specs);
@@ -196,7 +200,7 @@ const handleSpecCreated = (spec: Plan_Spec) => {
     plan.value.specs = [];
   }
   plan.value.specs.push(spec);
-  
+
   // Select the newly created spec
   events.emit("select-spec", { spec });
 };
@@ -249,28 +253,30 @@ const getSheetFromSpec = (spec: Plan_Spec): string | undefined => {
 
 const getSpecTypeName = (spec: Plan_Spec): string => {
   if (spec.createDatabaseConfig) {
-    return "Create Database";
+    return t("plan.spec.type.create-database");
   } else if (spec.changeDatabaseConfig) {
     const changeType = spec.changeDatabaseConfig.type;
     switch (changeType) {
       case Plan_ChangeDatabaseConfig_Type.MIGRATE:
-        return "Schema Change";
+        return t("plan.spec.type.schema-change");
       case Plan_ChangeDatabaseConfig_Type.DATA:
-        return "Data Change";
+        return t("plan.spec.type.data-change");
       case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
-        return "Ghost Migration";
+        return t("plan.spec.type.ghost-migration");
       default:
-        return "Database Change";
+        return t("plan.spec.type.database-change");
     }
   } else if (spec.exportDataConfig) {
-    return "Export Data";
+    return t("plan.spec.type.export-data");
   }
-  return "Unknown";
+  return t("plan.spec.type.unknown");
 };
 
 const getTargetCountText = (spec: Plan_Spec): string => {
   const targets = targetsForSpec(spec);
-  if (targets.length === 0) return "No targets";
-  return targets.length === 1 ? "1 target" : `${targets.length} targets`;
+  if (targets.length === 0) return t("plan.targets.no-targets");
+  return targets.length === 1
+    ? t("plan.targets.one-target")
+    : t("plan.targets.multiple-targets", { count: targets.length });
 };
 </script>

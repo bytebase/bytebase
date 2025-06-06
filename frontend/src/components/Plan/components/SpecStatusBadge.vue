@@ -11,10 +11,13 @@
 import { CheckCircleIcon, AlertCircleIcon, XCircleIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   status: "SUCCESS" | "WARNING" | "ERROR" | "STATUS_UNSPECIFIED";
 }>();
+
+const { t } = useI18n();
 
 const statusIcon = computed(() => {
   switch (props.status) {
@@ -32,11 +35,11 @@ const statusIcon = computed(() => {
 const statusText = computed(() => {
   switch (props.status) {
     case "SUCCESS":
-      return "Pass";
+      return t("plan.spec.status.pass");
     case "WARNING":
-      return "Warn";
+      return t("plan.spec.status.warn");
     case "ERROR":
-      return "Error";
+      return t("plan.spec.status.error");
     default:
       return "";
   }

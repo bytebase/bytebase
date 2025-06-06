@@ -3,9 +3,11 @@
     <div class="max-w-4xl mx-auto space-y-4">
       <!-- Plan Header -->
       <div>
-        <h1 class="text-2xl font-semibold mb-2">Plan Overview</h1>
+        <h1 class="text-2xl font-semibold mb-2">
+          {{ $t("plan.overview.title") }}
+        </h1>
         <p class="text-control-light">
-          View and manage all specifications in this plan
+          {{ $t("plan.overview.description") }}
         </p>
       </div>
 
@@ -14,7 +16,9 @@
         <div class="bg-white rounded border px-3 py-2">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-control-light">Total Specs</p>
+              <p class="text-sm text-control-light">
+                {{ $t("plan.overview.total-specs") }}
+              </p>
               <p class="text-2xl font-semibold mt-1">
                 {{ statistics.totalSpecs }}
               </p>
@@ -26,7 +30,9 @@
         <div class="bg-white rounded border px-3 py-2">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-control-light">Total Targets</p>
+              <p class="text-sm text-control-light">
+                {{ $t("plan.overview.total-targets") }}
+              </p>
               <p class="text-2xl font-semibold mt-1">
                 {{ statistics.totalTargets }}
               </p>
@@ -38,7 +44,9 @@
         <div class="bg-white rounded border px-3 py-2">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-control-light">Check Status</p>
+              <p class="text-sm text-control-light">
+                {{ $t("plan.overview.check-status") }}
+              </p>
               <div class="flex items-center gap-3 mt-1">
                 <div
                   v-if="statistics.checkStatus.error > 0"
@@ -71,7 +79,7 @@
                   v-if="statistics.checkStatus.total === 0"
                   class="text-lg text-control"
                 >
-                  No checks
+                  {{ $t("plan.overview.no-checks") }}
                 </span>
               </div>
             </div>
@@ -82,7 +90,9 @@
 
       <!-- Affected Resources -->
       <div v-if="affectedResources.length > 0">
-        <h2 class="text-lg font-semibold mb-3">Affected Resources</h2>
+        <h2 class="text-lg font-semibold mb-3">
+          {{ $t("plan.overview.affected-resources") }}
+        </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <div
             v-for="resource in affectedResources"
@@ -121,8 +131,12 @@
                     }}
                   </span>
                   <span class="text-sm text-control-light">
-                    {{ resource.databases.length }} database{{
-                      resource.databases.length === 1 ? "" : "s"
+                    {{
+                      resource.databases.length === 1
+                        ? t("plan.targets.one-database")
+                        : t("plan.targets.multiple-databases", {
+                            count: resource.databases.length,
+                          })
                     }}
                   </span>
                 </template>
@@ -135,7 +149,7 @@
                   <span
                     class="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-600"
                   >
-                    Database Group
+                    {{ t("plan.targets.database-group") }}
                   </span>
                 </template>
               </div>
@@ -160,6 +174,7 @@ import {
   FolderIcon,
 } from "lucide-vue-next";
 import { computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { InstanceV1EngineIcon } from "@/components/v2/Model/Instance";
 import { useInstanceV1Store, useDBGroupStore } from "@/store";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
@@ -168,6 +183,7 @@ import { usePlanContext } from "../logic/context";
 import { targetsForSpec } from "../logic/plan";
 import DescriptionSection from "./DescriptionSection";
 
+const { t } = useI18n();
 const { plan } = usePlanContext();
 const instanceStore = useInstanceV1Store();
 const dbGroupStore = useDBGroupStore();
