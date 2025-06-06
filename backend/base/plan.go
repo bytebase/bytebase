@@ -211,8 +211,6 @@ func (e FeatureType) Name() string {
 	// Change Workflow
 	case FeatureDBAWorkflow:
 		return "DBA workflow"
-	case FeatureMultiTenancy:
-		return "Multi-tenancy"
 	case FeatureSchemaDrift:
 		return "Schema drift"
 	case FeatureSQLReview:
@@ -296,7 +294,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureBranding: {false, false, true},
 	// Change Workflow
 	FeatureDBAWorkflow:         {false, false, true},
-	FeatureMultiTenancy:        {false, false, true},
 	FeatureSchemaDrift:         {false, false, true},
 	FeatureSQLReview:           {true, true, true},
 	FeatureEncryptedSecrets:    {false, true, true},
