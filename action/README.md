@@ -60,6 +60,18 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   Default: `""` (empty string)
     -   Note: Migration filenames should conform to a versioning format. The version part of the filename must start with an optional 'v' or 'V', followed by one or more numbers, with subsequent numbers separated by a dot. For example: v1.2.3_description.sql, 1.0_initial_schema.sql, V2_add_users_table.sql. The version is extracted based on the pattern ^[vV]?(\d+(\.\d+)*).
 
+### `check` Command Specific Flags
+
+These flags are specific to the `check` subcommand (`bytebase-action check`).
+
+-   **`--check-release`**: Determines whether to fail the command based on check results.
+    -   Valid values:
+        -   `SKIP`: Do not fail regardless of check results (default behavior).
+        -   `FAIL_ON_WARNING`: Fail if there are warnings or errors in the check results.
+        -   `FAIL_ON_ERROR`: Fail only if there are errors in the check results.
+    -   Default: `SKIP`
+    -   Note: Platform-specific outputs (GitHub comments, GitLab reports, etc.) are always generated before evaluating whether to fail.
+
 ### `rollout` Command Specific Flags
 
 These flags are specific to the `rollout` subcommand (`bytebase-action rollout`).
