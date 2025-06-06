@@ -142,8 +142,6 @@ const (
 	FeatureCustomInstanceSynchronization FeatureType = "bb.feature.custom-instance-synchronization"
 	// FeatureSyncSchemaAllVersions allows user to sync the base database schema all versions into target database.
 	FeatureSyncSchemaAllVersions FeatureType = "bb.feature.sync-schema-all-versions"
-	// FeatureIndexAdvisor provides the index advisor for databases.
-	FeatureIndexAdvisor FeatureType = "bb.feature.index-advisor"
 
 	// Policy Control.
 
@@ -249,8 +247,6 @@ func (e FeatureType) Name() string {
 		return "Custom synchronization for instance"
 	case FeatureSyncSchemaAllVersions:
 		return "Synchronize schema all versions"
-	case FeatureIndexAdvisor:
-		return "Index advisor"
 	// Policy Control
 	case FeatureRolloutPolicy:
 		return "Rollout policy"
@@ -328,7 +324,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureReadReplicaConnection:         {false, false, true},
 	FeatureCustomInstanceSynchronization: {false, false, true},
 	FeatureSyncSchemaAllVersions:         {false, true, true},
-	FeatureIndexAdvisor:                  {true, true, true},
 	// Policy Control
 	FeatureRolloutPolicy:         {true, true, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
@@ -357,7 +352,6 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureCustomInstanceSynchronization: true,
 	FeatureDatabaseGrouping:              true,
 	FeatureSyncSchemaAllVersions:         true,
-	FeatureIndexAdvisor:                  true,
 	// Policy Control
 	FeatureSensitiveData: true,
 	FeatureRolloutPolicy: true,

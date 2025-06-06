@@ -40,7 +40,6 @@ export type FeatureType =
   | "bb.feature.read-replica-connection"
   | "bb.feature.custom-instance-synchronization"
   | "bb.feature.sync-schema-all-versions"
-  | "bb.feature.index-advisor"
   // Policy Control
   | "bb.feature.rollout-policy"
   | "bb.feature.environment-tier-policy"
@@ -68,7 +67,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.read-replica-connection",
   "bb.feature.custom-instance-synchronization",
   "bb.feature.sync-schema-all-versions",
-  "bb.feature.index-advisor",
   "bb.feature.database-grouping",
   // Policy Control
   "bb.feature.sensitive-data",
