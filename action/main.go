@@ -574,7 +574,7 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 }
 
 func main() {
-	slog.Info("bytebase-action built at commit " + args.Gitcommit)
+	slog.Info("bytebase-action version " + args.Version + " built at commit " + args.Gitcommit)
 	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)
 	// Trigger graceful shutdown on SIGINT or SIGTERM.
