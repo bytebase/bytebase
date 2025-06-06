@@ -12,8 +12,9 @@
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
     CREATE NONCLUSTERED INDEX [IX_users_email] ON [dbo].[users] ([email]);
-  expected: |
+  expected: |+
     CREATE NONCLUSTERED INDEX [IX_users_email] ON [dbo].[users] ([email]);
+
 - description: Drop index
   oldSchema: |
     CREATE TABLE [dbo].[users] (
@@ -45,8 +46,9 @@
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
     CREATE UNIQUE NONCLUSTERED INDEX [UX_users_email] ON [dbo].[users] ([email]);
-  expected: |
+  expected: |+
     CREATE UNIQUE NONCLUSTERED INDEX [UX_users_email] ON [dbo].[users] ([email]);
+
 - description: Create unique constraint
   oldSchema: |
     CREATE TABLE [dbo].[users] (
@@ -61,8 +63,9 @@
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id]),
       CONSTRAINT [UQ_users_email] UNIQUE NONCLUSTERED ([email])
     );
-  expected: |
+  expected: |+
     ALTER TABLE [dbo].[users] ADD CONSTRAINT [UQ_users_email] UNIQUE NONCLUSTERED ([email]);
+
 - description: Create clustered columnstore index
   oldSchema: |
     CREATE TABLE [dbo].[sales_data] (
@@ -79,8 +82,9 @@
       [amount] decimal(10,2) NOT NULL
     );
     CREATE CLUSTERED COLUMNSTORE INDEX [CCI_sales_data] ON [dbo].[sales_data];
-  expected: |
+  expected: |+
     CREATE CLUSTERED COLUMNSTORE INDEX [CCI_sales_data] ON [dbo].[sales_data];
+
 - description: Create nonclustered columnstore index with columns
   oldSchema: |
     CREATE TABLE [dbo].[analytics_data] (
@@ -101,8 +105,9 @@
       CONSTRAINT [PK_analytics_data] PRIMARY KEY CLUSTERED ([id])
     );
     CREATE NONCLUSTERED COLUMNSTORE INDEX [NCCI_analytics_data] ON [dbo].[analytics_data] ([product_id], [sale_date], [amount]);
-  expected: |
+  expected: |+
     CREATE NONCLUSTERED COLUMNSTORE INDEX [NCCI_analytics_data] ON [dbo].[analytics_data] ([product_id], [sale_date], [amount]);
+
 - description: Drop columnstore index
   oldSchema: |
     CREATE TABLE [dbo].[sales_data] (

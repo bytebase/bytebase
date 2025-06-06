@@ -24,9 +24,8 @@
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
   newSchema: ""
-  expected: |+
+  expected: |
     DROP TABLE [dbo].[users];
-
 - description: Add column to existing table
   oldSchema: |
     CREATE TABLE [dbo].[users] (
@@ -41,8 +40,9 @@
       [email] nvarchar(255) NULL,
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
-  expected: |
+  expected: |+
     ALTER TABLE [dbo].[users] ADD [email] nvarchar(255) NULL;
+
 - description: Drop column from table
   oldSchema: |
     CREATE TABLE [dbo].[users] (
@@ -73,8 +73,9 @@
       [name] nvarchar(100) NOT NULL,
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
-  expected: |
+  expected: |+
     ALTER TABLE [dbo].[users] ALTER COLUMN [name] nvarchar(100) NOT NULL;
+
 - description: Change column nullability
   oldSchema: |
     CREATE TABLE [dbo].[users] (
@@ -90,8 +91,9 @@
       [email] nvarchar(255) NULL,
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
-  expected: |
+  expected: |+
     ALTER TABLE [dbo].[users] ALTER COLUMN [email] nvarchar(255) NULL;
+
 - description: Add default constraint
   oldSchema: |
     CREATE TABLE [dbo].[users] (
@@ -105,8 +107,9 @@
       [status] int NOT NULL DEFAULT 1,
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
-  expected: |
+  expected: |+
     ALTER TABLE [dbo].[users] ADD CONSTRAINT [DF_users_status] DEFAULT 1 FOR [status];
+
 - description: Create table with check constraint
   oldSchema: ""
   newSchema: |

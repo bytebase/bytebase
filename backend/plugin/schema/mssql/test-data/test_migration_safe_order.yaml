@@ -1,0 +1,227 @@
+- description: Safe order - drop dependent objects before tables
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL PRIMARY KEY,
+      [user_id] int NOT NULL,
+      CONSTRAINT [FK_orders_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[users]([id])
+    );
+    GO
+    CREATE INDEX [IX_orders_user_id] ON [dbo].[orders]([user_id]);
+    GO
+    CREATE VIEW [dbo].[v_user_orders] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[users] u
+    LEFT JOIN [dbo].[orders] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+    CREATE PROCEDURE [dbo].[sp_get_user_orders]
+      @user_id int
+    AS
+    BEGIN
+      SELECT * FROM [dbo].[v_user_orders] WHERE id = @user_id;
+    END;
+    GO
+  newSchema: ""
+  expected: |
+    ALTER TABLE [dbo].[orders] DROP CONSTRAINT [FK_orders_users];
+    DROP PROCEDURE [dbo].[sp_get_user_orders];
+    GO
+    DROP VIEW [dbo].[v_user_orders];
+    GO
+    DROP TABLE [dbo].[orders];
+    DROP TABLE [dbo].[users];
+- description: Safe order - create tables before dependent objects
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL PRIMARY KEY,
+      [user_id] int NOT NULL,
+      CONSTRAINT [FK_orders_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[users]([id])
+    );
+    GO
+    CREATE INDEX [IX_orders_user_id] ON [dbo].[orders]([user_id]);
+    GO
+    CREATE VIEW [dbo].[v_user_orders] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[users] u
+    LEFT JOIN [dbo].[orders] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+    CREATE PROCEDURE [dbo].[sp_get_user_orders]
+      @user_id int
+    AS
+    BEGIN
+      SELECT * FROM [dbo].[v_user_orders] WHERE id = @user_id;
+    END;
+    GO
+  expected: |
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      CONSTRAINT [PK_orders_2] PRIMARY KEY ([id])
+    );
+    CREATE INDEX [IX_orders_user_id] ON [dbo].[orders] ([user_id]);
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      CONSTRAINT [PK_users_1] PRIMARY KEY ([id])
+    );
+    ALTER TABLE [dbo].[orders] ADD CONSTRAINT [FK_orders_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[users] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+    GO
+    CREATE VIEW [dbo].[v_user_orders] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[users] u
+    LEFT JOIN [dbo].[orders] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+    CREATE PROCEDURE [dbo].[sp_get_user_orders]
+      @user_id int
+    AS
+    BEGIN
+      SELECT * FROM [dbo].[v_user_orders] WHERE id = @user_id;
+    END;
+    GO
+- description: Safe order - complex view dependencies with drops and creates
+  oldSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL,
+      [dept_id] int NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_departments] AS
+    SELECT id, name FROM [dbo].[departments];
+    GO
+    CREATE VIEW [dbo].[v_employees] AS
+    SELECT id, name, dept_id FROM [dbo].[employees];
+    GO
+    CREATE VIEW [dbo].[v_employee_dept] AS
+    SELECT e.id, e.name, d.name as dept_name
+    FROM [dbo].[v_employees] e
+    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL,
+      [location] nvarchar(200) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL,
+      [dept_id] int NULL,
+      [salary] decimal(10,2) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_departments] AS
+    SELECT id, name, location FROM [dbo].[departments];
+    GO
+    CREATE VIEW [dbo].[v_employees] AS
+    SELECT id, name, dept_id, salary FROM [dbo].[employees];
+    GO
+    CREATE VIEW [dbo].[v_employee_dept] AS
+    SELECT e.id, e.name, e.salary, d.name as dept_name, d.location
+    FROM [dbo].[v_employees] e
+    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
+    GO
+    CREATE VIEW [dbo].[v_dept_summary] AS
+    SELECT dept_name, location, COUNT(*) as emp_count, AVG(salary) as avg_salary
+    FROM [dbo].[v_employee_dept]
+    GROUP BY dept_name, location;
+    GO
+  expected: |
+    DROP VIEW [dbo].[v_employee_dept];
+    GO
+    DROP VIEW [dbo].[v_employees];
+    GO
+    DROP VIEW [dbo].[v_departments];
+    GO
+
+    ALTER TABLE [dbo].[departments] ADD [location] nvarchar(200) NULL;
+
+    ALTER TABLE [dbo].[employees] ADD [salary] decimal(10,2) NULL;
+
+
+    GO
+    CREATE VIEW [dbo].[v_departments] AS
+    SELECT id, name, location FROM [dbo].[departments];
+    GO
+    CREATE VIEW [dbo].[v_employees] AS
+    SELECT id, name, dept_id, salary FROM [dbo].[employees];
+    GO
+    CREATE VIEW [dbo].[v_employee_dept] AS
+    SELECT e.id, e.name, e.salary, d.name as dept_name, d.location
+    FROM [dbo].[v_employees] e
+    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
+    GO
+    CREATE VIEW [dbo].[v_dept_summary] AS
+    SELECT dept_name, location, COUNT(*) as emp_count, AVG(salary) as avg_salary
+    FROM [dbo].[v_employee_dept]
+    GROUP BY dept_name, location;
+    GO
+- description: Safe order - circular view dependency fallback
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE [dbo].[table1] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[table2] (
+      [id] int NOT NULL,
+      [value] nvarchar(100) NULL
+    );
+    GO
+    -- Note: These views create a circular dependency which should fall back to original order
+    CREATE VIEW [dbo].[v_circular1] AS
+    SELECT t1.id, t1.name, t2.value
+    FROM [dbo].[table1] t1
+    JOIN [dbo].[table2] t2 ON t1.id = t2.id
+    WHERE EXISTS (SELECT 1 FROM [dbo].[v_circular2] v WHERE v.id = t1.id);
+    GO
+    CREATE VIEW [dbo].[v_circular2] AS
+    SELECT t2.id, t2.value, t1.name
+    FROM [dbo].[table2] t2
+    JOIN [dbo].[table1] t1 ON t2.id = t1.id
+    WHERE EXISTS (SELECT 1 FROM [dbo].[v_circular1] v WHERE v.id = t2.id);
+    GO
+  expected: |
+    CREATE TABLE [dbo].[table1] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    CREATE TABLE [dbo].[table2] (
+      [id] int NOT NULL,
+      [value] nvarchar(100) NULL
+    );
+
+    GO
+    CREATE VIEW [dbo].[v_circular1] AS
+    SELECT t1.id, t1.name, t2.value
+    FROM [dbo].[table1] t1
+    JOIN [dbo].[table2] t2 ON t1.id = t2.id
+    WHERE EXISTS (SELECT 1 FROM [dbo].[v_circular2] v WHERE v.id = t1.id);
+    GO
+    CREATE VIEW [dbo].[v_circular2] AS
+    SELECT t2.id, t2.value, t1.name
+    FROM [dbo].[table2] t2
+    JOIN [dbo].[table1] t1 ON t2.id = t1.id
+    WHERE EXISTS (SELECT 1 FROM [dbo].[v_circular1] v WHERE v.id = t2.id);
+    GO

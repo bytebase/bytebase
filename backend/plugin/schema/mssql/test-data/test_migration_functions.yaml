@@ -36,10 +36,9 @@
       RETURN @FirstName + ' ' + @LastName
     END
   newSchema: ""
-  expected: |+
+  expected: |
     DROP FUNCTION [dbo].[GetFullName];
     GO
-
 - description: Create table-valued function
   oldSchema: ""
   newSchema: |

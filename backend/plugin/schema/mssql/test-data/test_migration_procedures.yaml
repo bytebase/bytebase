@@ -24,10 +24,9 @@
       SELECT * FROM Users WHERE Id = @UserId
     END
   newSchema: ""
-  expected: |+
+  expected: |
     DROP PROCEDURE [dbo].[GetUserById];
     GO
-
 - description: Create procedure with output parameters
   oldSchema: ""
   newSchema: |

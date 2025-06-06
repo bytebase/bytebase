@@ -1,0 +1,283 @@
+- description: Create single view
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+  expected: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+- description: Create views with dependencies - correct order
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      [amount] decimal(10,2) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_orders] AS
+    SELECT o.id, o.user_id, o.amount, u.name
+    FROM [dbo].[orders] o
+    JOIN [dbo].[users] u ON o.user_id = u.id;
+    GO
+    CREATE VIEW [dbo].[v_user_orders] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[v_users] u
+    LEFT JOIN [dbo].[v_orders] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+  expected: |
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      [amount] decimal(10,2) NULL
+    );
+
+    GO
+    CREATE VIEW [dbo].[v_orders] AS
+    SELECT o.id, o.user_id, o.amount, u.name
+    FROM [dbo].[orders] o
+    JOIN [dbo].[users] u ON o.user_id = u.id;
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_user_orders] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[v_users] u
+    LEFT JOIN [dbo].[v_orders] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+- description: Drop views with dependencies - reverse order
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      [amount] decimal(10,2) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_orders] AS
+    SELECT o.id, o.user_id, o.amount, u.name
+    FROM [dbo].[orders] o
+    JOIN [dbo].[users] u ON o.user_id = u.id;
+    GO
+    CREATE VIEW [dbo].[v_user_orders] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[v_users] u
+    LEFT JOIN [dbo].[v_orders] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      [amount] decimal(10,2) NULL
+    );
+    GO
+  expected: |
+    DROP VIEW [dbo].[v_user_orders];
+    GO
+    DROP VIEW [dbo].[v_users];
+    GO
+    DROP VIEW [dbo].[v_orders];
+    GO
+- description: Alter view - drop and recreate
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      [email] nvarchar(200) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name, email FROM [dbo].[users];
+    GO
+  expected: |
+    DROP VIEW [dbo].[v_users];
+    GO
+
+    ALTER TABLE [dbo].[users] ADD [email] nvarchar(200) NULL;
+
+
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name, email FROM [dbo].[users];
+    GO
+- description: Alter multiple views with dependencies
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_active_users] AS
+    SELECT * FROM [dbo].[v_users] WHERE id > 0;
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      [status] nvarchar(50) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name, status FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_active_users] AS
+    SELECT * FROM [dbo].[v_users] WHERE status = 'active';
+    GO
+  expected: |
+    DROP VIEW [dbo].[v_active_users];
+    GO
+    DROP VIEW [dbo].[v_users];
+    GO
+
+    ALTER TABLE [dbo].[users] ADD [status] nvarchar(50) NULL;
+
+
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name, status FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_active_users] AS
+    SELECT * FROM [dbo].[v_users] WHERE status = 'active';
+    GO
+- description: Create views in different schemas
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+  newSchema: |
+    CREATE SCHEMA [reporting];
+    GO
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [reporting].[v_user_report] AS
+    SELECT * FROM [dbo].[v_users];
+    GO
+  expected: |
+    CREATE SCHEMA [reporting];
+    GO
+
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [reporting].[v_user_report] AS
+    SELECT * FROM [dbo].[v_users];
+    GO
+- description: Complex view dependencies across schemas
+  oldSchema: ""
+  newSchema: |
+    CREATE SCHEMA [sales];
+    GO
+    CREATE SCHEMA [reporting];
+    GO
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      [price] decimal(10,2) NULL
+    );
+    GO
+    CREATE TABLE [sales].[orders] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [quantity] int NOT NULL
+    );
+    GO
+    CREATE VIEW [sales].[v_order_details] AS
+    SELECT o.id, o.product_id, o.quantity, p.name, p.price
+    FROM [sales].[orders] o
+    JOIN [dbo].[products] p ON o.product_id = p.id;
+    GO
+    CREATE VIEW [reporting].[v_sales_summary] AS
+    SELECT product_id, SUM(quantity) as total_quantity, SUM(quantity * price) as total_revenue
+    FROM [sales].[v_order_details]
+    GROUP BY product_id;
+    GO
+  expected: |
+    CREATE SCHEMA [reporting];
+    GO
+    CREATE SCHEMA [sales];
+    GO
+
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      [price] decimal(10,2) NULL
+    );
+    CREATE TABLE [sales].[orders] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [quantity] int NOT NULL
+    );
+
+    GO
+    CREATE VIEW [sales].[v_order_details] AS
+    SELECT o.id, o.product_id, o.quantity, p.name, p.price
+    FROM [sales].[orders] o
+    JOIN [dbo].[products] p ON o.product_id = p.id;
+    GO
+    CREATE VIEW [reporting].[v_sales_summary] AS
+    SELECT product_id, SUM(quantity) as total_quantity, SUM(quantity * price) as total_revenue
+    FROM [sales].[v_order_details]
+    GROUP BY product_id;
+    GO

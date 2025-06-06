@@ -134,13 +134,9 @@ func TestGenerateMigration_Procedures(t *testing.T) {
 }
 
 func TestGenerateMigration_Views(t *testing.T) {
-	// Skip views test for now due to parser limitations with multiple statements
-	t.Skip("Skipping views test due to parser limitations")
 	runMigrationTest(t, "test_migration_views.yaml", false /* record */)
 }
 
 func TestGenerateMigration_SafeOrder(t *testing.T) {
-	// Skip safe order test for now due to parser limitations with multiple statements
-	t.Skip("Skipping safe order test due to parser limitations")
 	runMigrationTest(t, "test_migration_safe_order.yaml", false /* record */)
 }
