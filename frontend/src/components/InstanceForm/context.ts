@@ -1,3 +1,9 @@
+import Emittery from "emittery";
+import { cloneDeep, isEqual, omit } from "lodash-es";
+import { useDialog } from "naive-ui";
+import type { InjectionKey, Ref } from "vue";
+import { computed, inject, provide, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { instanceServiceClient } from "@/grpcweb";
 import {
   environmentNamePrefix,
@@ -25,12 +31,6 @@ import {
   isValidSpannerHost,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
-import Emittery from "emittery";
-import { cloneDeep, isEqual, omit } from "lodash-es";
-import { useDialog } from "naive-ui";
-import type { InjectionKey, Ref } from "vue";
-import { computed, inject, provide, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import type { ResourceIdField } from "../v2";
 import type { EditDataSource } from "./common";
 import {
@@ -204,7 +204,9 @@ export const provideInstanceFormContext = (baseContext: {
     if (!hasWorkspacePermissionV2("bb.instances.create")) {
       return false;
     }
-    if (!isValidEnvironmentName(`${environmentNamePrefix}${environment.value.id}`)) {
+    if (
+      !isValidEnvironmentName(`${environmentNamePrefix}${environment.value.id}`)
+    ) {
       return false;
     }
     if (basicInfo.value.engine === Engine.SPANNER) {
@@ -256,7 +258,6 @@ export const provideInstanceFormContext = (baseContext: {
         "updatedMasterPassword",
         "useEmptyMasterPassword",
         "updateSsl",
-        "updateSsh",
         "updateAuthenticationPrivateKey"
       )
     );
