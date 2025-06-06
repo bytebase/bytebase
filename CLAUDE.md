@@ -7,6 +7,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - The database migration files are in `./backend/migrator/<<version>>/`. `TestLatestVersion` in `./backend/migrator/migrator_test.go` needs update after new migration files are added. `./backend/migrator/migration/LATEST.sql` should updated for DDL migrations.
 - Files in `./backend/store` are mappings to the database tables.
 
+## Development Workflow
+**ALWAYS follow these steps after making code changes:**
+
+### After Go Code Changes
+1. **Format**: Run `gofmt -w` on modified files
+2. **Lint**: Run `golangci-lint run --allow-parallel-runners` to catch issues
+3. **Auto-fix**: Use `golangci-lint run --fix --allow-parallel-runners` to fix issues automatically
+4. **Test**: Run relevant tests before committing
+
+### After Frontend Code Changes
+1. **Lint**: Run `pnpm --dir frontend lint --fix`
+2. **Type check**: Run `pnpm --dir frontend type-check`
+3. **Test**: Run `pnpm --dir frontend test`
+
+### After Proto Changes
+1. **Format**: Run `cd proto && buf format -w`
+2. **Lint**: Run `cd proto && buf lint`
+3. **Generate**: Run `cd proto && buf generate`
+
 ## Build/Test Commands
 - Backend: `go build -ldflags "-w -s" -p=16 -o ./.air/bytebase ./backend/bin/server/main.go`
 - Start backend: `PG_URL=postgresql://bbdev@localhost/bbdev go run ./backend/bin/server/main.go --port 8080 --data . --debug`
@@ -15,13 +34,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Frontend install: `pnpm --dir frontend i`
 - Frontend dev: `pnpm --dir frontend dev`
 - Frontend lint: `pnpm --dir frontend lint`
-- Frontend lint fix: `pnpm --dir frontend lint --fix` - Please run this before committing to ensure code quality if changes are made in the frontend code.
 - Frontend type check: `pnpm --dir frontend type-check`
 - Frontend test: `pnpm --dir frontend test`
 - Proto format: `cd proto && buf format -w`
 - Proto lint: `cd proto && buf lint`
 - Proto generate: `cd proto && buf generate`
-- Go lint command: `golangci-lint run --allow-parallel-runners` - This custom alias lints Go code, ensuring no errors or warnings are present after updates.
+- Go lint: `golangci-lint run --allow-parallel-runners`
 - Connect to Postgres: `psql -U bbdev bbdev`
 
 ## Code Style
@@ -42,7 +60,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Go Lint Rules
 Always follow these guidelines to avoid common linting errors:
 
-- **File Formatting**: Run `gofmt -w` on files before committing to ensure proper formatting
 - **Unused Parameters**: Prefix unused parameters with underscore (e.g., `func foo(_ *Bar)`)
 - **Modern Go Conventions**: Use `any` instead of `interface{}` (since Go 1.18)
 - **Confusing Naming**: Avoid similar names that differ only by capitalization
@@ -54,7 +71,9 @@ Always follow these guidelines to avoid common linting errors:
 - **Export Rules**: Only export (capitalize) functions and types that need to be used outside the package
 
 ## Misc
+
 - The database JSONB columns store JSON marshalled by protojson.Marshal in go code. protojson.Marshal produces camelCased key rather than the snake_case key defined in the proto files. e.g. task_run becomes taskRun.
 
 ## Individual Preferences
+
 - @~/.claude/bytebase-instructions.md
