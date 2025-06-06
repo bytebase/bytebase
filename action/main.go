@@ -199,6 +199,9 @@ func runCheck(*cobra.Command, []string) error {
 	if err != nil {
 		return err
 	}
+	
+	// Check version compatibility
+	checkVersionCompatibility(client, args.Version)
 
 	releaseFiles, err := getReleaseFiles(Config.FilePattern)
 	if err != nil {
@@ -267,6 +270,9 @@ func runRollout(command *cobra.Command, _ []string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to create client")
 	}
+	
+	// Check version compatibility
+	checkVersionCompatibility(client, args.Version)
 
 	var plan *v1pb.Plan
 	if Config.Plan != "" {
@@ -571,6 +577,36 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 		time.Sleep(5 * time.Second)
 	}
 	return nil
+}
+
+func checkVersionCompatibility(client *Client, cliVersion string) {
+	if cliVersion == "unknown" {
+		slog.Warn("CLI version unknown, unable to check compatibility")
+		return
+	}
+	
+	actuatorInfo, err := client.getActuatorInfo()
+	if err != nil {
+		slog.Warn("Unable to get server version for compatibility check", "error", err)
+		return
+	}
+	
+	serverVersion := actuatorInfo.Version
+	if serverVersion == "" {
+		slog.Warn("Server version is empty, unable to check compatibility")
+		return
+	}
+	
+	if cliVersion == "latest" {
+		slog.Warn("Using 'latest' CLI version. It is recommended to use a specific version like bytebase-action:" + serverVersion + " to match your Bytebase server version " + serverVersion)
+		return
+	}
+	
+	if cliVersion != serverVersion {
+		slog.Warn("CLI version mismatch", "cliVersion", cliVersion, "serverVersion", serverVersion, "recommendation", "use bytebase-action:"+serverVersion+" to match your Bytebase server")
+	} else {
+		slog.Info("CLI version matches server version", "version", cliVersion)
+	}
 }
 
 func main() {
