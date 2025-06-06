@@ -1,0 +1,106 @@
+- description: Create scalar function
+  oldSchema: ""
+  newSchema: |
+    CREATE FUNCTION [dbo].[GetFullName]
+    (
+      @FirstName nvarchar(50),
+      @LastName nvarchar(50)
+    )
+    RETURNS nvarchar(101)
+    AS
+    BEGIN
+      RETURN @FirstName + ' ' + @LastName
+    END
+  expected: |
+    CREATE FUNCTION [dbo].[GetFullName]
+    (
+      @FirstName nvarchar(50),
+      @LastName nvarchar(50)
+    )
+    RETURNS nvarchar(101)
+    AS
+    BEGIN
+      RETURN @FirstName + ' ' + @LastName
+    END;
+    GO
+- description: Drop function
+  oldSchema: |
+    CREATE FUNCTION [dbo].[GetFullName]
+    (
+      @FirstName nvarchar(50),
+      @LastName nvarchar(50)
+    )
+    RETURNS nvarchar(101)
+    AS
+    BEGIN
+      RETURN @FirstName + ' ' + @LastName
+    END
+  newSchema: ""
+  expected: |+
+    DROP FUNCTION [dbo].[GetFullName];
+    GO
+
+- description: Create table-valued function
+  oldSchema: ""
+  newSchema: |
+    CREATE FUNCTION [dbo].[GetEmployeesByDepartment]
+    (
+      @DepartmentId int
+    )
+    RETURNS TABLE
+    AS
+    RETURN
+    (
+      SELECT Id, Name, Email
+      FROM Employees
+      WHERE DepartmentId = @DepartmentId
+    )
+  expected: |
+    CREATE FUNCTION [dbo].[GetEmployeesByDepartment]
+    (
+      @DepartmentId int
+    )
+    RETURNS TABLE
+    AS
+    RETURN
+    (
+      SELECT Id, Name, Email
+      FROM Employees
+      WHERE DepartmentId = @DepartmentId
+    );
+    GO
+- description: Create inline table-valued function
+  oldSchema: ""
+  newSchema: |
+    CREATE FUNCTION [dbo].[GetActiveUsers]()
+    RETURNS @Users TABLE
+    (
+      UserId int,
+      UserName nvarchar(100),
+      LastLogin datetime
+    )
+    AS
+    BEGIN
+      INSERT INTO @Users
+      SELECT Id, Name, LastLogin
+      FROM Users
+      WHERE IsActive = 1
+      RETURN
+    END
+  expected: |
+    CREATE FUNCTION [dbo].[GetActiveUsers]()
+    RETURNS @Users TABLE
+    (
+      UserId int,
+      UserName nvarchar(100),
+      LastLogin datetime
+    )
+    AS
+    BEGIN
+      INSERT INTO @Users
+      SELECT Id, Name, LastLogin
+      FROM Users
+      WHERE IsActive = 1
+      RETURN
+    END;
+    GO

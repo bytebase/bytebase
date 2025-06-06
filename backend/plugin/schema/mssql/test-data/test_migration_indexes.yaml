@@ -1,0 +1,124 @@
+- description: Create regular index
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE NONCLUSTERED INDEX [IX_users_email] ON [dbo].[users] ([email]);
+  expected: |
+    CREATE NONCLUSTERED INDEX [IX_users_email] ON [dbo].[users] ([email]);
+- description: Drop index
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE NONCLUSTERED INDEX [IX_users_email] ON [dbo].[users] ([email]);
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    DROP INDEX [IX_users_email] ON [dbo].[users];
+
+- description: Create unique index
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE UNIQUE NONCLUSTERED INDEX [UX_users_email] ON [dbo].[users] ([email]);
+  expected: |
+    CREATE UNIQUE NONCLUSTERED INDEX [UX_users_email] ON [dbo].[users] ([email]);
+- description: Create unique constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [UQ_users_email] UNIQUE NONCLUSTERED ([email])
+    );
+  expected: |
+    ALTER TABLE [dbo].[users] ADD CONSTRAINT [UQ_users_email] UNIQUE NONCLUSTERED ([email]);
+- description: Create clustered columnstore index
+  oldSchema: |
+    CREATE TABLE [dbo].[sales_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[sales_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL
+    );
+    CREATE CLUSTERED COLUMNSTORE INDEX [CCI_sales_data] ON [dbo].[sales_data];
+  expected: |
+    CREATE CLUSTERED COLUMNSTORE INDEX [CCI_sales_data] ON [dbo].[sales_data];
+- description: Create nonclustered columnstore index with columns
+  oldSchema: |
+    CREATE TABLE [dbo].[analytics_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL,
+      [region] nvarchar(50) NOT NULL,
+      CONSTRAINT [PK_analytics_data] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[analytics_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL,
+      [region] nvarchar(50) NOT NULL,
+      CONSTRAINT [PK_analytics_data] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE NONCLUSTERED COLUMNSTORE INDEX [NCCI_analytics_data] ON [dbo].[analytics_data] ([product_id], [sale_date], [amount]);
+  expected: |
+    CREATE NONCLUSTERED COLUMNSTORE INDEX [NCCI_analytics_data] ON [dbo].[analytics_data] ([product_id], [sale_date], [amount]);
+- description: Drop columnstore index
+  oldSchema: |
+    CREATE TABLE [dbo].[sales_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL
+    );
+    CREATE CLUSTERED COLUMNSTORE INDEX [CCI_sales_data] ON [dbo].[sales_data];
+  newSchema: |
+    CREATE TABLE [dbo].[sales_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL
+    );
+  expected: |+
+    DROP INDEX [CCI_sales_data] ON [dbo].[sales_data];
+
