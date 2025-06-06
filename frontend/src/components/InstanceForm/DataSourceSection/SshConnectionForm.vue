@@ -84,24 +84,15 @@
       </div>
     </div>
   </template>
-
-  <FeatureModal
-    feature="bb.feature.instance-ssh-connection"
-    :open="state.showFeatureModal"
-    :instance="instance"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
-import { NInput, NRadio } from "naive-ui";
-import { reactive, computed, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { FeatureModal } from "@/components/FeatureGuard";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
-import { useSubscriptionV1Store } from "@/store";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
+import { NInput, NRadio } from "naive-ui";
+import { reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 const SshTypes = ["NONE", "TUNNEL+PK"] as const;
 
@@ -118,7 +109,6 @@ type WithSshOptions = {
 type LocalState = {
   type: SshType;
   value: WithSshOptions;
-  showFeatureModal: boolean;
 };
 
 const props = defineProps<{
@@ -136,26 +126,10 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   type: guessSshType(props.value),
   value: {},
-  showFeatureModal: false,
-});
-
-const hasSSHConnectionFeature = computed(() => {
-  return useSubscriptionV1Store().hasInstanceFeature(
-    "bb.feature.instance-ssh-connection",
-    props.instance
-  );
 });
 
 const handleSelectType = (type: SshType, checked: boolean) => {
   if (!checked) return;
-
-  if (!hasSSHConnectionFeature.value) {
-    if (type !== "NONE") {
-      state.type = "NONE";
-      state.showFeatureModal = true;
-      return;
-    }
-  }
 
   state.type = type;
 };
