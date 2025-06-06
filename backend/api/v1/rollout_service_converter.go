@@ -595,12 +595,10 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		environmentOrder = plan.Config.Deployment.GetEnvironments()
 	} else {
 		// Use global environment setting order
-		environments, err := s.GetEnvironmentSetting(ctx)
+		var err error
+		environmentOrder, err = getAllEnvironmentIDs(ctx, s)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list environments")
-		}
-		for _, e := range environments.GetEnvironments() {
-			environmentOrder = append(environmentOrder, e.Id)
+			return nil, err
 		}
 	}
 
