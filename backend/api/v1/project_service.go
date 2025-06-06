@@ -139,7 +139,7 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 			return fmt.Sprintf("project.resource_id = $%d", len(positionalArgs)), nil
 		case "exclude_default":
 			if excludeDefault, ok := value.(bool); excludeDefault && ok {
-				positionalArgs = append(positionalArgs, base.DefaultProjectID)
+				positionalArgs = append(positionalArgs, common.DefaultProjectID)
 				return fmt.Sprintf("project.resource_id != $%d", len(positionalArgs)), nil
 			}
 			return "TRUE", nil
@@ -323,7 +323,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 	if project.Deleted {
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project.Name)
 	}
-	if project.ResourceID == base.DefaultProjectID {
+	if project.ResourceID == common.DefaultProjectID {
 		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be updated")
 	}
 
@@ -445,7 +445,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	if project.Deleted {
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Name)
 	}
-	if project.ResourceID == base.DefaultProjectID {
+	if project.ResourceID == common.DefaultProjectID {
 		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be deleted")
 	}
 
@@ -457,7 +457,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	// We don't move the sheet to default project because BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
 	if request.Force {
 		if len(databases) > 0 {
-			defaultProject := base.DefaultProjectID
+			defaultProject := common.DefaultProjectID
 			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProject}); err != nil {
 				return nil, err
 			}
@@ -599,7 +599,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 	// Must contain one owner binding.
 	if !existProjectOwner {
-		return nil, status.Errorf(codes.InvalidArgument, "IAM Policy must have at least one binding with %s", base.ProjectOwner.String())
+		return nil, status.Errorf(codes.InvalidArgument, "IAM Policy must have at least one binding with %s", common.ProjectOwner)
 	}
 
 	policy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
@@ -950,12 +950,12 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 		webhookplugin.Context{
 			URL:         webhook.URL,
 			Level:       webhookplugin.WebhookInfo,
-			EventType:   string(base.EventTypeIssueCreate),
+			EventType:   string(common.EventTypeIssueCreate),
 			Title:       fmt.Sprintf("Test webhook %q", webhook.Title),
 			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Title),
 			Description: "This is a test",
 			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", setting.ExternalUrl, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
-			ActorID:     base.SystemBotID,
+			ActorID:     common.SystemBotID,
 			ActorName:   "Bytebase",
 			ActorEmail:  s.store.GetSystemBotUser(ctx).Email,
 			CreatedTS:   time.Now().Unix(),
@@ -1008,23 +1008,23 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 		case v1pb.Activity_TYPE_UNSPECIFIED:
 			return nil, common.Errorf(common.Invalid, "activity type must not be unspecified")
 		case v1pb.Activity_TYPE_ISSUE_CREATE:
-			result = append(result, string(base.EventTypeIssueCreate))
+			result = append(result, string(common.EventTypeIssueCreate))
 		case v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE:
-			result = append(result, string(base.EventTypeIssueCommentCreate))
+			result = append(result, string(common.EventTypeIssueCommentCreate))
 		case v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE:
-			result = append(result, string(base.EventTypeIssueUpdate))
+			result = append(result, string(common.EventTypeIssueUpdate))
 		case v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE:
-			result = append(result, string(base.EventTypeIssueStatusUpdate))
+			result = append(result, string(common.EventTypeIssueStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY:
-			result = append(result, string(base.EventTypeIssueApprovalCreate))
+			result = append(result, string(common.EventTypeIssueApprovalCreate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
-			result = append(result, string(base.EventTypeStageStatusUpdate))
+			result = append(result, string(common.EventTypeStageStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
-			result = append(result, string(base.EventTypeTaskRunStatusUpdate))
+			result = append(result, string(common.EventTypeTaskRunStatusUpdate))
 		case v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED:
-			result = append(result, string(base.EventTypeIssueApprovalPass))
+			result = append(result, string(common.EventTypeIssueApprovalPass))
 		case v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT:
-			result = append(result, string(base.EventTypeIssueRolloutReady))
+			result = append(result, string(common.EventTypeIssueRolloutReady))
 		default:
 			return nil, common.Errorf(common.Invalid, "unsupported activity type: %v", tp)
 		}
@@ -1036,23 +1036,23 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 	var result []v1pb.Activity_Type
 	for _, tp := range types {
 		switch tp {
-		case string(base.EventTypeIssueCreate):
+		case string(common.EventTypeIssueCreate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_CREATE)
-		case string(base.EventTypeIssueCommentCreate):
+		case string(common.EventTypeIssueCommentCreate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE)
-		case string(base.EventTypeIssueUpdate):
+		case string(common.EventTypeIssueUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE)
-		case string(base.EventTypeIssueStatusUpdate):
+		case string(common.EventTypeIssueStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE)
-		case string(base.EventTypeIssueApprovalCreate):
+		case string(common.EventTypeIssueApprovalCreate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY)
-		case string(base.EventTypeStageStatusUpdate):
+		case string(common.EventTypeStageStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
-		case string(base.EventTypeTaskRunStatusUpdate):
+		case string(common.EventTypeTaskRunStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
-		case string(base.EventTypeIssueApprovalPass):
+		case string(common.EventTypeIssueApprovalPass):
 			result = append(result, v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED)
-		case string(base.EventTypeIssueRolloutReady):
+		case string(common.EventTypeIssueRolloutReady):
 			result = append(result, v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT)
 		default:
 			result = append(result, v1pb.Activity_TYPE_UNSPECIFIED)
@@ -1252,7 +1252,7 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 	} else if strings.HasPrefix(member, common.GroupBindingPrefix) {
 		email := strings.TrimPrefix(member, common.GroupBindingPrefix)
 		return common.FormatGroupEmail(email), nil
-	} else if member == base.AllUsers {
+	} else if member == common.AllUsers {
 		return member, nil
 	}
 	return "", status.Errorf(codes.InvalidArgument, "unsupport member %s", member)
@@ -1398,7 +1398,7 @@ func validateIAMPolicy(
 		if len(binding.Members) == 0 {
 			continue
 		}
-		if binding.Role == fmt.Sprintf("roles/%s", base.ProjectOwner) {
+		if binding.Role == fmt.Sprintf("roles/%s", common.ProjectOwner) {
 			existProjectOwner = true
 		}
 
@@ -1429,7 +1429,7 @@ func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maxi
 			return err
 		}
 
-		if binding.Role != fmt.Sprintf("roles/%s", base.ProjectOwner) && maximumRoleExpiration != nil {
+		if binding.Role != fmt.Sprintf("roles/%s", common.ProjectOwner) && maximumRoleExpiration != nil {
 			// Only validate when maximumRoleExpiration is set and the role is not project owner.
 			if err := validateExpirationInExpression(binding.GetCondition().GetExpression(), maximumRoleExpiration); err != nil {
 				return status.Errorf(codes.InvalidArgument, "failed to validate expiration for binding %v: %v", binding.Role, err.Error())
@@ -1537,7 +1537,7 @@ func validateExpirationInExpression(expr string, maximumRoleExpiration *duration
 }
 
 func validateMember(member string) error {
-	if member == base.AllUsers {
+	if member == common.AllUsers {
 		return nil
 	}
 

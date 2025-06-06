@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/jsonrpc2"
 
-	"github.com/bytebase/bytebase/backend/base"
+	"github.com/bytebase/bytebase/backend/common"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -51,7 +51,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 
 	defaultDatabase := h.getDefaultDatabase()
 	engine := h.getEngineType(ctx)
-	if !base.EngineSupportAutoComplete(engine) {
+	if !common.EngineSupportAutoComplete(engine) {
 		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil
 	}

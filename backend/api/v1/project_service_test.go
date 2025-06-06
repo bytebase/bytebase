@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/base"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -411,14 +411,14 @@ func TestListProjectFilter(t *testing.T) {
 			input: `exclude_default == true`,
 			want: &store.ListResourceFilter{
 				Where: `(project.resource_id != $1)`,
-				Args:  []any{base.DefaultProjectID},
+				Args:  []any{common.DefaultProjectID},
 			},
 		},
 		{
 			input: `(name.matches("sample") || resource_id.matches("Sample")) && exclude_default == true`,
 			want: &store.ListResourceFilter{
 				Where: `(((LOWER(project.name) LIKE '%sample%') OR (LOWER(project.resource_id) LIKE '%sample%')) AND (project.resource_id != $1))`,
-				Args:  []any{base.DefaultProjectID},
+				Args:  []any{common.DefaultProjectID},
 			},
 		},
 	}

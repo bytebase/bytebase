@@ -10,7 +10,6 @@ import (
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -154,7 +153,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	policy := &storepb.IamPolicy{
 		Bindings: []*storepb.Binding{
 			{
-				Role: common.FormatRole(base.ProjectOwner.String()),
+				Role: common.FormatRole(common.ProjectOwner),
 				Members: []string{
 					common.FormatUserUID(user.ID),
 				},

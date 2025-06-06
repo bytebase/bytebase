@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -236,7 +235,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 						}
 						checkResult.RiskLevel = riskLevelEnum
 					}
-					if base.EngineSupportSQLReview(instance.Metadata.GetEngine()) {
+					if common.EngineSupportSQLReview(instance.Metadata.GetEngine()) {
 						adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, changeType, statement)
 						if err != nil {
 							return nil, status.Errorf(codes.Internal, "failed to check SQL review: %v", err)

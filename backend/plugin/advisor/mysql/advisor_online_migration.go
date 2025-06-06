@@ -11,7 +11,6 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -55,7 +54,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 
 	// Check gh-ost database existence first if the change type is gh-ost.
 	if checkCtx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
-		ghostDatabaseName := base.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
+		ghostDatabaseName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
 		if !advisor.DatabaseExists(ctx, checkCtx, ghostDatabaseName) {
 			return []*storepb.Advice{
 				{

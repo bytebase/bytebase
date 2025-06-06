@@ -18,7 +18,6 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -84,7 +83,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 
 	var priorBackupDetail *storepb.PriorBackupDetail
 	// Check if we should skip backup or not.
-	if base.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
+	if common.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
 		var backupErr error
 		priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, statement, task.Payload, task, issueN, instance, database)
 		if backupErr != nil {
@@ -106,7 +105,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 							},
 						},
 					},
-				}, base.SystemBotID); err != nil {
+				}, common.SystemBotID); err != nil {
 					slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
 				}
 			}
@@ -170,7 +169,7 @@ func (exec *DataUpdateExecutor) backupData(
 
 	sourceDatabaseName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
 	// Format: instances/{instance}/databases/{database}
-	backupDBName := base.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
+	backupDBName := common.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
 	targetDatabaseName := common.FormatDatabase(database.InstanceID, backupDBName)
 	var backupDatabase *store.DatabaseMessage
 	var backupDriver db.Driver
@@ -323,7 +322,7 @@ func (exec *DataUpdateExecutor) backupData(
 						},
 					},
 				},
-			}, base.SystemBotID); err != nil {
+			}, common.SystemBotID); err != nil {
 				slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err))
 			}
 		}

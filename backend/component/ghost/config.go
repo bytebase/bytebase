@@ -9,7 +9,7 @@ import (
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
+	"github.com/bytebase/bytebase/backend/common"
 	secretcomp "github.com/bytebase/bytebase/backend/component/secret"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -233,7 +233,7 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	migrationContext.CliPassword = password
 	// GhostDatabaseName is our homemade parameter to allow creating temporary tables under another database.
 	// Use MySQL/TiDB backup database name for gh-ost
-	migrationContext.GhostDatabaseName = base.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
+	migrationContext.GhostDatabaseName = common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
 	migrationContext.DatabaseName = database.DatabaseName
 	migrationContext.OriginalTableName = tableName
 	migrationContext.AlterStatement = strings.Join(strings.Fields(statement), " ")
