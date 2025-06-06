@@ -995,6 +995,13 @@
     }
   },
   "plan": {
+    "add-spec": "Add Specification",
+    "change-type": "Change Type",
+    "schema-migration": "Schema Migration",
+    "schema-migration-description": "Modify database schema (DDL)",
+    "data-change": "Data Change",
+    "data-change-description": "Modify data (DML)",
+    "select-targets": "Select Targets",
     "options": {
       "self": "Options",
       "applies-to-all-tasks": "Applies to all tasks",

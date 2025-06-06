@@ -5,6 +5,7 @@
         <h3 class="text-base font-medium">Targets</h3>
         <span class="text-control-light">({{ targets.length }})</span>
       </div>
+      <!-- TODO(claude): allow to update targets when no rollout is created by plan -->
       <NButton
         v-if="allowEdit"
         size="small"
@@ -105,7 +106,12 @@ import {
   useDBGroupStore,
   useProjectV1Store,
 } from "@/store";
-import { extractInstanceResourceName, instanceV1Name } from "@/utils";
+import {
+  extractInstanceResourceName,
+  instanceV1Name,
+  extractDatabaseResourceName,
+  extractDatabaseGroupName,
+} from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
 import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
@@ -206,18 +212,15 @@ const tableData = computed((): TargetRow[] => {
 
     // For database group targets
     if (target.includes("/databaseGroups/")) {
-      const match = target.match(/projects\/([^/]+)\/databaseGroups\/([^/]+)/);
-      if (match) {
-        const [, , groupName] = match;
-        const dbGroup = dbGroupStore.getDBGroupByName(target);
+      const groupName = extractDatabaseGroupName(target);
+      const dbGroup = dbGroupStore.getDBGroupByName(target);
 
-        return {
-          target,
-          type: "databaseGroup",
-          icon: FolderIcon,
-          name: dbGroup?.title || groupName,
-        };
-      }
+      return {
+        target,
+        type: "databaseGroup",
+        icon: FolderIcon,
+        name: dbGroup?.title || groupName,
+      };
     }
 
     // For regular database targets
@@ -225,9 +228,9 @@ const tableData = computed((): TargetRow[] => {
 
     if (!database) {
       // Fallback when database is not found
-      const match = target.match(/instances\/([^/]+)\/databases\/([^/]+)/);
-      if (match) {
-        const [_, instanceId, databaseName] = match;
+      const { instance: instanceId, databaseName } =
+        extractDatabaseResourceName(target);
+      if (instanceId && databaseName) {
         return {
           target,
           type: "database",

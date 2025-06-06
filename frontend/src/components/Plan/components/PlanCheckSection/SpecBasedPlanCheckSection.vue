@@ -106,11 +106,13 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else class="text-center py-8">
+      <div v-else class="flex flex-col">
         <div class="text-control-light">
-          <CheckCircleIcon class="w-12 h-12 mx-auto mb-2 opacity-20" />
-          <p>No check results available</p>
-          <p v-if="allowRunChecks" class="text-sm mt-2">
+          <div class="flex flex-row justify-start items-center gap-2">
+            <CheckCircleIcon class="w-5 h-5 opacity-40" />
+            <span>No check results available</span>
+          </div>
+          <p v-if="allowRunChecks" class="text-sm mt-1">
             Click "Run Checks" to validate this specification
           </p>
         </div>
@@ -238,7 +240,7 @@ import {
   PlanCheckRun_Result_Status,
   type PlanCheckRun,
 } from "@/types/proto/v1/plan_service";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, extractDatabaseResourceName } from "@/utils";
 import { planCheckRunListForSpec, planSpecHasPlanChecks } from "../../logic";
 import { usePlanContext } from "../../logic/context";
 
@@ -414,9 +416,9 @@ const getCheckTypeLabel = (type: string) => {
 };
 
 const formatTarget = (target: string): string => {
-  const match = target.match(/instances\/([^/]+)\/databases\/([^/]+)/);
-  if (match) {
-    return `${match[2]} (${match[1]})`;
+  const { instanceName, databaseName } = extractDatabaseResourceName(target);
+  if (instanceName && databaseName) {
+    return `${databaseName} (${instanceName})`;
   }
   return target;
 };

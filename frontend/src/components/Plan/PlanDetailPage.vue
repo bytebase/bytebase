@@ -9,7 +9,7 @@
         class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
       >
         <Overview v-if="!selectedSpec" />
-        <SpecDetailView v-else />
+        <SpecDetailView v-else :key="selectedSpec.id" />
       </div>
     </div>
   </div>

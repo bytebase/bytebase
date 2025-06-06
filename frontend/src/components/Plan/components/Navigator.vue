@@ -51,9 +51,8 @@
                 :max="99"
               />
             </div>
-            <!-- TODO(claude): Implement me please -->
             <NButton
-              v-if="isCreating && false"
+              v-if="isCreating"
               type="default"
               size="tiny"
               @click="handleAddSpec"
@@ -133,6 +132,12 @@
         </div>
       </div>
     </NScrollbar>
+
+    <!-- Add Spec Drawer -->
+    <AddSpecDrawer
+      v-model:show="showAddSpecDrawer"
+      @created="handleSpecCreated"
+    />
   </div>
 </template>
 
@@ -143,7 +148,7 @@ import {
   PlusIcon,
 } from "lucide-vue-next";
 import { NButton, NScrollbar, NBadge } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import {
   Plan_ChangeDatabaseConfig_Type,
@@ -151,6 +156,7 @@ import {
 } from "@/types/proto/v1/plan_service";
 import { usePlanContext } from "../logic/context";
 import { targetsForSpec } from "../logic/plan";
+import AddSpecDrawer from "./AddSpecDrawer.vue";
 import SpecStatusBadge from "./SpecStatusBadge.vue";
 import { useSpecsValidation } from "./common/validateSpec";
 
@@ -158,7 +164,8 @@ const router = useRouter();
 const route = useRoute();
 const { plan, selectedSpec, isCreating, events } = usePlanContext();
 
-const specs = computed(() => plan.value?.specs || []);
+const specs = computed(() => plan.value.specs);
+const showAddSpecDrawer = ref(false);
 
 // Use the validation hook for all specs
 const { isSpecEmpty } = useSpecsValidation(specs.value);
@@ -180,7 +187,18 @@ const handleSelectSpec = (spec: Plan_Spec) => {
 };
 
 const handleAddSpec = () => {
-  // TODO: Implement add spec functionality
+  showAddSpecDrawer.value = true;
+};
+
+const handleSpecCreated = (spec: Plan_Spec) => {
+  // Add the new spec to the plan
+  if (!plan.value?.specs) {
+    plan.value.specs = [];
+  }
+  plan.value.specs.push(spec);
+  
+  // Select the newly created spec
+  events.emit("select-spec", { spec });
 };
 
 const getSpecCheckStatus = (spec: Plan_Spec) => {

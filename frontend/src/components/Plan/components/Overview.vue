@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full p-4 overflow-y-auto mt-8">
+  <div class="w-full p-4 overflow-y-auto mt-4">
     <div class="max-w-4xl mx-auto space-y-4">
       <!-- Plan Header -->
       <div>
@@ -11,7 +11,7 @@
 
       <!-- Statistics Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white rounded border p-4">
+        <div class="bg-white rounded border px-3 py-2">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-control-light">Total Specs</p>
@@ -19,11 +19,11 @@
                 {{ statistics.totalSpecs }}
               </p>
             </div>
-            <LayersIcon class="w-8 h-8 text-control" />
+            <LayersIcon class="w-8 h-8 text-control-light" stroke-width="1" />
           </div>
         </div>
 
-        <div class="bg-white rounded border p-4">
+        <div class="bg-white rounded border px-3 py-2">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-control-light">Total Targets</p>
@@ -31,11 +31,11 @@
                 {{ statistics.totalTargets }}
               </p>
             </div>
-            <DatabaseIcon class="w-8 h-8 text-control" />
+            <DatabaseIcon class="w-8 h-8 text-control-light" stroke-width="1" />
           </div>
         </div>
 
-        <div class="bg-white rounded border p-4">
+        <div class="bg-white rounded border px-3 py-2">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-control-light">Check Status</p>
@@ -75,7 +75,7 @@
                 </span>
               </div>
             </div>
-            <ActivityIcon class="w-8 h-8 text-control" />
+            <ActivityIcon class="w-8 h-8 text-control-light" stroke-width="1" />
           </div>
         </div>
       </div>
@@ -83,41 +83,61 @@
       <!-- Affected Resources -->
       <div v-if="affectedResources.length > 0">
         <h2 class="text-lg font-semibold mb-3">Affected Resources</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <div
             v-for="resource in affectedResources"
             :key="resource.name"
-            class="flex items-start gap-3 p-3 bg-control-bg rounded"
+            class="flex items-start gap-3 p-3 rounded border"
           >
+            <!-- Icon -->
             <InstanceV1EngineIcon
-              v-if="resource.instance"
+              v-if="resource.type === 'instance' && resource.instance"
               :instance="resource.instance"
               :tooltip="false"
               size="medium"
               class="mt-0.5"
             />
+            <FolderIcon
+              v-else-if="resource.type === 'databaseGroup'"
+              class="w-5 h-5 text-control mt-0.5"
+            />
+
+            <!-- Content -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <p class="font-medium truncate">
-                  {{
-                    resource.instance
-                      ? instanceV1Name(resource.instance)
-                      : resource.name
-                  }}
-                </p>
-                <span
-                  v-if="resource.instance?.environmentEntity"
-                  class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600"
-                >
-                  {{ resource.instance.environmentEntity.title }}
-                </span>
-              </div>
-              <div class="flex items-center gap-3 mt-1">
-                <p class="text-sm text-control-light">
-                  {{ resource.databases.length }} database{{
-                    resource.databases.length === 1 ? "" : "s"
-                  }}
-                </p>
+                <!-- Instance info -->
+                <template v-if="resource.type === 'instance'">
+                  <span
+                    v-if="resource.instance?.environmentEntity"
+                    class="text-sm text-gray-600"
+                  >
+                    ({{ resource.instance.environmentEntity.title }})
+                  </span>
+                  <span class="font-medium truncate">
+                    {{
+                      resource.instance
+                        ? instanceV1Name(resource.instance)
+                        : resource.name
+                    }}
+                  </span>
+                  <span class="text-sm text-control-light">
+                    {{ resource.databases.length }} database{{
+                      resource.databases.length === 1 ? "" : "s"
+                    }}
+                  </span>
+                </template>
+
+                <!-- Database Group info -->
+                <template v-else-if="resource.type === 'databaseGroup'">
+                  <span class="font-medium truncate">
+                    {{ resource.databaseGroup?.title || resource.name }}
+                  </span>
+                  <span
+                    class="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-600"
+                  >
+                    Database Group
+                  </span>
+                </template>
               </div>
             </div>
           </div>
@@ -137,60 +157,39 @@ import {
   CheckCircleIcon,
   AlertCircleIcon,
   XCircleIcon,
+  FolderIcon,
 } from "lucide-vue-next";
 import { computed, watch } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2/Model/Instance";
-import { useInstanceV1Store } from "@/store";
-import { instanceV1Name } from "@/utils";
+import { useInstanceV1Store, useDBGroupStore } from "@/store";
+import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
+import { instanceV1Name, extractDatabaseResourceName } from "@/utils";
 import { usePlanContext } from "../logic/context";
 import { targetsForSpec } from "../logic/plan";
 import DescriptionSection from "./DescriptionSection";
 
 const { plan } = usePlanContext();
 const instanceStore = useInstanceV1Store();
+const dbGroupStore = useDBGroupStore();
 
 // Calculate statistics
 const statistics = computed(() => {
-  const specs = plan.value?.specs || [];
   let totalTargets = 0;
   const checkStatus = {
     total: 0,
-    success: 0,
-    warning: 0,
-    error: 0,
+    success:
+      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.SUCCESS],
+    warning:
+      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.WARNING],
+    error: plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.ERROR],
   };
-
-  // Count targets
-  for (const spec of specs) {
+  checkStatus.total =
+    checkStatus.success + checkStatus.warning + checkStatus.error;
+  for (const spec of plan.value.specs) {
     totalTargets += targetsForSpec(spec).length;
   }
-
-  // Count check statuses
-  const checkRuns = plan.value?.planCheckRunList || [];
-  for (const checkRun of checkRuns) {
-    checkStatus.total++;
-    let hasError = false;
-    let hasWarning = false;
-
-    for (const result of checkRun.results) {
-      if (result.status === "ERROR") {
-        hasError = true;
-      } else if (result.status === "WARNING") {
-        hasWarning = true;
-      }
-    }
-
-    if (hasError) {
-      checkStatus.error++;
-    } else if (hasWarning) {
-      checkStatus.warning++;
-    } else {
-      checkStatus.success++;
-    }
-  }
-
   return {
-    totalSpecs: specs.length,
+    totalSpecs: plan.value.specs.length,
     totalTargets,
     checkStatus,
   };
@@ -199,50 +198,72 @@ const statistics = computed(() => {
 // Get affected resources
 const affectedResources = computed(() => {
   const specs = plan.value?.specs || [];
-  const resourceMap = new Map<
-    string,
-    { instanceName: string; databases: Set<string> }
-  >();
+  const resourceList: Array<{
+    type: "instance" | "databaseGroup";
+    name: string;
+    instance?: any;
+    databaseGroup?: any;
+    databases: string[];
+  }> = [];
+
+  const instanceMap = new Map<string, Set<string>>();
+  const dbGroupSet = new Set<string>();
 
   for (const spec of specs) {
     const targets = targetsForSpec(spec);
     for (const target of targets) {
-      // Parse target format: instances/{instance}/databases/{database}
-      const match = target.match(/instances\/([^/]+)\/databases\/([^/]+)/);
-      if (match) {
-        const instanceId = match[1];
-        const database = match[2];
-        const instanceName = `instances/${instanceId}`;
-
-        if (!resourceMap.has(instanceName)) {
-          resourceMap.set(instanceName, {
-            instanceName,
-            databases: new Set(),
-          });
+      // Check if it's a database group
+      if (target.includes("/databaseGroups/")) {
+        dbGroupSet.add(target);
+      } else {
+        // Parse instance/database format
+        const { instance, databaseName } = extractDatabaseResourceName(target);
+        if (instance && databaseName) {
+          if (!instanceMap.has(instance)) {
+            instanceMap.set(instance, new Set());
+          }
+          instanceMap.get(instance)!.add(databaseName);
         }
-
-        resourceMap.get(instanceName)!.databases.add(database);
       }
     }
   }
 
-  return Array.from(resourceMap.values()).map((resource) => {
-    const instance = instanceStore.getInstanceByName(resource.instanceName);
-    return {
-      name: resource.instanceName,
+  // Add instances to resource list
+  for (const [instanceName, databases] of instanceMap.entries()) {
+    const instance = instanceStore.getInstanceByName(instanceName);
+    resourceList.push({
+      type: "instance",
+      name: instanceName,
       instance: instance,
-      databases: Array.from(resource.databases),
-    };
-  });
+      databases: Array.from(databases),
+    });
+  }
+
+  // Add database groups to resource list
+  for (const dbGroupName of dbGroupSet) {
+    const dbGroup = dbGroupStore.getDBGroupByName(dbGroupName);
+    resourceList.push({
+      type: "databaseGroup",
+      name: dbGroupName,
+      databaseGroup: dbGroup,
+      databases: dbGroup?.matchedDatabases.map((db) => db.name) || [],
+    });
+  }
+
+  return resourceList;
 });
 
 watch(
   () => affectedResources.value,
   () => {
-    const instances = affectedResources.value.map((res) => res.name);
-    for (const instanceName of instances) {
-      instanceStore.getOrFetchInstanceByName(instanceName);
+    for (const resource of affectedResources.value) {
+      if (resource.type === "instance") {
+        instanceStore.getOrFetchInstanceByName(resource.name);
+      } else if (resource.type === "databaseGroup") {
+        dbGroupStore.getOrFetchDBGroupByName(resource.name);
+      }
     }
-  }
+  },
+  { immediate: true }
 );
 </script>
