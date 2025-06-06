@@ -25,10 +25,6 @@
             </i18n-t>
           </template>
         </NTooltip>
-        <FeatureBadge
-          feature="bb.feature.online-migration"
-          :instance="instance"
-        />
       </div>
       <GhostSwitch />
     </div>
@@ -56,21 +52,16 @@
 </template>
 
 <script lang="ts" setup>
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { WrenchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
-import { computed, ref } from "vue";
-import { FeatureBadge } from "@/components/FeatureGuard";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { ref } from "vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";
 import { useGhostSettingContext } from "./context";
 
 const showFlagsPanel = ref(false);
 
-const { allowChange, enabled, databases } = useGhostSettingContext();
+const { allowChange, enabled } = useGhostSettingContext();
 
-const instance = computed(() => {
-  return databases.value.find((db) => !db.instanceResource.activation)
-    ?.instanceResource;
-});
 </script>

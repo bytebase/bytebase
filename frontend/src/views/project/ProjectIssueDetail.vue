@@ -9,20 +9,9 @@
       <NSpin />
     </div>
   </div>
-  <FeatureModal
-    :open="state.showFeatureModal"
-    feature="bb.feature.multi-tenancy"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
-import { useTitle } from "@vueuse/core";
-import Emittery from "emittery";
-import { NSpin } from "naive-ui";
-import { computed, onMounted, reactive, toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import { FeatureModal } from "@/components/FeatureGuard";
 import {
   DataExportIssueDetailPage,
   GrantRequestIssueDetailPage,
@@ -38,14 +27,15 @@ import {
 import { useBodyLayoutContext } from "@/layouts/common";
 import { projectNamePrefix, useProjectByName, useUIStateStore } from "@/store";
 import {
-  isGrantRequestIssue,
   isDatabaseDataExportIssue,
+  isGrantRequestIssue,
   isValidIssueName,
 } from "@/utils";
-
-interface LocalState {
-  showFeatureModal: boolean;
-}
+import { useTitle } from "@vueuse/core";
+import Emittery from "emittery";
+import { NSpin } from "naive-ui";
+import { computed, onMounted, toRef } from "vue";
+import { useI18n } from "vue-i18n";
 
 defineOptions({
   inheritAttrs: false,
@@ -58,9 +48,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
-const state = reactive<LocalState>({
-  showFeatureModal: false,
-});
 const { project, ready: projectReady } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );

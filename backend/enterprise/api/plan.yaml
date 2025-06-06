@@ -66,8 +66,6 @@ planList:
     freeInstanceCount: 10
     maximumInstanceCount: 10
     maximumSeatCount: 20
-    maximumTaskCount: -1
-    maximumEnvironmentCount: -1
     pricePerSeatPerMonth: 0
     pricePerInstancePerMonth: 0
     featureList:
@@ -134,8 +132,6 @@ planList:
     freeInstanceCount: 10
     maximumInstanceCount: 10
     maximumSeatCount: 20
-    maximumTaskCount: -1
-    maximumEnvironmentCount: -1
     pricePerSeatPerMonth: 20
     pricePerInstancePerMonth: 0
     featureList:
@@ -207,8 +203,6 @@ planList:
     freeInstanceCount: 0
     maximumInstanceCount: -1
     maximumSeatCount: -1
-    maximumTaskCount: -1
-    maximumEnvironmentCount: -1
     pricePerSeatPerMonth: 0
     pricePerInstancePerMonth: 300
     featureList:
