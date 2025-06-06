@@ -138,14 +138,10 @@ const (
 	// FeatureReadReplicaConnection allows user to set a read replica connection
 	// including host and port to data source.
 	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
-	// FeatureInstanceSSHConnection provides SSH connection for instances.
-	FeatureInstanceSSHConnection FeatureType = "bb.feature.instance-ssh-connection"
 	// FeatureCustomInstanceSynchronization allows user to customize the synchronization for instance.
 	FeatureCustomInstanceSynchronization FeatureType = "bb.feature.custom-instance-synchronization"
 	// FeatureSyncSchemaAllVersions allows user to sync the base database schema all versions into target database.
 	FeatureSyncSchemaAllVersions FeatureType = "bb.feature.sync-schema-all-versions"
-	// FeatureIndexAdvisor provides the index advisor for databases.
-	FeatureIndexAdvisor FeatureType = "bb.feature.index-advisor"
 
 	// Policy Control.
 
@@ -247,14 +243,10 @@ func (e FeatureType) Name() string {
 	// Database management
 	case FeatureReadReplicaConnection:
 		return "Read replica connection"
-	case FeatureInstanceSSHConnection:
-		return "Instance SSH connection"
 	case FeatureCustomInstanceSynchronization:
 		return "Custom synchronization for instance"
 	case FeatureSyncSchemaAllVersions:
 		return "Synchronize schema all versions"
-	case FeatureIndexAdvisor:
-		return "Index advisor"
 	// Policy Control
 	case FeatureRolloutPolicy:
 		return "Rollout policy"
@@ -330,10 +322,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureIssueProjectSetting: {false, true, true},
 	// Database management
 	FeatureReadReplicaConnection:         {false, false, true},
-	FeatureInstanceSSHConnection:         {false, false, true},
 	FeatureCustomInstanceSynchronization: {false, false, true},
 	FeatureSyncSchemaAllVersions:         {false, true, true},
-	FeatureIndexAdvisor:                  {true, true, true},
 	// Policy Control
 	FeatureRolloutPolicy:         {true, true, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
@@ -359,11 +349,9 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureOnlineMigration:  true,
 	// Database management
 	FeatureReadReplicaConnection:         true,
-	FeatureInstanceSSHConnection:         true,
 	FeatureCustomInstanceSynchronization: true,
 	FeatureDatabaseGrouping:              true,
 	FeatureSyncSchemaAllVersions:         true,
-	FeatureIndexAdvisor:                  true,
 	// Policy Control
 	FeatureSensitiveData: true,
 	FeatureRolloutPolicy: true,

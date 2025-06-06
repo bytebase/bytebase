@@ -967,10 +967,6 @@ MIIEvQ...
       <label for="ssh" class="textlabel block">
         {{ $t("data-source.ssh-connection") }}
       </label>
-      <FeatureBadge
-        feature="bb.feature.instance-ssh-connection"
-        :instance="instance"
-      />
     </div>
     <SshConnectionForm
       :value="dataSource"
@@ -982,19 +978,6 @@ MIIEvQ...
 </template>
 
 <script setup lang="ts">
-import {
-  NButton,
-  NRadioGroup,
-  NRadio,
-  NCheckbox,
-  NInput,
-  NUpload,
-  NUploadDragger,
-  type UploadFileInfo,
-  NSwitch,
-} from "naive-ui";
-import { watch, reactive, computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
@@ -1003,19 +986,32 @@ import type { DataSourceOptions } from "@/types/dataSource";
 import { Engine } from "@/types/proto/v1/common";
 import type { DataSource } from "@/types/proto/v1/instance_service";
 import {
-  SASLConfig,
-  KerberosConfig,
-  DataSourceType,
   DataSourceExternalSecret,
-  DataSourceExternalSecret_AuthType,
-  DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_AppRoleAuthOption,
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+  DataSourceExternalSecret_AuthType,
+  DataSourceExternalSecret_SecretType,
+  DataSourceType,
   DataSource_AuthenticationType,
   DataSource_ClientSecretCredential,
+  DataSource_RedisType,
+  KerberosConfig,
+  SASLConfig,
 } from "@/types/proto/v1/instance_service";
-import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
+import {
+  NButton,
+  NCheckbox,
+  NInput,
+  NRadio,
+  NRadioGroup,
+  NSwitch,
+  NUpload,
+  NUploadDragger,
+  type UploadFileInfo,
+} from "naive-ui";
+import { computed, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
