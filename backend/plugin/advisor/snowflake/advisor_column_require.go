@@ -4,7 +4,7 @@ package snowflake
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
@@ -117,9 +117,7 @@ func (l *columnRequireChecker) ExitCreate_table(ctx *parser.Create_tableContext)
 		return
 	}
 
-	sort.Slice(columnNames, func(i, j int) bool {
-		return columnNames[i] < columnNames[j]
-	})
+	slices.Sort(columnNames)
 	for _, column := range columnNames {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:        l.level,
@@ -163,9 +161,7 @@ func (l *columnRequireChecker) ExitAlter_table(ctx *parser.Alter_tableContext) {
 		return
 	}
 
-	sort.Slice(columnNames, func(i, j int) bool {
-		return columnNames[i] < columnNames[j]
-	})
+	slices.Sort(columnNames)
 	for _, column := range columnNames {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:        l.level,

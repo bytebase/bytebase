@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -131,8 +131,13 @@ func getSortedVersionedFiles() ([]versionedFile, error) {
 	}); err != nil {
 		return nil, err
 	}
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].version.LT(*files[j].version)
+	slices.SortFunc(files, func(a, b versionedFile) int {
+		if a.version.LT(*b.version) {
+			return -1
+		} else if a.version.GT(*b.version) {
+			return 1
+		}
+		return 0
 	})
 	return files, nil
 }

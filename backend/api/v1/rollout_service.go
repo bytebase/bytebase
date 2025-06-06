@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"log/slog"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -585,8 +584,8 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		}
 		taskRunCreates = append(taskRunCreates, create)
 	}
-	sort.Slice(taskRunCreates, func(i, j int) bool {
-		return taskRunCreates[i].TaskUID < taskRunCreates[j].TaskUID
+	slices.SortFunc(taskRunCreates, func(a, b *store.TaskRunMessage) int {
+		return a.TaskUID - b.TaskUID
 	})
 
 	if err := s.store.CreatePendingTaskRuns(ctx, taskRunCreates...); err != nil {
