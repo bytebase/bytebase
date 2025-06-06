@@ -363,3 +363,19 @@ func (c *Client) batchCancelTaskRuns(r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.
 	}
 	return resp, nil
 }
+
+func (c *Client) getActuatorInfo() (*v1pb.ActuatorInfo, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/actuator/info", c.url), nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.doRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get actuator info")
+	}
+	resp := &v1pb.ActuatorInfo{}
+	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

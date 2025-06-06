@@ -1,3 +1,6 @@
 package args
 
-var Gitcommit = "unknown"
+var (
+	Gitcommit = "unknown"
+	Version   = "unknown"
+)
