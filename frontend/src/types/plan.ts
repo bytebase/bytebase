@@ -27,11 +27,8 @@ export type FeatureType =
   | "bb.feature.branding"
   // Change Workflow
   | "bb.feature.dba-workflow"
-  | "bb.feature.multi-tenancy"
-  | "bb.feature.online-migration"
   | "bb.feature.schema-drift"
   | "bb.feature.sql-review"
-  | "bb.feature.task-schedule-time"
   | "bb.feature.encrypted-secrets"
   | "bb.feature.database-grouping"
   | "bb.feature.schema-template"
@@ -61,8 +58,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   // Change Workflow
   "bb.feature.schema-drift",
   "bb.feature.encrypted-secrets",
-  "bb.feature.task-schedule-time",
-  "bb.feature.online-migration",
   // Database Management
   "bb.feature.read-replica-connection",
   "bb.feature.custom-instance-synchronization",
