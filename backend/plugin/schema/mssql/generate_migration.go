@@ -34,7 +34,8 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	// Phase 1: Drop dependent objects
 	// 1.1 Drop foreign keys first (they depend on tables)
 	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.Action == schema.MetadataDiffActionAlter {
+		switch tableDiff.Action {
+		case schema.MetadataDiffActionAlter:
 			for _, fkDiff := range tableDiff.ForeignKeyChanges {
 				if fkDiff.Action == schema.MetadataDiffActionDrop {
 					_, _ = buf.WriteString("ALTER TABLE [")
@@ -46,7 +47,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 					_, _ = buf.WriteString("];\nGO\n")
 				}
 			}
-		} else if tableDiff.Action == schema.MetadataDiffActionDrop {
+		case schema.MetadataDiffActionDrop:
 			// Drop foreign keys before dropping table
 			for _, fk := range tableDiff.OldTable.ForeignKeys {
 				_, _ = buf.WriteString("ALTER TABLE [")
@@ -328,9 +329,10 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 			} else {
 				_, _ = buf.WriteString("]")
 			}
-			if idx.Type == "CLUSTERED" {
+			switch idx.Type {
+			case "CLUSTERED":
 				_, _ = buf.WriteString(" CLUSTERED")
-			} else if idx.Type == "NONCLUSTERED" {
+			case "NONCLUSTERED":
 				_, _ = buf.WriteString(" NONCLUSTERED")
 			}
 			_, _ = buf.WriteString(" (")
@@ -346,7 +348,7 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 			constraintAdded = true
 		}
 	}
-	
+
 	if constraintAdded && len(table.CheckConstraints) > 0 {
 		_, _ = buf.WriteString(",\n")
 	} else if constraintAdded {
@@ -444,9 +446,10 @@ func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
 				} else {
 					_, _ = buf.WriteString("]")
 				}
-				if indexDiff.NewIndex.Type == "CLUSTERED" {
+				switch indexDiff.NewIndex.Type {
+				case "CLUSTERED":
 					_, _ = buf.WriteString(" CLUSTERED")
-				} else if indexDiff.NewIndex.Type == "NONCLUSTERED" {
+				case "NONCLUSTERED":
 					_, _ = buf.WriteString(" NONCLUSTERED")
 				}
 				_, _ = buf.WriteString(" (")
@@ -652,9 +655,10 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 			_, _ = buf.WriteString(" UNIQUE")
 		}
 
-		if index.Type == "CLUSTERED" {
+		switch index.Type {
+		case "CLUSTERED":
 			_, _ = buf.WriteString(" CLUSTERED")
-		} else if index.Type == "NONCLUSTERED" {
+		case "NONCLUSTERED":
 			_, _ = buf.WriteString(" NONCLUSTERED")
 		}
 
