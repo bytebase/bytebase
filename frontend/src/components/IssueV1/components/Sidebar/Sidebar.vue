@@ -5,7 +5,11 @@
     <ReviewSection />
     <IssueLabels />
 
-    <template v-if="selectedSpec">
+    <template
+      v-if="
+        selectedSpec && (shouldShowPreBackupSection || shouldShowGhostSection)
+      "
+    >
       <div class="border-t -mx-3" />
       <NTooltip :showArrow="false">
         <template #trigger>
@@ -25,7 +29,7 @@
         </template>
         {{ $t("plan.options.split-into-multiple-issues-tip") }}
       </NTooltip>
-      <PreBackupSection />
+      <PreBackupSection ref="preBackupSectionRef" />
       <GhostSection v-if="shouldShowGhostSection" />
     </template>
   </div>
@@ -33,10 +37,10 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { targetsForSpec } from "@/components/Plan";
-import { GhostSection } from "@/components/Plan/components/Sidebar";
-import { provideGhostSettingContext } from "@/components/Plan/components/Sidebar/GhostSection/context";
+import { GhostSection } from "@/components/Plan/components/Configuration";
+import { provideGhostSettingContext } from "@/components/Plan/components/Configuration/GhostSection/context";
 import { useCurrentProjectV1 } from "@/store";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { specForTask, useIssueContext } from "../../logic";
@@ -48,6 +52,7 @@ import TaskCheckSummarySection from "./TaskCheckSummarySection";
 
 const { isCreating, selectedTask, issue, events } = useIssueContext();
 const { project } = useCurrentProjectV1();
+const preBackupSectionRef = ref<InstanceType<typeof PreBackupSection>>();
 
 const selectedSpec = computed(() =>
   specForTask(issue.value.planEntity as Plan, selectedTask.value)
@@ -70,6 +75,10 @@ const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
     selectedTask: selectedTask,
     issue,
   });
+
+const shouldShowPreBackupSection = computed(() => {
+  return preBackupSectionRef.value?.shouldShow ?? false;
+});
 
 ghostEvents.on("update", () => {
   events.emit("status-changed", {

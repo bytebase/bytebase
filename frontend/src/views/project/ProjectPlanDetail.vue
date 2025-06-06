@@ -53,7 +53,7 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-const { isCreating, plan, isInitializing, reInitialize } = useInitializePlan(
+const { isCreating, plan, isInitializing } = useInitializePlan(
   toRef(props, "planSlug"),
   toRef(props, "projectId")
 );
@@ -71,7 +71,6 @@ providePlanContext(
     isCreating,
     plan,
     ready,
-    reInitialize,
     ...planBaseContext,
   },
   true /* root */

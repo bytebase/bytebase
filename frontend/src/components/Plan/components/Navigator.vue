@@ -1,0 +1,258 @@
+<template>
+  <div class="w-60 flex flex-col border-r">
+    <!-- Navigator Content -->
+    <NScrollbar class="flex-1">
+      <div class="py-2">
+        <!-- Overview Tab -->
+        <div
+          class="mx-2 px-3 py-2 rounded-md cursor-pointer group transition-all"
+          :class="[
+            !selectedSpec
+              ? 'bg-accent bg-opacity-10 shadow-sm'
+              : 'hover:bg-gray-50',
+          ]"
+          @click="handleSelectOverview"
+        >
+          <div class="flex items-center gap-2">
+            <LayoutDashboardIcon
+              class="w-4 h-4 transition-colors"
+              :class="[
+                !selectedSpec
+                  ? 'text-accent'
+                  : 'text-control-light group-hover:text-main',
+              ]"
+            />
+            <span
+              class="text-sm font-medium transition-colors"
+              :class="[
+                !selectedSpec
+                  ? 'text-accent'
+                  : 'text-control group-hover:text-main',
+              ]"
+            >
+              Overview
+            </span>
+          </div>
+        </div>
+
+        <!-- Specs Section -->
+        <div class="px-4 pb-2 mt-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span
+                class="text-xs font-medium uppercase tracking-wider text-control-light"
+              >
+                Specifications
+              </span>
+              <NBadge
+                v-if="specs.length > 10"
+                type="info"
+                :value="specs.length"
+                :max="99"
+              />
+            </div>
+            <!-- TODO(claude): Implement me please -->
+            <NButton
+              v-if="isCreating && false"
+              type="default"
+              size="tiny"
+              @click="handleAddSpec"
+            >
+              <template #icon>
+                <PlusIcon class="w-4 h-4" />
+              </template>
+            </NButton>
+          </div>
+        </div>
+
+        <!-- Spec List -->
+        <div class="px-2 space-y-1">
+          <div
+            v-for="(spec, index) in specs"
+            :key="spec.id"
+            class="px-3 py-2 rounded-md cursor-pointer group transition-all"
+            :class="[
+              selectedSpec?.id === spec.id
+                ? 'bg-accent bg-opacity-10 shadow-sm'
+                : 'hover:bg-gray-50',
+            ]"
+            @click="handleSelectSpec(spec)"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="text-sm font-medium"
+                    :class="[
+                      selectedSpec?.id === spec.id
+                        ? 'text-accent'
+                        : 'text-control',
+                    ]"
+                  >
+                    Spec {{ index + 1 }}
+                    <span
+                      v-if="isSpecEmpty(spec)"
+                      class="text-error ml-0.5"
+                      title="Statement is empty"
+                    >
+                      *
+                    </span>
+                  </span>
+                  <SpecStatusBadge
+                    v-if="getSpecCheckStatus(spec) !== 'STATUS_UNSPECIFIED'"
+                    :status="getSpecCheckStatus(spec)"
+                  />
+                </div>
+
+                <div
+                  class="flex flex-row items-center gap-1 mt-1 text-xs text-control-light"
+                >
+                  <div class="truncate">
+                    {{ getSpecTypeName(spec) }}
+                  </div>
+                  <span class="mx-0.5">·</span>
+                  <div class="opacity-80">
+                    {{ getTargetCountText(spec) }}
+                  </div>
+                </div>
+              </div>
+
+              <ChevronRightIcon
+                v-if="selectedSpec?.id === spec.id"
+                class="w-4 h-4 text-accent mt-0.5 flex-shrink-0"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="specs.length === 0"
+          class="text-sm text-control-light text-center py-8 px-4"
+        >
+          No specifications
+        </div>
+      </div>
+    </NScrollbar>
+  </div>
+</template>
+
+<script setup lang="ts">
+import {
+  LayoutDashboardIcon,
+  ChevronRightIcon,
+  PlusIcon,
+} from "lucide-vue-next";
+import { NButton, NScrollbar, NBadge } from "naive-ui";
+import { computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import {
+  Plan_ChangeDatabaseConfig_Type,
+  type Plan_Spec,
+} from "@/types/proto/v1/plan_service";
+import { usePlanContext } from "../logic/context";
+import { targetsForSpec } from "../logic/plan";
+import SpecStatusBadge from "./SpecStatusBadge.vue";
+import { useSpecsValidation } from "./common/validateSpec";
+
+const router = useRouter();
+const route = useRoute();
+const { plan, selectedSpec, isCreating, events } = usePlanContext();
+
+const specs = computed(() => plan.value?.specs || []);
+
+// Use the validation hook for all specs
+const { isSpecEmpty } = useSpecsValidation(specs.value);
+
+const handleSelectOverview = () => {
+  // Clear spec selection to show overview
+  router.replace({
+    query: {
+      ...route.query,
+      spec: undefined,
+      target: undefined,
+    },
+    hash: route.hash,
+  });
+};
+
+const handleSelectSpec = (spec: Plan_Spec) => {
+  events.emit("select-spec", { spec });
+};
+
+const handleAddSpec = () => {
+  // TODO: Implement add spec functionality
+};
+
+const getSpecCheckStatus = (spec: Plan_Spec) => {
+  // Get aggregated check status for the spec
+  const checkRuns = plan.value?.planCheckRunList || [];
+  const targets = targetsForSpec(spec);
+  const sheet = getSheetFromSpec(spec);
+
+  if (!sheet || targets.length === 0) {
+    return "STATUS_UNSPECIFIED";
+  }
+
+  const relevantCheckRuns = checkRuns.filter((check) => {
+    return targets.includes(check.target) && check.sheet === sheet;
+  });
+
+  if (relevantCheckRuns.length === 0) {
+    return "STATUS_UNSPECIFIED";
+  }
+
+  // Find worst status
+  let hasError = false;
+  let hasWarning = false;
+
+  for (const checkRun of relevantCheckRuns) {
+    for (const result of checkRun.results) {
+      if (result.status === "ERROR") {
+        hasError = true;
+      } else if (result.status === "WARNING") {
+        hasWarning = true;
+      }
+    }
+  }
+
+  if (hasError) return "ERROR";
+  if (hasWarning) return "WARNING";
+  return "SUCCESS";
+};
+
+const getSheetFromSpec = (spec: Plan_Spec): string | undefined => {
+  if (spec.changeDatabaseConfig) {
+    return spec.changeDatabaseConfig.sheet;
+  } else if (spec.exportDataConfig) {
+    return spec.exportDataConfig.sheet;
+  }
+  return undefined;
+};
+
+const getSpecTypeName = (spec: Plan_Spec): string => {
+  if (spec.createDatabaseConfig) {
+    return "Create Database";
+  } else if (spec.changeDatabaseConfig) {
+    const changeType = spec.changeDatabaseConfig.type;
+    switch (changeType) {
+      case Plan_ChangeDatabaseConfig_Type.MIGRATE:
+        return "Schema Change";
+      case Plan_ChangeDatabaseConfig_Type.DATA:
+        return "Data Change";
+      case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
+        return "Ghost Migration";
+      default:
+        return "Database Change";
+    }
+  } else if (spec.exportDataConfig) {
+    return "Export Data";
+  }
+  return "Unknown";
+};
+
+const getTargetCountText = (spec: Plan_Spec): string => {
+  const targets = targetsForSpec(spec);
+  if (targets.length === 0) return "No targets";
+  return targets.length === 1 ? "1 target" : `${targets.length} targets`;
+};
+</script>
