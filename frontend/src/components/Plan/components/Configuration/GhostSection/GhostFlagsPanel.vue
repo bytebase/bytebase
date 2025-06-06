@@ -1,5 +1,5 @@
 <template>
-  <Drawer :show="show">
+  <Drawer :show="show" @close="close">
     <DrawerContent
       :title="title"
       class="w-[100vw] md:max-w-[calc(100vw-8rem)] md:w-[40vw]"

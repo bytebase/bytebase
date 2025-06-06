@@ -33,7 +33,6 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { ErrorList } from "@/components/Plan/components/common";
 import {
   databaseEngineForSpec,
@@ -44,26 +43,20 @@ import { usePlanContext } from "@/components/Plan/logic";
 import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
-import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,
   extractSheetUID,
-  getSheetStatement,
   hasProjectPermissionV2,
   planV1Slug,
-  setSheetStatement,
 } from "@/utils";
-
-const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
 const router = useRouter();
 const { project } = useCurrentProjectV1();
-const { plan, formatOnSave } = usePlanContext();
+const { plan } = usePlanContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
 
@@ -133,7 +126,6 @@ const createSheets = async () => {
       const engine = await databaseEngineForSpec(spec);
       sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
-      await maybeFormatSQL(sheet, engine);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
@@ -153,26 +145,5 @@ const createSheets = async () => {
       config.sheet = sheetNameMap.get(config.sheet) ?? "";
     }
   });
-};
-
-const maybeFormatSQL = async (sheet: Sheet, engine: Engine) => {
-  if (!formatOnSave.value) {
-    return;
-  }
-  const language = languageOfEngineV1(engine);
-  if (language !== "sql") {
-    return;
-  }
-  const dialect = dialectOfEngineV1(engine);
-  const statement = getSheetStatement(sheet);
-  if (statement.length > MAX_FORMATTABLE_STATEMENT_SIZE) {
-    return;
-  }
-  const { error, data: formatted } = await formatSQL(statement, dialect);
-  if (error) {
-    return;
-  }
-
-  setSheetStatement(sheet, formatted);
 };
 </script>

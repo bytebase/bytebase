@@ -995,6 +995,62 @@
     }
   },
   "plan": {
+    "add-spec": "仕様を追加",
+    "change-type": "変更タイプ",
+    "schema-migration": "スキーマの移行",
+    "schema-migration-description": "データベーススキーマの変更（DDL）",
+    "data-change": "データの変更",
+    "data-change-description": "データの変更 (DML)",
+    "select-targets": "ターゲットを選択",
+    "overview": {
+      "title": "プランの概要",
+      "description": "このプランのすべての仕様を表示および管理します",
+      "total-specs": "合計スペック",
+      "total-targets": "合計ターゲット",
+      "check-status": "ステータスを確認する",
+      "no-checks": "チェックなし",
+      "affected-resources": "影響を受けるリソース"
+    },
+    "navigator": {
+      "overview": "概要",
+      "specifications": "仕様",
+      "spec-number": "スペック {number}",
+      "no-specifications": "仕様なし",
+      "statement-empty": "ステートメントが空です"
+    },
+    "spec": {
+      "type": {
+        "create-database": "データベースの作成",
+        "schema-change": "スキーマの変更",
+        "data-change": "データの変更",
+        "ghost-migration": "ゴーストマイグレーション",
+        "database-change": "データベースの変更",
+        "export-data": "データのエクスポート",
+        "unknown": "未知"
+      },
+      "status": {
+        "pass": "合格",
+        "warn": "警告する",
+        "error": "エラー"
+      }
+    },
+    "targets": {
+      "title": "ターゲット",
+      "no-targets-found": "ターゲットが見つかりません",
+      "no-targets": "ターゲットなし",
+      "one-target": "1つのターゲット",
+      "multiple-targets": "{count} 個のターゲット",
+      "one-database": "1 つのデータベース",
+      "multiple-databases": "{count} データベース",
+      "database-group": "データベースグループ",
+      "database-not-found": "データベースが見つかりません",
+      "environment": "環境: {environment}",
+      "type": {
+        "instance": "実例",
+        "database": "データベース",
+        "database-group": "データベースグループ"
+      }
+    },
     "options": {
       "self": "オプション",
       "applies-to-all-tasks": "すべてのタスクに適用",

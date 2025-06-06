@@ -1,13 +1,17 @@
 import DescriptionSection from "./DescriptionSection";
 import HeaderSection from "./HeaderSection";
+import Navigator from "./Navigator.vue";
+import Overview from "./Overview.vue";
 import PlanCheckSection from "./PlanCheckSection";
 import SQLCheckSection from "./SQLCheckSection";
-import SpecListSection from "./SpecListSection";
+import { SpecDetailView } from "./SpecDetailView";
 import StatementSection from "./StatementSection";
 
 export {
   HeaderSection,
-  SpecListSection,
+  Navigator,
+  Overview,
+  SpecDetailView,
   PlanCheckSection,
   SQLCheckSection,
   StatementSection,

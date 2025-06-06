@@ -7,6 +7,8 @@ import {
 } from "@/types/proto/v1/plan_service";
 import { semverCompare } from "@/utils";
 
+export const GHOST_AVAILABLE_ENGINES = [Engine.MYSQL, Engine.MARIADB];
+
 export const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.6.0";
 
 export const MIN_GHOST_SUPPORT_MARIADB_VERSION = "10.6.0";

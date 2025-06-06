@@ -995,6 +995,62 @@
     }
   },
   "plan": {
+    "add-spec": "Add Specification",
+    "change-type": "Change Type",
+    "schema-migration": "Schema Migration",
+    "schema-migration-description": "Modify database schema (DDL)",
+    "data-change": "Data Change",
+    "data-change-description": "Modify data (DML)",
+    "select-targets": "Select Targets",
+    "overview": {
+      "title": "Plan Overview",
+      "description": "View and manage all specifications in this plan",
+      "total-specs": "Total Specs",
+      "total-targets": "Total Targets",
+      "check-status": "Check Status",
+      "no-checks": "No checks",
+      "affected-resources": "Affected Resources"
+    },
+    "navigator": {
+      "overview": "Overview",
+      "specifications": "Specifications",
+      "spec-number": "Spec {number}",
+      "no-specifications": "No specifications",
+      "statement-empty": "Statement is empty"
+    },
+    "spec": {
+      "type": {
+        "create-database": "Create Database",
+        "schema-change": "Schema Change",
+        "data-change": "Data Change",
+        "ghost-migration": "Ghost Migration",
+        "database-change": "Database Change",
+        "export-data": "Export Data",
+        "unknown": "Unknown"
+      },
+      "status": {
+        "pass": "Pass",
+        "warn": "Warn",
+        "error": "Error"
+      }
+    },
+    "targets": {
+      "title": "Targets",
+      "no-targets-found": "No targets found",
+      "no-targets": "No targets",
+      "one-target": "1 target",
+      "multiple-targets": "{count} targets",
+      "one-database": "1 database",
+      "multiple-databases": "{count} databases",
+      "database-group": "Database Group",
+      "database-not-found": "Database not found",
+      "environment": "Environment: {environment}",
+      "type": {
+        "instance": "Instance",
+        "database": "Database",
+        "database-group": "Database Group"
+      }
+    },
     "options": {
       "self": "Options",
       "applies-to-all-tasks": "Applies to all tasks",

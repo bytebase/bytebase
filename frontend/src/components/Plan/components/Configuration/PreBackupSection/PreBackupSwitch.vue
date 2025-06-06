@@ -1,25 +1,24 @@
 <template>
-  <div class="flex items-center">
-    <NTooltip :disabled="!tooltipMessage" :showArrow="false">
-      <template #trigger>
-        <NSwitch
-          :value="enabled"
-          :disabled="!allowChange || errors.length > 0"
-          @update:value="(on) => handleToggle(on)"
-        />
-      </template>
-      <div class="max-w-sm">
-        <p class="opacity-80">{{ tooltipMessage }}</p>
-        <ErrorList v-if="errors.length > 0" :errors="errors" class="mt-2" />
-        <LearnMoreLink
-          v-if="disallowPreBackupLink && errors.length === 0"
-          :url="disallowPreBackupLink"
-          color="light"
-          class="mt-1 text-sm"
-        />
-      </div>
-    </NTooltip>
-  </div>
+  <NTooltip :disabled="!tooltipMessage" :showArrow="false">
+    <template #trigger>
+      <NSwitch
+        size="small"
+        :value="enabled"
+        :disabled="!allowChange || errors.length > 0"
+        @update:value="(on) => handleToggle(on)"
+      />
+    </template>
+    <div class="max-w-sm">
+      <p class="opacity-80">{{ tooltipMessage }}</p>
+      <ErrorList v-if="errors.length > 0" :errors="errors" class="mt-2" />
+      <LearnMoreLink
+        v-if="disallowPreBackupLink && errors.length === 0"
+        :url="disallowPreBackupLink"
+        color="light"
+        class="mt-1 text-sm"
+      />
+    </div>
+  </NTooltip>
 </template>
 
 <script lang="ts" setup>
