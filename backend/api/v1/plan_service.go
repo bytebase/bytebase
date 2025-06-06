@@ -1030,16 +1030,27 @@ func getPlanSpecDatabaseGroups(specs []*storepb.PlanConfig_Spec) []string {
 	return databaseGroups
 }
 
-func getPlanDeployment(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, project *store.ProjectMessage) (*storepb.PlanConfig_Deployment, error) {
-	snapshot := &storepb.PlanConfig_Deployment{}
-
+// getAllEnvironmentIDs returns all environment IDs from the store.
+func getAllEnvironmentIDs(ctx context.Context, s *store.Store) ([]string, error) {
 	environments, err := s.GetEnvironmentSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list environments")
 	}
+	var environmentIDs []string
 	for _, e := range environments.GetEnvironments() {
-		snapshot.Environments = append(snapshot.Environments, e.Id)
+		environmentIDs = append(environmentIDs, e.Id)
 	}
+	return environmentIDs, nil
+}
+
+func getPlanDeployment(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, project *store.ProjectMessage) (*storepb.PlanConfig_Deployment, error) {
+	snapshot := &storepb.PlanConfig_Deployment{}
+
+	environmentIDs, err := getAllEnvironmentIDs(ctx, s)
+	if err != nil {
+		return nil, err
+	}
+	snapshot.Environments = environmentIDs
 
 	databaseGroups := getPlanSpecDatabaseGroups(specs)
 

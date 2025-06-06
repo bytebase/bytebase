@@ -238,7 +238,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting that the target database is in a stage")
 	}
 	if isChangeDatabasePlan(plan.Config.GetSpecs()) {
-		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment().GetEnvironments(), pipelineCreate, request.Target)
+		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment(), pipelineCreate, request.Target)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to filter stages with stageId, error: %v", err)
 		}
@@ -910,6 +910,34 @@ func isChangeDatabasePlan(specs []*storepb.PlanConfig_Spec) bool {
 	return false
 }
 
+// getPlanEnvironmentSnapshots returns the environment snapshots and environment index map.
+func getPlanEnvironmentSnapshots(ctx context.Context, s *store.Store, deployment *storepb.PlanConfig_Deployment) ([]string, map[string]int, error) {
+	snapshotEnvironments := deployment.GetEnvironments()
+	if len(snapshotEnvironments) == 0 {
+		var err error
+		snapshotEnvironments, err = getAllEnvironmentIDs(ctx, s)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	environmentIndex := make(map[string]int)
+	for i, e := range snapshotEnvironments {
+		environmentIndex[e] = i
+	}
+	return snapshotEnvironments, environmentIndex, nil
+}
+
+// filterTasksByEnvironments filters tasks to only include those in the given environment index.
+func filterTasksByEnvironments(tasks []*store.TaskMessage, environmentIndex map[string]int) []*store.TaskMessage {
+	filteredTasks := []*store.TaskMessage{}
+	for _, task := range tasks {
+		if _, ok := environmentIndex[task.Environment]; ok {
+			filteredTasks = append(filteredTasks, task)
+		}
+	}
+	return filteredTasks
+}
+
 // GetPipelineCreate gets a pipeline create message from a plan.
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, rolloutTitle string, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Step 1 - transform database group specs.
@@ -920,19 +948,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	}
 
 	// Step 2 - list snapshot environments.
-	snapshotEnvironments := deployment.GetEnvironments()
-	if len(snapshotEnvironments) == 0 {
-		environments, err := s.GetEnvironmentSetting(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list environments")
-		}
-		for _, e := range environments.GetEnvironments() {
-			snapshotEnvironments = append(snapshotEnvironments, e.Id)
-		}
-	}
-	environmentIndex := make(map[string]int)
-	for i, e := range snapshotEnvironments {
-		environmentIndex[e] = i
+	_, environmentIndex, err := getPlanEnvironmentSnapshots(ctx, s, deployment)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get plan environment snapshots")
 	}
 
 	// Step 3 - convert all task creates.
@@ -949,12 +967,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	}
 
 	// Filter out tasks not in deployment environments
-	filteredTasks := []*store.TaskMessage{}
-	for _, task := range taskCreates {
-		if _, ok := environmentIndex[task.Environment]; ok {
-			filteredTasks = append(filteredTasks, task)
-		}
-	}
+	filteredTasks := filterTasksByEnvironments(taskCreates, environmentIndex)
 
 	return &store.PipelineMessage{
 		Name:      rolloutTitle,
@@ -964,7 +977,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 }
 
 // filter pipelineCreate.Tasks using targetEnvironmentID.
-func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshotEnvironments []string, pipelineCreate *store.PipelineMessage, targetEnvironment *string) (*store.PipelineMessage, error) {
+func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, deployment *storepb.PlanConfig_Deployment, pipelineCreate *store.PipelineMessage, targetEnvironment *string) (*store.PipelineMessage, error) {
 	if targetEnvironment == nil {
 		return pipelineCreate, nil
 	}
@@ -976,14 +989,10 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapsho
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get environment id from %q", *targetEnvironment)
 	}
-	if len(snapshotEnvironments) == 0 {
-		environments, err := s.GetEnvironmentSetting(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list environments")
-		}
-		for _, e := range environments.GetEnvironments() {
-			snapshotEnvironments = append(snapshotEnvironments, e.Id)
-		}
+
+	snapshotEnvironments, _, err := getPlanEnvironmentSnapshots(ctx, s, deployment)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get environment snapshots")
 	}
 
 	// Build a set of allowed environments up to and including the target
