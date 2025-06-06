@@ -194,13 +194,16 @@ const statistics = computed(() => {
   const checkStatus = {
     total: 0,
     success:
-      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.SUCCESS],
+      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.SUCCESS] ||
+      0,
     warning:
-      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.WARNING],
-    error: plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.ERROR],
+      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.WARNING] ||
+      0,
+    error:
+      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.ERROR] || 0,
   };
   checkStatus.total =
-    checkStatus.success + checkStatus.warning + checkStatus.error;
+    checkStatus.success + checkStatus.warning + checkStatus.error || 0;
   for (const spec of plan.value.specs) {
     totalTargets += targetsForSpec(spec).length;
   }
