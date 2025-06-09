@@ -8,10 +8,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common/log"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -69,7 +69,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 	subscription := &enterprise.Subscription{
 		InstanceCount: 0,
 		Seat:          0,
-		Plan:          base.FREE,
+		Plan:          v1pb.PlanType_FREE,
 		OrgID:         aws.ToString(p.identity.Account),
 		OrgName:       aws.ToString(p.identity.Arn),
 	}
@@ -86,7 +86,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 		return subscription
 	}
 
-	subscription.Plan = base.ENTERPRISE
+	subscription.Plan = v1pb.PlanType_ENTERPRISE
 
 	if v := license.Validity; v != nil {
 		begin, err := time.Parse(time.RFC3339, aws.ToString(v.Begin))

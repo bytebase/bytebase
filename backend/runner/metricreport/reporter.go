@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -18,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric/segment"
 	"github.com/bytebase/bytebase/backend/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -165,7 +165,7 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 
 	subscriptionStartDate := ""
 	subscriptionEndDate := ""
-	if subscription.Plan != base.FREE {
+	if subscription.Plan != v1pb.PlanType_FREE {
 		subscriptionStartDate = time.Unix(subscription.StartedTS, 0).Format(time.RFC3339)
 		subscriptionEndDate = time.Unix(subscription.ExpiresTS, 0).Format(time.RFC3339)
 	}
