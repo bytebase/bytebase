@@ -401,42 +401,10 @@ func writeProcedure(out io.Writer, procedure *storepb.ProcedureMetadata) error {
 	}
 
 	// Set charset, collation, and sql mode.
-	if _, err := io.WriteString(out, setCharacterSetClient); err != nil {
+	if err := writeAdditionalEventsIfSet(out, procedure.CharacterSetClient, procedure.CharacterSetClient, procedure.CollationConnection, procedure.SqlMode); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, procedure.CharacterSetClient); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, setCharacterSetResult); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, procedure.CharacterSetClient); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, setCollation); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, procedure.CollationConnection); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, setSQLMode); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, procedure.SqlMode); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
-		return err
-	}
+
 	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
 		return err
 	}
@@ -479,43 +447,7 @@ func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
 	}
 
 	// Set charset, collation, and sql mode.
-	if _, err := io.WriteString(out, setCharacterSetClient); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, function.CharacterSetClient); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, setCharacterSetResult); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, function.CharacterSetClient); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, setCollation); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, function.CollationConnection); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, setSQLMode); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, function.SqlMode); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
+	if err := writeAdditionalEventsIfSet(out, function.CharacterSetClient, function.CharacterSetClient, function.CollationConnection, function.SqlMode); err != nil {
 		return err
 	}
 
@@ -1302,4 +1234,53 @@ func writeTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
 	}
 	_, err := io.WriteString(out, ";\n\n")
 	return err
+}
+
+func writeAdditionalEventsIfSet(out io.Writer, characterSetClient, characterSetResult, collationConnection, sqlMode string) error {
+	if characterSetClient != "" {
+		if _, err := io.WriteString(out, setCharacterSetClient); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, characterSetClient); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, ";\n"); err != nil {
+			return err
+		}
+	}
+	if characterSetResult != "" {
+		if _, err := io.WriteString(out, setCharacterSetResult); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, characterSetResult); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, ";\n"); err != nil {
+			return err
+		}
+	}
+	if collationConnection != "" {
+		if _, err := io.WriteString(out, setCollation); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, collationConnection); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, ";\n"); err != nil {
+			return err
+		}
+	}
+	if sqlMode != "" {
+		if _, err := io.WriteString(out, setSQLMode); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, sqlMode); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, ";\n"); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
