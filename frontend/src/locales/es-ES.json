@@ -2637,7 +2637,7 @@
     "change-type": {
       "ddl": "DDL",
       "ddl-ghost": "Fantasma DDL",
-      "dml": "LMD",
+      "dml": "DML",
       "unspecified": "No especificado"
     },
     "file-type": {
