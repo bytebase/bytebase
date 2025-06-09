@@ -16,9 +16,9 @@ import { onBeforeRouteLeave } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { hasFeature } from "@/store";
 import { VirtualRoleType } from "@/types";
-import type { Environment } from "@/types/v1/environment";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import type { Environment } from "@/types/v1/environment";
 import { FeatureModal } from "../FeatureGuard";
 import { provideEnvironmentFormContext } from "./context";
 
@@ -82,7 +82,7 @@ onBeforeRouteLeave((to, from, next) => {
 useEmitteryEventListener(events, "create", (params) => {
   const { rolloutPolicy, environment } = params;
   if (environment.tags?.protected === "protected") {
-    if (!hasFeature("bb.feature.custom-approval")) {
+    if (!hasFeature("bb.feature.environment-tier-policy")) {
       missingFeature.value = "bb.feature.environment-tier-policy";
       return;
     }
