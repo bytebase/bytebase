@@ -705,7 +705,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 					Server:   "",
 					Database: databaseName,
 					Schema:   schemaName,
-					Name:     tableName,
+					Name:     table.GetProto().Name,
 					Columns: func() []string {
 						var result []string
 						for _, column := range table.GetColumns() {
@@ -731,7 +731,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 					Server:   "",
 					Database: databaseName,
 					Schema:   schemaName,
-					Name:     viewName,
+					Name:     view.GetProto().Name,
 					Columns:  columns,
 				}
 				return tableSource, nil

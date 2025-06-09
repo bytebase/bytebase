@@ -1336,7 +1336,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: databaseName,
-			Name:     tableName,
+			Name:     table.GetProto().Name,
 			Columns:  columns,
 		}, nil
 	}
@@ -1349,7 +1349,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: databaseName,
-			Name:     tableName,
+			Name:     foreignTable.GetProto().Name,
 			Columns:  columns,
 		}, nil
 	}
@@ -1361,7 +1361,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 			return nil, err
 		}
 		return &base.PseudoTable{
-			Name:    tableName,
+			Name:    view.GetProto().Name,
 			Columns: columns,
 		}, nil
 	}
@@ -1373,7 +1373,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 			return nil, err
 		}
 		return &base.PseudoTable{
-			Name:    tableName,
+			Name:    materializedView.GetProto().Name,
 			Columns: columns,
 		}, nil
 	}
