@@ -9,7 +9,9 @@
     />
     <div v-if="editable && allowAdmin" class="mt-4">
       <NButton @click="addStep">
-        <template #icon><heroicons:plus /></template>
+        <template #icon>
+          <PlusIcon class="w-4" />
+        </template>
         <span>
           {{ $t("custom-approval.approval-flow.node.add") }}
         </span>
@@ -19,7 +21,12 @@
 </template>
 
 <script lang="tsx" setup>
-import { ArrowUpIcon, ArrowDownIcon, TrashIcon } from "lucide-vue-next";
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  TrashIcon,
+  PlusIcon,
+} from "lucide-vue-next";
 import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
@@ -97,14 +104,14 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
             size="tiny"
             onClick={() => reorder(step, index, -1)}
           >
-            <ArrowUpIcon />
+            <ArrowUpIcon class={"w-4"} />
           </NButton>
           <NButton
             disabled={index === steps.value.length - 1 || !allowAdmin.value}
             size="tiny"
             onClick={() => reorder(step, index, 1)}
           >
-            <ArrowDownIcon />
+            <ArrowDownIcon class={"w-4"} />
           </NButton>
           {allowAdmin.value && (
             <SpinnerButton
@@ -112,7 +119,7 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
               tooltip={t("custom-approval.approval-flow.node.delete")}
               onConfirm={() => removeStep(step, index)}
             >
-              <TrashIcon />
+              <TrashIcon class={"w-4"} />
             </SpinnerButton>
           )}
         </div>
