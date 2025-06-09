@@ -1,10 +1,19 @@
 package mssql
 
 import (
+	"context"
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/tsql-parser"
+	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -15,11 +24,23 @@ func init() {
 func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	var buf strings.Builder
 
+	// Collect schemas to create first (needed for checking if create phase will have content)
+	var schemasToCreate []string
+	for _, schemaDiff := range diff.SchemaChanges {
+		if schemaDiff.Action == schema.MetadataDiffActionCreate {
+			// Skip creating dbo schema as it already exists by default
+			if strings.ToLower(schemaDiff.SchemaName) != "dbo" {
+				schemasToCreate = append(schemasToCreate, schemaDiff.SchemaName)
+			}
+		}
+	}
+	sort.Strings(schemasToCreate)
+
 	// Safe order for migrations:
 	// 1. Drop dependent objects first (in reverse dependency order)
 	//    - Drop foreign keys
 	//    - Drop indexes
-	//    - Drop views (might depend on tables/columns)
+	//    - Drop views (in reverse topological order)
 	//    - Drop functions/procedures (might depend on tables)
 	//    - Drop tables
 	//    - Drop schemas
@@ -28,7 +49,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	//    - Create/Alter tables and columns
 	//    - Create indexes
 	//    - Create foreign keys
-	//    - Create views
+	//    - Create views (in topological order)
 	//    - Create functions/procedures
 
 	// Phase 1: Drop dependent objects
@@ -83,15 +104,9 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 
-	// 1.4 Drop views (might depend on tables/columns)
-	for _, viewDiff := range diff.ViewChanges {
-		if viewDiff.Action == schema.MetadataDiffActionDrop {
-			_, _ = buf.WriteString("DROP VIEW [")
-			_, _ = buf.WriteString(viewDiff.SchemaName)
-			_, _ = buf.WriteString("].[")
-			_, _ = buf.WriteString(viewDiff.ViewName)
-			_, _ = buf.WriteString("];\nGO\n")
-		}
+	// 1.4 Drop views in reverse topological order (dependent views first)
+	if err := dropViewsInOrder(diff, &buf); err != nil {
+		return "", err
 	}
 
 	// 1.5 Drop indexes and constraints from tables being altered
@@ -172,47 +187,51 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 
-	// Add blank line between drop and create phases if we had any drops
-	if buf.Len() > 0 {
+	// Only add blank line if we have drops AND we're about to create something
+	dropPhaseHasContent := buf.Len() > 0
+	createPhaseWillHaveContent := len(schemasToCreate) > 0 ||
+		hasCreateOrAlterTables(diff) ||
+		hasCreateViews(diff) ||
+		hasCreateFunctions(diff) ||
+		hasCreateProcedures(diff)
+
+	if dropPhaseHasContent && createPhaseWillHaveContent {
 		_, _ = buf.WriteString("\n")
 	}
 
 	// Phase 2: Create/Alter objects
-	// 2.1 Create schemas first
-	for _, schemaDiff := range diff.SchemaChanges {
-		if schemaDiff.Action == schema.MetadataDiffActionCreate {
-			// Skip creating dbo schema as it already exists by default
-			if strings.ToLower(schemaDiff.SchemaName) == "dbo" {
-				continue
-			}
-			_, _ = buf.WriteString("CREATE SCHEMA [")
-			_, _ = buf.WriteString(schemaDiff.SchemaName)
-			_, _ = buf.WriteString("];\nGO\n")
-		}
+	// 2.1 Create schemas first (already sorted)
+	for _, schemaName := range schemasToCreate {
+		_, _ = buf.WriteString("CREATE SCHEMA [")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("];\nGO\n")
 	}
 
-	// Add blank line after schema creation if any
-	schemasCreated := false
-	for _, schemaDiff := range diff.SchemaChanges {
-		if schemaDiff.Action == schema.MetadataDiffActionCreate && strings.ToLower(schemaDiff.SchemaName) != "dbo" {
-			schemasCreated = true
-			break
-		}
-	}
-	if schemasCreated {
+	// Add blank line after schema creation only if we have schemas and more content follows
+	if len(schemasToCreate) > 0 && (hasCreateOrAlterTables(diff) || hasCreateViews(diff) || hasCreateFunctions(diff) || hasCreateProcedures(diff)) {
 		_, _ = buf.WriteString("\n")
 	}
 
-	// 2.2 Create new tables
+	// 2.2 Create new tables WITHOUT foreign keys (sorted for consistent output)
+	var tablesToCreate []*schema.TableDiff
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionCreate {
-			createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
-			if err != nil {
-				return "", err
-			}
-			_, _ = buf.WriteString(createTableSQL)
-			_, _ = buf.WriteString("\n")
+			tablesToCreate = append(tablesToCreate, tableDiff)
 		}
+	}
+	// Sort by schema.table name for consistent output
+	sort.Slice(tablesToCreate, func(i, j int) bool {
+		iFullName := getObjectID(tablesToCreate[i].SchemaName, tablesToCreate[i].TableName)
+		jFullName := getObjectID(tablesToCreate[j].SchemaName, tablesToCreate[j].TableName)
+		return iFullName < jFullName
+	})
+	for _, tableDiff := range tablesToCreate {
+		createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
+		if err != nil {
+			return "", err
+		}
+		_, _ = buf.WriteString(createTableSQL)
+		_, _ = buf.WriteString("\n")
 	}
 
 	// 2.3 Alter existing tables (add columns, alter columns)
@@ -223,31 +242,33 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 				return "", err
 			}
 			_, _ = buf.WriteString(alterTableSQL)
+			if alterTableSQL != "" {
+				_, _ = buf.WriteString("\n")
+			}
 		}
 	}
 
-	// 2.4 Create views (after tables are ready)
-	for _, viewDiff := range diff.ViewChanges {
-		switch viewDiff.Action {
-		case schema.MetadataDiffActionCreate:
-			_, _ = buf.WriteString(viewDiff.NewView.Definition)
-			if !strings.HasSuffix(strings.TrimSpace(viewDiff.NewView.Definition), ";") {
-				_, _ = buf.WriteString(";")
+	// 2.4 Add foreign keys for newly created tables (after all tables exist)
+	for _, tableDiff := range tablesToCreate {
+		for _, fk := range tableDiff.NewTable.ForeignKeys {
+			fkSQL, err := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fk)
+			if err != nil {
+				return "", err
 			}
-			_, _ = buf.WriteString("\nGO\n")
-		case schema.MetadataDiffActionAlter:
-			// MSSQL requires dropping and recreating views
-			_, _ = buf.WriteString("DROP VIEW [")
-			_, _ = buf.WriteString(viewDiff.SchemaName)
-			_, _ = buf.WriteString("].[")
-			_, _ = buf.WriteString(viewDiff.ViewName)
-			_, _ = buf.WriteString("];\nGO\n")
-			_, _ = buf.WriteString(viewDiff.NewView.Definition)
-			if !strings.HasSuffix(strings.TrimSpace(viewDiff.NewView.Definition), ";") {
-				_, _ = buf.WriteString(";")
-			}
-			_, _ = buf.WriteString("\nGO\n")
+			_, _ = buf.WriteString(fkSQL)
+			_, _ = buf.WriteString(";\n")
 		}
+	}
+
+	// Add a GO statement to separate table creation/alteration from the next phase
+	// Only add if we have tables/alters and we have views/functions/procedures to follow
+	if hasCreateOrAlterTables(diff) && (hasCreateViews(diff) || hasCreateFunctions(diff) || hasCreateProcedures(diff)) {
+		_, _ = buf.WriteString("\nGO\n")
+	}
+
+	// 2.4 Create views in topological order (dependencies first)
+	if err := createViewsInOrder(diff, &buf); err != nil {
+		return "", err
 	}
 
 	// 2.5 Create functions
@@ -383,16 +404,7 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 		}
 	}
 
-	// Add foreign keys (after table and referenced tables exist)
-	for _, fk := range table.ForeignKeys {
-		fkSQL, err := generateAddForeignKey(schemaName, tableName, fk)
-		if err != nil {
-			return "", err
-		}
-		_, _ = buf.WriteString("\n")
-		_, _ = buf.WriteString(fkSQL)
-		_, _ = buf.WriteString(";")
-	}
+	// Note: Foreign keys are now added in a separate phase after all tables are created
 
 	return buf.String(), nil
 }
@@ -812,4 +824,305 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 	}
 
 	return ""
+}
+
+type queryClauseListener struct {
+	*parser.BaseTSqlParserListener
+
+	result string
+}
+
+func (l *queryClauseListener) EnterCreate_view(ctx *parser.Create_viewContext) {
+	if l.result != "" {
+		return
+	}
+
+	l.result = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_statement_standalone())
+}
+
+// getViewDependencies extracts the tables that a view depends on
+func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
+	// Parse the CREATE VIEW statement to extract the query properly
+	// We need to find the AS keyword that's part of CREATE VIEW, not column aliases
+
+	parseResult, err := tsql.ParseTSQL(viewDef)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse view definition")
+	}
+
+	// Extract the query part after the CREATE VIEW statement
+	// This assumes the viewDef is a valid CREATE VIEW statement
+	// and that it contains a valid T-SQL query.
+	l := &queryClauseListener{}
+	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	if l.result == "" {
+		return []string{}, nil
+	}
+
+	// Use GetQuerySpan with mock functions to avoid nil pointer dereference
+	span, err := tsql.GetQuerySpan(
+		context.Background(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+				// Return minimal metadata - we only need table references, not column info
+				metadata := &storepb.DatabaseSchemaMetadata{
+					Name: databaseName,
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name:   schemaName,
+							Tables: []*storepb.TableMetadata{},
+						},
+					},
+				}
+				dbMetadata := model.NewDatabaseMetadata(metadata, false, false)
+				return databaseName, dbMetadata, nil
+			},
+			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
+				// Return empty list - we don't need actual database names for dependency extraction
+				return []string{}, nil
+			},
+		},
+		l.result,
+		"", // database
+		schemaName,
+		false, // case sensitive
+	)
+
+	// If error parsing query span, return empty dependencies to allow migration to proceed
+	// This is intentional - we prefer to proceed with no dependencies rather than block the migration
+	if err != nil {
+		return []string{}, nil // nolint:nilerr
+	}
+
+	// Collect unique dependencies
+	dependencyMap := make(map[string]bool)
+	for sourceColumn := range span.SourceColumns {
+		// Create dependency ID in format: schema.table
+		depID := getObjectID(sourceColumn.Schema, sourceColumn.Table)
+		dependencyMap[depID] = true
+	}
+
+	// Convert map to slice
+	var dependencies []string
+	for dep := range dependencyMap {
+		dependencies = append(dependencies, dep)
+	}
+
+	return dependencies, nil
+}
+
+// getObjectID creates a unique identifier for a database object
+func getObjectID(schema, name string) string {
+	if schema == "" {
+		return name
+	}
+	return fmt.Sprintf("%s.%s", schema, name)
+}
+
+// dropViewsInOrder drops views in reverse topological order (dependent views first)
+func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
+	// Build dependency graph for views being dropped or altered
+	graph := base.NewGraph()
+	viewMap := make(map[string]*schema.ViewDiff)
+
+	// First pass: Add all views to be dropped or altered to the graph and viewMap
+	// Sort for deterministic processing order
+	var viewsToProcess []*schema.ViewDiff
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionDrop || viewDiff.Action == schema.MetadataDiffActionAlter {
+			viewsToProcess = append(viewsToProcess, viewDiff)
+		}
+	}
+	sort.Slice(viewsToProcess, func(i, j int) bool {
+		return getObjectID(viewsToProcess[i].SchemaName, viewsToProcess[i].ViewName) < getObjectID(viewsToProcess[j].SchemaName, viewsToProcess[j].ViewName)
+	})
+
+	for _, viewDiff := range viewsToProcess {
+		viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
+		graph.AddNode(viewID)
+		viewMap[viewID] = viewDiff
+	}
+
+	// Second pass: Add dependency edges now that all views are in viewMap
+	for _, viewDiff := range viewsToProcess {
+		viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
+
+		// Get dependencies from the old view definition
+		if viewDiff.OldView != nil && viewDiff.OldView.Definition != "" {
+			deps, err := getViewDependencies(viewDiff.OldView.Definition, viewDiff.SchemaName)
+			if err != nil {
+				// If we can't parse dependencies, we'll just drop in original order
+				continue
+			}
+
+			// Add edges from this view to its dependencies
+			for _, dep := range deps {
+				// Only add edge if the dependency is also being dropped/altered
+				if _, exists := viewMap[dep]; exists {
+					graph.AddEdge(viewID, dep)
+				}
+			}
+		}
+	}
+
+	// Get topological order
+	orderedList, err := graph.TopologicalSort()
+	if err != nil {
+		// If there's a cycle or error, fall back to original order
+		var fallbackViews []*schema.ViewDiff
+		for _, viewDiff := range diff.ViewChanges {
+			if viewDiff.Action == schema.MetadataDiffActionDrop || viewDiff.Action == schema.MetadataDiffActionAlter {
+				fallbackViews = append(fallbackViews, viewDiff)
+			}
+		}
+		// Sort alphabetically for deterministic output
+		sort.Slice(fallbackViews, func(i, j int) bool {
+			return getObjectID(fallbackViews[i].SchemaName, fallbackViews[i].ViewName) < getObjectID(fallbackViews[j].SchemaName, fallbackViews[j].ViewName)
+		})
+		for _, viewDiff := range fallbackViews {
+			_, _ = buf.WriteString("DROP VIEW [")
+			_, _ = buf.WriteString(viewDiff.SchemaName)
+			_, _ = buf.WriteString("].[")
+			_, _ = buf.WriteString(viewDiff.ViewName)
+			_, _ = buf.WriteString("];\nGO\n")
+		}
+		return nil
+	}
+
+	// Drop views in order (most dependent first due to edge direction)
+	for _, viewID := range orderedList {
+		if viewDiff, ok := viewMap[viewID]; ok {
+			_, _ = buf.WriteString("DROP VIEW [")
+			_, _ = buf.WriteString(viewDiff.SchemaName)
+			_, _ = buf.WriteString("].[")
+			_, _ = buf.WriteString(viewDiff.ViewName)
+			_, _ = buf.WriteString("];\nGO\n")
+		}
+	}
+
+	return nil
+}
+
+// createViewsInOrder creates views in topological order (dependencies first)
+func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
+	// Build dependency graph for views being created or altered
+	graph := base.NewGraph()
+	viewMap := make(map[string]*schema.ViewDiff)
+
+	// First pass: Add all views to be created or altered to the graph and viewMap
+	// Sort for deterministic processing order
+	var viewsToProcess []*schema.ViewDiff
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate || viewDiff.Action == schema.MetadataDiffActionAlter {
+			viewsToProcess = append(viewsToProcess, viewDiff)
+		}
+	}
+	sort.Slice(viewsToProcess, func(i, j int) bool {
+		return getObjectID(viewsToProcess[i].SchemaName, viewsToProcess[i].ViewName) < getObjectID(viewsToProcess[j].SchemaName, viewsToProcess[j].ViewName)
+	})
+
+	for _, viewDiff := range viewsToProcess {
+		viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
+		graph.AddNode(viewID)
+		viewMap[viewID] = viewDiff
+	}
+
+	// Second pass: Add dependency edges now that all views are in viewMap
+	for _, viewDiff := range viewsToProcess {
+		viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
+
+		// Get dependencies from the new view definition
+		if viewDiff.NewView != nil && viewDiff.NewView.Definition != "" {
+			deps, err := getViewDependencies(viewDiff.NewView.Definition, viewDiff.SchemaName)
+			if err != nil {
+				// If we can't parse dependencies, we'll just create in original order
+				continue
+			}
+
+			// Add edges from dependencies to this view
+			for _, dep := range deps {
+				// Only add edge if the dependency is also being created/altered
+				if _, exists := viewMap[dep]; exists {
+					graph.AddEdge(dep, viewID)
+				}
+			}
+		}
+	}
+
+	// Get topological order
+	orderedList, err := graph.TopologicalSort()
+	if err != nil {
+		// If there's a cycle or error, fall back to original order
+		var fallbackViews []*schema.ViewDiff
+		for _, viewDiff := range diff.ViewChanges {
+			// Only handle CREATE and ALTER (as create) in this phase
+			if viewDiff.Action == schema.MetadataDiffActionCreate || viewDiff.Action == schema.MetadataDiffActionAlter {
+				fallbackViews = append(fallbackViews, viewDiff)
+			}
+		}
+		// Sort alphabetically for deterministic output
+		sort.Slice(fallbackViews, func(i, j int) bool {
+			return getObjectID(fallbackViews[i].SchemaName, fallbackViews[i].ViewName) < getObjectID(fallbackViews[j].SchemaName, fallbackViews[j].ViewName)
+		})
+		for _, viewDiff := range fallbackViews {
+			_, _ = buf.WriteString(viewDiff.NewView.Definition)
+			if !strings.HasSuffix(strings.TrimSpace(viewDiff.NewView.Definition), ";") {
+				_, _ = buf.WriteString(";")
+			}
+			_, _ = buf.WriteString("\nGO\n")
+		}
+		return nil
+	}
+
+	// Create views in order
+	for _, viewID := range orderedList {
+		if viewDiff, ok := viewMap[viewID]; ok {
+			// Both CREATE and ALTER actions create the view in this phase
+			// (ALTER views were already dropped in the drop phase)
+			_, _ = buf.WriteString(viewDiff.NewView.Definition)
+			if !strings.HasSuffix(strings.TrimSpace(viewDiff.NewView.Definition), ";") {
+				_, _ = buf.WriteString(";")
+			}
+			_, _ = buf.WriteString("\nGO\n")
+		}
+	}
+
+	return nil
+}
+
+// Helper functions to check if diff contains certain types of changes
+func hasCreateOrAlterTables(diff *schema.MetadataDiff) bool {
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate || tableDiff.Action == schema.MetadataDiffActionAlter {
+			return true
+		}
+	}
+	return false
+}
+
+func hasCreateViews(diff *schema.MetadataDiff) bool {
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate || viewDiff.Action == schema.MetadataDiffActionAlter {
+			return true
+		}
+	}
+	return false
+}
+
+func hasCreateFunctions(diff *schema.MetadataDiff) bool {
+	for _, funcDiff := range diff.FunctionChanges {
+		if funcDiff.Action == schema.MetadataDiffActionCreate {
+			return true
+		}
+	}
+	return false
+}
+
+func hasCreateProcedures(diff *schema.MetadataDiff) bool {
+	for _, procDiff := range diff.ProcedureChanges {
+		if procDiff.Action == schema.MetadataDiffActionCreate || procDiff.Action == schema.MetadataDiffActionAlter {
+			return true
+		}
+	}
+	return false
 }

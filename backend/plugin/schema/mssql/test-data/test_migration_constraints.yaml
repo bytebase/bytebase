@@ -24,8 +24,9 @@
       CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id]),
       CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id])
     );
-  expected: |
+  expected: |+
     ALTER TABLE [dbo].[employees] ADD CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
 - description: Drop foreign key constraint
   oldSchema: |
     CREATE TABLE [dbo].[departments] (
@@ -70,8 +71,9 @@
       CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id]),
       CONSTRAINT [CK_products_price] CHECK ([price] > 0)
     );
-  expected: |
+  expected: |+
     ALTER TABLE [dbo].[products] ADD CONSTRAINT [CK_products_price] CHECK ([price] > 0);
+
 - description: Drop check constraint
   oldSchema: |
     CREATE TABLE [dbo].[products] (
@@ -101,8 +103,9 @@
       [name] nvarchar(100) NOT NULL,
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
-  expected: |
+  expected: |+
     ALTER TABLE [dbo].[users] ADD CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id]);
+
 - description: Drop primary key constraint
   oldSchema: |
     CREATE TABLE [dbo].[users] (
