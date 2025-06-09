@@ -24,7 +24,11 @@ import { hasProjectPermissionV2 } from "@/utils";
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { plan, selectedSpec } = usePlanContext();
+const {
+  plan,
+  selectedSpec,
+  planCheckRunList: contextPlanCheckRunList,
+} = usePlanContext();
 
 const show = computed(() => {
   if (!selectedSpec.value) {
@@ -52,9 +56,12 @@ const allowRunChecks = computed(() => {
 const planCheckRunList = computed(() => {
   // If a spec is database change spec, show plan checks for the spec.
   if (selectedSpec.value && isDatabaseChangeSpec(selectedSpec.value)) {
-    return planCheckRunListForSpec(plan.value, selectedSpec.value);
+    return planCheckRunListForSpec(
+      contextPlanCheckRunList.value,
+      selectedSpec.value
+    );
   }
   // Otherwise, show all plan checks in the plan.
-  return plan.value.planCheckRunList;
+  return contextPlanCheckRunList.value;
 });
 </script>

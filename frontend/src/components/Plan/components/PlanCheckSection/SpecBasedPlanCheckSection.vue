@@ -246,7 +246,7 @@ import { usePlanContext } from "../../logic/context";
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { plan, selectedSpec } = usePlanContext();
+const { plan, selectedSpec, planCheckRunList } = usePlanContext();
 
 const isLoading = ref(false);
 const isRunningChecks = ref(false);
@@ -263,7 +263,7 @@ const show = computed(() => {
 
 const checkRunsForSpec = computed(() => {
   if (!selectedSpec.value) return [];
-  return planCheckRunListForSpec(plan.value, selectedSpec.value);
+  return planCheckRunListForSpec(planCheckRunList.value, selectedSpec.value);
 });
 
 const totalCheckRuns = computed(() => checkRunsForSpec.value.length);

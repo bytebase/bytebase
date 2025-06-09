@@ -1003,7 +1003,6 @@
     "data-change-description": "データの変更 (DML)",
     "select-targets": "ターゲットを選択",
     "overview": {
-      "title": "プランの概要",
       "description": "このプランのすべての仕様を表示および管理します",
       "total-specs": "合計スペック",
       "total-targets": "合計ターゲット",

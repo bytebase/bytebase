@@ -116,6 +116,7 @@ import {
   instanceV1Name,
   extractDatabaseResourceName,
   extractDatabaseGroupName,
+  extractProjectResourceName,
 } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
@@ -151,8 +152,9 @@ const isCreateDatabaseSpec = computed(() => {
 });
 
 const project = computed(() => {
-  if (!plan.value?.project) return undefined;
-  return projectStore.getProjectByName(plan.value.project);
+  if (!plan.value?.name) return undefined;
+  const projectName = `projects/${extractProjectResourceName(plan.value.name)}`;
+  return projectStore.getProjectByName(projectName);
 });
 
 // Only allow editing in creation mode or if the plan is editable
