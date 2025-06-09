@@ -101,4 +101,3 @@ func (s *SubscriptionService) loadSubscription(ctx context.Context) (*v1pb.Subsc
 
 	return subscription, nil
 }
-
