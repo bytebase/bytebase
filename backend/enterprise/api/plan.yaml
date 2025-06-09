@@ -1,10 +1,10 @@
-planList:
-  - type: 0
-    maximumInstanceCount: 10
-    maximumSeatCount: 20
+plans:
   - type: 1
-    maximumInstanceCount: 10
-    maximumSeatCount: 20
+    maximum_instance_count: 10
+    maximum_seat_count: 20
   - type: 2
-    maximumInstanceCount: -1
-    maximumSeatCount: -1
+    maximum_instance_count: 10
+    maximum_seat_count: 20
+  - type: 3
+    maximum_instance_count: -1
+    maximum_seat_count: -1

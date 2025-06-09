@@ -1,6 +1,7 @@
 import {
   PlanType,
-  planTypeFromJSON,
+  type PlanConfig,
+  type PlanLimitConfig,
 } from "@/types/proto/v1/subscription_service";
 import planData from "./plan.yaml";
 
@@ -73,14 +74,8 @@ export const planTypeToString = (planType: PlanType): string => {
   }
 };
 
-export interface Plan {
-  type: PlanType;
-  maximumSeatCount: number;
-  maximumInstanceCount: number;
-}
+// Re-export proto types for convenience
+export type { PlanConfig, PlanLimitConfig };
 
-export const PLANS: Plan[] = planData.planList.map((raw: any) => ({
-  type: planTypeFromJSON(raw.type + 1),
-  maximumSeatCount: raw.maximumSeatCount,
-  maximumInstanceCount: raw.maximumInstanceCount,
-}));
+export const PLAN_CONFIG: PlanConfig = planData;
+export const PLANS: PlanLimitConfig[] = planData.plans;
