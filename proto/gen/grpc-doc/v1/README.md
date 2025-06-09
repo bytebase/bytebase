@@ -7058,14 +7058,14 @@ QueryDataPolicy is the policy configuration for querying data.
 <a name="bytebase-v1-SQLReviewRule"></a>
 
 ### SQLReviewRule
-
+The SQL review rules. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [string](#string) |  |  |
 | level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  |  |
-| payload | [string](#string) |  |  |
+| payload | [string](#string) |  | The payload is a JSON string that varies by rule type. |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | comment | [string](#string) |  |  |
 
