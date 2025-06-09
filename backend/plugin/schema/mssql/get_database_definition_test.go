@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -39,7 +39,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 
 	for i, tc := range tests {
 		var metadata storepb.DatabaseSchemaMetadata
-		err := protojson.Unmarshal([]byte(tc.Input), &metadata)
+		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Input), &metadata)
 		a.NoError(err)
 
 		result, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, &metadata)

@@ -73,7 +73,6 @@ func GetTableDefinition(schemaName string, table *storepb.TableMetadata, _ []*st
 	return buf.String(), nil
 }
 
-
 func writeFunctionsAndProcedures(out *strings.Builder, schema *storepb.SchemaMetadata) {
 	for _, function := range schema.Functions {
 		writeFunction(out, schema.Name, function)
@@ -347,16 +346,16 @@ func writeColumn(out *strings.Builder, column *storepb.ColumnMetadata) {
 	}
 }
 
-func writeView(out *strings.Builder, schemaName string, view *storepb.ViewMetadata) {
+func writeView(out *strings.Builder, _ string, view *storepb.ViewMetadata) {
 	// The view definition already contains CREATE VIEW statement
 	_, _ = fmt.Fprintf(out, "%s;\n\nGO\n\n", view.Definition)
 }
 
-func writeFunction(out *strings.Builder, schemaName string, function *storepb.FunctionMetadata) {
+func writeFunction(out *strings.Builder, _ string, function *storepb.FunctionMetadata) {
 	_, _ = fmt.Fprintf(out, "%s\n\nGO\n\n", function.Definition)
 }
 
-func writeProcedure(out *strings.Builder, schemaName string, procedure *storepb.ProcedureMetadata) {
+func writeProcedure(out *strings.Builder, _ string, procedure *storepb.ProcedureMetadata) {
 	_, _ = fmt.Fprintf(out, "%s\n\nGO\n\n", procedure.Definition)
 }
 
