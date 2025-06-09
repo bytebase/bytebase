@@ -246,9 +246,6 @@ useTitle(title);
 router.afterEach((to /*, from */) => {
   // Needs to use nextTick otherwise title will still be the one from the previous route.
   nextTick(() => {
-    if (to.meta.overrideTitle) {
-      return;
-    }
     if (to.meta.title) {
       document.title = to.meta.title(to);
     } else {
