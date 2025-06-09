@@ -690,7 +690,11 @@ type Plan struct {
 	// The issue associated with the plan.
 	// Can be empty.
 	// Format: projects/{project}/issues/{issue}
-	Issue       string       `protobuf:"bytes,3,opt,name=issue,proto3" json:"issue,omitempty"`
+	Issue string `protobuf:"bytes,3,opt,name=issue,proto3" json:"issue,omitempty"`
+	// The rollout associated with the plan.
+	// Can be empty.
+	// Format: projects/{project}/rollouts/{rollout}
+	Rollout     string       `protobuf:"bytes,15,opt,name=rollout,proto3" json:"rollout,omitempty"`
 	Title       string       `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
 	Description string       `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
 	Specs       []*Plan_Spec `protobuf:"bytes,14,rep,name=specs,proto3" json:"specs,omitempty"`
@@ -749,6 +753,13 @@ func (x *Plan) GetName() string {
 func (x *Plan) GetIssue() string {
 	if x != nil {
 		return x.Issue
+	}
+	return ""
+}
+
+func (x *Plan) GetRollout() string {
+	if x != nil {
+		return x.Rollout
 	}
 	return ""
 }
@@ -2049,10 +2060,11 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x11UpdatePlanRequest\x12+\n" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x04\xe2A\x01\x02R\x04plan\x12A\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
-	"updateMask\"\xb1\x11\n" +
+	"updateMask\"\xd7\x11\n" +
 	"\x04Plan\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05issue\x18\x03 \x01(\tR\x05issue\x12\x14\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
+	"\x05issue\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\x05issue\x12\x1e\n" +
+	"\arollout\x18\x0f \x01(\tB\x04\xe2A\x01\x03R\arollout\x12\x14\n" +
 	"\x05title\x18\x04 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x05 \x01(\tR\vdescription\x12,\n" +
 	"\x05specs\x18\x0e \x03(\v2\x16.bytebase.v1.Plan.SpecR\x05specs\x12\x1e\n" +
