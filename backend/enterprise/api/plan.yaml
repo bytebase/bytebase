@@ -1,10 +1,10 @@
 plans:
-  - type: 1
+  - type: FREE
     maximum_instance_count: 10
     maximum_seat_count: 20
-  - type: 2
+  - type: TEAM
     maximum_instance_count: 10
     maximum_seat_count: 20
-  - type: 3
+  - type: ENTERPRISE
     maximum_instance_count: -1
     maximum_seat_count: -1
