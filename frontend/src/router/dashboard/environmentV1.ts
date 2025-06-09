@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from "vue-router";
+import { t } from "@/plugins/i18n";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
@@ -13,6 +14,9 @@ const environmentV1Routes: RouteRecordRaw[] = [
       leftSidebar: DashboardSidebar,
     },
     props: { content: true },
+    meta: {
+      title: () => t("common.environment"),
+    },
   },
 ];
 
