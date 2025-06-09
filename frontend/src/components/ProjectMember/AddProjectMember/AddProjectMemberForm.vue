@@ -156,7 +156,9 @@ const state = reactive<LocalState>(getInitialState());
 watch(
   () => state.role,
   () => {
-    state.databaseResources = undefined;
+    state.databaseResources = props.databaseResource
+      ? [{ ...props.databaseResource }]
+      : undefined;
     state.maxRowCount = undefined;
   },
   {
