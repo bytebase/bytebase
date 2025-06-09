@@ -1120,7 +1120,7 @@ func (q *querySpanExtractor) findTableSchema(objectName parser.IObject_nameConte
 				}
 				columns := tableSchema.GetColumns()
 				return normalizedDatabaseName, &base.PhysicalTable{
-					Name:     normalizedTableName,
+					Name:     tableSchema.GetProto().Name,
 					Database: normalizedDatabaseName,
 					Schema:   normalizedSchemaName,
 					Columns: func() []string {

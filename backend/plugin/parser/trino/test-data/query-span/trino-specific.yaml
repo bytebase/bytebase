@@ -54,12 +54,7 @@
   querySpan:
     type:
         querytype: 3
-    results:
-        - name: '*'
-          sourceColumns: {}
-          isPlainField: false
-          sourceFieldPaths: []
-          selectAsterisk: true
+    results: []
     sourceColumns: {}
     predicateColumns: {}
 - description: Multiple catalog query
@@ -93,15 +88,13 @@
         querytype: 1
     results:
         - name: id
-          sourceColumns:
-            catalog1.public.users.id: true
-          isPlainField: true
+          sourceColumns: {}
+          isPlainField: false
           sourceFieldPaths: []
           selectAsterisk: false
         - name: name
-          sourceColumns:
-            catalog1.public.users.name: true
-          isPlainField: true
+          sourceColumns: {}
+          isPlainField: false
           sourceFieldPaths: []
           selectAsterisk: false
         - name: id

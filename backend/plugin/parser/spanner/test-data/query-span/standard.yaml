@@ -170,12 +170,12 @@
             - server: ""
               database: ds1
               schema: ""
-              table: address
+              table: ADDRESS
               column: PEOPLE_ID
             - server: ""
               database: ds1
               schema: ""
-              table: people
+              table: PEOPLE
               column: ID
           isplainfield: false
           sourcefieldpaths: []
@@ -185,12 +185,12 @@
             - server: ""
               database: ds1
               schema: ""
-              table: address
+              table: ADDRESS
               column: ADDRESS
             - server: ""
               database: ds1
               schema: ""
-              table: people
+              table: PEOPLE
               column: NAME
           isplainfield: false
           sourcefieldpaths: []
@@ -264,7 +264,7 @@
             - server: ""
               database: ds1
               schema: ""
-              table: people
+              table: PEOPLE
               column: ID
           isplainfield: false
           sourcefieldpaths: []
@@ -274,7 +274,7 @@
             - server: ""
               database: ds1
               schema: ""
-              table: people
+              table: PEOPLE
               column: NAME
           isplainfield: false
           sourcefieldpaths: []
@@ -284,7 +284,7 @@
             - server: ""
               database: ds1
               schema: ""
-              table: address
+              table: ADDRESS
               column: ADDRESS
           isplainfield: false
           sourcefieldpaths: []
@@ -348,7 +348,7 @@
             - server: ""
               database: ds1
               schema: ""
-              table: people
+              table: PEOPLE
               column: ID
           isplainfield: false
           sourcefieldpaths: []
@@ -358,7 +358,7 @@
             - server: ""
               database: ds1
               schema: ""
-              table: people
+              table: PEOPLE
               column: NAME
           isplainfield: false
           sourcefieldpaths: []
@@ -368,7 +368,7 @@
             - server: ""
               database: ds1
               schema: ""
-              table: address
+              table: ADDRESS
               column: ADDRESS
           isplainfield: false
           sourcefieldpaths: []
@@ -429,7 +429,7 @@
             - server: ""
               database: maskingdb
               schema: ""
-              table: people
+              table: People
               column: Id
           isplainfield: false
           sourcefieldpaths: []
@@ -439,7 +439,7 @@
             - server: ""
               database: maskingdb
               schema: ""
-              table: people
+              table: People
               column: Name
           isplainfield: false
           sourcefieldpaths: []
@@ -449,7 +449,7 @@
             - server: ""
               database: maskingdb
               schema: ""
-              table: address
+              table: Address
               column: Address
           isplainfield: false
           sourcefieldpaths: []
@@ -680,7 +680,7 @@
             - server: ""
               database: ds1
               schema: ""
-              table: galleries
+              table: GALLERIES
               column: CITY
           isplainfield: false
           sourcefieldpaths: []

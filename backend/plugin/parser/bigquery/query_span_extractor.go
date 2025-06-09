@@ -1145,7 +1145,7 @@ func (q *querySpanExtractor) findTableSchema(datasetName string, tableName strin
 		Server:   "",
 		Database: datasetName,
 		Schema:   "",
-		Name:     tableName,
+		Name:     table.GetProto().Name,
 		Columns:  columns,
 	}, nil
 }
