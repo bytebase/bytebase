@@ -205,11 +205,11 @@ func (s *IdentityProviderService) checkFeatureAvailable(ssoType v1pb.IdentityPro
 	}
 	plan := s.licenseService.GetEffectivePlan()
 	switch plan {
-	case base.FREE:
+	case v1pb.PlanType_FREE:
 		return status.Error(codes.PermissionDenied, "feature is not available for free plan")
-	case base.ENTERPRISE:
+	case v1pb.PlanType_ENTERPRISE:
 		return nil
-	case base.TEAM:
+	case v1pb.PlanType_TEAM:
 		if ssoType != v1pb.IdentityProviderType_OAUTH2 {
 			return status.Error(codes.PermissionDenied, "only oauth type is available")
 		}

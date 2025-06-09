@@ -51,7 +51,8 @@ func (*SubscriptionService) GetFeatureMatrix(_ context.Context, _ *v1pb.GetFeatu
 	for key, val := range base.FeatureMatrix {
 		matrix := map[string]bool{}
 		for i, enabled := range val {
-			plan := covertToV1PlanType(base.PlanType(i))
+			// Convert array index to PlanType (0=FREE, 1=TEAM, 2=ENTERPRISE)
+			plan := v1pb.PlanType(i + 1) // +1 because proto enums start at 1
 			matrix[plan.String()] = enabled
 		}
 		resp.Features = append(resp.Features, &v1pb.Feature{
@@ -88,28 +89,15 @@ func (s *SubscriptionService) loadSubscription(ctx context.Context) (*v1pb.Subsc
 	subscription := &v1pb.Subscription{
 		SeatCount:     int32(sub.Seat),
 		InstanceCount: int32(sub.InstanceCount),
-		Plan:          covertToV1PlanType(sub.Plan),
+		Plan:          sub.Plan,
 		Trialing:      sub.Trialing,
 		OrgId:         sub.OrgID,
 		OrgName:       sub.OrgName,
 	}
-	if sub.Plan != base.FREE {
+	if sub.Plan != v1pb.PlanType_FREE {
 		subscription.ExpiresTime = timestamppb.New(time.Unix(sub.ExpiresTS, 0))
 		subscription.StartedTime = timestamppb.New(time.Unix(sub.StartedTS, 0))
 	}
 
 	return subscription, nil
-}
-
-func covertToV1PlanType(planType base.PlanType) v1pb.PlanType {
-	switch planType {
-	case base.FREE:
-		return v1pb.PlanType_FREE
-	case base.TEAM:
-		return v1pb.PlanType_TEAM
-	case base.ENTERPRISE:
-		return v1pb.PlanType_ENTERPRISE
-	default:
-		return v1pb.PlanType_PLAN_TYPE_UNSPECIFIED
-	}
 }
