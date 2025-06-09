@@ -32,8 +32,6 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
 	p := &v1pb.Plan{
 		Name:                    common.FormatPlan(plan.ProjectID, plan.UID),
-		Issue:                   "",
-		Rollout:                 "",
 		Title:                   plan.Name,
 		Description:             plan.Description,
 		Specs:                   convertToPlanSpecs(plan.Config.Specs), // Use specs field for output
