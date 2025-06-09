@@ -555,16 +555,16 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 
 	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRun.ID)
 
-	if !done && err != nil {
+	switch {
+	case !done && err != nil:
 		slog.Debug("Encountered transient error running task, will retry",
 			slog.Int("id", task.ID),
 			slog.String("type", string(task.Type)),
 			log.BBError(err),
 		)
 		return
-	}
 
-	if done && err != nil && errors.Is(err, context.Canceled) {
+	case done && err != nil && errors.Is(err, context.Canceled):
 		slog.Warn("task run is canceled",
 			slog.Int("id", task.ID),
 			slog.String("type", string(task.Type)),
@@ -592,7 +592,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			Code:      &code,
 			Result:    &result,
 		}
-
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as CANCELED",
 				slog.Int("id", task.ID),
@@ -601,27 +600,23 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			return
 		}
 		return
-	}
 
-	if done && err != nil {
+	case done && err != nil:
 		slog.Warn("task run failed",
 			slog.Int("id", task.ID),
 			slog.String("type", string(task.Type)),
 			log.BBError(err),
 		)
-
 		taskRunResult := &storepb.TaskRunResult{
 			Detail:    err.Error(),
 			Changelog: "",
 			Version:   "",
 		}
-
 		var errWithPosition *db.ErrorWithPosition
 		if errors.As(err, &errWithPosition) {
 			taskRunResult.StartPosition = errWithPosition.Start
 			taskRunResult.EndPosition = errWithPosition.End
 		}
-
 		resultBytes, marshalErr := protojson.Marshal(taskRunResult)
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
@@ -640,7 +635,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			Code:      &code,
 			Result:    &result,
 		}
-
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as FAILED",
 				slog.Int("id", task.ID),
@@ -648,7 +642,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
-
 		if err := func() error {
 			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
 				PipelineID: &task.PipelineID,
@@ -664,12 +657,10 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
-
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_FAILED, taskRunResult.Detail)
 		return
-	}
 
-	if done && err == nil {
+	case done && err == nil:
 		resultBytes, marshalErr := protojson.Marshal(result)
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
@@ -695,7 +686,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
-
 		if err := func() error {
 			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
 				PipelineID: &task.PipelineID,
@@ -711,7 +701,6 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
-
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_DONE, "")
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 		return
