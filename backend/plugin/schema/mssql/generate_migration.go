@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -14,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	parser "github.com/bytebase/tsql-parser"
 )
 
 func init() {
