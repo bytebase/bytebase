@@ -55,7 +55,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		p.Issue = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 	if plan.PipelineUID != nil {
-		p.Rollout = common.FormatRollout(issue.Project.ResourceID, *issue.PipelineUID)
+		p.Rollout = common.FormatRollout(plan.ProjectID, *plan.PipelineUID)
 	}
 	return p, nil
 }
