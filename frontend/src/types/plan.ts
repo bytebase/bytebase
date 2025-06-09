@@ -55,17 +55,9 @@ export type FeatureType =
   | "bb.feature.user-count";
 
 export const instanceLimitFeature = new Set<FeatureType>([
-  // Change Workflow
-  "bb.feature.schema-drift",
   "bb.feature.encrypted-secrets",
-  // Database Management
   "bb.feature.read-replica-connection",
-  "bb.feature.custom-instance-synchronization",
-  "bb.feature.sync-schema-all-versions",
-  "bb.feature.database-grouping",
-  // Policy Control
   "bb.feature.sensitive-data",
-  "bb.feature.rollout-policy",
 ]);
 
 export const planTypeToString = (planType: PlanType): string => {
@@ -81,28 +73,16 @@ export const planTypeToString = (planType: PlanType): string => {
   }
 };
 
-interface PlanFeature {
-  type: string;
-  content?: string;
-  tooltip?: string;
-}
-
 export interface Plan {
-  // Plan meta data
   type: PlanType;
-  trialDays: number;
-  trialPrice: number;
-  unitPrice: number;
-  pricePerSeatPerMonth: number;
-  pricePerInstancePerMonth: number;
+  title: string;
   maximumSeatCount: number;
   maximumInstanceCount: number;
-  // Plan desc and feature
-  title: string;
-  featureList: PlanFeature[];
 }
 
-export const PLANS: Plan[] = planData.planList.map((raw: Plan) => ({
-  ...raw,
+export const PLANS: Plan[] = planData.planList.map((raw: any) => ({
   type: planTypeFromJSON(raw.type + 1),
+  title: raw.title,
+  maximumSeatCount: raw.maximumSeatCount,
+  maximumInstanceCount: raw.maximumInstanceCount,
 }));
