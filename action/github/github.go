@@ -195,14 +195,14 @@ func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
 			_, _ = sb.WriteString(",title=")
 			_, _ = sb.WriteString(advice.Title)
 			_, _ = sb.WriteString(" (")
-			_, _ = sb.WriteString(string(advice.Code))
+			_, _ = sb.WriteString(strconv.Itoa(int(advice.Code)))
 			_, _ = sb.WriteString(")::")
 			_, _ = sb.WriteString(advice.Content)
 			_, _ = sb.WriteString(". Targets: ")
 			_, _ = sb.WriteString(result.Target)
 			_, _ = sb.WriteString(" ")
 			_, _ = sb.WriteString(" https://www.bytebase.com/docs/reference/error-code/advisor#")
-			_, _ = sb.WriteString(string(advice.Code))
+			_, _ = sb.WriteString(strconv.Itoa(int(advice.Code)))
 			fmt.Println(sb.String())
 		}
 	}
