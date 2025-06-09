@@ -96,7 +96,7 @@ message PlanLimitConfig {
   // Feature represents the available features in Bytebase
   enum Feature {
     FEATURE_UNSPECIFIED = 0;
-    
+
     // Database Change Management
     DATABASE_CHANGE = 1;
     GIT_BASED_SCHEMA_VERSION_CONTROL = 2;
@@ -114,7 +114,7 @@ message PlanLimitConfig {
     CHANGELIST = 14;
     SCHEMA_TEMPLATE = 15;
     ROLLOUT_POLICY = 16;
-    
+
     // SQL Editor & Development
     WEB_BASED_SQL_EDITOR = 17;
     SQL_EDITOR_ADMIN_MODE = 18;
@@ -131,7 +131,7 @@ message PlanLimitConfig {
     BATCH_QUERY = 29;
     INSTANCE_READ_ONLY_CONNECTION = 30;
     RESTRICT_COPYING_DATA = 31;
-    
+
     // Security & Compliance
     IAM = 32;
     INSTANCE_SSL_CONNECTION = 33;
@@ -160,7 +160,7 @@ message PlanLimitConfig {
     SIGN_IN_FREQUENCY_CONTROL = 56;
     EXTERNAL_SECRET_MANAGER = 57;
     USER_EMAIL_DOMAIN_RESTRICTION = 58;
-    
+
     // Administration & Support
     ENVIRONMENT_MANAGEMENT = 59;
     IM_NOTIFICATIONS = 60;
