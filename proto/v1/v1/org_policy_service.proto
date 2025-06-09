@@ -298,9 +298,12 @@ message QueryDataPolicy {
   google.protobuf.Duration timeout = 1;
 }
 
+// The SQL review rules. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
 message SQLReviewRule {
   string type = 1;
   SQLReviewRuleLevel level = 2;
+
+  // The payload is a JSON string that varies by rule type.
   string payload = 3;
   Engine engine = 4;
   string comment = 5;
