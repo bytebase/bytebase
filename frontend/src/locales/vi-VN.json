@@ -2630,7 +2630,7 @@
     "archive-this-release": "Lưu trữ bản phát hành này",
     "total-files": "Tổng số {count} tệp",
     "plan-tip": "Kế hoạch này được cấu hình để sử dụng bản phát hành. Các thay đổi cơ sở dữ liệu sẽ được thực hiện bằng các câu lệnh SQL từ các tệp phát hành đã chọn.",
-    "not-found": "发布包未找到",
+    "not-found": "Không tìm thấy",
     "vcs-source": "Nguồn VCS",
     "view-all-files": "Xem tất cả các tập tin",
     "and-n-more-files": "và {n} tập tin khác",
