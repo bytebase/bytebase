@@ -7,7 +7,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/base"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -25,7 +24,7 @@ const (
 )
 
 // PlanLimitValues is the plan limit value mapping.
-var PlanLimitValues = map[PlanLimit]map[base.PlanType]int{
+var PlanLimitValues = map[PlanLimit]map[v1pb.PlanType]int{
 	PlanLimitMaximumInstance: {},
 	PlanLimitMaximumUser:     {},
 }
@@ -49,22 +48,8 @@ func init() {
 		panic("failed to unmarshal plan config proto: " + err.Error())
 	}
 
-	for _, planLimit := range conf.Plans {
-		planType := convertProtoPlanType(planLimit.Type)
-		PlanLimitValues[PlanLimitMaximumInstance][planType] = int(planLimit.MaximumInstanceCount)
-		PlanLimitValues[PlanLimitMaximumUser][planType] = int(planLimit.MaximumSeatCount)
-	}
-}
-
-func convertProtoPlanType(protoPlanType v1pb.PlanType) base.PlanType {
-	switch protoPlanType {
-	case v1pb.PlanType_FREE:
-		return base.FREE
-	case v1pb.PlanType_TEAM:
-		return base.TEAM
-	case v1pb.PlanType_ENTERPRISE:
-		return base.ENTERPRISE
-	default:
-		return base.FREE
+	for _, plan := range conf.Plans {
+		PlanLimitValues[PlanLimitMaximumInstance][plan.Type] = int(plan.MaximumInstanceCount)
+		PlanLimitValues[PlanLimitMaximumUser][plan.Type] = int(plan.MaximumSeatCount)
 	}
 }

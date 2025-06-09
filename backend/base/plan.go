@@ -2,46 +2,9 @@ package base
 
 import (
 	"fmt"
+
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
-
-// PlanType is the type for a plan.
-type PlanType int
-
-const (
-	// FREE is the plan type for FREE.
-	FREE PlanType = iota
-	// TEAM is the plan type for TEAM.
-	TEAM
-	// ENTERPRISE is the plan type for ENTERPRISE.
-	ENTERPRISE
-)
-
-// String returns the string format of plan type.
-func (p PlanType) String() string {
-	switch p {
-	case FREE:
-		return "FREE"
-	case TEAM:
-		return "TEAM"
-	case ENTERPRISE:
-		return "ENTERPRISE"
-	}
-	return ""
-}
-
-// Priority returns the priority of the plan type.
-// Higher priority means the plan supports more features.
-func (p PlanType) Priority() int {
-	switch p {
-	case FREE:
-		return 1
-	case TEAM:
-		return 2
-	case ENTERPRISE:
-		return 3
-	}
-	return 0
-}
 
 // FeatureType is the type of a feature.
 type FeatureType string
@@ -261,18 +224,19 @@ func (e FeatureType) AccessErrorMessage() string {
 }
 
 // minimumSupportedPlan will find the minimum plan which supports the target feature.
-func (e FeatureType) minimumSupportedPlan() PlanType {
+func (e FeatureType) minimumSupportedPlan() v1pb.PlanType {
 	for i, enabled := range FeatureMatrix[e] {
 		if enabled {
-			return PlanType(i)
+			return v1pb.PlanType(i + 1) // +1 because proto enums start at 1
 		}
 	}
 
-	return ENTERPRISE
+	return v1pb.PlanType_ENTERPRISE
 }
 
 // FeatureMatrix is a map from the a particular feature to the respective enablement of a particular
 // plan in [FREE, TEAM, Enterprise].
+// Index 0 = FREE, 1 = TEAM, 2 = ENTERPRISE
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	FeatureSSO:                    {false, true, true},
@@ -326,10 +290,14 @@ var InstanceLimitFeature = map[FeatureType]bool{
 }
 
 // Feature returns whether a particular feature is available in a particular plan.
-func Feature(feature FeatureType, plan PlanType) bool {
+func Feature(feature FeatureType, plan v1pb.PlanType) bool {
 	matrix, ok := FeatureMatrix[feature]
 	if !ok {
 		return false
 	}
-	return matrix[plan]
+	// Convert proto enum to array index (FREE=1 -> 0, TEAM=2 -> 1, ENTERPRISE=3 -> 2)
+	if plan < v1pb.PlanType_FREE || plan > v1pb.PlanType_ENTERPRISE {
+		return false
+	}
+	return matrix[plan-1]
 }
