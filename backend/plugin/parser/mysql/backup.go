@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -131,14 +131,26 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 		result = append(result, *backupStatement)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].StartPosition.Line != result[j].StartPosition.Line {
-			return result[i].StartPosition.Line < result[j].StartPosition.Line
+	slices.SortFunc(result, func(i, j base.BackupStatement) int {
+		if i.StartPosition.Line != j.StartPosition.Line {
+			if i.StartPosition.Line < j.StartPosition.Line {
+				return -1
+			}
+			return 1
 		}
-		if result[i].StartPosition.Column != result[j].StartPosition.Column {
-			return result[i].StartPosition.Column < result[j].StartPosition.Column
+		if i.StartPosition.Column != j.StartPosition.Column {
+			if i.StartPosition.Column < j.StartPosition.Column {
+				return -1
+			}
+			return 1
 		}
-		return result[i].SourceTableName < result[j].SourceTableName
+		if i.SourceTableName < j.SourceTableName {
+			return -1
+		}
+		if i.SourceTableName > j.SourceTableName {
+			return 1
+		}
+		return 0
 	})
 
 	return result, nil

@@ -3,7 +3,7 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -178,7 +178,7 @@ func (checker *columnRequirementChecker) generateAdviceList() []*storepb.Advice 
 
 		if len(missingColumns) > 0 {
 			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
-			sort.Strings(missingColumns)
+			slices.Sort(missingColumns)
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          advisor.NoRequiredColumn.Int32(),

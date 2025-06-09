@@ -2,7 +2,7 @@ package mssql
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -54,7 +54,7 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	for name := range extractor.schemas {
 		schemaNames = append(schemaNames, name)
 	}
-	sort.Strings(schemaNames)
+	slices.Sort(schemaNames)
 
 	for _, schemaName := range schemaNames {
 		schemaMetadata.Schemas = append(schemaMetadata.Schemas, extractor.schemas[schemaName])

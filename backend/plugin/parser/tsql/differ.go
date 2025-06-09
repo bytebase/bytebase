@@ -2,7 +2,7 @@ package tsql
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -111,8 +111,14 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	for _, newSchema := range newSchemaMap {
 		newSchemas = append(newSchemas, newSchema)
 	}
-	sort.Slice(newSchemas, func(i, j int) bool {
-		return newSchemas[i].id < newSchemas[j].id
+	slices.SortFunc(newSchemas, func(i, j *schemaInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, newSchema := range newSchemas {
 		lowerSchema := newSchema.lowerName
@@ -133,8 +139,14 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 		}
 		remainingSchemas = append(remainingSchemas, oldSchema)
 	}
-	sort.Slice(remainingSchemas, func(i, j int) bool {
-		return remainingSchemas[i].id < remainingSchemas[j].id
+	slices.SortFunc(remainingSchemas, func(i, j *schemaInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, oldSchema := range remainingSchemas {
 		diff.dropFullSchema(oldSchema)
@@ -148,8 +160,14 @@ func (d *diffNode) dropFullSchema(schema *schemaInfo) {
 	for _, table := range schema.tableMap {
 		tables = append(tables, table)
 	}
-	sort.Slice(tables, func(i, j int) bool {
-		return tables[i].id < tables[j].id
+	slices.SortFunc(tables, func(i, j *tableInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, table := range tables {
 		d.dropFullTable(schema.name, table)
@@ -162,8 +180,14 @@ func (d *diffNode) diffSchema(oldSchema, newSchema *schemaInfo) error {
 	for _, newTable := range newSchema.tableMap {
 		newTables = append(newTables, newTable)
 	}
-	sort.Slice(newTables, func(i, j int) bool {
-		return newTables[i].id < newTables[j].id
+	slices.SortFunc(newTables, func(i, j *tableInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, newTable := range newTables {
 		lowerTable := newTable.lowerName
@@ -184,8 +208,14 @@ func (d *diffNode) diffSchema(oldSchema, newSchema *schemaInfo) error {
 		}
 		remainingTables = append(remainingTables, oldTable)
 	}
-	sort.Slice(remainingTables, func(i, j int) bool {
-		return remainingTables[i].id < remainingTables[j].id
+	slices.SortFunc(remainingTables, func(i, j *tableInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, oldTable := range remainingTables {
 		d.dropFullTable(oldSchema.name, oldTable)
@@ -199,8 +229,14 @@ func (d *diffNode) dropFullTable(schemaName string, table *tableInfo) {
 	for _, index := range table.indexMap {
 		indexes = append(indexes, index)
 	}
-	sort.Slice(indexes, func(i, j int) bool {
-		return indexes[i].id < indexes[j].id
+	slices.SortFunc(indexes, func(i, j *indexInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, index := range indexes {
 		d.dropIndex = append(d.dropIndex, fmt.Sprintf("DROP INDEX [%s] ON [%s].[%s]", index.name, schemaName, table.name))
@@ -220,8 +256,14 @@ func (d *diffNode) diffTable(schemaName string, oldTable, newTable *tableInfo) e
 	for _, newIndex := range newTable.indexMap {
 		newIndexes = append(newIndexes, newIndex)
 	}
-	sort.Slice(newIndexes, func(i, j int) bool {
-		return newIndexes[i].id < newIndexes[j].id
+	slices.SortFunc(newIndexes, func(i, j *indexInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, newIndex := range newIndexes {
 		lowerIndex := newIndex.lowerName
@@ -242,8 +284,14 @@ func (d *diffNode) diffTable(schemaName string, oldTable, newTable *tableInfo) e
 		}
 		remainingIndexes = append(remainingIndexes, oldIndex)
 	}
-	sort.Slice(remainingIndexes, func(i, j int) bool {
-		return remainingIndexes[i].id < remainingIndexes[j].id
+	slices.SortFunc(remainingIndexes, func(i, j *indexInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, oldIndex := range remainingIndexes {
 		d.dropIndex = append(d.dropIndex, fmt.Sprintf("DROP INDEX [%s] ON [%s].[%s]", oldIndex.name, schemaName, oldTable.name))
@@ -511,8 +559,14 @@ func (d *diffNode) addSchema(schema *schemaInfo) {
 	for _, table := range schema.tableMap {
 		newTables = append(newTables, table)
 	}
-	sort.Slice(newTables, func(i, j int) bool {
-		return newTables[i].id < newTables[j].id
+	slices.SortFunc(newTables, func(i, j *tableInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	for _, table := range newTables {
@@ -521,8 +575,14 @@ func (d *diffNode) addSchema(schema *schemaInfo) {
 		for _, index := range table.indexMap {
 			newIndexes = append(newIndexes, index)
 		}
-		sort.Slice(newIndexes, func(i, j int) bool {
-			return newIndexes[i].id < newIndexes[j].id
+		slices.SortFunc(newIndexes, func(i, j *indexInfo) int {
+			if i.id < j.id {
+				return -1
+			}
+			if i.id > j.id {
+				return 1
+			}
+			return 0
 		})
 		for _, index := range newIndexes {
 			d.addIndex = append(d.addIndex, index.node.GetParser().GetTokenStream().GetTextFromRuleContext(index.node))

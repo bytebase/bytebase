@@ -2,7 +2,7 @@ package mysql
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -1623,8 +1623,14 @@ func extractTableRefs(database string, ctx antlr.ParserRuleContext) ([]base.Sche
 		result = append(result, resource)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].String() < result[j].String()
+	slices.SortFunc(result, func(i, j base.SchemaResource) int {
+		if i.String() < j.String() {
+			return -1
+		}
+		if i.String() > j.String() {
+			return 1
+		}
+		return 0
 	})
 
 	return result, nil

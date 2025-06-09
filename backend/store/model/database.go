@@ -3,7 +3,7 @@ package model
 import (
 	"bytes"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -747,7 +747,7 @@ func (s *SchemaMetadata) ListTableNames() []string {
 		result = append(result, table.GetProto().GetName())
 	}
 
-	sort.Strings(result)
+	slices.Sort(result)
 	return result
 }
 
@@ -758,7 +758,7 @@ func (s *SchemaMetadata) ListProcedureNames() []string {
 		result = append(result, procedure.GetProto().GetName())
 	}
 
-	sort.Strings(result)
+	slices.Sort(result)
 	return result
 }
 
@@ -769,7 +769,7 @@ func (s *SchemaMetadata) ListFunctionNames() []string {
 		result = append(result, function.GetProto().GetName())
 	}
 
-	sort.Strings(result)
+	slices.Sort(result)
 	return result
 }
 
@@ -780,7 +780,7 @@ func (s *SchemaMetadata) ListViewNames() []string {
 		result = append(result, view.GetProto().GetName())
 	}
 
-	sort.Strings(result)
+	slices.Sort(result)
 	return result
 }
 
@@ -791,7 +791,7 @@ func (s *SchemaMetadata) ListForeignTableNames() []string {
 		result = append(result, table.GetProto().GetName())
 	}
 
-	sort.Strings(result)
+	slices.Sort(result)
 	return result
 }
 
@@ -802,7 +802,7 @@ func (s *SchemaMetadata) ListMaterializedViewNames() []string {
 		result = append(result, view.GetProto().GetName())
 	}
 
-	sort.Strings(result)
+	slices.Sort(result)
 	return result
 }
 

@@ -6,7 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"reflect"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -510,7 +510,7 @@ func sortAndWriteAlterTablePartitionedByList(buf io.Writer, partitions map[strin
 	for tableName := range partitions {
 		tableNames = append(tableNames, tableName)
 	}
-	sort.Strings(tableNames)
+	slices.Sort(tableNames)
 	for _, tableName := range tableNames {
 		var body strings.Builder
 		if _, err := body.WriteString(fmt.Sprintf("ALTER TABLE `%s` PARTITION BY ", tableName)); err != nil {
@@ -734,8 +734,14 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 		for _, partition := range p.partitions {
 			sortedPartitions = append(sortedPartitions, partition)
 		}
-		sort.Slice(sortedPartitions, func(i, j int) bool {
-			return sortedPartitions[i].id < sortedPartitions[j].id
+		slices.SortFunc(sortedPartitions, func(a, b *partitionDefinition) int {
+			if a.id < b.id {
+				return -1
+			}
+			if a.id > b.id {
+				return 1
+			}
+			return 0
 		})
 		if _, err := buf.WriteString("\n("); err != nil {
 			return err
@@ -776,8 +782,14 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 				for _, subPartition := range partition.subpartitions {
 					sortedSubpartitions = append(sortedSubpartitions, subPartition)
 				}
-				sort.Slice(sortedSubpartitions, func(i, j int) bool {
-					return sortedSubpartitions[i].id < sortedSubpartitions[j].id
+				slices.SortFunc(sortedSubpartitions, func(a, b *partitionDefinition) int {
+					if a.id < b.id {
+						return -1
+					}
+					if a.id > b.id {
+						return 1
+					}
+					return 0
 				})
 				for j, subPartition := range sortedSubpartitions {
 					if _, err := buf.WriteString(fmt.Sprintf("SUBPARTITION %s", subPartition.name)); err != nil {
@@ -950,8 +962,16 @@ func writeNodeList(w format.RestoreWriter, ns []ast.Node, flags format.RestoreFl
 }
 
 func sortAndWriteNodeList(w format.RestoreWriter, ns []ast.Node, flags format.RestoreFlags) error {
-	sort.Slice(ns, func(i, j int) bool {
-		return getID(ns[i]) < getID(ns[j])
+	slices.SortFunc(ns, func(a, b ast.Node) int {
+		idA := getID(a)
+		idB := getID(b)
+		if idA < idB {
+			return -1
+		}
+		if idA > idB {
+			return 1
+		}
+		return 0
 	})
 
 	for _, n := range ns {
@@ -1561,8 +1581,14 @@ func normalizeColumnOptions(options []*ast.ColumnOption) (*ast.ColumnOption, []*
 		}
 		retOptions = append(retOptions, option)
 	}
-	sort.Slice(retOptions, func(i, j int) bool {
-		return retOptions[i].Tp < retOptions[j].Tp
+	slices.SortFunc(retOptions, func(a, b *ast.ColumnOption) int {
+		if a.Tp < b.Tp {
+			return -1
+		}
+		if a.Tp > b.Tp {
+			return 1
+		}
+		return 0
 	})
 	return collateOption, retOptions
 }

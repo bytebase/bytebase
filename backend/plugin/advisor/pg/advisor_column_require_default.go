@@ -5,7 +5,7 @@ package pg
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 
@@ -76,8 +76,14 @@ func (checker *columnRequireDefaultChecker) generateAdvice() []*storepb.Advice {
 	for _, column := range checker.columnSet {
 		columnList = append(columnList, column)
 	}
-	sort.Slice(columnList, func(i, j int) bool {
-		return columnList[i].line < columnList[j].line
+	slices.SortFunc(columnList, func(i, j columnData) int {
+		if i.line < j.line {
+			return -1
+		}
+		if i.line > j.line {
+			return 1
+		}
+		return 0
 	})
 
 	for _, column := range columnList {

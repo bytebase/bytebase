@@ -3,7 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -101,7 +101,7 @@ func (checker *columnRequirementChecker) Visit(node ast.Node) ast.Visitor {
 
 	if len(missingColumns) > 0 {
 		// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
-		sort.Strings(missingColumns)
+		slices.Sort(missingColumns)
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:        checker.level,
 			Code:          advisor.NoRequiredColumn.Int32(),
