@@ -243,16 +243,14 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 					return 0
 				} else if x.GetStartPosition() == nil {
 					return -1
-				} else {
-					return 1
 				}
+				return 1
 			}
 			if x.GetStartPosition().Line != y.GetStartPosition().Line {
 				if x.GetStartPosition().Line < y.GetStartPosition().Line {
 					return -1
-				} else {
-					return 1
 				}
+				return 1
 			}
 			if x.Content < y.Content {
 				return -1

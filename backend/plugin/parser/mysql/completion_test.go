@@ -61,16 +61,14 @@ func TestCompletion(t *testing.T) {
 			if x.Type != y.Type {
 				if x.Type < y.Type {
 					return -1
-				} else {
-					return 1
 				}
+				return 1
 			}
 			if x.Text != y.Text {
 				if x.Text < y.Text {
 					return -1
-				} else {
-					return 1
 				}
+				return 1
 			}
 			if x.Definition < y.Definition {
 				return -1

@@ -360,9 +360,8 @@ func (t *TableState) convertToColumnMetadataList() []*storepb.ColumnMetadata {
 		if x.Position != y.Position {
 			if x.Position < y.Position {
 				return -1
-			} else {
-				return 1
 			}
+			return 1
 		}
 		if x.Name < y.Name {
 			return -1
