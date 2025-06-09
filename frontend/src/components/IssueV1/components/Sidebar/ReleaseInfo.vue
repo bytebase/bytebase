@@ -12,25 +12,28 @@
         'line-through opacity-60': release.state === State.DELETED,
       }"
     >
-      {{ release.title }}
+      {{ release.title || release.name }}
     </a>
   </div>
 </template>
 
 <script setup lang="ts">
 import { PackageIcon } from "lucide-vue-next";
-import { useIssueContext } from "@/components/IssueV1";
+import { computed } from "vue";
+import { specForTask, useIssueContext } from "@/components/IssueV1";
 import { useReleaseByName } from "@/store";
 import { isValidReleaseName } from "@/types";
 import { State } from "@/types/proto/v1/common";
 
-const { issue } = useIssueContext();
+const { issue, selectedTask } = useIssueContext();
+
+const releaseName = computed(
+  () =>
+    specForTask(issue.value.planEntity, selectedTask.value)
+      ?.changeDatabaseConfig?.release
+);
 
 const { release, ready } = useReleaseByName(
-  (() => {
-    return issue.value.planEntity?.specs.find(spec => 
-      spec.changeDatabaseConfig?.release
-    )?.changeDatabaseConfig?.release || "";
-  })()
+  computed(() => releaseName.value || "")
 );
 </script>

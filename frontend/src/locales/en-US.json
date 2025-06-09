@@ -2622,12 +2622,31 @@
     "change-type": "Change type"
   },
   "release": {
+    "title": "Release",
     "releases": "Releases",
     "files": "Files",
     "create": "Create release",
     "select": "Select release",
     "archive-this-release": "Archive this release",
     "total-files": "Total {count} files",
+    "plan-tip": "This plan is configured to use a release. Database changes will be executed using the SQL statements from the selected release files.",
+    "not-found": "Not found",
+    "vcs-source": "VCS Source",
+    "view-all-files": "View all files",
+    "and-n-more-files": "and {n} more files",
+    "change-type": {
+      "ddl": "DDL",
+      "ddl-ghost": "DDL Ghost",
+      "dml": "DML",
+      "unspecified": "Unspecified"
+    },
+    "file-type": {
+      "versioned": "Version",
+      "unspecified": "Unspecified"
+    },
+    "vcs-type": {
+      "unspecified": "Unspecified"
+    },
     "actions": {
       "new-file": "New file",
       "import-from-release": "Import from release"
