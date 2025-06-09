@@ -988,6 +988,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.PlanConfig"><span class="badge">M</span>PlanConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PlanLimitConfig"><span class="badge">M</span>PlanLimitConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Subscription"><span class="badge">M</span>Subscription</a>
                 </li>
               
@@ -11925,6 +11933,68 @@ The access is based on approval flow.</p></td>
                 <tr>
                   <td>license</td>
                   <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PlanConfig">PlanConfig</h3>
+        <p>PlanConfig represents the configuration for all plans loaded from plan.yaml</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plans</td>
+                  <td><a href="#bytebase.v1.PlanLimitConfig">PlanLimitConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PlanLimitConfig">PlanLimitConfig</h3>
+        <p>PlanLimitConfig represents a single plan's configuration</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.PlanType">PlanType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_instance_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_seat_count</td>
+                  <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
