@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from "vue-router";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
+import { t } from "@/plugins/i18n";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import { INSTANCE_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
@@ -11,6 +12,9 @@ const instanceRoutes: RouteRecordRaw[] = [
     components: {
       content: InstanceLayout,
       leftSidebar: DashboardSidebar,
+    },
+    meta: {
+      title: () => t("common.instance"),
     },
     props: { content: true },
     children: [
