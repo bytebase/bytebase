@@ -1003,7 +1003,6 @@
     "data-change-description": "Modify data (DML)",
     "select-targets": "Select Targets",
     "overview": {
-      "title": "Plan Overview",
       "description": "View and manage all specifications in this plan",
       "total-specs": "Total Specs",
       "total-targets": "Total Targets",
@@ -2641,7 +2640,7 @@
       "unspecified": "Unspecified"
     },
     "file-type": {
-      "versioned": "Version",
+      "versioned": "Versioned",
       "unspecified": "Unspecified"
     },
     "vcs-type": {

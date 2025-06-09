@@ -1003,7 +1003,6 @@
     "data-change-description": "Modificar datos (DML)",
     "select-targets": "Seleccionar objetivos",
     "overview": {
-      "title": "Descripción general del plan",
       "description": "Ver y administrar todas las especificaciones de este plan",
       "total-specs": "Especificaciones totales",
       "total-targets": "Objetivos totales",

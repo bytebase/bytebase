@@ -4,7 +4,7 @@
       <!-- Plan Header -->
       <div>
         <h1 class="text-2xl font-semibold mb-2">
-          {{ $t("plan.overview.title") }}
+          {{ $t("plan.navigator.overview") }}
         </h1>
         <p class="text-control-light">
           {{ $t("plan.overview.description") }}

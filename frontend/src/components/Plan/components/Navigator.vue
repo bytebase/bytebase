@@ -156,6 +156,7 @@ import { useRouter, useRoute } from "vue-router";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan_Spec,
+  type PlanCheckRun,
 } from "@/types/proto/v1/plan_service";
 import { usePlanContext } from "../logic/context";
 import { targetsForSpec } from "../logic/plan";
@@ -166,7 +167,8 @@ import { useSpecsValidation } from "./common/validateSpec";
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
-const { plan, selectedSpec, isCreating, events } = usePlanContext();
+const { plan, selectedSpec, isCreating, events, planCheckRunList } =
+  usePlanContext();
 
 const specs = computed(() => plan.value.specs);
 const showAddSpecDrawer = ref(false);
@@ -207,7 +209,7 @@ const handleSpecCreated = (spec: Plan_Spec) => {
 
 const getSpecCheckStatus = (spec: Plan_Spec) => {
   // Get aggregated check status for the spec
-  const checkRuns = plan.value?.planCheckRunList || [];
+  const checkRuns = planCheckRunList.value || [];
   const targets = targetsForSpec(spec);
   const sheet = getSheetFromSpec(spec);
 
@@ -215,7 +217,7 @@ const getSpecCheckStatus = (spec: Plan_Spec) => {
     return "STATUS_UNSPECIFIED";
   }
 
-  const relevantCheckRuns = checkRuns.filter((check) => {
+  const relevantCheckRuns = checkRuns.filter((check: PlanCheckRun) => {
     return targets.includes(check.target) && check.sheet === sheet;
   });
 

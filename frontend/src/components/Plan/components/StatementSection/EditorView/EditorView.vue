@@ -425,7 +425,7 @@ const updateStatement = async (statement: string) => {
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(
-    plan.value.project,
+    project.value.name,
     sheet
   );
 
