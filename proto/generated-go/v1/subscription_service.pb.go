@@ -433,6 +433,112 @@ func (x *Feature) GetMatrix() map[string]bool {
 	return nil
 }
 
+// PlanConfig represents the configuration for all plans loaded from plan.yaml
+type PlanConfig struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Plans         []*PlanLimitConfig     `protobuf:"bytes,1,rep,name=plans,proto3" json:"plans,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PlanConfig) Reset() {
+	*x = PlanConfig{}
+	mi := &file_v1_subscription_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlanConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlanConfig) ProtoMessage() {}
+
+func (x *PlanConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_subscription_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlanConfig.ProtoReflect.Descriptor instead.
+func (*PlanConfig) Descriptor() ([]byte, []int) {
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *PlanConfig) GetPlans() []*PlanLimitConfig {
+	if x != nil {
+		return x.Plans
+	}
+	return nil
+}
+
+// PlanLimitConfig represents a single plan's configuration
+type PlanLimitConfig struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Type                 PlanType               `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.PlanType" json:"type,omitempty"`
+	MaximumInstanceCount int32                  `protobuf:"varint,2,opt,name=maximum_instance_count,json=maximumInstanceCount,proto3" json:"maximum_instance_count,omitempty"`
+	MaximumSeatCount     int32                  `protobuf:"varint,3,opt,name=maximum_seat_count,json=maximumSeatCount,proto3" json:"maximum_seat_count,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *PlanLimitConfig) Reset() {
+	*x = PlanLimitConfig{}
+	mi := &file_v1_subscription_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlanLimitConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlanLimitConfig) ProtoMessage() {}
+
+func (x *PlanLimitConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_subscription_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlanLimitConfig.ProtoReflect.Descriptor instead.
+func (*PlanLimitConfig) Descriptor() ([]byte, []int) {
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *PlanLimitConfig) GetType() PlanType {
+	if x != nil {
+		return x.Type
+	}
+	return PlanType_PLAN_TYPE_UNSPECIFIED
+}
+
+func (x *PlanLimitConfig) GetMaximumInstanceCount() int32 {
+	if x != nil {
+		return x.MaximumInstanceCount
+	}
+	return 0
+}
+
+func (x *PlanLimitConfig) GetMaximumSeatCount() int32 {
+	if x != nil {
+		return x.MaximumSeatCount
+	}
+	return 0
+}
+
 var File_v1_subscription_service_proto protoreflect.FileDescriptor
 
 const file_v1_subscription_service_proto_rawDesc = "" +
@@ -461,7 +567,14 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x06matrix\x18\x02 \x03(\v2 .bytebase.v1.Feature.MatrixEntryR\x06matrix\x1a9\n" +
 	"\vMatrixEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01*I\n" +
+	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\"@\n" +
+	"\n" +
+	"PlanConfig\x122\n" +
+	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\"\xa0\x01\n" +
+	"\x0fPlanLimitConfig\x12)\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeR\x04type\x124\n" +
+	"\x16maximum_instance_count\x18\x02 \x01(\x05R\x14maximumInstanceCount\x12,\n" +
+	"\x12maximum_seat_count\x18\x03 \x01(\x05R\x10maximumSeatCount*I\n" +
 	"\bPlanType\x12\x19\n" +
 	"\x15PLAN_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04FREE\x10\x01\x12\b\n" +
@@ -486,7 +599,7 @@ func file_v1_subscription_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_subscription_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_subscription_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_v1_subscription_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_v1_subscription_service_proto_goTypes = []any{
 	(PlanType)(0),                     // 0: bytebase.v1.PlanType
 	(*GetSubscriptionRequest)(nil),    // 1: bytebase.v1.GetSubscriptionRequest
@@ -496,27 +609,31 @@ var file_v1_subscription_service_proto_goTypes = []any{
 	(*Subscription)(nil),              // 5: bytebase.v1.Subscription
 	(*FeatureMatrix)(nil),             // 6: bytebase.v1.FeatureMatrix
 	(*Feature)(nil),                   // 7: bytebase.v1.Feature
-	nil,                               // 8: bytebase.v1.Feature.MatrixEntry
-	(*timestamppb.Timestamp)(nil),     // 9: google.protobuf.Timestamp
+	(*PlanConfig)(nil),                // 8: bytebase.v1.PlanConfig
+	(*PlanLimitConfig)(nil),           // 9: bytebase.v1.PlanLimitConfig
+	nil,                               // 10: bytebase.v1.Feature.MatrixEntry
+	(*timestamppb.Timestamp)(nil),     // 11: google.protobuf.Timestamp
 }
 var file_v1_subscription_service_proto_depIdxs = []int32{
-	4, // 0: bytebase.v1.UpdateSubscriptionRequest.patch:type_name -> bytebase.v1.PatchSubscription
-	9, // 1: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
-	9, // 2: bytebase.v1.Subscription.started_time:type_name -> google.protobuf.Timestamp
-	0, // 3: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
-	7, // 4: bytebase.v1.FeatureMatrix.features:type_name -> bytebase.v1.Feature
-	8, // 5: bytebase.v1.Feature.matrix:type_name -> bytebase.v1.Feature.MatrixEntry
-	1, // 6: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
-	2, // 7: bytebase.v1.SubscriptionService.GetFeatureMatrix:input_type -> bytebase.v1.GetFeatureMatrixRequest
-	3, // 8: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
-	5, // 9: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
-	6, // 10: bytebase.v1.SubscriptionService.GetFeatureMatrix:output_type -> bytebase.v1.FeatureMatrix
-	5, // 11: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
-	9, // [9:12] is the sub-list for method output_type
-	6, // [6:9] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	4,  // 0: bytebase.v1.UpdateSubscriptionRequest.patch:type_name -> bytebase.v1.PatchSubscription
+	11, // 1: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
+	11, // 2: bytebase.v1.Subscription.started_time:type_name -> google.protobuf.Timestamp
+	0,  // 3: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
+	7,  // 4: bytebase.v1.FeatureMatrix.features:type_name -> bytebase.v1.Feature
+	10, // 5: bytebase.v1.Feature.matrix:type_name -> bytebase.v1.Feature.MatrixEntry
+	9,  // 6: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
+	0,  // 7: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
+	1,  // 8: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
+	2,  // 9: bytebase.v1.SubscriptionService.GetFeatureMatrix:input_type -> bytebase.v1.GetFeatureMatrixRequest
+	3,  // 10: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
+	5,  // 11: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
+	6,  // 12: bytebase.v1.SubscriptionService.GetFeatureMatrix:output_type -> bytebase.v1.FeatureMatrix
+	5,  // 13: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
+	11, // [11:14] is the sub-list for method output_type
+	8,  // [8:11] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_v1_subscription_service_proto_init() }
@@ -531,7 +648,7 @@ func file_v1_subscription_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_subscription_service_proto_rawDesc), len(file_v1_subscription_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

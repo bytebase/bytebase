@@ -212,6 +212,8 @@
     - [GetFeatureMatrixRequest](#bytebase-v1-GetFeatureMatrixRequest)
     - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
     - [PatchSubscription](#bytebase-v1-PatchSubscription)
+    - [PlanConfig](#bytebase-v1-PlanConfig)
+    - [PlanLimitConfig](#bytebase-v1-PlanLimitConfig)
     - [Subscription](#bytebase-v1-Subscription)
     - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
   
@@ -3998,6 +4000,38 @@ ANY means approving any node will proceed.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | license | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PlanConfig"></a>
+
+### PlanConfig
+PlanConfig represents the configuration for all plans loaded from plan.yaml
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plans | [PlanLimitConfig](#bytebase-v1-PlanLimitConfig) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PlanLimitConfig"></a>
+
+### PlanLimitConfig
+PlanLimitConfig represents a single plan&#39;s configuration
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [PlanType](#bytebase-v1-PlanType) |  |  |
+| maximum_instance_count | [int32](#int32) |  |  |
+| maximum_seat_count | [int32](#int32) |  |  |
 
 
 
