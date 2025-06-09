@@ -320,17 +320,9 @@ var FeatureMatrix = map[FeatureType][3]bool{
 
 // InstanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.
 var InstanceLimitFeature = map[FeatureType]bool{
-	// Security
-	FeatureExternalSecretManager: true,
-	// Change Workflow
-	FeatureSchemaDrift:      true,
-	FeatureEncryptedSecrets: true,
-	// Database management
-	FeatureReadReplicaConnection:         true,
-	FeatureCustomInstanceSynchronization: true,
-	FeatureSyncSchemaAllVersions:         true,
-	// Policy Control
-	FeatureSensitiveData: true,
+	FeatureEncryptedSecrets:      true,
+	FeatureReadReplicaConnection: true,
+	FeatureSensitiveData:         true,
 }
 
 // Feature returns whether a particular feature is available in a particular plan.
