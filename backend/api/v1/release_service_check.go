@@ -121,7 +121,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
 
-		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance), nil)
+		engine := instance.Metadata.GetEngine()
+		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, engine, store.IsObjectCaseSensitive(instance), nil)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create catalog: %v", err)
 		}
@@ -188,7 +189,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 					Target: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
 				}
 				statement := string(file.Statement)
-				engine := instance.Metadata.GetEngine()
 				// Check if any syntax error in the statement.
 				if common.EngineSupportSyntaxCheck(engine) {
 					_, syntaxAdvices := s.sheetManager.GetASTsForChecks(engine, statement)
@@ -222,7 +222,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 						"project_id":     database.ProjectID,
 						"database_name":  database.DatabaseName,
 						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-						"db_engine":     instance.Metadata.GetEngine().String(),
+						"db_engine":     engine.String(),
 						"sql_statement": statement,
 					}
 					riskLevel, err := CalculateRiskLevelWithSummaryReport(ctx, risks, commonArgs, getRiskSourceFromChangeType(changeType), summaryReport)
