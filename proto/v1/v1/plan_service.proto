@@ -215,7 +215,12 @@ message Plan {
   // The issue associated with the plan.
   // Can be empty.
   // Format: projects/{project}/issues/{issue}
-  string issue = 3;
+  string issue = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The rollout associated with the plan.
+  // Can be empty.
+  // Format: projects/{project}/rollouts/{rollout}
+  string rollout = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 4;
   string description = 5;

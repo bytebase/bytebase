@@ -142,6 +142,12 @@ export interface Plan {
    * Format: projects/{project}/issues/{issue}
    */
   issue: string;
+  /**
+   * The rollout associated with the plan.
+   * Can be empty.
+   * Format: projects/{project}/rollouts/{rollout}
+   */
+  rollout: string;
   title: string;
   description: string;
   specs: Plan_Spec[];
@@ -1176,6 +1182,7 @@ function createBasePlan(): Plan {
   return {
     name: "",
     issue: "",
+    rollout: "",
     title: "",
     description: "",
     specs: [],
@@ -1194,6 +1201,9 @@ export const Plan: MessageFns<Plan> = {
     }
     if (message.issue !== "") {
       writer.uint32(26).string(message.issue);
+    }
+    if (message.rollout !== "") {
+      writer.uint32(122).string(message.rollout);
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -1243,6 +1253,14 @@ export const Plan: MessageFns<Plan> = {
           }
 
           message.issue = reader.string();
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.rollout = reader.string();
           continue;
         }
         case 4: {
@@ -1329,6 +1347,9 @@ export const Plan: MessageFns<Plan> = {
     if (message.issue !== "") {
       obj.issue = message.issue;
     }
+    if (message.rollout !== "") {
+      obj.rollout = message.rollout;
+    }
     if (message.title !== "") {
       obj.title = message.title;
     }
@@ -1369,6 +1390,7 @@ export const Plan: MessageFns<Plan> = {
     const message = createBasePlan();
     message.name = object.name ?? "";
     message.issue = object.issue ?? "";
+    message.rollout = object.rollout ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
     message.specs = object.specs?.map((e) => Plan_Spec.fromPartial(e)) || [];

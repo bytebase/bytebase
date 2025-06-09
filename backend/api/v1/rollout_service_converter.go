@@ -33,6 +33,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	p := &v1pb.Plan{
 		Name:                    common.FormatPlan(plan.ProjectID, plan.UID),
 		Issue:                   "",
+		Rollout:                 "",
 		Title:                   plan.Name,
 		Description:             plan.Description,
 		Specs:                   convertToPlanSpecs(plan.Config.Specs), // Use specs field for output
@@ -54,6 +55,9 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	}
 	if issue != nil {
 		p.Issue = common.FormatIssue(issue.Project.ResourceID, issue.UID)
+	}
+	if plan.PipelineUID != nil {
+		p.Rollout = common.FormatRollout(issue.Project.ResourceID, *issue.PipelineUID)
 	}
 	return p, nil
 }
