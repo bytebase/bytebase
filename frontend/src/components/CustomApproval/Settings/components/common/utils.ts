@@ -1,8 +1,5 @@
-import { CheckIcon } from "lucide-vue-next";
-import type { SelectOption } from "naive-ui";
-import { h, type VNode } from "vue";
 import { type OptionConfig } from "@/components/ExprEditor/context";
-import { type Factor, SQLTypeList } from "@/plugins/cel";
+import { SQLTypeList, type Factor } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
 import {
   environmentNamePrefix,
@@ -11,21 +8,24 @@ import {
   useRoleStore,
 } from "@/store";
 import {
-  PresetRiskLevelList,
   DEFAULT_PROJECT_NAME,
   PRESET_WORKSPACE_ROLES,
+  PresetRiskLevelList,
   useSupportedSourceList,
   type ComposedProject,
 } from "@/types";
 import type { Risk } from "@/types/proto/v1/risk_service";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
 import {
+  displayRoleTitle,
   engineNameV1,
   extractProjectResourceName,
-  supportedEngineV1List,
   getDefaultPagination,
-  displayRoleTitle,
+  supportedEngineV1List,
 } from "@/utils";
+import { CheckIcon } from "lucide-vue-next";
+import type { SelectOption } from "naive-ui";
+import { h, type VNode } from "vue";
 
 export const sourceText = (source: Risk_Source) => {
   switch (source) {
@@ -111,8 +111,8 @@ export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
   [
     Risk_Source.REQUEST_ROLE,
     [
-      ...commonFactorList,
-      "database_name",
+      "environment_id", // use `environment.resource_id` instead.
+      "project_id", // use `project.resource_id` instead.
       "expiration_days",
       "export_rows",
       "role",
