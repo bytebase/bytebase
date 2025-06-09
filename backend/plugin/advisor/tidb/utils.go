@@ -2,7 +2,7 @@
 package tidb
 
 import (
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -29,7 +29,7 @@ func (t tableState) tableList() []string {
 	for tableName := range t {
 		tableList = append(tableList, tableName)
 	}
-	sort.Strings(tableList)
+	slices.Sort(tableList)
 	return tableList
 }
 
@@ -41,7 +41,7 @@ func (t tablePK) tableList() []string {
 	for tableName := range t {
 		tableList = append(tableList, tableName)
 	}
-	sort.Strings(tableList)
+	slices.Sort(tableList)
 	return tableList
 }
 

@@ -3,7 +3,7 @@ package elasticsearch
 import (
 	"encoding/json"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -197,8 +197,14 @@ func ParseElasticsearchREST(text string) (*ParseResult, error) {
 
 	// Convert Error
 	var syntaxErrors []*base.SyntaxError
-	sort.Slice(p.errors, func(i, j int) bool {
-		return p.errors[i].byteOffset < p.errors[j].byteOffset
+	slices.SortFunc(p.errors, func(a, b *syntaxError) int {
+		if a.byteOffset < b.byteOffset {
+			return -1
+		}
+		if a.byteOffset > b.byteOffset {
+			return 1
+		}
+		return 0
 	})
 
 	for i, err := range p.errors {

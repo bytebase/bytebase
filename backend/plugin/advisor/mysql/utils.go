@@ -3,7 +3,7 @@ package mysql
 
 import (
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	parser "github.com/bytebase/mysql-parser"
@@ -27,7 +27,7 @@ func (t tableState) tableList() []string {
 	for tableName := range t {
 		tableList = append(tableList, tableName)
 	}
-	sort.Strings(tableList)
+	slices.Sort(tableList)
 	return tableList
 }
 
@@ -39,7 +39,7 @@ func (t tablePK) tableList() []string {
 	for tableName := range t {
 		tableList = append(tableList, tableName)
 	}
-	sort.Strings(tableList)
+	slices.Sort(tableList)
 	return tableList
 }
 

@@ -3,7 +3,7 @@ package plsql
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -143,8 +143,14 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 	for _, table := range newSchemaInfo.tableMap {
 		newTables = append(newTables, table)
 	}
-	sort.Slice(newTables, func(i, j int) bool {
-		return newTables[i].id < newTables[j].id
+	slices.SortFunc(newTables, func(i, j *tableInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, newTable := range newTables {
 		tableName := newTable.name
@@ -163,8 +169,14 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 	for _, table := range oldSchemaInfo.tableMap {
 		remainingTables = append(remainingTables, table)
 	}
-	sort.Slice(remainingTables, func(i, j int) bool {
-		return remainingTables[i].id < remainingTables[j].id
+	slices.SortFunc(remainingTables, func(i, j *tableInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 	for _, table := range remainingTables {
 		if ctx.StrictMode {
@@ -178,8 +190,14 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 	for _, index := range newSchemaInfo.indexMap {
 		newIndexes = append(newIndexes, index)
 	}
-	sort.Slice(newIndexes, func(i, j int) bool {
-		return newIndexes[i].pos < newIndexes[j].pos
+	slices.SortFunc(newIndexes, func(i, j *indexInfo) int {
+		if i.pos < j.pos {
+			return -1
+		}
+		if i.pos > j.pos {
+			return 1
+		}
+		return 0
 	})
 	for _, newIndex := range newIndexes {
 		id := newIndex.id
@@ -200,8 +218,14 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 	for _, index := range oldSchemaInfo.indexMap {
 		remainingIndexes = append(remainingIndexes, index)
 	}
-	sort.Slice(remainingIndexes, func(i, j int) bool {
-		return remainingIndexes[i].pos < remainingIndexes[j].pos
+	slices.SortFunc(remainingIndexes, func(i, j *indexInfo) int {
+		if i.pos < j.pos {
+			return -1
+		}
+		if i.pos > j.pos {
+			return 1
+		}
+		return 0
 	})
 	for _, index := range remainingIndexes {
 		if ctx.StrictMode {
@@ -338,9 +362,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 		dropConstraints = append(dropConstraints, constraintName)
 	}
 
-	sort.Slice(dropConstraints, func(i, j int) bool {
-		return dropConstraints[i] < dropConstraints[j]
-	})
+	slices.Sort(dropConstraints)
 
 	return diff.appendConstraintDiff(newTable.name, addConstraints, dropConstraints)
 }
@@ -505,9 +527,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) error {
 		dropColumns = append(dropColumns, NormalizeIdentifierContext(column.Column_name().Identifier()))
 	}
 
-	sort.Slice(dropColumns, func(i, j int) bool {
-		return dropColumns[i] < dropColumns[j]
-	})
+	slices.Sort(dropColumns)
 
 	return diff.appendColumnDiff(oldTable.name, addColumns, modifyColumns, modifyColumnVisibility, dropColumns)
 }

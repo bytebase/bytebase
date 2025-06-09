@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -613,8 +613,14 @@ func convertColumnMapToSortedList(columns map[string]*columnDef) (newColumns []*
 	for _, column := range columns {
 		newColumns = append(newColumns, column)
 	}
-	sort.Slice(newColumns, func(i, j int) bool {
-		return newColumns[i].id < newColumns[j].id
+	slices.SortFunc(newColumns, func(a, b *columnDef) int {
+		if a.id < b.id {
+			return -1
+		}
+		if a.id > b.id {
+			return 1
+		}
+		return 0
 	})
 	return newColumns
 }
@@ -839,8 +845,14 @@ func (diff *diffNode) deparse() (string, error) {
 }
 
 func sortAndWriteAlertTableOptionList(buf *strings.Builder, tableOptions []*tableOptionDef) error {
-	sort.Slice(tableOptions, func(i, j int) bool {
-		return tableOptions[i].tableName < tableOptions[j].tableName
+	slices.SortFunc(tableOptions, func(a, b *tableOptionDef) int {
+		if a.tableName < b.tableName {
+			return -1
+		}
+		if a.tableName > b.tableName {
+			return 1
+		}
+		return 0
 	})
 
 	for _, tableOption := range tableOptions {
@@ -859,10 +871,16 @@ func writeAlertTableOptionStatement(buf *strings.Builder, tableOption *tableOpti
 }
 
 func sortAndWriteDropCheckConstraintList(buf *strings.Builder, checks []*checkDef) error {
-	sort.Slice(checks, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", checks[i].tableName, checks[i].name)
-		c2 := fmt.Sprintf("%s.%s", checks[j].tableName, checks[j].name)
-		return c1 < c2
+	slices.SortFunc(checks, func(a, b *checkDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, check := range checks {
@@ -881,10 +899,16 @@ func writeDropCheckConstraintStatement(buf *strings.Builder, check *checkDef) er
 }
 
 func sortAndWriteAddCheckConstraintList(buf *strings.Builder, checks []*checkDef) error {
-	sort.Slice(checks, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", checks[i].tableName, checks[i].name)
-		c2 := fmt.Sprintf("%s.%s", checks[j].tableName, checks[j].name)
-		return c1 < c2
+	slices.SortFunc(checks, func(a, b *checkDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, check := range checks {
@@ -909,10 +933,16 @@ func writeAddCheckConstraintStatement(buf *strings.Builder, check *checkDef) err
 }
 
 func sortAndWriteAddForeignKeyList(buf *strings.Builder, fks []*foreignKeyDef) error {
-	sort.Slice(fks, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", fks[i].tableName, fks[i].name)
-		c2 := fmt.Sprintf("%s.%s", fks[j].tableName, fks[j].name)
-		return c1 < c2
+	slices.SortFunc(fks, func(a, b *foreignKeyDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, fk := range fks {
@@ -937,10 +967,16 @@ func writeAddForeignKeyStatement(buf *strings.Builder, fk *foreignKeyDef) error 
 }
 
 func sortAndWriteDropForeignKeyList(buf *strings.Builder, fks []*foreignKeyDef) error {
-	sort.Slice(fks, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", fks[i].tableName, fks[i].name)
-		c2 := fmt.Sprintf("%s.%s", fks[j].tableName, fks[j].name)
-		return c1 < c2
+	slices.SortFunc(fks, func(a, b *foreignKeyDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, fk := range fks {
@@ -1135,10 +1171,16 @@ func writeCreateTriggerStatement(buf *strings.Builder, trigger *triggerDef) erro
 }
 
 func sortAndWriteDropIndexList(buf *strings.Builder, indexes []*indexDef) error {
-	sort.Slice(indexes, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", indexes[i].tableName, indexes[i].name)
-		c2 := fmt.Sprintf("%s.%s", indexes[j].tableName, indexes[j].name)
-		return c1 < c2
+	slices.SortFunc(indexes, func(a, b *indexDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, index := range indexes {
@@ -1157,10 +1199,16 @@ func writeDropIndexStatement(buf *strings.Builder, index *indexDef) error {
 }
 
 func sortAndWriteDropIndexConstraintList(buf *strings.Builder, indexes []*indexConstraintDef) error {
-	sort.Slice(indexes, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", indexes[i].tableName, indexes[i].name)
-		c2 := fmt.Sprintf("%s.%s", indexes[j].tableName, indexes[j].name)
-		return c1 < c2
+	slices.SortFunc(indexes, func(a, b *indexConstraintDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, index := range indexes {
@@ -1179,8 +1227,14 @@ func writeDropIndexConstraintStatement(buf *strings.Builder, index *indexConstra
 }
 
 func sortAndWriteDropViewList(buf *strings.Builder, views []*viewDef) error {
-	sort.Slice(views, func(i, j int) bool {
-		return views[i].name < views[j].name
+	slices.SortFunc(views, func(a, b *viewDef) int {
+		if a.name < b.name {
+			return -1
+		}
+		if a.name > b.name {
+			return 1
+		}
+		return 0
 	})
 
 	for _, view := range views {
@@ -1200,8 +1254,14 @@ func writeDropViewStatement(buf *strings.Builder, view *viewDef) error {
 }
 
 func sortAndWriteDropTableList(buf *strings.Builder, ns []*tableDef) error {
-	sort.Slice(ns, func(i, j int) bool {
-		return ns[i].id < ns[j].id
+	slices.SortFunc(ns, func(a, b *tableDef) int {
+		if a.id < b.id {
+			return -1
+		}
+		if a.id > b.id {
+			return 1
+		}
+		return 0
 	})
 
 	for _, table := range ns {
@@ -1220,8 +1280,14 @@ func writeDropTableStatement(buf *strings.Builder, table *tableDef) error {
 }
 
 func sortAndWriteCreateTableList(buf *strings.Builder, ns []*tableDef) error {
-	sort.Slice(ns, func(i, j int) bool {
-		return ns[i].name < ns[j].name
+	slices.SortFunc(ns, func(a, b *tableDef) int {
+		if a.name < b.name {
+			return -1
+		}
+		if a.name > b.name {
+			return 1
+		}
+		return 0
 	})
 
 	for _, table := range ns {
@@ -1254,10 +1320,16 @@ func writeCreateTableStatement(buf *strings.Builder, table *tableDef) error {
 }
 
 func sortAndWriteDropColumnList(buf *strings.Builder, columns []*columnDef) error {
-	sort.Slice(columns, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", columns[i].tableName, columns[i].name)
-		c2 := fmt.Sprintf("%s.%s", columns[j].tableName, columns[j].name)
-		return c1 < c2
+	slices.SortFunc(columns, func(a, b *columnDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, column := range columns {
@@ -1312,8 +1384,14 @@ func writeAddColumnStatement(buf *strings.Builder, column *columnDef) error {
 }
 
 func sortAndWriteCreateTempViewList(buf *strings.Builder, views []*viewDef) error {
-	sort.Slice(views, func(i, j int) bool {
-		return views[i].name < views[j].name
+	slices.SortFunc(views, func(a, b *viewDef) int {
+		if a.name < b.name {
+			return -1
+		}
+		if a.name > b.name {
+			return 1
+		}
+		return 0
 	})
 
 	for _, view := range views {
@@ -1338,7 +1416,7 @@ func sortAndWriteAlterTablePartitionedByList(buf *strings.Builder, partitions ma
 	for tableName := range partitions {
 		tableNames = append(tableNames, tableName)
 	}
-	sort.Strings(tableNames)
+	slices.Sort(tableNames)
 	for _, tableName := range tableNames {
 		var body strings.Builder
 		if _, err := body.WriteString(fmt.Sprintf("ALTER TABLE `%s` PARTITION BY ", tableName)); err != nil {
@@ -1562,8 +1640,14 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 		for _, partition := range p.partitions {
 			sortedPartitions = append(sortedPartitions, partition)
 		}
-		sort.Slice(sortedPartitions, func(i, j int) bool {
-			return sortedPartitions[i].id < sortedPartitions[j].id
+		slices.SortFunc(sortedPartitions, func(a, b *partitionDefinition) int {
+			if a.id < b.id {
+				return -1
+			}
+			if a.id > b.id {
+				return 1
+			}
+			return 0
 		})
 		if _, err := buf.WriteString("\n("); err != nil {
 			return err
@@ -1604,8 +1688,14 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 				for _, subPartition := range partition.subpartitions {
 					sortedSubpartitions = append(sortedSubpartitions, subPartition)
 				}
-				sort.Slice(sortedSubpartitions, func(i, j int) bool {
-					return sortedSubpartitions[i].id < sortedSubpartitions[j].id
+				slices.SortFunc(sortedSubpartitions, func(a, b *partitionDefinition) int {
+					if a.id < b.id {
+						return -1
+					}
+					if a.id > b.id {
+						return 1
+					}
+					return 0
 				})
 				for j, subPartition := range sortedSubpartitions {
 					if _, err := buf.WriteString(fmt.Sprintf("SUBPARTITION %s", subPartition.name)); err != nil {
@@ -1704,8 +1794,14 @@ func splitPartitionExprIntoFields(expr string) []string {
 }
 
 func sortAndWriteCreateViewList(buf *strings.Builder, views []*viewDef) error {
-	sort.Slice(views, func(i, j int) bool {
-		return views[i].name < views[j].name
+	slices.SortFunc(views, func(a, b *viewDef) int {
+		if a.name < b.name {
+			return -1
+		}
+		if a.name > b.name {
+			return 1
+		}
+		return 0
 	})
 
 	for _, view := range views {
@@ -1761,10 +1857,16 @@ func writeCreateViewStatement(buf *strings.Builder, view *viewDef) error {
 }
 
 func sortAndWriteModifyColumnList(buf *strings.Builder, columns []*columnDef) error {
-	sort.Slice(columns, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", columns[i].tableName, columns[i].name)
-		c2 := fmt.Sprintf("%s.%s", columns[j].tableName, columns[j].name)
-		return c1 < c2
+	slices.SortFunc(columns, func(a, b *columnDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, column := range columns {
@@ -1795,10 +1897,16 @@ func writeModifyColumnStatement(buf *strings.Builder, column *columnDef) error {
 }
 
 func sortAndWriteCreateIndexList(buf *strings.Builder, indexes []*indexDef) error {
-	sort.Slice(indexes, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", indexes[i].tableName, indexes[i].name)
-		c2 := fmt.Sprintf("%s.%s", indexes[j].tableName, indexes[j].name)
-		return c1 < c2
+	slices.SortFunc(indexes, func(a, b *indexDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, index := range indexes {
@@ -1823,10 +1931,16 @@ func writeCreateIndexStatement(buf *strings.Builder, index *indexDef) error {
 }
 
 func sortAndWriteCreateIndexConstraintList(buf *strings.Builder, indexes []*indexConstraintDef) error {
-	sort.Slice(indexes, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", indexes[i].tableName, indexes[i].name)
-		c2 := fmt.Sprintf("%s.%s", indexes[j].tableName, indexes[j].name)
-		return c1 < c2
+	slices.SortFunc(indexes, func(a, b *indexConstraintDef) int {
+		c1 := fmt.Sprintf("%s.%s", a.tableName, a.name)
+		c2 := fmt.Sprintf("%s.%s", b.tableName, b.name)
+		if c1 < c2 {
+			return -1
+		}
+		if c1 > c2 {
+			return 1
+		}
+		return 0
 	})
 
 	for _, index := range indexes {
@@ -1865,8 +1979,14 @@ func writeCreateIndexConstraintStatement(buf *strings.Builder, index *indexConst
 }
 
 func sortAndWriteCreatePrimaryIndexList(buf *strings.Builder, primaryKeys []*primaryKeyDef) error {
-	sort.Slice(primaryKeys, func(i, j int) bool {
-		return primaryKeys[i].tableName < primaryKeys[j].tableName
+	slices.SortFunc(primaryKeys, func(a, b *primaryKeyDef) int {
+		if a.tableName < b.tableName {
+			return -1
+		}
+		if a.tableName > b.tableName {
+			return 1
+		}
+		return 0
 	})
 
 	for _, primaryKey := range primaryKeys {
@@ -1890,8 +2010,14 @@ func writeCreatePrimaryIndexStatement(buf *strings.Builder, primary *primaryKeyD
 }
 
 func sortAndWriteDropPrimaryIndexList(buf *strings.Builder, primaryKeys []*primaryKeyDef) error {
-	sort.Slice(primaryKeys, func(i, j int) bool {
-		return primaryKeys[i].tableName < primaryKeys[j].tableName
+	slices.SortFunc(primaryKeys, func(a, b *primaryKeyDef) int {
+		if a.tableName < b.tableName {
+			return -1
+		}
+		if a.tableName > b.tableName {
+			return 1
+		}
+		return 0
 	})
 
 	for _, primaryKey := range primaryKeys {
@@ -2754,9 +2880,7 @@ func (t *mysqlTransformer) ExitCreateView(_ *mysql.CreateViewContext) {
 	// the column order of createView is decided by createView statement.
 	// we get columns here only for create temp view.
 	// only for test-case.
-	sort.Slice(result, func(i, j int) bool {
-		return result[i] < result[j]
-	})
+	slices.Sort(result)
 	view.columns = result
 }
 

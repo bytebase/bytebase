@@ -5,7 +5,7 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -213,8 +213,14 @@ func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []*storepb.A
 	for _, table := range checker.tableSet {
 		tableList = append(tableList, table)
 	}
-	sort.Slice(tableList, func(i, j int) bool {
-		return tableList[i].line < tableList[j].line
+	slices.SortFunc(tableList, func(a, b tableData) int {
+		if a.line < b.line {
+			return -1
+		}
+		if a.line > b.line {
+			return 1
+		}
+		return 0
 	})
 	for _, table := range tableList {
 		if table.defaultCurrentTimeCount > maxDefaultCurrentTimeColumCount {

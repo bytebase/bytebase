@@ -2,7 +2,7 @@ package mssql
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -170,11 +170,20 @@ func sortViewsByDependenciesAcrossSchemas(views []*viewWithSchema) []*viewWithSc
 	if err != nil {
 		// If there's a cycle or error, return views in original order
 		// Sort by schema then by name for deterministic output
-		sort.Slice(views, func(i, j int) bool {
-			if views[i].schema != views[j].schema {
-				return views[i].schema < views[j].schema
+		slices.SortFunc(views, func(a, b *viewWithSchema) int {
+			if a.schema != b.schema {
+				if a.schema < b.schema {
+					return -1
+				}
+				return 1
 			}
-			return views[i].view.Name < views[j].view.Name
+			if a.view.Name < b.view.Name {
+				return -1
+			}
+			if a.view.Name > b.view.Name {
+				return 1
+			}
+			return 0
 		})
 		return views
 	}

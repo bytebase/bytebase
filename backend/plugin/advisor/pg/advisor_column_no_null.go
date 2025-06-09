@@ -3,7 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 
@@ -68,14 +68,26 @@ func (checker *columnNoNullChecker) generateAdviceList() []*storepb.Advice {
 	}
 	if len(columnList) > 0 {
 		// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
-		sort.Slice(columnList, func(i, j int) bool {
-			if columnList[i].schema != columnList[j].schema {
-				return columnList[i].schema < columnList[j].schema
+		slices.SortFunc(columnList, func(i, j columnName) int {
+			if i.schema != j.schema {
+				if i.schema < j.schema {
+					return -1
+				}
+				return 1
 			}
-			if columnList[i].table != columnList[j].table {
-				return columnList[i].table < columnList[j].table
+			if i.table != j.table {
+				if i.table < j.table {
+					return -1
+				}
+				return 1
 			}
-			return columnList[i].column < columnList[j].column
+			if i.column < j.column {
+				return -1
+			}
+			if i.column > j.column {
+				return 1
+			}
+			return 0
 		})
 	}
 	for _, column := range columnList {

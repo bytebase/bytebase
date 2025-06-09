@@ -5,7 +5,7 @@ package pg
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 
@@ -57,8 +57,14 @@ func (checker *statementMergeAlterTableChecker) generateAdvice() []*storepb.Advi
 	for _, table := range checker.tableMap {
 		tableList = append(tableList, table)
 	}
-	sort.Slice(tableList, func(i, j int) bool {
-		return tableList[i].line < tableList[j].line
+	slices.SortFunc(tableList, func(i, j tableStatement) int {
+		if i.line < j.line {
+			return -1
+		}
+		if i.line > j.line {
+			return 1
+		}
+		return 0
 	})
 	for _, table := range tableList {
 		if table.count > 1 {

@@ -3,7 +3,7 @@ package clickhouse
 import (
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -73,8 +73,13 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	for _, column := range t.columns {
 		columns = append(columns, column)
 	}
-	sort.Slice(columns, func(i, j int) bool {
-		return columns[i].id < columns[j].id
+	slices.SortFunc(columns, func(x, y *columnState) int {
+		if x.id < y.id {
+			return -1
+		} else if x.id > y.id {
+			return 1
+		}
+		return 0
 	})
 	for i, column := range columns {
 		if i > 0 {

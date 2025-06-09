@@ -5,7 +5,7 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -82,8 +82,14 @@ func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []*storepb.A
 	for _, table := range checker.tableSet {
 		tableList = append(tableList, table)
 	}
-	sort.Slice(tableList, func(i, j int) bool {
-		return tableList[i].line < tableList[j].line
+	slices.SortFunc(tableList, func(i, j tableData) int {
+		if i.line < j.line {
+			return -1
+		}
+		if i.line > j.line {
+			return 1
+		}
+		return 0
 	})
 	for _, table := range tableList {
 		if table.defaultCurrentTimeCount > maxDefaultCurrentTimeColumCount {

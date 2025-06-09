@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -237,14 +237,27 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 
 		adviceList, err := SQLReviewCheck(t.Context(), sm, tc.Statement, ruleList, checkCtx)
 		// Sort adviceList by (line, content)
-		sort.Slice(adviceList, func(i, j int) bool {
-			if adviceList[i].GetStartPosition() == nil || adviceList[j].GetStartPosition() == nil {
-				return adviceList[i].GetStartPosition() == nil
+		slices.SortFunc(adviceList, func(x, y *storepb.Advice) int {
+			if x.GetStartPosition() == nil || y.GetStartPosition() == nil {
+				if x.GetStartPosition() == nil && y.GetStartPosition() == nil {
+					return 0
+				} else if x.GetStartPosition() == nil {
+					return -1
+				}
+				return 1
 			}
-			if adviceList[i].GetStartPosition().Line != adviceList[j].GetStartPosition().Line {
-				return adviceList[i].GetStartPosition().Line < adviceList[j].GetStartPosition().Line
+			if x.GetStartPosition().Line != y.GetStartPosition().Line {
+				if x.GetStartPosition().Line < y.GetStartPosition().Line {
+					return -1
+				}
+				return 1
 			}
-			return adviceList[i].Content < adviceList[j].Content
+			if x.Content < y.Content {
+				return -1
+			} else if x.Content > y.Content {
+				return 1
+			}
+			return 0
 		})
 
 		require.NoError(t, err)

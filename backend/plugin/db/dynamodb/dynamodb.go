@@ -5,7 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -233,7 +233,7 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement string, query
 	for key := range rowMap {
 		sortedColumnNames = append(sortedColumnNames, key)
 	}
-	sort.Strings(sortedColumnNames)
+	slices.Sort(sortedColumnNames)
 	columnTypes := make([]string, 0, len(sortedColumnNames))
 	for _, key := range sortedColumnNames {
 		columnTypes = append(columnTypes, columnTypeMap[key])

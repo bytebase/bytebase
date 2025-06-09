@@ -3,7 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -99,14 +99,26 @@ func generateSQL(statementInfoList []statementInfo, targetSchema string, tablePr
 		result = append(result, *backupStatement)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].StartPosition.Line != result[j].StartPosition.Line {
-			return result[i].StartPosition.Line < result[j].StartPosition.Line
+	slices.SortFunc(result, func(a, b base.BackupStatement) int {
+		if a.StartPosition.Line != b.StartPosition.Line {
+			if a.StartPosition.Line < b.StartPosition.Line {
+				return -1
+			}
+			return 1
 		}
-		if result[i].StartPosition.Column != result[j].StartPosition.Column {
-			return result[i].StartPosition.Column < result[j].StartPosition.Column
+		if a.StartPosition.Column != b.StartPosition.Column {
+			if a.StartPosition.Column < b.StartPosition.Column {
+				return -1
+			}
+			return 1
 		}
-		return result[i].SourceTableName < result[j].SourceTableName
+		if a.SourceTableName < b.SourceTableName {
+			return -1
+		}
+		if a.SourceTableName > b.SourceTableName {
+			return 1
+		}
+		return 0
 	})
 
 	return result, nil

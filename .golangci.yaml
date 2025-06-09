@@ -23,6 +23,17 @@ linters:
           msg: Please use os\.ReadDir instead
         - pattern: protojson\.Unmarshal?
           msg: Please use ProtojsonUnmarshaler instead
+        # Prohibit old sort functions in favor of new slices package (Go 1.21+)
+        - pattern: sort\.Slice
+          msg: Please use slices\.SortFunc instead
+        - pattern: sort\.SliceStable
+          msg: Please use slices\.SortStableFunc instead
+        - pattern: sort\.SliceIsSorted
+          msg: Please use slices\.IsSortedFunc instead
+        - pattern: sort\.Strings
+          msg: Please use slices\.Sort instead
+        - pattern: sort\.Ints
+          msg: Please use slices\.Sort instead
     gocritic:
       disabled-checks:
         - ifElseChain

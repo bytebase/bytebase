@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -360,7 +360,7 @@ func getForeignKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.F
 		for _, v := range m {
 			foreignkeyNames = append(foreignkeyNames, v.Name)
 		}
-		sort.Strings(foreignkeyNames)
+		slices.Sort(foreignkeyNames)
 		for _, fkName := range foreignkeyNames {
 			result[k] = append(result[k], m[fkName])
 		}
@@ -623,8 +623,14 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 		for _, v := range m {
 			tableIndexes[k] = append(tableIndexes[k], v)
 		}
-		sort.Slice(tableIndexes[k], func(i, j int) bool {
-			return tableIndexes[k][i].Name < tableIndexes[k][j].Name
+		slices.SortFunc(tableIndexes[k], func(a, b *storepb.IndexMetadata) int {
+			if a.Name < b.Name {
+				return -1
+			}
+			if a.Name > b.Name {
+				return 1
+			}
+			return 0
 		})
 	}
 	return tableIndexes, nil
@@ -713,8 +719,14 @@ func getKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMet
 		for _, v := range m {
 			tableIndexes[k] = append(tableIndexes[k], v)
 		}
-		sort.Slice(tableIndexes[k], func(i, j int) bool {
-			return tableIndexes[k][i].Name < tableIndexes[k][j].Name
+		slices.SortFunc(tableIndexes[k], func(a, b *storepb.IndexMetadata) int {
+			if a.Name < b.Name {
+				return -1
+			}
+			if a.Name > b.Name {
+				return 1
+			}
+			return 0
 		})
 	}
 	return tableIndexes, nil

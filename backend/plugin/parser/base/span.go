@@ -2,7 +2,7 @@ package base
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -361,9 +361,14 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 		for k := range result.SourceColumns {
 			yamlResult.SourceColumns = append(yamlResult.SourceColumns, k)
 		}
-		sort.Slice(yamlResult.SourceColumns, func(i, j int) bool {
-			vi, vj := yamlResult.SourceColumns[i], yamlResult.SourceColumns[j]
-			return vi.String() < vj.String()
+		slices.SortFunc(yamlResult.SourceColumns, func(i, j ColumnResource) int {
+			if i.String() < j.String() {
+				return -1
+			}
+			if i.String() > j.String() {
+				return 1
+			}
+			return 0
 		})
 		for k, v := range result.SourceFieldPaths {
 			s, _ := v.String()
@@ -372,25 +377,40 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 				Path: s,
 			})
 		}
-		sort.Slice(yamlResult.SourceFieldPaths, func(i, j int) bool {
-			vi, vj := yamlResult.SourceFieldPaths[i], yamlResult.SourceFieldPaths[j]
-			return vi.Name < vj.Name
+		slices.SortFunc(yamlResult.SourceFieldPaths, func(i, j YamlQuerySpanResultSourceFieldPaths) int {
+			if i.Name < j.Name {
+				return -1
+			}
+			if i.Name > j.Name {
+				return 1
+			}
+			return 0
 		})
 		y.Results = append(y.Results, *yamlResult)
 	}
 	for k := range s.SourceColumns {
 		y.SourceColumns = append(y.SourceColumns, k)
 	}
-	sort.Slice(y.SourceColumns, func(i, j int) bool {
-		vi, vj := y.SourceColumns[i], y.SourceColumns[j]
-		return vi.String() < vj.String()
+	slices.SortFunc(y.SourceColumns, func(i, j ColumnResource) int {
+		if i.String() < j.String() {
+			return -1
+		}
+		if i.String() > j.String() {
+			return 1
+		}
+		return 0
 	})
 	for k := range s.PredicateColumns {
 		y.PredicateColumns = append(y.PredicateColumns, k)
 	}
-	sort.Slice(y.PredicateColumns, func(i, j int) bool {
-		vi, vj := y.PredicateColumns[i], y.PredicateColumns[j]
-		return vi.String() < vj.String()
+	slices.SortFunc(y.PredicateColumns, func(i, j ColumnResource) int {
+		if i.String() < j.String() {
+			return -1
+		}
+		if i.String() > j.String() {
+			return 1
+		}
+		return 0
 	})
 	return y
 }

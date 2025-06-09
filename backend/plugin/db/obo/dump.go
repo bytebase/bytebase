@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -62,8 +62,13 @@ func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) err
 		}
 		tableList = append(tableList, table)
 	}
-	sort.Slice(tableList, func(i, j int) bool {
-		return tableList[i].meta.TableName.String < tableList[j].meta.TableName.String
+	slices.SortFunc(tableList, func(x, y *tableSchema) int {
+		if x.meta.TableName.String < y.meta.TableName.String {
+			return -1
+		} else if x.meta.TableName.String > y.meta.TableName.String {
+			return 1
+		}
+		return 0
 	})
 
 	for _, table := range tableList {
