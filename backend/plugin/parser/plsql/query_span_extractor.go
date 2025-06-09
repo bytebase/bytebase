@@ -2,7 +2,7 @@ package plsql
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -1681,8 +1681,14 @@ func getAccessTables(currentDatabase string, tree antlr.Tree) ([]base.SchemaReso
 		result = append(result, resource)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].String() < result[j].String()
+	slices.SortFunc(result, func(a, b base.SchemaResource) int {
+		if a.String() < b.String() {
+			return -1
+		}
+		if a.String() > b.String() {
+			return 1
+		}
+		return 0
 	})
 
 	return result, nil

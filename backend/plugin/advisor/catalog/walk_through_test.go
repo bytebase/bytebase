@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -232,8 +232,13 @@ func (d *DatabaseState) convertToSchemaMetadataList() []*storepb.SchemaMetadata 
 		result = append(result, schemaMeta)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Name < result[j].Name
+	slices.SortFunc(result, func(x, y *storepb.SchemaMetadata) int {
+		if x.Name < y.Name {
+			return -1
+		} else if x.Name > y.Name {
+			return 1
+		}
+		return 0
 	})
 
 	return result
@@ -266,8 +271,13 @@ func (s *SchemaState) convertToTableMetadataList() []*storepb.TableMetadata {
 		result = append(result, tableMeta)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Name < result[j].Name
+	slices.SortFunc(result, func(x, y *storepb.TableMetadata) int {
+		if x.Name < y.Name {
+			return -1
+		} else if x.Name > y.Name {
+			return 1
+		}
+		return 0
 	})
 
 	return result
@@ -300,8 +310,13 @@ func (t *TableState) convertToIndexMetadataList() []*storepb.IndexMetadata {
 		result = append(result, indexMeta)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Name < result[j].Name
+	slices.SortFunc(result, func(x, y *storepb.IndexMetadata) int {
+		if x.Name < y.Name {
+			return -1
+		} else if x.Name > y.Name {
+			return 1
+		}
+		return 0
 	})
 
 	return result
@@ -341,11 +356,19 @@ func (t *TableState) convertToColumnMetadataList() []*storepb.ColumnMetadata {
 		result = append(result, columnMeta)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].Position != result[j].Position {
-			return result[i].Position < result[j].Position
+	slices.SortFunc(result, func(x, y *storepb.ColumnMetadata) int {
+		if x.Position != y.Position {
+			if x.Position < y.Position {
+				return -1
+			}
+			return 1
 		}
-		return result[i].Name < result[j].Name
+		if x.Name < y.Name {
+			return -1
+		} else if x.Name > y.Name {
+			return 1
+		}
+		return 0
 	})
 
 	return result

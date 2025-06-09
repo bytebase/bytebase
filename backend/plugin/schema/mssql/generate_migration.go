@@ -3,7 +3,7 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -34,7 +34,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 			}
 		}
 	}
-	sort.Strings(schemasToCreate)
+	slices.Sort(schemasToCreate)
 
 	// Safe order for migrations:
 	// 1. Drop dependent objects first (in reverse dependency order)
@@ -220,10 +220,16 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 	// Sort by schema.table name for consistent output
-	sort.Slice(tablesToCreate, func(i, j int) bool {
-		iFullName := getObjectID(tablesToCreate[i].SchemaName, tablesToCreate[i].TableName)
-		jFullName := getObjectID(tablesToCreate[j].SchemaName, tablesToCreate[j].TableName)
-		return iFullName < jFullName
+	slices.SortFunc(tablesToCreate, func(i, j *schema.TableDiff) int {
+		iFullName := getObjectID(i.SchemaName, i.TableName)
+		jFullName := getObjectID(j.SchemaName, j.TableName)
+		if iFullName < jFullName {
+			return -1
+		}
+		if iFullName > jFullName {
+			return 1
+		}
+		return 0
 	})
 	for _, tableDiff := range tablesToCreate {
 		createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
@@ -933,8 +939,16 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			viewsToProcess = append(viewsToProcess, viewDiff)
 		}
 	}
-	sort.Slice(viewsToProcess, func(i, j int) bool {
-		return getObjectID(viewsToProcess[i].SchemaName, viewsToProcess[i].ViewName) < getObjectID(viewsToProcess[j].SchemaName, viewsToProcess[j].ViewName)
+	slices.SortFunc(viewsToProcess, func(i, j *schema.ViewDiff) int {
+		iFullName := getObjectID(i.SchemaName, i.ViewName)
+		jFullName := getObjectID(j.SchemaName, j.ViewName)
+		if iFullName < jFullName {
+			return -1
+		}
+		if iFullName > jFullName {
+			return 1
+		}
+		return 0
 	})
 
 	for _, viewDiff := range viewsToProcess {
@@ -976,8 +990,16 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			}
 		}
 		// Sort alphabetically for deterministic output
-		sort.Slice(fallbackViews, func(i, j int) bool {
-			return getObjectID(fallbackViews[i].SchemaName, fallbackViews[i].ViewName) < getObjectID(fallbackViews[j].SchemaName, fallbackViews[j].ViewName)
+		slices.SortFunc(fallbackViews, func(i, j *schema.ViewDiff) int {
+			iFullName := getObjectID(i.SchemaName, i.ViewName)
+			jFullName := getObjectID(j.SchemaName, j.ViewName)
+			if iFullName < jFullName {
+				return -1
+			}
+			if iFullName > jFullName {
+				return 1
+			}
+			return 0
 		})
 		for _, viewDiff := range fallbackViews {
 			_, _ = buf.WriteString("DROP VIEW [")
@@ -1017,8 +1039,16 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			viewsToProcess = append(viewsToProcess, viewDiff)
 		}
 	}
-	sort.Slice(viewsToProcess, func(i, j int) bool {
-		return getObjectID(viewsToProcess[i].SchemaName, viewsToProcess[i].ViewName) < getObjectID(viewsToProcess[j].SchemaName, viewsToProcess[j].ViewName)
+	slices.SortFunc(viewsToProcess, func(i, j *schema.ViewDiff) int {
+		iFullName := getObjectID(i.SchemaName, i.ViewName)
+		jFullName := getObjectID(j.SchemaName, j.ViewName)
+		if iFullName < jFullName {
+			return -1
+		}
+		if iFullName > jFullName {
+			return 1
+		}
+		return 0
 	})
 
 	for _, viewDiff := range viewsToProcess {
@@ -1061,8 +1091,16 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			}
 		}
 		// Sort alphabetically for deterministic output
-		sort.Slice(fallbackViews, func(i, j int) bool {
-			return getObjectID(fallbackViews[i].SchemaName, fallbackViews[i].ViewName) < getObjectID(fallbackViews[j].SchemaName, fallbackViews[j].ViewName)
+		slices.SortFunc(fallbackViews, func(i, j *schema.ViewDiff) int {
+			iFullName := getObjectID(i.SchemaName, i.ViewName)
+			jFullName := getObjectID(j.SchemaName, j.ViewName)
+			if iFullName < jFullName {
+				return -1
+			}
+			if iFullName > jFullName {
+				return 1
+			}
+			return 0
 		})
 		for _, viewDiff := range fallbackViews {
 			_, _ = buf.WriteString(viewDiff.NewView.Definition)

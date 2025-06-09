@@ -423,14 +423,14 @@ func (s *StringsManipulator) Manipulate(actions ...base.StringsManipulatorAction
 			addTables = append(addTables, action)
 		case *StringsManipulatorActionDropIndex:
 			indexID := indexID{
-				schema: action.GetSchemaName(),
+				schema: action.SchemaName,
 				table:  action.GetTopLevelNaming(),
 				index:  action.GetSecondLevelNaming(),
 			}
 			indexActions[indexID] = append(indexActions[indexID], action)
 		case *StringsManipulatorActionModifyIndex:
 			indexID := indexID{
-				schema: action.GetSchemaName(),
+				schema: action.SchemaName,
 				table:  action.GetTopLevelNaming(),
 				index:  action.GetSecondLevelNaming(),
 			}

@@ -3,7 +3,7 @@ package mysql
 
 import (
 	"bytes"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pingcap/tidb/pkg/parser"
@@ -214,8 +214,14 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 						missingIndexList = append(missingIndexList, index)
 					}
 				}
-				sort.Slice(missingIndexList, func(i, j int) bool {
-					return missingIndexList[i].originPos < missingIndexList[j].originPos
+				slices.SortFunc(missingIndexList, func(a, b *indexInfo) int {
+					if a.originPos < b.originPos {
+						return -1
+					}
+					if a.originPos > b.originPos {
+						return 1
+					}
+					return 0
 				})
 				for _, index := range missingIndexList {
 					orderedList = append(orderedList, index.createIndex)
@@ -238,8 +244,14 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 			missingTableList = append(missingTableList, table)
 		}
 	}
-	sort.Slice(missingTableList, func(i, j int) bool {
-		return missingTableList[i].originPos < missingTableList[j].originPos
+	slices.SortFunc(missingTableList, func(a, b *tableInfo) int {
+		if a.originPos < b.originPos {
+			return -1
+		}
+		if a.originPos > b.originPos {
+			return 1
+		}
+		return 0
 	})
 	for _, table := range missingTableList {
 		orderedList = append(orderedList, table.createTable)
@@ -249,8 +261,14 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 				missingIndexList = append(missingIndexList, index)
 			}
 		}
-		sort.Slice(missingIndexList, func(i, j int) bool {
-			return missingIndexList[i].originPos < missingIndexList[j].originPos
+		slices.SortFunc(missingIndexList, func(a, b *indexInfo) int {
+			if a.originPos < b.originPos {
+				return -1
+			}
+			if a.originPos > b.originPos {
+				return 1
+			}
+			return 0
 		})
 		for _, index := range missingIndexList {
 			orderedList = append(orderedList, index.createIndex)

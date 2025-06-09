@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 
@@ -2470,8 +2470,14 @@ func (diff *diffNode) dropConstraint(m schemaMap) {
 					constraintInfoList = append(constraintInfoList, constraintInfo)
 				}
 			}
-			sort.Slice(constraintInfoList, func(i, j int) bool {
-				return constraintInfoList[i].id < constraintInfoList[j].id
+			slices.SortFunc(constraintInfoList, func(i, j *constraintInfo) int {
+				if i.id < j.id {
+					return -1
+				}
+				if i.id > j.id {
+					return 1
+				}
+				return 0
 			})
 			var dropConstraintList []*ast.ConstraintDef
 			for _, constraintInfo := range constraintInfoList {
@@ -2497,8 +2503,14 @@ func dropMaterializedView(m schemaMap) []*ast.CreateMaterializedViewStmt {
 	if len(materializedViewList) == 0 {
 		return nil
 	}
-	sort.Slice(materializedViewList, func(i, j int) bool {
-		return materializedViewList[i].id < materializedViewList[j].id
+	slices.SortFunc(materializedViewList, func(i, j *materializedViewInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	var materializedViewDefList []*ast.CreateMaterializedViewStmt
@@ -2522,8 +2534,14 @@ func dropView(m schemaMap) []*ast.CreateViewStmt {
 	if len(viewList) == 0 {
 		return nil
 	}
-	sort.Slice(viewList, func(i, j int) bool {
-		return viewList[i].id < viewList[j].id
+	slices.SortFunc(viewList, func(i, j *viewInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	var viewDefList []*ast.CreateViewStmt
@@ -2547,8 +2565,14 @@ func dropTable(m schemaMap) []*ast.CreateTableStmt {
 	if len(tableList) == 0 {
 		return nil
 	}
-	sort.Slice(tableList, func(i, j int) bool {
-		return tableList[i].id < tableList[j].id
+	slices.SortFunc(tableList, func(i, j *tableInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	var result []*ast.CreateTableStmt
@@ -2569,8 +2593,14 @@ func dropSchema(m schemaMap) *ast.DropSchemaStmt {
 	if len(schemaList) == 0 {
 		return nil
 	}
-	sort.Slice(schemaList, func(i, j int) bool {
-		return schemaList[i].id < schemaList[j].id
+	slices.SortFunc(schemaList, func(i, j *schemaInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	var schemaNameList []string
@@ -2596,8 +2626,14 @@ func dropExtension(m schemaMap) *ast.DropExtensionStmt {
 	if len(extensionList) == 0 {
 		return nil
 	}
-	sort.Slice(extensionList, func(i, j int) bool {
-		return extensionList[i].id < extensionList[j].id
+	slices.SortFunc(extensionList, func(i, j *extensionInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	var extensionNameList []string
@@ -2623,8 +2659,14 @@ func dropFunction(m schemaMap) []*ast.CreateFunctionStmt {
 	if len(functionList) == 0 {
 		return nil
 	}
-	sort.Slice(functionList, func(i, j int) bool {
-		return functionList[i].id < functionList[j].id
+	slices.SortFunc(functionList, func(i, j *functionInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	var result []*ast.CreateFunctionStmt
@@ -2653,8 +2695,14 @@ func (diff *diffNode) dropComment(m schemaMap) {
 			views = append(views, view)
 		}
 	}
-	sort.Slice(tables, func(i, j int) bool {
-		return tables[i].id < tables[j].id
+	slices.SortFunc(tables, func(i, j *tableInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	for _, table := range tables {
@@ -2677,8 +2725,14 @@ func (diff *diffNode) dropComment(m schemaMap) {
 				comment: v,
 			})
 		}
-		sort.Slice(columnCommentList, func(i, j int) bool {
-			return columnCommentList[i].column < columnCommentList[j].column
+		slices.SortFunc(columnCommentList, func(i, j commentInfo) int {
+			if i.column < j.column {
+				return -1
+			}
+			if i.column > j.column {
+				return 1
+			}
+			return 0
 		})
 		for _, columnComment := range columnCommentList {
 			diff.setCommentList = append(diff.setCommentList, &ast.CommentStmt{
@@ -2692,8 +2746,14 @@ func (diff *diffNode) dropComment(m schemaMap) {
 		}
 	}
 
-	sort.Slice(views, func(i, j int) bool {
-		return views[i].id < views[j].id
+	slices.SortFunc(views, func(i, j *viewInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	for _, view := range views {
@@ -2716,8 +2776,14 @@ func (diff *diffNode) dropComment(m schemaMap) {
 				comment: v,
 			})
 		}
-		sort.Slice(columnCommentList, func(i, j int) bool {
-			return columnCommentList[i].column < columnCommentList[j].column
+		slices.SortFunc(columnCommentList, func(i, j commentInfo) int {
+			if i.column < j.column {
+				return -1
+			}
+			if i.column > j.column {
+				return 1
+			}
+			return 0
 		})
 		for _, columnComment := range columnCommentList {
 			diff.setCommentList = append(diff.setCommentList, &ast.CommentStmt{
@@ -2746,8 +2812,14 @@ func (diff *diffNode) dropTypeStmt(m schemaMap) {
 	if len(typeList) == 0 {
 		return
 	}
-	sort.Slice(typeList, func(i, j int) bool {
-		return typeList[i].id < typeList[j].id
+	slices.SortFunc(typeList, func(i, j *typeInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	for _, tp := range typeList {
@@ -2773,8 +2845,14 @@ func (diff *diffNode) dropTriggerStmt(m schemaMap) {
 	if len(triggerList) == 0 {
 		return
 	}
-	sort.Slice(triggerList, func(i, j int) bool {
-		return triggerList[i].id < triggerList[j].id
+	slices.SortFunc(triggerList, func(i, j *triggerInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	for _, trigger := range triggerList {
@@ -2807,8 +2885,14 @@ func dropIndex(m schemaMap) *ast.DropIndexStmt {
 	if len(indexList) == 0 {
 		return nil
 	}
-	sort.Slice(indexList, func(i, j int) bool {
-		return indexList[i].id < indexList[j].id
+	slices.SortFunc(indexList, func(i, j *indexInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	var indexDefList []*ast.IndexDef
@@ -2838,8 +2922,14 @@ func (diff *diffNode) dropSequenceOwnedBy(m schemaMap) {
 	if len(sequenceOwnedByList) == 0 {
 		return
 	}
-	sort.Slice(sequenceOwnedByList, func(i, j int) bool {
-		return sequenceOwnedByList[i].id < sequenceOwnedByList[j].id
+	slices.SortFunc(sequenceOwnedByList, func(i, j *sequenceOwnedByInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	for _, sequenceOwnedBy := range sequenceOwnedByList {
@@ -2865,8 +2955,14 @@ func dropSequence(m schemaMap) *ast.DropSequenceStmt {
 	if len(sequenceList) == 0 {
 		return nil
 	}
-	sort.Slice(sequenceList, func(i, j int) bool {
-		return sequenceList[i].id < sequenceList[j].id
+	slices.SortFunc(sequenceList, func(i, j *sequenceInfo) int {
+		if i.id < j.id {
+			return -1
+		}
+		if i.id > j.id {
+			return 1
+		}
+		return 0
 	})
 
 	var sequenceNameList []*ast.SequenceNameDef

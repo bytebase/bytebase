@@ -3,7 +3,7 @@ package redshift
 import (
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 	"strings"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -71,8 +71,14 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	for _, column := range t.columns {
 		columns = append(columns, column)
 	}
-	sort.Slice(columns, func(i, j int) bool {
-		return columns[i].id < columns[j].id
+	slices.SortFunc(columns, func(a, b *columnState) int {
+		if a.id < b.id {
+			return -1
+		}
+		if a.id > b.id {
+			return 1
+		}
+		return 0
 	})
 	for i, column := range columns {
 		if i > 0 {
@@ -89,14 +95,20 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	for _, index := range t.indexes {
 		indexes = append(indexes, index)
 	}
-	sort.Slice(indexes, func(i, j int) bool {
-		if indexes[i].primary {
-			return true
+	slices.SortFunc(indexes, func(a, b *indexState) int {
+		if a.primary && !b.primary {
+			return -1
 		}
-		if indexes[j].primary {
-			return false
+		if !a.primary && b.primary {
+			return 1
 		}
-		return indexes[i].name < indexes[j].name
+		if a.name < b.name {
+			return -1
+		}
+		if a.name > b.name {
+			return 1
+		}
+		return 0
 	})
 
 	for i, index := range indexes {
@@ -114,8 +126,14 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	for _, fk := range t.foreignKeys {
 		foreignKeys = append(foreignKeys, fk)
 	}
-	sort.Slice(foreignKeys, func(i, j int) bool {
-		return foreignKeys[i].name < foreignKeys[j].name
+	slices.SortFunc(foreignKeys, func(a, b *foreignKeyState) int {
+		if a.name < b.name {
+			return -1
+		}
+		if a.name > b.name {
+			return 1
+		}
+		return 0
 	})
 
 	for i, fk := range foreignKeys {

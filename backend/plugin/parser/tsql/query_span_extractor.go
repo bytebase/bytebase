@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sort"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -3454,8 +3454,14 @@ func getAccessTables(currentNormalizedDatabase string, currentNormalizedSchema s
 
 	var result []base.SchemaResource
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].String() < result[j].String()
+	slices.SortFunc(result, func(a, b base.SchemaResource) int {
+		if a.String() < b.String() {
+			return -1
+		}
+		if a.String() > b.String() {
+			return 1
+		}
+		return 0
 	})
 
 	return l.resourceMap

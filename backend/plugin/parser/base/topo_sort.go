@@ -1,7 +1,7 @@
 package base
 
 import (
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 )
@@ -56,7 +56,7 @@ func (g *Graph) TopologicalSort() ([]string, error) {
 			queue = append(queue, id)
 		}
 	}
-	sort.Strings(queue)
+	slices.Sort(queue)
 
 	for len(queue) > 0 {
 		node := queue[0]

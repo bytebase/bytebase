@@ -2,7 +2,7 @@ package dynamodb
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -118,7 +118,7 @@ func (d *Driver) syncTable(ctx context.Context, tableName string) (*storepb.Tabl
 		for key := range columnsMap {
 			sortedColumns = append(sortedColumns, key)
 		}
-		sort.Strings(sortedColumns)
+		slices.Sort(sortedColumns)
 		tableMetadata.Columns = make([]*storepb.ColumnMetadata, 0, len(sortedColumns))
 		for _, key := range sortedColumns {
 			tableMetadata.Columns = append(tableMetadata.Columns, &storepb.ColumnMetadata{

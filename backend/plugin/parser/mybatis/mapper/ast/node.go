@@ -3,7 +3,7 @@ package ast
 
 import (
 	"io"
-	"sort"
+	"slices"
 )
 
 // Node is the interface implemented by all AST node types.
@@ -86,8 +86,14 @@ func (n *RootNode) RestoreSQLWithLineMapping(ctx *RestoreContext, w io.Writer) (
 			OriginalEleLine: originalEleLine,
 		})
 	}
-	sort.Slice(lineMapping, func(i, j int) bool {
-		return lineMapping[i].SQLLastLine < lineMapping[j].SQLLastLine
+	slices.SortFunc(lineMapping, func(a, b *MybatisSQLLineMapping) int {
+		if a.SQLLastLine < b.SQLLastLine {
+			return -1
+		}
+		if a.SQLLastLine > b.SQLLastLine {
+			return 1
+		}
+		return 0
 	})
 	return lineMapping, nil
 }

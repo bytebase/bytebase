@@ -3,7 +3,7 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
@@ -82,11 +82,20 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	for _, column := range checker.columnSet {
 		columnList = append(columnList, column)
 	}
-	sort.Slice(columnList, func(i, j int) bool {
-		if columnList[i].line != columnList[j].line {
-			return columnList[i].line < columnList[j].line
+	slices.SortFunc(columnList, func(a, b columnName) int {
+		if a.line != b.line {
+			if a.line < b.line {
+				return -1
+			}
+			return 1
 		}
-		return columnList[i].columnName < columnList[j].columnName
+		if a.columnName < b.columnName {
+			return -1
+		}
+		if a.columnName > b.columnName {
+			return 1
+		}
+		return 0
 	})
 
 	for _, column := range columnList {

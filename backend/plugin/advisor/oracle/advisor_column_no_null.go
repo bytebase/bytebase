@@ -4,7 +4,7 @@ package oracle
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
@@ -74,7 +74,7 @@ func (l *columnNoNullListener) generateAdvice() ([]*storepb.Advice, error) {
 	for columnID := range l.nullableColumns {
 		columnIDs = append(columnIDs, columnID)
 	}
-	sort.Strings(columnIDs)
+	slices.Sort(columnIDs)
 	for _, columnID := range columnIDs {
 		line := l.nullableColumns[columnID]
 		advice = append(advice, &storepb.Advice{

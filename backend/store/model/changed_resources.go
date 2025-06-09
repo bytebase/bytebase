@@ -1,7 +1,7 @@
 package model
 
 import (
-	"sort"
+	"slices"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -70,8 +70,13 @@ func (d *ChangedDatabase) build() *storepb.ChangedResourceDatabase {
 		s.Name = name
 		changedResourceDatabase.Schemas = append(changedResourceDatabase.Schemas, s)
 	}
-	sort.Slice(changedResourceDatabase.Schemas, func(i, j int) bool {
-		return changedResourceDatabase.Schemas[i].GetName() < changedResourceDatabase.Schemas[j].GetName()
+	slices.SortFunc(changedResourceDatabase.Schemas, func(a, b *storepb.ChangedResourceSchema) int {
+		if a.GetName() < b.GetName() {
+			return -1
+		} else if a.GetName() > b.GetName() {
+			return 1
+		}
+		return 0
 	})
 	return changedResourceDatabase
 }
@@ -81,29 +86,49 @@ func (s *ChangedSchema) build() *storepb.ChangedResourceSchema {
 	for _, table := range s.tables {
 		changedResourceSchema.Tables = append(changedResourceSchema.Tables, table.table)
 	}
-	sort.Slice(changedResourceSchema.Tables, func(i, j int) bool {
-		return changedResourceSchema.Tables[i].GetName() < changedResourceSchema.Tables[j].GetName()
+	slices.SortFunc(changedResourceSchema.Tables, func(a, b *storepb.ChangedResourceTable) int {
+		if a.GetName() < b.GetName() {
+			return -1
+		} else if a.GetName() > b.GetName() {
+			return 1
+		}
+		return 0
 	})
 
 	for _, view := range s.views {
 		changedResourceSchema.Views = append(changedResourceSchema.Views, view)
 	}
-	sort.Slice(changedResourceSchema.Views, func(i, j int) bool {
-		return changedResourceSchema.Views[i].GetName() < changedResourceSchema.Views[j].GetName()
+	slices.SortFunc(changedResourceSchema.Views, func(a, b *storepb.ChangedResourceView) int {
+		if a.GetName() < b.GetName() {
+			return -1
+		} else if a.GetName() > b.GetName() {
+			return 1
+		}
+		return 0
 	})
 
 	for _, function := range s.functions {
 		changedResourceSchema.Functions = append(changedResourceSchema.Functions, function)
 	}
-	sort.Slice(changedResourceSchema.Functions, func(i, j int) bool {
-		return changedResourceSchema.Functions[i].GetName() < changedResourceSchema.Functions[j].GetName()
+	slices.SortFunc(changedResourceSchema.Functions, func(a, b *storepb.ChangedResourceFunction) int {
+		if a.GetName() < b.GetName() {
+			return -1
+		} else if a.GetName() > b.GetName() {
+			return 1
+		}
+		return 0
 	})
 
 	for _, procedure := range s.procedures {
 		changedResourceSchema.Procedures = append(changedResourceSchema.Procedures, procedure)
 	}
-	sort.Slice(changedResourceSchema.Procedures, func(i, j int) bool {
-		return changedResourceSchema.Procedures[i].GetName() < changedResourceSchema.Procedures[j].GetName()
+	slices.SortFunc(changedResourceSchema.Procedures, func(a, b *storepb.ChangedResourceProcedure) int {
+		if a.GetName() < b.GetName() {
+			return -1
+		} else if a.GetName() > b.GetName() {
+			return 1
+		}
+		return 0
 	})
 
 	return changedResourceSchema

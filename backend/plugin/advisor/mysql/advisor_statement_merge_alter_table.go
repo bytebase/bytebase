@@ -5,7 +5,7 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -121,8 +121,14 @@ func (checker *statementMergeAlterTableChecker) generateAdvice() []*storepb.Advi
 	for _, table := range checker.tableMap {
 		tableList = append(tableList, table)
 	}
-	sort.Slice(tableList, func(i, j int) bool {
-		return tableList[i].lastLine < tableList[j].lastLine
+	slices.SortFunc(tableList, func(i, j tableStatement) int {
+		if i.lastLine < j.lastLine {
+			return -1
+		}
+		if i.lastLine > j.lastLine {
+			return 1
+		}
+		return 0
 	})
 
 	for _, table := range tableList {

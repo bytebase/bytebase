@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -57,14 +57,26 @@ func TestCompletion(t *testing.T) {
 				filteredResult = append(filteredResult, r)
 			}
 		}
-		sort.Slice(filteredResult, func(i, j int) bool {
-			if filteredResult[i].Type != filteredResult[j].Type {
-				return filteredResult[i].Type < filteredResult[j].Type
+		slices.SortFunc(filteredResult, func(a, b base.Candidate) int {
+			if a.Type != b.Type {
+				if a.Type < b.Type {
+					return -1
+				}
+				return 1
 			}
-			if filteredResult[i].Text != filteredResult[j].Text {
-				return filteredResult[i].Text < filteredResult[j].Text
+			if a.Text != b.Text {
+				if a.Text < b.Text {
+					return -1
+				}
+				return 1
 			}
-			return filteredResult[i].Definition < filteredResult[j].Definition
+			if a.Definition < b.Definition {
+				return -1
+			}
+			if a.Definition > b.Definition {
+				return 1
+			}
+			return 0
 		})
 
 		if record {

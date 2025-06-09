@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -43,11 +43,23 @@ func TestBackup(t *testing.T) {
 			DatabaseName:            "",
 		}, t.Input, "", "backupSchema", "rollback")
 		a.NoError(err)
-		sort.Slice(result, func(i, j int) bool {
-			if result[i].TargetTableName == result[j].TargetTableName {
-				return result[i].Statement < result[j].Statement
+		slices.SortFunc(result, func(i, j base.BackupStatement) int {
+			if i.TargetTableName == j.TargetTableName {
+				if i.Statement < j.Statement {
+					return -1
+				}
+				if i.Statement > j.Statement {
+					return 1
+				}
+				return 0
 			}
-			return result[i].TargetTableName < result[j].TargetTableName
+			if i.TargetTableName < j.TargetTableName {
+				return -1
+			}
+			if i.TargetTableName > j.TargetTableName {
+				return 1
+			}
+			return 0
 		})
 
 		if record {

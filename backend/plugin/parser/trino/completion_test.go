@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -74,14 +74,26 @@ func TestCompletion(t *testing.T) {
 		if filteredResult == nil {
 			filteredResult = []base.Candidate{}
 		}
-		sort.Slice(filteredResult, func(i, j int) bool {
-			if filteredResult[i].Type != filteredResult[j].Type {
-				return filteredResult[i].Type < filteredResult[j].Type
+		slices.SortFunc(filteredResult, func(i, j base.Candidate) int {
+			if i.Type != j.Type {
+				if i.Type < j.Type {
+					return -1
+				}
+				return 1
 			}
-			if filteredResult[i].Text != filteredResult[j].Text {
-				return filteredResult[i].Text < filteredResult[j].Text
+			if i.Text != j.Text {
+				if i.Text < j.Text {
+					return -1
+				}
+				return 1
 			}
-			return filteredResult[i].Definition < filteredResult[j].Definition
+			if i.Definition < j.Definition {
+				return -1
+			}
+			if i.Definition > j.Definition {
+				return 1
+			}
+			return 0
 		})
 
 		if record {
