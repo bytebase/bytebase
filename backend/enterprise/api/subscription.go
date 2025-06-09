@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	"github.com/bytebase/bytebase/backend/base"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // SubscriptionPatch is the API message for update the subscription.
@@ -18,7 +18,7 @@ type Subscription struct {
 	Seat          int
 	ExpiresTS     int64
 	StartedTS     int64
-	Plan          base.PlanType
+	Plan          v1pb.PlanType
 	Trialing      bool
 	OrgID         string
 	OrgName       string
@@ -26,7 +26,7 @@ type Subscription struct {
 
 // IsExpired returns if the subscription is expired.
 func (s *Subscription) IsExpired() bool {
-	if s.Plan == base.FREE || s.ExpiresTS < 0 {
+	if s.Plan == v1pb.PlanType_FREE || s.ExpiresTS < 0 {
 		return false
 	}
 	return time.Unix(s.ExpiresTS, 0).Before(time.Now())

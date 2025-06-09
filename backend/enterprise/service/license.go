@@ -14,6 +14,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
 	"github.com/bytebase/bytebase/backend/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var _ enterprise.LicenseService = (*LicenseService)(nil)
@@ -60,7 +61,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subsc
 	s.mu.RUnlock()
 
 	if cached != nil {
-		if cached.Plan == base.FREE || cached.IsExpired() {
+		if cached.Plan == v1pb.PlanType_FREE || cached.IsExpired() {
 			// refresh expired subscription
 			s.mu.Lock()
 			s.cachedSubscription = nil
@@ -76,7 +77,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subsc
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// Double-check after acquiring write lock
-	if s.cachedSubscription != nil && s.cachedSubscription.Plan != base.FREE && !s.cachedSubscription.IsExpired() {
+	if s.cachedSubscription != nil && s.cachedSubscription.Plan != v1pb.PlanType_FREE && !s.cachedSubscription.IsExpired() {
 		return s.cachedSubscription
 	}
 	s.cachedSubscription = s.provider.LoadSubscription(ctx)
@@ -95,7 +96,7 @@ func (s *LicenseService) IsFeatureEnabled(feature base.FeatureType) error {
 func (s *LicenseService) IsFeatureEnabledForInstance(feature base.FeatureType, instance *store.InstanceMessage) error {
 	plan := s.GetEffectivePlan()
 	// DONOT check instance license fo FREE plan.
-	if plan == base.FREE {
+	if plan == v1pb.PlanType_FREE {
 		return s.IsFeatureEnabled(feature)
 	}
 	if err := s.IsFeatureEnabled(feature); err != nil {
@@ -121,11 +122,11 @@ func (s *LicenseService) GetInstanceLicenseCount(ctx context.Context) int {
 }
 
 // GetEffectivePlan gets the effective plan.
-func (s *LicenseService) GetEffectivePlan() base.PlanType {
+func (s *LicenseService) GetEffectivePlan() v1pb.PlanType {
 	ctx := context.Background()
 	subscription := s.LoadSubscription(ctx)
 	if expireTime := time.Unix(subscription.ExpiresTS, 0); expireTime.Before(time.Now()) {
-		return base.FREE
+		return v1pb.PlanType_FREE
 	}
 	return subscription.Plan
 }
@@ -143,9 +144,9 @@ func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.
 	}
 
 	switch subscription.Plan {
-	case base.FREE:
+	case v1pb.PlanType_FREE:
 		return limit
-	case base.TEAM, base.ENTERPRISE:
+	case v1pb.PlanType_TEAM, v1pb.PlanType_ENTERPRISE:
 		switch name {
 		case enterprise.PlanLimitMaximumInstance:
 			return limit
