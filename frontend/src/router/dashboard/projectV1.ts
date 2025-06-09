@@ -45,7 +45,6 @@ const projectV1Routes: RouteRecordRaw[] = [
     },
     props: { content: true, leftSidebar: true },
     meta: {
-      overrideTitle: true,
       requiredPermissionList: () => ["bb.projects.get"],
     },
     children: [
@@ -60,7 +59,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "databases",
         name: PROJECT_V1_ROUTE_DATABASES,
         meta: {
-          overrideTitle: true,
+          title: () => t("common.databases"),
           requiredPermissionList: () => ["bb.databases.list"],
         },
         component: () => import("@/views/project/ProjectDatabaseDashboard.vue"),
@@ -69,7 +68,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "masking-exemption",
         meta: {
-          overrideTitle: true,
+          title: () => t("project.masking-exemption.self"),
           requiredPermissionList: () => [
             "bb.databases.list",
             "bb.policies.get",
@@ -99,16 +98,13 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "database-groups",
         meta: {
-          overrideTitle: true,
+          title: () => t("common.groups"),
         },
         props: true,
         children: [
           {
             path: "",
             name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
-            meta: {
-              overrideTitle: true,
-            },
             component: () =>
               import("@/views/project/ProjectDatabaseGroupDashboard.vue"),
             props: true,
@@ -117,7 +113,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "create",
             name: PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => ["bb.projects.update"],
             },
             component: () =>
@@ -136,7 +131,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "issues",
         meta: {
-          overrideTitle: true,
+          title: () => t("common.issues"),
         },
         props: true,
         children: [
@@ -164,7 +159,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "changelists",
         meta: {
-          overrideTitle: true,
+          title: () => t("changelist.changelists"),
         },
         props: true,
         children: [
@@ -172,7 +167,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "",
             name: PROJECT_V1_ROUTE_CHANGELISTS,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => ["bb.changelists.list"],
             },
             component: () =>
@@ -183,7 +177,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: ":changelistName",
             name: PROJECT_V1_ROUTE_CHANGELIST_DETAIL,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => ["bb.changelists.get"],
             },
             component: () =>
@@ -196,7 +189,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "sync-schema",
         name: PROJECT_V1_ROUTE_SYNC_SCHEMA,
         meta: {
-          overrideTitle: true,
+          title: () => t("database.sync-schema.title"),
           requiredPermissionList: () => ["bb.databases.sync"],
         },
         component: () =>
@@ -207,7 +200,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "audit-logs",
         name: PROJECT_V1_ROUTE_AUDIT_LOGS,
         meta: {
-          overrideTitle: true,
+          title: () => t("settings.sidebar.audit-log"),
           requiredPermissionList: () => ["bb.auditLogs.search"],
         },
         component: () => import("@/views/project/ProjectAuditLogDashboard.vue"),
@@ -216,16 +209,13 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "webhooks",
         meta: {
-          overrideTitle: true,
+          title: () => t("common.webhooks"),
         },
         props: true,
         children: [
           {
             path: "",
             name: PROJECT_V1_ROUTE_WEBHOOKS,
-            meta: {
-              overrideTitle: true,
-            },
             component: () =>
               import("@/views/project/ProjectWebhookDashboard.vue"),
             props: true,
@@ -243,9 +233,6 @@ const projectV1Routes: RouteRecordRaw[] = [
           {
             path: ":projectWebhookSlug",
             name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
-            meta: {
-              overrideTitle: true,
-            },
             component: () => import("@/views/project/ProjectWebhookDetail.vue"),
             props: true,
           },
@@ -255,7 +242,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "members",
         name: PROJECT_V1_ROUTE_MEMBERS,
         meta: {
-          overrideTitle: true,
+          title: () => t("common.members"),
           requiredPermissionList: () => ["bb.projects.getIamPolicy"],
         },
         component: () => import("@/views/project/ProjectMemberDashboard.vue"),
@@ -265,7 +252,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "settings",
         name: PROJECT_V1_ROUTE_SETTINGS,
         meta: {
-          overrideTitle: true,
+          title: () => t("common.settings"),
         },
         component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,
@@ -273,7 +260,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "instances/:instanceId/databases/:databaseName",
         meta: {
-          overrideTitle: true,
+          title: () => t("common.database"),
           requiredPermissionList: () => ["bb.databases.get"],
         },
         component: () => import("@/views/project/ProjectDatabaseLayout.vue"),
@@ -282,9 +269,6 @@ const projectV1Routes: RouteRecordRaw[] = [
           {
             path: "",
             name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-            meta: {
-              overrideTitle: true,
-            },
             component: () => import("@/views/DatabaseDetail"),
             props: true,
           },
@@ -311,7 +295,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "revisions/:revisionId",
             name: PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => [
                 "bb.databases.get",
                 "bb.revisions.get",
@@ -333,7 +316,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "export-center",
         name: PROJECT_V1_ROUTE_EXPORT_CENTER,
         meta: {
-          overrideTitle: true,
+          title: () => t("export-center.self"),
           requiredPermissionList: () => ["bb.issues.list", "bb.databases.list"],
         },
         component: () => import("@/views/ExportCenter/index.vue"),
@@ -342,7 +325,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "review-center",
         meta: {
-          overrideTitle: true,
+          title: () => t("review-center.self"),
         },
         props: true,
         children: [
@@ -350,7 +333,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "",
             name: PROJECT_V1_ROUTE_REVIEW_CENTER,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => [
                 "bb.databases.list",
                 "bb.plans.list",
@@ -363,7 +345,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: ":planSlug",
             name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => ["bb.plans.get"],
             },
             component: () => import("@/views/project/ProjectPlanDetail.vue"),
@@ -399,7 +380,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "releases",
         meta: {
-          overrideTitle: true,
+          title: () => t("release.releases"),
         },
         props: true,
         children: [
@@ -407,7 +388,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "",
             name: PROJECT_V1_ROUTE_RELEASES,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => ["bb.releases.list"],
             },
             component: () =>
@@ -428,7 +408,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: ":releaseId",
             name: PROJECT_V1_ROUTE_RELEASE_DETAIL,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => ["bb.releases.get"],
             },
             component: () => import("@/components/Release/ReleaseDetail/"),
@@ -439,7 +418,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "rollouts",
         meta: {
-          overrideTitle: true,
+          title: () => t("common.rollout"),
         },
         props: true,
         children: [
@@ -447,7 +426,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "",
             name: PROJECT_V1_ROUTE_ROLLOUTS,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => ["bb.rollouts.list"],
             },
             component: () =>
@@ -462,25 +440,18 @@ const projectV1Routes: RouteRecordRaw[] = [
               ),
             props: true,
             meta: {
-              overrideTitle: true,
               requiredPermissionList: () => ["bb.rollouts.get"],
             },
             children: [
               {
                 path: "",
                 name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-                meta: {
-                  overrideTitle: true,
-                },
                 component: () => import("@/components/Rollout/RolloutDetail/"),
                 props: true,
               },
               {
                 path: "stages/:stageId/tasks/:taskId",
                 name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
-                meta: {
-                  overrideTitle: true,
-                },
                 component: () =>
                   import("@/components/Rollout/RolloutDetail/TaskDetail/"),
                 props: true,
