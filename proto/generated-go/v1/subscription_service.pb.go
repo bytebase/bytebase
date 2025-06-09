@@ -75,6 +75,267 @@ func (PlanType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_subscription_service_proto_rawDescGZIP(), []int{0}
 }
 
+// Feature represents the available features in Bytebase
+type PlanLimitConfig_Feature int32
+
+const (
+	PlanLimitConfig_FEATURE_UNSPECIFIED PlanLimitConfig_Feature = 0
+	// Database Change Management
+	PlanLimitConfig_DATABASE_CHANGE                      PlanLimitConfig_Feature = 1
+	PlanLimitConfig_GIT_BASED_SCHEMA_VERSION_CONTROL     PlanLimitConfig_Feature = 2
+	PlanLimitConfig_DECLARATIVE_SCHEMA_MIGRATION         PlanLimitConfig_Feature = 3
+	PlanLimitConfig_COMPARE_AND_SYNC_SCHEMA              PlanLimitConfig_Feature = 4
+	PlanLimitConfig_ONLINE_SCHEMA_CHANGE                 PlanLimitConfig_Feature = 5
+	PlanLimitConfig_PRE_DEPLOYMENT_SQL_REVIEW            PlanLimitConfig_Feature = 6
+	PlanLimitConfig_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES PlanLimitConfig_Feature = 7
+	PlanLimitConfig_ONE_CLICK_DATA_ROLLBACK              PlanLimitConfig_Feature = 8
+	PlanLimitConfig_MULTI_DATABASE_BATCH_CHANGES         PlanLimitConfig_Feature = 9
+	PlanLimitConfig_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT   PlanLimitConfig_Feature = 10
+	PlanLimitConfig_SCHEDULED_ROLLOUT_TIME               PlanLimitConfig_Feature = 11
+	PlanLimitConfig_DATABASE_CHANGELOG                   PlanLimitConfig_Feature = 12
+	PlanLimitConfig_SCHEMA_DRIFT_DETECTION               PlanLimitConfig_Feature = 13
+	PlanLimitConfig_CHANGELIST                           PlanLimitConfig_Feature = 14
+	PlanLimitConfig_SCHEMA_TEMPLATE                      PlanLimitConfig_Feature = 15
+	PlanLimitConfig_ROLLOUT_POLICY                       PlanLimitConfig_Feature = 16
+	// SQL Editor & Development
+	PlanLimitConfig_WEB_BASED_SQL_EDITOR           PlanLimitConfig_Feature = 17
+	PlanLimitConfig_SQL_EDITOR_ADMIN_MODE          PlanLimitConfig_Feature = 18
+	PlanLimitConfig_NATURAL_LANGUAGE_TO_SQL        PlanLimitConfig_Feature = 19
+	PlanLimitConfig_AI_QUERY_EXPLANATION           PlanLimitConfig_Feature = 20
+	PlanLimitConfig_AI_QUERY_SUGGESTIONS           PlanLimitConfig_Feature = 21
+	PlanLimitConfig_AUTO_COMPLETE                  PlanLimitConfig_Feature = 22
+	PlanLimitConfig_SCHEMA_DIAGRAM                 PlanLimitConfig_Feature = 23
+	PlanLimitConfig_SCHEMA_EDITOR                  PlanLimitConfig_Feature = 24
+	PlanLimitConfig_DATA_EXPORT                    PlanLimitConfig_Feature = 25
+	PlanLimitConfig_QUERY_HISTORY                  PlanLimitConfig_Feature = 26
+	PlanLimitConfig_SAVED_AND_SHARED_SQL_SCRIPTS   PlanLimitConfig_Feature = 27
+	PlanLimitConfig_SQL_EDITOR_DDL_DML_RESTRICTION PlanLimitConfig_Feature = 28
+	PlanLimitConfig_BATCH_QUERY                    PlanLimitConfig_Feature = 29
+	PlanLimitConfig_INSTANCE_READ_ONLY_CONNECTION  PlanLimitConfig_Feature = 30
+	PlanLimitConfig_RESTRICT_COPYING_DATA          PlanLimitConfig_Feature = 31
+	// Security & Compliance
+	PlanLimitConfig_IAM                                    PlanLimitConfig_Feature = 32
+	PlanLimitConfig_INSTANCE_SSL_CONNECTION                PlanLimitConfig_Feature = 33
+	PlanLimitConfig_INSTANCE_CONNECTION_OVER_SSH_TUNNEL    PlanLimitConfig_Feature = 34
+	PlanLimitConfig_INSTANCE_CONNECTION_IAM_AUTHENTICATION PlanLimitConfig_Feature = 35
+	PlanLimitConfig_GOOGLE_AND_GITHUB_SSO                  PlanLimitConfig_Feature = 36
+	PlanLimitConfig_USER_GROUPS                            PlanLimitConfig_Feature = 37
+	PlanLimitConfig_DISALLOW_SELF_SERVICE_SIGNUP           PlanLimitConfig_Feature = 38
+	PlanLimitConfig_DATABASE_SECRET_VARIABLES              PlanLimitConfig_Feature = 39
+	PlanLimitConfig_QUERY_DATASOURCE_RESTRICTION           PlanLimitConfig_Feature = 40
+	PlanLimitConfig_CUSTOM_INSTANCE_SYNC_TIME              PlanLimitConfig_Feature = 41
+	PlanLimitConfig_CUSTOM_INSTANCE_CONNECTION_LIMIT       PlanLimitConfig_Feature = 42
+	PlanLimitConfig_RISK_ASSESSMENT                        PlanLimitConfig_Feature = 43
+	PlanLimitConfig_APPROVAL_WORKFLOW                      PlanLimitConfig_Feature = 44
+	PlanLimitConfig_AUDIT_LOG                              PlanLimitConfig_Feature = 45
+	PlanLimitConfig_ENTERPRISE_SSO                         PlanLimitConfig_Feature = 46
+	PlanLimitConfig_TWO_FA                                 PlanLimitConfig_Feature = 47
+	PlanLimitConfig_PASSWORD_RESTRICTIONS                  PlanLimitConfig_Feature = 48
+	PlanLimitConfig_CUSTOM_ROLES                           PlanLimitConfig_Feature = 49
+	PlanLimitConfig_REQUEST_ROLE_WORKFLOW                  PlanLimitConfig_Feature = 50
+	PlanLimitConfig_DATA_MASKING                           PlanLimitConfig_Feature = 51
+	PlanLimitConfig_DATA_CLASSIFICATION                    PlanLimitConfig_Feature = 52
+	PlanLimitConfig_SCIM                                   PlanLimitConfig_Feature = 53
+	PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID                PlanLimitConfig_Feature = 54
+	PlanLimitConfig_DIRECTORY_SYNC_OKTA                    PlanLimitConfig_Feature = 55
+	PlanLimitConfig_SIGN_IN_FREQUENCY_CONTROL              PlanLimitConfig_Feature = 56
+	PlanLimitConfig_EXTERNAL_SECRET_MANAGER                PlanLimitConfig_Feature = 57
+	PlanLimitConfig_USER_EMAIL_DOMAIN_RESTRICTION          PlanLimitConfig_Feature = 58
+	// Administration & Support
+	PlanLimitConfig_ENVIRONMENT_MANAGEMENT     PlanLimitConfig_Feature = 59
+	PlanLimitConfig_IM_NOTIFICATIONS           PlanLimitConfig_Feature = 60
+	PlanLimitConfig_TERRAFORM_PROVIDER         PlanLimitConfig_Feature = 61
+	PlanLimitConfig_DATABASE_GROUPS            PlanLimitConfig_Feature = 62
+	PlanLimitConfig_ENVIRONMENT_TIERS          PlanLimitConfig_Feature = 63
+	PlanLimitConfig_API_INTEGRATION_GUIDANCE   PlanLimitConfig_Feature = 64
+	PlanLimitConfig_CUSTOM_LOGO                PlanLimitConfig_Feature = 65
+	PlanLimitConfig_WATERMARK                  PlanLimitConfig_Feature = 66
+	PlanLimitConfig_ROADMAP_PRIORITIZATION     PlanLimitConfig_Feature = 67
+	PlanLimitConfig_CUSTOM_MSA                 PlanLimitConfig_Feature = 68
+	PlanLimitConfig_COMMUNITY_SUPPORT          PlanLimitConfig_Feature = 69
+	PlanLimitConfig_EMAIL_SUPPORT              PlanLimitConfig_Feature = 70
+	PlanLimitConfig_DEDICATED_SUPPORT_WITH_SLA PlanLimitConfig_Feature = 71
+)
+
+// Enum value maps for PlanLimitConfig_Feature.
+var (
+	PlanLimitConfig_Feature_name = map[int32]string{
+		0:  "FEATURE_UNSPECIFIED",
+		1:  "DATABASE_CHANGE",
+		2:  "GIT_BASED_SCHEMA_VERSION_CONTROL",
+		3:  "DECLARATIVE_SCHEMA_MIGRATION",
+		4:  "COMPARE_AND_SYNC_SCHEMA",
+		5:  "ONLINE_SCHEMA_CHANGE",
+		6:  "PRE_DEPLOYMENT_SQL_REVIEW",
+		7:  "AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES",
+		8:  "ONE_CLICK_DATA_ROLLBACK",
+		9:  "MULTI_DATABASE_BATCH_CHANGES",
+		10: "PROGRESSIVE_ENVIRONMENT_DEPLOYMENT",
+		11: "SCHEDULED_ROLLOUT_TIME",
+		12: "DATABASE_CHANGELOG",
+		13: "SCHEMA_DRIFT_DETECTION",
+		14: "CHANGELIST",
+		15: "SCHEMA_TEMPLATE",
+		16: "ROLLOUT_POLICY",
+		17: "WEB_BASED_SQL_EDITOR",
+		18: "SQL_EDITOR_ADMIN_MODE",
+		19: "NATURAL_LANGUAGE_TO_SQL",
+		20: "AI_QUERY_EXPLANATION",
+		21: "AI_QUERY_SUGGESTIONS",
+		22: "AUTO_COMPLETE",
+		23: "SCHEMA_DIAGRAM",
+		24: "SCHEMA_EDITOR",
+		25: "DATA_EXPORT",
+		26: "QUERY_HISTORY",
+		27: "SAVED_AND_SHARED_SQL_SCRIPTS",
+		28: "SQL_EDITOR_DDL_DML_RESTRICTION",
+		29: "BATCH_QUERY",
+		30: "INSTANCE_READ_ONLY_CONNECTION",
+		31: "RESTRICT_COPYING_DATA",
+		32: "IAM",
+		33: "INSTANCE_SSL_CONNECTION",
+		34: "INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
+		35: "INSTANCE_CONNECTION_IAM_AUTHENTICATION",
+		36: "GOOGLE_AND_GITHUB_SSO",
+		37: "USER_GROUPS",
+		38: "DISALLOW_SELF_SERVICE_SIGNUP",
+		39: "DATABASE_SECRET_VARIABLES",
+		40: "QUERY_DATASOURCE_RESTRICTION",
+		41: "CUSTOM_INSTANCE_SYNC_TIME",
+		42: "CUSTOM_INSTANCE_CONNECTION_LIMIT",
+		43: "RISK_ASSESSMENT",
+		44: "APPROVAL_WORKFLOW",
+		45: "AUDIT_LOG",
+		46: "ENTERPRISE_SSO",
+		47: "TWO_FA",
+		48: "PASSWORD_RESTRICTIONS",
+		49: "CUSTOM_ROLES",
+		50: "REQUEST_ROLE_WORKFLOW",
+		51: "DATA_MASKING",
+		52: "DATA_CLASSIFICATION",
+		53: "SCIM",
+		54: "DIRECTORY_SYNC_ENTRA_ID",
+		55: "DIRECTORY_SYNC_OKTA",
+		56: "SIGN_IN_FREQUENCY_CONTROL",
+		57: "EXTERNAL_SECRET_MANAGER",
+		58: "USER_EMAIL_DOMAIN_RESTRICTION",
+		59: "ENVIRONMENT_MANAGEMENT",
+		60: "IM_NOTIFICATIONS",
+		61: "TERRAFORM_PROVIDER",
+		62: "DATABASE_GROUPS",
+		63: "ENVIRONMENT_TIERS",
+		64: "API_INTEGRATION_GUIDANCE",
+		65: "CUSTOM_LOGO",
+		66: "WATERMARK",
+		67: "ROADMAP_PRIORITIZATION",
+		68: "CUSTOM_MSA",
+		69: "COMMUNITY_SUPPORT",
+		70: "EMAIL_SUPPORT",
+		71: "DEDICATED_SUPPORT_WITH_SLA",
+	}
+	PlanLimitConfig_Feature_value = map[string]int32{
+		"FEATURE_UNSPECIFIED":                    0,
+		"DATABASE_CHANGE":                        1,
+		"GIT_BASED_SCHEMA_VERSION_CONTROL":       2,
+		"DECLARATIVE_SCHEMA_MIGRATION":           3,
+		"COMPARE_AND_SYNC_SCHEMA":                4,
+		"ONLINE_SCHEMA_CHANGE":                   5,
+		"PRE_DEPLOYMENT_SQL_REVIEW":              6,
+		"AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES":   7,
+		"ONE_CLICK_DATA_ROLLBACK":                8,
+		"MULTI_DATABASE_BATCH_CHANGES":           9,
+		"PROGRESSIVE_ENVIRONMENT_DEPLOYMENT":     10,
+		"SCHEDULED_ROLLOUT_TIME":                 11,
+		"DATABASE_CHANGELOG":                     12,
+		"SCHEMA_DRIFT_DETECTION":                 13,
+		"CHANGELIST":                             14,
+		"SCHEMA_TEMPLATE":                        15,
+		"ROLLOUT_POLICY":                         16,
+		"WEB_BASED_SQL_EDITOR":                   17,
+		"SQL_EDITOR_ADMIN_MODE":                  18,
+		"NATURAL_LANGUAGE_TO_SQL":                19,
+		"AI_QUERY_EXPLANATION":                   20,
+		"AI_QUERY_SUGGESTIONS":                   21,
+		"AUTO_COMPLETE":                          22,
+		"SCHEMA_DIAGRAM":                         23,
+		"SCHEMA_EDITOR":                          24,
+		"DATA_EXPORT":                            25,
+		"QUERY_HISTORY":                          26,
+		"SAVED_AND_SHARED_SQL_SCRIPTS":           27,
+		"SQL_EDITOR_DDL_DML_RESTRICTION":         28,
+		"BATCH_QUERY":                            29,
+		"INSTANCE_READ_ONLY_CONNECTION":          30,
+		"RESTRICT_COPYING_DATA":                  31,
+		"IAM":                                    32,
+		"INSTANCE_SSL_CONNECTION":                33,
+		"INSTANCE_CONNECTION_OVER_SSH_TUNNEL":    34,
+		"INSTANCE_CONNECTION_IAM_AUTHENTICATION": 35,
+		"GOOGLE_AND_GITHUB_SSO":                  36,
+		"USER_GROUPS":                            37,
+		"DISALLOW_SELF_SERVICE_SIGNUP":           38,
+		"DATABASE_SECRET_VARIABLES":              39,
+		"QUERY_DATASOURCE_RESTRICTION":           40,
+		"CUSTOM_INSTANCE_SYNC_TIME":              41,
+		"CUSTOM_INSTANCE_CONNECTION_LIMIT":       42,
+		"RISK_ASSESSMENT":                        43,
+		"APPROVAL_WORKFLOW":                      44,
+		"AUDIT_LOG":                              45,
+		"ENTERPRISE_SSO":                         46,
+		"TWO_FA":                                 47,
+		"PASSWORD_RESTRICTIONS":                  48,
+		"CUSTOM_ROLES":                           49,
+		"REQUEST_ROLE_WORKFLOW":                  50,
+		"DATA_MASKING":                           51,
+		"DATA_CLASSIFICATION":                    52,
+		"SCIM":                                   53,
+		"DIRECTORY_SYNC_ENTRA_ID":                54,
+		"DIRECTORY_SYNC_OKTA":                    55,
+		"SIGN_IN_FREQUENCY_CONTROL":              56,
+		"EXTERNAL_SECRET_MANAGER":                57,
+		"USER_EMAIL_DOMAIN_RESTRICTION":          58,
+		"ENVIRONMENT_MANAGEMENT":                 59,
+		"IM_NOTIFICATIONS":                       60,
+		"TERRAFORM_PROVIDER":                     61,
+		"DATABASE_GROUPS":                        62,
+		"ENVIRONMENT_TIERS":                      63,
+		"API_INTEGRATION_GUIDANCE":               64,
+		"CUSTOM_LOGO":                            65,
+		"WATERMARK":                              66,
+		"ROADMAP_PRIORITIZATION":                 67,
+		"CUSTOM_MSA":                             68,
+		"COMMUNITY_SUPPORT":                      69,
+		"EMAIL_SUPPORT":                          70,
+		"DEDICATED_SUPPORT_WITH_SLA":             71,
+	}
+)
+
+func (x PlanLimitConfig_Feature) Enum() *PlanLimitConfig_Feature {
+	p := new(PlanLimitConfig_Feature)
+	*p = x
+	return p
+}
+
+func (x PlanLimitConfig_Feature) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PlanLimitConfig_Feature) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_subscription_service_proto_enumTypes[1].Descriptor()
+}
+
+func (PlanLimitConfig_Feature) Type() protoreflect.EnumType {
+	return &file_v1_subscription_service_proto_enumTypes[1]
+}
+
+func (x PlanLimitConfig_Feature) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PlanLimitConfig_Feature.Descriptor instead.
+func (PlanLimitConfig_Feature) EnumDescriptor() ([]byte, []int) {
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{8, 0}
+}
+
 type GetSubscriptionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -480,10 +741,11 @@ func (x *PlanConfig) GetPlans() []*PlanLimitConfig {
 
 // PlanLimitConfig represents a single plan's configuration
 type PlanLimitConfig struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	Type                 PlanType               `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.PlanType" json:"type,omitempty"`
-	MaximumInstanceCount int32                  `protobuf:"varint,2,opt,name=maximum_instance_count,json=maximumInstanceCount,proto3" json:"maximum_instance_count,omitempty"`
-	MaximumSeatCount     int32                  `protobuf:"varint,3,opt,name=maximum_seat_count,json=maximumSeatCount,proto3" json:"maximum_seat_count,omitempty"`
+	state                protoimpl.MessageState    `protogen:"open.v1"`
+	Type                 PlanType                  `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.PlanType" json:"type,omitempty"`
+	MaximumInstanceCount int32                     `protobuf:"varint,2,opt,name=maximum_instance_count,json=maximumInstanceCount,proto3" json:"maximum_instance_count,omitempty"`
+	MaximumSeatCount     int32                     `protobuf:"varint,3,opt,name=maximum_seat_count,json=maximumSeatCount,proto3" json:"maximum_seat_count,omitempty"`
+	Features             []PlanLimitConfig_Feature `protobuf:"varint,4,rep,packed,name=features,proto3,enum=bytebase.v1.PlanLimitConfig_Feature" json:"features,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -539,6 +801,13 @@ func (x *PlanLimitConfig) GetMaximumSeatCount() int32 {
 	return 0
 }
 
+func (x *PlanLimitConfig) GetFeatures() []PlanLimitConfig_Feature {
+	if x != nil {
+		return x.Features
+	}
+	return nil
+}
+
 var File_v1_subscription_service_proto protoreflect.FileDescriptor
 
 const file_v1_subscription_service_proto_rawDesc = "" +
@@ -570,11 +839,89 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\"@\n" +
 	"\n" +
 	"PlanConfig\x122\n" +
-	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\"\xa0\x01\n" +
+	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\"\xb3\x10\n" +
 	"\x0fPlanLimitConfig\x12)\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeR\x04type\x124\n" +
 	"\x16maximum_instance_count\x18\x02 \x01(\x05R\x14maximumInstanceCount\x12,\n" +
-	"\x12maximum_seat_count\x18\x03 \x01(\x05R\x10maximumSeatCount*I\n" +
+	"\x12maximum_seat_count\x18\x03 \x01(\x05R\x10maximumSeatCount\x12@\n" +
+	"\bfeatures\x18\x04 \x03(\x0e2$.bytebase.v1.PlanLimitConfig.FeatureR\bfeatures\"\xce\x0e\n" +
+	"\aFeature\x12\x17\n" +
+	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fDATABASE_CHANGE\x10\x01\x12$\n" +
+	" GIT_BASED_SCHEMA_VERSION_CONTROL\x10\x02\x12 \n" +
+	"\x1cDECLARATIVE_SCHEMA_MIGRATION\x10\x03\x12\x1b\n" +
+	"\x17COMPARE_AND_SYNC_SCHEMA\x10\x04\x12\x18\n" +
+	"\x14ONLINE_SCHEMA_CHANGE\x10\x05\x12\x1d\n" +
+	"\x19PRE_DEPLOYMENT_SQL_REVIEW\x10\x06\x12(\n" +
+	"$AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES\x10\a\x12\x1b\n" +
+	"\x17ONE_CLICK_DATA_ROLLBACK\x10\b\x12 \n" +
+	"\x1cMULTI_DATABASE_BATCH_CHANGES\x10\t\x12&\n" +
+	"\"PROGRESSIVE_ENVIRONMENT_DEPLOYMENT\x10\n" +
+	"\x12\x1a\n" +
+	"\x16SCHEDULED_ROLLOUT_TIME\x10\v\x12\x16\n" +
+	"\x12DATABASE_CHANGELOG\x10\f\x12\x1a\n" +
+	"\x16SCHEMA_DRIFT_DETECTION\x10\r\x12\x0e\n" +
+	"\n" +
+	"CHANGELIST\x10\x0e\x12\x13\n" +
+	"\x0fSCHEMA_TEMPLATE\x10\x0f\x12\x12\n" +
+	"\x0eROLLOUT_POLICY\x10\x10\x12\x18\n" +
+	"\x14WEB_BASED_SQL_EDITOR\x10\x11\x12\x19\n" +
+	"\x15SQL_EDITOR_ADMIN_MODE\x10\x12\x12\x1b\n" +
+	"\x17NATURAL_LANGUAGE_TO_SQL\x10\x13\x12\x18\n" +
+	"\x14AI_QUERY_EXPLANATION\x10\x14\x12\x18\n" +
+	"\x14AI_QUERY_SUGGESTIONS\x10\x15\x12\x11\n" +
+	"\rAUTO_COMPLETE\x10\x16\x12\x12\n" +
+	"\x0eSCHEMA_DIAGRAM\x10\x17\x12\x11\n" +
+	"\rSCHEMA_EDITOR\x10\x18\x12\x0f\n" +
+	"\vDATA_EXPORT\x10\x19\x12\x11\n" +
+	"\rQUERY_HISTORY\x10\x1a\x12 \n" +
+	"\x1cSAVED_AND_SHARED_SQL_SCRIPTS\x10\x1b\x12\"\n" +
+	"\x1eSQL_EDITOR_DDL_DML_RESTRICTION\x10\x1c\x12\x0f\n" +
+	"\vBATCH_QUERY\x10\x1d\x12!\n" +
+	"\x1dINSTANCE_READ_ONLY_CONNECTION\x10\x1e\x12\x19\n" +
+	"\x15RESTRICT_COPYING_DATA\x10\x1f\x12\a\n" +
+	"\x03IAM\x10 \x12\x1b\n" +
+	"\x17INSTANCE_SSL_CONNECTION\x10!\x12'\n" +
+	"#INSTANCE_CONNECTION_OVER_SSH_TUNNEL\x10\"\x12*\n" +
+	"&INSTANCE_CONNECTION_IAM_AUTHENTICATION\x10#\x12\x19\n" +
+	"\x15GOOGLE_AND_GITHUB_SSO\x10$\x12\x0f\n" +
+	"\vUSER_GROUPS\x10%\x12 \n" +
+	"\x1cDISALLOW_SELF_SERVICE_SIGNUP\x10&\x12\x1d\n" +
+	"\x19DATABASE_SECRET_VARIABLES\x10'\x12 \n" +
+	"\x1cQUERY_DATASOURCE_RESTRICTION\x10(\x12\x1d\n" +
+	"\x19CUSTOM_INSTANCE_SYNC_TIME\x10)\x12$\n" +
+	" CUSTOM_INSTANCE_CONNECTION_LIMIT\x10*\x12\x13\n" +
+	"\x0fRISK_ASSESSMENT\x10+\x12\x15\n" +
+	"\x11APPROVAL_WORKFLOW\x10,\x12\r\n" +
+	"\tAUDIT_LOG\x10-\x12\x12\n" +
+	"\x0eENTERPRISE_SSO\x10.\x12\n" +
+	"\n" +
+	"\x06TWO_FA\x10/\x12\x19\n" +
+	"\x15PASSWORD_RESTRICTIONS\x100\x12\x10\n" +
+	"\fCUSTOM_ROLES\x101\x12\x19\n" +
+	"\x15REQUEST_ROLE_WORKFLOW\x102\x12\x10\n" +
+	"\fDATA_MASKING\x103\x12\x17\n" +
+	"\x13DATA_CLASSIFICATION\x104\x12\b\n" +
+	"\x04SCIM\x105\x12\x1b\n" +
+	"\x17DIRECTORY_SYNC_ENTRA_ID\x106\x12\x17\n" +
+	"\x13DIRECTORY_SYNC_OKTA\x107\x12\x1d\n" +
+	"\x19SIGN_IN_FREQUENCY_CONTROL\x108\x12\x1b\n" +
+	"\x17EXTERNAL_SECRET_MANAGER\x109\x12!\n" +
+	"\x1dUSER_EMAIL_DOMAIN_RESTRICTION\x10:\x12\x1a\n" +
+	"\x16ENVIRONMENT_MANAGEMENT\x10;\x12\x14\n" +
+	"\x10IM_NOTIFICATIONS\x10<\x12\x16\n" +
+	"\x12TERRAFORM_PROVIDER\x10=\x12\x13\n" +
+	"\x0fDATABASE_GROUPS\x10>\x12\x15\n" +
+	"\x11ENVIRONMENT_TIERS\x10?\x12\x1c\n" +
+	"\x18API_INTEGRATION_GUIDANCE\x10@\x12\x0f\n" +
+	"\vCUSTOM_LOGO\x10A\x12\r\n" +
+	"\tWATERMARK\x10B\x12\x1a\n" +
+	"\x16ROADMAP_PRIORITIZATION\x10C\x12\x0e\n" +
+	"\n" +
+	"CUSTOM_MSA\x10D\x12\x15\n" +
+	"\x11COMMUNITY_SUPPORT\x10E\x12\x11\n" +
+	"\rEMAIL_SUPPORT\x10F\x12\x1e\n" +
+	"\x1aDEDICATED_SUPPORT_WITH_SLA\x10G*I\n" +
 	"\bPlanType\x12\x19\n" +
 	"\x15PLAN_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04FREE\x10\x01\x12\b\n" +
@@ -598,42 +945,44 @@ func file_v1_subscription_service_proto_rawDescGZIP() []byte {
 	return file_v1_subscription_service_proto_rawDescData
 }
 
-var file_v1_subscription_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_v1_subscription_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_v1_subscription_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_v1_subscription_service_proto_goTypes = []any{
 	(PlanType)(0),                     // 0: bytebase.v1.PlanType
-	(*GetSubscriptionRequest)(nil),    // 1: bytebase.v1.GetSubscriptionRequest
-	(*GetFeatureMatrixRequest)(nil),   // 2: bytebase.v1.GetFeatureMatrixRequest
-	(*UpdateSubscriptionRequest)(nil), // 3: bytebase.v1.UpdateSubscriptionRequest
-	(*PatchSubscription)(nil),         // 4: bytebase.v1.PatchSubscription
-	(*Subscription)(nil),              // 5: bytebase.v1.Subscription
-	(*FeatureMatrix)(nil),             // 6: bytebase.v1.FeatureMatrix
-	(*Feature)(nil),                   // 7: bytebase.v1.Feature
-	(*PlanConfig)(nil),                // 8: bytebase.v1.PlanConfig
-	(*PlanLimitConfig)(nil),           // 9: bytebase.v1.PlanLimitConfig
-	nil,                               // 10: bytebase.v1.Feature.MatrixEntry
-	(*timestamppb.Timestamp)(nil),     // 11: google.protobuf.Timestamp
+	(PlanLimitConfig_Feature)(0),      // 1: bytebase.v1.PlanLimitConfig.Feature
+	(*GetSubscriptionRequest)(nil),    // 2: bytebase.v1.GetSubscriptionRequest
+	(*GetFeatureMatrixRequest)(nil),   // 3: bytebase.v1.GetFeatureMatrixRequest
+	(*UpdateSubscriptionRequest)(nil), // 4: bytebase.v1.UpdateSubscriptionRequest
+	(*PatchSubscription)(nil),         // 5: bytebase.v1.PatchSubscription
+	(*Subscription)(nil),              // 6: bytebase.v1.Subscription
+	(*FeatureMatrix)(nil),             // 7: bytebase.v1.FeatureMatrix
+	(*Feature)(nil),                   // 8: bytebase.v1.Feature
+	(*PlanConfig)(nil),                // 9: bytebase.v1.PlanConfig
+	(*PlanLimitConfig)(nil),           // 10: bytebase.v1.PlanLimitConfig
+	nil,                               // 11: bytebase.v1.Feature.MatrixEntry
+	(*timestamppb.Timestamp)(nil),     // 12: google.protobuf.Timestamp
 }
 var file_v1_subscription_service_proto_depIdxs = []int32{
-	4,  // 0: bytebase.v1.UpdateSubscriptionRequest.patch:type_name -> bytebase.v1.PatchSubscription
-	11, // 1: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
-	11, // 2: bytebase.v1.Subscription.started_time:type_name -> google.protobuf.Timestamp
+	5,  // 0: bytebase.v1.UpdateSubscriptionRequest.patch:type_name -> bytebase.v1.PatchSubscription
+	12, // 1: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
+	12, // 2: bytebase.v1.Subscription.started_time:type_name -> google.protobuf.Timestamp
 	0,  // 3: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
-	7,  // 4: bytebase.v1.FeatureMatrix.features:type_name -> bytebase.v1.Feature
-	10, // 5: bytebase.v1.Feature.matrix:type_name -> bytebase.v1.Feature.MatrixEntry
-	9,  // 6: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
+	8,  // 4: bytebase.v1.FeatureMatrix.features:type_name -> bytebase.v1.Feature
+	11, // 5: bytebase.v1.Feature.matrix:type_name -> bytebase.v1.Feature.MatrixEntry
+	10, // 6: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
 	0,  // 7: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
-	1,  // 8: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
-	2,  // 9: bytebase.v1.SubscriptionService.GetFeatureMatrix:input_type -> bytebase.v1.GetFeatureMatrixRequest
-	3,  // 10: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
-	5,  // 11: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
-	6,  // 12: bytebase.v1.SubscriptionService.GetFeatureMatrix:output_type -> bytebase.v1.FeatureMatrix
-	5,  // 13: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
-	11, // [11:14] is the sub-list for method output_type
-	8,  // [8:11] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	1,  // 8: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanLimitConfig.Feature
+	2,  // 9: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
+	3,  // 10: bytebase.v1.SubscriptionService.GetFeatureMatrix:input_type -> bytebase.v1.GetFeatureMatrixRequest
+	4,  // 11: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
+	6,  // 12: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
+	7,  // 13: bytebase.v1.SubscriptionService.GetFeatureMatrix:output_type -> bytebase.v1.FeatureMatrix
+	6,  // 14: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
+	12, // [12:15] is the sub-list for method output_type
+	9,  // [9:12] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_v1_subscription_service_proto_init() }
@@ -647,7 +996,7 @@ func file_v1_subscription_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_subscription_service_proto_rawDesc), len(file_v1_subscription_service_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
