@@ -1,12 +1,10 @@
 <template>
-  <div class="h-full flex flex-row justify-end items-center">
-    <CreateButton v-if="isCreating" />
-    <CreateIssueButton
-      v-else-if="
-        databaseChangeMode === DatabaseChangeMode.PIPELINE && !relatedIssueUID
-      "
-    />
-  </div>
+  <CreateButton v-if="isCreating" />
+  <CreateIssueButton
+    v-else-if="
+      databaseChangeMode === DatabaseChangeMode.PIPELINE && !relatedIssueUID
+    "
+  />
 </template>
 
 <script setup lang="ts">

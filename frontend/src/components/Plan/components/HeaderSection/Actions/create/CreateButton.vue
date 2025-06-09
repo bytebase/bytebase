@@ -33,11 +33,13 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { ErrorList } from "@/components/Plan/components/common";
+import {
+  ErrorList,
+  useSpecsValidation,
+} from "@/components/Plan/components/common";
 import {
   databaseEngineForSpec,
   getLocalSheetByName,
-  isValidSpec,
 } from "@/components/Plan/logic";
 import { usePlanContext } from "@/components/Plan/logic";
 import { planServiceClient } from "@/grpcweb";
@@ -60,6 +62,9 @@ const { plan } = usePlanContext();
 const sheetStore = useSheetV1Store();
 const loading = ref(false);
 
+// Use the validation hook for all specs
+const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
+
 const planCreateErrorList = computed(() => {
   const errorList: string[] = [];
   if (!hasProjectPermissionV2(project.value, "bb.plans.create")) {
@@ -68,10 +73,9 @@ const planCreateErrorList = computed(() => {
   if (!plan.value.title.trim()) {
     errorList.push("Missing plan title");
   }
-  if (!(plan.value?.specs || []).every((spec) => isValidSpec(spec))) {
-    errorList.push("Missing SQL statement in some tasks");
+  if (plan.value.specs.some((spec) => isSpecEmpty(spec))) {
+    errorList.push("Missing statement");
   }
-
   return errorList;
 });
 

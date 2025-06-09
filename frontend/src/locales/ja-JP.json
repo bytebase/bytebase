@@ -2622,12 +2622,31 @@
     "change-type": "タイプを変更"
   },
   "release": {
+    "title": "リリース",
     "releases": "リリース",
     "files": "ファイル",
     "create": "リリースを作成",
     "select": "リリースを選択",
     "archive-this-release": "このリリースをアーカイブする",
     "total-files": "合計 {count} ファイル",
+    "plan-tip": "このプランはリリースを使用するように設定されています。データベースの変更は、選択したリリースファイルのSQL文を使用して実行されます。",
+    "not-found": "配信パケットが到着していません",
+    "vcs-source": "VCSソース",
+    "view-all-files": "すべてのファイルを表示",
+    "and-n-more-files": "および{n}個のファイル",
+    "change-type": {
+      "ddl": "DDL",
+      "ddl-ghost": "DDLゴースト",
+      "dml": "DML",
+      "unspecified": "未指定"
+    },
+    "file-type": {
+      "versioned": "バージョン",
+      "unspecified": "未指定"
+    },
+    "vcs-type": {
+      "unspecified": "未指定"
+    },
     "actions": {
       "new-file": "新しいファイル",
       "import-from-release": "リリースからのインポート"
