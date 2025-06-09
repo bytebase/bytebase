@@ -181,7 +181,7 @@ import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import { instanceV1Name, extractDatabaseResourceName } from "@/utils";
 import { usePlanContext } from "../logic/context";
 import { targetsForSpec } from "../logic/plan";
-import DescriptionSection from "./DescriptionSection";
+import DescriptionSection from "./DescriptionSection.vue";
 
 const { t } = useI18n();
 const { plan } = usePlanContext();

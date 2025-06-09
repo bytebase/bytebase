@@ -1,4 +1,3 @@
-import DescriptionSection from "./DescriptionSection";
 import HeaderSection from "./HeaderSection";
 import Navigator from "./Navigator.vue";
 import Overview from "./Overview.vue";
@@ -15,5 +14,4 @@ export {
   PlanCheckSection,
   SQLCheckSection,
   StatementSection,
-  DescriptionSection,
 };
