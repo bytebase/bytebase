@@ -2,10 +2,13 @@ package api
 
 import (
 	_ "embed"
+	"encoding/json"
 
+	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/base"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 //go:embed plan.yaml
@@ -27,22 +30,41 @@ var PlanLimitValues = map[PlanLimit]map[base.PlanType]int{
 	PlanLimitMaximumUser:     {},
 }
 
-type planLimitConfig struct {
-	Type                 base.PlanType `yaml:"type"`
-	MaximumInstanceCount int           `yaml:"maximumInstanceCount"`
-	MaximumSeatCount     int           `yaml:"maximumSeatCount"`
-}
-
-type planConfg struct {
-	PlanList []*planLimitConfig `yaml:"planList"`
-}
-
 func init() {
-	conf := &planConfg{}
-	_ = yaml.Unmarshal([]byte(planConfigStr), conf)
+	// First unmarshal YAML to a generic map, then convert to JSON for protojson
+	var yamlData map[string]any
+	if err := yaml.Unmarshal([]byte(planConfigStr), &yamlData); err != nil {
+		panic("failed to unmarshal plan.yaml: " + err.Error())
+	}
 
-	for _, limitConfig := range conf.PlanList {
-		PlanLimitValues[PlanLimitMaximumInstance][limitConfig.Type] = limitConfig.MaximumInstanceCount
-		PlanLimitValues[PlanLimitMaximumUser][limitConfig.Type] = limitConfig.MaximumSeatCount
+	// Convert YAML data to JSON bytes
+	jsonBytes, err := json.Marshal(yamlData)
+	if err != nil {
+		panic("failed to convert plan.yaml to JSON: " + err.Error())
+	}
+
+	conf := &v1pb.PlanConfig{}
+	//nolint:forbidigo
+	if err := protojson.Unmarshal(jsonBytes, conf); err != nil {
+		panic("failed to unmarshal plan config proto: " + err.Error())
+	}
+
+	for _, planLimit := range conf.Plans {
+		planType := convertProtoPlanType(planLimit.Type)
+		PlanLimitValues[PlanLimitMaximumInstance][planType] = int(planLimit.MaximumInstanceCount)
+		PlanLimitValues[PlanLimitMaximumUser][planType] = int(planLimit.MaximumSeatCount)
+	}
+}
+
+func convertProtoPlanType(protoPlanType v1pb.PlanType) base.PlanType {
+	switch protoPlanType {
+	case v1pb.PlanType_FREE:
+		return base.FREE
+	case v1pb.PlanType_TEAM:
+		return base.TEAM
+	case v1pb.PlanType_ENTERPRISE:
+		return base.ENTERPRISE
+	default:
+		return base.FREE
 	}
 }

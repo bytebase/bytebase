@@ -113,6 +113,18 @@ export interface Feature_MatrixEntry {
   value: boolean;
 }
 
+/** PlanConfig represents the configuration for all plans loaded from plan.yaml */
+export interface PlanConfig {
+  plans: PlanLimitConfig[];
+}
+
+/** PlanLimitConfig represents a single plan's configuration */
+export interface PlanLimitConfig {
+  type: PlanType;
+  maximumInstanceCount: number;
+  maximumSeatCount: number;
+}
+
 function createBaseGetSubscriptionRequest(): GetSubscriptionRequest {
   return {};
 }
@@ -675,6 +687,144 @@ export const Feature_MatrixEntry: MessageFns<Feature_MatrixEntry> = {
     const message = createBaseFeature_MatrixEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? false;
+    return message;
+  },
+};
+
+function createBasePlanConfig(): PlanConfig {
+  return { plans: [] };
+}
+
+export const PlanConfig: MessageFns<PlanConfig> = {
+  encode(message: PlanConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.plans) {
+      PlanLimitConfig.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PlanConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.plans.push(PlanLimitConfig.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  toJSON(message: PlanConfig): unknown {
+    const obj: any = {};
+    if (message.plans?.length) {
+      obj.plans = message.plans.map((e) => PlanLimitConfig.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PlanConfig>): PlanConfig {
+    return PlanConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PlanConfig>): PlanConfig {
+    const message = createBasePlanConfig();
+    message.plans = object.plans?.map((e) => PlanLimitConfig.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePlanLimitConfig(): PlanLimitConfig {
+  return { type: PlanType.PLAN_TYPE_UNSPECIFIED, maximumInstanceCount: 0, maximumSeatCount: 0 };
+}
+
+export const PlanLimitConfig: MessageFns<PlanLimitConfig> = {
+  encode(message: PlanLimitConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.type !== PlanType.PLAN_TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(planTypeToNumber(message.type));
+    }
+    if (message.maximumInstanceCount !== 0) {
+      writer.uint32(16).int32(message.maximumInstanceCount);
+    }
+    if (message.maximumSeatCount !== 0) {
+      writer.uint32(24).int32(message.maximumSeatCount);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PlanLimitConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanLimitConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = planTypeFromJSON(reader.int32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.maximumInstanceCount = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maximumSeatCount = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  toJSON(message: PlanLimitConfig): unknown {
+    const obj: any = {};
+    if (message.type !== PlanType.PLAN_TYPE_UNSPECIFIED) {
+      obj.type = planTypeToJSON(message.type);
+    }
+    if (message.maximumInstanceCount !== 0) {
+      obj.maximumInstanceCount = Math.round(message.maximumInstanceCount);
+    }
+    if (message.maximumSeatCount !== 0) {
+      obj.maximumSeatCount = Math.round(message.maximumSeatCount);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PlanLimitConfig>): PlanLimitConfig {
+    return PlanLimitConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PlanLimitConfig>): PlanLimitConfig {
+    const message = createBasePlanLimitConfig();
+    message.type = object.type ?? PlanType.PLAN_TYPE_UNSPECIFIED;
+    message.maximumInstanceCount = object.maximumInstanceCount ?? 0;
+    message.maximumSeatCount = object.maximumSeatCount ?? 0;
     return message;
   },
 };
