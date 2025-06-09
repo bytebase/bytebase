@@ -35,14 +35,15 @@ func init() {
 	if err := yaml.Unmarshal([]byte(planConfigStr), &yamlData); err != nil {
 		panic("failed to unmarshal plan.yaml: " + err.Error())
 	}
-	
+
 	// Convert YAML data to JSON bytes
 	jsonBytes, err := yaml.Marshal(yamlData)
 	if err != nil {
 		panic("failed to convert plan.yaml to JSON: " + err.Error())
 	}
-	
+
 	conf := &v1pb.PlanConfig{}
+	//nolint:forbidigo
 	if err := protojson.Unmarshal(jsonBytes, conf); err != nil {
 		panic("failed to unmarshal plan config proto: " + err.Error())
 	}
