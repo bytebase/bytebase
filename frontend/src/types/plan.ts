@@ -75,14 +75,12 @@ export const planTypeToString = (planType: PlanType): string => {
 
 export interface Plan {
   type: PlanType;
-  title: string;
   maximumSeatCount: number;
   maximumInstanceCount: number;
 }
 
 export const PLANS: Plan[] = planData.planList.map((raw: any) => ({
   type: planTypeFromJSON(raw.type + 1),
-  title: raw.title,
   maximumSeatCount: raw.maximumSeatCount,
   maximumInstanceCount: raw.maximumInstanceCount,
 }));

@@ -1,13 +1,10 @@
 planList:
   - type: 0
-    title: free
     maximumInstanceCount: 10
     maximumSeatCount: 20
   - type: 1
-    title: team
     maximumInstanceCount: 10
     maximumSeatCount: 20
   - type: 2
-    title: enterprise
     maximumInstanceCount: -1
     maximumSeatCount: -1
