@@ -373,6 +373,47 @@ func EngineSupportQuerySpanPlainField(e storepb.Engine) bool {
 	}
 }
 
+func EngineSupportSyntaxCheck(e storepb.Engine) bool {
+	//exhaustive:enforce
+	switch e {
+	case
+		storepb.Engine_TIDB,
+		storepb.Engine_MYSQL,
+		storepb.Engine_MARIADB,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_POSTGRES,
+		storepb.Engine_REDSHIFT,
+		storepb.Engine_ORACLE,
+		storepb.Engine_OCEANBASE_ORACLE,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_MSSQL,
+		storepb.Engine_DYNAMODB,
+		storepb.Engine_COCKROACHDB:
+		return true
+	case
+		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_CASSANDRA,
+		storepb.Engine_SQLITE,
+		storepb.Engine_MONGODB,
+		storepb.Engine_REDIS,
+		storepb.Engine_CLICKHOUSE,
+		storepb.Engine_SPANNER,
+		storepb.Engine_BIGQUERY,
+		storepb.Engine_STARROCKS,
+		storepb.Engine_RISINGWAVE,
+		storepb.Engine_HIVE,
+		storepb.Engine_DORIS,
+		storepb.Engine_ELASTICSEARCH,
+		storepb.Engine_DATABRICKS,
+		storepb.Engine_COSMOSDB,
+		storepb.Engine_TRINO,
+		storepb.Engine_DM:
+		return false
+	default:
+		return false
+	}
+}
+
 func BackupDatabaseNameOfEngine(e storepb.Engine) string {
 	//exhaustive:enforce
 	switch e {
