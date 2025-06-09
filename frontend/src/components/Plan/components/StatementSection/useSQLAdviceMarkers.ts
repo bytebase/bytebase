@@ -35,9 +35,9 @@ export const useSQLAdviceMarkers = (
         };
       });
     } else {
-      const { plan, selectedSpec } = context;
+      const { selectedSpec, planCheckRunList: contextPlanCheckRunList } = context;
       const planCheckRunList = planCheckRunListForSpec(
-        plan.value,
+        contextPlanCheckRunList.value,
         selectedSpec.value as Plan_Spec
       );
       const types: PlanCheckRun_Type[] = [

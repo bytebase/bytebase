@@ -29,15 +29,17 @@
 <script lang="ts" setup>
 import type { PropType } from "vue";
 import { computed } from "vue";
-import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
-import type { ComposedPlan } from "@/types/v1/issue/plan";
+import {
+  PlanCheckRun_Result_Status,
+  type Plan,
+} from "@/types/proto/v1/plan_service";
 
 export type SizeType = "small" | "normal";
 
 const props = defineProps({
   plan: {
     required: true,
-    type: Object as PropType<ComposedPlan>,
+    type: Object as PropType<Plan>,
   },
   size: {
     type: String as PropType<SizeType>,
@@ -46,12 +48,11 @@ const props = defineProps({
 });
 
 const planCheckRunStatus = computed(() => {
-  const { planCheckRunStatusCount } = props.plan;
-  if (planCheckRunStatusCount["ERROR"] > 0) {
+  if (props.plan.planCheckRunStatusCount["ERROR"] > 0) {
     return PlanCheckRun_Result_Status.ERROR;
-  } else if (planCheckRunStatusCount["WARNING"] > 0) {
+  } else if (props.plan.planCheckRunStatusCount["WARNING"] > 0) {
     return PlanCheckRun_Result_Status.WARNING;
-  } else if (planCheckRunStatusCount["SUCCESS"] > 0) {
+  } else if (props.plan.planCheckRunStatusCount["SUCCESS"] > 0) {
     return PlanCheckRun_Result_Status.SUCCESS;
   }
   return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;

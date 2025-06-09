@@ -5,7 +5,7 @@
     :striped="true"
     :bordered="true"
     :loading="loading"
-    :row-key="(plan: ComposedPlan) => plan.name"
+    :row-key="(plan: Plan) => plan.name"
     :row-props="rowProps"
   />
 </template>
@@ -22,7 +22,7 @@ import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { getTimeForPbTimestamp, unknownUser } from "@/types";
-import type { ComposedPlan } from "@/types/v1/issue/plan";
+import type { Plan } from "@/types/proto/v1/plan_service";
 import {
   extractPlanUID,
   extractProjectResourceName,
@@ -33,7 +33,7 @@ import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
 const props = withDefaults(
   defineProps<{
-    planList: ComposedPlan[];
+    planList: Plan[];
     loading?: boolean;
     showProject: boolean;
   }>(),
@@ -47,14 +47,16 @@ const { t } = useI18n();
 const router = useRouter();
 const userStore = useUserStore();
 
-const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
-  const columns: (DataTableColumn<ComposedPlan> & { hide?: boolean })[] = [
+const columnList = computed((): DataTableColumn<Plan>[] => {
+  const columns: (DataTableColumn<Plan> & { hide?: boolean })[] = [
     {
       key: "status",
       title: "",
       width: "36px",
       render: (plan) => {
-        return <PlanCheckRunStatusIcon plan={plan} />;
+        // For now, we don't have access to planCheckRunList here
+        // The parent component should provide it if needed
+        return <PlanCheckRunStatusIcon plan={plan} planCheckRunList={[]} />;
       },
     },
     {
@@ -117,14 +119,14 @@ const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
   return columns.filter((column) => !column.hide);
 });
 
-const rowProps = (plan: ComposedPlan) => {
+const rowProps = (plan: Plan) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
       const route = router.resolve({
         name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
         params: {
-          projectId: extractProjectResourceName(plan.project),
+          projectId: extractProjectResourceName(plan.name),
           planSlug: planV1Slug(plan),
         },
       });

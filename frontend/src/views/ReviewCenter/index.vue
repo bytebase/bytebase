@@ -72,7 +72,7 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { buildPlanFindBySearchParams } from "@/store/modules/v1/plan";
-import type { ComposedPlan } from "@/types/v1/issue/plan";
+import type { Plan } from "@/types/proto/v1/plan_service";
 import {
   extractProjectResourceName,
   hasPermissionToCreatePlanInProject,
@@ -126,7 +126,7 @@ watch(
 );
 
 const planStore = usePlanStore();
-const planPagedTable = ref<ComponentExposed<typeof PagedTable<ComposedPlan>>>();
+const planPagedTable = ref<ComponentExposed<typeof PagedTable<Plan>>>();
 
 const planCreationButtonOptions = computed((): DropdownOption[] => {
   return [

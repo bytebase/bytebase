@@ -62,14 +62,14 @@ const router = useRouter();
 const dialog = useDialog();
 const { project } = useCurrentProjectV1();
 const policyV1Store = usePolicyV1Store();
-const { plan } = usePlanContext();
+const { plan, planCheckRunList } = usePlanContext();
 const loading = ref(false);
 const restrictIssueCreationForSqlReviewPolicy = ref(false);
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   const planCheckList = uniqBy(
     plan.value.specs.flatMap((spec) =>
-      planCheckRunListForSpec(plan.value, spec)
+      planCheckRunListForSpec(planCheckRunList.value, spec)
     ),
     (checkRun) => checkRun.name
   );
@@ -117,7 +117,7 @@ watchEffect(async () => {
 
   const projectLevelPolicy =
     await policyV1Store.getOrFetchPolicyByParentAndType({
-      parentPath: plan.value.project,
+      parentPath: project.value.name,
       policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
     });
   if (projectLevelPolicy?.restrictIssueCreationForSqlReviewPolicy?.disallow) {
@@ -147,7 +147,7 @@ const doCreateIssue = async () => {
 
   try {
     const createdIssue = await issueServiceClient.createIssue({
-      parent: plan.value.project,
+      parent: project.value.name,
       issue: {
         ...Issue.fromPartial(buildIssue()),
         rollout: "",
@@ -160,7 +160,7 @@ const doCreateIssue = async () => {
       planEntity: plan.value,
     };
     const createdRollout = await rolloutServiceClient.createRollout({
-      parent: plan.value.project,
+      parent: project.value.name,
       rollout: {
         plan: plan.value.name,
       },
@@ -173,7 +173,7 @@ const doCreateIssue = async () => {
       router.push({
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
-          projectId: extractProjectResourceName(plan.value.project),
+          projectId: extractProjectResourceName(plan.value.name),
           issueSlug: issueV1Slug(composedIssue),
         },
       });
