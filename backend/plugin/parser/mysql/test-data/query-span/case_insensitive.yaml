@@ -29,7 +29,7 @@
             - server: ""
               database: db
               schema: ""
-              table: T
+              table: t
               column: a
           isplainfield: true
           sourcefieldpaths: []
