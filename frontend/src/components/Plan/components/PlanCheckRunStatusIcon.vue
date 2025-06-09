@@ -48,11 +48,12 @@ const props = defineProps({
 });
 
 const planCheckRunStatus = computed(() => {
-  if (props.plan.planCheckRunStatusCount["ERROR"] > 0) {
+  const { planCheckRunStatusCount } = props.plan;
+  if (planCheckRunStatusCount["ERROR"] > 0) {
     return PlanCheckRun_Result_Status.ERROR;
-  } else if (props.plan.planCheckRunStatusCount["WARNING"] > 0) {
+  } else if (planCheckRunStatusCount["WARNING"] > 0) {
     return PlanCheckRun_Result_Status.WARNING;
-  } else if (props.plan.planCheckRunStatusCount["SUCCESS"] > 0) {
+  } else if (planCheckRunStatusCount["SUCCESS"] > 0) {
     return PlanCheckRun_Result_Status.SUCCESS;
   }
   return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
