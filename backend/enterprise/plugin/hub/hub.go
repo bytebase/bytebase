@@ -9,7 +9,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -17,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var _ plugin.LicenseProvider = (*Provider)(nil)
@@ -76,7 +76,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 	license := p.loadLicense(ctx)
 	if license == nil {
 		return &enterprise.Subscription{
-			Plan: base.FREE,
+			Plan: v1pb.PlanType_FREE,
 			// -1 means not expire, just for free plan
 			ExpiresTS: -1,
 			// Instance license count.
@@ -192,7 +192,7 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.
 		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", planType)
 	}
 
-	if claim.WorkspaceID != "" && planType == base.ENTERPRISE && !claim.Trialing {
+	if claim.WorkspaceID != "" && planType == v1pb.PlanType_ENTERPRISE && !claim.Trialing {
 		workspaceID, err := p.store.GetWorkspaceID(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get workspace id from setting")
@@ -216,15 +216,15 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.
 	return license, nil
 }
 
-func convertPlanType(candidate string) (base.PlanType, error) {
+func convertPlanType(candidate string) (v1pb.PlanType, error) {
 	switch candidate {
-	case base.TEAM.String():
-		return base.TEAM, nil
-	case base.ENTERPRISE.String():
-		return base.ENTERPRISE, nil
-	case base.FREE.String():
-		return base.FREE, nil
+	case "TEAM":
+		return v1pb.PlanType_TEAM, nil
+	case "ENTERPRISE":
+		return v1pb.PlanType_ENTERPRISE, nil
+	case "FREE":
+		return v1pb.PlanType_FREE, nil
 	default:
-		return base.FREE, errors.Errorf("cannot conver plan type %q", candidate)
+		return v1pb.PlanType_FREE, errors.Errorf("cannot convert plan type %q", candidate)
 	}
 }
