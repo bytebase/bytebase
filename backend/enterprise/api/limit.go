@@ -32,7 +32,7 @@ var PlanLimitValues = map[PlanLimit]map[base.PlanType]int{
 
 func init() {
 	// First unmarshal YAML to a generic map, then convert to JSON for protojson
-	var yamlData map[string]interface{}
+	var yamlData map[string]any
 	if err := yaml.Unmarshal([]byte(planConfigStr), &yamlData); err != nil {
 		panic("failed to unmarshal plan.yaml: " + err.Error())
 	}
@@ -44,6 +44,7 @@ func init() {
 	}
 
 	conf := &v1pb.PlanConfig{}
+	//nolint:forbidigo
 	if err := protojson.Unmarshal(jsonBytes, conf); err != nil {
 		panic("failed to unmarshal plan config proto: " + err.Error())
 	}
