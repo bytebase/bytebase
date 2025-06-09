@@ -1003,7 +1003,6 @@
     "data-change-description": "Sửa đổi dữ liệu (DML)",
     "select-targets": "Chọn mục tiêu",
     "overview": {
-      "title": "Tổng quan về kế hoạch",
       "description": "Xem và quản lý tất cả các thông số kỹ thuật trong kế hoạch này",
       "total-specs": "Tổng số thông số kỹ thuật",
       "total-targets": "Tổng số mục tiêu",

@@ -7,7 +7,6 @@ import {
   useSheetV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { composePlan } from "@/store/modules/v1/plan";
 import type { ComposedProject, IssueType } from "@/types";
 import {
   Plan,
@@ -119,7 +118,7 @@ export const buildPlan = async (params: CreatePlanParams) => {
       plan.specs = [spec];
     }
   }
-  return await composePlan(plan);
+  return plan;
 };
 
 const buildSpecForTargetsV1 = async (

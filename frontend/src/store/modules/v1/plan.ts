@@ -3,11 +3,10 @@ import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { planServiceClient } from "@/grpcweb";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
-import type { Plan } from "@/types/proto/v1/plan_service";
+import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import {
   emptyPlan,
   unknownPlan,
-  type ComposedPlan,
 } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,
@@ -71,24 +70,19 @@ export const buildPlanFindBySearchParams = (
   return filter;
 };
 
-export const composePlan = async (rawPlan: Plan): Promise<ComposedPlan> => {
-  const project = `projects/${extractProjectResourceName(rawPlan.name)}`;
+export const fetchPlanCheckRuns = async (plan: Plan): Promise<PlanCheckRun[]> => {
+  const project = `projects/${extractProjectResourceName(plan.name)}`;
   const projectEntity =
     await useProjectV1Store().getOrFetchProjectByName(project);
 
-  const plan: ComposedPlan = {
-    ...rawPlan,
-    planCheckRunList: [],
-    project,
-  };
   if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
     const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
-      parent: rawPlan.name,
+      parent: plan.name,
       latestOnly: true,
     });
-    plan.planCheckRunList = orderBy(planCheckRuns, "name", "desc");
+    return orderBy(planCheckRuns, "name", "desc");
   }
-  return plan;
+  return [];
 };
 
 export type ListPlanParams = {
@@ -105,29 +99,26 @@ export const usePlanStore = defineStore("plan", () => {
       pageSize,
       pageToken,
     });
-    const composedPlans = await Promise.all(
-      resp.plans.map((plan) => composePlan(plan))
-    );
-    // Preprare creator for the plans.
-    const users = uniq(composedPlans.map((plan) => plan.creator));
+    // Prepare creator for the plans.
+    const users = uniq(resp.plans.map((plan) => plan.creator));
     await useUserStore().batchGetUsers(users);
     return {
       nextPageToken: resp.nextPageToken,
-      plans: composedPlans,
+      plans: resp.plans,
     };
   };
 
-  const fetchPlanByName = async (name: string): Promise<ComposedPlan> => {
-    const rawPlan = await planServiceClient.getPlan({
+  const fetchPlanByName = async (name: string): Promise<Plan> => {
+    const plan = await planServiceClient.getPlan({
       name,
     });
-    return await composePlan(rawPlan);
+    return plan;
   };
 
   const fetchPlanByUID = async (
     uid: string,
     project = "-"
-  ): Promise<ComposedPlan> => {
+  ): Promise<Plan> => {
     if (uid === "undefined") {
       console.warn("undefined plan uid");
       return emptyPlan();
@@ -143,5 +134,6 @@ export const usePlanStore = defineStore("plan", () => {
     searchPlans,
     fetchPlanByName,
     fetchPlanByUID,
+    fetchPlanCheckRuns,
   };
 });

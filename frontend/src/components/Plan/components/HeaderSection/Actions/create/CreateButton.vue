@@ -47,7 +47,6 @@ import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projec
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
-import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,
   extractSheetUID,
@@ -85,27 +84,22 @@ const doCreatePlan = async () => {
   try {
     await createSheets();
     const createdPlan = await planServiceClient.createPlan({
-      parent: plan.value.project,
+      parent: project.value.name,
       plan: plan.value,
     });
     if (!createdPlan) return;
-
-    const composedPlan: ComposedPlan = {
-      ...plan.value,
-      ...createdPlan,
-    };
 
     nextTick(() => {
       router.push({
         name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
         params: {
-          projectId: extractProjectResourceName(composedPlan.project),
-          planSlug: planV1Slug(composedPlan),
+          projectId: extractProjectResourceName(createdPlan.name),
+          planSlug: planV1Slug(createdPlan),
         },
       });
     });
 
-    return composedPlan;
+    return createdPlan;
   } catch {
     loading.value = false;
   }
@@ -138,7 +132,7 @@ const createSheets = async () => {
     const sheet = pendingCreateSheetList[i];
     sheet.title = plan.value.title;
     const createdSheet = await sheetStore.createSheet(
-      plan.value.project,
+      project.value.name,
       sheet
     );
     sheetNameMap.set(sheet.name, createdSheet.name);

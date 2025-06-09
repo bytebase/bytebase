@@ -1,5 +1,4 @@
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import type { ComposedPlan } from "@/types/v1/issue/plan";
+import type { Plan_Spec, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { sheetNameForSpec, targetsForSpec } from "./plan";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
@@ -10,12 +9,12 @@ export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
 };
 
 export const planCheckRunListForSpec = (
-  plan: ComposedPlan,
+  planCheckRunList: PlanCheckRun[],
   spec: Plan_Spec
 ) => {
   const targets = targetsForSpec(spec);
   const sheet = spec ? sheetNameForSpec(spec) : "";
-  return plan.planCheckRunList.filter((check) => {
+  return planCheckRunList.filter((check) => {
     if (!targets.includes(check.target)) {
       return false;
     }

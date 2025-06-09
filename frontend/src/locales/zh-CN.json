@@ -1003,7 +1003,6 @@
     "data-change-description": "修改数据（DML）",
     "select-targets": "选择变更对象",
     "overview": {
-      "title": "变更计划概述",
       "description": "查看和管理此变更计划中的所有变更项",
       "total-specs": "变更项",
       "total-targets": "变更对象",
