@@ -3,7 +3,7 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
@@ -65,11 +65,20 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	for _, column := range checker.columnSet {
 		columnList = append(columnList, column)
 	}
-	sort.Slice(columnList, func(i, j int) bool {
-		if columnList[i].line != columnList[j].line {
-			return columnList[i].line < columnList[j].line
+	slices.SortFunc(columnList, func(i, j columnName) int {
+		if i.line != j.line {
+			if i.line < j.line {
+				return -1
+			}
+			return 1
 		}
-		return columnList[i].columnName < columnList[j].columnName
+		if i.columnName < j.columnName {
+			return -1
+		}
+		if i.columnName > j.columnName {
+			return 1
+		}
+		return 0
 	})
 
 	for _, column := range columnList {

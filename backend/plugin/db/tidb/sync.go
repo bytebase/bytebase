@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -420,7 +420,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 				for indexName := range indexes {
 					indexNames = append(indexNames, indexName)
 				}
-				sort.Strings(indexNames)
+				slices.Sort(indexNames)
 				for _, indexName := range indexNames {
 					tableMetadata.Indexes = append(tableMetadata.Indexes, indexes[indexName])
 				}

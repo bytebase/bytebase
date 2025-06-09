@@ -3,7 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -443,11 +443,20 @@ func (m CompletionMap) toSlice() []base.Candidate {
 	for _, candidate := range m {
 		result = append(result, candidate)
 	}
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].Type != result[j].Type {
-			return result[i].Type < result[j].Type
+	slices.SortFunc(result, func(a, b base.Candidate) int {
+		if a.Type != b.Type {
+			if a.Type < b.Type {
+				return -1
+			}
+			return 1
 		}
-		return result[i].Text < result[j].Text
+		if a.Text < b.Text {
+			return -1
+		}
+		if a.Text > b.Text {
+			return 1
+		}
+		return 0
 	})
 	return result
 }
@@ -759,9 +768,7 @@ func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []stri
 			for alias := range aliasMap {
 				result = append(result, alias)
 			}
-			sort.Slice(result, func(i, j int) bool {
-				return result[i] < result[j]
-			})
+			slices.Sort(result)
 			return result
 		case pg.PostgreSQLParserRULE_opt_sort_clause, pg.PostgreSQLParserRULE_group_clause, pg.PostgreSQLParserRULE_having_clause:
 			canUseAliases = true

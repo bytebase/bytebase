@@ -2,7 +2,6 @@ package snowflake
 
 import (
 	"context"
-	"sort"
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -1316,11 +1315,7 @@ func getAccessTables(currentNormalizedDatabase string, currentNormalizedSchema s
 		resourceMap:     make(base.SourceColumnSet),
 	}
 
-	var result []base.SchemaResource
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].String() < result[j].String()
-	})
 
 	return l.resourceMap
 }

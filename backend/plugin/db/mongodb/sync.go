@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"sort"
+	"slices"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -136,8 +136,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err := collectionList.Close(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to close collection list")
 	}
-	sort.Strings(collectionNames)
-	sort.Strings(viewNames)
+	slices.Sort(collectionNames)
+	slices.Sort(viewNames)
 
 	for _, collectionName := range collectionNames {
 		if systemCollection[collectionName] {
@@ -251,7 +251,7 @@ func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.I
 	for name := range indexMap {
 		indexNames = append(indexNames, name)
 	}
-	sort.Strings(indexNames)
+	slices.Sort(indexNames)
 	for _, name := range indexNames {
 		indexes = append(indexes, indexMap[name])
 	}

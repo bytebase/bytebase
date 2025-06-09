@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -158,8 +158,13 @@ func retainMostRecentFilesByPattern(dir, pattern string, retainCount int) error 
 	}
 
 	// Sort files by timestamp in descending order (most recent first)
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].timestamp > files[j].timestamp
+	slices.SortFunc(files, func(a, b fileInfo) int {
+		if a.timestamp > b.timestamp {
+			return -1
+		} else if a.timestamp < b.timestamp {
+			return 1
+		}
+		return 0
 	})
 
 	// Remove older files beyond retention count

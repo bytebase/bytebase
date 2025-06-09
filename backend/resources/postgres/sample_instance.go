@@ -8,7 +8,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"path"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -80,7 +80,7 @@ func loadSampleData() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 
 	var builder strings.Builder
 	for _, name := range names {

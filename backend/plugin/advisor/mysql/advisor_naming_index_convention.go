@@ -161,9 +161,8 @@ func (checker *namingIndexConventionChecker) EnterAlterTable(ctx *mysql.AlterTab
 				// Unique index naming convention should in advisor_naming_unique_key_convention.go
 				continue
 			}
-			columnList := indexState.ExpressionList()
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+				advisor.ColumnListTemplateToken: strings.Join(indexState.ExpressionList(), "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			indexData := &indexMetaData{

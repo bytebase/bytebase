@@ -3,7 +3,7 @@ package v1
 import (
 	"context"
 	"maps"
-	"sort"
+	"slices"
 
 	"github.com/google/cel-go/cel"
 	celtypes "github.com/google/cel-go/common/types"
@@ -26,8 +26,13 @@ func CalculateRiskLevelWithSummaryReport(
 	}
 
 	// Sort by level DESC, higher risks go first.
-	sort.Slice(risks, func(i, j int) bool {
-		return risks[i].Level > risks[j].Level
+	slices.SortFunc(risks, func(a, b *store.RiskMessage) int {
+		if a.Level > b.Level {
+			return -1
+		} else if a.Level < b.Level {
+			return 1
+		}
+		return 0
 	})
 
 	for _, risk := range risks {

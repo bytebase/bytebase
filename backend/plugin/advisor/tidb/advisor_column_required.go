@@ -3,7 +3,7 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -129,7 +129,7 @@ func (v *columnRequirementChecker) generateAdviceList() []*storepb.Advice {
 		}
 		if len(missingColumns) > 0 {
 			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
-			sort.Strings(missingColumns)
+			slices.Sort(missingColumns)
 			v.adviceList = append(v.adviceList, &storepb.Advice{
 				Status:        v.level,
 				Code:          advisor.NoRequiredColumn.Int32(),

@@ -5,7 +5,7 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
@@ -85,8 +85,14 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []*storepb.Advice 
 			line: v,
 		})
 	}
-	sort.Slice(tableList, func(i, j int) bool {
-		return tableList[i].line < tableList[j].line
+	slices.SortFunc(tableList, func(i, j tableName) int {
+		if i.line < j.line {
+			return -1
+		}
+		if i.line > j.line {
+			return 1
+		}
+		return 0
 	})
 
 	for _, table := range tableList {

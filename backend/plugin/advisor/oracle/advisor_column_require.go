@@ -4,7 +4,7 @@ package oracle
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -100,7 +100,7 @@ func (l *columnRequireListener) ExitCreate_table(ctx *parser.Create_tableContext
 		return
 	}
 
-	sort.Strings(missingColumns)
+	slices.Sort(missingColumns)
 	tableName := normalizeIdentifier(ctx.Table_name(), l.currentDatabase)
 	l.adviceList = append(l.adviceList, &storepb.Advice{
 		Status:        l.level,
@@ -137,7 +137,7 @@ func (l *columnRequireListener) ExitAlter_table(ctx *parser.Alter_tableContext) 
 		return
 	}
 
-	sort.Strings(missingColumns)
+	slices.Sort(missingColumns)
 	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase))
 	l.adviceList = append(l.adviceList, &storepb.Advice{
 		Status:        l.level,

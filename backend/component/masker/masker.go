@@ -4,7 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"log/slog"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -163,8 +163,13 @@ func (m *RangeMasker) formatRanges(maxLength int32) []*MaskRangeSlice {
 		}
 	}
 
-	sort.SliceStable(mergedMaskRangeSlice, func(i, j int) bool {
-		return mergedMaskRangeSlice[i].Start < mergedMaskRangeSlice[j].Start
+	slices.SortStableFunc(mergedMaskRangeSlice, func(a, b *MaskRangeSlice) int {
+		if a.Start < b.Start {
+			return -1
+		} else if a.Start > b.Start {
+			return 1
+		}
+		return 0
 	})
 
 	return mergedMaskRangeSlice
