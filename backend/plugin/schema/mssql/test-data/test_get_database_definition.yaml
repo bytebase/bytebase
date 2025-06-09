@@ -1,0 +1,623 @@
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "INT",
+                  "isIdentity": true,
+                  "identitySeed": "1",
+                  "identityIncrement": "1"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "NVARCHAR(100)",
+                  "nullable": false
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "type": "NVARCHAR(255)",
+                  "nullable": true,
+                  "defaultExpression": "''"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "type": "DATETIME2",
+                  "nullable": false,
+                  "defaultExpression": "GETDATE()"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_users",
+                  "expressions": ["id"],
+                  "descending": [false],
+                  "primary": true,
+                  "isConstraint": true,
+                  "type": "CLUSTERED"
+                },
+                {
+                  "name": "IX_users_email",
+                  "expressions": ["email"],
+                  "descending": [false],
+                  "unique": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE TABLE [dbo].[users] (
+        [id] INT IDENTITY(1,1) NOT NULL,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(255) DEFAULT '',
+        [created_at] DATETIME2 DEFAULT GETDATE() NOT NULL,
+        CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id] ASC)
+    );
+
+    CREATE UNIQUE INDEX [IX_users_email] ON
+    [dbo].[users] (
+        [email] ASC
+    );
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "order_id",
+                  "position": 1,
+                  "type": "INT",
+                  "isIdentity": true,
+                  "identitySeed": "1",
+                  "identityIncrement": "1"
+                },
+                {
+                  "name": "user_id",
+                  "position": 2,
+                  "type": "INT",
+                  "nullable": false
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "type": "DECIMAL(10,2)",
+                  "nullable": false
+                },
+                {
+                  "name": "status",
+                  "position": 4,
+                  "type": "NVARCHAR(20)",
+                  "nullable": false,
+                  "defaultExpression": "'pending'"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_orders",
+                  "expressions": ["order_id"],
+                  "descending": [false],
+                  "primary": true,
+                  "isConstraint": true
+                }
+              ],
+              "foreignKeys": [
+                {
+                  "name": "FK_orders_users",
+                  "columns": ["user_id"],
+                  "referencedSchema": "dbo",
+                  "referencedTable": "users",
+                  "referencedColumns": ["id"],
+                  "onDelete": "CASCADE",
+                  "onUpdate": "NO ACTION"
+                }
+              ],
+              "checkConstraints": [
+                {
+                  "name": "CK_orders_amount",
+                  "expression": "([amount] > 0)"
+                },
+                {
+                  "name": "CK_orders_status",
+                  "expression": "([status] IN ('pending', 'completed', 'cancelled'))"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE TABLE [dbo].[orders] (
+        [order_id] INT IDENTITY(1,1) NOT NULL,
+        [user_id] INT NOT NULL,
+        [amount] DECIMAL(10,2) NOT NULL,
+        [status] NVARCHAR(20) DEFAULT 'pending' NOT NULL,
+        CONSTRAINT [PK_orders] PRIMARY KEY ([order_id] ASC),
+        CONSTRAINT [FK_orders_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[users] ([id]) ON DELETE CASCADE ON UPDATE NO ACTION,
+        CONSTRAINT [CK_orders_amount] CHECK ([amount] > 0),
+        CONSTRAINT [CK_orders_status] CHECK ([status] IN ('pending', 'completed', 'cancelled'))
+    );
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "views": [
+            {
+              "name": "v_active_users",
+              "definition": "CREATE VIEW [dbo].[v_active_users] AS SELECT u.id, u.name, u.email, COUNT(o.order_id) as order_count\nFROM dbo.users u\nLEFT JOIN dbo.orders o ON u.id = o.user_id\nWHERE u.created_at >= DATEADD(month, -6, GETDATE())\nGROUP BY u.id, u.name, u.email"
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE VIEW [dbo].[v_active_users] AS SELECT u.id, u.name, u.email, COUNT(o.order_id) as order_count
+    FROM dbo.users u
+    LEFT JOIN dbo.orders o ON u.id = o.user_id
+    WHERE u.created_at >= DATEADD(month, -6, GETDATE())
+    GROUP BY u.id, u.name, u.email;
+
+    GO
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "functions": [
+            {
+              "name": "fn_GetUserOrderTotal",
+              "definition": "CREATE FUNCTION [dbo].[fn_GetUserOrderTotal]\n(\n    @UserId INT\n)\nRETURNS DECIMAL(10,2)\nAS\nBEGIN\n    DECLARE @Total DECIMAL(10,2)\n\n    SELECT @Total = SUM(amount)\n    FROM dbo.orders\n    WHERE user_id = @UserId\n    AND status = 'completed'\n\n    RETURN ISNULL(@Total, 0)\nEND"
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE FUNCTION [dbo].[fn_GetUserOrderTotal]
+    (
+        @UserId INT
+    )
+    RETURNS DECIMAL(10,2)
+    AS
+    BEGIN
+        DECLARE @Total DECIMAL(10,2)
+
+        SELECT @Total = SUM(amount)
+        FROM dbo.orders
+        WHERE user_id = @UserId
+        AND status = 'completed'
+
+        RETURN ISNULL(@Total, 0)
+    END
+
+    GO
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "procedures": [
+            {
+              "name": "sp_UpdateOrderStatus",
+              "definition": "CREATE PROCEDURE [dbo].[sp_UpdateOrderStatus]\n    @OrderId INT,\n    @NewStatus NVARCHAR(20)\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n    UPDATE dbo.orders\n    SET status = @NewStatus\n    WHERE order_id = @OrderId;\n\n    SELECT @@ROWCOUNT AS RowsAffected;\nEND"
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE PROCEDURE [dbo].[sp_UpdateOrderStatus]
+        @OrderId INT,
+        @NewStatus NVARCHAR(20)
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+
+        UPDATE dbo.orders
+        SET status = @NewStatus
+        WHERE order_id = @OrderId;
+
+        SELECT @@ROWCOUNT AS RowsAffected;
+    END
+
+    GO
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "sales",
+          "tables": [
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "product_id",
+                  "position": 1,
+                  "type": "INT",
+                  "isIdentity": true,
+                  "identitySeed": "1",
+                  "identityIncrement": "1"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "NVARCHAR(200)",
+                  "nullable": false
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_products",
+                  "expressions": ["product_id"],
+                  "descending": [false],
+                  "primary": true,
+                  "isConstraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE SCHEMA [sales];
+    GO
+
+    CREATE TABLE [sales].[products] (
+        [product_id] INT IDENTITY(1,1) NOT NULL,
+        [name] NVARCHAR(200) NOT NULL,
+        CONSTRAINT [PK_products] PRIMARY KEY ([product_id] ASC)
+    );
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "employee_id",
+                  "position": 1,
+                  "type": "INT",
+                  "isIdentity": true,
+                  "identitySeed": "1",
+                  "identityIncrement": "1"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "NVARCHAR(100)",
+                  "nullable": false
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_employees",
+                  "expressions": ["employee_id"],
+                  "descending": [false],
+                  "primary": true,
+                  "isConstraint": true
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v_employee_list",
+              "definition": "CREATE VIEW [dbo].[v_employee_list] AS SELECT employee_id, name FROM dbo.employees WHERE employee_id > 0"
+            }
+          ],
+          "functions": [
+            {
+              "name": "fn_GetEmployeeName",
+              "definition": "CREATE FUNCTION [dbo].[fn_GetEmployeeName](@EmpId INT) RETURNS NVARCHAR(100) AS BEGIN DECLARE @Name NVARCHAR(100); SELECT @Name = name FROM dbo.employees WHERE employee_id = @EmpId; RETURN @Name; END"
+            }
+          ],
+          "procedures": [
+            {
+              "name": "sp_GetEmployee",
+              "definition": "CREATE PROCEDURE [dbo].[sp_GetEmployee] @EmpId INT AS BEGIN SELECT * FROM dbo.employees WHERE employee_id = @EmpId; END"
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE TABLE [dbo].[employees] (
+        [employee_id] INT IDENTITY(1,1) NOT NULL,
+        [name] NVARCHAR(100) NOT NULL,
+        CONSTRAINT [PK_employees] PRIMARY KEY ([employee_id] ASC)
+    );
+
+    GO
+
+    CREATE VIEW [dbo].[v_employee_list] AS SELECT employee_id, name FROM dbo.employees WHERE employee_id > 0;
+
+    GO
+
+    CREATE FUNCTION [dbo].[fn_GetEmployeeName](@EmpId INT) RETURNS NVARCHAR(100) AS BEGIN DECLARE @Name NVARCHAR(100); SELECT @Name = name FROM dbo.employees WHERE employee_id = @EmpId; RETURN @Name; END
+
+    GO
+
+    CREATE PROCEDURE [dbo].[sp_GetEmployee] @EmpId INT AS BEGIN SELECT * FROM dbo.employees WHERE employee_id = @EmpId; END
+
+    GO
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "international_data",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "INT",
+                  "nullable": false
+                },
+                {
+                  "name": "text_data",
+                  "position": 2,
+                  "type": "NVARCHAR(MAX)",
+                  "nullable": true,
+                  "collation": "Latin1_General_CI_AS"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE TABLE [dbo].[international_data] (
+        [id] INT NOT NULL,
+        [text_data] NVARCHAR(MAX) COLLATE Latin1_General_CI_AS
+    );
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "fact_sales",
+              "columns": [
+                {
+                  "name": "sale_id",
+                  "position": 1,
+                  "type": "BIGINT",
+                  "nullable": false
+                },
+                {
+                  "name": "product_id",
+                  "position": 2,
+                  "type": "INT",
+                  "nullable": false
+                },
+                {
+                  "name": "quantity",
+                  "position": 3,
+                  "type": "INT",
+                  "nullable": false
+                },
+                {
+                  "name": "amount",
+                  "position": 4,
+                  "type": "DECIMAL(10,2)",
+                  "nullable": false
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "CCI_fact_sales",
+                  "type": "CLUSTERED COLUMNSTORE"
+                },
+                {
+                  "name": "NCCI_fact_sales_product",
+                  "type": "NONCLUSTERED COLUMNSTORE",
+                  "expressions": ["product_id", "quantity"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE TABLE [dbo].[fact_sales] (
+        [sale_id] BIGINT NOT NULL,
+        [product_id] INT NOT NULL,
+        [quantity] INT NOT NULL,
+        [amount] DECIMAL(10,2) NOT NULL
+    );
+
+    CREATE CLUSTERED COLUMNSTORE INDEX [CCI_fact_sales] ON [dbo].[fact_sales];
+
+    CREATE NONCLUSTERED COLUMNSTORE INDEX [NCCI_fact_sales_product] ON [dbo].[fact_sales] (
+        [product_id],
+        [quantity]
+    );
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "customers",
+              "columns": [
+                {
+                  "name": "customer_id",
+                  "position": 1,
+                  "type": "INT",
+                  "nullable": false
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "NVARCHAR(100)",
+                  "nullable": false
+                }
+              ]
+            },
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "order_id",
+                  "position": 1,
+                  "type": "INT",
+                  "nullable": false
+                },
+                {
+                  "name": "customer_id",
+                  "position": 2,
+                  "type": "INT",
+                  "nullable": false
+                },
+                {
+                  "name": "total",
+                  "position": 3,
+                  "type": "DECIMAL(10,2)",
+                  "nullable": false
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v_customer_orders",
+              "definition": "CREATE VIEW [dbo].[v_customer_orders] AS SELECT c.customer_id, c.name, o.order_id, o.total FROM dbo.customers c JOIN dbo.orders o ON c.customer_id = o.customer_id"
+            },
+            {
+              "name": "v_customer_summary",
+              "definition": "CREATE VIEW [dbo].[v_customer_summary] AS SELECT customer_id, name, COUNT(order_id) as order_count, SUM(total) as total_amount FROM dbo.v_customer_orders GROUP BY customer_id, name"
+            },
+            {
+              "name": "v_top_customers",
+              "definition": "CREATE VIEW [dbo].[v_top_customers] AS SELECT TOP 10 * FROM dbo.v_customer_summary ORDER BY total_amount DESC"
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE TABLE [dbo].[customers] (
+        [customer_id] INT NOT NULL,
+        [name] NVARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE [dbo].[orders] (
+        [order_id] INT NOT NULL,
+        [customer_id] INT NOT NULL,
+        [total] DECIMAL(10,2) NOT NULL
+    );
+
+    GO
+
+    CREATE VIEW [dbo].[v_customer_orders] AS SELECT c.customer_id, c.name, o.order_id, o.total FROM dbo.customers c JOIN dbo.orders o ON c.customer_id = o.customer_id;
+
+    GO
+
+    CREATE VIEW [dbo].[v_customer_summary] AS SELECT customer_id, name, COUNT(order_id) as order_count, SUM(total) as total_amount FROM dbo.v_customer_orders GROUP BY customer_id, name;
+
+    GO
+
+    CREATE VIEW [dbo].[v_top_customers] AS SELECT TOP 10 * FROM dbo.v_customer_summary ORDER BY total_amount DESC;
+
+    GO
+
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "sales",
+          "tables": [
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "product_id",
+                  "position": 1,
+                  "type": "INT",
+                  "nullable": false
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "NVARCHAR(100)",
+                  "nullable": false
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v_product_list",
+              "definition": "CREATE VIEW [sales].[v_product_list] AS SELECT product_id, name FROM sales.products"
+            }
+          ]
+        },
+        {
+          "name": "reporting",
+          "views": [
+            {
+              "name": "v_all_products",
+              "definition": "CREATE VIEW [reporting].[v_all_products] AS SELECT * FROM sales.v_product_list"
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE SCHEMA [sales];
+    GO
+
+    CREATE SCHEMA [reporting];
+    GO
+
+    CREATE TABLE [sales].[products] (
+        [product_id] INT NOT NULL,
+        [name] NVARCHAR(100) NOT NULL
+    );
+
+    GO
+
+    CREATE VIEW [sales].[v_product_list] AS SELECT product_id, name FROM sales.products;
+
+    GO
+
+    CREATE VIEW [reporting].[v_all_products] AS SELECT * FROM sales.v_product_list;
+
+    GO
+
