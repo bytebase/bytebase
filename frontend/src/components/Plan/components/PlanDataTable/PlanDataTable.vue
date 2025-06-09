@@ -53,11 +53,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       key: "status",
       title: "",
       width: "36px",
-      render: (plan) => {
-        // For now, we don't have access to planCheckRunList here
-        // The parent component should provide it if needed
-        return <PlanCheckRunStatusIcon plan={plan} planCheckRunList={[]} />;
-      },
+      render: (plan) => <PlanCheckRunStatusIcon plan={plan} />,
     },
     {
       key: "title",
