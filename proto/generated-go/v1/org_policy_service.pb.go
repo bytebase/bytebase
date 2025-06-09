@@ -1115,13 +1115,15 @@ func (x *QueryDataPolicy) GetTimeout() *durationpb.Duration {
 	return nil
 }
 
+// The SQL review rules. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
 type SQLReviewRule struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Level         SQLReviewRuleLevel     `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.v1.SQLReviewRuleLevel" json:"level,omitempty"`
-	Payload       string                 `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
-	Engine        Engine                 `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	Comment       string                 `protobuf:"bytes,5,opt,name=comment,proto3" json:"comment,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Type  string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Level SQLReviewRuleLevel     `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.v1.SQLReviewRuleLevel" json:"level,omitempty"`
+	// The payload is a JSON string that varies by rule type.
+	Payload       string `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	Engine        Engine `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	Comment       string `protobuf:"bytes,5,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

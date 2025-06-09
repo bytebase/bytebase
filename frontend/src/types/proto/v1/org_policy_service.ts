@@ -395,9 +395,11 @@ export interface QueryDataPolicy {
   timeout: Duration | undefined;
 }
 
+/** The SQL review rules. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details. */
 export interface SQLReviewRule {
   type: string;
   level: SQLReviewRuleLevel;
+  /** The payload is a JSON string that varies by rule type. */
   payload: string;
   engine: Engine;
   comment: string;
