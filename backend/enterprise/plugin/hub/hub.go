@@ -225,6 +225,6 @@ func convertPlanType(candidate string) (v1pb.PlanType, error) {
 	case "FREE":
 		return v1pb.PlanType_FREE, nil
 	default:
-		return v1pb.PlanType_FREE, errors.Errorf("cannot conver plan type %q", candidate)
+		return v1pb.PlanType_FREE, errors.Errorf("cannot convert plan type %q", candidate)
 	}
 }
