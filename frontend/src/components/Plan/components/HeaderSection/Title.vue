@@ -1,7 +1,7 @@
 <template>
   <div class="flex-1">
     <NInput
-      :value="state.title"
+      v-model:value="state.title"
       :style="style"
       :loading="state.isUpdating"
       :disabled="!allowEdit || state.isUpdating"
@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { planServiceClient } from "@/grpcweb";
 import {
@@ -71,14 +71,12 @@ const allowEdit = computed(() => {
   if (isCreating.value) {
     return true;
   }
-
+  // Allowed if current user is the creator.
   if (extractUserId(plan.value.creator) === currentUser.value.email) {
-    // Allowed if current user is the creator.
     return true;
   }
-
+  // Allowed if current user has related permission.
   if (hasProjectPermissionV2(project.value, "bb.plans.update")) {
-    // Allowed if current has plan update permission in the project
     return true;
   }
   return false;
@@ -124,19 +122,12 @@ const onEnter = (e: Event) => {
   input.blur();
 };
 
-const onUpdateValue = (title: string) => {
-  state.title = title;
-  if (isCreating.value) {
-    plan.value.title = title;
+const onUpdateValue = (value: string) => {
+  if (!isCreating.value) {
+    return;
   }
+  plan.value.title = value;
 };
-
-watch(
-  () => plan.value.title,
-  (title) => {
-    state.title = title;
-  }
-);
 </script>
 
 <style>

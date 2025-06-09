@@ -3,7 +3,7 @@
     <SQLCheckSection v-if="isCreating" />
     <SpecBasedPlanCheckSection v-else />
     <TargetListSection />
-    <div>
+    <div class="w-full">
       <StatementSection />
       <Configuration />
     </div>

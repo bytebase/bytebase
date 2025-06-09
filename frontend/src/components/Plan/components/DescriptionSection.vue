@@ -79,7 +79,7 @@ import {
 } from "@/store";
 import { Plan } from "@/types/proto/v1/plan_service";
 import { hasProjectPermissionV2 } from "@/utils";
-import { usePlanContext } from "../../logic";
+import { usePlanContext } from "../logic";
 
 type LocalState = {
   isEditing: boolean;
@@ -109,17 +109,19 @@ const allowEdit = computed(() => {
   if (extractUserId(plan.value.creator) === currentUser.value.email) {
     return true;
   }
-  // Allowed if current has plan update permission in the project
+  // Allowed if current user has related permission.
   if (hasProjectPermissionV2(project.value, "bb.plans.update")) {
     return true;
   }
   return false;
 });
 
-const onDescriptionChange = (description: string) => {
-  if (isCreating.value) {
-    plan.value.description = description;
+const onDescriptionChange = (value: string) => {
+  if (!isCreating.value) {
+    return;
   }
+
+  plan.value.description = value;
 };
 
 const beginEdit = () => {

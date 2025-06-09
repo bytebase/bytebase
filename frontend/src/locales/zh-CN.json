@@ -979,8 +979,8 @@
       }
     },
     "sql-review-only": "仅 SQL 审核",
-    "create-issue": "创建变更工单",
-    "this-plan-will-be-converted-to-a-new-issue": "该计划将转换为一个变更工单",
+    "create-issue": "创建工单",
+    "this-plan-will-be-converted-to-a-new-issue": "该变更计划将转换为一个工单",
     "title": {
       "edit-schema": "变更 Schema",
       "change-data": "变更数据",
@@ -1001,12 +1001,12 @@
     "schema-migration-description": "修改数据库 Schema (DDL)",
     "data-change": "数据变更",
     "data-change-description": "修改数据（DML）",
-    "select-targets": "选择目标",
+    "select-targets": "选择变更对象",
     "overview": {
       "title": "变更计划概述",
       "description": "查看和管理此变更计划中的所有变更项",
       "total-specs": "变更项",
-      "total-targets": "变更目标",
+      "total-targets": "变更对象",
       "check-status": "检查状态",
       "no-checks": "没有检查",
       "affected-resources": "受影响的资源"
@@ -1035,11 +1035,11 @@
       }
     },
     "targets": {
-      "title": "目标",
-      "no-targets-found": "未找到目标",
-      "no-targets": "没有目标",
-      "one-target": "1 个目标",
-      "multiple-targets": "{count} 个目标",
+      "title": "变更对象",
+      "no-targets-found": "未找到变更对象",
+      "no-targets": "没有变更对象",
+      "one-target": "1 个变更对象",
+      "multiple-targets": "{count} 个变更对象",
       "one-database": "1 个数据库",
       "multiple-databases": "{count} 个数据库",
       "database-group": "数据库组",
@@ -2622,12 +2622,31 @@
     "change-type": "更改类型"
   },
   "release": {
+    "title": "发布包",
     "releases": "发布包",
     "files": "文件",
     "create": "创建发布",
     "select": "选择发布",
     "archive-this-release": "归档此发布",
     "total-files": "共 {count} 个文件",
+    "plan-tip": "此变更计划已配置为使用发布包。数据库变更将使用所选发布包文件中的 SQL 语句执行。",
+    "not-found": "未找到",
+    "vcs-source": "VCS 源",
+    "view-all-files": "查看全部文件",
+    "and-n-more-files": "还有 {count} 个文件",
+    "change-type": {
+      "ddl": "DDL",
+      "ddl-ghost": "DDL Ghost",
+      "dml": "DML",
+      "unspecified": "未指定"
+    },
+    "file-type": {
+      "versioned": "版本化",
+      "unspecified": "未指定"
+    },
+    "vcs-type": {
+      "unspecified": "未指定"
+    },
     "actions": {
       "new-file": "新建文件",
       "import-from-release": "从发布导入"

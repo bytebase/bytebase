@@ -27,7 +27,6 @@ export const useSpecSheet = (spec: Plan_Spec) => {
       if (uid.startsWith("-")) {
         return getLocalSheetByName(name);
       }
-
       return sheetStore.getOrFetchSheetByName(name);
     },
     undefined,

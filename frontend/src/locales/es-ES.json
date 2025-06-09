@@ -2622,12 +2622,31 @@
     "change-type": "Cambiar tipo"
   },
   "release": {
+    "title": "Liberar",
     "releases": "Lanzamientos",
     "files": "Archivos",
     "create": "Crear lanzamiento",
     "select": "Seleccionar versión",
     "archive-this-release": "Archivar este comunicado",
     "total-files": "Total de {count} archivos",
+    "plan-tip": "Este plan está configurado para usar una versión. Los cambios en la base de datos se ejecutarán mediante las sentencias SQL de los archivos de la versión seleccionada.",
+    "not-found": "Extraviado",
+    "vcs-source": "Fuente VCS",
+    "view-all-files": "Ver todos los archivos",
+    "and-n-more-files": "y {n} archivos más",
+    "change-type": {
+      "ddl": "DDL",
+      "ddl-ghost": "Fantasma DDL",
+      "dml": "DML",
+      "unspecified": "No especificado"
+    },
+    "file-type": {
+      "versioned": "Versión",
+      "unspecified": "No especificado"
+    },
+    "vcs-type": {
+      "unspecified": "No especificado"
+    },
     "actions": {
       "new-file": "Nuevo archivo",
       "import-from-release": "Importar desde la versión"

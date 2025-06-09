@@ -2622,12 +2622,31 @@
     "change-type": "Loại thay đổi"
   },
   "release": {
+    "title": "Giải phóng",
     "releases": "Bản phát hành",
     "files": "Tệp",
     "create": "Tạo bản phát hành",
     "select": "Chọn bản phát hành",
     "archive-this-release": "Lưu trữ bản phát hành này",
     "total-files": "Tổng số {count} tệp",
+    "plan-tip": "Kế hoạch này được cấu hình để sử dụng bản phát hành. Các thay đổi cơ sở dữ liệu sẽ được thực hiện bằng các câu lệnh SQL từ các tệp phát hành đã chọn.",
+    "not-found": "Không tìm thấy",
+    "vcs-source": "Nguồn VCS",
+    "view-all-files": "Xem tất cả các tập tin",
+    "and-n-more-files": "và {n} tập tin khác",
+    "change-type": {
+      "ddl": "DDL",
+      "ddl-ghost": "DDL Ma",
+      "dml": "DML",
+      "unspecified": "Không xác định"
+    },
+    "file-type": {
+      "versioned": "Phiên bản",
+      "unspecified": "Không xác định"
+    },
+    "vcs-type": {
+      "unspecified": "Không xác định"
+    },
     "actions": {
       "new-file": "Tệp mới",
       "import-from-release": "Nhập từ bản phát hành"
