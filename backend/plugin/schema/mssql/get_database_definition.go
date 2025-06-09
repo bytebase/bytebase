@@ -2,8 +2,10 @@ package mssql
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -15,6 +17,9 @@ const (
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_MSSQL, GetDatabaseDefinition)
 	schema.RegisterGetTableDefinition(storepb.Engine_MSSQL, GetTableDefinition)
+	schema.RegisterGetViewDefinition(storepb.Engine_MSSQL, GetViewDefinition)
+	schema.RegisterGetFunctionDefinition(storepb.Engine_MSSQL, GetFunctionDefinition)
+	schema.RegisterGetProcedureDefinition(storepb.Engine_MSSQL, GetProcedureDefinition)
 }
 
 func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSchemaMetadata) (string, error) {
@@ -23,8 +28,40 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 	}
 
 	var buf strings.Builder
+
+	// First, write all schemas
 	for _, schema := range to.Schemas {
-		writeSchema(&buf, schema)
+		if schema.Name != defaultSchema {
+			_, _ = fmt.Fprintf(&buf, "CREATE SCHEMA [%s];\nGO\n\n", schema.Name)
+		}
+	}
+
+	// Then, write all tables
+	for _, schema := range to.Schemas {
+		for _, table := range schema.Tables {
+			writeTable(&buf, schema.Name, table)
+		}
+	}
+
+	// Then, write all views in dependency order across all schemas
+	if hasViews(to.Schemas) {
+		// Add GO separator between tables and views if we have tables
+		hasTables := false
+		for _, schema := range to.Schemas {
+			if len(schema.Tables) > 0 {
+				hasTables = true
+				break
+			}
+		}
+		if hasTables {
+			_, _ = buf.WriteString("GO\n\n")
+		}
+		writeAllViewsInOrder(&buf, to.Schemas)
+	}
+
+	// Finally, write functions and procedures
+	for _, schema := range to.Schemas {
+		writeFunctionsAndProcedures(&buf, schema)
 	}
 
 	return buf.String(), nil
@@ -36,14 +73,121 @@ func GetTableDefinition(schemaName string, table *storepb.TableMetadata, _ []*st
 	return buf.String(), nil
 }
 
-func writeSchema(out *strings.Builder, schema *storepb.SchemaMetadata) {
-	if schema.Name != defaultSchema {
-		_, _ = fmt.Fprintf(out, "CREATE SCHEMA [%s];\nGO\n\n", schema.Name)
+func writeFunctionsAndProcedures(out *strings.Builder, schema *storepb.SchemaMetadata) {
+	for _, function := range schema.Functions {
+		writeFunction(out, schema.Name, function)
 	}
 
-	for _, table := range schema.Tables {
-		writeTable(out, schema.Name, table)
+	for _, procedure := range schema.Procedures {
+		writeProcedure(out, schema.Name, procedure)
 	}
+}
+
+func hasViews(schemas []*storepb.SchemaMetadata) bool {
+	for _, schema := range schemas {
+		if len(schema.Views) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func writeAllViewsInOrder(out *strings.Builder, schemas []*storepb.SchemaMetadata) {
+	// Collect all views from all schemas
+	var allViews []*viewWithSchema
+	for _, schema := range schemas {
+		for _, view := range schema.Views {
+			allViews = append(allViews, &viewWithSchema{
+				schema: schema.Name,
+				view:   view,
+			})
+		}
+	}
+
+	if len(allViews) == 0 {
+		return
+	}
+
+	// Sort views by dependencies across all schemas
+	sortedViews := sortViewsByDependenciesAcrossSchemas(allViews)
+
+	// Write sorted views
+	for _, vws := range sortedViews {
+		writeView(out, vws.schema, vws.view)
+	}
+}
+
+type viewWithSchema struct {
+	schema string
+	view   *storepb.ViewMetadata
+}
+
+// sortViewsByDependenciesAcrossSchemas sorts views using topological sort considering cross-schema dependencies
+func sortViewsByDependenciesAcrossSchemas(views []*viewWithSchema) []*viewWithSchema {
+	if len(views) <= 1 {
+		return views
+	}
+
+	// Create a map for quick lookup
+	viewMap := make(map[string]*viewWithSchema)
+	for _, vws := range views {
+		viewID := getObjectID(vws.schema, vws.view.Name)
+		viewMap[viewID] = vws
+	}
+
+	// Build dependency graph
+	graph := base.NewGraph()
+
+	// Add all view nodes
+	for _, vws := range views {
+		viewID := getObjectID(vws.schema, vws.view.Name)
+		graph.AddNode(viewID)
+	}
+
+	// Add edges based on dependencies
+	for _, vws := range views {
+		viewID := getObjectID(vws.schema, vws.view.Name)
+
+		// Get dependencies from the view definition
+		deps, err := getViewDependencies(vws.view.Definition, vws.schema)
+		if err != nil {
+			// If we can't parse dependencies, continue without adding edges
+			continue
+		}
+
+		// For each dependency, check if it's a view (in any schema)
+		for _, dep := range deps {
+			// dep is already in format schema.table
+			if _, isView := viewMap[dep]; isView {
+				// The dependency view must come before this view
+				graph.AddEdge(dep, viewID)
+			}
+		}
+	}
+
+	// Perform topological sort
+	sortedIDs, err := graph.TopologicalSort()
+	if err != nil {
+		// If there's a cycle or error, return views in original order
+		// Sort by schema then by name for deterministic output
+		sort.Slice(views, func(i, j int) bool {
+			if views[i].schema != views[j].schema {
+				return views[i].schema < views[j].schema
+			}
+			return views[i].view.Name < views[j].view.Name
+		})
+		return views
+	}
+
+	// Build the result in sorted order
+	var result []*viewWithSchema
+	for _, id := range sortedIDs {
+		if vws, ok := viewMap[id]; ok {
+			result = append(result, vws)
+		}
+	}
+
+	return result
 }
 
 func writeTable(out *strings.Builder, schemaName string, table *storepb.TableMetadata) {
@@ -100,6 +244,9 @@ func writeNonClusteredColumnStoreIndex(out *strings.Builder, schemaName string, 
 
 func writeNormalIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
 	_, _ = out.WriteString("CREATE")
+	if index.Unique {
+		_, _ = out.WriteString(" UNIQUE")
+	}
 	if index.Type != "" {
 		_, _ = fmt.Fprintf(out, " %s", index.Type)
 	}
@@ -109,7 +256,7 @@ func writeNormalIndex(out *strings.Builder, schemaName string, tableName string,
 			_, _ = out.WriteString(",\n")
 		}
 		_, _ = fmt.Fprintf(out, "    [%s]", column)
-		if index.Descending[i] {
+		if i < len(index.Descending) && index.Descending[i] {
 			_, _ = out.WriteString(" DESC")
 		} else {
 			_, _ = out.WriteString(" ASC")
@@ -174,7 +321,7 @@ func writeKey(out *strings.Builder, key *storepb.IndexMetadata) {
 			_, _ = out.WriteString(", ")
 		}
 		_, _ = fmt.Fprintf(out, "[%s]", column)
-		if key.Descending[i] {
+		if i < len(key.Descending) && key.Descending[i] {
 			_, _ = out.WriteString(" DESC")
 		} else {
 			_, _ = out.WriteString(" ASC")
@@ -197,4 +344,35 @@ func writeColumn(out *strings.Builder, column *storepb.ColumnMetadata) {
 	if !column.Nullable {
 		_, _ = out.WriteString(" NOT NULL")
 	}
+}
+
+func writeView(out *strings.Builder, _ string, view *storepb.ViewMetadata) {
+	// The view definition already contains CREATE VIEW statement
+	_, _ = fmt.Fprintf(out, "%s;\n\nGO\n\n", view.Definition)
+}
+
+func writeFunction(out *strings.Builder, _ string, function *storepb.FunctionMetadata) {
+	_, _ = fmt.Fprintf(out, "%s\n\nGO\n\n", function.Definition)
+}
+
+func writeProcedure(out *strings.Builder, _ string, procedure *storepb.ProcedureMetadata) {
+	_, _ = fmt.Fprintf(out, "%s\n\nGO\n\n", procedure.Definition)
+}
+
+func GetViewDefinition(schemaName string, view *storepb.ViewMetadata) (string, error) {
+	var buf strings.Builder
+	writeView(&buf, schemaName, view)
+	return buf.String(), nil
+}
+
+func GetFunctionDefinition(schemaName string, function *storepb.FunctionMetadata) (string, error) {
+	var buf strings.Builder
+	writeFunction(&buf, schemaName, function)
+	return buf.String(), nil
+}
+
+func GetProcedureDefinition(schemaName string, procedure *storepb.ProcedureMetadata) (string, error) {
+	var buf strings.Builder
+	writeProcedure(&buf, schemaName, procedure)
+	return buf.String(), nil
 }

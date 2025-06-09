@@ -19,7 +19,7 @@
     CREATE VIEW [dbo].[v_users] AS
     SELECT id, name FROM [dbo].[users];
     GO
-- description: Create views with dependencies - correct order
+- description: Create views with dependencies - deterministic order
   oldSchema: |
     CREATE TABLE [dbo].[users] (
       [id] int NOT NULL,
@@ -41,15 +41,15 @@
     CREATE VIEW [dbo].[v_users] AS
     SELECT id, name FROM [dbo].[users];
     GO
-    CREATE VIEW [dbo].[v_orders] AS
-    SELECT o.id, o.user_id, o.amount, u.name
+    CREATE VIEW [dbo].[v_orders_with_users] AS
+    SELECT o.id, o.user_id, o.amount, v.name
     FROM [dbo].[orders] o
-    JOIN [dbo].[users] u ON o.user_id = u.id;
+    JOIN [dbo].[v_users] v ON o.user_id = v.id;
     GO
-    CREATE VIEW [dbo].[v_user_orders] AS
+    CREATE VIEW [dbo].[v_user_order_summary] AS
     SELECT u.id, u.name, COUNT(o.id) as order_count
     FROM [dbo].[v_users] u
-    LEFT JOIN [dbo].[v_orders] o ON u.id = o.user_id
+    LEFT JOIN [dbo].[v_orders_with_users] o ON u.id = o.user_id
     GROUP BY u.id, u.name;
     GO
   expected: |
@@ -60,21 +60,21 @@
     );
 
     GO
-    CREATE VIEW [dbo].[v_orders] AS
-    SELECT o.id, o.user_id, o.amount, u.name
-    FROM [dbo].[orders] o
-    JOIN [dbo].[users] u ON o.user_id = u.id;
-    GO
     CREATE VIEW [dbo].[v_users] AS
     SELECT id, name FROM [dbo].[users];
     GO
-    CREATE VIEW [dbo].[v_user_orders] AS
+    CREATE VIEW [dbo].[v_orders_with_users] AS
+    SELECT o.id, o.user_id, o.amount, v.name
+    FROM [dbo].[orders] o
+    JOIN [dbo].[v_users] v ON o.user_id = v.id;
+    GO
+    CREATE VIEW [dbo].[v_user_order_summary] AS
     SELECT u.id, u.name, COUNT(o.id) as order_count
     FROM [dbo].[v_users] u
-    LEFT JOIN [dbo].[v_orders] o ON u.id = o.user_id
+    LEFT JOIN [dbo].[v_orders_with_users] o ON u.id = o.user_id
     GROUP BY u.id, u.name;
     GO
-- description: Drop views with dependencies - reverse order
+- description: Drop views with dependencies - deterministic order
   oldSchema: |
     CREATE TABLE [dbo].[users] (
       [id] int NOT NULL,
@@ -90,15 +90,15 @@
     CREATE VIEW [dbo].[v_users] AS
     SELECT id, name FROM [dbo].[users];
     GO
-    CREATE VIEW [dbo].[v_orders] AS
-    SELECT o.id, o.user_id, o.amount, u.name
+    CREATE VIEW [dbo].[v_orders_with_users] AS
+    SELECT o.id, o.user_id, o.amount, v.name
     FROM [dbo].[orders] o
-    JOIN [dbo].[users] u ON o.user_id = u.id;
+    JOIN [dbo].[v_users] v ON o.user_id = v.id;
     GO
-    CREATE VIEW [dbo].[v_user_orders] AS
+    CREATE VIEW [dbo].[v_user_order_summary] AS
     SELECT u.id, u.name, COUNT(o.id) as order_count
     FROM [dbo].[v_users] u
-    LEFT JOIN [dbo].[v_orders] o ON u.id = o.user_id
+    LEFT JOIN [dbo].[v_orders_with_users] o ON u.id = o.user_id
     GROUP BY u.id, u.name;
     GO
   newSchema: |
@@ -114,11 +114,11 @@
     );
     GO
   expected: |
-    DROP VIEW [dbo].[v_user_orders];
+    DROP VIEW [dbo].[v_user_order_summary];
+    GO
+    DROP VIEW [dbo].[v_orders_with_users];
     GO
     DROP VIEW [dbo].[v_users];
-    GO
-    DROP VIEW [dbo].[v_orders];
     GO
 - description: Alter view - drop and recreate
   oldSchema: |
