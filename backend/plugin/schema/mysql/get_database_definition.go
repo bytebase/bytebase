@@ -1237,37 +1237,27 @@ func writeTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
 }
 
 func writeAdditionalEventsIfSet(out io.Writer, characterSetClient, characterSetResult, collationConnection, sqlMode string) error {
-	if characterSetClient != "" {
-		if _, err := io.WriteString(out, setCharacterSetClient); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, characterSetClient); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, ";\n"); err != nil {
-			return err
-		}
+	events := []struct {
+		condition bool
+		prefix    string
+		value     string
+	}{
+		{characterSetClient != "", setCharacterSetClient, characterSetClient},
+		{characterSetResult != "", setCharacterSetResult, characterSetResult},
+		{collationConnection != "", setCollation, collationConnection},
 	}
-	if characterSetResult != "" {
-		if _, err := io.WriteString(out, setCharacterSetResult); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, characterSetResult); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, ";\n"); err != nil {
-			return err
-		}
-	}
-	if collationConnection != "" {
-		if _, err := io.WriteString(out, setCollation); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, collationConnection); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, ";\n"); err != nil {
-			return err
+
+	for _, event := range events {
+		if event.condition {
+			if _, err := io.WriteString(out, event.prefix); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, event.value); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, ";\n"); err != nil {
+				return err
+			}
 		}
 	}
 	if sqlMode != "" {
