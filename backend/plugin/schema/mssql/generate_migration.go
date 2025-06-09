@@ -926,33 +926,40 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 	viewMap := make(map[string]*schema.ViewDiff)
 
 	// First pass: Add all views to be dropped or altered to the graph and viewMap
+	// Sort for deterministic processing order
+	var viewsToProcess []*schema.ViewDiff
 	for _, viewDiff := range diff.ViewChanges {
 		if viewDiff.Action == schema.MetadataDiffActionDrop || viewDiff.Action == schema.MetadataDiffActionAlter {
-			viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
-			graph.AddNode(viewID)
-			viewMap[viewID] = viewDiff
+			viewsToProcess = append(viewsToProcess, viewDiff)
 		}
+	}
+	sort.Slice(viewsToProcess, func(i, j int) bool {
+		return getObjectID(viewsToProcess[i].SchemaName, viewsToProcess[i].ViewName) < getObjectID(viewsToProcess[j].SchemaName, viewsToProcess[j].ViewName)
+	})
+
+	for _, viewDiff := range viewsToProcess {
+		viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
+		graph.AddNode(viewID)
+		viewMap[viewID] = viewDiff
 	}
 
 	// Second pass: Add dependency edges now that all views are in viewMap
-	for _, viewDiff := range diff.ViewChanges {
-		if viewDiff.Action == schema.MetadataDiffActionDrop || viewDiff.Action == schema.MetadataDiffActionAlter {
-			viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
+	for _, viewDiff := range viewsToProcess {
+		viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
 
-			// Get dependencies from the old view definition
-			if viewDiff.OldView != nil && viewDiff.OldView.Definition != "" {
-				deps, err := getViewDependencies(viewDiff.OldView.Definition, viewDiff.SchemaName)
-				if err != nil {
-					// If we can't parse dependencies, we'll just drop in original order
-					continue
-				}
+		// Get dependencies from the old view definition
+		if viewDiff.OldView != nil && viewDiff.OldView.Definition != "" {
+			deps, err := getViewDependencies(viewDiff.OldView.Definition, viewDiff.SchemaName)
+			if err != nil {
+				// If we can't parse dependencies, we'll just drop in original order
+				continue
+			}
 
-				// Add edges from this view to its dependencies
-				for _, dep := range deps {
-					// Only add edge if the dependency is also being dropped/altered
-					if _, exists := viewMap[dep]; exists {
-						graph.AddEdge(viewID, dep)
-					}
+			// Add edges from this view to its dependencies
+			for _, dep := range deps {
+				// Only add edge if the dependency is also being dropped/altered
+				if _, exists := viewMap[dep]; exists {
+					graph.AddEdge(viewID, dep)
 				}
 			}
 		}
@@ -962,14 +969,22 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 	orderedList, err := graph.TopologicalSort()
 	if err != nil {
 		// If there's a cycle or error, fall back to original order
+		var fallbackViews []*schema.ViewDiff
 		for _, viewDiff := range diff.ViewChanges {
 			if viewDiff.Action == schema.MetadataDiffActionDrop || viewDiff.Action == schema.MetadataDiffActionAlter {
-				_, _ = buf.WriteString("DROP VIEW [")
-				_, _ = buf.WriteString(viewDiff.SchemaName)
-				_, _ = buf.WriteString("].[")
-				_, _ = buf.WriteString(viewDiff.ViewName)
-				_, _ = buf.WriteString("];\nGO\n")
+				fallbackViews = append(fallbackViews, viewDiff)
 			}
+		}
+		// Sort alphabetically for deterministic output
+		sort.Slice(fallbackViews, func(i, j int) bool {
+			return getObjectID(fallbackViews[i].SchemaName, fallbackViews[i].ViewName) < getObjectID(fallbackViews[j].SchemaName, fallbackViews[j].ViewName)
+		})
+		for _, viewDiff := range fallbackViews {
+			_, _ = buf.WriteString("DROP VIEW [")
+			_, _ = buf.WriteString(viewDiff.SchemaName)
+			_, _ = buf.WriteString("].[")
+			_, _ = buf.WriteString(viewDiff.ViewName)
+			_, _ = buf.WriteString("];\nGO\n")
 		}
 		return nil
 	}
@@ -995,33 +1010,40 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 	viewMap := make(map[string]*schema.ViewDiff)
 
 	// First pass: Add all views to be created or altered to the graph and viewMap
+	// Sort for deterministic processing order
+	var viewsToProcess []*schema.ViewDiff
 	for _, viewDiff := range diff.ViewChanges {
 		if viewDiff.Action == schema.MetadataDiffActionCreate || viewDiff.Action == schema.MetadataDiffActionAlter {
-			viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
-			graph.AddNode(viewID)
-			viewMap[viewID] = viewDiff
+			viewsToProcess = append(viewsToProcess, viewDiff)
 		}
+	}
+	sort.Slice(viewsToProcess, func(i, j int) bool {
+		return getObjectID(viewsToProcess[i].SchemaName, viewsToProcess[i].ViewName) < getObjectID(viewsToProcess[j].SchemaName, viewsToProcess[j].ViewName)
+	})
+
+	for _, viewDiff := range viewsToProcess {
+		viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
+		graph.AddNode(viewID)
+		viewMap[viewID] = viewDiff
 	}
 
 	// Second pass: Add dependency edges now that all views are in viewMap
-	for _, viewDiff := range diff.ViewChanges {
-		if viewDiff.Action == schema.MetadataDiffActionCreate || viewDiff.Action == schema.MetadataDiffActionAlter {
-			viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
+	for _, viewDiff := range viewsToProcess {
+		viewID := getObjectID(viewDiff.SchemaName, viewDiff.ViewName)
 
-			// Get dependencies from the new view definition
-			if viewDiff.NewView != nil && viewDiff.NewView.Definition != "" {
-				deps, err := getViewDependencies(viewDiff.NewView.Definition, viewDiff.SchemaName)
-				if err != nil {
-					// If we can't parse dependencies, we'll just create in original order
-					continue
-				}
+		// Get dependencies from the new view definition
+		if viewDiff.NewView != nil && viewDiff.NewView.Definition != "" {
+			deps, err := getViewDependencies(viewDiff.NewView.Definition, viewDiff.SchemaName)
+			if err != nil {
+				// If we can't parse dependencies, we'll just create in original order
+				continue
+			}
 
-				// Add edges from dependencies to this view
-				for _, dep := range deps {
-					// Only add edge if the dependency is also being created/altered
-					if _, exists := viewMap[dep]; exists {
-						graph.AddEdge(dep, viewID)
-					}
+			// Add edges from dependencies to this view
+			for _, dep := range deps {
+				// Only add edge if the dependency is also being created/altered
+				if _, exists := viewMap[dep]; exists {
+					graph.AddEdge(dep, viewID)
 				}
 			}
 		}
@@ -1031,15 +1053,23 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 	orderedList, err := graph.TopologicalSort()
 	if err != nil {
 		// If there's a cycle or error, fall back to original order
+		var fallbackViews []*schema.ViewDiff
 		for _, viewDiff := range diff.ViewChanges {
 			// Only handle CREATE and ALTER (as create) in this phase
 			if viewDiff.Action == schema.MetadataDiffActionCreate || viewDiff.Action == schema.MetadataDiffActionAlter {
-				_, _ = buf.WriteString(viewDiff.NewView.Definition)
-				if !strings.HasSuffix(strings.TrimSpace(viewDiff.NewView.Definition), ";") {
-					_, _ = buf.WriteString(";")
-				}
-				_, _ = buf.WriteString("\nGO\n")
+				fallbackViews = append(fallbackViews, viewDiff)
 			}
+		}
+		// Sort alphabetically for deterministic output
+		sort.Slice(fallbackViews, func(i, j int) bool {
+			return getObjectID(fallbackViews[i].SchemaName, fallbackViews[i].ViewName) < getObjectID(fallbackViews[j].SchemaName, fallbackViews[j].ViewName)
+		})
+		for _, viewDiff := range fallbackViews {
+			_, _ = buf.WriteString(viewDiff.NewView.Definition)
+			if !strings.HasSuffix(strings.TrimSpace(viewDiff.NewView.Definition), ";") {
+				_, _ = buf.WriteString(";")
+			}
+			_, _ = buf.WriteString("\nGO\n")
 		}
 		return nil
 	}
