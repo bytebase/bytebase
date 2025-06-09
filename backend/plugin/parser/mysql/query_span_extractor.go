@@ -1391,9 +1391,9 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 			columnNames = append(columnNames, column.Name)
 		}
 		return &base.PhysicalTable{
-			Name:     tableName,
+			Name:     tableSchema.GetProto().Name,
 			Schema:   emptySchema,
-			Database: databaseName,
+			Database: dbSchema.GetName(),
 			Server:   "",
 			Columns:  columnNames,
 		}, nil
@@ -1416,9 +1416,9 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 			return nil, errors.Wrapf(err, "failed to get columns for view %q", tableName)
 		}
 		return &base.PhysicalView{
-			Name:     tableName,
+			Name:     viewSchema.GetProto().Name,
 			Schema:   emptySchema,
-			Database: databaseName,
+			Database: dbSchema.GetName(),
 			Server:   "",
 			Columns:  columns,
 		}, nil

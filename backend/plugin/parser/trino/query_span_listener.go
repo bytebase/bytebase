@@ -122,7 +122,7 @@ func (l *trinoQuerySpanListener) EnterTableName(ctx *parser.TableNameContext) {
 	physicalTable := &base.PhysicalTable{
 		Database: db,
 		Schema:   schema,
-		Name:     table,
+		Name:     tableMeta.GetProto().Name,
 		Columns:  columnNames, // Populate with actual column names
 	}
 	l.extractor.tableSourcesFrom = append(l.extractor.tableSourcesFrom, physicalTable)
