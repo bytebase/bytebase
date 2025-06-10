@@ -880,12 +880,6 @@
       "closed": "关闭",
       "close": "关闭"
     },
-    "sdl": {
-      "schema-change": "Schema 变化",
-      "generated-ddl-statements": "生成的 DDL 语句",
-      "full-schema": "完整 schema",
-      "left-schema-may-change": "左边的 schema 在工单执行前可能会发生变化。"
-    },
     "approval-flow": {
       "self": "审批流",
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批。",
@@ -2152,7 +2146,6 @@
     "delete": "删除审核策略",
     "input-then-press-enter": "输入后按下回车来添加",
     "not-available-for-free": "{plan}订阅不能使用该规则",
-    "unlock-full-feature": "解锁 100+ SQL Review 规则",
     "search-by-name": "按名称搜索",
     "attach-resource": {
       "no-linked-resources": "没有绑定的资源",
