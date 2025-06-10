@@ -1,11 +1,11 @@
 <template>
   <div class="w-full overflow-x-hidden space-y-4">
-    <FeatureAttention
+    <BBAttention
       v-if="remainingUserCount <= 3"
-      :feature="PlanLimitConfig_Feature.IAM"
+      :type="'warning'"
+      :title="$t('dynamic.subscription.features.bb-feature-user-count.title')"
       :description="userCountAttention"
     />
-
     <NTabs v-model:value="state.typeTab" type="line" animated>
       <NTabPane name="USERS">
         <template #tab>
@@ -75,7 +75,9 @@
           >
             <template #icon>
               <SettingsIcon class="h-5 w-5" />
-              <FeatureBadge :feature="PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID" />
+              <FeatureBadge
+                :feature="PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID"
+              />
             </template>
             {{ $t(`settings.members.entra-sync.self`) }}
           </NButton>
@@ -185,7 +187,14 @@
 </template>
 
 <script setup lang="ts">
-import { FeatureAttention, FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import { PlusIcon, SettingsIcon } from "lucide-vue-next";
+import { NButton, NCheckbox, NPopover, NTabPane, NTabs } from "naive-ui";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
+import { useI18n } from "vue-i18n";
+import { RouterLink, useRoute, useRouter } from "vue-router";
+import { BBAttention } from "@/bbkit";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
 import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue";
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
@@ -210,12 +219,6 @@ import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { type User } from "@/types/proto/v1/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { PlusIcon, SettingsIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NPopover, NTabPane, NTabs } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import type { ComponentExposed } from "vue-component-type-helpers";
-import { useI18n } from "vue-i18n";
-import { RouterLink, useRoute, useRouter } from "vue-router";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
@@ -328,7 +331,9 @@ const workspaceProfileSetting = computed(() =>
   )
 );
 
-const hasDirectorySyncFeature = featureToRef(PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID);
+const hasDirectorySyncFeature = featureToRef(
+  PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID
+);
 
 const allowGetSCIMSetting = computed(() =>
   hasWorkspacePermissionV2("bb.settings.get")

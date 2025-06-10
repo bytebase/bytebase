@@ -12,10 +12,7 @@
       {{ $t("instance.sync-databases.description") }}
     </div>
     <div class="space-y-2">
-      <NCheckbox
-        v-model:checked="state.syncAll"
-        :disabled="!allowEdit"
-      >
+      <NCheckbox v-model:checked="state.syncAll" :disabled="!allowEdit">
         {{ $t("instance.sync-databases.sync-all") }}
       </NCheckbox>
       <div v-if="!state.syncAll">
@@ -24,7 +21,6 @@
           <SearchBox
             v-model:value="state.searchText"
             style="max-width: 100%"
-            :disabled="false"
             :placeholder="$t('instance.sync-databases.search-database')"
           />
           <NTree
@@ -56,13 +52,13 @@
 </template>
 
 <script lang="tsx" setup>
+import type { TreeOption } from "naive-ui";
+import { NCheckbox, NInput, NTree } from "naive-ui";
+import { computed, h, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { SearchBox } from "@/components/v2";
 import { useInstanceV1Store } from "@/store";
 import { getHighlightHTMLByKeyWords } from "@/utils";
-import type { TreeOption } from "naive-ui";
-import { NCheckbox, NInput, NTree } from "naive-ui";
-import { computed, h, reactive, watch } from "vue";
 import { useInstanceFormContext } from "./context";
 
 const props = withDefaults(
