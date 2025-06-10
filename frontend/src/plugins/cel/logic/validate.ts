@@ -4,8 +4,10 @@ import type {
   ConditionGroupExpr,
   RawStringExpr,
   SimpleExpr,
+  DirectoryExpr,
 } from "../types";
 import {
+  isDirectoryExpr,
   isEqualityExpr,
   isNumberFactor,
   isRawStringExpr,
@@ -43,6 +45,11 @@ const validateNumberArray = (array: any) => {
 
 export const validateSimpleExpr = (expr: SimpleExpr): boolean => {
   const validateCondition = (condition: ConditionExpr): boolean => {
+    if (isDirectoryExpr(condition)) {
+      const [_, key, value] = (condition as DirectoryExpr).args;
+      return validateString(key) && validateString(value);
+    }
+
     if (condition.args.length !== 2) {
       // All condition expressions' args need to be [factor, value(s)] format.
       return false;

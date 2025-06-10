@@ -6,7 +6,7 @@
     :consistent-menu-width="false"
     :disabled="!allowAdmin"
     size="small"
-    style="width: auto; max-width: 7rem; min-width: 2.5rem; flex-shrink: 0"
+    style="width: auto; min-width: 2.5rem; flex-shrink: 0"
   />
 </template>
 
@@ -43,13 +43,8 @@ const factor = computed(() => {
 });
 
 const OPERATOR_DICT = new Map([
-  ["_==_", "=="],
-  ["_!=_", "!="],
-  ["_<_", "<"],
-  ["_<=_", "≤"],
-  ["_>=_", "≥"],
-  ["_>_", ">"],
   ["@not_in", "not in"],
+  ["_[_]", "exist key:value pair"],
 ]);
 
 const options = computed(() => {
@@ -59,7 +54,7 @@ const options = computed(() => {
   );
 
   const mapOption = (op: Operator): SelectOption => {
-    const label = OPERATOR_DICT.get(op) ?? op.replace(/^@/g, "");
+    const label = OPERATOR_DICT.get(op) ?? op.replace(/[@_]/g, "");
     return {
       label,
       value: op,

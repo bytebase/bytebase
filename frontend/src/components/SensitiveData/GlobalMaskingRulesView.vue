@@ -339,6 +339,7 @@ const factorList = computed((): Factor[] => {
     "table_name",
     "column_name",
     "classification_level",
+    "database_labels",
   ];
 
   return list;

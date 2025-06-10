@@ -110,6 +110,7 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 			"table_name":           tableName,
 			"column_name":          columnName,
 			"classification_level": classificationLevel,
+			"database_labels":      databaseMessage.Metadata.Labels,
 		}
 		pass, err := evaluateMaskingRulePolicyCondition(maskingRule.Condition.Expression, maskingRuleAttributes)
 		if err != nil {

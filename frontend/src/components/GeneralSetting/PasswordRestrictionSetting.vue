@@ -10,7 +10,7 @@
       <div class="flex items-center space-x-2">
         <NInputNumber
           :value="state.minLength"
-          :readonly="!allowEdit"
+          :disabled="!allowEdit"
           class="w-24"
           :min="1"
           :placeholder="'Minimum length'"
@@ -35,7 +35,7 @@
       </div>
       <NCheckbox
         :checked="state.requireNumber"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireNumber: val });
@@ -50,7 +50,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="state.requireLetter"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireLetter: val });
@@ -65,7 +65,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="state.requireUppercaseLetter"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireUppercaseLetter: val });
@@ -82,7 +82,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="state.requireSpecialCharacter"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireSpecialCharacter: val });
@@ -99,7 +99,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="state.requireResetPasswordForFirstLogin"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireResetPasswordForFirstLogin: val });
@@ -116,7 +116,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="!!state.passwordRotation"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         class="!flex !items-center"
         @update:checked="
           (checked) => {
@@ -142,7 +142,7 @@
               :value="
                 Number(state.passwordRotation.seconds.divide(24 * 60 * 60))
               "
-              :readonly="!allowEdit"
+              :disabled="!allowEdit"
               :min="1"
               class="w-24 mx-2"
               :size="'small'"
@@ -180,7 +180,10 @@ import { computed, ref, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import { PasswordRestrictionSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import {
+  PasswordRestrictionSetting,
+  Setting_SettingName,
+} from "@/types/proto/v1/setting_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 const DEFAULT_MIN_LENGTH = 8;
@@ -195,8 +198,9 @@ const hasPasswordFeature = featureToRef("bb.feature.password-restriction");
 
 const passwordRestrictionSetting = computed(
   () =>
-    settingV1Store.getSettingByName(Setting_SettingName.PASSWORD_RESTRICTION)?.value
-      ?.passwordRestrictionSetting ?? PasswordRestrictionSetting.fromPartial({})
+    settingV1Store.getSettingByName(Setting_SettingName.PASSWORD_RESTRICTION)
+      ?.value?.passwordRestrictionSetting ??
+    PasswordRestrictionSetting.fromPartial({})
 );
 
 const state = reactive<PasswordRestrictionSetting>(

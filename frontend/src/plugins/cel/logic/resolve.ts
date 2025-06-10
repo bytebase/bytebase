@@ -12,6 +12,7 @@ import type {
   CompareExpr,
   EqualityExpr,
   StringExpr,
+  DirectoryExpr,
   LogicalOperator,
   RawStringExpr,
 } from "../types";
@@ -26,6 +27,7 @@ import {
   isStringFactor,
   isTimestampFactor,
   isNegativeOperator,
+  isDictionaryOperator,
   ExprType,
 } from "../types";
 import stringifyExpr from "./stringify";
@@ -102,22 +104,31 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
   return dfs(expr);
 };
 
-const resolveEqualityExpr = (expr: CELExpr): EqualityExpr => {
+const resolveEqualityExpr = (expr: CELExpr): EqualityExpr | DirectoryExpr => {
   const operator = expr.callExpr!.function as EqualityOperator;
   const [factorExpr, valueExpr] = expr.callExpr!.args;
-  const factor = getFactorName(factorExpr);
+  const { factor, key } = getFactorName(factorExpr);
   if (isNumberFactor(factor)) {
     return {
       type: ExprType.Condition,
       operator,
-      args: [factor, valueExpr.constExpr!.int64Value!.toNumber() ?? 0],
+      args: [factor, valueExpr.constExpr?.int64Value?.toNumber() ?? 0],
     };
   }
+
   if (isStringFactor(factor)) {
+    const value = valueExpr.constExpr?.stringValue ?? "";
+    if (key) {
+      return {
+        type: ExprType.Condition,
+        operator,
+        args: [factor, key, value],
+      };
+    }
     return {
       type: ExprType.Condition,
       operator,
-      args: [factor, valueExpr.constExpr!.stringValue! ?? ""],
+      args: [factor, value],
     };
   }
   throw new Error(`cannot resolve expr ${JSON.stringify(expr)}`);
@@ -126,7 +137,7 @@ const resolveEqualityExpr = (expr: CELExpr): EqualityExpr => {
 const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
   const operator = expr.callExpr!.function as CompareOperator;
   const [factorExpr, valueExpr] = expr.callExpr!.args;
-  const factor = getFactorName(factorExpr);
+  const { factor } = getFactorName(factorExpr);
   if (isNumberFactor(factor)) {
     return {
       type: ExprType.Condition,
@@ -149,7 +160,7 @@ const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
 
 const resolveStringExpr = (expr: CELExpr): StringExpr => {
   const operator = expr.callExpr!.function as StringOperator;
-  const factor = getFactorName(expr.callExpr!.target!);
+  const { factor } = getFactorName(expr.callExpr!.target!);
   const value = expr.callExpr!.args[0];
   return {
     type: ExprType.Condition,
@@ -167,7 +178,7 @@ const resolveCollectionExpr = (
     operator = "@not_in";
   }
   const [factorExpr, valuesExpr] = expr.callExpr!.args;
-  const factor = getFactorName(factorExpr);
+  const { factor } = getFactorName(factorExpr);
 
   if (isNumberFactor(factor)) {
     return {
@@ -213,12 +224,24 @@ export const emptySimpleExpr = (
   };
 };
 
-const getFactorName = (expr: CELExpr): string => {
+const getFactorName = (expr: CELExpr): { factor: string; key?: string } => {
+  if (expr.callExpr !== undefined) {
+    const operator = expr.callExpr.function as Operator;
+    if (isDictionaryOperator(operator)) {
+      const [factorExpr, valueExpr] = expr.callExpr!.args;
+      return {
+        factor: getFactorName(factorExpr).factor,
+        key: valueExpr.constExpr?.stringValue ?? "",
+      };
+    }
+  }
   if (expr.identExpr !== undefined) {
-    return expr.identExpr.name;
+    return { factor: expr.identExpr.name };
   } else if (expr.selectExpr !== undefined) {
-    return `${expr.selectExpr.operand!.identExpr!.name!}.${expr.selectExpr
-      .field!}`;
+    return {
+      factor: `${expr.selectExpr.operand!.identExpr!.name!}.${expr.selectExpr
+        .field!}`,
+    };
   }
   throw new Error(`cannot resolve factor name ${JSON.stringify(expr)}`);
 };

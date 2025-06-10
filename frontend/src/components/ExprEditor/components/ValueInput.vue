@@ -39,14 +39,35 @@
       @update:value="setArrayValue($event)"
     />
   </template>
+  <template v-if="inputType === 'KEY-VALUE-INPUT'">
+    <div>
+      <NInputGroup>
+        <StringInput
+          style="width: 5rem"
+          placeholder="key"
+          :value="getStringValue(1)"
+          @update:value="setStringValue($event, 1)"
+        />
+        <StringInput
+          style="width: 5rem"
+          placeholder="value"
+          :value="getStringValue(2)"
+          @update:value="setStringValue($event, 2)"
+        />
+      </NInputGroup>
+    </div>
+  </template>
 </template>
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 import { isNumber } from "lodash-es";
+import { NInputGroup } from "naive-ui";
 import { computed, watch } from "vue";
 import {
+  type Factor,
   type ConditionExpr,
+  isDictionaryOperator,
   isEqualityOperator,
   isCollectionOperator,
   isStringOperator,
@@ -61,7 +82,12 @@ import NumberInput from "./NumberInput.vue";
 import SingleSelect from "./SingleSelect.vue";
 import StringInput from "./StringInput.vue";
 
-type InputType = "INPUT" | "SINGLE-SELECT" | "MULTI-SELECT" | "MULTI-INPUT";
+type InputType =
+  | "INPUT"
+  | "SINGLE-SELECT"
+  | "MULTI-SELECT"
+  | "MULTI-INPUT"
+  | "KEY-VALUE-INPUT";
 
 const props = defineProps<{
   expr: ConditionExpr;
@@ -72,7 +98,7 @@ const operator = computed(() => {
 });
 
 const factor = computed(() => {
-  return props.expr.args[0];
+  return props.expr.args[0] as Factor;
 });
 
 const { factorSupportDropdown } = useExprEditorContext();
@@ -100,6 +126,9 @@ const inputType = computed((): InputType => {
       ? "MULTI-SELECT"
       : "MULTI-INPUT";
   }
+  if (isDictionaryOperator(operator.value)) {
+    return "KEY-VALUE-INPUT";
+  }
   if (isEqualityOperator(operator.value)) {
     if (factorSupportDropdown.value.includes(factor.value)) {
       return "SINGLE-SELECT";
@@ -117,13 +146,13 @@ const setNumberValue = (value: number) => {
   props.expr.args[1] = value;
 };
 
-const getStringValue = () => {
-  const value = props.expr.args[1];
+const getStringValue = (index: number = 1) => {
+  const value = props.expr.args[index];
   if (typeof value !== "string") return "";
   return value;
 };
-const setStringValue = (value: string) => {
-  props.expr.args[1] = value;
+const setStringValue = (value: string, index: number = 1) => {
+  props.expr.args[index] = value;
 };
 
 const getArrayValue = () => {

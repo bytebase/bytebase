@@ -16,6 +16,7 @@ export type NumberFactor = (typeof NumberFactorList)[number];
 export const StringFactorList = [
   // Risk related factors
   "source",
+  "level",
   "environment_id", // using `environment.resource_id`
   "project_id", // using `project.resource_id`
   "database_name",
@@ -45,20 +46,14 @@ export const StringFactorList = [
   // Masking rule
   "classification_level",
   "column_name",
+  "database_labels",
 ] as const;
 export type StringFactor = (typeof StringFactorList)[number];
 
 export const TimestampFactorList = ["request.time"];
 export type TimestampFactor = (typeof TimestampFactorList)[number];
 
-export const HighLevelFactorList = ["level", "source"] as const;
-export type HighLevelFactor = (typeof HighLevelFactorList)[number];
-
-export type Factor =
-  | NumberFactor
-  | StringFactor
-  | TimestampFactor
-  | HighLevelFactor;
+export type Factor = NumberFactor | StringFactor | TimestampFactor;
 
 export const isNumberFactor = (factor: string): factor is NumberFactor => {
   return NumberFactorList.includes(factor as NumberFactor);
@@ -72,10 +67,4 @@ export const isTimestampFactor = (
   factor: string
 ): factor is TimestampFactor => {
   return TimestampFactorList.includes(factor as TimestampFactor);
-};
-
-export const isHighLevelFactor = (
-  factor: string
-): factor is HighLevelFactor => {
-  return HighLevelFactorList.includes(factor as HighLevelFactor);
 };
