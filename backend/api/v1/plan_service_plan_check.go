@@ -107,36 +107,43 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group %q", target)
 	}
-
-	_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
-	}
-
 	if len(databaseGroup.MatchedDatabases) == 0 {
 		return nil, errors.Errorf("no matched databases found in database group %q", target)
 	}
 
+	sheetUIDs, err := getSheetUIDsFromChangeDatabaseConfig(ctx, s, config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheets from change database config")
+	}
+	if len(sheetUIDs) == 0 {
+		return nil, errors.Errorf("change database config must have either sheet or release specified, but got neither")
+	}
+
 	var planCheckRuns []*store.PlanCheckRunMessage
 	for _, matchedDatabase := range databaseGroup.MatchedDatabases {
-		database, err := getDatabaseMessage(ctx, s, matchedDatabase.Name)
-		if err != nil {
-			return nil, err
+		for _, sheetUID := range sheetUIDs {
+			database, err := getDatabaseMessage(ctx, s, matchedDatabase.Name)
+			if err != nil {
+				return nil, err
+			}
+			runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get plan check runs from spec with change database config for database %q", database.DatabaseName)
+			}
+			planCheckRuns = append(planCheckRuns, runs...)
 		}
-		runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get plan check runs from spec with change database config for database %q", database.DatabaseName)
-		}
-		planCheckRuns = append(planCheckRuns, runs...)
 	}
 
 	return planCheckRuns, nil
 }
 
 func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
-	_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
+	sheetUIDs, err := getSheetUIDsFromChangeDatabaseConfig(ctx, s, config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
+		return nil, errors.Wrapf(err, "failed to get sheets from change database config")
+	}
+	if len(sheetUIDs) == 0 {
+		return nil, errors.Errorf("change database config must have either sheet or release specified, but got neither")
 	}
 
 	var checks []*store.PlanCheckRunMessage
@@ -148,11 +155,13 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context,
 		if database.Deleted {
 			return nil, errors.Errorf("database %q was deleted", target)
 		}
-		v, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
-		if err != nil {
-			return nil, err
+		for _, sheetUID := range sheetUIDs {
+			v, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
+			if err != nil {
+				return nil, err
+			}
+			checks = append(checks, v...)
 		}
-		checks = append(checks, v...)
 	}
 	return checks, nil
 }
@@ -319,4 +328,37 @@ func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type)
 		return storepb.PlanCheckRunConfig_DML
 	}
 	return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
+}
+
+func getSheetUIDsFromChangeDatabaseConfig(ctx context.Context, s *store.Store, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]int, error) {
+	var sheetUIDs []int
+	if config.Sheet != "" {
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
+		}
+		sheetUIDs = append(sheetUIDs, sheetUID)
+	} else if config.Release != "" {
+		_, releaseUID, err := common.GetProjectReleaseUID(config.Release)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get release id from release name %q", config.Release)
+		}
+		release, err := s.GetRelease(ctx, releaseUID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get release %q", config.Release)
+		}
+		if release == nil {
+			return nil, errors.Errorf("release %q not found", config.Release)
+		}
+		for _, file := range release.Payload.Files {
+			_, sheetUID, err := common.GetProjectResourceIDSheetUID(file.Sheet)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", file.Sheet)
+			}
+			sheetUIDs = append(sheetUIDs, sheetUID)
+		}
+	} else {
+		return nil, errors.Errorf("change database config must have either sheet or release specified, but got neither")
+	}
+	return sheetUIDs, nil
 }
