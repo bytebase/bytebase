@@ -1,0 +1,311 @@
+- input: |
+    CREATE SCHEMA IF NOT EXISTS myapp;
+
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA myapp;
+
+    CREATE TYPE myapp.user_status AS ENUM ('active', 'inactive', 'suspended', 'deleted');
+
+    CREATE TABLE myapp.users (
+        id UUID DEFAULT myapp.uuid_generate_v4() PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        status myapp.user_status DEFAULT 'active',
+        full_name TEXT,
+        metadata JSONB,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT uk_username UNIQUE (username),
+        CONSTRAINT uk_email UNIQUE (email),
+        CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+    );
+
+    CREATE INDEX idx_users_status ON myapp.users (status);
+    CREATE INDEX idx_users_created_at ON myapp.users (created_at DESC);
+    CREATE INDEX idx_users_full_name_gin ON myapp.users USING gin (to_tsvector('english', full_name));
+    CREATE INDEX idx_users_metadata ON myapp.users USING gin (metadata);
+
+    CREATE FUNCTION myapp.update_user_timestamp()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        NEW.updated_at = CURRENT_TIMESTAMP;
+        RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+  metadata_result: |-
+    {
+      "schemas": [
+        {
+          "name": "myapp",
+          "tables": [
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": {
+                    "DefaultExpression": "myapp.uuid_generate_v4()"
+                  },
+                  "type": "UUID"
+                },
+                {
+                  "name": "username",
+                  "DefaultValue": null,
+                  "type": "VARCHAR(50)"
+                },
+                {
+                  "name": "email",
+                  "DefaultValue": null,
+                  "type": "VARCHAR(255)"
+                },
+                {
+                  "name": "status",
+                  "DefaultValue": {
+                    "DefaultExpression": "'active'"
+                  },
+                  "nullable": true,
+                  "type": "myapp.user_status"
+                },
+                {
+                  "name": "full_name",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "TEXT"
+                },
+                {
+                  "name": "metadata",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "JSONB"
+                },
+                {
+                  "name": "created_at",
+                  "DefaultValue": {
+                    "DefaultExpression": "CURRENT_TIMESTAMP"
+                  },
+                  "nullable": true,
+                  "type": "TIMESTAMP WITH TIME ZONE"
+                },
+                {
+                  "name": "updated_at",
+                  "DefaultValue": {
+                    "DefaultExpression": "CURRENT_TIMESTAMP"
+                  },
+                  "nullable": true,
+                  "type": "TIMESTAMP WITH TIME ZONE"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "users_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "uk_username",
+                  "unique": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "uk_email",
+                  "unique": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "idx_users_status",
+                  "expressions": [
+                    "status"
+                  ],
+                  "descending": [
+                    false
+                  ]
+                },
+                {
+                  "name": "idx_users_created_at",
+                  "expressions": [
+                    "created_at"
+                  ],
+                  "descending": [
+                    true
+                  ]
+                },
+                {
+                  "name": "idx_users_full_name_gin",
+                  "expressions": [
+                    "to_tsvector('english', full_name)"
+                  ],
+                  "descending": [
+                    false
+                  ]
+                },
+                {
+                  "name": "idx_users_metadata",
+                  "expressions": [
+                    "metadata"
+                  ],
+                  "descending": [
+                    false
+                  ]
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "chk_email_format",
+                  "expression": "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "update_user_timestamp",
+              "definition": "CREATE FUNCTION myapp.update_user_timestamp()\nRETURNS TRIGGER AS $$\nBEGIN\n    NEW.updated_at = CURRENT_TIMESTAMP;\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql",
+              "signature": "\"update_user_timestamp\"()"
+            }
+          ],
+          "enum_types": [
+            {
+              "name": "user_status",
+              "values": [
+                "active",
+                "inactive",
+                "suspended",
+                "deleted"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "public"
+        }
+      ],
+      "extensions": [
+        {
+          "name": "uuid-ossp",
+          "schema": "myapp"
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL
+    );
+  metadata_result: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "SERIAL"
+                },
+                {
+                  "name": "name",
+                  "DefaultValue": null,
+                  "type": "TEXT"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "users_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE TABLE test_ordering (
+        a INTEGER,
+        b TEXT,
+        c TIMESTAMP
+    );
+    CREATE INDEX idx_mixed_order ON test_ordering (a ASC, b DESC, c);
+  metadata_result: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "test_ordering",
+              "columns": [
+                {
+                  "name": "a",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "INTEGER"
+                },
+                {
+                  "name": "b",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "TEXT"
+                },
+                {
+                  "name": "c",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "TIMESTAMP"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "idx_mixed_order",
+                  "expressions": [
+                    "a",
+                    "b",
+                    "c"
+                  ],
+                  "descending": [
+                    false,
+                    true,
+                    false
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: ""
+  metadata_result: |-
+    {
+      "schemas": [
+        {
+          "name": "public"
+        }
+      ]
+    }
+- input: "   \n\t  "
+  metadata_result: |-
+    {
+      "schemas": [
+        {
+          "name": "public"
+        }
+      ]
+    }
