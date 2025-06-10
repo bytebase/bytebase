@@ -1,8 +1,11 @@
 <template>
   <div class="flex flex-col space-y-4">
-    <FeatureAttention
+    <BBAttention
       v-if="remainingInstanceCount <= 3"
-      :feature="PlanLimitConfig_Feature.IAM"
+      :type="'warning'"
+      :title="
+        $t('dynamic.subscription.features.bb-feature-instance-count.title')
+      "
       :description="instanceCountAttention"
     />
     <div class="px-4 flex items-center space-x-2">
@@ -70,16 +73,27 @@
 </template>
 
 <script lang="tsx" setup>
+import { PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
+import { computed, onMounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { BBAttention } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
+import { FeatureModal } from "@/components/FeatureGuard";
 import {
   InstanceForm,
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
-import { Drawer, DrawerContent, InstanceOperations, PagedInstanceTable } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  InstanceOperations,
+  PagedInstanceTable,
+} from "@/components/v2";
 import {
   useActuatorV1Store,
   useAppFeature,
@@ -93,11 +107,6 @@ import { engineFromJSON } from "@/types/proto/v1/common";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
-import { PlusIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 
 interface LocalState {
   params: SearchParams;
