@@ -304,7 +304,7 @@
   },
   "banner": {
     "license-expired": "Your license for {plan} has expired on {expireAt}.",
-    "license-expires": "Your license for {plan} will expires in {days} days on {expireAt}.",
+    "license-expires": "Your license for {plan} will expire in {days} days on {expireAt}.",
     "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
     "deploy": "Self Host",
     "cloud": "Cloud",
@@ -1142,7 +1142,7 @@
     },
     "selected-n-instances": "{n} instance selected | {n} instances selected",
     "users": "Users",
-    "successfully-retored-instance": "Successfully retored the instance '{0}'.",
+    "successfully-restored-instance": "Successfully restored the instance '{0}'.",
     "successfully-archived-instance": "Successfully archived the instance '{0}'.",
     "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
     "archive-this-instance": "Archive this instance",
@@ -1305,7 +1305,7 @@
       "description": "Only sync selected databases.",
       "sync-all": "Sync all databases",
       "search-database": "Search database",
-      "add-database": "+ Add database, press enter to sumbit"
+      "add-database": "+ Add database, press enter to submit"
     },
     "advanced-search": {
       "scope": {
@@ -2081,6 +2081,20 @@
     "upgrade-trial": "You can upgrade your free trial to this plan.",
     "contact-to-upgrade": "Contact your Workspace admin to upgrade the plan.",
     "upgrade-now": "Upgrade Now",
+    "usage": {
+      "instance-count": {
+        "title": "Instance count limit",
+        "remaining": "Your total instance quota is {total}, with only {count} instances remaining.",
+        "runoutof": "You have run out of your {total} instance quota.",
+        "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
+      },
+      "user-count": {
+        "title": "User count limit",
+        "remaining": "Your total user quota is {total}, with only {count} users remaining.",
+        "runoutof": "You have run out of your {total} user quota.",
+        "upgrade": "@:{'subscription.upgrade'} to get unlimited user quota."
+      }
+    },
     "instance-assignment": {
       "license": "License",
       "assign-license": "Assign License",
@@ -2151,7 +2165,7 @@
       "no-linked-resources": "No attached resources",
       "change-resources": "Change attached resources",
       "self": "Attach to resources",
-      "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if exists, or fallback to the environment-level policy.",
+      "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if it exists, or fallback to the environment-level policy.",
       "label-environment": "The SQL review policy will affect all databases belonging to the selected environment.",
       "label-project": "The SQL review policy will affect all databases belonging to the selected project. This will supersede the database environment-level policy.",
       "override-warning": "Following resources already bound with other SQL review policies. Click \"{button}\" will override the config."

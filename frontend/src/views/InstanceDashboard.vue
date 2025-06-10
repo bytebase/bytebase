@@ -4,7 +4,7 @@
       v-if="remainingInstanceCount <= 3"
       :type="'warning'"
       :title="
-        $t('dynamic.subscription.features.bb-feature-instance-count.title')
+        $t('subscription.usage.instance-count.title')
       "
       :description="instanceCountAttention"
     />
@@ -219,13 +219,13 @@ const remainingInstanceCount = computed((): number => {
 
 const instanceCountAttention = computed((): string => {
   const upgrade = t(
-    "dynamic.subscription.features.bb-feature-instance-count.upgrade"
+    "subscription.usage.instance-count.upgrade"
   );
   let status = "";
 
   if (remainingInstanceCount.value > 0) {
     status = t(
-      "dynamic.subscription.features.bb-feature-instance-count.remaining",
+      "subscription.usage.instance-count.remaining",
       {
         total: subscriptionStore.instanceCountLimit,
         count: remainingInstanceCount.value,
@@ -233,7 +233,7 @@ const instanceCountAttention = computed((): string => {
     );
   } else {
     status = t(
-      "dynamic.subscription.features.bb-feature-instance-count.runoutof",
+      "subscription.usage.instance-count.runoutof",
       {
         total: subscriptionStore.instanceCountLimit,
       }
