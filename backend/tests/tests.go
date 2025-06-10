@@ -78,6 +78,8 @@ type controller struct {
 	subscriptionServiceClient    v1pb.SubscriptionServiceClient
 	actuatorServiceClient        v1pb.ActuatorServiceClient
 	workspaceServiceClient       v1pb.WorkspaceServiceClient
+	releaseServiceClient         v1pb.ReleaseServiceClient
+	revisionServiceClient        v1pb.RevisionServiceClient
 
 	cookie  string
 	project *v1pb.Project
@@ -257,6 +259,8 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
 	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)
 	ctl.workspaceServiceClient = v1pb.NewWorkspaceServiceClient(ctl.grpcConn)
+	ctl.releaseServiceClient = v1pb.NewReleaseServiceClient(ctl.grpcConn)
+	ctl.revisionServiceClient = v1pb.NewRevisionServiceClient(ctl.grpcConn)
 
 	if err := ctl.waitForHealthz(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to wait for healthz")
