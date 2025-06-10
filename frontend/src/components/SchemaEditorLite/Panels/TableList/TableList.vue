@@ -40,7 +40,7 @@
   </Drawer>
 
   <FeatureModal
-    feature="bb.feature.schema-template"
+    :feature="PlanLimitConfig_Feature.SCHEMA_TEMPLATE"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -57,6 +57,7 @@ import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import { hasFeature } from "@/store";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import type { ComposedDatabase } from "@/types";
 import {
   TableCatalog,
@@ -375,7 +376,7 @@ const handleRestoreTable = (table: TableMetadata) => {
 
 const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   state.showSchemaTemplateDrawer = false;
-  if (!hasFeature("bb.feature.schema-template")) {
+  if (!hasFeature(PlanLimitConfig_Feature.SCHEMA_TEMPLATE)) {
     state.showFeatureModal = true;
     return;
   }

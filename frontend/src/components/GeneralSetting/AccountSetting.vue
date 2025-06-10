@@ -21,7 +21,7 @@
           />
           <div class="font-medium flex items-center gap-x-2">
             {{ $t("settings.general.workspace.disallow-signup.enable") }}
-            <FeatureBadge feature="bb.feature.disallow-signup" />
+            <FeatureBadge :feature="PlanLimitConfig_Feature.DISALLOW_SELF_SERVICE_SIGNUP" />
           </div>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
@@ -47,7 +47,7 @@
             />
             <div class="font-medium flex items-center gap-x-2">
               {{ $t("settings.general.workspace.require-2fa.enable") }}
-              <FeatureBadge feature="bb.feature.2fa" />
+              <FeatureBadge :feature="PlanLimitConfig_Feature.TWO_FA" />
             </div>
           </div>
           <div class="mt-1 mb-3 text-sm text-gray-400">
@@ -86,7 +86,7 @@
                   )
                 }}
               </NTooltip>
-              <FeatureBadge feature="bb.feature.disallow-password-signin" />
+              <FeatureBadge :feature="PlanLimitConfig_Feature.DISALLOW_PASSWORD_SIGNIN" />
             </div>
           </div>
           <div class="mt-1 mb-3 text-sm text-gray-400">
@@ -115,11 +115,6 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual } from "lodash-es";
-import { TriangleAlertIcon } from "lucide-vue-next";
-import { NDivider, NTooltip } from "naive-ui";
-import { storeToRefs } from "pinia";
-import { computed, reactive, ref, watchEffect } from "vue";
 import { Switch } from "@/components/v2";
 import {
   featureToRef,
@@ -127,14 +122,19 @@ import {
   useIdentityProviderStore,
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import type { FeatureType } from "@/types";
 import { type WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { isEqual } from "lodash-es";
+import { TriangleAlertIcon } from "lucide-vue-next";
+import { NDivider, NTooltip } from "naive-ui";
+import { storeToRefs } from "pinia";
+import { computed, reactive, ref, watchEffect } from "vue";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import PasswordRestrictionSetting from "./PasswordRestrictionSetting.vue";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {
-  featureNameForModal?: FeatureType;
+  featureNameForModal?: PlanLimitConfig_Feature;
   disallowSignup: boolean;
   require2fa: boolean;
   disallowPasswordSignin: boolean;
@@ -168,10 +168,10 @@ const state = reactive<LocalState>({
 });
 
 const { isSaaSMode } = storeToRefs(actuatorStore);
-const has2FAFeature = featureToRef("bb.feature.2fa");
-const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
+const has2FAFeature = featureToRef(PlanLimitConfig_Feature.TWO_FA);
+const hasDisallowSignupFeature = featureToRef(PlanLimitConfig_Feature.DISALLOW_SELF_SERVICE_SIGNUP);
 const hasDisallowPasswordSigninFeature = featureToRef(
-  "bb.feature.disallow-password-signin"
+  PlanLimitConfig_Feature.DISALLOW_PASSWORD_SIGNIN
 );
 
 watchEffect(async () => {

@@ -1,6 +1,6 @@
 <template>
   <div class="w-full space-y-4">
-    <FeatureAttention feature="bb.feature.audit-log" />
+    <FeatureAttention :feature="PlanLimitConfig_Feature.AUDIT_LOG" />
     <AuditLogSearch v-model:params="state.params">
       <template #searchbox-suffix>
         <DataExportButton
@@ -58,6 +58,7 @@ import { featureToRef, useAuditLogStore, useUserStore } from "@/store";
 import { type SearchAuditLogsParams } from "@/types";
 import type { AuditLog } from "@/types/proto/v1/audit_log_service";
 import { ExportFormat } from "@/types/proto/v1/common";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import type { SearchParams, SearchScope } from "@/utils";
 
 interface LocalState {
@@ -98,7 +99,7 @@ watch(
 );
 
 const { t } = useI18n();
-const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
+const hasAuditLogFeature = featureToRef(PlanLimitConfig_Feature.AUDIT_LOG);
 const auditLogPagedTable = ref<ComponentExposed<typeof PagedTable<AuditLog>>>();
 const auditLogStore = useAuditLogStore();
 

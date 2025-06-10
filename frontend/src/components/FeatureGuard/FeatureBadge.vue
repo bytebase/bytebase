@@ -60,12 +60,12 @@
 import { NTooltip } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useSubscriptionV1Store } from "@/store";
-import type { FeatureType } from "@/types";
 import { planTypeToString } from "@/types";
 import type {
   Instance,
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import InstanceAssignment from "../InstanceAssignment.vue";
 
@@ -75,7 +75,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    feature: FeatureType;
+    feature: PlanLimitConfig_Feature;
     instance?: Instance | InstanceResource;
     showInstanceMissingLicense?: boolean;
     clickable?: boolean;

@@ -47,7 +47,8 @@ import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { useProjectByName, hasFeature } from "@/store";
-import type { DatabaseResource, FeatureType } from "@/types";
+import type { DatabaseResource } from "@/types";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
 
 interface LocalState {
@@ -60,7 +61,7 @@ const props = withDefaults(
   defineProps<{
     disabled?: boolean;
     projectName: string;
-    requiredFeature: FeatureType;
+    requiredFeature: PlanLimitConfig_Feature;
     includeCloumn: boolean;
     allowSelectAll?: boolean;
     databaseResources?: DatabaseResource[];

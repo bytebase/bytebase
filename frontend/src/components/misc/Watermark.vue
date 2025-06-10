@@ -39,6 +39,7 @@ import { featureToRef, useCurrentUserV1, extractUserId, useActuatorV1Store } fro
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { UNKNOWN_USER_NAME } from "@/types";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 
 const GAP = 320;
 const SIZE = 16;
@@ -49,7 +50,7 @@ const version = computed(() => useActuatorV1Store().version + "-" + useActuatorV
 const setting = computed(() =>
   useSettingV1Store().getSettingByName(Setting_SettingName.WATERMARK)
 );
-const hasWatermarkFeature = featureToRef("bb.feature.watermark");
+const hasWatermarkFeature = featureToRef(PlanLimitConfig_Feature.WATERMARK);
 
 const lines = computed(() => {
   const user = currentUserV1.value;

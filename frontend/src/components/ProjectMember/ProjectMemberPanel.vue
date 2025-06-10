@@ -12,8 +12,6 @@
       </a>
     </div>
 
-    <FeatureAttention feature="bb.feature.rbac" />
-
     <NTabs v-model:value="state.selectedTab" type="bar" animated>
       <template #suffix>
         <div class="flex justify-end gap-x-2">
@@ -92,17 +90,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
-import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";
 import {
-  getMemberBindingsByRole,
   getMemberBindings,
+  getMemberBindingsByRole,
 } from "@/components/Member/utils";
 import {
   extractUserId,
@@ -115,7 +108,11 @@ import {
 import type { ComposedProject } from "@/types";
 import { PRESET_WORKSPACE_ROLES, groupBindingPrefix } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
-import { FeatureAttention } from "../FeatureGuard";
+import { computedAsync } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
+import { NButton, NTabPane, NTabs, useDialog } from "naive-ui";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel/index.vue";

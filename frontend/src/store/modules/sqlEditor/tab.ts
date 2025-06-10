@@ -28,6 +28,7 @@ import {
   extractUserId,
   hasFeature,
 } from "../v1";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { useSQLEditorStore } from "./editor";
 import {
   EXTENDED_TAB_FIELDS,
@@ -205,7 +206,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     if (!currentTab.value) {
       return false;
     }
-    if (!hasFeature("bb.feature.batch-query")) {
+    if (!hasFeature(PlanLimitConfig_Feature.BATCH_QUERY)) {
       return false;
     }
     const { batchQueryContext } = currentTab.value;
@@ -213,7 +214,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       return false;
     }
     const { databaseGroups = [], databases = [] } = batchQueryContext;
-    if (!hasFeature("bb.feature.database-grouping")) {
+    if (!hasFeature(PlanLimitConfig_Feature.DATABASE_GROUPS)) {
       return databases.length > 1;
     }
     return databaseGroups.length > 0 || databases.length > 1;

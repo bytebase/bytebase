@@ -7,7 +7,7 @@
             {{ $t("database.secret.self") }}
           </p>
           <FeatureBadge
-            feature="bb.feature.encrypted-secrets"
+            :feature="PlanLimitConfig_Feature.DATABASE_SECRET_VARIABLES"
             class="ml-2"
             :instance="database.instanceResource"
           />
@@ -33,7 +33,7 @@
       </div>
     </div>
     <FeatureAttention
-      feature="bb.feature.encrypted-secrets"
+      :feature="PlanLimitConfig_Feature.DATABASE_SECRET_VARIABLES"
       :instance="database.instanceResource"
     />
     <div>
@@ -159,7 +159,7 @@
     </Drawer>
   </div>
   <FeatureModal
-    feature="bb.feature.encrypted-secrets"
+    :feature="PlanLimitConfig_Feature.DATABASE_SECRET_VARIABLES"
     :open="showFeatureModal"
     :instance="database.instanceResource"
     @cancel="showFeatureModal = false"
@@ -186,6 +186,7 @@ import {
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import { Secret } from "@/types/proto/v1/database_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 
 export type Detail = {
   secret: Secret;
@@ -260,7 +261,7 @@ const extractSecretName = (name: string) => {
 
 const hasSecretFeature = computed(() => {
   return subscriptionV1Store.hasInstanceFeature(
-    "bb.feature.encrypted-secrets",
+    PlanLimitConfig_Feature.DATABASE_SECRET_VARIABLES,
     props.database.instanceResource
   );
 });

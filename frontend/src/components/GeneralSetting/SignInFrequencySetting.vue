@@ -4,7 +4,7 @@
       <span class="mr-2">{{
         $t("settings.general.workspace.sign-in-frequency.self")
       }}</span>
-      <FeatureBadge feature="bb.feature.secure-token" />
+      <FeatureBadge :feature="PlanLimitConfig_Feature.SIGN_IN_FREQUENCY_CONTROL" />
     </p>
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.sign-in-frequency.description") }}
@@ -42,7 +42,7 @@
   </div>
 
   <FeatureModal
-    feature="bb.feature.secure-token"
+    :feature="PlanLimitConfig_Feature.SIGN_IN_FREQUENCY_CONTROL"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -56,6 +56,7 @@ import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { defaultTokenDurationInHours } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 const getInitialState = (): LocalState => {
@@ -91,7 +92,7 @@ const props = defineProps<{
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
 
-const hasSecureTokenFeature = featureToRef("bb.feature.secure-token");
+const hasSecureTokenFeature = featureToRef(PlanLimitConfig_Feature.SIGN_IN_FREQUENCY_CONTROL);
 
 const allowChangeSetting = computed(() => {
   return hasSecureTokenFeature.value && props.allowEdit;

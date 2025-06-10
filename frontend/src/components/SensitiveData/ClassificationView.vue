@@ -99,6 +99,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
@@ -212,7 +213,7 @@ const allowEdit = computed(() => {
   return hasWorkspacePermissionV2("bb.settings.set");
 });
 
-const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const hasSensitiveDataFeature = featureToRef(PlanLimitConfig_Feature.DATA_MASKING);
 
 const onUpload = () => {
   uploader.value?.click();
