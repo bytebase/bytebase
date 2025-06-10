@@ -98,7 +98,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 	}
 
 	// Validate and sanitize release files.
-	request.Release.Files, err = validateAndSanitizeReleaseFiles(request.Release.Files)
+	request.Release.Files, err = validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
 	}
@@ -188,6 +188,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 					File:   file.Path,
 					Target: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
 				}
+				// statement is guaranteed to be populated by validateAndSanitizeReleaseFiles
 				statement := string(file.Statement)
 				// Check if any syntax error in the statement.
 				if common.EngineSupportSyntaxCheck(engine) {
