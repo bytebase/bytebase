@@ -81,20 +81,6 @@
         "title": "Đặt thời gian lập lịch tác vụ",
         "desc": "Đặt thời gian lập lịch tác vụ cho phép bạn đặt thời gian cụ thể để chạy tác vụ của mình."
       },
-      "bb-feature-instance-count": {
-        "title": "Giới hạn số lượng phiên bản",
-        "desc": "Bạn đã đạt đến giới hạn số lượng phiên bản tối đa. Vui lòng nâng cấp để có thêm hạn ngạch phiên bản.",
-        "remaining": "Tổng hạn ngạch phiên bản của bạn là {total}, chỉ còn lại {count} phiên bản.",
-        "runoutof": "Bạn đã hết hạn ngạch {total} phiên bản của mình.",
-        "upgrade": "@:{'subscription.upgrade'} để có thêm hạn ngạch phiên bản."
-      },
-      "bb-feature-user-count": {
-        "title": "Giới hạn số lượng người dùng",
-        "desc": "Bạn đã đạt đến giới hạn số lượng người dùng tối đa. Vui lòng nâng cấp để có hạn ngạch người dùng không giới hạn.",
-        "remaining": "Tổng hạn ngạch người dùng của bạn là {total}, chỉ còn lại {count} người dùng.",
-        "runoutof": "Bạn đã hết hạn ngạch {total} người dùng của mình.",
-        "upgrade": "@:{'subscription.upgrade'} để có hạn ngạch người dùng không giới hạn."
-      },
       "bb-feature-multi-tenancy": {
         "title": "Chế độ hàng loạt",
         "desc": "Thay đổi hàng loạt một nhóm cơ sở dữ liệu từ các đối tượng thuê hoặc phân vùng khác nhau."

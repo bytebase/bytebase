@@ -81,20 +81,6 @@
         "title": "设定任务执行时间",
         "desc": "「设定任务执行时间」可以将任务设定在特定时间执行"
       },
-      "bb-feature-instance-count": {
-        "title": "实例数量限制",
-        "desc": "您已达最大实例数量限制，请付费升级来获取更多实例额度。",
-        "remaining": "当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。",
-        "runoutof": "已用尽全部 {total} 个实例额度。",
-        "upgrade": "@:{'subscription.upgrade'}来获取更多实例额度。"
-      },
-      "bb-feature-user-count": {
-        "title": "用户数量限制",
-        "desc": "您已达最大用户数量限制，请付费升级来获取无限的用户额度。",
-        "remaining": "当前总用户额度为 {total}，目前仅剩 {count} 个份额可用。",
-        "runoutof": "已用尽全部 {total} 个用户额度。",
-        "upgrade": "@:{'subscription.upgrade'}来获取无限的用户额度。"
-      },
       "bb-feature-multi-tenancy": {
         "title": "批量模式",
         "desc": "批量变更一组属于不同租户或者数据库分库的数据库。"
