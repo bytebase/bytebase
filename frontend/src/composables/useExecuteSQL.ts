@@ -28,6 +28,7 @@ import type {
   QueryDataSourceType,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import {
@@ -216,7 +217,7 @@ const useExecuteSQL = () => {
     ]);
 
     // Check if the user selects multiple databases to query.
-    if (tab.batchQueryContext && hasFeature("bb.feature.batch-query")) {
+    if (tab.batchQueryContext && hasFeature(PlanLimitConfig_Feature.BATCH_QUERY)) {
       const { databases = [], databaseGroups = [] } = tab.batchQueryContext;
       for (const databaseResourceName of databases) {
         if (!isValidDatabaseName(databaseResourceName)) {
@@ -228,7 +229,7 @@ const useExecuteSQL = () => {
         batchQueryDatabaseSet.add(databaseResourceName);
       }
 
-      if (hasFeature("bb.feature.database-grouping")) {
+      if (hasFeature(PlanLimitConfig_Feature.DATABASE_GROUPS)) {
         for (const databaseGroupName of databaseGroups) {
           try {
             const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(

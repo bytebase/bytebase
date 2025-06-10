@@ -180,6 +180,7 @@ export enum PlanLimitConfig_Feature {
   ENTERPRISE_SSO = "ENTERPRISE_SSO",
   TWO_FA = "TWO_FA",
   PASSWORD_RESTRICTIONS = "PASSWORD_RESTRICTIONS",
+  DISALLOW_PASSWORD_SIGNIN = "DISALLOW_PASSWORD_SIGNIN",
   CUSTOM_ROLES = "CUSTOM_ROLES",
   REQUEST_ROLE_WORKFLOW = "REQUEST_ROLE_WORKFLOW",
   DATA_MASKING = "DATA_MASKING",
@@ -358,75 +359,78 @@ export function planLimitConfig_FeatureFromJSON(object: any): PlanLimitConfig_Fe
     case "PASSWORD_RESTRICTIONS":
       return PlanLimitConfig_Feature.PASSWORD_RESTRICTIONS;
     case 49:
+    case "DISALLOW_PASSWORD_SIGNIN":
+      return PlanLimitConfig_Feature.DISALLOW_PASSWORD_SIGNIN;
+    case 50:
     case "CUSTOM_ROLES":
       return PlanLimitConfig_Feature.CUSTOM_ROLES;
-    case 50:
+    case 51:
     case "REQUEST_ROLE_WORKFLOW":
       return PlanLimitConfig_Feature.REQUEST_ROLE_WORKFLOW;
-    case 51:
+    case 52:
     case "DATA_MASKING":
       return PlanLimitConfig_Feature.DATA_MASKING;
-    case 52:
+    case 53:
     case "DATA_CLASSIFICATION":
       return PlanLimitConfig_Feature.DATA_CLASSIFICATION;
-    case 53:
+    case 54:
     case "SCIM":
       return PlanLimitConfig_Feature.SCIM;
-    case 54:
+    case 55:
     case "DIRECTORY_SYNC_ENTRA_ID":
       return PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID;
-    case 55:
+    case 56:
     case "DIRECTORY_SYNC_OKTA":
       return PlanLimitConfig_Feature.DIRECTORY_SYNC_OKTA;
-    case 56:
+    case 57:
     case "SIGN_IN_FREQUENCY_CONTROL":
       return PlanLimitConfig_Feature.SIGN_IN_FREQUENCY_CONTROL;
-    case 57:
+    case 58:
     case "EXTERNAL_SECRET_MANAGER":
       return PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER;
-    case 58:
+    case 59:
     case "USER_EMAIL_DOMAIN_RESTRICTION":
       return PlanLimitConfig_Feature.USER_EMAIL_DOMAIN_RESTRICTION;
-    case 59:
+    case 60:
     case "ENVIRONMENT_MANAGEMENT":
       return PlanLimitConfig_Feature.ENVIRONMENT_MANAGEMENT;
-    case 60:
+    case 61:
     case "IM_NOTIFICATIONS":
       return PlanLimitConfig_Feature.IM_NOTIFICATIONS;
-    case 61:
+    case 62:
     case "TERRAFORM_PROVIDER":
       return PlanLimitConfig_Feature.TERRAFORM_PROVIDER;
-    case 62:
+    case 63:
     case "DATABASE_GROUPS":
       return PlanLimitConfig_Feature.DATABASE_GROUPS;
-    case 63:
+    case 64:
     case "ENVIRONMENT_TIERS":
       return PlanLimitConfig_Feature.ENVIRONMENT_TIERS;
-    case 64:
+    case 65:
     case "DASHBOARD_ANNOUNCEMENT":
       return PlanLimitConfig_Feature.DASHBOARD_ANNOUNCEMENT;
-    case 65:
+    case 66:
     case "API_INTEGRATION_GUIDANCE":
       return PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE;
-    case 66:
+    case 67:
     case "CUSTOM_LOGO":
       return PlanLimitConfig_Feature.CUSTOM_LOGO;
-    case 67:
+    case 68:
     case "WATERMARK":
       return PlanLimitConfig_Feature.WATERMARK;
-    case 68:
+    case 69:
     case "ROADMAP_PRIORITIZATION":
       return PlanLimitConfig_Feature.ROADMAP_PRIORITIZATION;
-    case 69:
+    case 70:
     case "CUSTOM_MSA":
       return PlanLimitConfig_Feature.CUSTOM_MSA;
-    case 70:
+    case 71:
     case "COMMUNITY_SUPPORT":
       return PlanLimitConfig_Feature.COMMUNITY_SUPPORT;
-    case 71:
+    case 72:
     case "EMAIL_SUPPORT":
       return PlanLimitConfig_Feature.EMAIL_SUPPORT;
-    case 72:
+    case 73:
     case "DEDICATED_SUPPORT_WITH_SLA":
       return PlanLimitConfig_Feature.DEDICATED_SUPPORT_WITH_SLA;
     case -1:
@@ -536,6 +540,8 @@ export function planLimitConfig_FeatureToJSON(object: PlanLimitConfig_Feature): 
       return "TWO_FA";
     case PlanLimitConfig_Feature.PASSWORD_RESTRICTIONS:
       return "PASSWORD_RESTRICTIONS";
+    case PlanLimitConfig_Feature.DISALLOW_PASSWORD_SIGNIN:
+      return "DISALLOW_PASSWORD_SIGNIN";
     case PlanLimitConfig_Feature.CUSTOM_ROLES:
       return "CUSTOM_ROLES";
     case PlanLimitConfig_Feature.REQUEST_ROLE_WORKFLOW:
@@ -690,54 +696,56 @@ export function planLimitConfig_FeatureToNumber(object: PlanLimitConfig_Feature)
       return 47;
     case PlanLimitConfig_Feature.PASSWORD_RESTRICTIONS:
       return 48;
-    case PlanLimitConfig_Feature.CUSTOM_ROLES:
+    case PlanLimitConfig_Feature.DISALLOW_PASSWORD_SIGNIN:
       return 49;
-    case PlanLimitConfig_Feature.REQUEST_ROLE_WORKFLOW:
+    case PlanLimitConfig_Feature.CUSTOM_ROLES:
       return 50;
-    case PlanLimitConfig_Feature.DATA_MASKING:
+    case PlanLimitConfig_Feature.REQUEST_ROLE_WORKFLOW:
       return 51;
-    case PlanLimitConfig_Feature.DATA_CLASSIFICATION:
+    case PlanLimitConfig_Feature.DATA_MASKING:
       return 52;
-    case PlanLimitConfig_Feature.SCIM:
+    case PlanLimitConfig_Feature.DATA_CLASSIFICATION:
       return 53;
-    case PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID:
+    case PlanLimitConfig_Feature.SCIM:
       return 54;
-    case PlanLimitConfig_Feature.DIRECTORY_SYNC_OKTA:
+    case PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID:
       return 55;
-    case PlanLimitConfig_Feature.SIGN_IN_FREQUENCY_CONTROL:
+    case PlanLimitConfig_Feature.DIRECTORY_SYNC_OKTA:
       return 56;
-    case PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER:
+    case PlanLimitConfig_Feature.SIGN_IN_FREQUENCY_CONTROL:
       return 57;
-    case PlanLimitConfig_Feature.USER_EMAIL_DOMAIN_RESTRICTION:
+    case PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER:
       return 58;
-    case PlanLimitConfig_Feature.ENVIRONMENT_MANAGEMENT:
+    case PlanLimitConfig_Feature.USER_EMAIL_DOMAIN_RESTRICTION:
       return 59;
-    case PlanLimitConfig_Feature.IM_NOTIFICATIONS:
+    case PlanLimitConfig_Feature.ENVIRONMENT_MANAGEMENT:
       return 60;
-    case PlanLimitConfig_Feature.TERRAFORM_PROVIDER:
+    case PlanLimitConfig_Feature.IM_NOTIFICATIONS:
       return 61;
-    case PlanLimitConfig_Feature.DATABASE_GROUPS:
+    case PlanLimitConfig_Feature.TERRAFORM_PROVIDER:
       return 62;
-    case PlanLimitConfig_Feature.ENVIRONMENT_TIERS:
+    case PlanLimitConfig_Feature.DATABASE_GROUPS:
       return 63;
-    case PlanLimitConfig_Feature.DASHBOARD_ANNOUNCEMENT:
+    case PlanLimitConfig_Feature.ENVIRONMENT_TIERS:
       return 64;
-    case PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE:
+    case PlanLimitConfig_Feature.DASHBOARD_ANNOUNCEMENT:
       return 65;
-    case PlanLimitConfig_Feature.CUSTOM_LOGO:
+    case PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE:
       return 66;
-    case PlanLimitConfig_Feature.WATERMARK:
+    case PlanLimitConfig_Feature.CUSTOM_LOGO:
       return 67;
-    case PlanLimitConfig_Feature.ROADMAP_PRIORITIZATION:
+    case PlanLimitConfig_Feature.WATERMARK:
       return 68;
-    case PlanLimitConfig_Feature.CUSTOM_MSA:
+    case PlanLimitConfig_Feature.ROADMAP_PRIORITIZATION:
       return 69;
-    case PlanLimitConfig_Feature.COMMUNITY_SUPPORT:
+    case PlanLimitConfig_Feature.CUSTOM_MSA:
       return 70;
-    case PlanLimitConfig_Feature.EMAIL_SUPPORT:
+    case PlanLimitConfig_Feature.COMMUNITY_SUPPORT:
       return 71;
-    case PlanLimitConfig_Feature.DEDICATED_SUPPORT_WITH_SLA:
+    case PlanLimitConfig_Feature.EMAIL_SUPPORT:
       return 72;
+    case PlanLimitConfig_Feature.DEDICATED_SUPPORT_WITH_SLA:
+      return 73;
     case PlanLimitConfig_Feature.UNRECOGNIZED:
     default:
       return -1;

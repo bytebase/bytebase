@@ -44,6 +44,7 @@ import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import { SemanticTypeSetting_SemanticType, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
 import type { SemanticItem } from "./components/SemanticTypesTable.vue";
@@ -66,7 +67,7 @@ const settingStore = useSettingV1Store();
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
-const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const hasSensitiveDataFeature = featureToRef(PlanLimitConfig_Feature.DATA_MASKING);
 
 const semanticTypeSettingValue = computed(() => {
   const semanticTypeSetting = settingStore.getSettingByName(

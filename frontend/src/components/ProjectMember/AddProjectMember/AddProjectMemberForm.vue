@@ -58,7 +58,7 @@
       <QuerierDatabaseResourceForm
         v-model:database-resources="state.databaseResources"
         :project-name="projectName"
-        :required-feature="'bb.feature.access-control'"
+        :required-feature="PlanLimitConfig_Feature.IAM"
         :include-cloumn="false"
       />
     </div>
@@ -88,9 +88,6 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import { isUndefined } from "lodash-es";
-import { NInput, NButton } from "naive-ui";
-import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
@@ -99,8 +96,12 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import { RoleSelect } from "@/components/v2/Select";
 import { PresetRoleType, type DatabaseResource } from "@/types";
 import type { Binding } from "@/types/proto/v1/iam_policy";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { checkRoleContainsAnyPermission } from "@/utils";
 import { buildConditionExpr } from "@/utils/issue/cel";
+import { isUndefined } from "lodash-es";
+import { NButton, NInput } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 
 const props = withDefaults(
   defineProps<{

@@ -4,8 +4,8 @@ import { useDialog } from "naive-ui";
 import type { InjectionKey, Ref } from "vue";
 import { provide, inject, computed, ref, watch } from "vue";
 import type { ResourceIdField } from "@/components/v2";
-import type { FeatureType } from "@/types";
 import { PolicyType, type Policy } from "@/types/proto/v1/org_policy_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import type { Environment } from "@/types/v1/environment";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -49,7 +49,7 @@ export const provideEnvironmentFormContext = (baseContext: {
     rolloutPolicy: cloneDeep(rolloutPolicy.value),
     policyChanged: false,
   });
-  const missingFeature = ref<FeatureType | undefined>(undefined);
+  const missingFeature = ref<PlanLimitConfig_Feature | undefined>(undefined);
   const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
   const valueChanged = (

@@ -154,7 +154,7 @@
             class="text-lg font-medium flex flex-row justify-start items-center"
           >
             {{ $t("two-factor.self") }}
-            <FeatureBadge :feature="'bb.feature.2fa'" class="ml-2" />
+            <FeatureBadge :feature="PlanLimitConfig_Feature.TWO_FA" class="ml-2" />
           </span>
           <div class="space-x-2">
             <NButton v-if="user.email === currentUser.email" @click="enable2FA">
@@ -203,7 +203,7 @@
   </main>
 
   <FeatureModal
-    feature="bb.feature.2fa"
+    :feature="PlanLimitConfig_Feature.TWO_FA"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -221,13 +221,6 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync, useTitle } from "@vueuse/core";
-import { cloneDeep, head, isEqual } from "lodash-es";
-import type { DropdownOption } from "naive-ui";
-import { NButton, NInput, NDropdown, NTag } from "naive-ui";
-import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import EmailInput from "@/components/EmailInput.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
@@ -245,23 +238,31 @@ import {
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
+  usePermissionStore,
   useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
-  usePermissionStore,
 } from "@/store";
 import {
-  unknownUser,
-  SYSTEM_BOT_USER_NAME,
   ALL_USERS_USER_EMAIL,
+  SYSTEM_BOT_USER_NAME,
+  unknownUser,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import {
   UpdateUserRequest,
   UserType,
   type User,
 } from "@/types/proto/v1/user_service";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
+import { computedAsync, useTitle } from "@vueuse/core";
+import { cloneDeep, head, isEqual } from "lodash-es";
+import type { DropdownOption } from "naive-ui";
+import { NButton, NDropdown, NInput, NTag } from "naive-ui";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
 interface LocalState {
   editing: boolean;
@@ -324,8 +325,8 @@ onUnmounted(() => {
   document.removeEventListener("keydown", keyboardHandler);
 });
 
-const hasRBACFeature = featureToRef("bb.feature.rbac");
-const has2FAFeature = featureToRef("bb.feature.2fa");
+const hasRBACFeature = featureToRef(PlanLimitConfig_Feature.IAM);
+const has2FAFeature = featureToRef(PlanLimitConfig_Feature.TWO_FA);
 
 const isMFAEnabled = computed(() => {
   return user.value.mfaEnabled;

@@ -13,7 +13,7 @@
     @update:value="onValueUpdate"
   />
   <FeatureModal
-    feature="bb.feature.custom-role"
+    :feature="PlanLimitConfig_Feature.CUSTOM_ROLES"
     :open="showFeatureModal"
     @cancel="showFeatureModal = false"
   />
@@ -27,6 +27,7 @@ import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { t } from "@/plugins/i18n";
 import { useAppFeature, useRoleStore, featureToRef } from "@/store";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import {
   PRESET_PROJECT_ROLES,
   PRESET_ROLES,
@@ -66,7 +67,7 @@ const emit = defineEmits<{
 const roleStore = useRoleStore();
 const hideProjectRoles = useAppFeature("bb.feature.members.hide-project-roles");
 const showFeatureModal = ref(false);
-const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
+const hasCustomRoleFeature = featureToRef(PlanLimitConfig_Feature.CUSTOM_ROLES);
 
 const filterRole = (role: string) => {
   if (!props.supportRoles || props.supportRoles.length === 0) {
@@ -132,7 +133,7 @@ const renderLabel = (option: SelectOption) => {
   }
 
   const icon = h(FeatureBadge, {
-    feature: "bb.feature.custom-role",
+    feature: PlanLimitConfig_Feature.CUSTOM_ROLES,
     clickable: false,
   });
   return h(

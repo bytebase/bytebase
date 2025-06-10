@@ -5,7 +5,7 @@
         <h1 class="text-2xl font-bold">
           {{ title }}
         </h1>
-        <FeatureBadge feature="bb.feature.branding" />
+        <FeatureBadge :feature="PlanLimitConfig_Feature.CUSTOM_LOGO" />
       </div>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
         {{ $t("settings.general.workspace.only-admin-can-edit") }}
@@ -55,7 +55,7 @@
   </div>
 
   <FeatureModal
-    feature="bb.feature.branding"
+    :feature="PlanLimitConfig_Feature.CUSTOM_LOGO"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -68,6 +68,7 @@ import { featureToRef } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import SingleFileSelector from "../SingleFileSelector.vue";
 
@@ -106,7 +107,7 @@ const allowSave = computed((): boolean => {
   return state.logoUrl !== settingV1Store.brandingLogo;
 });
 
-const hasBrandingFeature = featureToRef("bb.feature.branding");
+const hasBrandingFeature = featureToRef(PlanLimitConfig_Feature.CUSTOM_LOGO);
 
 const doUpdate = async (content: string) => {
   if (state.loading) {

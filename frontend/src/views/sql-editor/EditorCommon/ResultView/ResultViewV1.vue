@@ -144,6 +144,7 @@ import type {
   DatabaseResource,
 } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";
@@ -212,7 +213,7 @@ const missingResource = computed((): DatabaseResource | undefined => {
 const showRequestQueryButton = computed(() => {
   // Developer self-helped request query is guarded by "Access Control" feature
   return (
-    hasFeature("bb.feature.access-control") &&
+    hasFeature(PlanLimitConfig_Feature.IAM) &&
     !disallowRequestQuery.value &&
     missingResource.value
   );

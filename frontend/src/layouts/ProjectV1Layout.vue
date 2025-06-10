@@ -59,12 +59,6 @@
 </template>
 
 <script lang="ts" setup>
-import { UsersIcon } from "lucide-vue-next";
-import { NButton, NEllipsis, NSpin } from "naive-ui";
-import type { ClientError } from "nice-grpc-web";
-import { computed, watchEffect, h, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
@@ -72,28 +66,33 @@ import IAMRemindModal from "@/components/IAMRemindModal.vue";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import {
-  PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_MEMBERS,
 } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import {
-  hasFeature,
-  useAppFeature,
-  useProjectV1Store,
-  useProjectByName,
   pushNotification,
+  useAppFeature,
   usePermissionStore,
+  useProjectByName,
+  useProjectV1Store
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
-  UNKNOWN_PROJECT_NAME,
   DEFAULT_PROJECT_NAME,
   PresetRoleType,
+  UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
+import { UsersIcon } from "lucide-vue-next";
+import { NButton, NEllipsis, NSpin } from "naive-ui";
+import type { ClientError } from "nice-grpc-web";
+import { computed, h, reactive, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { useBodyLayoutContext } from "./common";
 
 interface LocalState {
@@ -176,10 +175,6 @@ const hasPermission = computed(() => {
   );
 });
 
-const hasDBAWorkflowFeature = computed(() => {
-  return hasFeature("bb.feature.dba-workflow");
-});
-
 const allowEdit = computed(() => {
   if (project.value.state === State.DELETED) {
     return false;
@@ -202,8 +197,7 @@ const quickActionListForDatabase = computed(() => {
 
   if (
     !isProjectOwner.value &&
-    hasProjectPermissionV2(project.value, "bb.issues.create") &&
-    hasDBAWorkflowFeature.value
+    hasProjectPermissionV2(project.value, "bb.issues.create")
   ) {
     actions.push({
       title: t("issue.title.request-role"),

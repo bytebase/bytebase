@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4 h-full flex flex-col">
-    <FeatureAttention feature="bb.feature.sql-review" />
+    <FeatureAttention :feature="PlanLimitConfig_Feature.PRE_DEPLOYMENT_SQL_REVIEW" />
     <SQLReviewCreation
       class="flex-1"
       :selected-rule-list="[]"
@@ -14,6 +14,7 @@ import { computed, watchEffect } from "vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { SQLReviewCreation } from "@/components/SQLReview";
 import { useSQLReviewStore } from "@/store";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 
 const attachedResources = computed(() => {
   const url = new URL(window.location.href);
