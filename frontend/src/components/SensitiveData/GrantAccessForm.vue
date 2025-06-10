@@ -12,7 +12,7 @@
           <DatabaseResourceForm
             v-model:database-resources="state.databaseResources"
             :project-name="projectName"
-            :required-feature="PlanLimitConfig_Feature.DATA_MASKING"
+            :required-feature="PlanFeature.FEATURE_DATA_MASKING"
             :include-cloumn="true"
           />
         </div>
@@ -119,7 +119,7 @@ import {
   MaskingExceptionPolicy_MaskingException_Action,
   maskingExceptionPolicy_MaskingException_ActionToJSON,
 } from "@/types/proto/v1/org_policy_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { SensitiveColumn } from "./types";
 import {
   getExpressionsForDatabaseResource,

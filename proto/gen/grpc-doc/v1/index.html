@@ -1005,7 +1005,7 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.PlanLimitConfig.Feature"><span class="badge">E</span>PlanLimitConfig.Feature</a>
+                  <a href="#bytebase.v1.PlanFeature"><span class="badge">E</span>PlanFeature</a>
                 </li>
               
                 <li>
@@ -12001,7 +12001,7 @@ The access is based on approval flow.</p></td>
               
                 <tr>
                   <td>features</td>
-                  <td><a href="#bytebase.v1.PlanLimitConfig.Feature">PlanLimitConfig.Feature</a></td>
+                  <td><a href="#bytebase.v1.PlanFeature">PlanFeature</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -12112,8 +12112,8 @@ The access is based on approval flow.</p></td>
       
 
       
-        <h3 id="bytebase.v1.PlanLimitConfig.Feature">PlanLimitConfig.Feature</h3>
-        <p>Feature represents the available features in Bytebase</p>
+        <h3 id="bytebase.v1.PlanFeature">PlanFeature</h3>
+        <p>PlanFeature represents the available features in Bytebase</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -12127,440 +12127,434 @@ The access is based on approval flow.</p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_CHANGE</td>
+                <td>FEATURE_DATABASE_CHANGE</td>
                 <td>1</td>
                 <td><p>Database Change Management</p></td>
               </tr>
             
               <tr>
-                <td>GIT_BASED_SCHEMA_VERSION_CONTROL</td>
+                <td>FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DECLARATIVE_SCHEMA_MIGRATION</td>
+                <td>FEATURE_DECLARATIVE_SCHEMA_MIGRATION</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>COMPARE_AND_SYNC_SCHEMA</td>
+                <td>FEATURE_COMPARE_AND_SYNC_SCHEMA</td>
                 <td>4</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ONLINE_SCHEMA_CHANGE</td>
+                <td>FEATURE_ONLINE_SCHEMA_CHANGE</td>
                 <td>5</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>PRE_DEPLOYMENT_SQL_REVIEW</td>
+                <td>FEATURE_PRE_DEPLOYMENT_SQL_REVIEW</td>
                 <td>6</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES</td>
+                <td>FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES</td>
                 <td>7</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ONE_CLICK_DATA_ROLLBACK</td>
+                <td>FEATURE_ONE_CLICK_DATA_ROLLBACK</td>
                 <td>8</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>MULTI_DATABASE_BATCH_CHANGES</td>
+                <td>FEATURE_MULTI_DATABASE_BATCH_CHANGES</td>
                 <td>9</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>PROGRESSIVE_ENVIRONMENT_DEPLOYMENT</td>
+                <td>FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT</td>
                 <td>10</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SCHEDULED_ROLLOUT_TIME</td>
+                <td>FEATURE_SCHEDULED_ROLLOUT_TIME</td>
                 <td>11</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_CHANGELOG</td>
+                <td>FEATURE_DATABASE_CHANGELOG</td>
                 <td>12</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SCHEMA_DRIFT_DETECTION</td>
+                <td>FEATURE_SCHEMA_DRIFT_DETECTION</td>
                 <td>13</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>CHANGELIST</td>
+                <td>FEATURE_CHANGELIST</td>
                 <td>14</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SCHEMA_TEMPLATE</td>
+                <td>FEATURE_SCHEMA_TEMPLATE</td>
                 <td>15</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ROLLOUT_POLICY</td>
+                <td>FEATURE_ROLLOUT_POLICY</td>
                 <td>16</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>WEB_BASED_SQL_EDITOR</td>
+                <td>FEATURE_WEB_BASED_SQL_EDITOR</td>
                 <td>17</td>
                 <td><p>SQL Editor &amp; Development</p></td>
               </tr>
             
               <tr>
-                <td>SQL_EDITOR_ADMIN_MODE</td>
+                <td>FEATURE_SQL_EDITOR_ADMIN_MODE</td>
                 <td>18</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>NATURAL_LANGUAGE_TO_SQL</td>
+                <td>FEATURE_NATURAL_LANGUAGE_TO_SQL</td>
                 <td>19</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>AI_QUERY_EXPLANATION</td>
+                <td>FEATURE_AI_QUERY_EXPLANATION</td>
                 <td>20</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>AI_QUERY_SUGGESTIONS</td>
+                <td>FEATURE_AI_QUERY_SUGGESTIONS</td>
                 <td>21</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>AUTO_COMPLETE</td>
+                <td>FEATURE_AUTO_COMPLETE</td>
                 <td>22</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SCHEMA_DIAGRAM</td>
+                <td>FEATURE_SCHEMA_DIAGRAM</td>
                 <td>23</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SCHEMA_EDITOR</td>
+                <td>FEATURE_SCHEMA_EDITOR</td>
                 <td>24</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DATA_EXPORT</td>
+                <td>FEATURE_DATA_EXPORT</td>
                 <td>25</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>QUERY_HISTORY</td>
+                <td>FEATURE_QUERY_HISTORY</td>
                 <td>26</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SAVED_AND_SHARED_SQL_SCRIPTS</td>
+                <td>FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS</td>
                 <td>27</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SQL_EDITOR_DDL_DML_RESTRICTION</td>
+                <td>FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION</td>
                 <td>28</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>BATCH_QUERY</td>
+                <td>FEATURE_BATCH_QUERY</td>
                 <td>29</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>INSTANCE_READ_ONLY_CONNECTION</td>
+                <td>FEATURE_INSTANCE_READ_ONLY_CONNECTION</td>
                 <td>30</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>RESTRICT_COPYING_DATA</td>
+                <td>FEATURE_RESTRICT_COPYING_DATA</td>
                 <td>31</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>IAM</td>
+                <td>FEATURE_IAM</td>
                 <td>32</td>
                 <td><p>Security &amp; Compliance</p></td>
               </tr>
             
               <tr>
-                <td>INSTANCE_SSL_CONNECTION</td>
+                <td>FEATURE_INSTANCE_SSL_CONNECTION</td>
                 <td>33</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>INSTANCE_CONNECTION_OVER_SSH_TUNNEL</td>
+                <td>FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL</td>
                 <td>34</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>INSTANCE_CONNECTION_IAM_AUTHENTICATION</td>
+                <td>FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION</td>
                 <td>35</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>GOOGLE_AND_GITHUB_SSO</td>
+                <td>FEATURE_GOOGLE_AND_GITHUB_SSO</td>
                 <td>36</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>USER_GROUPS</td>
+                <td>FEATURE_USER_GROUPS</td>
                 <td>37</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DISALLOW_SELF_SERVICE_SIGNUP</td>
+                <td>FEATURE_DISALLOW_SELF_SERVICE_SIGNUP</td>
                 <td>38</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_SECRET_VARIABLES</td>
+                <td>FEATURE_DATABASE_SECRET_VARIABLES</td>
                 <td>39</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>QUERY_DATASOURCE_RESTRICTION</td>
+                <td>FEATURE_QUERY_DATASOURCE_RESTRICTION</td>
                 <td>40</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>CUSTOM_INSTANCE_SYNC_TIME</td>
+                <td>FEATURE_CUSTOM_INSTANCE_SYNC_TIME</td>
                 <td>41</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>CUSTOM_INSTANCE_CONNECTION_LIMIT</td>
+                <td>FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT</td>
                 <td>42</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>RISK_ASSESSMENT</td>
+                <td>FEATURE_RISK_ASSESSMENT</td>
                 <td>43</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>APPROVAL_WORKFLOW</td>
+                <td>FEATURE_APPROVAL_WORKFLOW</td>
                 <td>44</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>AUDIT_LOG</td>
+                <td>FEATURE_AUDIT_LOG</td>
                 <td>45</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ENTERPRISE_SSO</td>
+                <td>FEATURE_ENTERPRISE_SSO</td>
                 <td>46</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>TWO_FA</td>
+                <td>FEATURE_TWO_FA</td>
                 <td>47</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>PASSWORD_RESTRICTIONS</td>
+                <td>FEATURE_PASSWORD_RESTRICTIONS</td>
                 <td>48</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DISALLOW_PASSWORD_SIGNIN</td>
+                <td>FEATURE_DISALLOW_PASSWORD_SIGNIN</td>
                 <td>49</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>CUSTOM_ROLES</td>
+                <td>FEATURE_CUSTOM_ROLES</td>
                 <td>50</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>REQUEST_ROLE_WORKFLOW</td>
+                <td>FEATURE_REQUEST_ROLE_WORKFLOW</td>
                 <td>51</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DATA_MASKING</td>
+                <td>FEATURE_DATA_MASKING</td>
                 <td>52</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DATA_CLASSIFICATION</td>
+                <td>FEATURE_DATA_CLASSIFICATION</td>
                 <td>53</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SCIM</td>
+                <td>FEATURE_SCIM</td>
                 <td>54</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DIRECTORY_SYNC_ENTRA_ID</td>
+                <td>FEATURE_DIRECTORY_SYNC</td>
                 <td>55</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DIRECTORY_SYNC_OKTA</td>
+                <td>FEATURE_SIGN_IN_FREQUENCY_CONTROL</td>
                 <td>56</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SIGN_IN_FREQUENCY_CONTROL</td>
+                <td>FEATURE_EXTERNAL_SECRET_MANAGER</td>
                 <td>57</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>EXTERNAL_SECRET_MANAGER</td>
+                <td>FEATURE_USER_EMAIL_DOMAIN_RESTRICTION</td>
                 <td>58</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>USER_EMAIL_DOMAIN_RESTRICTION</td>
+                <td>FEATURE_ENVIRONMENT_MANAGEMENT</td>
                 <td>59</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ENVIRONMENT_MANAGEMENT</td>
-                <td>60</td>
                 <td><p>Administration &amp; Support</p></td>
               </tr>
             
               <tr>
-                <td>IM_NOTIFICATIONS</td>
+                <td>FEATURE_IM_NOTIFICATIONS</td>
+                <td>60</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FEATURE_TERRAFORM_PROVIDER</td>
                 <td>61</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>TERRAFORM_PROVIDER</td>
+                <td>FEATURE_DATABASE_GROUPS</td>
                 <td>62</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_GROUPS</td>
+                <td>FEATURE_ENVIRONMENT_TIERS</td>
                 <td>63</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ENVIRONMENT_TIERS</td>
+                <td>FEATURE_DASHBOARD_ANNOUNCEMENT</td>
                 <td>64</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DASHBOARD_ANNOUNCEMENT</td>
+                <td>FEATURE_API_INTEGRATION_GUIDANCE</td>
                 <td>65</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>API_INTEGRATION_GUIDANCE</td>
+                <td>FEATURE_CUSTOM_LOGO</td>
                 <td>66</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>CUSTOM_LOGO</td>
+                <td>FEATURE_WATERMARK</td>
                 <td>67</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>WATERMARK</td>
+                <td>FEATURE_ROADMAP_PRIORITIZATION</td>
                 <td>68</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ROADMAP_PRIORITIZATION</td>
+                <td>FEATURE_CUSTOM_MSA</td>
                 <td>69</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>CUSTOM_MSA</td>
+                <td>FEATURE_COMMUNITY_SUPPORT</td>
                 <td>70</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>COMMUNITY_SUPPORT</td>
+                <td>FEATURE_EMAIL_SUPPORT</td>
                 <td>71</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>EMAIL_SUPPORT</td>
+                <td>FEATURE_DEDICATED_SUPPORT_WITH_SLA</td>
                 <td>72</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DEDICATED_SUPPORT_WITH_SLA</td>
-                <td>73</td>
                 <td><p></p></td>
               </tr>
             

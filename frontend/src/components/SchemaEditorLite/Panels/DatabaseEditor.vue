@@ -35,7 +35,7 @@
               @click="state.showSchemaTemplateDrawer = true"
             >
               <template #icon>
-                <FeatureBadge :feature="PlanLimitConfig_Feature.SCHEMA_TEMPLATE" />
+                <FeatureBadge :feature="PlanFeature.FEATURE_SCHEMA_TEMPLATE" />
                 <PlusIcon class="w-4 h-4" />
               </template>
               {{ $t("schema-editor.actions.add-from-template") }}
@@ -142,7 +142,7 @@
   </Drawer>
 
   <FeatureModal
-    :feature="PlanLimitConfig_Feature.SCHEMA_TEMPLATE"
+    :feature="PlanFeature.FEATURE_SCHEMA_TEMPLATE"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -159,7 +159,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -341,7 +341,7 @@ const tryEditColumn = async (
 
 const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   state.showSchemaTemplateDrawer = false;
-  if (!hasFeature(PlanLimitConfig_Feature.SCHEMA_TEMPLATE)) {
+  if (!hasFeature(PlanFeature.FEATURE_SCHEMA_TEMPLATE)) {
     state.showFeatureModal = true;
     return;
   }

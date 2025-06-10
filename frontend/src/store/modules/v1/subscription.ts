@@ -13,7 +13,7 @@ import type {
 } from "@/types/proto/v1/instance_service";
 import type { Subscription } from "@/types/proto/v1/subscription_service";
 import {
-  PlanLimitConfig_Feature,
+  PlanFeature,
   PlanType,
   planTypeFromJSON,
   planTypeToNumber,
@@ -176,14 +176,14 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     setSubscription(subscription: Subscription) {
       this.subscription = subscription;
     },
-    hasFeature(feature: PlanLimitConfig_Feature) {
+    hasFeature(feature: PlanFeature) {
       if (this.isExpired) {
         return false;
       }
       return checkFeature(this.currentPlan, feature);
     },
     hasInstanceFeature(
-      feature: PlanLimitConfig_Feature,
+      feature: PlanFeature,
       instance: Instance | InstanceResource | undefined = undefined
     ) {
       // For FREE plan, don't check instance activation
@@ -199,7 +199,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       return checkInstanceFeature(this.currentPlan, feature, instance.activation);
     },
     instanceMissingLicense(
-      feature: PlanLimitConfig_Feature,
+      feature: PlanFeature,
       instance: Instance | InstanceResource | undefined = undefined
     ) {
       // Only relevant for instance-limited features
@@ -215,7 +215,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     currentPlanGTE(plan: PlanType): boolean {
       return planTypeToNumber(this.currentPlan) >= planTypeToNumber(plan);
     },
-    getMinimumRequiredPlan(feature: PlanLimitConfig_Feature): PlanType {
+    getMinimumRequiredPlan(feature: PlanFeature): PlanType {
       return getMinimumRequiredPlan(feature);
     },
     async fetchSubscription() {
@@ -241,13 +241,13 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
   },
 });
 
-export const hasFeature = (feature: PlanLimitConfig_Feature) => {
+export const hasFeature = (feature: PlanFeature) => {
   const store = useSubscriptionV1Store();
   return store.hasFeature(feature);
 };
 
 export const featureToRef = (
-  feature: PlanLimitConfig_Feature,
+  feature: PlanFeature,
   instance: Instance | InstanceResource | undefined = undefined
 ): Ref<boolean> => {
   const store = useSubscriptionV1Store();

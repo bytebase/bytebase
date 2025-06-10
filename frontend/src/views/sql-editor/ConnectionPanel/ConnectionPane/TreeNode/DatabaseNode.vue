@@ -41,7 +41,7 @@ import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
 
@@ -79,7 +79,7 @@ const canQuery = computed(() => isDatabaseV1Queryable(database.value));
 const showRequestQueryButton = computed(() => {
   // Developer self-helped request query is guarded by "Access Control" feature
   return (
-    hasFeature(PlanLimitConfig_Feature.IAM) &&
+    hasFeature(PlanFeature.FEATURE_IAM) &&
     !disallowRequestQuery.value &&
     !canQuery.value
   );

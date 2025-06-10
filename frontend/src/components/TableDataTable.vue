@@ -26,25 +26,25 @@
 </template>
 
 <script lang="ts" setup>
-import type { DataTableColumn } from "naive-ui";
-import { NDataTable } from "naive-ui";
-import type { PropType } from "vue";
-import { computed, reactive, onMounted, h, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
 import {
   featureToRef,
-  useSettingV1Store,
-  useDatabaseCatalog,
   getTableCatalog,
+  useDatabaseCatalog,
+  useSettingV1Store,
 } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { bytesToString, hasSchemaProperty } from "@/utils";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
+import type { PropType } from "vue";
+import { computed, h, onMounted, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
 type LocalState = {
@@ -101,7 +101,7 @@ const classificationConfig = computed(() => {
   );
 });
 
-const hasSensitiveDataFeature = featureToRef(PlanLimitConfig_Feature.DATA_MASKING);
+const hasSensitiveDataFeature = featureToRef(PlanFeature.FEATURE_DATA_MASKING);
 
 const engine = computed(() => props.database.instanceResource.engine);
 

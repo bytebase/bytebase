@@ -65,7 +65,7 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import InstanceAssignment from "../InstanceAssignment.vue";
 
@@ -75,7 +75,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    feature: PlanLimitConfig_Feature;
+    feature: PlanFeature;
     instance?: Instance | InstanceResource;
     showInstanceMissingLicense?: boolean;
     clickable?: boolean;

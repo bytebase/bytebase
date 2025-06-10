@@ -30,7 +30,7 @@ var PlanLimitValues = map[PlanLimit]map[v1pb.PlanType]int{
 }
 
 // PlanFeatureMatrix maps plans to their available features
-var PlanFeatureMatrix = make(map[v1pb.PlanType]map[v1pb.PlanLimitConfig_Feature]bool)
+var PlanFeatureMatrix = make(map[v1pb.PlanType]map[v1pb.PlanFeature]bool)
 
 func init() {
 	// First unmarshal YAML to a generic map, then convert to JSON for protojson
@@ -56,7 +56,7 @@ func init() {
 		PlanLimitValues[PlanLimitMaximumUser][plan.Type] = int(plan.MaximumSeatCount)
 
 		// Initialize feature map for this plan
-		PlanFeatureMatrix[plan.Type] = make(map[v1pb.PlanLimitConfig_Feature]bool)
+		PlanFeatureMatrix[plan.Type] = make(map[v1pb.PlanFeature]bool)
 		for _, feature := range plan.Features {
 			PlanFeatureMatrix[plan.Type][feature] = true
 		}

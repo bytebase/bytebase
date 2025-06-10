@@ -4,7 +4,7 @@
       <span class="mr-2">
         {{ $t("settings.general.workspace.query-data-policy.timeout.self") }}
       </span>
-      <FeatureBadge :feature="PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION" />
+      <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION" />
     </p>
     <p class="text-sm text-gray-400 mt-1">
       {{
@@ -42,14 +42,14 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { NInputNumber } from "naive-ui";
 import { computed, ref } from "vue";
 import { FeatureBadge } from "../FeatureGuard";
 
 const policyV1Store = usePolicyV1Store();
-const hasAccessControlFeature = featureToRef(PlanLimitConfig_Feature.IAM);
+const hasAccessControlFeature = featureToRef(PlanFeature.FEATURE_IAM);
 
 const { policy: queryDataPolicy } = usePolicyByParentAndType(
   computed(() => ({

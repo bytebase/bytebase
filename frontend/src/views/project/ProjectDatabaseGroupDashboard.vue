@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-4">
-    <FeatureAttention :feature="PlanLimitConfig_Feature.DATABASE_GROUPS" />
+    <FeatureAttention :feature="PlanFeature.FEATURE_DATABASE_GROUPS" />
 
     <div class="flex flex-row items-center justify-end gap-x-2">
       <SearchBox
@@ -26,7 +26,7 @@
         <template #icon>
           <PlusIcon class="w-4" />
           <FeatureBadge
-            :feature="PlanLimitConfig_Feature.DATABASE_GROUPS"
+            :feature="PlanFeature.FEATURE_DATABASE_GROUPS"
             class="text-white"
           />
         </template>
@@ -38,7 +38,7 @@
 
   <FeatureModal
     :open="state.showFeatureModal"
-    :feature="PlanLimitConfig_Feature.DATABASE_GROUPS"
+    :feature="PlanFeature.FEATURE_DATABASE_GROUPS"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -57,7 +57,7 @@ import {
 import { SearchBox } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE } from "@/router/dashboard/projectV1";
 import { useProjectByName, hasFeature } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -84,6 +84,6 @@ const allowCreate = computed(() =>
 );
 
 const hasDBGroupFeature = computed(() =>
-  hasFeature(PlanLimitConfig_Feature.DATABASE_GROUPS)
+  hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)
 );
 </script>

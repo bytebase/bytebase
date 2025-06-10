@@ -368,7 +368,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 	case v1pb.PolicyType_ROLLOUT_POLICY:
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
 		if !rolloutPolicy.Automatic {
-			if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_ROLLOUT_POLICY); err != nil {
+			if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_ROLLOUT_POLICY); err != nil {
 				return "", status.Error(codes.PermissionDenied, err.Error())
 			}
 		}
@@ -387,7 +387,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_RESTRICT_COPYING_DATA); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RESTRICT_COPYING_DATA); err != nil {
 			return "", status.Error(codes.PermissionDenied, err.Error())
 		}
 		payload, err := convertToDisableCopyDataPolicyPayload(policy.GetDisableCopyDataPolicy())
@@ -400,7 +400,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_EXPORT:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_QUERY_DATASOURCE_RESTRICTION); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION); err != nil {
 			return "", status.Error(codes.PermissionDenied, err.Error())
 		}
 		payload, err := convertToExportDataPolicyPayload(policy.GetExportDataPolicy())
@@ -413,7 +413,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_QUERY:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_QUERY_DATASOURCE_RESTRICTION); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION); err != nil {
 			return "", status.Error(codes.PermissionDenied, err.Error())
 		}
 		payload, err := convertToQueryDataPolicyPayload(policy.GetQueryDataPolicy())
@@ -426,7 +426,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING_RULE:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DATA_MASKING); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_MASKING); err != nil {
 			return "", status.Error(codes.PermissionDenied, err.Error())
 		}
 		payload, err := convertToStorePBMskingRulePolicy(policy.GetMaskingRulePolicy())
@@ -439,7 +439,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING_EXCEPTION:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DATA_MASKING); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_MASKING); err != nil {
 			return "", status.Error(codes.PermissionDenied, err.Error())
 		}
 		payload, err := s.convertToStorePBMaskingExceptionPolicyPayload(ctx, policy.GetMaskingExceptionPolicy())

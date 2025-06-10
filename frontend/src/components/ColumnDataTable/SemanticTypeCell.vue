@@ -24,7 +24,7 @@
   </div>
 
   <FeatureModal
-    :feature="PlanLimitConfig_Feature.DATA_MASKING"
+    :feature="PlanFeature.FEATURE_DATA_MASKING"
     :instance="database.instanceResource"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
@@ -47,7 +47,7 @@ import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
 import { MiniActionButton } from "@/components/v2";
 import { useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
 
@@ -76,12 +76,12 @@ const { semanticType, semanticTypeList } = useSemanticType(
 );
 
 const hasSensitiveDataFeature = computed(() => {
-  return subscriptionV1Store.hasFeature(PlanLimitConfig_Feature.DATA_MASKING);
+  return subscriptionV1Store.hasFeature(PlanFeature.FEATURE_DATA_MASKING);
 });
 
 const instanceMissingLicense = computed(() => {
   return subscriptionV1Store.instanceMissingLicense(
-    PlanLimitConfig_Feature.DATA_MASKING,
+    PlanFeature.FEATURE_DATA_MASKING,
     props.database.instanceResource
   );
 });

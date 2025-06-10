@@ -62,7 +62,7 @@ import {
   DataSourceType,
   Instance,
 } from "@/types/proto/v1/instance_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { defer, isValidSpannerHost } from "@/utils";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton } from "naive-ui";
@@ -198,7 +198,7 @@ const tryCreate = async () => {
 };
 
 const hasExternalSecretFeature = computed(() =>
-  subscriptionStore.hasFeature(PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER)
+  subscriptionStore.hasFeature(PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER)
 );
 const checkExternalSecretFeature = (dataSources: DataSource[]) => {
   if (hasExternalSecretFeature.value) {
@@ -257,7 +257,7 @@ const doCreate = async () => {
   }
 
   if (!checkExternalSecretFeature(pendingCreateInstance.value.dataSources)) {
-    missingFeature.value = PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER;
+    missingFeature.value = PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER;
     return;
   }
 
@@ -309,12 +309,12 @@ const doUpdate = async () => {
     return;
   }
   if (!checkRODataSourceFeature(inst)) {
-    missingFeature.value = PlanLimitConfig_Feature.INSTANCE_READ_ONLY_CONNECTION;
+    missingFeature.value = PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION;
     return;
   }
 
   if (!checkExternalSecretFeature([adminDataSource.value])) {
-    missingFeature.value = PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER;
+    missingFeature.value = PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER;
     return;
   }
 
@@ -324,7 +324,7 @@ const doUpdate = async () => {
       ...readonlyDataSourceList.value,
     ])
   ) {
-    missingFeature.value = PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER;
+    missingFeature.value = PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER;
     return;
   }
 

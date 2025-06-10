@@ -46,7 +46,7 @@
               />
               <FeatureBadge
                 v-else-if="isColumnMissingSensitive(header.index)"
-                :feature="PlanLimitConfig_Feature.DATA_MASKING"
+                :feature="PlanFeature.FEATURE_DATA_MASKING"
                 class="ml-0.5 shrink-0"
                 :instance="database.instanceResource"
               />
@@ -132,7 +132,7 @@ import { NEmpty } from "naive-ui";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { type QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";

@@ -1,6 +1,6 @@
 <template>
   <div class="w-full mx-auto space-y-4">
-    <FeatureAttention :feature="PlanLimitConfig_Feature.IAM" />
+    <FeatureAttention :feature="PlanFeature.FEATURE_IAM" />
 
     <NoPermissionPlaceholder
       v-if="permissionStore.onlyWorkspaceMember"
@@ -106,7 +106,7 @@ import {
 } from "@/store";
 import { userBindingPrefix } from "@/types";
 import { User, UserType } from "@/types/proto/v1/user_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
