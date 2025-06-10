@@ -9197,13 +9197,15 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
-| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
-| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
 | change_type | [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType) |  |  |
-| statement | [bytes](#bytes) |  | The statement is used for preview or check purpose. |
-| statement_size | [int64](#int64) |  |  |
+| sheet | [string](#string) |  | For inputs, we must either use `sheet` or `statement`. For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
+
+The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
+| statement | [bytes](#bytes) |  | The raw SQL statement content. |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet content or the statement. |
+| statement_size | [int64](#int64) |  | The size of the statement in bytes. |
 
 
 

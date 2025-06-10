@@ -25753,21 +25753,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The sheet that holds the content.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_sha256</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The SHA256 hash value of the sheet. </p></td>
-                </tr>
-              
-                <tr>
                   <td>type</td>
                   <td><a href="#bytebase.v1.ReleaseFileType">ReleaseFileType</a></td>
                   <td></td>
@@ -25789,17 +25774,35 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>For inputs, we must either use `sheet` or `statement`.
+For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
+
+The sheet that holds the content.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
                   <td>statement</td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
-                  <td><p>The statement is used for preview or check purpose. </p></td>
+                  <td><p>The raw SQL statement content. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_sha256</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The SHA256 hash value of the sheet content or the statement. </p></td>
                 </tr>
               
                 <tr>
                   <td>statement_size</td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The size of the statement in bytes. </p></td>
                 </tr>
               
             </tbody>
