@@ -107,6 +107,7 @@ export enum PlanFeature {
   FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION = "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION",
   FEATURE_BATCH_QUERY = "FEATURE_BATCH_QUERY",
   FEATURE_INSTANCE_READ_ONLY_CONNECTION = "FEATURE_INSTANCE_READ_ONLY_CONNECTION",
+  FEATURE_QUERY_POLICY = "FEATURE_QUERY_POLICY",
   FEATURE_RESTRICT_COPYING_DATA = "FEATURE_RESTRICT_COPYING_DATA",
   /** FEATURE_IAM - Security & Compliance */
   FEATURE_IAM = "FEATURE_IAM",
@@ -250,129 +251,132 @@ export function planFeatureFromJSON(object: any): PlanFeature {
     case "FEATURE_INSTANCE_READ_ONLY_CONNECTION":
       return PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION;
     case 31:
+    case "FEATURE_QUERY_POLICY":
+      return PlanFeature.FEATURE_QUERY_POLICY;
+    case 32:
     case "FEATURE_RESTRICT_COPYING_DATA":
       return PlanFeature.FEATURE_RESTRICT_COPYING_DATA;
-    case 32:
+    case 33:
     case "FEATURE_IAM":
       return PlanFeature.FEATURE_IAM;
-    case 33:
+    case 34:
     case "FEATURE_INSTANCE_SSL_CONNECTION":
       return PlanFeature.FEATURE_INSTANCE_SSL_CONNECTION;
-    case 34:
+    case 35:
     case "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL":
       return PlanFeature.FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL;
-    case 35:
+    case 36:
     case "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION":
       return PlanFeature.FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION;
-    case 36:
+    case 37:
     case "FEATURE_GOOGLE_AND_GITHUB_SSO":
       return PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO;
-    case 37:
+    case 38:
     case "FEATURE_USER_GROUPS":
       return PlanFeature.FEATURE_USER_GROUPS;
-    case 38:
+    case 39:
     case "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP":
       return PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP;
-    case 39:
+    case 40:
     case "FEATURE_DATABASE_SECRET_VARIABLES":
       return PlanFeature.FEATURE_DATABASE_SECRET_VARIABLES;
-    case 40:
+    case 41:
     case "FEATURE_QUERY_DATASOURCE_RESTRICTION":
       return PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION;
-    case 41:
+    case 42:
     case "FEATURE_CUSTOM_INSTANCE_SYNC_TIME":
       return PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME;
-    case 42:
+    case 43:
     case "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT":
       return PlanFeature.FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT;
-    case 43:
+    case 44:
     case "FEATURE_RISK_ASSESSMENT":
       return PlanFeature.FEATURE_RISK_ASSESSMENT;
-    case 44:
+    case 45:
     case "FEATURE_APPROVAL_WORKFLOW":
       return PlanFeature.FEATURE_APPROVAL_WORKFLOW;
-    case 45:
+    case 46:
     case "FEATURE_AUDIT_LOG":
       return PlanFeature.FEATURE_AUDIT_LOG;
-    case 46:
+    case 47:
     case "FEATURE_ENTERPRISE_SSO":
       return PlanFeature.FEATURE_ENTERPRISE_SSO;
-    case 47:
+    case 48:
     case "FEATURE_TWO_FA":
       return PlanFeature.FEATURE_TWO_FA;
-    case 48:
+    case 49:
     case "FEATURE_PASSWORD_RESTRICTIONS":
       return PlanFeature.FEATURE_PASSWORD_RESTRICTIONS;
-    case 49:
+    case 50:
     case "FEATURE_DISALLOW_PASSWORD_SIGNIN":
       return PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN;
-    case 50:
+    case 51:
     case "FEATURE_CUSTOM_ROLES":
       return PlanFeature.FEATURE_CUSTOM_ROLES;
-    case 51:
+    case 52:
     case "FEATURE_REQUEST_ROLE_WORKFLOW":
       return PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW;
-    case 52:
+    case 53:
     case "FEATURE_DATA_MASKING":
       return PlanFeature.FEATURE_DATA_MASKING;
-    case 53:
+    case 54:
     case "FEATURE_DATA_CLASSIFICATION":
       return PlanFeature.FEATURE_DATA_CLASSIFICATION;
-    case 54:
+    case 55:
     case "FEATURE_SCIM":
       return PlanFeature.FEATURE_SCIM;
-    case 55:
+    case 56:
     case "FEATURE_DIRECTORY_SYNC":
       return PlanFeature.FEATURE_DIRECTORY_SYNC;
-    case 56:
+    case 57:
     case "FEATURE_SIGN_IN_FREQUENCY_CONTROL":
       return PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL;
-    case 57:
+    case 58:
     case "FEATURE_EXTERNAL_SECRET_MANAGER":
       return PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER;
-    case 58:
+    case 59:
     case "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":
       return PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION;
-    case 59:
+    case 60:
     case "FEATURE_ENVIRONMENT_MANAGEMENT":
       return PlanFeature.FEATURE_ENVIRONMENT_MANAGEMENT;
-    case 60:
+    case 61:
     case "FEATURE_IM_NOTIFICATIONS":
       return PlanFeature.FEATURE_IM_NOTIFICATIONS;
-    case 61:
+    case 62:
     case "FEATURE_TERRAFORM_PROVIDER":
       return PlanFeature.FEATURE_TERRAFORM_PROVIDER;
-    case 62:
+    case 63:
     case "FEATURE_DATABASE_GROUPS":
       return PlanFeature.FEATURE_DATABASE_GROUPS;
-    case 63:
+    case 64:
     case "FEATURE_ENVIRONMENT_TIERS":
       return PlanFeature.FEATURE_ENVIRONMENT_TIERS;
-    case 64:
+    case 65:
     case "FEATURE_DASHBOARD_ANNOUNCEMENT":
       return PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT;
-    case 65:
+    case 66:
     case "FEATURE_API_INTEGRATION_GUIDANCE":
       return PlanFeature.FEATURE_API_INTEGRATION_GUIDANCE;
-    case 66:
+    case 67:
     case "FEATURE_CUSTOM_LOGO":
       return PlanFeature.FEATURE_CUSTOM_LOGO;
-    case 67:
+    case 68:
     case "FEATURE_WATERMARK":
       return PlanFeature.FEATURE_WATERMARK;
-    case 68:
+    case 69:
     case "FEATURE_ROADMAP_PRIORITIZATION":
       return PlanFeature.FEATURE_ROADMAP_PRIORITIZATION;
-    case 69:
+    case 70:
     case "FEATURE_CUSTOM_MSA":
       return PlanFeature.FEATURE_CUSTOM_MSA;
-    case 70:
+    case 71:
     case "FEATURE_COMMUNITY_SUPPORT":
       return PlanFeature.FEATURE_COMMUNITY_SUPPORT;
-    case 71:
+    case 72:
     case "FEATURE_EMAIL_SUPPORT":
       return PlanFeature.FEATURE_EMAIL_SUPPORT;
-    case 72:
+    case 73:
     case "FEATURE_DEDICATED_SUPPORT_WITH_SLA":
       return PlanFeature.FEATURE_DEDICATED_SUPPORT_WITH_SLA;
     case -1:
@@ -446,6 +450,8 @@ export function planFeatureToJSON(object: PlanFeature): string {
       return "FEATURE_BATCH_QUERY";
     case PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION:
       return "FEATURE_INSTANCE_READ_ONLY_CONNECTION";
+    case PlanFeature.FEATURE_QUERY_POLICY:
+      return "FEATURE_QUERY_POLICY";
     case PlanFeature.FEATURE_RESTRICT_COPYING_DATA:
       return "FEATURE_RESTRICT_COPYING_DATA";
     case PlanFeature.FEATURE_IAM:
@@ -600,90 +606,92 @@ export function planFeatureToNumber(object: PlanFeature): number {
       return 29;
     case PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION:
       return 30;
-    case PlanFeature.FEATURE_RESTRICT_COPYING_DATA:
+    case PlanFeature.FEATURE_QUERY_POLICY:
       return 31;
-    case PlanFeature.FEATURE_IAM:
+    case PlanFeature.FEATURE_RESTRICT_COPYING_DATA:
       return 32;
-    case PlanFeature.FEATURE_INSTANCE_SSL_CONNECTION:
+    case PlanFeature.FEATURE_IAM:
       return 33;
-    case PlanFeature.FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL:
+    case PlanFeature.FEATURE_INSTANCE_SSL_CONNECTION:
       return 34;
-    case PlanFeature.FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION:
+    case PlanFeature.FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL:
       return 35;
-    case PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO:
+    case PlanFeature.FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION:
       return 36;
-    case PlanFeature.FEATURE_USER_GROUPS:
+    case PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO:
       return 37;
-    case PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP:
+    case PlanFeature.FEATURE_USER_GROUPS:
       return 38;
-    case PlanFeature.FEATURE_DATABASE_SECRET_VARIABLES:
+    case PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP:
       return 39;
-    case PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION:
+    case PlanFeature.FEATURE_DATABASE_SECRET_VARIABLES:
       return 40;
-    case PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME:
+    case PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION:
       return 41;
-    case PlanFeature.FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT:
+    case PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME:
       return 42;
-    case PlanFeature.FEATURE_RISK_ASSESSMENT:
+    case PlanFeature.FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT:
       return 43;
-    case PlanFeature.FEATURE_APPROVAL_WORKFLOW:
+    case PlanFeature.FEATURE_RISK_ASSESSMENT:
       return 44;
-    case PlanFeature.FEATURE_AUDIT_LOG:
+    case PlanFeature.FEATURE_APPROVAL_WORKFLOW:
       return 45;
-    case PlanFeature.FEATURE_ENTERPRISE_SSO:
+    case PlanFeature.FEATURE_AUDIT_LOG:
       return 46;
-    case PlanFeature.FEATURE_TWO_FA:
+    case PlanFeature.FEATURE_ENTERPRISE_SSO:
       return 47;
-    case PlanFeature.FEATURE_PASSWORD_RESTRICTIONS:
+    case PlanFeature.FEATURE_TWO_FA:
       return 48;
-    case PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN:
+    case PlanFeature.FEATURE_PASSWORD_RESTRICTIONS:
       return 49;
-    case PlanFeature.FEATURE_CUSTOM_ROLES:
+    case PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN:
       return 50;
-    case PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW:
+    case PlanFeature.FEATURE_CUSTOM_ROLES:
       return 51;
-    case PlanFeature.FEATURE_DATA_MASKING:
+    case PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW:
       return 52;
-    case PlanFeature.FEATURE_DATA_CLASSIFICATION:
+    case PlanFeature.FEATURE_DATA_MASKING:
       return 53;
-    case PlanFeature.FEATURE_SCIM:
+    case PlanFeature.FEATURE_DATA_CLASSIFICATION:
       return 54;
-    case PlanFeature.FEATURE_DIRECTORY_SYNC:
+    case PlanFeature.FEATURE_SCIM:
       return 55;
-    case PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL:
+    case PlanFeature.FEATURE_DIRECTORY_SYNC:
       return 56;
-    case PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER:
+    case PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL:
       return 57;
-    case PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION:
+    case PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER:
       return 58;
-    case PlanFeature.FEATURE_ENVIRONMENT_MANAGEMENT:
+    case PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION:
       return 59;
-    case PlanFeature.FEATURE_IM_NOTIFICATIONS:
+    case PlanFeature.FEATURE_ENVIRONMENT_MANAGEMENT:
       return 60;
-    case PlanFeature.FEATURE_TERRAFORM_PROVIDER:
+    case PlanFeature.FEATURE_IM_NOTIFICATIONS:
       return 61;
-    case PlanFeature.FEATURE_DATABASE_GROUPS:
+    case PlanFeature.FEATURE_TERRAFORM_PROVIDER:
       return 62;
-    case PlanFeature.FEATURE_ENVIRONMENT_TIERS:
+    case PlanFeature.FEATURE_DATABASE_GROUPS:
       return 63;
-    case PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT:
+    case PlanFeature.FEATURE_ENVIRONMENT_TIERS:
       return 64;
-    case PlanFeature.FEATURE_API_INTEGRATION_GUIDANCE:
+    case PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT:
       return 65;
-    case PlanFeature.FEATURE_CUSTOM_LOGO:
+    case PlanFeature.FEATURE_API_INTEGRATION_GUIDANCE:
       return 66;
-    case PlanFeature.FEATURE_WATERMARK:
+    case PlanFeature.FEATURE_CUSTOM_LOGO:
       return 67;
-    case PlanFeature.FEATURE_ROADMAP_PRIORITIZATION:
+    case PlanFeature.FEATURE_WATERMARK:
       return 68;
-    case PlanFeature.FEATURE_CUSTOM_MSA:
+    case PlanFeature.FEATURE_ROADMAP_PRIORITIZATION:
       return 69;
-    case PlanFeature.FEATURE_COMMUNITY_SUPPORT:
+    case PlanFeature.FEATURE_CUSTOM_MSA:
       return 70;
-    case PlanFeature.FEATURE_EMAIL_SUPPORT:
+    case PlanFeature.FEATURE_COMMUNITY_SUPPORT:
       return 71;
-    case PlanFeature.FEATURE_DEDICATED_SUPPORT_WITH_SLA:
+    case PlanFeature.FEATURE_EMAIL_SUPPORT:
       return 72;
+    case PlanFeature.FEATURE_DEDICATED_SUPPORT_WITH_SLA:
+      return 73;
     case PlanFeature.UNRECOGNIZED:
     default:
       return -1;
@@ -691,9 +699,6 @@ export function planFeatureToNumber(object: PlanFeature): number {
 }
 
 export interface GetSubscriptionRequest {
-}
-
-export interface GetFeatureMatrixRequest {
 }
 
 export interface UpdateSubscriptionRequest {
@@ -713,22 +718,6 @@ export interface Subscription {
   trialing: boolean;
   orgId: string;
   orgName: string;
-}
-
-export interface FeatureMatrix {
-  features: Feature[];
-}
-
-export interface Feature {
-  /** Name is the feature name. */
-  name: string;
-  /** Matrix is the feature matrix for different plan. The key is the plan enum in string value. */
-  matrix: { [key: string]: boolean };
-}
-
-export interface Feature_MatrixEntry {
-  key: string;
-  value: boolean;
 }
 
 /** PlanConfig represents the configuration for all plans loaded from plan.yaml */
@@ -780,45 +769,6 @@ export const GetSubscriptionRequest: MessageFns<GetSubscriptionRequest> = {
   },
   fromPartial(_: DeepPartial<GetSubscriptionRequest>): GetSubscriptionRequest {
     const message = createBaseGetSubscriptionRequest();
-    return message;
-  },
-};
-
-function createBaseGetFeatureMatrixRequest(): GetFeatureMatrixRequest {
-  return {};
-}
-
-export const GetFeatureMatrixRequest: MessageFns<GetFeatureMatrixRequest> = {
-  encode(_: GetFeatureMatrixRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GetFeatureMatrixRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetFeatureMatrixRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  toJSON(_: GetFeatureMatrixRequest): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetFeatureMatrixRequest>): GetFeatureMatrixRequest {
-    return GetFeatureMatrixRequest.fromPartial(base ?? {});
-  },
-  fromPartial(_: DeepPartial<GetFeatureMatrixRequest>): GetFeatureMatrixRequest {
-    const message = createBaseGetFeatureMatrixRequest();
     return message;
   },
 };
@@ -1105,212 +1055,6 @@ export const Subscription: MessageFns<Subscription> = {
   },
 };
 
-function createBaseFeatureMatrix(): FeatureMatrix {
-  return { features: [] };
-}
-
-export const FeatureMatrix: MessageFns<FeatureMatrix> = {
-  encode(message: FeatureMatrix, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.features) {
-      Feature.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): FeatureMatrix {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFeatureMatrix();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.features.push(Feature.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  toJSON(message: FeatureMatrix): unknown {
-    const obj: any = {};
-    if (message.features?.length) {
-      obj.features = message.features.map((e) => Feature.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<FeatureMatrix>): FeatureMatrix {
-    return FeatureMatrix.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<FeatureMatrix>): FeatureMatrix {
-    const message = createBaseFeatureMatrix();
-    message.features = object.features?.map((e) => Feature.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseFeature(): Feature {
-  return { name: "", matrix: {} };
-}
-
-export const Feature: MessageFns<Feature> = {
-  encode(message: Feature, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    Object.entries(message.matrix).forEach(([key, value]) => {
-      Feature_MatrixEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).join();
-    });
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Feature {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFeature();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          const entry2 = Feature_MatrixEntry.decode(reader, reader.uint32());
-          if (entry2.value !== undefined) {
-            message.matrix[entry2.key] = entry2.value;
-          }
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  toJSON(message: Feature): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.matrix) {
-      const entries = Object.entries(message.matrix);
-      if (entries.length > 0) {
-        obj.matrix = {};
-        entries.forEach(([k, v]) => {
-          obj.matrix[k] = v;
-        });
-      }
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Feature>): Feature {
-    return Feature.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Feature>): Feature {
-    const message = createBaseFeature();
-    message.name = object.name ?? "";
-    message.matrix = Object.entries(object.matrix ?? {}).reduce<{ [key: string]: boolean }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = globalThis.Boolean(value);
-      }
-      return acc;
-    }, {});
-    return message;
-  },
-};
-
-function createBaseFeature_MatrixEntry(): Feature_MatrixEntry {
-  return { key: "", value: false };
-}
-
-export const Feature_MatrixEntry: MessageFns<Feature_MatrixEntry> = {
-  encode(message: Feature_MatrixEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== false) {
-      writer.uint32(16).bool(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Feature_MatrixEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFeature_MatrixEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.value = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  toJSON(message: Feature_MatrixEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== false) {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Feature_MatrixEntry>): Feature_MatrixEntry {
-    return Feature_MatrixEntry.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Feature_MatrixEntry>): Feature_MatrixEntry {
-    const message = createBaseFeature_MatrixEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? false;
-    return message;
-  },
-};
-
 function createBasePlanConfig(): PlanConfig {
   return { plans: [], instanceFeatures: [] };
 }
@@ -1521,20 +1265,6 @@ export const SubscriptionServiceDefinition = {
           578365826: [
             new Uint8Array([18, 18, 16, 47, 118, 49, 47, 115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110]),
           ],
-        },
-      },
-    },
-    getFeatureMatrix: {
-      name: "GetFeatureMatrix",
-      requestType: GetFeatureMatrixRequest,
-      requestStream: false,
-      responseType: FeatureMatrix,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([0])],
-          800000: [new Uint8Array([1])],
-          578365826: [new Uint8Array([13, 18, 11, 47, 118, 49, 47, 102, 101, 97, 116, 117, 114, 101])],
         },
       },
     },

@@ -964,22 +964,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.Feature"><span class="badge">M</span>Feature</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Feature.MatrixEntry"><span class="badge">M</span>Feature.MatrixEntry</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.FeatureMatrix"><span class="badge">M</span>FeatureMatrix</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetFeatureMatrixRequest"><span class="badge">M</span>GetFeatureMatrixRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetSubscriptionRequest"><span class="badge">M</span>GetSubscriptionRequest</a>
                 </li>
               
@@ -11820,99 +11804,6 @@ The access is based on approval flow.</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.Feature">Feature</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Name is the feature name. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>matrix</td>
-                  <td><a href="#bytebase.v1.Feature.MatrixEntry">Feature.MatrixEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>Matrix is the feature matrix for different plan. The key is the plan enum in string value. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Feature.MatrixEntry">Feature.MatrixEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.FeatureMatrix">FeatureMatrix</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>features</td>
-                  <td><a href="#bytebase.v1.Feature">Feature</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetFeatureMatrixRequest">GetFeatureMatrixRequest</h3>
-        <p></p>
-
-        
-
-        
-      
         <h3 id="bytebase.v1.GetSubscriptionRequest">GetSubscriptionRequest</h3>
         <p></p>
 
@@ -12314,254 +12205,260 @@ The access is based on approval flow.</p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_RESTRICT_COPYING_DATA</td>
+                <td>FEATURE_QUERY_POLICY</td>
                 <td>31</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_IAM</td>
+                <td>FEATURE_RESTRICT_COPYING_DATA</td>
                 <td>32</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FEATURE_IAM</td>
+                <td>33</td>
                 <td><p>Security &amp; Compliance</p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_INSTANCE_SSL_CONNECTION</td>
-                <td>33</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL</td>
                 <td>34</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION</td>
+                <td>FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL</td>
                 <td>35</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_GOOGLE_AND_GITHUB_SSO</td>
+                <td>FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION</td>
                 <td>36</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_USER_GROUPS</td>
+                <td>FEATURE_GOOGLE_AND_GITHUB_SSO</td>
                 <td>37</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DISALLOW_SELF_SERVICE_SIGNUP</td>
+                <td>FEATURE_USER_GROUPS</td>
                 <td>38</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DATABASE_SECRET_VARIABLES</td>
+                <td>FEATURE_DISALLOW_SELF_SERVICE_SIGNUP</td>
                 <td>39</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_QUERY_DATASOURCE_RESTRICTION</td>
+                <td>FEATURE_DATABASE_SECRET_VARIABLES</td>
                 <td>40</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_CUSTOM_INSTANCE_SYNC_TIME</td>
+                <td>FEATURE_QUERY_DATASOURCE_RESTRICTION</td>
                 <td>41</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT</td>
+                <td>FEATURE_CUSTOM_INSTANCE_SYNC_TIME</td>
                 <td>42</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_RISK_ASSESSMENT</td>
+                <td>FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT</td>
                 <td>43</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_APPROVAL_WORKFLOW</td>
+                <td>FEATURE_RISK_ASSESSMENT</td>
                 <td>44</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_AUDIT_LOG</td>
+                <td>FEATURE_APPROVAL_WORKFLOW</td>
                 <td>45</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_ENTERPRISE_SSO</td>
+                <td>FEATURE_AUDIT_LOG</td>
                 <td>46</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_TWO_FA</td>
+                <td>FEATURE_ENTERPRISE_SSO</td>
                 <td>47</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_PASSWORD_RESTRICTIONS</td>
+                <td>FEATURE_TWO_FA</td>
                 <td>48</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DISALLOW_PASSWORD_SIGNIN</td>
+                <td>FEATURE_PASSWORD_RESTRICTIONS</td>
                 <td>49</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_CUSTOM_ROLES</td>
+                <td>FEATURE_DISALLOW_PASSWORD_SIGNIN</td>
                 <td>50</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_REQUEST_ROLE_WORKFLOW</td>
+                <td>FEATURE_CUSTOM_ROLES</td>
                 <td>51</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DATA_MASKING</td>
+                <td>FEATURE_REQUEST_ROLE_WORKFLOW</td>
                 <td>52</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DATA_CLASSIFICATION</td>
+                <td>FEATURE_DATA_MASKING</td>
                 <td>53</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_SCIM</td>
+                <td>FEATURE_DATA_CLASSIFICATION</td>
                 <td>54</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DIRECTORY_SYNC</td>
+                <td>FEATURE_SCIM</td>
                 <td>55</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_SIGN_IN_FREQUENCY_CONTROL</td>
+                <td>FEATURE_DIRECTORY_SYNC</td>
                 <td>56</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_EXTERNAL_SECRET_MANAGER</td>
+                <td>FEATURE_SIGN_IN_FREQUENCY_CONTROL</td>
                 <td>57</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_USER_EMAIL_DOMAIN_RESTRICTION</td>
+                <td>FEATURE_EXTERNAL_SECRET_MANAGER</td>
                 <td>58</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_ENVIRONMENT_MANAGEMENT</td>
+                <td>FEATURE_USER_EMAIL_DOMAIN_RESTRICTION</td>
                 <td>59</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FEATURE_ENVIRONMENT_MANAGEMENT</td>
+                <td>60</td>
                 <td><p>Administration &amp; Support</p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_IM_NOTIFICATIONS</td>
-                <td>60</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FEATURE_TERRAFORM_PROVIDER</td>
                 <td>61</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DATABASE_GROUPS</td>
+                <td>FEATURE_TERRAFORM_PROVIDER</td>
                 <td>62</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_ENVIRONMENT_TIERS</td>
+                <td>FEATURE_DATABASE_GROUPS</td>
                 <td>63</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DASHBOARD_ANNOUNCEMENT</td>
+                <td>FEATURE_ENVIRONMENT_TIERS</td>
                 <td>64</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_API_INTEGRATION_GUIDANCE</td>
+                <td>FEATURE_DASHBOARD_ANNOUNCEMENT</td>
                 <td>65</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_CUSTOM_LOGO</td>
+                <td>FEATURE_API_INTEGRATION_GUIDANCE</td>
                 <td>66</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_WATERMARK</td>
+                <td>FEATURE_CUSTOM_LOGO</td>
                 <td>67</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_ROADMAP_PRIORITIZATION</td>
+                <td>FEATURE_WATERMARK</td>
                 <td>68</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_CUSTOM_MSA</td>
+                <td>FEATURE_ROADMAP_PRIORITIZATION</td>
                 <td>69</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_COMMUNITY_SUPPORT</td>
+                <td>FEATURE_CUSTOM_MSA</td>
                 <td>70</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_EMAIL_SUPPORT</td>
+                <td>FEATURE_COMMUNITY_SUPPORT</td>
                 <td>71</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DEDICATED_SUPPORT_WITH_SLA</td>
+                <td>FEATURE_EMAIL_SUPPORT</td>
                 <td>72</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FEATURE_DEDICATED_SUPPORT_WITH_SLA</td>
+                <td>73</td>
                 <td><p></p></td>
               </tr>
             
@@ -12623,13 +12520,6 @@ The access is based on approval flow.</p></td>
               </tr>
             
               <tr>
-                <td>GetFeatureMatrix</td>
-                <td><a href="#bytebase.v1.GetFeatureMatrixRequest">GetFeatureMatrixRequest</a></td>
-                <td><a href="#bytebase.v1.FeatureMatrix">FeatureMatrix</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>UpdateSubscription</td>
                 <td><a href="#bytebase.v1.UpdateSubscriptionRequest">UpdateSubscriptionRequest</a></td>
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
@@ -12660,16 +12550,6 @@ The access is based on approval flow.</p></td>
                 <td>GetSubscription</td>
                 <td>GET</td>
                 <td>/v1/subscription</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetFeatureMatrix</td>
-                <td>GET</td>
-                <td>/v1/feature</td>
                 <td></td>
               </tr>
               

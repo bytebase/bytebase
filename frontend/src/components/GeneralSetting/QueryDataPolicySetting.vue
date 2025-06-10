@@ -49,7 +49,7 @@ import { computed, ref } from "vue";
 import { FeatureBadge } from "../FeatureGuard";
 
 const policyV1Store = usePolicyV1Store();
-const hasAccessControlFeature = featureToRef(PlanFeature.FEATURE_IAM);
+const hasQueryPolicyFeature = featureToRef(PlanFeature.FEATURE_QUERY_POLICY);
 
 const { policy: queryDataPolicy } = usePolicyByParentAndType(
   computed(() => ({
@@ -61,7 +61,7 @@ const { policy: queryDataPolicy } = usePolicyByParentAndType(
 const allowEdit = computed(
   () =>
     hasWorkspacePermissionV2("bb.policies.update") &&
-    hasAccessControlFeature.value
+    hasQueryPolicyFeature.value
 );
 
 const initialState = () => {

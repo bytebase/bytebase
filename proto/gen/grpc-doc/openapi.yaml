@@ -496,24 +496,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/feature:
-        get:
-            tags:
-                - SubscriptionService
-            operationId: SubscriptionService_GetFeatureMatrix
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/FeatureMatrix'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/groups:
         get:
             tags:
@@ -9984,24 +9966,6 @@ components:
 
                          This results from the macro `has(request.auth)`.
             description: A field selection expression. e.g. `request.auth`.
-        Feature:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: Name is the feature name.
-                matrix:
-                    type: object
-                    additionalProperties:
-                        type: boolean
-                    description: Matrix is the feature matrix for different plan. The key is the plan enum in string value.
-        FeatureMatrix:
-            type: object
-            properties:
-                features:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Feature'
         FieldMapping:
             type: object
             properties:

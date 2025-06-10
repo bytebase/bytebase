@@ -9,13 +9,6 @@
             {{ statementTitle }}
           </span>
           <span v-if="isCreating" class="text-red-600">*</span>
-          <NButton
-            v-if="!isCreating && !hasFeature(PlanFeature.FEATURE_PRE_DEPLOYMENT_SQL_REVIEW)"
-            size="tiny"
-            @click.prevent="state.showFeatureModal = true"
-          >
-            🎈{{ $t("sql-review.unlock-full-feature") }}
-          </NButton>
         </div>
       </div>
 
@@ -178,30 +171,15 @@
       />
     </div>
   </BBModal>
-
-  <FeatureModal
-    :open="state.showFeatureModal"
-    :feature="PlanFeature.FEATURE_PRE_DEPLOYMENT_SQL_REVIEW"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head, isEmpty } from "lodash-es";
-import { ExpandIcon } from "lucide-vue-next";
-import { NButton, NTooltip, useDialog } from "naive-ui";
-import { computed, reactive, ref, toRef, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
 import { BBAttention, BBModal } from "@/bbkit";
-import { FeatureModal } from "@/components/FeatureGuard";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
-  useIssueContext,
   allowUserToEditStatementForTask,
   isTaskEditable,
+  useIssueContext,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
@@ -215,10 +193,9 @@ import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import {
-  hasFeature,
   pushNotification,
-  useSheetV1Store,
   useCurrentProjectV1,
+  useSheetV1Store
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
@@ -228,10 +205,17 @@ import type { Advice } from "@/types/proto/v1/sql_service";
 import {
   flattenTaskV1List,
   getSheetStatement,
+  getStatementSize,
   setSheetStatement,
   useInstanceV1EditorLanguage,
-  getStatementSize,
 } from "@/utils";
+import { useElementSize } from "@vueuse/core";
+import { cloneDeep, head, isEmpty } from "lodash-es";
+import { ExpandIcon } from "lucide-vue-next";
+import { NButton, NTooltip, useDialog } from "naive-ui";
+import { computed, reactive, ref, toRef, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import EditorActionPopover from "./EditorActionPopover.vue";
 import { provideEditorContext } from "./context";
