@@ -369,9 +369,9 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 			Title: "GitOps Multi-Target Release v1.0",
 			Files: []*v1pb.Release_File{
 				{
-					Path:       "migrations/001__create_table_one.sql",
+					Path:       "migrations/1.0.0__create_table_one.sql",
 					Type:       v1pb.ReleaseFileType_VERSIONED,
-					Version:    "001",
+					Version:    "1.0.0",
 					ChangeType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE table_one (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -379,9 +379,9 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 					);`),
 				},
 				{
-					Path:       "migrations/002__create_table_two.sql",
+					Path:       "migrations/1.0.1__create_table_two.sql",
 					Type:       v1pb.ReleaseFileType_VERSIONED,
-					Version:    "002",
+					Version:    "1.0.1",
 					ChangeType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE table_two (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -389,9 +389,9 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 					);`),
 				},
 				{
-					Path:       "migrations/003__create_table_three.sql",
+					Path:       "migrations/1.0.2__create_table_three.sql",
 					Type:       v1pb.ReleaseFileType_VERSIONED,
-					Version:    "003",
+					Version:    "1.0.2",
 					ChangeType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE table_three (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -533,8 +533,8 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	// Both databases should have the same revision versions since they received the same migrations.
 	a.ElementsMatch(testVersions, prodVersions, "Test and prod databases should have the same revision versions")
 
-	// Verify that we have the expected versions (001, 002, 003).
-	expectedVersions := []string{"001", "002", "003"}
+	// Verify that we have the expected versions (1.0.0, 1.0.1, 1.0.2).
+	expectedVersions := []string{"1.0.0", "1.0.1", "1.0.2"}
 	a.ElementsMatch(testVersions, expectedVersions, "Test database should have the expected migration versions")
 	a.ElementsMatch(prodVersions, expectedVersions, "Prod database should have the expected migration versions")
 }
