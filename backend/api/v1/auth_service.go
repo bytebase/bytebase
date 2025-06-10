@@ -18,7 +18,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -140,7 +139,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	tokenDuration := auth.GetTokenDuration(ctx, s.store)
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
-	if s.licenseService.IsFeatureEnabled(base.Feature2FA) == nil && !mfaSecondLogin && userMFAEnabled {
+	if s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_TWO_FA) == nil && !mfaSecondLogin && userMFAEnabled {
 		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
@@ -211,7 +210,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 	if user.Type != storepb.PrincipalType_END_USER {
 		return false
 	}
-	if err := s.licenseService.IsFeatureEnabled(base.FeaturePasswordRestriction); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_PASSWORD_RESTRICTIONS); err != nil {
 		return false
 	}
 
@@ -412,7 +411,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return user, nil
 	}
 
-	if err := s.licenseService.IsFeatureEnabled(base.FeatureSSO); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_ENTERPRISE_SSO); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	// Create new user from identity provider.

@@ -24,7 +24,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -440,7 +439,7 @@ func queryRetry(
 				return nil, nil, time.Duration(0), err
 			}
 		}
-		if licenseService.IsFeatureEnabledForInstance(base.FeatureSensitiveData, instance) == nil {
+		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_DATA_MASKING, instance) == nil {
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
@@ -504,7 +503,7 @@ func queryRetry(
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
-		if licenseService.IsFeatureEnabledForInstance(base.FeatureSensitiveData, instance) == nil {
+		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_DATA_MASKING, instance) == nil {
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
@@ -524,7 +523,7 @@ func queryRetry(
 		}
 	}
 
-	if licenseService.IsFeatureEnabledForInstance(base.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
+	if licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_DATA_MASKING, instance) == nil && !queryContext.Explain {
 		// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
 		if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {
 			if len(spans) != 1 {
@@ -668,7 +667,7 @@ func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService
 	var timeout time.Duration
 	// For access control feature, we will use the timeout from request and query data policy.
 	// Otherwise, no timeout will be applied.
-	if licenseService.IsFeatureEnabled(base.FeatureAccessControl) == nil {
+	if licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_QUERY_DATASOURCE_RESTRICTION) == nil {
 		queryDataPolicy, err := stores.GetQueryDataPolicy(ctx)
 		if err != nil {
 			return nil, time.Duration(0), errors.Wrap(err, "failed to get query data policy")
@@ -896,7 +895,7 @@ func DoExport(
 		return nil, duration, errors.New(results[0].GetError())
 	}
 
-	if licenseService.IsFeatureEnabledForInstance(base.FeatureSensitiveData, instance) == nil {
+	if licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_DATA_MASKING, instance) == nil {
 		masker := NewQueryResultMasker(stores)
 		if err := masker.MaskResults(ctx, spans, results, instance, user, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
 			return nil, duration, err

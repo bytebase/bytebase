@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -83,7 +82,7 @@ func (s *RoleService) getBuildinRole(roleID string) *store.RoleMessage {
 
 // CreateRole creates a new role.
 func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRequest) (*v1pb.Role, error) {
-	if err := s.licenseService.IsFeatureEnabled(base.FeatureCustomRole); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_CUSTOM_ROLES); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
@@ -126,7 +125,7 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 
 // UpdateRole updates an existing role.
 func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRequest) (*v1pb.Role, error) {
-	if err := s.licenseService.IsFeatureEnabled(base.FeatureCustomRole); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_CUSTOM_ROLES); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	if request.UpdateMask == nil {

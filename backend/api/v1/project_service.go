@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +22,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -331,24 +329,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		ResourceID: project.ResourceID,
 	}
 
-	issueProjectSettingFeatureRelatedPaths := []string{
-		"force_issue_labels",
-		"allow_modify_statement",
-		"auto_resolve_issue",
-		"enforce_issue_title",
-		"auto_enable_backup",
-		"skip_backup_errors",
-		"postgres_database_tenant_mode",
-		"ci_sampling_size",
-	}
 	for _, path := range request.UpdateMask.Paths {
-		if slices.Contains(issueProjectSettingFeatureRelatedPaths, path) {
-			// Check if the issue project setting feature is enabled.
-			if err := s.licenseService.IsFeatureEnabled(base.FeatureIssueProjectSetting); err != nil {
-				return nil, status.Error(codes.PermissionDenied, err.Error())
-			}
-		}
-
 		switch path {
 		case "title":
 			patch.Title = &request.Project.Title
