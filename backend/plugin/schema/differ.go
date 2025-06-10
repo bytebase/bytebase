@@ -221,7 +221,7 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 	// Add all tables
 	for _, tableName := range schema.ListTableNames() {
 		table := schema.GetTable(tableName)
-		if table != nil {
+		if table != nil && !table.GetProto().GetSkipDump() {
 			diff.TableChanges = append(diff.TableChanges, &TableDiff{
 				Action:     MetadataDiffActionCreate,
 				SchemaName: schemaName,
@@ -234,7 +234,7 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 	// Add all views
 	for _, viewName := range schema.ListViewNames() {
 		view := schema.GetView(viewName)
-		if view != nil {
+		if view != nil && !view.GetProto().GetSkipDump() {
 			diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
 				Action:     MetadataDiffActionCreate,
 				SchemaName: schemaName,
@@ -247,7 +247,7 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 	// Add all materialized views
 	for _, mvName := range schema.ListMaterializedViewNames() {
 		mv := schema.GetMaterializedView(mvName)
-		if mv != nil {
+		if mv != nil && !mv.GetProto().GetSkipDump() {
 			diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
 				Action:               MetadataDiffActionCreate,
 				SchemaName:           schemaName,
@@ -259,18 +259,20 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 
 	// Add all functions
 	for _, function := range schema.ListFunctions() {
-		diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
-			Action:       MetadataDiffActionCreate,
-			SchemaName:   schemaName,
-			FunctionName: function.GetProto().Name,
-			NewFunction:  function.GetProto(),
-		})
+		if !function.GetProto().GetSkipDump() {
+			diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
+				Action:       MetadataDiffActionCreate,
+				SchemaName:   schemaName,
+				FunctionName: function.GetProto().Name,
+				NewFunction:  function.GetProto(),
+			})
+		}
 	}
 
 	// Add all procedures
 	for _, procName := range schema.ListProcedureNames() {
 		proc := schema.GetProcedure(procName)
-		if proc != nil {
+		if proc != nil && !proc.GetProto().GetSkipDump() {
 			diff.ProcedureChanges = append(diff.ProcedureChanges, &ProcedureDiff{
 				Action:        MetadataDiffActionCreate,
 				SchemaName:    schemaName,
@@ -282,12 +284,14 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 
 	// Add all sequences
 	for _, seqProto := range schemaProto.Sequences {
-		diff.SequenceChanges = append(diff.SequenceChanges, &SequenceDiff{
-			Action:       MetadataDiffActionCreate,
-			SchemaName:   schemaName,
-			SequenceName: seqProto.Name,
-			NewSequence:  seqProto,
-		})
+		if !seqProto.GetSkipDump() {
+			diff.SequenceChanges = append(diff.SequenceChanges, &SequenceDiff{
+				Action:       MetadataDiffActionCreate,
+				SchemaName:   schemaName,
+				SequenceName: seqProto.Name,
+				NewSequence:  seqProto,
+			})
+		}
 	}
 }
 
@@ -299,7 +303,7 @@ func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newS
 	for _, tableName := range oldSchema.ListTableNames() {
 		if newSchema.GetTable(tableName) == nil {
 			oldTable := oldSchema.GetTable(tableName)
-			if oldTable != nil {
+			if oldTable != nil && !oldTable.GetProto().GetSkipDump() {
 				diff.TableChanges = append(diff.TableChanges, &TableDiff{
 					Action:     MetadataDiffActionDrop,
 					SchemaName: schemaName,
@@ -313,7 +317,7 @@ func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newS
 	// Check for new and modified tables
 	for _, tableName := range newSchema.ListTableNames() {
 		newTable := newSchema.GetTable(tableName)
-		if newTable == nil {
+		if newTable == nil || newTable.GetProto().GetSkipDump() {
 			continue
 		}
 
@@ -327,7 +331,7 @@ func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newS
 		} else {
 			// Compare table details
 			oldTable := oldSchema.GetTable(tableName)
-			if oldTable != nil {
+			if oldTable != nil && !oldTable.GetProto().GetSkipDump() {
 				tableDiff := compareTableDetails(schemaName, tableName, oldTable, newTable)
 				if tableDiff != nil {
 					diff.TableChanges = append(diff.TableChanges, tableDiff)
@@ -746,7 +750,7 @@ func compareViews(diff *MetadataDiff, schemaName string, oldSchema, newSchema *m
 	for _, viewName := range oldSchema.ListViewNames() {
 		if newSchema.GetView(viewName) == nil {
 			oldView := oldSchema.GetView(viewName)
-			if oldView != nil {
+			if oldView != nil && !oldView.GetProto().GetSkipDump() {
 				diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
 					Action:     MetadataDiffActionDrop,
 					SchemaName: schemaName,
@@ -760,7 +764,7 @@ func compareViews(diff *MetadataDiff, schemaName string, oldSchema, newSchema *m
 	// Check for new and modified views
 	for _, viewName := range newSchema.ListViewNames() {
 		newView := newSchema.GetView(viewName)
-		if newView == nil {
+		if newView == nil || newView.GetProto().GetSkipDump() {
 			continue
 		}
 
@@ -772,7 +776,7 @@ func compareViews(diff *MetadataDiff, schemaName string, oldSchema, newSchema *m
 				ViewName:   viewName,
 				NewView:    newView.GetProto(),
 			})
-		} else if oldView.Definition != newView.Definition {
+		} else if !oldView.GetProto().GetSkipDump() && oldView.Definition != newView.Definition {
 			diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
 				Action:     MetadataDiffActionAlter,
 				SchemaName: schemaName,
@@ -790,7 +794,7 @@ func compareMaterializedViews(diff *MetadataDiff, schemaName string, oldSchema, 
 	for _, mvName := range oldSchema.ListMaterializedViewNames() {
 		if newSchema.GetMaterializedView(mvName) == nil {
 			oldMV := oldSchema.GetMaterializedView(mvName)
-			if oldMV != nil {
+			if oldMV != nil && !oldMV.GetProto().GetSkipDump() {
 				diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
 					Action:               MetadataDiffActionDrop,
 					SchemaName:           schemaName,
@@ -804,7 +808,7 @@ func compareMaterializedViews(diff *MetadataDiff, schemaName string, oldSchema, 
 	// Check for new and modified materialized views
 	for _, mvName := range newSchema.ListMaterializedViewNames() {
 		newMV := newSchema.GetMaterializedView(mvName)
-		if newMV == nil {
+		if newMV == nil || newMV.GetProto().GetSkipDump() {
 			continue
 		}
 
@@ -816,7 +820,7 @@ func compareMaterializedViews(diff *MetadataDiff, schemaName string, oldSchema, 
 				MaterializedViewName: mvName,
 				NewMaterializedView:  newMV.GetProto(),
 			})
-		} else if oldMV.Definition != newMV.Definition {
+		} else if !oldMV.GetProto().GetSkipDump() && oldMV.Definition != newMV.Definition {
 			diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
 				Action:               MetadataDiffActionAlter,
 				SchemaName:           schemaName,
@@ -835,21 +839,25 @@ func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 	// Build map of old functions by signature
 	oldFuncsBySignature := make(map[string]*model.FunctionMetadata)
 	for _, fn := range oldSchema.ListFunctions() {
-		sig := fn.GetProto().Signature
-		if sig == "" {
-			sig = fn.GetProto().Name // fallback if no signature
+		if !fn.GetProto().GetSkipDump() {
+			sig := fn.GetProto().Signature
+			if sig == "" {
+				sig = fn.GetProto().Name // fallback if no signature
+			}
+			oldFuncsBySignature[sig] = fn
 		}
-		oldFuncsBySignature[sig] = fn
 	}
 
 	// Build map of new functions by signature
 	newFuncsBySignature := make(map[string]*model.FunctionMetadata)
 	for _, fn := range newSchema.ListFunctions() {
-		sig := fn.GetProto().Signature
-		if sig == "" {
-			sig = fn.GetProto().Name // fallback if no signature
+		if !fn.GetProto().GetSkipDump() {
+			sig := fn.GetProto().Signature
+			if sig == "" {
+				sig = fn.GetProto().Name // fallback if no signature
+			}
+			newFuncsBySignature[sig] = fn
 		}
-		newFuncsBySignature[sig] = fn
 	}
 
 	// Check for dropped functions
@@ -921,7 +929,7 @@ func compareProcedures(diff *MetadataDiff, schemaName string, oldSchema, newSche
 	for _, procName := range oldSchema.ListProcedureNames() {
 		if newSchema.GetProcedure(procName) == nil {
 			oldProc := oldSchema.GetProcedure(procName)
-			if oldProc != nil {
+			if oldProc != nil && !oldProc.GetProto().GetSkipDump() {
 				diff.ProcedureChanges = append(diff.ProcedureChanges, &ProcedureDiff{
 					Action:        MetadataDiffActionDrop,
 					SchemaName:    schemaName,
@@ -935,7 +943,7 @@ func compareProcedures(diff *MetadataDiff, schemaName string, oldSchema, newSche
 	// Check for new and modified procedures
 	for _, procName := range newSchema.ListProcedureNames() {
 		newProc := newSchema.GetProcedure(procName)
-		if newProc == nil {
+		if newProc == nil || newProc.GetProto().GetSkipDump() {
 			continue
 		}
 
@@ -947,7 +955,7 @@ func compareProcedures(diff *MetadataDiff, schemaName string, oldSchema, newSche
 				ProcedureName: procName,
 				NewProcedure:  newProc.GetProto(),
 			})
-		} else if oldProc.Definition != newProc.Definition {
+		} else if !oldProc.GetProto().GetSkipDump() && oldProc.Definition != newProc.Definition {
 			diff.ProcedureChanges = append(diff.ProcedureChanges, &ProcedureDiff{
 				Action:        MetadataDiffActionAlter,
 				SchemaName:    schemaName,
@@ -964,12 +972,16 @@ func compareSequences(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 	// Get sequences from proto since there's no ListSequenceNames method
 	oldSeqMap := make(map[string]*storepb.SequenceMetadata)
 	for _, seq := range oldSchema.GetProto().Sequences {
-		oldSeqMap[seq.Name] = seq
+		if !seq.GetSkipDump() {
+			oldSeqMap[seq.Name] = seq
+		}
 	}
 
 	newSeqMap := make(map[string]*storepb.SequenceMetadata)
 	for _, seq := range newSchema.GetProto().Sequences {
-		newSeqMap[seq.Name] = seq
+		if !seq.GetSkipDump() {
+			newSeqMap[seq.Name] = seq
+		}
 	}
 
 	// Check for dropped sequences
