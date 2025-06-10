@@ -19,7 +19,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -980,7 +979,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
-	if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureEncryptedSecrets, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_DATABASE_SECRET_VARIABLES, instance); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
@@ -1070,7 +1069,7 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
-	if err := s.licenseService.IsFeatureEnabledForInstance(base.FeatureEncryptedSecrets, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_DATABASE_SECRET_VARIABLES, instance); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
