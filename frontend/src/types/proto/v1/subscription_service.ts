@@ -734,6 +734,7 @@ export interface Feature_MatrixEntry {
 /** PlanConfig represents the configuration for all plans loaded from plan.yaml */
 export interface PlanConfig {
   plans: PlanLimitConfig[];
+  instanceFeatures: PlanFeature[];
 }
 
 /** PlanLimitConfig represents a single plan's configuration */
@@ -1311,7 +1312,7 @@ export const Feature_MatrixEntry: MessageFns<Feature_MatrixEntry> = {
 };
 
 function createBasePlanConfig(): PlanConfig {
-  return { plans: [] };
+  return { plans: [], instanceFeatures: [] };
 }
 
 export const PlanConfig: MessageFns<PlanConfig> = {
@@ -1319,6 +1320,11 @@ export const PlanConfig: MessageFns<PlanConfig> = {
     for (const v of message.plans) {
       PlanLimitConfig.encode(v!, writer.uint32(10).fork()).join();
     }
+    writer.uint32(18).fork();
+    for (const v of message.instanceFeatures) {
+      writer.int32(planFeatureToNumber(v));
+    }
+    writer.join();
     return writer;
   },
 
@@ -1337,6 +1343,24 @@ export const PlanConfig: MessageFns<PlanConfig> = {
           message.plans.push(PlanLimitConfig.decode(reader, reader.uint32()));
           continue;
         }
+        case 2: {
+          if (tag === 16) {
+            message.instanceFeatures.push(planFeatureFromJSON(reader.int32()));
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.instanceFeatures.push(planFeatureFromJSON(reader.int32()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1351,6 +1375,9 @@ export const PlanConfig: MessageFns<PlanConfig> = {
     if (message.plans?.length) {
       obj.plans = message.plans.map((e) => PlanLimitConfig.toJSON(e));
     }
+    if (message.instanceFeatures?.length) {
+      obj.instanceFeatures = message.instanceFeatures.map((e) => planFeatureToJSON(e));
+    }
     return obj;
   },
 
@@ -1360,6 +1387,7 @@ export const PlanConfig: MessageFns<PlanConfig> = {
   fromPartial(object: DeepPartial<PlanConfig>): PlanConfig {
     const message = createBasePlanConfig();
     message.plans = object.plans?.map((e) => PlanLimitConfig.fromPartial(e)) || [];
+    message.instanceFeatures = object.instanceFeatures?.map((e) => e) || [];
     return message;
   },
 };
