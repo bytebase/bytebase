@@ -67,7 +67,7 @@ import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, hasFeature } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
@@ -379,7 +379,7 @@ const columns = computed(() => {
       maxWidth: 320,
       hide:
         !props.showDatabaseCatalogColumn ||
-        !hasFeature(PlanLimitConfig_Feature.DATA_MASKING),
+        !hasFeature(PlanFeature.FEATURE_DATA_MASKING),
       render: (column) => {
         return h(SemanticTypeCell, {
           database: props.database.name,

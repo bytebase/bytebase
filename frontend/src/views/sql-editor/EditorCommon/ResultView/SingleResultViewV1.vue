@@ -230,7 +230,7 @@ import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type {
   QueryResult,
   QueryRow,
@@ -334,7 +334,7 @@ const allowToRequestExportData = computed(() => {
 
   // The current plan doesn't have access control feature.
   // Developers can not self-helped to request export.
-  if (!featureToRef(PlanLimitConfig_Feature.IAM).value) {
+  if (!featureToRef(PlanFeature.FEATURE_IAM).value) {
     return false;
   }
 

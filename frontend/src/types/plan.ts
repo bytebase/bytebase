@@ -2,18 +2,18 @@ import {
   PlanType,
   type PlanConfig,
   type PlanLimitConfig,
-  PlanLimitConfig_Feature,
+  PlanFeature,
 } from "@/types/proto/v1/subscription_service";
 import planData from "./plan.yaml";
 
 // Use proto Feature enum as the primary feature type
-export type Feature = PlanLimitConfig_Feature;
+export type Feature = PlanFeature;
 
 // Instance-limited features that require activated instances
-export const instanceLimitFeature = new Set<PlanLimitConfig_Feature>([
-  PlanLimitConfig_Feature.DATABASE_SECRET_VARIABLES,
-  PlanLimitConfig_Feature.INSTANCE_READ_ONLY_CONNECTION,
-  PlanLimitConfig_Feature.DATA_MASKING,
+export const instanceLimitFeature = new Set<PlanFeature>([
+  PlanFeature.FEATURE_DATABASE_SECRET_VARIABLES,
+  PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION,
+  PlanFeature.FEATURE_DATA_MASKING,
 ]);
 
 export const planTypeToString = (planType: PlanType): string => {
@@ -36,7 +36,7 @@ export const PLAN_CONFIG: PlanConfig = planData;
 export const PLANS: PlanLimitConfig[] = planData.plans;
 
 // Create a plan feature matrix from the YAML data
-export const PLAN_FEATURE_MATRIX = new Map<PlanType, Set<PlanLimitConfig_Feature>>();
+export const PLAN_FEATURE_MATRIX = new Map<PlanType, Set<PlanFeature>>();
 
 // Initialize the feature matrix from plan data
 PLANS.forEach((plan) => {
@@ -44,13 +44,13 @@ PLANS.forEach((plan) => {
 });
 
 // Helper function to check if a plan has a feature
-export const planHasFeature = (plan: PlanType, feature: PlanLimitConfig_Feature): boolean => {
+export const planHasFeature = (plan: PlanType, feature: PlanFeature): boolean => {
   const planFeatures = PLAN_FEATURE_MATRIX.get(plan);
   return planFeatures?.has(feature) ?? false;
 };
 
 // Helper function to get minimum required plan for a feature
-export const getMinimumRequiredPlan = (feature: PlanLimitConfig_Feature): PlanType => {
+export const getMinimumRequiredPlan = (feature: PlanFeature): PlanType => {
   const planOrder = [PlanType.FREE, PlanType.TEAM, PlanType.ENTERPRISE];
   for (const plan of planOrder) {
     if (planHasFeature(plan, feature)) {
@@ -61,12 +61,12 @@ export const getMinimumRequiredPlan = (feature: PlanLimitConfig_Feature): PlanTy
 };
 
 // Helper function to check if a feature is available for a plan
-export const hasFeature = (plan: PlanType, feature: PlanLimitConfig_Feature): boolean => {
+export const hasFeature = (plan: PlanType, feature: PlanFeature): boolean => {
   return planHasFeature(plan, feature);
 };
 
 // Helper function to check instance features
-export const hasInstanceFeature = (plan: PlanType, feature: PlanLimitConfig_Feature, instanceActivated = true): boolean => {
+export const hasInstanceFeature = (plan: PlanType, feature: PlanFeature, instanceActivated = true): boolean => {
   if (!hasFeature(plan, feature)) {
     return false;
   }

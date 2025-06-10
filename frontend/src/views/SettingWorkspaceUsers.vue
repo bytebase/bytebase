@@ -76,7 +76,7 @@
             <template #icon>
               <SettingsIcon class="h-5 w-5" />
               <FeatureBadge
-                :feature="PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID"
+                :feature="PlanFeature.FEATURE_DIRECTORY_SYNC"
               />
             </template>
             {{ $t(`settings.members.entra-sync.self`) }}
@@ -180,19 +180,13 @@
   />
 
   <FeatureModal
-    :feature="PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID"
+    :feature="PlanFeature.FEATURE_DIRECTORY_SYNC"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
 
 <script setup lang="ts">
-import { PlusIcon, SettingsIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NPopover, NTabPane, NTabs } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import type { ComponentExposed } from "vue-component-type-helpers";
-import { useI18n } from "vue-i18n";
-import { RouterLink, useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
@@ -216,9 +210,15 @@ import { groupNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group_service";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { type User } from "@/types/proto/v1/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { PlusIcon, SettingsIcon } from "lucide-vue-next";
+import { NButton, NCheckbox, NPopover, NTabPane, NTabs } from "naive-ui";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
+import { useI18n } from "vue-i18n";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
@@ -332,7 +332,7 @@ const workspaceProfileSetting = computed(() =>
 );
 
 const hasDirectorySyncFeature = featureToRef(
-  PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID
+  PlanFeature.FEATURE_DIRECTORY_SYNC
 );
 
 const allowGetSCIMSetting = computed(() =>

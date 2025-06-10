@@ -199,7 +199,7 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 }
 
 func (s *IdentityProviderService) checkFeatureAvailable(ssoType v1pb.IdentityProviderType) error {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_ENTERPRISE_SSO); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO); err != nil {
 		return status.Error(codes.PermissionDenied, err.Error())
 	}
 	plan := s.licenseService.GetEffectivePlan()

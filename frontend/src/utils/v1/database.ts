@@ -1,5 +1,5 @@
 import { checkQuerierPermission, hasFeature } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
@@ -51,7 +51,7 @@ export const isArchivedDatabaseV1 = (_db: ComposedDatabase): boolean => {
 
 // isDatabaseV1Alterable checks if database alterable for user.
 export const isDatabaseV1Alterable = (database: ComposedDatabase): boolean => {
-  if (!hasFeature(PlanLimitConfig_Feature.IAM)) {
+  if (!hasFeature(PlanFeature.FEATURE_IAM)) {
     // The current plan doesn't have access control feature.
     // Fallback to true.
     return true;

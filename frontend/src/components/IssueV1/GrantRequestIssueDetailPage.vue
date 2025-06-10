@@ -2,7 +2,7 @@
   <div ref="containerRef" class="h-full flex flex-col">
     <div class="border-b">
       <BannerSection v-if="!isCreating" />
-      <FeatureAttention :feature="PlanLimitConfig_Feature.APPROVAL_WORKFLOW" />
+      <FeatureAttention :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
       <HeaderSection />
     </div>
 
@@ -117,7 +117,7 @@ import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { displayRoleTitle } from "@/utils";
 import { convertFromCELString } from "@/utils/issue/cel";
 import { provideSidebarContext } from "../Plan/logic";

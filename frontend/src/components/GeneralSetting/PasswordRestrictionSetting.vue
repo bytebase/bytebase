@@ -4,7 +4,7 @@
       class="font-medium flex flex-row justify-start items-center mb-2 gap-x-2"
     >
       {{ $t("settings.general.workspace.password-restriction.self") }}
-      <FeatureBadge :feature="PlanLimitConfig_Feature.PASSWORD_RESTRICTIONS" />
+      <FeatureBadge :feature="PlanFeature.FEATURE_PASSWORD_RESTRICTIONS" />
     </p>
     <div class="w-full flex flex-col space-y-3">
       <div class="flex items-center space-x-2">
@@ -167,7 +167,7 @@
   </div>
 
   <FeatureModal
-    :feature="PlanLimitConfig_Feature.PASSWORD_RESTRICTIONS"
+    :feature="PlanFeature.FEATURE_PASSWORD_RESTRICTIONS"
     :open="showFeatureModal"
     @cancel="showFeatureModal = false"
   />
@@ -181,7 +181,7 @@ import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { PasswordRestrictionSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 const DEFAULT_MIN_LENGTH = 8;
@@ -192,7 +192,7 @@ defineProps<{
 
 const settingV1Store = useSettingV1Store();
 const showFeatureModal = ref<boolean>(false);
-const hasPasswordFeature = featureToRef(PlanLimitConfig_Feature.PASSWORD_RESTRICTIONS);
+const hasPasswordFeature = featureToRef(PlanFeature.FEATURE_PASSWORD_RESTRICTIONS);
 
 const passwordRestrictionSetting = computed(
   () =>

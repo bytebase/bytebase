@@ -5,7 +5,7 @@
         class="textinfolabel mb-2 w-full leading-4 flex flex-col 2xl:flex-row items-start 2xl:items-center gap-x-1"
       >
         <div class="flex items-center gap-x-1">
-          <FeatureBadge :feature="PlanLimitConfig_Feature.BATCH_QUERY" />
+          <FeatureBadge :feature="PlanFeature.FEATURE_BATCH_QUERY" />
           {{
             $t("sql-editor.batch-query.description", {
               database: state.selectedDatabases.size,
@@ -158,7 +158,7 @@
   </div>
 
   <FeatureModal
-    :feature="PlanLimitConfig_Feature.BATCH_QUERY"
+    :feature="PlanFeature.FEATURE_BATCH_QUERY"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -218,7 +218,7 @@ import {
 } from "@/types";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import {
   findAncestor,
   isDescendantOf,
@@ -277,8 +277,8 @@ watch(
   { deep: true }
 );
 
-const hasBatchQueryFeature = featureToRef(PlanLimitConfig_Feature.BATCH_QUERY);
-const hasDatabaseGroupFeature = featureToRef(PlanLimitConfig_Feature.DATABASE_GROUPS);
+const hasBatchQueryFeature = featureToRef(PlanFeature.FEATURE_BATCH_QUERY);
+const hasDatabaseGroupFeature = featureToRef(PlanFeature.FEATURE_DATABASE_GROUPS);
 
 const state = reactive<LocalState>({
   selectedDatabases: new Set(),

@@ -2,7 +2,7 @@
   <div ref="containerRef" class="h-full flex flex-col">
     <div class="border-b">
       <BannerSection v-if="!isCreating" />
-      <FeatureAttention :feature="PlanLimitConfig_Feature.APPROVAL_WORKFLOW" />
+      <FeatureAttention :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
 
       <HeaderSection />
     </div>
@@ -68,7 +68,7 @@
 import { computed, ref } from "vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { useCurrentProjectV1 } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import { type Task } from "@/types/proto/v1/rollout_service";
 import { SQLCheckSection } from "../Plan/components";

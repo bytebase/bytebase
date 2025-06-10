@@ -49,7 +49,7 @@ func (*SubscriptionService) GetFeatureMatrix(_ context.Context, _ *v1pb.GetFeatu
 	resp := &v1pb.FeatureMatrix{}
 
 	// Create a map to collect features
-	featureMap := make(map[v1pb.PlanLimitConfig_Feature]map[string]bool)
+	featureMap := make(map[v1pb.PlanFeature]map[string]bool)
 
 	// Iterate through all plans and features
 	for planType, features := range enterprise.PlanFeatureMatrix {

@@ -18,7 +18,7 @@ import { hasFeature } from "@/store";
 import { VirtualRoleType } from "@/types";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { Environment } from "@/types/v1/environment";
 import { FeatureModal } from "../FeatureGuard";
 import { provideEnvironmentFormContext } from "./context";
@@ -83,21 +83,21 @@ onBeforeRouteLeave((to, from, next) => {
 useEmitteryEventListener(events, "create", (params) => {
   const { rolloutPolicy, environment } = params;
   if (environment.tags?.protected === "protected") {
-    if (!hasFeature(PlanLimitConfig_Feature.ENVIRONMENT_TIERS)) {
-      missingFeature.value = PlanLimitConfig_Feature.ENVIRONMENT_TIERS;
+    if (!hasFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)) {
+      missingFeature.value = PlanFeature.FEATURE_ENVIRONMENT_TIERS;
       return;
     }
   }
   const rp = rolloutPolicy.rolloutPolicy;
   if (rp?.automatic === false) {
     if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
-      if (!hasFeature(PlanLimitConfig_Feature.APPROVAL_WORKFLOW)) {
-        missingFeature.value = PlanLimitConfig_Feature.APPROVAL_WORKFLOW;
+      if (!hasFeature(PlanFeature.FEATURE_APPROVAL_WORKFLOW)) {
+        missingFeature.value = PlanFeature.FEATURE_APPROVAL_WORKFLOW;
         return;
       }
     }
-    if (!hasFeature(PlanLimitConfig_Feature.ROLLOUT_POLICY)) {
-      missingFeature.value = PlanLimitConfig_Feature.ROLLOUT_POLICY;
+    if (!hasFeature(PlanFeature.FEATURE_ROLLOUT_POLICY)) {
+      missingFeature.value = PlanFeature.FEATURE_ROLLOUT_POLICY;
       return;
     }
   }
@@ -107,9 +107,9 @@ useEmitteryEventListener(events, "create", (params) => {
 useEmitteryEventListener(events, "update", (environment) => {
   if (
     environment.tags.protected === "protected" &&
-    !hasFeature(PlanLimitConfig_Feature.ENVIRONMENT_TIERS)
+    !hasFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
   ) {
-    missingFeature.value = PlanLimitConfig_Feature.ENVIRONMENT_TIERS;
+    missingFeature.value = PlanFeature.FEATURE_ENVIRONMENT_TIERS;
     return;
   }
 
@@ -121,13 +121,13 @@ useEmitteryEventListener(events, "update-policy", (params) => {
     const rp = policy.rolloutPolicy;
     if (rp?.automatic === false) {
       if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
-        if (!hasFeature(PlanLimitConfig_Feature.APPROVAL_WORKFLOW)) {
-          missingFeature.value = PlanLimitConfig_Feature.APPROVAL_WORKFLOW;
+        if (!hasFeature(PlanFeature.FEATURE_APPROVAL_WORKFLOW)) {
+          missingFeature.value = PlanFeature.FEATURE_APPROVAL_WORKFLOW;
           return;
         }
       }
-      if (!hasFeature(PlanLimitConfig_Feature.ROLLOUT_POLICY)) {
-        missingFeature.value = PlanLimitConfig_Feature.ROLLOUT_POLICY;
+      if (!hasFeature(PlanFeature.FEATURE_ROLLOUT_POLICY)) {
+        missingFeature.value = PlanFeature.FEATURE_ROLLOUT_POLICY;
         return;
       }
     }

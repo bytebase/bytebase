@@ -21,7 +21,7 @@
           />
           <div class="font-medium flex items-center gap-x-2">
             {{ $t("settings.general.workspace.disallow-signup.enable") }}
-            <FeatureBadge :feature="PlanLimitConfig_Feature.DISALLOW_SELF_SERVICE_SIGNUP" />
+            <FeatureBadge :feature="PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP" />
           </div>
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
@@ -47,7 +47,7 @@
             />
             <div class="font-medium flex items-center gap-x-2">
               {{ $t("settings.general.workspace.require-2fa.enable") }}
-              <FeatureBadge :feature="PlanLimitConfig_Feature.TWO_FA" />
+              <FeatureBadge :feature="PlanFeature.FEATURE_TWO_FA" />
             </div>
           </div>
           <div class="mt-1 mb-3 text-sm text-gray-400">
@@ -86,7 +86,7 @@
                   )
                 }}
               </NTooltip>
-              <FeatureBadge :feature="PlanLimitConfig_Feature.DISALLOW_PASSWORD_SIGNIN" />
+              <FeatureBadge :feature="PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN" />
             </div>
           </div>
           <div class="mt-1 mb-3 text-sm text-gray-400">
@@ -123,7 +123,7 @@ import {
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { type WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { isEqual } from "lodash-es";
 import { TriangleAlertIcon } from "lucide-vue-next";
 import { NDivider, NTooltip } from "naive-ui";
@@ -134,7 +134,7 @@ import PasswordRestrictionSetting from "./PasswordRestrictionSetting.vue";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {
-  featureNameForModal?: PlanLimitConfig_Feature;
+  featureNameForModal?: PlanFeature;
   disallowSignup: boolean;
   require2fa: boolean;
   disallowPasswordSignin: boolean;
@@ -168,10 +168,10 @@ const state = reactive<LocalState>({
 });
 
 const { isSaaSMode } = storeToRefs(actuatorStore);
-const has2FAFeature = featureToRef(PlanLimitConfig_Feature.TWO_FA);
-const hasDisallowSignupFeature = featureToRef(PlanLimitConfig_Feature.DISALLOW_SELF_SERVICE_SIGNUP);
+const has2FAFeature = featureToRef(PlanFeature.FEATURE_TWO_FA);
+const hasDisallowSignupFeature = featureToRef(PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP);
 const hasDisallowPasswordSigninFeature = featureToRef(
-  PlanLimitConfig_Feature.DISALLOW_PASSWORD_SIGNIN
+  PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN
 );
 
 watchEffect(async () => {
