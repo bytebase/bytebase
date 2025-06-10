@@ -65,9 +65,9 @@ type LicenseService interface {
 	// LoadSubscription will load subscription.
 	LoadSubscription(ctx context.Context) *Subscription
 	// IsFeatureEnabled returns whether a feature is enabled.
-	IsFeatureEnabled(feature v1pb.PlanLimitConfig_Feature) error
+	IsFeatureEnabled(feature v1pb.PlanFeature) error
 	// IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
-	IsFeatureEnabledForInstance(feature v1pb.PlanLimitConfig_Feature, instance *store.InstanceMessage) error
+	IsFeatureEnabledForInstance(feature v1pb.PlanFeature, instance *store.InstanceMessage) error
 	// GetEffectivePlan gets the effective plan.
 	GetEffectivePlan() v1pb.PlanType
 	// GetPlanLimitValue gets the limit value for the plan.

@@ -6,7 +6,7 @@
           <div>
             <div class="textlabel flex items-center gap-x-1">
               {{ $t("issue.approval-flow.self") }}
-              <FeatureBadge :feature="PlanLimitConfig_Feature.APPROVAL_WORKFLOW" />
+              <FeatureBadge :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
             </div>
           </div>
         </template>
@@ -62,7 +62,7 @@
   <div v-if="isCreating" class="flex flex-col gap-y-1">
     <div class="textlabel flex items-center gap-x-1">
       {{ $t("issue.approval-flow.self") }}
-      <FeatureBadge :feature="PlanLimitConfig_Feature.APPROVAL_WORKFLOW" />
+      <FeatureBadge :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
     </div>
     <div class="text-control-placeholder text-xs">
       {{ $t("issue.approval-flow.pre-issue-created-tips") }}
@@ -77,7 +77,7 @@ import { BBSpin } from "@/bbkit";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import { useIssueContext, useWrappedReviewStepsV1 } from "@/components/IssueV1";
 import { useIssueV1Store } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import RiskLevelTag from "./RiskLevelTag.vue";
 import Timeline from "./Timeline.vue";
 

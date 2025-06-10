@@ -34,7 +34,7 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { computed, ref, watch } from "vue";
 import { Switch } from "../v2";
@@ -56,7 +56,7 @@ const allowEdit = computed(() => {
   return (
     props.allowEdit &&
     hasWorkspacePermissionV2("bb.policies.update") &&
-    hasFeature(PlanLimitConfig_Feature.IAM)
+    hasFeature(PlanFeature.FEATURE_IAM)
   );
 });
 

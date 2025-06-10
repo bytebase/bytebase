@@ -22,7 +22,7 @@
           <span class="font-medium">
             {{ $t("settings.general.workspace.watermark.enable") }}
           </span>
-          <FeatureBadge :feature="PlanLimitConfig_Feature.WATERMARK" />
+          <FeatureBadge :feature="PlanFeature.FEATURE_WATERMARK" />
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.watermark.description") }}
@@ -38,7 +38,7 @@
           <span class="font-medium">
             {{ $t("settings.general.workspace.data-export.enable") }}
           </span>
-          <FeatureBadge :feature="PlanLimitConfig_Feature.RESTRICT_COPYING_DATA" />
+          <FeatureBadge :feature="PlanFeature.FEATURE_RESTRICT_COPYING_DATA" />
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.data-export.description") }}
@@ -86,7 +86,7 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { isEqual } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
@@ -97,7 +97,7 @@ import QueryDataPolicySetting from "./QueryDataPolicySetting.vue";
 import RestrictIssueCreationConfigure from "./RestrictIssueCreationConfigure.vue";
 
 interface LocalState {
-  featureNameForModal?: PlanLimitConfig_Feature;
+  featureNameForModal?: PlanFeature;
   enableWatermark: boolean;
   enableDataExport: boolean;
 }
@@ -109,7 +109,7 @@ const props = defineProps<{
 
 const settingV1Store = useSettingV1Store();
 const policyV1Store = usePolicyV1Store();
-const hasWatermarkFeature = featureToRef(PlanLimitConfig_Feature.WATERMARK);
+const hasWatermarkFeature = featureToRef(PlanFeature.FEATURE_WATERMARK);
 
 const domainRestrictionSettingRef =
   ref<InstanceType<typeof DomainRestrictionSetting>>();

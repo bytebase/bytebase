@@ -389,7 +389,7 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 		return status.Errorf(codes.InvalidArgument, "data source id is required")
 	}
 
-	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_EXTERNAL_SECRET_MANAGER, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER, instance); err != nil {
 		missingFeatureError := status.Error(codes.PermissionDenied, err.Error())
 		if dataSource.GetExternalSecret() != nil {
 			return missingFeatureError
@@ -463,12 +463,12 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			}
 			patch.Metadata.Activation = request.Instance.Activation
 		case "sync_interval":
-			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_CUSTOM_INSTANCE_SYNC_TIME, instance); err != nil {
+			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
 			patch.Metadata.SyncInterval = request.Instance.SyncInterval
 		case "maximum_connections":
-			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_CUSTOM_INSTANCE_CONNECTION_LIMIT, instance); err != nil {
+			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
 			patch.Metadata.MaximumConnections = request.Instance.MaximumConnections
@@ -692,7 +692,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
 		return nil, status.Error(codes.InvalidArgument, "only read-only data source can be added.")
 	}
-	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
@@ -741,7 +741,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	if dataSource.GetType() == storepb.DataSourceType_READ_ONLY {
-		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanLimitConfig_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
+		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}

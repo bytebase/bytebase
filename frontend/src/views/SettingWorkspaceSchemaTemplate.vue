@@ -1,6 +1,6 @@
 <template>
   <div class="w-full space-y-4">
-    <FeatureAttention :feature="PlanLimitConfig_Feature.SCHEMA_TEMPLATE" />
+    <FeatureAttention :feature="PlanFeature.FEATURE_SCHEMA_TEMPLATE" />
     <NTabs v-model:value="state.selectedTab" type="line">
       <NTabPane
         name="FIELD_TEMPLATE"
@@ -39,7 +39,7 @@ import ColumnTypes from "@/views/SchemaTemplate/ColumnTypes.vue";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   selectedTab: "FIELD_TEMPLATE" | "COLUMN_TYPE_RESTRICTION" | "TABLE_TEMPLATE";
@@ -55,7 +55,7 @@ const state = reactive<LocalState>({
   selectedTab: "FIELD_TEMPLATE",
 });
 
-const hasFeature = featureToRef(PlanLimitConfig_Feature.SCHEMA_TEMPLATE);
+const hasFeature = featureToRef(PlanFeature.FEATURE_SCHEMA_TEMPLATE);
 
 watch(
   () => route.hash,

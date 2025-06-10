@@ -29,7 +29,7 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
-import { PlanLimitConfig_Feature, PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanFeature, PlanType } from "@/types/proto/v1/subscription_service";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -44,7 +44,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    feature: PlanLimitConfig_Feature;
+    feature: PlanFeature;
     description?: string;
     type?: "info" | "warning" | "error";
     instance?: Instance | InstanceResource;

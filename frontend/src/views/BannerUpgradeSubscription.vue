@@ -55,7 +55,7 @@
           ({{
             $t(
               `subscription.plan.${planTypeToString(
-                subscriptionStore.getMinimumRequiredPlan(feature as PlanLimitConfig_Feature)
+                subscriptionStore.getMinimumRequiredPlan(feature as PlanFeature)
               )}.title`
             )
           }})
@@ -79,7 +79,7 @@ import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store, useActuatorV1Store } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { planTypeToString } from "@/types";
 import {
   PlanType,
@@ -115,7 +115,7 @@ const neededPlan = computed(() => {
 
   for (const feature of unlicensedFeatures.value) {
     const requiredPlan = subscriptionStore.getMinimumRequiredPlan(
-      feature as PlanLimitConfig_Feature
+      feature as PlanFeature
     );
     if (planTypeToNumber(requiredPlan) > planTypeToNumber(plan)) {
       plan = requiredPlan;

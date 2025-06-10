@@ -111,7 +111,7 @@
               <template #default>
                 <div class="flex items-center gap-1">
                   <span>{{ $t("common.share") }}</span>
-                  <FeatureBadge :feature="PlanLimitConfig_Feature.SAVED_AND_SHARED_SQL_SCRIPTS" />
+                  <FeatureBadge :feature="PlanFeature.FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS" />
                 </div>
               </template>
             </NPopover>
@@ -171,7 +171,7 @@ import {
   type SQLEditorQueryParams,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { keyboardShortcutStr, isWorksheetWritableV1 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
@@ -183,7 +183,7 @@ import SchemaChooser from "./SchemaChooser.vue";
 import SharePopover from "./SharePopover.vue";
 
 interface LocalState {
-  requiredFeatureName?: PlanLimitConfig_Feature;
+  requiredFeatureName?: PlanFeature;
 }
 
 defineOptions({
@@ -200,7 +200,7 @@ const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
 const { events } = useSQLEditorContext();
 const { resultRowsLimit } = storeToRefs(useSQLEditorStore());
-const hasSharedSQLScriptFeature = featureToRef(PlanLimitConfig_Feature.SAVED_AND_SHARED_SQL_SCRIPTS);
+const hasSharedSQLScriptFeature = featureToRef(PlanFeature.FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS);
 const disallowShareWorksheet = useAppFeature(
   "bb.feature.sql-editor.disallow-share-worksheet"
 );
@@ -342,7 +342,7 @@ const handleClickSave = () => {
 
 const handleShareButtonClick = () => {
   if (!hasSharedSQLScriptFeature.value) {
-    state.requiredFeatureName = PlanLimitConfig_Feature.SAVED_AND_SHARED_SQL_SCRIPTS;
+    state.requiredFeatureName = PlanFeature.FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS;
   }
 };
 </script>

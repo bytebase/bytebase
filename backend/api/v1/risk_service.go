@@ -68,7 +68,7 @@ func (s *RiskService) GetRisk(ctx context.Context, request *v1pb.GetRiskRequest)
 
 // CreateRisk creates a risk.
 func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRequest) (*v1pb.Risk, error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_RISK_ASSESSMENT); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RISK_ASSESSMENT); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	// Validate the condition.
@@ -91,7 +91,7 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 
 // UpdateRisk updates a risk.
 func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRequest) (*v1pb.Risk, error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_RISK_ASSESSMENT); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RISK_ASSESSMENT); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	if request.UpdateMask == nil {

@@ -51,7 +51,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if config.ChangeDatabaseType == storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
 		return nil, errors.Errorf("change database type is unspecified")
 	}
-	if err := e.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_PRE_DEPLOYMENT_SQL_REVIEW); err != nil {
+	if err := e.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_PRE_DEPLOYMENT_SQL_REVIEW); err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{

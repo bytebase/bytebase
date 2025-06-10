@@ -154,7 +154,7 @@
             class="text-lg font-medium flex flex-row justify-start items-center"
           >
             {{ $t("two-factor.self") }}
-            <FeatureBadge :feature="PlanLimitConfig_Feature.TWO_FA" class="ml-2" />
+            <FeatureBadge :feature="PlanFeature.FEATURE_TWO_FA" class="ml-2" />
           </span>
           <div class="space-x-2">
             <NButton v-if="user.email === currentUser.email" @click="enable2FA">
@@ -203,7 +203,7 @@
   </main>
 
   <FeatureModal
-    :feature="PlanLimitConfig_Feature.TWO_FA"
+    :feature="PlanFeature.FEATURE_TWO_FA"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -249,7 +249,7 @@ import {
   unknownUser,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import {
   UpdateUserRequest,
   UserType,
@@ -325,8 +325,8 @@ onUnmounted(() => {
   document.removeEventListener("keydown", keyboardHandler);
 });
 
-const hasRBACFeature = featureToRef(PlanLimitConfig_Feature.IAM);
-const has2FAFeature = featureToRef(PlanLimitConfig_Feature.TWO_FA);
+const hasRBACFeature = featureToRef(PlanFeature.FEATURE_IAM);
+const has2FAFeature = featureToRef(PlanFeature.FEATURE_TWO_FA);
 
 const isMFAEnabled = computed(() => {
   return user.value.mfaEnabled;

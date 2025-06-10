@@ -27,7 +27,7 @@
   <BBSpin v-else class="w-full h-64" />
 
   <FeatureModal
-    :feature="PlanLimitConfig_Feature.ENTERPRISE_SSO"
+    :feature="PlanFeature.FEATURE_ENTERPRISE_SSO"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -41,7 +41,7 @@ import IdentityProviderCreateForm from "@/components/SSO/IdentityProviderCreateF
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { ssoNamePrefix } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 
 const props = defineProps<{
   ssoId?: string;

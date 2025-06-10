@@ -67,7 +67,7 @@
 
   <FeatureModal
     :open="state.showFeatureModal"
-    :feature="PlanLimitConfig_Feature.IAM"
+    :feature="PlanFeature.FEATURE_IAM"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -105,7 +105,7 @@ import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import type { Instance } from "@/types/proto/v1/instance_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

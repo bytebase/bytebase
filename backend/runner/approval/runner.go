@@ -137,7 +137,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		// no need to find if
 		// - feature is not enabled
 		// - approval setting rules are empty
-		if r.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_APPROVAL_WORKFLOW) != nil || len(approvalSetting.Rules) == 0 {
+		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil || len(approvalSetting.Rules) == 0 {
 			// nolint:nilerr
 			return nil, 0, true, nil
 		}
