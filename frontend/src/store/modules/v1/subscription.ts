@@ -1,15 +1,11 @@
-import dayjs from "dayjs";
-import { defineStore } from "pinia";
-import type { Ref } from "vue";
-import { computed } from "vue";
 import { subscriptionServiceClient } from "@/grpcweb";
-import { 
-  PLANS, 
-  getDateForPbTimestamp, 
-  instanceLimitFeature,
+import {
+  PLANS,
   hasFeature as checkFeature,
   hasInstanceFeature as checkInstanceFeature,
-  getMinimumRequiredPlan
+  getDateForPbTimestamp,
+  getMinimumRequiredPlan,
+  instanceLimitFeature
 } from "@/types";
 import type {
   Instance,
@@ -17,11 +13,15 @@ import type {
 } from "@/types/proto/v1/instance_service";
 import type { Subscription } from "@/types/proto/v1/subscription_service";
 import {
-  PlanType,
   PlanLimitConfig_Feature,
+  PlanType,
   planTypeFromJSON,
   planTypeToNumber,
 } from "@/types/proto/v1/subscription_service";
+import dayjs from "dayjs";
+import { defineStore } from "pinia";
+import type { Ref } from "vue";
+import { computed } from "vue";
 
 // The threshold of days before the license expiration date to show the warning.
 // Default is 7 days.
@@ -237,11 +237,6 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       });
       this.setSubscription(subscription);
       return subscription;
-    },
-    // Feature matrix is now loaded from plan.yaml, no need to fetch from API
-    async fetchFeatureMatrix() {
-      // This method is kept for backward compatibility but no longer needed
-      // Features are now determined from the static plan.yaml data
     },
   },
 });
