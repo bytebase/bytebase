@@ -14,7 +14,6 @@ import {
 import {
   isValidEnvironmentName,
   unknownEnvironment,
-  type FeatureType,
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
@@ -25,6 +24,7 @@ import {
   DataSource_AuthenticationType,
   DataSource_RedisType,
 } from "@/types/proto/v1/instance_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import {
   extractInstanceResourceName,
   hasWorkspacePermissionV2,
@@ -101,7 +101,7 @@ export const provideInstanceFormContext = (baseContext: {
 
   const hasReadonlyReplicaFeature = computed(() => {
     return useSubscriptionV1Store().hasInstanceFeature(
-      "bb.feature.read-replica-connection",
+      PlanLimitConfig_Feature.INSTANCE_READ_ONLY_CONNECTION,
       instance.value
     );
   });
@@ -109,7 +109,7 @@ export const provideInstanceFormContext = (baseContext: {
   const resetDataSource = () => {
     dataSourceEditState.value = extractDataSourceEditState(instance.value);
   };
-  const missingFeature = ref<FeatureType | undefined>(undefined);
+  const missingFeature = ref<PlanLimitConfig_Feature | undefined>(undefined);
 
   const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 

@@ -1,7 +1,7 @@
 <template>
   <div class="w-full space-y-4">
     <FeatureAttention
-      feature="bb.feature.sensitive-data"
+      :feature="PlanLimitConfig_Feature.DATA_MASKING"
       :instance="database.instanceResource"
     />
     <div
@@ -21,7 +21,7 @@
         <template #icon>
           <ShieldCheckIcon v-if="hasSensitiveDataFeature" class="w-4" />
           <FeatureBadge
-            feature="bb.feature.sensitive-data"
+            :feature="PlanLimitConfig_Feature.DATA_MASKING"
             class="text-white"
             :instance="database.instanceResource"
           />
@@ -43,7 +43,7 @@
   </div>
 
   <FeatureModal
-    feature="bb.feature.sensitive-data"
+    :feature="PlanLimitConfig_Feature.DATA_MASKING"
     :open="state.showFeatureModal"
     :instance="database.instanceResource"
     @cancel="state.showFeatureModal = false"
@@ -85,6 +85,7 @@ import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { SearchBox } from "@/components/v2";
 import { featureToRef, usePolicyV1Store, useDatabaseCatalog } from "@/store";
 import { type ComposedDatabase } from "@/types";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import {
   ObjectSchema_Type,
   type ObjectSchema,
@@ -141,7 +142,7 @@ const hasPolicyPermission = computed(() => {
 
 const policyStore = usePolicyV1Store();
 
-const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const hasSensitiveDataFeature = featureToRef(PlanLimitConfig_Feature.DATA_MASKING);
 
 const databaseCatalog = useDatabaseCatalog(props.database.name, false);
 

@@ -20,7 +20,7 @@ import {
   useAuthStore,
   useSubscriptionV1Store,
 } from "./store";
-import { humanizeTs, humanizeDate, isDev, isRelease } from "./utils";
+import { humanizeDate, humanizeTs, isDev, isRelease } from "./utils";
 
 protobufjs.util.Long = Long;
 protobufjs.configure();
@@ -46,7 +46,6 @@ console.debug("release:", isRelease());
   await Promise.all([
     useActuatorV1Store().fetchServerInfo(),
     useSubscriptionV1Store().fetchSubscription(),
-    useSubscriptionV1Store().fetchFeatureMatrix(),
     useAuthStore().fetchCurrentUser(),
   ]);
 

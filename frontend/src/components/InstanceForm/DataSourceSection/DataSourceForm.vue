@@ -276,7 +276,7 @@
             <NRadio :value="DataSourceExternalSecret_SecretType.VAULT_KV_V2">
               <div class="flex items-center gap-x-1">
                 {{ $t("instance.password-type.external-secret-vault") }}
-                <FeatureBadge feature="bb.feature.external-secret-manager" />
+                <FeatureBadge :feature="PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER" />
               </div>
             </NRadio>
             <NRadio
@@ -284,7 +284,7 @@
             >
               <div class="flex items-center gap-x-1">
                 {{ $t("instance.password-type.external-secret-aws") }}
-                <FeatureBadge feature="bb.feature.external-secret-manager" />
+                <FeatureBadge :feature="PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER" />
               </div>
             </NRadio>
             <NRadio
@@ -292,7 +292,7 @@
             >
               <div class="flex items-center gap-x-1">
                 {{ $t("instance.password-type.external-secret-gcp") }}
-                <FeatureBadge feature="bb.feature.external-secret-manager" />
+                <FeatureBadge :feature="PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER" />
               </div>
             </NRadio>
           </NRadioGroup>
@@ -318,7 +318,7 @@
               url="https://www.bytebase.com/docs/get-started/instance/#use-secret-manager?source=console"
               class="ml-1 text-sm"
             />
-            <FeatureBadge feature="bb.feature.external-secret-manager" />
+            <FeatureBadge :feature="PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER" />
           </div>
           <div class="mt-2">
             <NCheckbox
@@ -998,6 +998,7 @@ import {
   KerberosConfig,
   SASLConfig,
 } from "@/types/proto/v1/instance_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { onlyAllowNumber } from "@/utils";
 import {
   NButton,
@@ -1247,7 +1248,7 @@ const handleHostInput = (value: string) => {
       if (ds.host || ds.port) {
         ds.host = adminDataSource.value.host;
         ds.port = adminDataSource.value.port;
-        missingFeature.value = "bb.feature.read-replica-connection";
+        missingFeature.value = PlanLimitConfig_Feature.INSTANCE_READ_ONLY_CONNECTION;
         return;
       }
     }
@@ -1262,7 +1263,7 @@ const handlePortInput = (value: string) => {
       if (ds.host || ds.port) {
         ds.host = adminDataSource.value.host;
         ds.port = adminDataSource.value.port;
-        missingFeature.value = "bb.feature.read-replica-connection";
+        missingFeature.value = PlanLimitConfig_Feature.INSTANCE_READ_ONLY_CONNECTION;
         return;
       }
     }

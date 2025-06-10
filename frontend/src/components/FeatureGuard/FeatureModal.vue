@@ -115,22 +115,21 @@
 </template>
 
 <script lang="ts" setup>
+import { BBModal } from "@/bbkit";
+import { useLanguage } from "@/composables/useLanguage";
+import { useSubscriptionV1Store } from "@/store";
+import { ENTERPRISE_INQUIRE_LINK, planTypeToString } from "@/types";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto/v1/instance_service";
+import { PlanLimitConfig_Feature, PlanType } from "@/types/proto/v1/subscription_service";
+import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { NButton } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBModal } from "@/bbkit";
-import { useLanguage } from "@/composables/useLanguage";
-import { useSubscriptionV1Store } from "@/store";
-import type { FeatureType } from "@/types";
-import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
-import type {
-  Instance,
-  InstanceResource,
-} from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
-import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import InstanceAssignment from "../InstanceAssignment.vue";
 import WeChatQRModal from "../WeChatQRModal.vue";
 
@@ -146,8 +145,8 @@ const props = defineProps({
   },
   feature: {
     required: true,
-    type: String as PropType<FeatureType>,
-    default: "",
+    type: Number as unknown as PropType<PlanLimitConfig_Feature>,
+    default: () => PlanLimitConfig_Feature.FEATURE_UNSPECIFIED,
   },
   instance: {
     type: Object as PropType<Instance | InstanceResource>,
@@ -191,9 +190,8 @@ const ok = () => {
   emit("cancel");
 };
 
-const isRequiredInPlan = Array.isArray(
-  subscriptionStore.featureMatrix.get(props.feature)
-);
+// TODO(d): fix this required plan logic.
+const isRequiredInPlan = subscriptionStore.getMinimumRequiredPlan(props.feature) !== PlanType.FREE;
 const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 
 const featureKey = computed(() => {

@@ -44,29 +44,23 @@
       />
     </template>
   </div>
-  <FeatureModal
-    feature="bb.feature.instance-count"
-    :open="state.showFeatureModal"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script setup lang="ts">
-import { NCheckbox } from "naive-ui";
-import { computed, ref, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
 import {
-  useInstanceV1Store,
   pushNotification,
   useActuatorV1Store,
+  useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { FeatureModal } from "../FeatureGuard";
+import { NCheckbox } from "naive-ui";
+import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showFeatureModal: boolean;

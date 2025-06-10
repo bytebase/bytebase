@@ -43,7 +43,7 @@
           <template #icon>
             <ShieldCheckIcon class="w-4" />
             <FeatureBadge
-              feature="bb.feature.sensitive-data"
+              :feature="PlanLimitConfig_Feature.DATA_MASKING"
               class="text-white"
             />
           </template>
@@ -62,7 +62,7 @@
 
   <FeatureModal
     :open="state.showFeatureModal"
-    feature="bb.feature.sensitive-data"
+    :feature="PlanLimitConfig_Feature.DATA_MASKING"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -79,6 +79,7 @@ import { type AccessUser } from "@/components/SensitiveData/types";
 import { SearchBox, DatabaseSelect } from "@/components/v2";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/projectV1";
 import { useProjectByName, hasFeature } from "@/store";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto/v1/org_policy_service";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -105,7 +106,7 @@ const { project } = useProjectByName(
 );
 
 const hasSensitiveDataFeature = computed(() => {
-  return hasFeature("bb.feature.sensitive-data");
+  return hasFeature(PlanLimitConfig_Feature.DATA_MASKING);
 });
 
 const allowCreate = computed(() => {

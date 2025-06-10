@@ -1,5 +1,5 @@
 <template>
-  <FeatureAttention feature="bb.feature.custom-approval" class="mb-4" />
+  <FeatureAttention :feature="PlanLimitConfig_Feature.RISK_ASSESSMENT" class="mb-4" />
 
   <div class="w-full space-y-4 text-sm">
     <div class="textinfolabel">
@@ -22,14 +22,13 @@
   <RiskDialog />
 
   <FeatureModal
-    feature="bb.feature.custom-approval"
+    :feature="PlanLimitConfig_Feature.RISK_ASSESSMENT"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, toRef } from "vue";
 import { BBSpin } from "@/bbkit";
 import {
   RiskCenter,
@@ -39,7 +38,9 @@ import {
 import { provideRiskFilter } from "@/components/CustomApproval/Settings/components/common";
 import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
 import { featureToRef, useRiskStore } from "@/store";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { computed, onMounted, reactive, ref, toRef } from "vue";
 
 interface LocalState {
   ready: boolean;
@@ -50,7 +51,7 @@ const state = reactive<LocalState>({
   ready: false,
   showFeatureModal: false,
 });
-const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
+const hasRiskAssessmentFeature = featureToRef(PlanLimitConfig_Feature.RISK_ASSESSMENT);
 
 const allowAdmin = computed(() => {
   return hasWorkspacePermissionV2("bb.risks.update");
@@ -58,7 +59,7 @@ const allowAdmin = computed(() => {
 
 provideRiskFilter();
 provideRiskCenterContext({
-  hasFeature: hasCustomApprovalFeature,
+  hasFeature: hasRiskAssessmentFeature,
   showFeatureModal: toRef(state, "showFeatureModal"),
   allowAdmin,
   ready: toRef(state, "ready"),

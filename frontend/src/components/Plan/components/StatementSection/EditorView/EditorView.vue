@@ -11,7 +11,7 @@
           </span>
           <span v-if="isCreating" class="text-red-600">*</span>
           <NButton
-            v-if="!isCreating && !hasFeature('bb.feature.sql-review')"
+            v-if="!isCreating && !hasFeature(PlanLimitConfig_Feature.PRE_DEPLOYMENT_SQL_REVIEW)"
             size="small"
             @click.prevent="state.showFeatureModal = true"
           >
@@ -177,7 +177,7 @@
 
   <FeatureModal
     :open="state.showFeatureModal"
-    feature="bb.feature.sql-review"
+    :feature="PlanLimitConfig_Feature.PRE_DEPLOYMENT_SQL_REVIEW"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -192,6 +192,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBModal } from "@/bbkit";
 import { FeatureModal } from "@/components/FeatureGuard";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import { ErrorList } from "@/components/Plan/components/common";

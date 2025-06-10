@@ -34,7 +34,7 @@
                 "settings.general.workspace.domain-restriction.members-restriction.self"
               )
             }}
-            <FeatureBadge feature="bb.feature.domain-restriction" />
+            <FeatureBadge :feature="PlanLimitConfig_Feature.USER_EMAIL_DOMAIN_RESTRICTION" />
           </div>
           <p class="text-sm text-gray-400 leading-tight">
             {{
@@ -55,6 +55,7 @@ import { NCheckbox, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { FeatureBadge } from "../FeatureGuard";
 
 const initialState = computed((): LocalState => {
@@ -86,7 +87,7 @@ defineProps<{
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(initialState.value);
 
-const hasFeature = featureToRef("bb.feature.domain-restriction");
+const hasFeature = featureToRef(PlanLimitConfig_Feature.USER_EMAIL_DOMAIN_RESTRICTION);
 
 defineExpose({
   isDirty: computed(() => !isEqual(state, initialState.value)),

@@ -5,7 +5,7 @@
         <h1 class="text-2xl font-bold">
           {{ title }}
         </h1>
-        <FeatureBadge feature="bb.feature.ai-assistant" />
+        <FeatureBadge :feature="PlanLimitConfig_Feature.NATURAL_LANGUAGE_TO_SQL" />
       </div>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
         {{ $t("settings.general.workspace.only-admin-can-edit") }}
@@ -167,6 +167,7 @@ import {
   AISetting_Provider,
   Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { FeatureBadge } from "../FeatureGuard";
 
 interface LocalState {
@@ -198,7 +199,7 @@ const aiSetting = computed(
   () => settingV1Store.getSettingByName(Setting_SettingName.AI)?.value?.aiSetting
 );
 
-const hasAIFeature = computed(() => hasFeature("bb.feature.ai-assistant"));
+const hasAIFeature = computed(() => hasFeature(PlanLimitConfig_Feature.NATURAL_LANGUAGE_TO_SQL));
 
 const getInitialState = (): LocalState => {
   return {

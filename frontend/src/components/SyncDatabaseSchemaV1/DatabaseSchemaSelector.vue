@@ -52,7 +52,7 @@
   </div>
 
   <FeatureModal
-    feature="bb.feature.sync-schema-all-versions"
+    :feature="PlanLimitConfig_Feature.COMPARE_AND_SYNC_SCHEMA"
     :open="state.showFeatureModal"
     :instance="database?.instanceResource"
     @cancel="state.showFeatureModal = false"
@@ -83,6 +83,7 @@ import {
   Changelog_Type,
   changelog_TypeToJSON,
 } from "@/types/proto/v1/database_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import {
   extractChangelogUID,
   isValidChangelogName,
@@ -135,7 +136,7 @@ const isPreparingSchemaVersionOptions = ref(false);
 
 const hasSyncSchemaFeature = computed(() => {
   return useSubscriptionV1Store().hasInstanceFeature(
-    "bb.feature.sync-schema-all-versions",
+    PlanLimitConfig_Feature.COMPARE_AND_SYNC_SCHEMA,
     database.value?.instanceResource
   );
 });
@@ -211,7 +212,7 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
     <div class="flex flex-row justify-start items-center truncate gap-1">
       {index > 0 && (
         <FeatureBadge
-          feature="bb.feature.sync-schema-all-versions"
+          feature={PlanLimitConfig_Feature.COMPARE_AND_SYNC_SCHEMA}
           instance={database.value?.instanceResource}
         />
       )}

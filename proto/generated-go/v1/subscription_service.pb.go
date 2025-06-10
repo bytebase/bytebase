@@ -131,31 +131,32 @@ const (
 	PlanLimitConfig_ENTERPRISE_SSO                         PlanLimitConfig_Feature = 46
 	PlanLimitConfig_TWO_FA                                 PlanLimitConfig_Feature = 47
 	PlanLimitConfig_PASSWORD_RESTRICTIONS                  PlanLimitConfig_Feature = 48
-	PlanLimitConfig_CUSTOM_ROLES                           PlanLimitConfig_Feature = 49
-	PlanLimitConfig_REQUEST_ROLE_WORKFLOW                  PlanLimitConfig_Feature = 50
-	PlanLimitConfig_DATA_MASKING                           PlanLimitConfig_Feature = 51
-	PlanLimitConfig_DATA_CLASSIFICATION                    PlanLimitConfig_Feature = 52
-	PlanLimitConfig_SCIM                                   PlanLimitConfig_Feature = 53
-	PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID                PlanLimitConfig_Feature = 54
-	PlanLimitConfig_DIRECTORY_SYNC_OKTA                    PlanLimitConfig_Feature = 55
-	PlanLimitConfig_SIGN_IN_FREQUENCY_CONTROL              PlanLimitConfig_Feature = 56
-	PlanLimitConfig_EXTERNAL_SECRET_MANAGER                PlanLimitConfig_Feature = 57
-	PlanLimitConfig_USER_EMAIL_DOMAIN_RESTRICTION          PlanLimitConfig_Feature = 58
+	PlanLimitConfig_DISALLOW_PASSWORD_SIGNIN               PlanLimitConfig_Feature = 49
+	PlanLimitConfig_CUSTOM_ROLES                           PlanLimitConfig_Feature = 50
+	PlanLimitConfig_REQUEST_ROLE_WORKFLOW                  PlanLimitConfig_Feature = 51
+	PlanLimitConfig_DATA_MASKING                           PlanLimitConfig_Feature = 52
+	PlanLimitConfig_DATA_CLASSIFICATION                    PlanLimitConfig_Feature = 53
+	PlanLimitConfig_SCIM                                   PlanLimitConfig_Feature = 54
+	PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID                PlanLimitConfig_Feature = 55
+	PlanLimitConfig_DIRECTORY_SYNC_OKTA                    PlanLimitConfig_Feature = 56
+	PlanLimitConfig_SIGN_IN_FREQUENCY_CONTROL              PlanLimitConfig_Feature = 57
+	PlanLimitConfig_EXTERNAL_SECRET_MANAGER                PlanLimitConfig_Feature = 58
+	PlanLimitConfig_USER_EMAIL_DOMAIN_RESTRICTION          PlanLimitConfig_Feature = 59
 	// Administration & Support
-	PlanLimitConfig_ENVIRONMENT_MANAGEMENT     PlanLimitConfig_Feature = 59
-	PlanLimitConfig_IM_NOTIFICATIONS           PlanLimitConfig_Feature = 60
-	PlanLimitConfig_TERRAFORM_PROVIDER         PlanLimitConfig_Feature = 61
-	PlanLimitConfig_DATABASE_GROUPS            PlanLimitConfig_Feature = 62
-	PlanLimitConfig_ENVIRONMENT_TIERS          PlanLimitConfig_Feature = 63
-	PlanLimitConfig_DASHBOARD_ANNOUNCEMENT     PlanLimitConfig_Feature = 64
-	PlanLimitConfig_API_INTEGRATION_GUIDANCE   PlanLimitConfig_Feature = 65
-	PlanLimitConfig_CUSTOM_LOGO                PlanLimitConfig_Feature = 66
-	PlanLimitConfig_WATERMARK                  PlanLimitConfig_Feature = 67
-	PlanLimitConfig_ROADMAP_PRIORITIZATION     PlanLimitConfig_Feature = 68
-	PlanLimitConfig_CUSTOM_MSA                 PlanLimitConfig_Feature = 69
-	PlanLimitConfig_COMMUNITY_SUPPORT          PlanLimitConfig_Feature = 70
-	PlanLimitConfig_EMAIL_SUPPORT              PlanLimitConfig_Feature = 71
-	PlanLimitConfig_DEDICATED_SUPPORT_WITH_SLA PlanLimitConfig_Feature = 72
+	PlanLimitConfig_ENVIRONMENT_MANAGEMENT     PlanLimitConfig_Feature = 60
+	PlanLimitConfig_IM_NOTIFICATIONS           PlanLimitConfig_Feature = 61
+	PlanLimitConfig_TERRAFORM_PROVIDER         PlanLimitConfig_Feature = 62
+	PlanLimitConfig_DATABASE_GROUPS            PlanLimitConfig_Feature = 63
+	PlanLimitConfig_ENVIRONMENT_TIERS          PlanLimitConfig_Feature = 64
+	PlanLimitConfig_DASHBOARD_ANNOUNCEMENT     PlanLimitConfig_Feature = 65
+	PlanLimitConfig_API_INTEGRATION_GUIDANCE   PlanLimitConfig_Feature = 66
+	PlanLimitConfig_CUSTOM_LOGO                PlanLimitConfig_Feature = 67
+	PlanLimitConfig_WATERMARK                  PlanLimitConfig_Feature = 68
+	PlanLimitConfig_ROADMAP_PRIORITIZATION     PlanLimitConfig_Feature = 69
+	PlanLimitConfig_CUSTOM_MSA                 PlanLimitConfig_Feature = 70
+	PlanLimitConfig_COMMUNITY_SUPPORT          PlanLimitConfig_Feature = 71
+	PlanLimitConfig_EMAIL_SUPPORT              PlanLimitConfig_Feature = 72
+	PlanLimitConfig_DEDICATED_SUPPORT_WITH_SLA PlanLimitConfig_Feature = 73
 )
 
 // Enum value maps for PlanLimitConfig_Feature.
@@ -210,30 +211,31 @@ var (
 		46: "ENTERPRISE_SSO",
 		47: "TWO_FA",
 		48: "PASSWORD_RESTRICTIONS",
-		49: "CUSTOM_ROLES",
-		50: "REQUEST_ROLE_WORKFLOW",
-		51: "DATA_MASKING",
-		52: "DATA_CLASSIFICATION",
-		53: "SCIM",
-		54: "DIRECTORY_SYNC_ENTRA_ID",
-		55: "DIRECTORY_SYNC_OKTA",
-		56: "SIGN_IN_FREQUENCY_CONTROL",
-		57: "EXTERNAL_SECRET_MANAGER",
-		58: "USER_EMAIL_DOMAIN_RESTRICTION",
-		59: "ENVIRONMENT_MANAGEMENT",
-		60: "IM_NOTIFICATIONS",
-		61: "TERRAFORM_PROVIDER",
-		62: "DATABASE_GROUPS",
-		63: "ENVIRONMENT_TIERS",
-		64: "DASHBOARD_ANNOUNCEMENT",
-		65: "API_INTEGRATION_GUIDANCE",
-		66: "CUSTOM_LOGO",
-		67: "WATERMARK",
-		68: "ROADMAP_PRIORITIZATION",
-		69: "CUSTOM_MSA",
-		70: "COMMUNITY_SUPPORT",
-		71: "EMAIL_SUPPORT",
-		72: "DEDICATED_SUPPORT_WITH_SLA",
+		49: "DISALLOW_PASSWORD_SIGNIN",
+		50: "CUSTOM_ROLES",
+		51: "REQUEST_ROLE_WORKFLOW",
+		52: "DATA_MASKING",
+		53: "DATA_CLASSIFICATION",
+		54: "SCIM",
+		55: "DIRECTORY_SYNC_ENTRA_ID",
+		56: "DIRECTORY_SYNC_OKTA",
+		57: "SIGN_IN_FREQUENCY_CONTROL",
+		58: "EXTERNAL_SECRET_MANAGER",
+		59: "USER_EMAIL_DOMAIN_RESTRICTION",
+		60: "ENVIRONMENT_MANAGEMENT",
+		61: "IM_NOTIFICATIONS",
+		62: "TERRAFORM_PROVIDER",
+		63: "DATABASE_GROUPS",
+		64: "ENVIRONMENT_TIERS",
+		65: "DASHBOARD_ANNOUNCEMENT",
+		66: "API_INTEGRATION_GUIDANCE",
+		67: "CUSTOM_LOGO",
+		68: "WATERMARK",
+		69: "ROADMAP_PRIORITIZATION",
+		70: "CUSTOM_MSA",
+		71: "COMMUNITY_SUPPORT",
+		72: "EMAIL_SUPPORT",
+		73: "DEDICATED_SUPPORT_WITH_SLA",
 	}
 	PlanLimitConfig_Feature_value = map[string]int32{
 		"FEATURE_UNSPECIFIED":                    0,
@@ -285,30 +287,31 @@ var (
 		"ENTERPRISE_SSO":                         46,
 		"TWO_FA":                                 47,
 		"PASSWORD_RESTRICTIONS":                  48,
-		"CUSTOM_ROLES":                           49,
-		"REQUEST_ROLE_WORKFLOW":                  50,
-		"DATA_MASKING":                           51,
-		"DATA_CLASSIFICATION":                    52,
-		"SCIM":                                   53,
-		"DIRECTORY_SYNC_ENTRA_ID":                54,
-		"DIRECTORY_SYNC_OKTA":                    55,
-		"SIGN_IN_FREQUENCY_CONTROL":              56,
-		"EXTERNAL_SECRET_MANAGER":                57,
-		"USER_EMAIL_DOMAIN_RESTRICTION":          58,
-		"ENVIRONMENT_MANAGEMENT":                 59,
-		"IM_NOTIFICATIONS":                       60,
-		"TERRAFORM_PROVIDER":                     61,
-		"DATABASE_GROUPS":                        62,
-		"ENVIRONMENT_TIERS":                      63,
-		"DASHBOARD_ANNOUNCEMENT":                 64,
-		"API_INTEGRATION_GUIDANCE":               65,
-		"CUSTOM_LOGO":                            66,
-		"WATERMARK":                              67,
-		"ROADMAP_PRIORITIZATION":                 68,
-		"CUSTOM_MSA":                             69,
-		"COMMUNITY_SUPPORT":                      70,
-		"EMAIL_SUPPORT":                          71,
-		"DEDICATED_SUPPORT_WITH_SLA":             72,
+		"DISALLOW_PASSWORD_SIGNIN":               49,
+		"CUSTOM_ROLES":                           50,
+		"REQUEST_ROLE_WORKFLOW":                  51,
+		"DATA_MASKING":                           52,
+		"DATA_CLASSIFICATION":                    53,
+		"SCIM":                                   54,
+		"DIRECTORY_SYNC_ENTRA_ID":                55,
+		"DIRECTORY_SYNC_OKTA":                    56,
+		"SIGN_IN_FREQUENCY_CONTROL":              57,
+		"EXTERNAL_SECRET_MANAGER":                58,
+		"USER_EMAIL_DOMAIN_RESTRICTION":          59,
+		"ENVIRONMENT_MANAGEMENT":                 60,
+		"IM_NOTIFICATIONS":                       61,
+		"TERRAFORM_PROVIDER":                     62,
+		"DATABASE_GROUPS":                        63,
+		"ENVIRONMENT_TIERS":                      64,
+		"DASHBOARD_ANNOUNCEMENT":                 65,
+		"API_INTEGRATION_GUIDANCE":               66,
+		"CUSTOM_LOGO":                            67,
+		"WATERMARK":                              68,
+		"ROADMAP_PRIORITIZATION":                 69,
+		"CUSTOM_MSA":                             70,
+		"COMMUNITY_SUPPORT":                      71,
+		"EMAIL_SUPPORT":                          72,
+		"DEDICATED_SUPPORT_WITH_SLA":             73,
 	}
 )
 
@@ -842,12 +845,12 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\"@\n" +
 	"\n" +
 	"PlanConfig\x122\n" +
-	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\"\xcf\x10\n" +
+	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\"\xed\x10\n" +
 	"\x0fPlanLimitConfig\x12)\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeR\x04type\x124\n" +
 	"\x16maximum_instance_count\x18\x02 \x01(\x05R\x14maximumInstanceCount\x12,\n" +
 	"\x12maximum_seat_count\x18\x03 \x01(\x05R\x10maximumSeatCount\x12@\n" +
-	"\bfeatures\x18\x04 \x03(\x0e2$.bytebase.v1.PlanLimitConfig.FeatureR\bfeatures\"\xea\x0e\n" +
+	"\bfeatures\x18\x04 \x03(\x0e2$.bytebase.v1.PlanLimitConfig.FeatureR\bfeatures\"\x88\x0f\n" +
 	"\aFeature\x12\x17\n" +
 	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CHANGE\x10\x01\x12$\n" +
@@ -900,32 +903,33 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x0eENTERPRISE_SSO\x10.\x12\n" +
 	"\n" +
 	"\x06TWO_FA\x10/\x12\x19\n" +
-	"\x15PASSWORD_RESTRICTIONS\x100\x12\x10\n" +
-	"\fCUSTOM_ROLES\x101\x12\x19\n" +
-	"\x15REQUEST_ROLE_WORKFLOW\x102\x12\x10\n" +
-	"\fDATA_MASKING\x103\x12\x17\n" +
-	"\x13DATA_CLASSIFICATION\x104\x12\b\n" +
-	"\x04SCIM\x105\x12\x1b\n" +
-	"\x17DIRECTORY_SYNC_ENTRA_ID\x106\x12\x17\n" +
-	"\x13DIRECTORY_SYNC_OKTA\x107\x12\x1d\n" +
-	"\x19SIGN_IN_FREQUENCY_CONTROL\x108\x12\x1b\n" +
-	"\x17EXTERNAL_SECRET_MANAGER\x109\x12!\n" +
-	"\x1dUSER_EMAIL_DOMAIN_RESTRICTION\x10:\x12\x1a\n" +
-	"\x16ENVIRONMENT_MANAGEMENT\x10;\x12\x14\n" +
-	"\x10IM_NOTIFICATIONS\x10<\x12\x16\n" +
-	"\x12TERRAFORM_PROVIDER\x10=\x12\x13\n" +
-	"\x0fDATABASE_GROUPS\x10>\x12\x15\n" +
-	"\x11ENVIRONMENT_TIERS\x10?\x12\x1a\n" +
-	"\x16DASHBOARD_ANNOUNCEMENT\x10@\x12\x1c\n" +
-	"\x18API_INTEGRATION_GUIDANCE\x10A\x12\x0f\n" +
-	"\vCUSTOM_LOGO\x10B\x12\r\n" +
-	"\tWATERMARK\x10C\x12\x1a\n" +
-	"\x16ROADMAP_PRIORITIZATION\x10D\x12\x0e\n" +
+	"\x15PASSWORD_RESTRICTIONS\x100\x12\x1c\n" +
+	"\x18DISALLOW_PASSWORD_SIGNIN\x101\x12\x10\n" +
+	"\fCUSTOM_ROLES\x102\x12\x19\n" +
+	"\x15REQUEST_ROLE_WORKFLOW\x103\x12\x10\n" +
+	"\fDATA_MASKING\x104\x12\x17\n" +
+	"\x13DATA_CLASSIFICATION\x105\x12\b\n" +
+	"\x04SCIM\x106\x12\x1b\n" +
+	"\x17DIRECTORY_SYNC_ENTRA_ID\x107\x12\x17\n" +
+	"\x13DIRECTORY_SYNC_OKTA\x108\x12\x1d\n" +
+	"\x19SIGN_IN_FREQUENCY_CONTROL\x109\x12\x1b\n" +
+	"\x17EXTERNAL_SECRET_MANAGER\x10:\x12!\n" +
+	"\x1dUSER_EMAIL_DOMAIN_RESTRICTION\x10;\x12\x1a\n" +
+	"\x16ENVIRONMENT_MANAGEMENT\x10<\x12\x14\n" +
+	"\x10IM_NOTIFICATIONS\x10=\x12\x16\n" +
+	"\x12TERRAFORM_PROVIDER\x10>\x12\x13\n" +
+	"\x0fDATABASE_GROUPS\x10?\x12\x15\n" +
+	"\x11ENVIRONMENT_TIERS\x10@\x12\x1a\n" +
+	"\x16DASHBOARD_ANNOUNCEMENT\x10A\x12\x1c\n" +
+	"\x18API_INTEGRATION_GUIDANCE\x10B\x12\x0f\n" +
+	"\vCUSTOM_LOGO\x10C\x12\r\n" +
+	"\tWATERMARK\x10D\x12\x1a\n" +
+	"\x16ROADMAP_PRIORITIZATION\x10E\x12\x0e\n" +
 	"\n" +
-	"CUSTOM_MSA\x10E\x12\x15\n" +
-	"\x11COMMUNITY_SUPPORT\x10F\x12\x11\n" +
-	"\rEMAIL_SUPPORT\x10G\x12\x1e\n" +
-	"\x1aDEDICATED_SUPPORT_WITH_SLA\x10H*I\n" +
+	"CUSTOM_MSA\x10F\x12\x15\n" +
+	"\x11COMMUNITY_SUPPORT\x10G\x12\x11\n" +
+	"\rEMAIL_SUPPORT\x10H\x12\x1e\n" +
+	"\x1aDEDICATED_SUPPORT_WITH_SLA\x10I*I\n" +
 	"\bPlanType\x12\x19\n" +
 	"\x15PLAN_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04FREE\x10\x01\x12\b\n" +
