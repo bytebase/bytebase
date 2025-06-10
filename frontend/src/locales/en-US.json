@@ -1142,6 +1142,7 @@
     },
     "selected-n-instances": "{n} instance selected | {n} instances selected",
     "users": "Users",
+    "successfully-restored-instance": "Successfully restored the instance '{0}'.",
     "successfully-archived-instance": "Successfully archived the instance '{0}'.",
     "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
     "archive-this-instance": "Archive this instance",

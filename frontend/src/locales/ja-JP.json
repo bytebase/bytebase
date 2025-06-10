@@ -1142,7 +1142,7 @@
     },
     "selected-n-instances": "{n} 個のインスタンスが選択されました",
     "users": "ユーザー",
-    "successfully-retored-instance": "インスタンス '{0}' を正常に復元しました。",
+    "successfully-restored-instance": "インスタンス '{0}' を正常に復元しました。",
     "successfully-archived-instance": "インスタンス '{0}' を正常にアーカイブしました。",
     "successfully-synced-schema-for-instance-instance-value-name": "インスタンス '{0}' のスキーマが正常に同期されました。",
     "archive-this-instance": "このインスタンスをアーカイブする",
