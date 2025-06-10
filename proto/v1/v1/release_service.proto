@@ -223,17 +223,21 @@ message Release {
     string id = 1;
     // The path of the file. e.g. `2.2/V0001_create_table.sql`.
     string path = 2;
-    // The sheet that holds the content.
-    // Format: projects/{project}/sheets/{sheet}
-    string sheet = 3 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
-    // The SHA256 hash value of the sheet.
-    string sheet_sha256 = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
     ReleaseFileType type = 5;
     string version = 6;
     ChangeType change_type = 9;
 
-    // The statement is used for preview or check purpose.
+    // For inputs, we must either use `sheet` or `statement`.
+    // For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
+    //
+    // The sheet that holds the content.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 3 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+    // The raw SQL statement content.
     bytes statement = 7;
+    // The SHA256 hash value of the sheet content or the statement.
+    string sheet_sha256 = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // The size of the statement in bytes.
     int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
     enum ChangeType {

@@ -258,18 +258,22 @@ export interface Release_File {
   id: string;
   /** The path of the file. e.g. `2.2/V0001_create_table.sql`. */
   path: string;
+  type: ReleaseFileType;
+  version: string;
+  changeType: Release_File_ChangeType;
   /**
+   * For inputs, we must either use `sheet` or `statement`.
+   * For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
+   *
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
-  /** The SHA256 hash value of the sheet. */
-  sheetSha256: string;
-  type: ReleaseFileType;
-  version: string;
-  changeType: Release_File_ChangeType;
-  /** The statement is used for preview or check purpose. */
+  /** The raw SQL statement content. */
   statement: Uint8Array;
+  /** The SHA256 hash value of the sheet content or the statement. */
+  sheetSha256: string;
+  /** The size of the statement in bytes. */
   statementSize: Long;
 }
 
@@ -1262,12 +1266,12 @@ function createBaseRelease_File(): Release_File {
   return {
     id: "",
     path: "",
-    sheet: "",
-    sheetSha256: "",
     type: ReleaseFileType.TYPE_UNSPECIFIED,
     version: "",
     changeType: Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED,
+    sheet: "",
     statement: new Uint8Array(0),
+    sheetSha256: "",
     statementSize: Long.ZERO,
   };
 }
@@ -1280,12 +1284,6 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.path !== "") {
       writer.uint32(18).string(message.path);
     }
-    if (message.sheet !== "") {
-      writer.uint32(26).string(message.sheet);
-    }
-    if (message.sheetSha256 !== "") {
-      writer.uint32(34).string(message.sheetSha256);
-    }
     if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
       writer.uint32(40).int32(releaseFileTypeToNumber(message.type));
     }
@@ -1295,8 +1293,14 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.changeType !== Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
       writer.uint32(72).int32(release_File_ChangeTypeToNumber(message.changeType));
     }
+    if (message.sheet !== "") {
+      writer.uint32(26).string(message.sheet);
+    }
     if (message.statement.length !== 0) {
       writer.uint32(58).bytes(message.statement);
+    }
+    if (message.sheetSha256 !== "") {
+      writer.uint32(34).string(message.sheetSha256);
     }
     if (!message.statementSize.equals(Long.ZERO)) {
       writer.uint32(64).int64(message.statementSize.toString());
@@ -1327,22 +1331,6 @@ export const Release_File: MessageFns<Release_File> = {
           message.path = reader.string();
           continue;
         }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.sheet = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.sheetSha256 = reader.string();
-          continue;
-        }
         case 5: {
           if (tag !== 40) {
             break;
@@ -1367,12 +1355,28 @@ export const Release_File: MessageFns<Release_File> = {
           message.changeType = release_File_ChangeTypeFromJSON(reader.int32());
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sheet = reader.string();
+          continue;
+        }
         case 7: {
           if (tag !== 58) {
             break;
           }
 
           message.statement = reader.bytes();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sheetSha256 = reader.string();
           continue;
         }
         case 8: {
@@ -1400,12 +1404,6 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.path !== "") {
       obj.path = message.path;
     }
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.sheetSha256 !== "") {
-      obj.sheetSha256 = message.sheetSha256;
-    }
     if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
       obj.type = releaseFileTypeToJSON(message.type);
     }
@@ -1415,8 +1413,14 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.changeType !== Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
       obj.changeType = release_File_ChangeTypeToJSON(message.changeType);
     }
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
     if (message.statement.length !== 0) {
       obj.statement = base64FromBytes(message.statement);
+    }
+    if (message.sheetSha256 !== "") {
+      obj.sheetSha256 = message.sheetSha256;
     }
     if (!message.statementSize.equals(Long.ZERO)) {
       obj.statementSize = (message.statementSize || Long.ZERO).toString();
@@ -1431,12 +1435,12 @@ export const Release_File: MessageFns<Release_File> = {
     const message = createBaseRelease_File();
     message.id = object.id ?? "";
     message.path = object.path ?? "";
-    message.sheet = object.sheet ?? "";
-    message.sheetSha256 = object.sheetSha256 ?? "";
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     message.changeType = object.changeType ?? Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED;
+    message.sheet = object.sheet ?? "";
     message.statement = object.statement ?? new Uint8Array(0);
+    message.sheetSha256 = object.sheetSha256 ?? "";
     message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
       ? Long.fromValue(object.statementSize)
       : Long.ZERO;
