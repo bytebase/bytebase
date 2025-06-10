@@ -75,271 +75,268 @@ func (PlanType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_subscription_service_proto_rawDescGZIP(), []int{0}
 }
 
-// Feature represents the available features in Bytebase
-type PlanLimitConfig_Feature int32
+// PlanFeature represents the available features in Bytebase
+type PlanFeature int32
 
 const (
-	PlanLimitConfig_FEATURE_UNSPECIFIED PlanLimitConfig_Feature = 0
+	PlanFeature_FEATURE_UNSPECIFIED PlanFeature = 0
 	// Database Change Management
-	PlanLimitConfig_DATABASE_CHANGE                      PlanLimitConfig_Feature = 1
-	PlanLimitConfig_GIT_BASED_SCHEMA_VERSION_CONTROL     PlanLimitConfig_Feature = 2
-	PlanLimitConfig_DECLARATIVE_SCHEMA_MIGRATION         PlanLimitConfig_Feature = 3
-	PlanLimitConfig_COMPARE_AND_SYNC_SCHEMA              PlanLimitConfig_Feature = 4
-	PlanLimitConfig_ONLINE_SCHEMA_CHANGE                 PlanLimitConfig_Feature = 5
-	PlanLimitConfig_PRE_DEPLOYMENT_SQL_REVIEW            PlanLimitConfig_Feature = 6
-	PlanLimitConfig_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES PlanLimitConfig_Feature = 7
-	PlanLimitConfig_ONE_CLICK_DATA_ROLLBACK              PlanLimitConfig_Feature = 8
-	PlanLimitConfig_MULTI_DATABASE_BATCH_CHANGES         PlanLimitConfig_Feature = 9
-	PlanLimitConfig_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT   PlanLimitConfig_Feature = 10
-	PlanLimitConfig_SCHEDULED_ROLLOUT_TIME               PlanLimitConfig_Feature = 11
-	PlanLimitConfig_DATABASE_CHANGELOG                   PlanLimitConfig_Feature = 12
-	PlanLimitConfig_SCHEMA_DRIFT_DETECTION               PlanLimitConfig_Feature = 13
-	PlanLimitConfig_CHANGELIST                           PlanLimitConfig_Feature = 14
-	PlanLimitConfig_SCHEMA_TEMPLATE                      PlanLimitConfig_Feature = 15
-	PlanLimitConfig_ROLLOUT_POLICY                       PlanLimitConfig_Feature = 16
+	PlanFeature_FEATURE_DATABASE_CHANGE                      PlanFeature = 1
+	PlanFeature_FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL     PlanFeature = 2
+	PlanFeature_FEATURE_DECLARATIVE_SCHEMA_MIGRATION         PlanFeature = 3
+	PlanFeature_FEATURE_COMPARE_AND_SYNC_SCHEMA              PlanFeature = 4
+	PlanFeature_FEATURE_ONLINE_SCHEMA_CHANGE                 PlanFeature = 5
+	PlanFeature_FEATURE_PRE_DEPLOYMENT_SQL_REVIEW            PlanFeature = 6
+	PlanFeature_FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES PlanFeature = 7
+	PlanFeature_FEATURE_ONE_CLICK_DATA_ROLLBACK              PlanFeature = 8
+	PlanFeature_FEATURE_MULTI_DATABASE_BATCH_CHANGES         PlanFeature = 9
+	PlanFeature_FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT   PlanFeature = 10
+	PlanFeature_FEATURE_SCHEDULED_ROLLOUT_TIME               PlanFeature = 11
+	PlanFeature_FEATURE_DATABASE_CHANGELOG                   PlanFeature = 12
+	PlanFeature_FEATURE_SCHEMA_DRIFT_DETECTION               PlanFeature = 13
+	PlanFeature_FEATURE_CHANGELIST                           PlanFeature = 14
+	PlanFeature_FEATURE_SCHEMA_TEMPLATE                      PlanFeature = 15
+	PlanFeature_FEATURE_ROLLOUT_POLICY                       PlanFeature = 16
 	// SQL Editor & Development
-	PlanLimitConfig_WEB_BASED_SQL_EDITOR           PlanLimitConfig_Feature = 17
-	PlanLimitConfig_SQL_EDITOR_ADMIN_MODE          PlanLimitConfig_Feature = 18
-	PlanLimitConfig_NATURAL_LANGUAGE_TO_SQL        PlanLimitConfig_Feature = 19
-	PlanLimitConfig_AI_QUERY_EXPLANATION           PlanLimitConfig_Feature = 20
-	PlanLimitConfig_AI_QUERY_SUGGESTIONS           PlanLimitConfig_Feature = 21
-	PlanLimitConfig_AUTO_COMPLETE                  PlanLimitConfig_Feature = 22
-	PlanLimitConfig_SCHEMA_DIAGRAM                 PlanLimitConfig_Feature = 23
-	PlanLimitConfig_SCHEMA_EDITOR                  PlanLimitConfig_Feature = 24
-	PlanLimitConfig_DATA_EXPORT                    PlanLimitConfig_Feature = 25
-	PlanLimitConfig_QUERY_HISTORY                  PlanLimitConfig_Feature = 26
-	PlanLimitConfig_SAVED_AND_SHARED_SQL_SCRIPTS   PlanLimitConfig_Feature = 27
-	PlanLimitConfig_SQL_EDITOR_DDL_DML_RESTRICTION PlanLimitConfig_Feature = 28
-	PlanLimitConfig_BATCH_QUERY                    PlanLimitConfig_Feature = 29
-	PlanLimitConfig_INSTANCE_READ_ONLY_CONNECTION  PlanLimitConfig_Feature = 30
-	PlanLimitConfig_RESTRICT_COPYING_DATA          PlanLimitConfig_Feature = 31
+	PlanFeature_FEATURE_WEB_BASED_SQL_EDITOR           PlanFeature = 17
+	PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE          PlanFeature = 18
+	PlanFeature_FEATURE_NATURAL_LANGUAGE_TO_SQL        PlanFeature = 19
+	PlanFeature_FEATURE_AI_QUERY_EXPLANATION           PlanFeature = 20
+	PlanFeature_FEATURE_AI_QUERY_SUGGESTIONS           PlanFeature = 21
+	PlanFeature_FEATURE_AUTO_COMPLETE                  PlanFeature = 22
+	PlanFeature_FEATURE_SCHEMA_DIAGRAM                 PlanFeature = 23
+	PlanFeature_FEATURE_SCHEMA_EDITOR                  PlanFeature = 24
+	PlanFeature_FEATURE_DATA_EXPORT                    PlanFeature = 25
+	PlanFeature_FEATURE_QUERY_HISTORY                  PlanFeature = 26
+	PlanFeature_FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS   PlanFeature = 27
+	PlanFeature_FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION PlanFeature = 28
+	PlanFeature_FEATURE_BATCH_QUERY                    PlanFeature = 29
+	PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION  PlanFeature = 30
+	PlanFeature_FEATURE_RESTRICT_COPYING_DATA          PlanFeature = 31
 	// Security & Compliance
-	PlanLimitConfig_IAM                                    PlanLimitConfig_Feature = 32
-	PlanLimitConfig_INSTANCE_SSL_CONNECTION                PlanLimitConfig_Feature = 33
-	PlanLimitConfig_INSTANCE_CONNECTION_OVER_SSH_TUNNEL    PlanLimitConfig_Feature = 34
-	PlanLimitConfig_INSTANCE_CONNECTION_IAM_AUTHENTICATION PlanLimitConfig_Feature = 35
-	PlanLimitConfig_GOOGLE_AND_GITHUB_SSO                  PlanLimitConfig_Feature = 36
-	PlanLimitConfig_USER_GROUPS                            PlanLimitConfig_Feature = 37
-	PlanLimitConfig_DISALLOW_SELF_SERVICE_SIGNUP           PlanLimitConfig_Feature = 38
-	PlanLimitConfig_DATABASE_SECRET_VARIABLES              PlanLimitConfig_Feature = 39
-	PlanLimitConfig_QUERY_DATASOURCE_RESTRICTION           PlanLimitConfig_Feature = 40
-	PlanLimitConfig_CUSTOM_INSTANCE_SYNC_TIME              PlanLimitConfig_Feature = 41
-	PlanLimitConfig_CUSTOM_INSTANCE_CONNECTION_LIMIT       PlanLimitConfig_Feature = 42
-	PlanLimitConfig_RISK_ASSESSMENT                        PlanLimitConfig_Feature = 43
-	PlanLimitConfig_APPROVAL_WORKFLOW                      PlanLimitConfig_Feature = 44
-	PlanLimitConfig_AUDIT_LOG                              PlanLimitConfig_Feature = 45
-	PlanLimitConfig_ENTERPRISE_SSO                         PlanLimitConfig_Feature = 46
-	PlanLimitConfig_TWO_FA                                 PlanLimitConfig_Feature = 47
-	PlanLimitConfig_PASSWORD_RESTRICTIONS                  PlanLimitConfig_Feature = 48
-	PlanLimitConfig_DISALLOW_PASSWORD_SIGNIN               PlanLimitConfig_Feature = 49
-	PlanLimitConfig_CUSTOM_ROLES                           PlanLimitConfig_Feature = 50
-	PlanLimitConfig_REQUEST_ROLE_WORKFLOW                  PlanLimitConfig_Feature = 51
-	PlanLimitConfig_DATA_MASKING                           PlanLimitConfig_Feature = 52
-	PlanLimitConfig_DATA_CLASSIFICATION                    PlanLimitConfig_Feature = 53
-	PlanLimitConfig_SCIM                                   PlanLimitConfig_Feature = 54
-	PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID                PlanLimitConfig_Feature = 55
-	PlanLimitConfig_DIRECTORY_SYNC_OKTA                    PlanLimitConfig_Feature = 56
-	PlanLimitConfig_SIGN_IN_FREQUENCY_CONTROL              PlanLimitConfig_Feature = 57
-	PlanLimitConfig_EXTERNAL_SECRET_MANAGER                PlanLimitConfig_Feature = 58
-	PlanLimitConfig_USER_EMAIL_DOMAIN_RESTRICTION          PlanLimitConfig_Feature = 59
+	PlanFeature_FEATURE_IAM                                    PlanFeature = 32
+	PlanFeature_FEATURE_INSTANCE_SSL_CONNECTION                PlanFeature = 33
+	PlanFeature_FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL    PlanFeature = 34
+	PlanFeature_FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION PlanFeature = 35
+	PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO                  PlanFeature = 36
+	PlanFeature_FEATURE_USER_GROUPS                            PlanFeature = 37
+	PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP           PlanFeature = 38
+	PlanFeature_FEATURE_DATABASE_SECRET_VARIABLES              PlanFeature = 39
+	PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION           PlanFeature = 40
+	PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME              PlanFeature = 41
+	PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT       PlanFeature = 42
+	PlanFeature_FEATURE_RISK_ASSESSMENT                        PlanFeature = 43
+	PlanFeature_FEATURE_APPROVAL_WORKFLOW                      PlanFeature = 44
+	PlanFeature_FEATURE_AUDIT_LOG                              PlanFeature = 45
+	PlanFeature_FEATURE_ENTERPRISE_SSO                         PlanFeature = 46
+	PlanFeature_FEATURE_TWO_FA                                 PlanFeature = 47
+	PlanFeature_FEATURE_PASSWORD_RESTRICTIONS                  PlanFeature = 48
+	PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN               PlanFeature = 49
+	PlanFeature_FEATURE_CUSTOM_ROLES                           PlanFeature = 50
+	PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW                  PlanFeature = 51
+	PlanFeature_FEATURE_DATA_MASKING                           PlanFeature = 52
+	PlanFeature_FEATURE_DATA_CLASSIFICATION                    PlanFeature = 53
+	PlanFeature_FEATURE_SCIM                                   PlanFeature = 54
+	PlanFeature_FEATURE_DIRECTORY_SYNC                         PlanFeature = 55
+	PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL              PlanFeature = 56
+	PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER                PlanFeature = 57
+	PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION          PlanFeature = 58
 	// Administration & Support
-	PlanLimitConfig_ENVIRONMENT_MANAGEMENT     PlanLimitConfig_Feature = 60
-	PlanLimitConfig_IM_NOTIFICATIONS           PlanLimitConfig_Feature = 61
-	PlanLimitConfig_TERRAFORM_PROVIDER         PlanLimitConfig_Feature = 62
-	PlanLimitConfig_DATABASE_GROUPS            PlanLimitConfig_Feature = 63
-	PlanLimitConfig_ENVIRONMENT_TIERS          PlanLimitConfig_Feature = 64
-	PlanLimitConfig_DASHBOARD_ANNOUNCEMENT     PlanLimitConfig_Feature = 65
-	PlanLimitConfig_API_INTEGRATION_GUIDANCE   PlanLimitConfig_Feature = 66
-	PlanLimitConfig_CUSTOM_LOGO                PlanLimitConfig_Feature = 67
-	PlanLimitConfig_WATERMARK                  PlanLimitConfig_Feature = 68
-	PlanLimitConfig_ROADMAP_PRIORITIZATION     PlanLimitConfig_Feature = 69
-	PlanLimitConfig_CUSTOM_MSA                 PlanLimitConfig_Feature = 70
-	PlanLimitConfig_COMMUNITY_SUPPORT          PlanLimitConfig_Feature = 71
-	PlanLimitConfig_EMAIL_SUPPORT              PlanLimitConfig_Feature = 72
-	PlanLimitConfig_DEDICATED_SUPPORT_WITH_SLA PlanLimitConfig_Feature = 73
+	PlanFeature_FEATURE_ENVIRONMENT_MANAGEMENT     PlanFeature = 59
+	PlanFeature_FEATURE_IM_NOTIFICATIONS           PlanFeature = 60
+	PlanFeature_FEATURE_TERRAFORM_PROVIDER         PlanFeature = 61
+	PlanFeature_FEATURE_DATABASE_GROUPS            PlanFeature = 62
+	PlanFeature_FEATURE_ENVIRONMENT_TIERS          PlanFeature = 63
+	PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT     PlanFeature = 64
+	PlanFeature_FEATURE_API_INTEGRATION_GUIDANCE   PlanFeature = 65
+	PlanFeature_FEATURE_CUSTOM_LOGO                PlanFeature = 66
+	PlanFeature_FEATURE_WATERMARK                  PlanFeature = 67
+	PlanFeature_FEATURE_ROADMAP_PRIORITIZATION     PlanFeature = 68
+	PlanFeature_FEATURE_CUSTOM_MSA                 PlanFeature = 69
+	PlanFeature_FEATURE_COMMUNITY_SUPPORT          PlanFeature = 70
+	PlanFeature_FEATURE_EMAIL_SUPPORT              PlanFeature = 71
+	PlanFeature_FEATURE_DEDICATED_SUPPORT_WITH_SLA PlanFeature = 72
 )
 
-// Enum value maps for PlanLimitConfig_Feature.
+// Enum value maps for PlanFeature.
 var (
-	PlanLimitConfig_Feature_name = map[int32]string{
+	PlanFeature_name = map[int32]string{
 		0:  "FEATURE_UNSPECIFIED",
-		1:  "DATABASE_CHANGE",
-		2:  "GIT_BASED_SCHEMA_VERSION_CONTROL",
-		3:  "DECLARATIVE_SCHEMA_MIGRATION",
-		4:  "COMPARE_AND_SYNC_SCHEMA",
-		5:  "ONLINE_SCHEMA_CHANGE",
-		6:  "PRE_DEPLOYMENT_SQL_REVIEW",
-		7:  "AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES",
-		8:  "ONE_CLICK_DATA_ROLLBACK",
-		9:  "MULTI_DATABASE_BATCH_CHANGES",
-		10: "PROGRESSIVE_ENVIRONMENT_DEPLOYMENT",
-		11: "SCHEDULED_ROLLOUT_TIME",
-		12: "DATABASE_CHANGELOG",
-		13: "SCHEMA_DRIFT_DETECTION",
-		14: "CHANGELIST",
-		15: "SCHEMA_TEMPLATE",
-		16: "ROLLOUT_POLICY",
-		17: "WEB_BASED_SQL_EDITOR",
-		18: "SQL_EDITOR_ADMIN_MODE",
-		19: "NATURAL_LANGUAGE_TO_SQL",
-		20: "AI_QUERY_EXPLANATION",
-		21: "AI_QUERY_SUGGESTIONS",
-		22: "AUTO_COMPLETE",
-		23: "SCHEMA_DIAGRAM",
-		24: "SCHEMA_EDITOR",
-		25: "DATA_EXPORT",
-		26: "QUERY_HISTORY",
-		27: "SAVED_AND_SHARED_SQL_SCRIPTS",
-		28: "SQL_EDITOR_DDL_DML_RESTRICTION",
-		29: "BATCH_QUERY",
-		30: "INSTANCE_READ_ONLY_CONNECTION",
-		31: "RESTRICT_COPYING_DATA",
-		32: "IAM",
-		33: "INSTANCE_SSL_CONNECTION",
-		34: "INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
-		35: "INSTANCE_CONNECTION_IAM_AUTHENTICATION",
-		36: "GOOGLE_AND_GITHUB_SSO",
-		37: "USER_GROUPS",
-		38: "DISALLOW_SELF_SERVICE_SIGNUP",
-		39: "DATABASE_SECRET_VARIABLES",
-		40: "QUERY_DATASOURCE_RESTRICTION",
-		41: "CUSTOM_INSTANCE_SYNC_TIME",
-		42: "CUSTOM_INSTANCE_CONNECTION_LIMIT",
-		43: "RISK_ASSESSMENT",
-		44: "APPROVAL_WORKFLOW",
-		45: "AUDIT_LOG",
-		46: "ENTERPRISE_SSO",
-		47: "TWO_FA",
-		48: "PASSWORD_RESTRICTIONS",
-		49: "DISALLOW_PASSWORD_SIGNIN",
-		50: "CUSTOM_ROLES",
-		51: "REQUEST_ROLE_WORKFLOW",
-		52: "DATA_MASKING",
-		53: "DATA_CLASSIFICATION",
-		54: "SCIM",
-		55: "DIRECTORY_SYNC_ENTRA_ID",
-		56: "DIRECTORY_SYNC_OKTA",
-		57: "SIGN_IN_FREQUENCY_CONTROL",
-		58: "EXTERNAL_SECRET_MANAGER",
-		59: "USER_EMAIL_DOMAIN_RESTRICTION",
-		60: "ENVIRONMENT_MANAGEMENT",
-		61: "IM_NOTIFICATIONS",
-		62: "TERRAFORM_PROVIDER",
-		63: "DATABASE_GROUPS",
-		64: "ENVIRONMENT_TIERS",
-		65: "DASHBOARD_ANNOUNCEMENT",
-		66: "API_INTEGRATION_GUIDANCE",
-		67: "CUSTOM_LOGO",
-		68: "WATERMARK",
-		69: "ROADMAP_PRIORITIZATION",
-		70: "CUSTOM_MSA",
-		71: "COMMUNITY_SUPPORT",
-		72: "EMAIL_SUPPORT",
-		73: "DEDICATED_SUPPORT_WITH_SLA",
+		1:  "FEATURE_DATABASE_CHANGE",
+		2:  "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL",
+		3:  "FEATURE_DECLARATIVE_SCHEMA_MIGRATION",
+		4:  "FEATURE_COMPARE_AND_SYNC_SCHEMA",
+		5:  "FEATURE_ONLINE_SCHEMA_CHANGE",
+		6:  "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW",
+		7:  "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES",
+		8:  "FEATURE_ONE_CLICK_DATA_ROLLBACK",
+		9:  "FEATURE_MULTI_DATABASE_BATCH_CHANGES",
+		10: "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT",
+		11: "FEATURE_SCHEDULED_ROLLOUT_TIME",
+		12: "FEATURE_DATABASE_CHANGELOG",
+		13: "FEATURE_SCHEMA_DRIFT_DETECTION",
+		14: "FEATURE_CHANGELIST",
+		15: "FEATURE_SCHEMA_TEMPLATE",
+		16: "FEATURE_ROLLOUT_POLICY",
+		17: "FEATURE_WEB_BASED_SQL_EDITOR",
+		18: "FEATURE_SQL_EDITOR_ADMIN_MODE",
+		19: "FEATURE_NATURAL_LANGUAGE_TO_SQL",
+		20: "FEATURE_AI_QUERY_EXPLANATION",
+		21: "FEATURE_AI_QUERY_SUGGESTIONS",
+		22: "FEATURE_AUTO_COMPLETE",
+		23: "FEATURE_SCHEMA_DIAGRAM",
+		24: "FEATURE_SCHEMA_EDITOR",
+		25: "FEATURE_DATA_EXPORT",
+		26: "FEATURE_QUERY_HISTORY",
+		27: "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS",
+		28: "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION",
+		29: "FEATURE_BATCH_QUERY",
+		30: "FEATURE_INSTANCE_READ_ONLY_CONNECTION",
+		31: "FEATURE_RESTRICT_COPYING_DATA",
+		32: "FEATURE_IAM",
+		33: "FEATURE_INSTANCE_SSL_CONNECTION",
+		34: "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
+		35: "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION",
+		36: "FEATURE_GOOGLE_AND_GITHUB_SSO",
+		37: "FEATURE_USER_GROUPS",
+		38: "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP",
+		39: "FEATURE_DATABASE_SECRET_VARIABLES",
+		40: "FEATURE_QUERY_DATASOURCE_RESTRICTION",
+		41: "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
+		42: "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
+		43: "FEATURE_RISK_ASSESSMENT",
+		44: "FEATURE_APPROVAL_WORKFLOW",
+		45: "FEATURE_AUDIT_LOG",
+		46: "FEATURE_ENTERPRISE_SSO",
+		47: "FEATURE_TWO_FA",
+		48: "FEATURE_PASSWORD_RESTRICTIONS",
+		49: "FEATURE_DISALLOW_PASSWORD_SIGNIN",
+		50: "FEATURE_CUSTOM_ROLES",
+		51: "FEATURE_REQUEST_ROLE_WORKFLOW",
+		52: "FEATURE_DATA_MASKING",
+		53: "FEATURE_DATA_CLASSIFICATION",
+		54: "FEATURE_SCIM",
+		55: "FEATURE_DIRECTORY_SYNC",
+		56: "FEATURE_SIGN_IN_FREQUENCY_CONTROL",
+		57: "FEATURE_EXTERNAL_SECRET_MANAGER",
+		58: "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
+		59: "FEATURE_ENVIRONMENT_MANAGEMENT",
+		60: "FEATURE_IM_NOTIFICATIONS",
+		61: "FEATURE_TERRAFORM_PROVIDER",
+		62: "FEATURE_DATABASE_GROUPS",
+		63: "FEATURE_ENVIRONMENT_TIERS",
+		64: "FEATURE_DASHBOARD_ANNOUNCEMENT",
+		65: "FEATURE_API_INTEGRATION_GUIDANCE",
+		66: "FEATURE_CUSTOM_LOGO",
+		67: "FEATURE_WATERMARK",
+		68: "FEATURE_ROADMAP_PRIORITIZATION",
+		69: "FEATURE_CUSTOM_MSA",
+		70: "FEATURE_COMMUNITY_SUPPORT",
+		71: "FEATURE_EMAIL_SUPPORT",
+		72: "FEATURE_DEDICATED_SUPPORT_WITH_SLA",
 	}
-	PlanLimitConfig_Feature_value = map[string]int32{
-		"FEATURE_UNSPECIFIED":                    0,
-		"DATABASE_CHANGE":                        1,
-		"GIT_BASED_SCHEMA_VERSION_CONTROL":       2,
-		"DECLARATIVE_SCHEMA_MIGRATION":           3,
-		"COMPARE_AND_SYNC_SCHEMA":                4,
-		"ONLINE_SCHEMA_CHANGE":                   5,
-		"PRE_DEPLOYMENT_SQL_REVIEW":              6,
-		"AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES":   7,
-		"ONE_CLICK_DATA_ROLLBACK":                8,
-		"MULTI_DATABASE_BATCH_CHANGES":           9,
-		"PROGRESSIVE_ENVIRONMENT_DEPLOYMENT":     10,
-		"SCHEDULED_ROLLOUT_TIME":                 11,
-		"DATABASE_CHANGELOG":                     12,
-		"SCHEMA_DRIFT_DETECTION":                 13,
-		"CHANGELIST":                             14,
-		"SCHEMA_TEMPLATE":                        15,
-		"ROLLOUT_POLICY":                         16,
-		"WEB_BASED_SQL_EDITOR":                   17,
-		"SQL_EDITOR_ADMIN_MODE":                  18,
-		"NATURAL_LANGUAGE_TO_SQL":                19,
-		"AI_QUERY_EXPLANATION":                   20,
-		"AI_QUERY_SUGGESTIONS":                   21,
-		"AUTO_COMPLETE":                          22,
-		"SCHEMA_DIAGRAM":                         23,
-		"SCHEMA_EDITOR":                          24,
-		"DATA_EXPORT":                            25,
-		"QUERY_HISTORY":                          26,
-		"SAVED_AND_SHARED_SQL_SCRIPTS":           27,
-		"SQL_EDITOR_DDL_DML_RESTRICTION":         28,
-		"BATCH_QUERY":                            29,
-		"INSTANCE_READ_ONLY_CONNECTION":          30,
-		"RESTRICT_COPYING_DATA":                  31,
-		"IAM":                                    32,
-		"INSTANCE_SSL_CONNECTION":                33,
-		"INSTANCE_CONNECTION_OVER_SSH_TUNNEL":    34,
-		"INSTANCE_CONNECTION_IAM_AUTHENTICATION": 35,
-		"GOOGLE_AND_GITHUB_SSO":                  36,
-		"USER_GROUPS":                            37,
-		"DISALLOW_SELF_SERVICE_SIGNUP":           38,
-		"DATABASE_SECRET_VARIABLES":              39,
-		"QUERY_DATASOURCE_RESTRICTION":           40,
-		"CUSTOM_INSTANCE_SYNC_TIME":              41,
-		"CUSTOM_INSTANCE_CONNECTION_LIMIT":       42,
-		"RISK_ASSESSMENT":                        43,
-		"APPROVAL_WORKFLOW":                      44,
-		"AUDIT_LOG":                              45,
-		"ENTERPRISE_SSO":                         46,
-		"TWO_FA":                                 47,
-		"PASSWORD_RESTRICTIONS":                  48,
-		"DISALLOW_PASSWORD_SIGNIN":               49,
-		"CUSTOM_ROLES":                           50,
-		"REQUEST_ROLE_WORKFLOW":                  51,
-		"DATA_MASKING":                           52,
-		"DATA_CLASSIFICATION":                    53,
-		"SCIM":                                   54,
-		"DIRECTORY_SYNC_ENTRA_ID":                55,
-		"DIRECTORY_SYNC_OKTA":                    56,
-		"SIGN_IN_FREQUENCY_CONTROL":              57,
-		"EXTERNAL_SECRET_MANAGER":                58,
-		"USER_EMAIL_DOMAIN_RESTRICTION":          59,
-		"ENVIRONMENT_MANAGEMENT":                 60,
-		"IM_NOTIFICATIONS":                       61,
-		"TERRAFORM_PROVIDER":                     62,
-		"DATABASE_GROUPS":                        63,
-		"ENVIRONMENT_TIERS":                      64,
-		"DASHBOARD_ANNOUNCEMENT":                 65,
-		"API_INTEGRATION_GUIDANCE":               66,
-		"CUSTOM_LOGO":                            67,
-		"WATERMARK":                              68,
-		"ROADMAP_PRIORITIZATION":                 69,
-		"CUSTOM_MSA":                             70,
-		"COMMUNITY_SUPPORT":                      71,
-		"EMAIL_SUPPORT":                          72,
-		"DEDICATED_SUPPORT_WITH_SLA":             73,
+	PlanFeature_value = map[string]int32{
+		"FEATURE_UNSPECIFIED":                            0,
+		"FEATURE_DATABASE_CHANGE":                        1,
+		"FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL":       2,
+		"FEATURE_DECLARATIVE_SCHEMA_MIGRATION":           3,
+		"FEATURE_COMPARE_AND_SYNC_SCHEMA":                4,
+		"FEATURE_ONLINE_SCHEMA_CHANGE":                   5,
+		"FEATURE_PRE_DEPLOYMENT_SQL_REVIEW":              6,
+		"FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES":   7,
+		"FEATURE_ONE_CLICK_DATA_ROLLBACK":                8,
+		"FEATURE_MULTI_DATABASE_BATCH_CHANGES":           9,
+		"FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT":     10,
+		"FEATURE_SCHEDULED_ROLLOUT_TIME":                 11,
+		"FEATURE_DATABASE_CHANGELOG":                     12,
+		"FEATURE_SCHEMA_DRIFT_DETECTION":                 13,
+		"FEATURE_CHANGELIST":                             14,
+		"FEATURE_SCHEMA_TEMPLATE":                        15,
+		"FEATURE_ROLLOUT_POLICY":                         16,
+		"FEATURE_WEB_BASED_SQL_EDITOR":                   17,
+		"FEATURE_SQL_EDITOR_ADMIN_MODE":                  18,
+		"FEATURE_NATURAL_LANGUAGE_TO_SQL":                19,
+		"FEATURE_AI_QUERY_EXPLANATION":                   20,
+		"FEATURE_AI_QUERY_SUGGESTIONS":                   21,
+		"FEATURE_AUTO_COMPLETE":                          22,
+		"FEATURE_SCHEMA_DIAGRAM":                         23,
+		"FEATURE_SCHEMA_EDITOR":                          24,
+		"FEATURE_DATA_EXPORT":                            25,
+		"FEATURE_QUERY_HISTORY":                          26,
+		"FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS":           27,
+		"FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION":         28,
+		"FEATURE_BATCH_QUERY":                            29,
+		"FEATURE_INSTANCE_READ_ONLY_CONNECTION":          30,
+		"FEATURE_RESTRICT_COPYING_DATA":                  31,
+		"FEATURE_IAM":                                    32,
+		"FEATURE_INSTANCE_SSL_CONNECTION":                33,
+		"FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL":    34,
+		"FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": 35,
+		"FEATURE_GOOGLE_AND_GITHUB_SSO":                  36,
+		"FEATURE_USER_GROUPS":                            37,
+		"FEATURE_DISALLOW_SELF_SERVICE_SIGNUP":           38,
+		"FEATURE_DATABASE_SECRET_VARIABLES":              39,
+		"FEATURE_QUERY_DATASOURCE_RESTRICTION":           40,
+		"FEATURE_CUSTOM_INSTANCE_SYNC_TIME":              41,
+		"FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT":       42,
+		"FEATURE_RISK_ASSESSMENT":                        43,
+		"FEATURE_APPROVAL_WORKFLOW":                      44,
+		"FEATURE_AUDIT_LOG":                              45,
+		"FEATURE_ENTERPRISE_SSO":                         46,
+		"FEATURE_TWO_FA":                                 47,
+		"FEATURE_PASSWORD_RESTRICTIONS":                  48,
+		"FEATURE_DISALLOW_PASSWORD_SIGNIN":               49,
+		"FEATURE_CUSTOM_ROLES":                           50,
+		"FEATURE_REQUEST_ROLE_WORKFLOW":                  51,
+		"FEATURE_DATA_MASKING":                           52,
+		"FEATURE_DATA_CLASSIFICATION":                    53,
+		"FEATURE_SCIM":                                   54,
+		"FEATURE_DIRECTORY_SYNC":                         55,
+		"FEATURE_SIGN_IN_FREQUENCY_CONTROL":              56,
+		"FEATURE_EXTERNAL_SECRET_MANAGER":                57,
+		"FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":          58,
+		"FEATURE_ENVIRONMENT_MANAGEMENT":                 59,
+		"FEATURE_IM_NOTIFICATIONS":                       60,
+		"FEATURE_TERRAFORM_PROVIDER":                     61,
+		"FEATURE_DATABASE_GROUPS":                        62,
+		"FEATURE_ENVIRONMENT_TIERS":                      63,
+		"FEATURE_DASHBOARD_ANNOUNCEMENT":                 64,
+		"FEATURE_API_INTEGRATION_GUIDANCE":               65,
+		"FEATURE_CUSTOM_LOGO":                            66,
+		"FEATURE_WATERMARK":                              67,
+		"FEATURE_ROADMAP_PRIORITIZATION":                 68,
+		"FEATURE_CUSTOM_MSA":                             69,
+		"FEATURE_COMMUNITY_SUPPORT":                      70,
+		"FEATURE_EMAIL_SUPPORT":                          71,
+		"FEATURE_DEDICATED_SUPPORT_WITH_SLA":             72,
 	}
 )
 
-func (x PlanLimitConfig_Feature) Enum() *PlanLimitConfig_Feature {
-	p := new(PlanLimitConfig_Feature)
+func (x PlanFeature) Enum() *PlanFeature {
+	p := new(PlanFeature)
 	*p = x
 	return p
 }
 
-func (x PlanLimitConfig_Feature) String() string {
+func (x PlanFeature) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (PlanLimitConfig_Feature) Descriptor() protoreflect.EnumDescriptor {
+func (PlanFeature) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_subscription_service_proto_enumTypes[1].Descriptor()
 }
 
-func (PlanLimitConfig_Feature) Type() protoreflect.EnumType {
+func (PlanFeature) Type() protoreflect.EnumType {
 	return &file_v1_subscription_service_proto_enumTypes[1]
 }
 
-func (x PlanLimitConfig_Feature) Number() protoreflect.EnumNumber {
+func (x PlanFeature) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use PlanLimitConfig_Feature.Descriptor instead.
-func (PlanLimitConfig_Feature) EnumDescriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{8, 0}
+// Deprecated: Use PlanFeature.Descriptor instead.
+func (PlanFeature) EnumDescriptor() ([]byte, []int) {
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{1}
 }
 
 type GetSubscriptionRequest struct {
@@ -747,11 +744,11 @@ func (x *PlanConfig) GetPlans() []*PlanLimitConfig {
 
 // PlanLimitConfig represents a single plan's configuration
 type PlanLimitConfig struct {
-	state                protoimpl.MessageState    `protogen:"open.v1"`
-	Type                 PlanType                  `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.PlanType" json:"type,omitempty"`
-	MaximumInstanceCount int32                     `protobuf:"varint,2,opt,name=maximum_instance_count,json=maximumInstanceCount,proto3" json:"maximum_instance_count,omitempty"`
-	MaximumSeatCount     int32                     `protobuf:"varint,3,opt,name=maximum_seat_count,json=maximumSeatCount,proto3" json:"maximum_seat_count,omitempty"`
-	Features             []PlanLimitConfig_Feature `protobuf:"varint,4,rep,packed,name=features,proto3,enum=bytebase.v1.PlanLimitConfig_Feature" json:"features,omitempty"`
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Type                 PlanType               `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.PlanType" json:"type,omitempty"`
+	MaximumInstanceCount int32                  `protobuf:"varint,2,opt,name=maximum_instance_count,json=maximumInstanceCount,proto3" json:"maximum_instance_count,omitempty"`
+	MaximumSeatCount     int32                  `protobuf:"varint,3,opt,name=maximum_seat_count,json=maximumSeatCount,proto3" json:"maximum_seat_count,omitempty"`
+	Features             []PlanFeature          `protobuf:"varint,4,rep,packed,name=features,proto3,enum=bytebase.v1.PlanFeature" json:"features,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -807,7 +804,7 @@ func (x *PlanLimitConfig) GetMaximumSeatCount() int32 {
 	return 0
 }
 
-func (x *PlanLimitConfig) GetFeatures() []PlanLimitConfig_Feature {
+func (x *PlanLimitConfig) GetFeatures() []PlanFeature {
 	if x != nil {
 		return x.Features
 	}
@@ -845,97 +842,93 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\"@\n" +
 	"\n" +
 	"PlanConfig\x122\n" +
-	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\"\xed\x10\n" +
+	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\"\xd6\x01\n" +
 	"\x0fPlanLimitConfig\x12)\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeR\x04type\x124\n" +
 	"\x16maximum_instance_count\x18\x02 \x01(\x05R\x14maximumInstanceCount\x12,\n" +
-	"\x12maximum_seat_count\x18\x03 \x01(\x05R\x10maximumSeatCount\x12@\n" +
-	"\bfeatures\x18\x04 \x03(\x0e2$.bytebase.v1.PlanLimitConfig.FeatureR\bfeatures\"\x88\x0f\n" +
-	"\aFeature\x12\x17\n" +
-	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x13\n" +
-	"\x0fDATABASE_CHANGE\x10\x01\x12$\n" +
-	" GIT_BASED_SCHEMA_VERSION_CONTROL\x10\x02\x12 \n" +
-	"\x1cDECLARATIVE_SCHEMA_MIGRATION\x10\x03\x12\x1b\n" +
-	"\x17COMPARE_AND_SYNC_SCHEMA\x10\x04\x12\x18\n" +
-	"\x14ONLINE_SCHEMA_CHANGE\x10\x05\x12\x1d\n" +
-	"\x19PRE_DEPLOYMENT_SQL_REVIEW\x10\x06\x12(\n" +
-	"$AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES\x10\a\x12\x1b\n" +
-	"\x17ONE_CLICK_DATA_ROLLBACK\x10\b\x12 \n" +
-	"\x1cMULTI_DATABASE_BATCH_CHANGES\x10\t\x12&\n" +
-	"\"PROGRESSIVE_ENVIRONMENT_DEPLOYMENT\x10\n" +
-	"\x12\x1a\n" +
-	"\x16SCHEDULED_ROLLOUT_TIME\x10\v\x12\x16\n" +
-	"\x12DATABASE_CHANGELOG\x10\f\x12\x1a\n" +
-	"\x16SCHEMA_DRIFT_DETECTION\x10\r\x12\x0e\n" +
-	"\n" +
-	"CHANGELIST\x10\x0e\x12\x13\n" +
-	"\x0fSCHEMA_TEMPLATE\x10\x0f\x12\x12\n" +
-	"\x0eROLLOUT_POLICY\x10\x10\x12\x18\n" +
-	"\x14WEB_BASED_SQL_EDITOR\x10\x11\x12\x19\n" +
-	"\x15SQL_EDITOR_ADMIN_MODE\x10\x12\x12\x1b\n" +
-	"\x17NATURAL_LANGUAGE_TO_SQL\x10\x13\x12\x18\n" +
-	"\x14AI_QUERY_EXPLANATION\x10\x14\x12\x18\n" +
-	"\x14AI_QUERY_SUGGESTIONS\x10\x15\x12\x11\n" +
-	"\rAUTO_COMPLETE\x10\x16\x12\x12\n" +
-	"\x0eSCHEMA_DIAGRAM\x10\x17\x12\x11\n" +
-	"\rSCHEMA_EDITOR\x10\x18\x12\x0f\n" +
-	"\vDATA_EXPORT\x10\x19\x12\x11\n" +
-	"\rQUERY_HISTORY\x10\x1a\x12 \n" +
-	"\x1cSAVED_AND_SHARED_SQL_SCRIPTS\x10\x1b\x12\"\n" +
-	"\x1eSQL_EDITOR_DDL_DML_RESTRICTION\x10\x1c\x12\x0f\n" +
-	"\vBATCH_QUERY\x10\x1d\x12!\n" +
-	"\x1dINSTANCE_READ_ONLY_CONNECTION\x10\x1e\x12\x19\n" +
-	"\x15RESTRICT_COPYING_DATA\x10\x1f\x12\a\n" +
-	"\x03IAM\x10 \x12\x1b\n" +
-	"\x17INSTANCE_SSL_CONNECTION\x10!\x12'\n" +
-	"#INSTANCE_CONNECTION_OVER_SSH_TUNNEL\x10\"\x12*\n" +
-	"&INSTANCE_CONNECTION_IAM_AUTHENTICATION\x10#\x12\x19\n" +
-	"\x15GOOGLE_AND_GITHUB_SSO\x10$\x12\x0f\n" +
-	"\vUSER_GROUPS\x10%\x12 \n" +
-	"\x1cDISALLOW_SELF_SERVICE_SIGNUP\x10&\x12\x1d\n" +
-	"\x19DATABASE_SECRET_VARIABLES\x10'\x12 \n" +
-	"\x1cQUERY_DATASOURCE_RESTRICTION\x10(\x12\x1d\n" +
-	"\x19CUSTOM_INSTANCE_SYNC_TIME\x10)\x12$\n" +
-	" CUSTOM_INSTANCE_CONNECTION_LIMIT\x10*\x12\x13\n" +
-	"\x0fRISK_ASSESSMENT\x10+\x12\x15\n" +
-	"\x11APPROVAL_WORKFLOW\x10,\x12\r\n" +
-	"\tAUDIT_LOG\x10-\x12\x12\n" +
-	"\x0eENTERPRISE_SSO\x10.\x12\n" +
-	"\n" +
-	"\x06TWO_FA\x10/\x12\x19\n" +
-	"\x15PASSWORD_RESTRICTIONS\x100\x12\x1c\n" +
-	"\x18DISALLOW_PASSWORD_SIGNIN\x101\x12\x10\n" +
-	"\fCUSTOM_ROLES\x102\x12\x19\n" +
-	"\x15REQUEST_ROLE_WORKFLOW\x103\x12\x10\n" +
-	"\fDATA_MASKING\x104\x12\x17\n" +
-	"\x13DATA_CLASSIFICATION\x105\x12\b\n" +
-	"\x04SCIM\x106\x12\x1b\n" +
-	"\x17DIRECTORY_SYNC_ENTRA_ID\x107\x12\x17\n" +
-	"\x13DIRECTORY_SYNC_OKTA\x108\x12\x1d\n" +
-	"\x19SIGN_IN_FREQUENCY_CONTROL\x109\x12\x1b\n" +
-	"\x17EXTERNAL_SECRET_MANAGER\x10:\x12!\n" +
-	"\x1dUSER_EMAIL_DOMAIN_RESTRICTION\x10;\x12\x1a\n" +
-	"\x16ENVIRONMENT_MANAGEMENT\x10<\x12\x14\n" +
-	"\x10IM_NOTIFICATIONS\x10=\x12\x16\n" +
-	"\x12TERRAFORM_PROVIDER\x10>\x12\x13\n" +
-	"\x0fDATABASE_GROUPS\x10?\x12\x15\n" +
-	"\x11ENVIRONMENT_TIERS\x10@\x12\x1a\n" +
-	"\x16DASHBOARD_ANNOUNCEMENT\x10A\x12\x1c\n" +
-	"\x18API_INTEGRATION_GUIDANCE\x10B\x12\x0f\n" +
-	"\vCUSTOM_LOGO\x10C\x12\r\n" +
-	"\tWATERMARK\x10D\x12\x1a\n" +
-	"\x16ROADMAP_PRIORITIZATION\x10E\x12\x0e\n" +
-	"\n" +
-	"CUSTOM_MSA\x10F\x12\x15\n" +
-	"\x11COMMUNITY_SUPPORT\x10G\x12\x11\n" +
-	"\rEMAIL_SUPPORT\x10H\x12\x1e\n" +
-	"\x1aDEDICATED_SUPPORT_WITH_SLA\x10I*I\n" +
+	"\x12maximum_seat_count\x18\x03 \x01(\x05R\x10maximumSeatCount\x124\n" +
+	"\bfeatures\x18\x04 \x03(\x0e2\x18.bytebase.v1.PlanFeatureR\bfeatures*I\n" +
 	"\bPlanType\x12\x19\n" +
 	"\x15PLAN_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04FREE\x10\x01\x12\b\n" +
 	"\x04TEAM\x10\x02\x12\x0e\n" +
 	"\n" +
-	"ENTERPRISE\x10\x032\x95\x03\n" +
+	"ENTERPRISE\x10\x03*\xaa\x13\n" +
+	"\vPlanFeature\x12\x17\n" +
+	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17FEATURE_DATABASE_CHANGE\x10\x01\x12,\n" +
+	"(FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL\x10\x02\x12(\n" +
+	"$FEATURE_DECLARATIVE_SCHEMA_MIGRATION\x10\x03\x12#\n" +
+	"\x1fFEATURE_COMPARE_AND_SYNC_SCHEMA\x10\x04\x12 \n" +
+	"\x1cFEATURE_ONLINE_SCHEMA_CHANGE\x10\x05\x12%\n" +
+	"!FEATURE_PRE_DEPLOYMENT_SQL_REVIEW\x10\x06\x120\n" +
+	",FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES\x10\a\x12#\n" +
+	"\x1fFEATURE_ONE_CLICK_DATA_ROLLBACK\x10\b\x12(\n" +
+	"$FEATURE_MULTI_DATABASE_BATCH_CHANGES\x10\t\x12.\n" +
+	"*FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT\x10\n" +
+	"\x12\"\n" +
+	"\x1eFEATURE_SCHEDULED_ROLLOUT_TIME\x10\v\x12\x1e\n" +
+	"\x1aFEATURE_DATABASE_CHANGELOG\x10\f\x12\"\n" +
+	"\x1eFEATURE_SCHEMA_DRIFT_DETECTION\x10\r\x12\x16\n" +
+	"\x12FEATURE_CHANGELIST\x10\x0e\x12\x1b\n" +
+	"\x17FEATURE_SCHEMA_TEMPLATE\x10\x0f\x12\x1a\n" +
+	"\x16FEATURE_ROLLOUT_POLICY\x10\x10\x12 \n" +
+	"\x1cFEATURE_WEB_BASED_SQL_EDITOR\x10\x11\x12!\n" +
+	"\x1dFEATURE_SQL_EDITOR_ADMIN_MODE\x10\x12\x12#\n" +
+	"\x1fFEATURE_NATURAL_LANGUAGE_TO_SQL\x10\x13\x12 \n" +
+	"\x1cFEATURE_AI_QUERY_EXPLANATION\x10\x14\x12 \n" +
+	"\x1cFEATURE_AI_QUERY_SUGGESTIONS\x10\x15\x12\x19\n" +
+	"\x15FEATURE_AUTO_COMPLETE\x10\x16\x12\x1a\n" +
+	"\x16FEATURE_SCHEMA_DIAGRAM\x10\x17\x12\x19\n" +
+	"\x15FEATURE_SCHEMA_EDITOR\x10\x18\x12\x17\n" +
+	"\x13FEATURE_DATA_EXPORT\x10\x19\x12\x19\n" +
+	"\x15FEATURE_QUERY_HISTORY\x10\x1a\x12(\n" +
+	"$FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS\x10\x1b\x12*\n" +
+	"&FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION\x10\x1c\x12\x17\n" +
+	"\x13FEATURE_BATCH_QUERY\x10\x1d\x12)\n" +
+	"%FEATURE_INSTANCE_READ_ONLY_CONNECTION\x10\x1e\x12!\n" +
+	"\x1dFEATURE_RESTRICT_COPYING_DATA\x10\x1f\x12\x0f\n" +
+	"\vFEATURE_IAM\x10 \x12#\n" +
+	"\x1fFEATURE_INSTANCE_SSL_CONNECTION\x10!\x12/\n" +
+	"+FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL\x10\"\x122\n" +
+	".FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION\x10#\x12!\n" +
+	"\x1dFEATURE_GOOGLE_AND_GITHUB_SSO\x10$\x12\x17\n" +
+	"\x13FEATURE_USER_GROUPS\x10%\x12(\n" +
+	"$FEATURE_DISALLOW_SELF_SERVICE_SIGNUP\x10&\x12%\n" +
+	"!FEATURE_DATABASE_SECRET_VARIABLES\x10'\x12(\n" +
+	"$FEATURE_QUERY_DATASOURCE_RESTRICTION\x10(\x12%\n" +
+	"!FEATURE_CUSTOM_INSTANCE_SYNC_TIME\x10)\x12,\n" +
+	"(FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT\x10*\x12\x1b\n" +
+	"\x17FEATURE_RISK_ASSESSMENT\x10+\x12\x1d\n" +
+	"\x19FEATURE_APPROVAL_WORKFLOW\x10,\x12\x15\n" +
+	"\x11FEATURE_AUDIT_LOG\x10-\x12\x1a\n" +
+	"\x16FEATURE_ENTERPRISE_SSO\x10.\x12\x12\n" +
+	"\x0eFEATURE_TWO_FA\x10/\x12!\n" +
+	"\x1dFEATURE_PASSWORD_RESTRICTIONS\x100\x12$\n" +
+	" FEATURE_DISALLOW_PASSWORD_SIGNIN\x101\x12\x18\n" +
+	"\x14FEATURE_CUSTOM_ROLES\x102\x12!\n" +
+	"\x1dFEATURE_REQUEST_ROLE_WORKFLOW\x103\x12\x18\n" +
+	"\x14FEATURE_DATA_MASKING\x104\x12\x1f\n" +
+	"\x1bFEATURE_DATA_CLASSIFICATION\x105\x12\x10\n" +
+	"\fFEATURE_SCIM\x106\x12\x1a\n" +
+	"\x16FEATURE_DIRECTORY_SYNC\x107\x12%\n" +
+	"!FEATURE_SIGN_IN_FREQUENCY_CONTROL\x108\x12#\n" +
+	"\x1fFEATURE_EXTERNAL_SECRET_MANAGER\x109\x12)\n" +
+	"%FEATURE_USER_EMAIL_DOMAIN_RESTRICTION\x10:\x12\"\n" +
+	"\x1eFEATURE_ENVIRONMENT_MANAGEMENT\x10;\x12\x1c\n" +
+	"\x18FEATURE_IM_NOTIFICATIONS\x10<\x12\x1e\n" +
+	"\x1aFEATURE_TERRAFORM_PROVIDER\x10=\x12\x1b\n" +
+	"\x17FEATURE_DATABASE_GROUPS\x10>\x12\x1d\n" +
+	"\x19FEATURE_ENVIRONMENT_TIERS\x10?\x12\"\n" +
+	"\x1eFEATURE_DASHBOARD_ANNOUNCEMENT\x10@\x12$\n" +
+	" FEATURE_API_INTEGRATION_GUIDANCE\x10A\x12\x17\n" +
+	"\x13FEATURE_CUSTOM_LOGO\x10B\x12\x15\n" +
+	"\x11FEATURE_WATERMARK\x10C\x12\"\n" +
+	"\x1eFEATURE_ROADMAP_PRIORITIZATION\x10D\x12\x16\n" +
+	"\x12FEATURE_CUSTOM_MSA\x10E\x12\x1d\n" +
+	"\x19FEATURE_COMMUNITY_SUPPORT\x10F\x12\x19\n" +
+	"\x15FEATURE_EMAIL_SUPPORT\x10G\x12&\n" +
+	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10H2\x95\x03\n" +
 	"\x13SubscriptionService\x12r\n" +
 	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1f\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12p\n" +
 	"\x10GetFeatureMatrix\x12$.bytebase.v1.GetFeatureMatrixRequest\x1a\x1a.bytebase.v1.FeatureMatrix\"\x1a\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\r\x12\v/v1/feature\x12\x97\x01\n" +
@@ -957,7 +950,7 @@ var file_v1_subscription_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_v1_subscription_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_v1_subscription_service_proto_goTypes = []any{
 	(PlanType)(0),                     // 0: bytebase.v1.PlanType
-	(PlanLimitConfig_Feature)(0),      // 1: bytebase.v1.PlanLimitConfig.Feature
+	(PlanFeature)(0),                  // 1: bytebase.v1.PlanFeature
 	(*GetSubscriptionRequest)(nil),    // 2: bytebase.v1.GetSubscriptionRequest
 	(*GetFeatureMatrixRequest)(nil),   // 3: bytebase.v1.GetFeatureMatrixRequest
 	(*UpdateSubscriptionRequest)(nil), // 4: bytebase.v1.UpdateSubscriptionRequest
@@ -979,7 +972,7 @@ var file_v1_subscription_service_proto_depIdxs = []int32{
 	11, // 5: bytebase.v1.Feature.matrix:type_name -> bytebase.v1.Feature.MatrixEntry
 	10, // 6: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
 	0,  // 7: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
-	1,  // 8: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanLimitConfig.Feature
+	1,  // 8: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanFeature
 	2,  // 9: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
 	3,  // 10: bytebase.v1.SubscriptionService.GetFeatureMatrix:input_type -> bytebase.v1.GetFeatureMatrixRequest
 	4,  // 11: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest

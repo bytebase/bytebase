@@ -13,7 +13,7 @@ import {
   useSQLEditorTabStore,
   useAppFeature,
 } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -163,7 +163,7 @@ router.beforeEach((to, from, next) => {
   const currentUserV1 = useCurrentUserV1();
 
   // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
-  if (hasFeature(PlanLimitConfig_Feature.TWO_FA) && actuatorStore.serverInfo?.require2fa) {
+  if (hasFeature(PlanFeature.FEATURE_TWO_FA) && actuatorStore.serverInfo?.require2fa) {
     const user = currentUserV1.value;
     if (user && !user.mfaEnabled) {
       next({

@@ -110,7 +110,7 @@ import type {
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
 import {
-  PlanLimitConfig_Feature,
+  PlanFeature,
   PlanType,
 } from "@/types/proto/v1/subscription_service";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
@@ -125,11 +125,11 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     open: boolean;
-    feature?: PlanLimitConfig_Feature;
+    feature?: PlanFeature;
     instance?: Instance | InstanceResource;
   }>(),
   {
-    feature: PlanLimitConfig_Feature.FEATURE_UNSPECIFIED,
+    feature: PlanFeature.FEATURE_UNSPECIFIED,
     instance: undefined,
   }
 );

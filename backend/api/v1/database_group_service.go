@@ -38,7 +38,7 @@ func NewDatabaseGroupService(store *store.Store, profile *config.Profile, iamMan
 
 // CreateDatabaseGroup creates a database group.
 func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DATABASE_GROUPS); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATABASE_GROUPS); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	projectResourceID, err := common.GetProjectID(request.Parent)
@@ -102,7 +102,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, request 
 
 // UpdateDatabaseGroup updates a database group.
 func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.UpdateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DATABASE_GROUPS); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATABASE_GROUPS); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.DatabaseGroup.Name)

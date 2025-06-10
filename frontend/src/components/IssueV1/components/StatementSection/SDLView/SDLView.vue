@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-2">
-    <div v-if="!hasFeature(PlanLimitConfig_Feature.PRE_DEPLOYMENT_SQL_REVIEW)">
+    <div v-if="!hasFeature(PlanFeature.FEATURE_PRE_DEPLOYMENT_SQL_REVIEW)">
       <div class="flex space-x-4 flex-1">
         <NButton size="small" @click.prevent="state.showFeatureModal = true">
           🎈{{ $t("sql-review.unlock-full-feature") }}
@@ -76,7 +76,7 @@
   </div>
   <FeatureModal
     :open="state.showFeatureModal"
-    :feature="PlanLimitConfig_Feature.PRE_DEPLOYMENT_SQL_REVIEW"
+    :feature="PlanFeature.FEATURE_PRE_DEPLOYMENT_SQL_REVIEW"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -89,7 +89,7 @@ import { FeatureModal } from "@/components/FeatureGuard";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import { hasFeature, pushNotification } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSDLState } from "./useSDLState";
 

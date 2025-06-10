@@ -85,7 +85,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subsc
 }
 
 // IsFeatureEnabled returns whether a feature is enabled.
-func (s *LicenseService) IsFeatureEnabled(f v1pb.PlanLimitConfig_Feature) error {
+func (s *LicenseService) IsFeatureEnabled(f v1pb.PlanFeature) error {
 	plan := s.GetEffectivePlan()
 	features, ok := enterprise.PlanFeatureMatrix[plan]
 	if !ok || !features[f] {
@@ -95,7 +95,7 @@ func (s *LicenseService) IsFeatureEnabled(f v1pb.PlanLimitConfig_Feature) error 
 }
 
 // IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
-func (s *LicenseService) IsFeatureEnabledForInstance(f v1pb.PlanLimitConfig_Feature, instance *store.InstanceMessage) error {
+func (s *LicenseService) IsFeatureEnabledForInstance(f v1pb.PlanFeature, instance *store.InstanceMessage) error {
 	plan := s.GetEffectivePlan()
 	// DONOT check instance license fo FREE plan.
 	if plan == v1pb.PlanType_FREE {
@@ -178,13 +178,13 @@ func (s *LicenseService) RefreshCache(ctx context.Context) {
 // Helper functions to avoid circular import
 
 // accessErrorMessage returns a error message with feature name and minimum supported plan.
-func accessErrorMessage(f v1pb.PlanLimitConfig_Feature) string {
+func accessErrorMessage(f v1pb.PlanFeature) string {
 	plan := minimumSupportedPlan(f)
 	return fmt.Sprintf("%s is a %s feature, please upgrade to access it.", f.String(), plan.String())
 }
 
 // minimumSupportedPlan will find the minimum plan which supports the target feature.
-func minimumSupportedPlan(f v1pb.PlanLimitConfig_Feature) v1pb.PlanType {
+func minimumSupportedPlan(f v1pb.PlanFeature) v1pb.PlanType {
 	// Check from lowest to highest plan
 	if enterprise.PlanFeatureMatrix[v1pb.PlanType_FREE][f] {
 		return v1pb.PlanType_FREE
@@ -196,8 +196,8 @@ func minimumSupportedPlan(f v1pb.PlanLimitConfig_Feature) v1pb.PlanType {
 }
 
 // instanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.
-var instanceLimitFeature = map[v1pb.PlanLimitConfig_Feature]bool{
-	v1pb.PlanLimitConfig_DATABASE_SECRET_VARIABLES:     true,
-	v1pb.PlanLimitConfig_INSTANCE_READ_ONLY_CONNECTION: true,
-	v1pb.PlanLimitConfig_DATA_MASKING:                  true,
+var instanceLimitFeature = map[v1pb.PlanFeature]bool{
+	v1pb.PlanFeature_FEATURE_DATABASE_SECRET_VARIABLES:     true,
+	v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION: true,
+	v1pb.PlanFeature_FEATURE_DATA_MASKING:                  true,
 }

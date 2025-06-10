@@ -6,7 +6,7 @@
       </label>
       <!-- TODO(d): fix this feature control. -->
       <FeatureBadge
-        :feature="PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION"
+        :feature="PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION"
       />
     </div>
     <div>
@@ -110,7 +110,7 @@ import {
   DisableCopyDataPolicy,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
@@ -172,7 +172,7 @@ const adminDataSourceQueruRestrictionEnabled = computed(() => {
 });
 
 const hasAccessControlFeature = computed(() =>
-  hasFeature(PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION)
+  hasFeature(PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION)
 );
 
 const allowUpdatePolicy = computed(() => {

@@ -36,7 +36,7 @@
       <div v-if="features.includes('TIER')" class="flex flex-col gap-y-2">
         <label class="font-medium flex items-center">
           {{ $t("policy.environment-tier.name") }}
-          <FeatureBadge :feature="PlanLimitConfig_Feature.ENVIRONMENT_TIERS" />
+          <FeatureBadge :feature="PlanFeature.FEATURE_ENVIRONMENT_TIERS" />
         </label>
         <p class="text-sm text-gray-600">
           <i18n-t tag="span" keypath="policy.environment-tier.description">
@@ -146,7 +146,7 @@ import {
   pushNotification,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { FeatureBadge } from "../FeatureGuard";
 import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
 import { ResourceIdField } from "../v2";
@@ -206,7 +206,7 @@ watch(
 );
 
 const hasEnvironmentPolicyFeature = computed(() =>
-  hasFeature(PlanLimitConfig_Feature.ENVIRONMENT_TIERS)
+  hasFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
 );
 
 const allowArchive = computed(() => {
@@ -242,7 +242,7 @@ const renderColorPicker = () => {
       }}
       onUpdateValue={(color: string) => {
         if (!hasEnvironmentPolicyFeature.value) {
-          missingFeature.value = PlanLimitConfig_Feature.ENVIRONMENT_TIERS;
+          missingFeature.value = PlanFeature.FEATURE_ENVIRONMENT_TIERS;
           return;
         }
         state.value.environment.color = color;

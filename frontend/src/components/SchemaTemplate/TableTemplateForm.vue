@@ -105,7 +105,7 @@
                 @click="state.showFieldTemplateDrawer = true"
               >
                 <template #icon>
-                  <FeatureBadge :feature="PlanLimitConfig_Feature.SCHEMA_TEMPLATE" />
+                  <FeatureBadge :feature="PlanFeature.FEATURE_SCHEMA_TEMPLATE" />
                   <PlusIcon class="w-4 h-4 text-control-placeholder" />
                 </template>
                 {{ $t("schema-editor.actions.add-from-template") }}
@@ -210,7 +210,7 @@ import {
   type SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
 import { SchemaTemplateSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";

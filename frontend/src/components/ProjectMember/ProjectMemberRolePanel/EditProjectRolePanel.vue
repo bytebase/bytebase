@@ -41,7 +41,7 @@
               v-model:database-resources="state.databaseResources"
               :project-name="project.name"
               :include-cloumn="false"
-              :required-feature="PlanLimitConfig_Feature.IAM"
+              :required-feature="PlanFeature.FEATURE_IAM"
             />
           </div>
 
@@ -141,7 +141,7 @@ import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Binding } from "@/types/proto/v1/iam_policy";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { displayRoleTitle, checkRoleContainsAnyPermission } from "@/utils";
 import { convertFromExpr, buildConditionExpr } from "@/utils/issue/cel";
 import { getBindingIdentifier } from "../utils";

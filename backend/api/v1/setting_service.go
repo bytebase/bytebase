@@ -200,7 +200,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				if s.profile.SaaS {
 					return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 				}
-				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
 					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				oldSetting.DisallowSignup = payload.DisallowSignup
@@ -217,14 +217,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				}
 				oldSetting.ExternalUrl = payload.ExternalUrl
 			case "value.workspace_profile_setting_value.require_2fa":
-				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_TWO_FA); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TWO_FA); err != nil {
 					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				oldSetting.Require_2Fa = payload.Require_2Fa
 			case "value.workspace_profile_setting_value.outbound_ip_list":
 				// We're not support update outbound_ip_list via api.
 			case "value.workspace_profile_setting_value.token_duration":
-				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
 					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
@@ -232,7 +232,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				}
 				oldSetting.TokenDuration = payload.TokenDuration
 			case "value.workspace_profile_setting_value.announcement":
-				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DASHBOARD_ANNOUNCEMENT); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT); err != nil {
 					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				oldSetting.Announcement = payload.Announcement
@@ -251,7 +251,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				oldSetting.Domains = payload.Domains
 			case "value.workspace_profile_setting_value.enforce_identity_domain":
 				if payload.EnforceIdentityDomain {
-					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_USER_EMAIL_DOMAIN_RESTRICTION); err != nil {
+					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION); err != nil {
 						return nil, status.Error(codes.PermissionDenied, err.Error())
 					}
 				}
@@ -284,7 +284,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_WORKSPACE_APPROVAL:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_APPROVAL_WORKFLOW); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 
@@ -369,7 +369,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_BRANDING_LOGO:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_CUSTOM_LOGO); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_CUSTOM_LOGO); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
@@ -450,7 +450,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		storeSettingValue = string(bytes)
 
 	case storepb.SettingName_SCHEMA_TEMPLATE:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_SCHEMA_TEMPLATE); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SCHEMA_TEMPLATE); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		schemaTemplateSetting := request.Setting.Value.GetSchemaTemplateSettingValue()
@@ -515,7 +515,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_WATERMARK:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_WATERMARK); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_WATERMARK); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
@@ -545,7 +545,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_PASSWORD_RESTRICTION:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_PASSWORD_RESTRICTIONS); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		passwordSetting := new(storepb.PasswordRestrictionSetting)

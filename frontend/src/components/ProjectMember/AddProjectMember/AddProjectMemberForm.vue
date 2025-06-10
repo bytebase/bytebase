@@ -58,7 +58,7 @@
       <QuerierDatabaseResourceForm
         v-model:database-resources="state.databaseResources"
         :project-name="projectName"
-        :required-feature="PlanLimitConfig_Feature.IAM"
+        :required-feature="PlanFeature.FEATURE_IAM"
         :include-cloumn="false"
       />
     </div>
@@ -96,7 +96,7 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import { RoleSelect } from "@/components/v2/Select";
 import { PresetRoleType, type DatabaseResource } from "@/types";
 import type { Binding } from "@/types/proto/v1/iam_policy";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { checkRoleContainsAnyPermission } from "@/utils";
 import { buildConditionExpr } from "@/utils/issue/cel";
 import { isUndefined } from "lodash-es";

@@ -332,8 +332,8 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	return &serverInfo, nil
 }
 
-func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanLimitConfig_Feature, error) {
-	var features []v1pb.PlanLimitConfig_Feature
+func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeature, error) {
+	var features []v1pb.PlanFeature
 
 	// idp
 	idps, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
@@ -342,7 +342,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanLimit
 	}
 	// TODO(d): use fine-grained feature control for SSO.
 	if len(idps) > 0 {
-		features = append(features, v1pb.PlanLimitConfig_ENTERPRISE_SSO)
+		features = append(features, v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO)
 	}
 
 	// setting
@@ -351,7 +351,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanLimit
 		return nil, errors.Wrapf(err, "failed to get branding logo setting")
 	}
 	if brandingLogo != nil && brandingLogo.Value != "" {
-		features = append(features, v1pb.PlanLimitConfig_CUSTOM_LOGO)
+		features = append(features, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO)
 	}
 
 	watermark, err := s.store.GetSettingV2(ctx, storepb.SettingName_WATERMARK)
@@ -359,7 +359,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanLimit
 		return nil, errors.Wrapf(err, "failed to get watermark setting")
 	}
 	if watermark != nil && watermark.Value == "1" {
-		features = append(features, v1pb.PlanLimitConfig_WATERMARK)
+		features = append(features, v1pb.PlanFeature_FEATURE_WATERMARK)
 	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -367,16 +367,16 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanLimit
 		return nil, errors.Wrapf(err, "failed to get workspace general setting")
 	}
 	if setting.DisallowSignup && !s.profile.SaaS {
-		features = append(features, v1pb.PlanLimitConfig_DISALLOW_SELF_SERVICE_SIGNUP)
+		features = append(features, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP)
 	}
 	if setting.Require_2Fa {
-		features = append(features, v1pb.PlanLimitConfig_TWO_FA)
+		features = append(features, v1pb.PlanFeature_FEATURE_TWO_FA)
 	}
 	if setting.GetTokenDuration().GetSeconds() > 0 && float64(setting.GetTokenDuration().GetSeconds()) != auth.DefaultTokenDuration.Seconds() {
-		features = append(features, v1pb.PlanLimitConfig_SIGN_IN_FREQUENCY_CONTROL)
+		features = append(features, v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL)
 	}
 	if setting.GetAnnouncement().GetText() != "" {
-		features = append(features, v1pb.PlanLimitConfig_DASHBOARD_ANNOUNCEMENT)
+		features = append(features, v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT)
 	}
 
 	// environment tier
@@ -386,7 +386,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanLimit
 	}
 	for _, env := range environments.GetEnvironments() {
 		if v, ok := env.Tags["protected"]; ok && v == "protected" {
-			features = append(features, v1pb.PlanLimitConfig_ENVIRONMENT_TIERS)
+			features = append(features, v1pb.PlanFeature_FEATURE_ENVIRONMENT_TIERS)
 			break
 		}
 	}
@@ -397,13 +397,13 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanLimit
 		return nil, errors.Wrapf(err, "failed to list database groups")
 	}
 	if len(databaseGroups) > 0 {
-		features = append(features, v1pb.PlanLimitConfig_DATABASE_GROUPS)
+		features = append(features, v1pb.PlanFeature_FEATURE_DATABASE_GROUPS)
 	}
 	return features, nil
 }
 
-func (s *ActuatorService) getUnlicensedFeatures(features []v1pb.PlanLimitConfig_Feature) []v1pb.PlanLimitConfig_Feature {
-	var unlicensedFeatures []v1pb.PlanLimitConfig_Feature
+func (s *ActuatorService) getUnlicensedFeatures(features []v1pb.PlanFeature) []v1pb.PlanFeature {
+	var unlicensedFeatures []v1pb.PlanFeature
 	for _, feature := range features {
 		if err := s.licenseService.IsFeatureEnabled(feature); err != nil {
 			unlicensedFeatures = append(unlicensedFeatures, feature)

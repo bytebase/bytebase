@@ -25,7 +25,7 @@
             />
             <FeatureBadge
               v-else-if="isColumnMissingSensitive(header.index)"
-              :feature="PlanLimitConfig_Feature.DATA_MASKING"
+              :feature="PlanFeature.FEATURE_DATA_MASKING"
               class="ml-0.5 shrink-0"
               :instance="database.instanceResource"
             />
@@ -57,7 +57,7 @@ import type { Table } from "@tanstack/vue-table";
 import { computed } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import TableCell from "./DataTable/TableCell.vue";
 import SensitiveDataIcon from "./DataTable/common/SensitiveDataIcon.vue";

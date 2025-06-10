@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-row justify-start items-center gap-x-1" v-bind="$attrs">
     <FeatureBadge
-      :feature="PlanLimitConfig_Feature.DATABASE_GROUPS"
+      :feature="PlanFeature.FEATURE_DATABASE_GROUPS"
       class="mr-2"
       :instance="database.instanceResource"
     />
@@ -26,7 +26,7 @@
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { DatabaseV1Name, EnvironmentV1Name } from "@/components/v2";
 import { useDatabaseV1ByName } from "@/store";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { InstanceV1EngineIcon } from "./Instance";
 
 const props = defineProps<{

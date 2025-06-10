@@ -112,7 +112,7 @@ import {
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
 import { Engine } from "@/types/proto/v1/common";
-import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   allowUsingSchemaEditor,
@@ -153,7 +153,7 @@ const disableSchemaEditor = useAppFeature(
 );
 
 const featureModalContext = ref<{
-  feature?: PlanLimitConfig_Feature;
+  feature?: PlanFeature;
 }>({});
 
 const schemaEditorContext = ref<{

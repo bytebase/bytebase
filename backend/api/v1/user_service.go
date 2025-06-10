@@ -821,7 +821,7 @@ func convertToPrincipalType(userType v1pb.UserType) (storepb.PrincipalType, erro
 }
 
 func validateEmailWithDomains(ctx context.Context, licenseService enterprise.LicenseService, stores *store.Store, email string, isServiceAccount bool, checkDomainSetting bool) error {
-	if licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
+	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
 		// nolint:nilerr
 		// feature not enabled, only validate email and skip domain restriction.
 		if err := validateEmail(email); err != nil {
