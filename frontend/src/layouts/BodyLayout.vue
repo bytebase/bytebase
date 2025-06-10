@@ -122,10 +122,6 @@
     <Quickstart />
   </div>
 
-  <TrialModal
-    v-if="state.showTrialModal"
-    @cancel="state.showTrialModal = false"
-  />
   <ReleaseRemindModal
     v-if="
       !hideReleaseRemind &&
@@ -141,7 +137,6 @@ import { useMounted, useWindowSize } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
-import TrialModal from "@/components/TrialModal.vue";
 import { t } from "@/plugins/i18n";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import {
@@ -159,7 +154,6 @@ import { provideBodyLayoutContext } from "./common";
 
 interface LocalState {
   showMobileOverlay: boolean;
-  showTrialModal: boolean;
   showReleaseModal: boolean;
   showRefreshRemindModal: boolean;
 }
@@ -173,7 +167,6 @@ const mounted = useMounted();
 
 const state = reactive<LocalState>({
   showMobileOverlay: false,
-  showTrialModal: false,
   showReleaseModal: false,
   showRefreshRemindModal: false,
 });
