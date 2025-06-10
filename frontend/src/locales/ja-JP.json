@@ -1142,7 +1142,7 @@
     },
     "selected-n-instances": "{n} 個のインスタンスが選択されました",
     "users": "ユーザー",
-    "successfully-retored-instance": "インスタンス '{0}' を正常に復元しました。",
+    "successfully-restored-instance": "インスタンス '{0}' を正常に復元しました。",
     "successfully-archived-instance": "インスタンス '{0}' を正常にアーカイブしました。",
     "successfully-synced-schema-for-instance-instance-value-name": "インスタンス '{0}' のスキーマが正常に同期されました。",
     "archive-this-instance": "このインスタンスをアーカイブする",
@@ -2081,6 +2081,20 @@
     "upgrade-trial": "既存の試用版をこのバージョンに直接アップグレードできます。",
     "contact-to-upgrade": "試用版にアップグレードするには、ワークスペースの所有者に問い合わせてください。",
     "upgrade-now": "今すぐアップグレード",
+    "usage": {
+      "instance-count": {
+        "title": "インスタンスの制限",
+        "remaining": "現在の合計インスタンス割り当ては {total} で、使用可能な共有は {count} 個のみです。",
+        "runoutof": "すべての {total} インスタンス クレジットが使用されました。",
+        "upgrade": "@:{'subscription.upgrade'} を使用して、より多くのインスタンス割り当てを取得します。"
+      },
+      "user-count": {
+        "title": "ユーザー制限",
+        "remaining": "現在の合計ユーザー割り当ては {total} で、使用できる共有は {count} 個のみです。",
+        "runoutof": "{total} 個のユーザー クレジットがすべて使用されました。",
+        "upgrade": "@:{'subscription.upgrade'} を使用すると、無制限のユーザー割り当てを取得できます。"
+      }
+    },
     "instance-assignment": {
       "license": "ライセンス",
       "assign-license": "ライセンスの割り当て",

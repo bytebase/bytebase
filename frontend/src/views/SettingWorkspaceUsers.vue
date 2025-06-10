@@ -3,7 +3,7 @@
     <BBAttention
       v-if="remainingUserCount <= 3"
       :type="'warning'"
-      :title="$t('dynamic.subscription.features.bb-feature-user-count.title')"
+      :title="$t('subscription.usage.user-count.title')"
       :description="userCountAttention"
     />
     <NTabs v-model:value="state.typeTab" type="line" animated>
@@ -394,20 +394,20 @@ const remainingUserCount = computed((): number => {
 
 const userCountAttention = computed((): string => {
   const upgrade = t(
-    "dynamic.subscription.features.bb-feature-user-count.upgrade"
+    "subscription.usage.user-count.upgrade"
   );
   let status = "";
 
   if (remainingUserCount.value > 0) {
     status = t(
-      "dynamic.subscription.features.bb-feature-user-count.remaining",
+      "subscription.usage.user-count.remaining",
       {
         total: subscriptionV1Store.userCountLimit,
         count: remainingUserCount.value,
       }
     );
   } else {
-    status = t("dynamic.subscription.features.bb-feature-user-count.runoutof", {
+    status = t("subscription.usage.user-count.runoutof", {
       total: subscriptionV1Store.userCountLimit,
     });
   }

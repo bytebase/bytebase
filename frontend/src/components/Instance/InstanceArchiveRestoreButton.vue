@@ -47,15 +47,15 @@
 </template>
 
 <script setup lang="ts">
-import { NCheckbox } from "naive-ui";
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
 import { pushNotification, useInstanceV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { NCheckbox } from "naive-ui";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   instance: ComposedInstance;
@@ -88,7 +88,7 @@ const archiveOrRestoreInstance = async (archive: boolean) => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: t("instance.successfully-retored-instance", [
+      title: t("instance.successfully-restored-instance", [
         props.instance.title,
       ]),
     });
