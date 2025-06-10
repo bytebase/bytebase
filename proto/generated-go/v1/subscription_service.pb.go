@@ -699,10 +699,11 @@ func (x *Feature) GetMatrix() map[string]bool {
 
 // PlanConfig represents the configuration for all plans loaded from plan.yaml
 type PlanConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Plans         []*PlanLimitConfig     `protobuf:"bytes,1,rep,name=plans,proto3" json:"plans,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Plans            []*PlanLimitConfig     `protobuf:"bytes,1,rep,name=plans,proto3" json:"plans,omitempty"`
+	InstanceFeatures []PlanFeature          `protobuf:"varint,2,rep,packed,name=instance_features,json=instanceFeatures,proto3,enum=bytebase.v1.PlanFeature" json:"instance_features,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *PlanConfig) Reset() {
@@ -738,6 +739,13 @@ func (*PlanConfig) Descriptor() ([]byte, []int) {
 func (x *PlanConfig) GetPlans() []*PlanLimitConfig {
 	if x != nil {
 		return x.Plans
+	}
+	return nil
+}
+
+func (x *PlanConfig) GetInstanceFeatures() []PlanFeature {
+	if x != nil {
+		return x.InstanceFeatures
 	}
 	return nil
 }
@@ -839,10 +847,11 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x06matrix\x18\x02 \x03(\v2 .bytebase.v1.Feature.MatrixEntryR\x06matrix\x1a9\n" +
 	"\vMatrixEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\"@\n" +
+	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\"\x87\x01\n" +
 	"\n" +
 	"PlanConfig\x122\n" +
-	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\"\xd6\x01\n" +
+	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\x12E\n" +
+	"\x11instance_features\x18\x02 \x03(\x0e2\x18.bytebase.v1.PlanFeatureR\x10instanceFeatures\"\xd6\x01\n" +
 	"\x0fPlanLimitConfig\x12)\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeR\x04type\x124\n" +
 	"\x16maximum_instance_count\x18\x02 \x01(\x05R\x14maximumInstanceCount\x12,\n" +
@@ -971,19 +980,20 @@ var file_v1_subscription_service_proto_depIdxs = []int32{
 	8,  // 4: bytebase.v1.FeatureMatrix.features:type_name -> bytebase.v1.Feature
 	11, // 5: bytebase.v1.Feature.matrix:type_name -> bytebase.v1.Feature.MatrixEntry
 	10, // 6: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
-	0,  // 7: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
-	1,  // 8: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanFeature
-	2,  // 9: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
-	3,  // 10: bytebase.v1.SubscriptionService.GetFeatureMatrix:input_type -> bytebase.v1.GetFeatureMatrixRequest
-	4,  // 11: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
-	6,  // 12: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
-	7,  // 13: bytebase.v1.SubscriptionService.GetFeatureMatrix:output_type -> bytebase.v1.FeatureMatrix
-	6,  // 14: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
-	12, // [12:15] is the sub-list for method output_type
-	9,  // [9:12] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	1,  // 7: bytebase.v1.PlanConfig.instance_features:type_name -> bytebase.v1.PlanFeature
+	0,  // 8: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
+	1,  // 9: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanFeature
+	2,  // 10: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
+	3,  // 11: bytebase.v1.SubscriptionService.GetFeatureMatrix:input_type -> bytebase.v1.GetFeatureMatrixRequest
+	4,  // 12: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
+	6,  // 13: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
+	7,  // 14: bytebase.v1.SubscriptionService.GetFeatureMatrix:output_type -> bytebase.v1.FeatureMatrix
+	6,  // 15: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
+	13, // [13:16] is the sub-list for method output_type
+	10, // [10:13] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_v1_subscription_service_proto_init() }

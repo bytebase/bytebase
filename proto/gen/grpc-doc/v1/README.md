@@ -4015,6 +4015,7 @@ PlanConfig represents the configuration for all plans loaded from plan.yaml
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | plans | [PlanLimitConfig](#bytebase-v1-PlanLimitConfig) | repeated |  |
+| instance_features | [PlanFeature](#bytebase-v1-PlanFeature) | repeated |  |
 
 
 
