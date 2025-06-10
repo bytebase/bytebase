@@ -217,6 +217,7 @@
     - [Subscription](#bytebase-v1-Subscription)
     - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
   
+    - [PlanLimitConfig.Feature](#bytebase-v1-PlanLimitConfig-Feature)
     - [PlanType](#bytebase-v1-PlanType)
   
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
@@ -4032,6 +4033,7 @@ PlanLimitConfig represents a single plan&#39;s configuration
 | type | [PlanType](#bytebase-v1-PlanType) |  |  |
 | maximum_instance_count | [int32](#int32) |  |  |
 | maximum_seat_count | [int32](#int32) |  |  |
+| features | [PlanLimitConfig.Feature](#bytebase-v1-PlanLimitConfig-Feature) | repeated |  |
 
 
 
@@ -4075,6 +4077,88 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 
  
+
+
+<a name="bytebase-v1-PlanLimitConfig-Feature"></a>
+
+### PlanLimitConfig.Feature
+Feature represents the available features in Bytebase
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FEATURE_UNSPECIFIED | 0 |  |
+| DATABASE_CHANGE | 1 | Database Change Management |
+| GIT_BASED_SCHEMA_VERSION_CONTROL | 2 |  |
+| DECLARATIVE_SCHEMA_MIGRATION | 3 |  |
+| COMPARE_AND_SYNC_SCHEMA | 4 |  |
+| ONLINE_SCHEMA_CHANGE | 5 |  |
+| PRE_DEPLOYMENT_SQL_REVIEW | 6 |  |
+| AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES | 7 |  |
+| ONE_CLICK_DATA_ROLLBACK | 8 |  |
+| MULTI_DATABASE_BATCH_CHANGES | 9 |  |
+| PROGRESSIVE_ENVIRONMENT_DEPLOYMENT | 10 |  |
+| SCHEDULED_ROLLOUT_TIME | 11 |  |
+| DATABASE_CHANGELOG | 12 |  |
+| SCHEMA_DRIFT_DETECTION | 13 |  |
+| CHANGELIST | 14 |  |
+| SCHEMA_TEMPLATE | 15 |  |
+| ROLLOUT_POLICY | 16 |  |
+| WEB_BASED_SQL_EDITOR | 17 | SQL Editor &amp; Development |
+| SQL_EDITOR_ADMIN_MODE | 18 |  |
+| NATURAL_LANGUAGE_TO_SQL | 19 |  |
+| AI_QUERY_EXPLANATION | 20 |  |
+| AI_QUERY_SUGGESTIONS | 21 |  |
+| AUTO_COMPLETE | 22 |  |
+| SCHEMA_DIAGRAM | 23 |  |
+| SCHEMA_EDITOR | 24 |  |
+| DATA_EXPORT | 25 |  |
+| QUERY_HISTORY | 26 |  |
+| SAVED_AND_SHARED_SQL_SCRIPTS | 27 |  |
+| SQL_EDITOR_DDL_DML_RESTRICTION | 28 |  |
+| BATCH_QUERY | 29 |  |
+| INSTANCE_READ_ONLY_CONNECTION | 30 |  |
+| RESTRICT_COPYING_DATA | 31 |  |
+| IAM | 32 | Security &amp; Compliance |
+| INSTANCE_SSL_CONNECTION | 33 |  |
+| INSTANCE_CONNECTION_OVER_SSH_TUNNEL | 34 |  |
+| INSTANCE_CONNECTION_IAM_AUTHENTICATION | 35 |  |
+| GOOGLE_AND_GITHUB_SSO | 36 |  |
+| USER_GROUPS | 37 |  |
+| DISALLOW_SELF_SERVICE_SIGNUP | 38 |  |
+| DATABASE_SECRET_VARIABLES | 39 |  |
+| QUERY_DATASOURCE_RESTRICTION | 40 |  |
+| CUSTOM_INSTANCE_SYNC_TIME | 41 |  |
+| CUSTOM_INSTANCE_CONNECTION_LIMIT | 42 |  |
+| RISK_ASSESSMENT | 43 |  |
+| APPROVAL_WORKFLOW | 44 |  |
+| AUDIT_LOG | 45 |  |
+| ENTERPRISE_SSO | 46 |  |
+| TWO_FA | 47 |  |
+| PASSWORD_RESTRICTIONS | 48 |  |
+| CUSTOM_ROLES | 49 |  |
+| REQUEST_ROLE_WORKFLOW | 50 |  |
+| DATA_MASKING | 51 |  |
+| DATA_CLASSIFICATION | 52 |  |
+| SCIM | 53 |  |
+| DIRECTORY_SYNC_ENTRA_ID | 54 |  |
+| DIRECTORY_SYNC_OKTA | 55 |  |
+| SIGN_IN_FREQUENCY_CONTROL | 56 |  |
+| EXTERNAL_SECRET_MANAGER | 57 |  |
+| USER_EMAIL_DOMAIN_RESTRICTION | 58 |  |
+| ENVIRONMENT_MANAGEMENT | 59 | Administration &amp; Support |
+| IM_NOTIFICATIONS | 60 |  |
+| TERRAFORM_PROVIDER | 61 |  |
+| DATABASE_GROUPS | 62 |  |
+| ENVIRONMENT_TIERS | 63 |  |
+| API_INTEGRATION_GUIDANCE | 64 |  |
+| CUSTOM_LOGO | 65 |  |
+| WATERMARK | 66 |  |
+| ROADMAP_PRIORITIZATION | 67 |  |
+| CUSTOM_MSA | 68 |  |
+| COMMUNITY_SUPPORT | 69 |  |
+| EMAIL_SUPPORT | 70 |  |
+| DEDICATED_SUPPORT_WITH_SLA | 71 |  |
+
 
 
 <a name="bytebase-v1-PlanType"></a>
