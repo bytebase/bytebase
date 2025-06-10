@@ -1,0 +1,1133 @@
+package pg
+
+import (
+	"fmt"
+	"slices"
+	"strings"
+
+	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/postgresql-parser"
+	"github.com/pkg/errors"
+
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+)
+
+func init() {
+	schema.RegisterGetDatabaseMetadata(storepb.Engine_POSTGRES, GetDatabaseMetadata)
+}
+
+// GetDatabaseMetadata parses the SQL schema text and returns the database metadata.
+func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+	parseResult, err := pgparser.ParsePostgreSQL(schemaText)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse PostgreSQL schema")
+	}
+
+	extractor := &metadataExtractor{
+		currentDatabase: "",
+		currentSchema:   "public",
+		schemas:         make(map[string]*storepb.SchemaMetadata),
+		tables:          make(map[tableKey]*storepb.TableMetadata),
+		sequences:       make(map[string]*storepb.SequenceMetadata),
+		extensions:      make(map[string]*storepb.ExtensionMetadata),
+	}
+
+	// Always ensure public schema exists
+	extractor.getOrCreateSchema("public")
+
+	// Only walk the tree if it's not empty
+	if parseResult.Tree != nil {
+		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	}
+
+	if extractor.err != nil {
+		return nil, extractor.err
+	}
+
+	// Build the final metadata structure
+	schemaMetadata := &storepb.DatabaseSchemaMetadata{
+		Name: extractor.currentDatabase,
+	}
+
+	// Sort schemas for consistent output
+	var schemaNames []string
+	for name := range extractor.schemas {
+		schemaNames = append(schemaNames, name)
+	}
+	slices.Sort(schemaNames)
+
+	for _, schemaName := range schemaNames {
+		schemaMetadata.Schemas = append(schemaMetadata.Schemas, extractor.schemas[schemaName])
+	}
+
+	// Add extensions
+	var extensionNames []string
+	for name := range extractor.extensions {
+		extensionNames = append(extensionNames, name)
+	}
+	slices.Sort(extensionNames)
+
+	for _, name := range extensionNames {
+		schemaMetadata.Extensions = append(schemaMetadata.Extensions, extractor.extensions[name])
+	}
+
+	return schemaMetadata, nil
+}
+
+type tableKey struct {
+	schema string
+	table  string
+}
+
+// metadataExtractor walks the parse tree and extracts metadata
+type metadataExtractor struct {
+	*parser.BasePostgreSQLParserListener
+
+	currentDatabase string
+	currentSchema   string
+	schemas         map[string]*storepb.SchemaMetadata
+	tables          map[tableKey]*storepb.TableMetadata
+	sequences       map[string]*storepb.SequenceMetadata
+	extensions      map[string]*storepb.ExtensionMetadata
+	err             error
+}
+
+// Helper function to get or create schema
+func (e *metadataExtractor) getOrCreateSchema(schemaName string) *storepb.SchemaMetadata {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+
+	if schema, exists := e.schemas[schemaName]; exists {
+		return schema
+	}
+
+	schema := &storepb.SchemaMetadata{
+		Name:              schemaName,
+		Tables:            []*storepb.TableMetadata{},
+		Views:             nil,
+		MaterializedViews: nil,
+		Procedures:        nil,
+		Functions:         nil,
+		Sequences:         nil,
+		EnumTypes:         nil,
+	}
+	e.schemas[schemaName] = schema
+	return schema
+}
+
+// Helper function to get or create table
+func (e *metadataExtractor) getOrCreateTable(schemaName, tableName string) *storepb.TableMetadata {
+	key := tableKey{
+		schema: schemaName,
+		table:  tableName,
+	}
+
+	if table, exists := e.tables[key]; exists {
+		return table
+	}
+
+	table := &storepb.TableMetadata{
+		Name:             tableName,
+		Columns:          []*storepb.ColumnMetadata{},
+		Indexes:          []*storepb.IndexMetadata{},
+		ForeignKeys:      nil,
+		CheckConstraints: nil,
+		Triggers:         nil,
+		Partitions:       nil,
+	}
+
+	schema := e.getOrCreateSchema(schemaName)
+	schema.Tables = append(schema.Tables, table)
+	e.tables[key] = table
+
+	return table
+}
+
+// EnterCreateschemastmt is called when entering a create schema statement
+func (e *metadataExtractor) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Try to get schema name directly from Colid first
+	if ctx.Colid() != nil {
+		schemaName := pgparser.NormalizePostgreSQLColid(ctx.Colid())
+		e.getOrCreateSchema(schemaName)
+	} else if ctx.Optschemaname() != nil && ctx.Optschemaname().Colid() != nil {
+		schemaName := pgparser.NormalizePostgreSQLColid(ctx.Optschemaname().Colid())
+		e.getOrCreateSchema(schemaName)
+	}
+}
+
+// EnterCreatestmt is called when entering a create table statement
+func (e *metadataExtractor) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	if ctx.Qualified_name(0) == nil {
+		return
+	}
+
+	qualifiedName := ctx.Qualified_name(0)
+	schemaName, tableName := e.extractSchemaAndTableName(qualifiedName)
+
+	tableMetadata := e.getOrCreateTable(schemaName, tableName)
+
+	// Extract table elements (columns, constraints)
+	if tableElementList := ctx.Opttableelementlist(); tableElementList != nil {
+		e.extractTableElements(tableElementList, tableMetadata, schemaName)
+	}
+
+	// Extract partition info
+	if partitionSpec := ctx.Optpartitionspec(); partitionSpec != nil {
+		e.extractPartitionSpec(partitionSpec, tableMetadata)
+	}
+}
+
+// extractSchemaAndTableName extracts schema and table name from qualified name
+func (e *metadataExtractor) extractSchemaAndTableName(ctx parser.IQualified_nameContext) (string, string) {
+	if ctx == nil {
+		return e.currentSchema, ""
+	}
+
+	parts := pgparser.NormalizePostgreSQLQualifiedName(ctx)
+	if len(parts) == 1 {
+		return e.currentSchema, parts[0]
+	} else if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return e.currentSchema, ""
+}
+
+// extractTableElements extracts columns and constraints from table elements
+func (e *metadataExtractor) extractTableElements(ctx parser.IOpttableelementlistContext, table *storepb.TableMetadata, schemaName string) {
+	if ctx == nil {
+		return
+	}
+
+	// Get the table element list
+	tableElementList := ctx.Tableelementlist()
+	if tableElementList == nil {
+		return
+	}
+
+	// Process all table elements
+	for _, tableElement := range tableElementList.AllTableelement() {
+		if tableElement == nil {
+			continue
+		}
+
+		// Handle column definitions
+		if columnDef := tableElement.ColumnDef(); columnDef != nil {
+			e.extractColumnDef(columnDef, table, schemaName)
+		}
+
+		// Handle table constraints
+		if tableConstraint := tableElement.Tableconstraint(); tableConstraint != nil {
+			e.extractTableConstraint(tableConstraint, table, schemaName)
+		}
+	}
+}
+
+// extractColumnDef extracts column definition
+func (e *metadataExtractor) extractColumnDef(ctx parser.IColumnDefContext, table *storepb.TableMetadata, schemaName string) {
+	if ctx == nil {
+		return
+	}
+
+	column := &storepb.ColumnMetadata{
+		Nullable: true, // Default to nullable
+	}
+
+	// Extract column name
+	if ctx.Colid() != nil {
+		column.Name = pgparser.NormalizePostgreSQLColid(ctx.Colid())
+	}
+
+	// Extract data type
+	if ctx.Typename() != nil {
+		column.Type = extractTypeName(ctx.Typename())
+	}
+
+	// Extract column constraints
+	if colquallist := ctx.Colquallist(); colquallist != nil {
+		for _, colConstraint := range colquallist.AllColconstraint() {
+			if colConstraint != nil && colConstraint.Colconstraintelem() != nil {
+				// Extract constraint name if present
+				var constraintName string
+				if colConstraint.CONSTRAINT() != nil && colConstraint.Name() != nil {
+					constraintName = pgparser.NormalizePostgreSQLName(colConstraint.Name())
+				}
+				e.extractColumnConstraint(colConstraint.Colconstraintelem(), column, table, constraintName, schemaName)
+			}
+		}
+	}
+
+	table.Columns = append(table.Columns, column)
+}
+
+// extractTypeName extracts the type name from typename context
+func extractTypeName(ctx parser.ITypenameContext) string {
+	if ctx == nil {
+		return ""
+	}
+	// Get the full text representation of the type
+	return ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+// extractColumnConstraint extracts column-level constraints
+func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintelemContext, column *storepb.ColumnMetadata, table *storepb.TableMetadata, constraintName string, schemaName string) {
+	if ctx == nil {
+		return
+	}
+
+	switch {
+	case ctx.NOT() != nil && ctx.NULL_P() != nil:
+		column.Nullable = false
+	case ctx.NULL_P() != nil && ctx.NOT() == nil:
+		column.Nullable = true
+	case ctx.DEFAULT() != nil:
+		if expr := ctx.B_expr(); expr != nil {
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{
+				DefaultExpression: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr),
+			}
+		}
+	case ctx.PRIMARY() != nil && ctx.KEY() != nil:
+		column.Nullable = false
+		// Create primary key index
+		index := &storepb.IndexMetadata{
+			Primary:      true,
+			Unique:       true,
+			IsConstraint: true,
+			Expressions:  []string{column.Name},
+			Descending:   []bool{false},
+		}
+		// Use provided constraint name or generate one
+		if constraintName != "" {
+			index.Name = constraintName
+		} else {
+			index.Name = fmt.Sprintf("%s_pkey", table.Name)
+		}
+		table.Indexes = append(table.Indexes, index)
+	case ctx.UNIQUE() != nil:
+		// Create unique index
+		index := &storepb.IndexMetadata{
+			Unique:       true,
+			IsConstraint: true,
+			Expressions:  []string{column.Name},
+			Descending:   []bool{false},
+		}
+		// Use provided constraint name or generate one
+		if constraintName != "" {
+			index.Name = constraintName
+		} else {
+			index.Name = fmt.Sprintf("%s_%s_key", table.Name, column.Name)
+		}
+		table.Indexes = append(table.Indexes, index)
+	case ctx.REFERENCES() != nil:
+		// Foreign key constraint
+		fk := &storepb.ForeignKeyMetadata{
+			Columns: []string{column.Name},
+		}
+		if constraintName != "" {
+			fk.Name = constraintName
+		}
+		if qualifiedName := ctx.Qualified_name(); qualifiedName != nil {
+			refSchema, refTable := e.extractSchemaAndTableName(qualifiedName)
+			fk.ReferencedSchema = refSchema
+			fk.ReferencedTable = refTable
+		}
+		if optColumnList := ctx.Opt_column_list(); optColumnList != nil && optColumnList.Columnlist() != nil {
+			fk.ReferencedColumns = extractColumnList(optColumnList.Columnlist())
+		}
+		// Extract ON DELETE/UPDATE actions
+		fk.OnDelete = "NO ACTION" // Default
+		fk.OnUpdate = "NO ACTION" // Default
+		if keyActions := ctx.Key_actions(); keyActions != nil {
+			if keyDelete := keyActions.Key_delete(); keyDelete != nil {
+				fk.OnDelete = extractKeyAction(keyDelete)
+			}
+			if keyUpdate := keyActions.Key_update(); keyUpdate != nil {
+				fk.OnUpdate = extractKeyActionUpdate(keyUpdate)
+			}
+		}
+		// Extract MATCH type
+		fk.MatchType = extractMatchType(ctx)
+
+		if table.ForeignKeys == nil {
+			table.ForeignKeys = []*storepb.ForeignKeyMetadata{}
+		}
+		table.ForeignKeys = append(table.ForeignKeys, fk)
+	case ctx.GENERATED() != nil && ctx.IDENTITY_P() != nil:
+		// Handle GENERATED ALWAYS AS IDENTITY or GENERATED BY DEFAULT AS IDENTITY
+		if generatedWhen := ctx.Generated_when(); generatedWhen != nil {
+			if generatedWhen.ALWAYS() != nil {
+				column.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
+			} else if generatedWhen.BY() != nil && generatedWhen.DEFAULT() != nil {
+				column.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+			}
+		}
+
+		// Create identity sequence for this column
+		e.createIdentitySequence(table, column, schemaName)
+	}
+}
+
+// extractTableConstraint extracts table-level constraints
+func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintContext, table *storepb.TableMetadata, _ string) {
+	if ctx == nil {
+		return
+	}
+
+	constraintElem := ctx.Constraintelem()
+	if constraintElem == nil {
+		return
+	}
+
+	// Get constraint name
+	var constraintName string
+	if ctx.Name() != nil {
+		constraintName = pgparser.NormalizePostgreSQLName(ctx.Name())
+	}
+
+	switch {
+	case constraintElem.PRIMARY() != nil && constraintElem.KEY() != nil:
+		// Primary key constraint
+		index := &storepb.IndexMetadata{
+			Name:         constraintName,
+			Primary:      true,
+			Unique:       true,
+			IsConstraint: true,
+			Expressions:  []string{},
+			Descending:   []bool{},
+		}
+		if index.Name == "" {
+			index.Name = fmt.Sprintf("%s_pkey", table.Name)
+		}
+		// Extract columns
+		if optColumnList := constraintElem.Opt_column_list(); optColumnList != nil && optColumnList.Columnlist() != nil {
+			columns := extractColumnList(optColumnList.Columnlist())
+			index.Expressions = columns
+			for range columns {
+				index.Descending = append(index.Descending, false)
+			}
+		}
+		table.Indexes = append(table.Indexes, index)
+
+	case constraintElem.UNIQUE() != nil:
+		// Unique constraint
+		index := &storepb.IndexMetadata{
+			Name:         constraintName,
+			Unique:       true,
+			IsConstraint: true,
+			Expressions:  []string{},
+			Descending:   []bool{},
+		}
+		// Extract columns
+		if optColumnList := constraintElem.Opt_column_list(); optColumnList != nil && optColumnList.Columnlist() != nil {
+			columns := extractColumnList(optColumnList.Columnlist())
+			index.Expressions = columns
+			for range columns {
+				index.Descending = append(index.Descending, false)
+			}
+		}
+		table.Indexes = append(table.Indexes, index)
+
+	case constraintElem.CHECK() != nil:
+		// Check constraint
+		check := &storepb.CheckConstraintMetadata{
+			Name: constraintName,
+		}
+		if expr := constraintElem.A_expr(); expr != nil {
+			check.Expression = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
+		}
+		if table.CheckConstraints == nil {
+			table.CheckConstraints = []*storepb.CheckConstraintMetadata{}
+		}
+		table.CheckConstraints = append(table.CheckConstraints, check)
+
+	case constraintElem.FOREIGN() != nil && constraintElem.KEY() != nil:
+		// Foreign key constraint
+		fk := &storepb.ForeignKeyMetadata{
+			Name:              constraintName,
+			Columns:           []string{},
+			ReferencedColumns: []string{},
+		}
+		// Extract local columns from Columnlist (before REFERENCES)
+		if columnList := constraintElem.Columnlist(); columnList != nil {
+			fk.Columns = extractColumnList(columnList)
+		}
+		// Extract referenced table
+		if qualifiedName := constraintElem.Qualified_name(); qualifiedName != nil {
+			refSchema, refTable := e.extractSchemaAndTableName(qualifiedName)
+			fk.ReferencedSchema = refSchema
+			fk.ReferencedTable = refTable
+		}
+		// Extract referenced columns from Opt_column_list (after REFERENCES table_name)
+		if optColumnList := constraintElem.Opt_column_list(); optColumnList != nil && optColumnList.Columnlist() != nil {
+			fk.ReferencedColumns = extractColumnList(optColumnList.Columnlist())
+		} else if len(fk.Columns) > 0 {
+			// If referenced columns not specified, assume they match the local columns
+			fk.ReferencedColumns = make([]string, len(fk.Columns))
+			copy(fk.ReferencedColumns, fk.Columns)
+		}
+		// Extract ON DELETE/UPDATE actions
+		fk.OnDelete = "NO ACTION" // Default
+		fk.OnUpdate = "NO ACTION" // Default
+		if keyActions := constraintElem.Key_actions(); keyActions != nil {
+			if keyDelete := keyActions.Key_delete(); keyDelete != nil {
+				fk.OnDelete = extractKeyAction(keyDelete)
+			}
+			if keyUpdate := keyActions.Key_update(); keyUpdate != nil {
+				fk.OnUpdate = extractKeyActionUpdate(keyUpdate)
+			}
+		}
+		// Extract MATCH type
+		fk.MatchType = extractMatchTypeFromConstraintElem(constraintElem)
+		if table.ForeignKeys == nil {
+			table.ForeignKeys = []*storepb.ForeignKeyMetadata{}
+		}
+		table.ForeignKeys = append(table.ForeignKeys, fk)
+	}
+}
+
+// extractKeyAction extracts the foreign key delete action type
+func extractKeyAction(ctx parser.IKey_deleteContext) string {
+	if ctx == nil {
+		return "NO ACTION"
+	}
+	keyAction := ctx.Key_action()
+	if keyAction == nil {
+		return "NO ACTION"
+	}
+	switch {
+	case keyAction.CASCADE() != nil:
+		return "CASCADE"
+	case keyAction.SET() != nil && keyAction.NULL_P() != nil:
+		return "SET NULL"
+	case keyAction.SET() != nil && keyAction.DEFAULT() != nil:
+		return "SET DEFAULT"
+	case keyAction.RESTRICT() != nil:
+		return "RESTRICT"
+	default:
+		return "NO ACTION"
+	}
+}
+
+// extractKeyActionUpdate extracts the foreign key update action type
+func extractKeyActionUpdate(ctx parser.IKey_updateContext) string {
+	if ctx == nil {
+		return "NO ACTION"
+	}
+	keyAction := ctx.Key_action()
+	if keyAction == nil {
+		return "NO ACTION"
+	}
+	switch {
+	case keyAction.CASCADE() != nil:
+		return "CASCADE"
+	case keyAction.SET() != nil && keyAction.NULL_P() != nil:
+		return "SET NULL"
+	case keyAction.SET() != nil && keyAction.DEFAULT() != nil:
+		return "SET DEFAULT"
+	case keyAction.RESTRICT() != nil:
+		return "RESTRICT"
+	default:
+		return "NO ACTION"
+	}
+}
+
+// extractMatchType extracts the match type from column constraint context
+func extractMatchType(ctx parser.IColconstraintelemContext) string {
+	if ctx == nil || ctx.Key_match() == nil {
+		return "" // Default is empty (MATCH SIMPLE)
+	}
+	keyMatch := ctx.Key_match()
+	switch {
+	case keyMatch.FULL() != nil:
+		return "FULL"
+	case keyMatch.PARTIAL() != nil:
+		return "PARTIAL"
+	case keyMatch.SIMPLE() != nil:
+		return "SIMPLE"
+	default:
+		return ""
+	}
+}
+
+// extractMatchTypeFromConstraintElem extracts the match type from table constraint context
+func extractMatchTypeFromConstraintElem(ctx parser.IConstraintelemContext) string {
+	if ctx == nil || ctx.Key_match() == nil {
+		return "" // Default is empty (MATCH SIMPLE)
+	}
+	keyMatch := ctx.Key_match()
+	switch {
+	case keyMatch.FULL() != nil:
+		return "FULL"
+	case keyMatch.PARTIAL() != nil:
+		return "PARTIAL"
+	case keyMatch.SIMPLE() != nil:
+		return "SIMPLE"
+	default:
+		return ""
+	}
+}
+
+// extractColumnList extracts column names from columnlist
+func extractColumnList(ctx parser.IColumnlistContext) []string {
+	if ctx == nil {
+		return nil
+	}
+
+	var columns []string
+	for _, colElem := range ctx.AllColumnElem() {
+		if colElem.Colid() != nil {
+			columns = append(columns, pgparser.NormalizePostgreSQLColid(colElem.Colid()))
+		}
+	}
+	return columns
+}
+
+// extractPartitionSpec extracts partition specification
+func (*metadataExtractor) extractPartitionSpec(ctx parser.IOptpartitionspecContext, table *storepb.TableMetadata) {
+	if ctx == nil {
+		return
+	}
+
+	partitionSpec := ctx.Partitionspec()
+	if partitionSpec == nil {
+		return
+	}
+
+	// Extract the full partition expression including the method (e.g., "RANGE (sale_date)")
+	expression := ctx.GetParser().GetTokenStream().GetTextFromTokens(partitionSpec.Colid().GetStart(), partitionSpec.CLOSE_PAREN().GetSymbol())
+
+	// Create a partition metadata entry for the partitioning specification
+	partition := &storepb.TablePartitionMetadata{
+		Expression: expression,
+	}
+	if table.Partitions == nil {
+		table.Partitions = []*storepb.TablePartitionMetadata{}
+	}
+	table.Partitions = append(table.Partitions, partition)
+}
+
+// EnterAltertablestmt is called when entering an ALTER TABLE statement
+func (e *metadataExtractor) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Check if this is an ATTACH PARTITION command
+	if partitionCmd := ctx.Partition_cmd(); partitionCmd != nil {
+		if partitionCmd.ATTACH() != nil && partitionCmd.PARTITION() != nil {
+			e.handleAttachPartition(ctx, partitionCmd)
+		}
+	}
+}
+
+// handleAttachPartition processes ALTER TABLE ATTACH PARTITION statements
+func (e *metadataExtractor) handleAttachPartition(ctx *parser.AltertablestmtContext, partitionCmd parser.IPartition_cmdContext) {
+	// Get the main table name
+	if relationExpr := ctx.Relation_expr(); relationExpr != nil {
+		if qualifiedName := relationExpr.Qualified_name(); qualifiedName != nil {
+			mainSchema, mainTable := e.extractSchemaAndTableName(qualifiedName)
+
+			// Get the partition name
+			if partitionQualifiedName := partitionCmd.Qualified_name(); partitionQualifiedName != nil {
+				partitionSchema, partitionName := e.extractSchemaAndTableName(partitionQualifiedName)
+
+				// Get or create the main table
+				mainTableMetadata := e.getOrCreateTable(mainSchema, mainTable)
+
+				// Create partition metadata
+				partition := &storepb.TablePartitionMetadata{
+					Name: partitionName,
+				}
+
+				// Extract the FOR VALUES clause if present
+				if partitionBound := partitionCmd.Partitionboundspec(); partitionBound != nil {
+					partition.Value = e.extractPartitionBoundSpec(partitionBound)
+				}
+
+				// Add to main table's partitions
+				if mainTableMetadata.Partitions == nil {
+					mainTableMetadata.Partitions = []*storepb.TablePartitionMetadata{}
+				}
+				mainTableMetadata.Partitions = append(mainTableMetadata.Partitions, partition)
+
+				// Ensure the partition table exists in our metadata
+				// This handles cases where the partition table was created separately
+				_ = e.getOrCreateTable(partitionSchema, partitionName)
+			}
+		}
+	}
+}
+
+// extractPartitionBoundSpec extracts the partition bound specification (FOR VALUES clause)
+func (*metadataExtractor) extractPartitionBoundSpec(ctx parser.IPartitionboundspecContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	// Get the full text of the partition bound specification
+	return ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+// EnterCreateseqstmt is called when entering a create sequence statement
+func (e *metadataExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	if ctx.Qualified_name() == nil {
+		return
+	}
+
+	schemaName, sequenceName := e.extractSchemaAndTableName(ctx.Qualified_name())
+	schemaMetadata := e.getOrCreateSchema(schemaName)
+
+	sequence := &storepb.SequenceMetadata{
+		Name:      sequenceName,
+		DataType:  "bigint", // Default for PostgreSQL
+		Start:     "1",
+		Increment: "1",
+		MinValue:  "1",
+		MaxValue:  "9223372036854775807",
+		Cycle:     false,
+		CacheSize: "1",
+	}
+
+	// Extract sequence options
+	if optSeqList := ctx.Optseqoptlist(); optSeqList != nil && optSeqList.Seqoptlist() != nil {
+		for _, seqOptElem := range optSeqList.Seqoptlist().AllSeqoptelem() {
+			if seqOptElem == nil {
+				continue
+			}
+			e.extractSequenceOption(seqOptElem, sequence)
+		}
+	}
+
+	// Store the sequence temporarily for OWNED BY processing
+	e.sequences[fmt.Sprintf("%s.%s", schemaName, sequenceName)] = sequence
+
+	if schemaMetadata.Sequences == nil {
+		schemaMetadata.Sequences = []*storepb.SequenceMetadata{}
+	}
+	schemaMetadata.Sequences = append(schemaMetadata.Sequences, sequence)
+}
+
+// EnterViewstmt is called when entering a create view statement
+func (e *metadataExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	if ctx.Qualified_name() == nil {
+		return
+	}
+
+	schemaName, viewName := e.extractSchemaAndTableName(ctx.Qualified_name())
+	schemaMetadata := e.getOrCreateSchema(schemaName)
+
+	viewMetadata := &storepb.ViewMetadata{
+		Name: viewName,
+	}
+
+	// Extract view definition
+	if ctx.Selectstmt() != nil {
+		viewMetadata.Definition = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Selectstmt())
+	}
+
+	if schemaMetadata.Views == nil {
+		schemaMetadata.Views = []*storepb.ViewMetadata{}
+	}
+	schemaMetadata.Views = append(schemaMetadata.Views, viewMetadata)
+}
+
+// EnterCreatefunctionstmt is called when entering a create function statement
+func (e *metadataExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	funcNameCtx := ctx.Func_name()
+	if funcNameCtx == nil {
+		return
+	}
+
+	parts := pgparser.NormalizePostgreSQLFuncName(funcNameCtx)
+	schemaName := e.currentSchema
+	funcName := ""
+	if len(parts) == 1 {
+		funcName = parts[0]
+	} else if len(parts) == 2 {
+		schemaName = parts[0]
+		funcName = parts[1]
+	}
+
+	if funcName == "" {
+		return
+	}
+
+	schemaMetadata := e.getOrCreateSchema(schemaName)
+
+	functionMetadata := &storepb.FunctionMetadata{
+		Name:       funcName,
+		Definition: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+		Signature:  e.extractFunctionSignature(ctx, funcName),
+	}
+
+	if schemaMetadata.Functions == nil {
+		schemaMetadata.Functions = []*storepb.FunctionMetadata{}
+	}
+	schemaMetadata.Functions = append(schemaMetadata.Functions, functionMetadata)
+}
+
+// extractFunctionSignature extracts the function signature with parameter types
+func (*metadataExtractor) extractFunctionSignature(ctx *parser.CreatefunctionstmtContext, funcName string) string {
+	var signature strings.Builder
+	signature.WriteString(`"`)
+	signature.WriteString(funcName)
+	signature.WriteString(`"(`)
+
+	if funcArgs := ctx.Func_args_with_defaults(); funcArgs != nil {
+		if funcArgsList := funcArgs.Func_args_with_defaults_list(); funcArgsList != nil {
+			args := funcArgsList.AllFunc_arg_with_default()
+			for i, arg := range args {
+				if i > 0 {
+					signature.WriteString(", ")
+				}
+
+				if funcArg := arg.Func_arg(); funcArg != nil {
+					// Extract parameter name if present
+					if paramName := funcArg.Param_name(); paramName != nil {
+						// Param_name returns the parameter name directly as text
+						signature.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(paramName))
+						signature.WriteString(" ")
+					}
+
+					// Extract argument class (IN/OUT/INOUT/VARIADIC)
+					if argClass := funcArg.Arg_class(); argClass != nil {
+						if argClass.OUT_P() != nil {
+							signature.WriteString("OUT ")
+						} else if argClass.INOUT() != nil {
+							signature.WriteString("INOUT ")
+						} else if argClass.VARIADIC() != nil {
+							signature.WriteString("VARIADIC ")
+						}
+						// IN is default and usually omitted
+					}
+
+					// Extract parameter type
+					if funcType := funcArg.Func_type(); funcType != nil {
+						if funcType.Typename() != nil {
+							signature.WriteString(extractTypeName(funcType.Typename()))
+						}
+					}
+				}
+			}
+		}
+	}
+
+	signature.WriteString(")")
+	return signature.String()
+}
+
+// EnterCreateextensionstmt is called when entering a create extension statement
+func (e *metadataExtractor) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	if ctx.Name() == nil {
+		return
+	}
+
+	extension := &storepb.ExtensionMetadata{
+		Name:   pgparser.NormalizePostgreSQLName(ctx.Name()),
+		Schema: "public", // Default schema
+	}
+
+	// Extract schema from extension options if present
+	if optList := ctx.Create_extension_opt_list(); optList != nil {
+		for _, optItem := range optList.AllCreate_extension_opt_item() {
+			if optItem == nil {
+				continue
+			}
+			// Check if this is a SCHEMA option
+			if optItem.SCHEMA() != nil && optItem.Name() != nil {
+				schemaName := pgparser.NormalizePostgreSQLName(optItem.Name())
+				extension.Schema = schemaName
+				break
+			}
+		}
+	}
+
+	e.extensions[extension.Name] = extension
+}
+
+// EnterDefinestmt is called when entering a define statement (CREATE TYPE AS ENUM)
+func (e *metadataExtractor) EnterDefinestmt(ctx *parser.DefinestmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Check if this is CREATE TYPE AS ENUM
+	if ctx.CREATE() != nil && ctx.TYPE_P() != nil && ctx.AS() != nil && ctx.ENUM_P() != nil {
+		// Extract type name
+		typeNames := ctx.AllAny_name()
+		if len(typeNames) == 0 {
+			return
+		}
+
+		// Get the schema and enum name from the first Any_name (which should be the type name)
+		typeName := typeNames[0]
+		schemaName, enumName := e.extractSchemaAndEnumName(typeName)
+		schemaMetadata := e.getOrCreateSchema(schemaName)
+
+		// Create enum metadata
+		enumType := &storepb.EnumTypeMetadata{
+			Name:   enumName,
+			Values: []string{},
+		}
+
+		// Extract enum values
+		if optEnumValList := ctx.Opt_enum_val_list(); optEnumValList != nil {
+			if enumValList := optEnumValList.Enum_val_list(); enumValList != nil {
+				for _, sconst := range enumValList.AllSconst() {
+					if sconst != nil {
+						value := extractStringConstant(sconst)
+						if value != "" {
+							enumType.Values = append(enumType.Values, value)
+						}
+					}
+				}
+			}
+		}
+
+		if schemaMetadata.EnumTypes == nil {
+			schemaMetadata.EnumTypes = []*storepb.EnumTypeMetadata{}
+		}
+		schemaMetadata.EnumTypes = append(schemaMetadata.EnumTypes, enumType)
+	}
+}
+
+// EnterIndexstmt is called when entering a create index statement
+func (e *metadataExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Check if this is CREATE INDEX
+	if ctx.CREATE() == nil || ctx.INDEX() == nil || ctx.ON() == nil {
+		return
+	}
+
+	// Extract index name
+	var indexName string
+	if name := ctx.Name(); name != nil {
+		indexName = pgparser.NormalizePostgreSQLName(name)
+	}
+
+	// If no explicit name, PostgreSQL will generate one - we can't predict it here
+	if indexName == "" {
+		return
+	}
+
+	// Extract table name from relation_expr
+	if relationExpr := ctx.Relation_expr(); relationExpr != nil {
+		if qualifiedName := relationExpr.Qualified_name(); qualifiedName != nil {
+			schemaName, tableName := e.extractSchemaAndTableName(qualifiedName)
+
+			// Get or create the table
+			tableMetadata := e.getOrCreateTable(schemaName, tableName)
+
+			// Create index metadata
+			index := &storepb.IndexMetadata{
+				Name:         indexName,
+				Expressions:  []string{},
+				Descending:   []bool{},
+				Unique:       false,
+				Primary:      false,
+				IsConstraint: false,
+			}
+
+			// Check if it's a unique index
+			if optUnique := ctx.Opt_unique(); optUnique != nil {
+				index.Unique = true
+			}
+
+			// Extract index parameters (columns/expressions)
+			if indexParams := ctx.Index_params(); indexParams != nil {
+				for _, indexElem := range indexParams.AllIndex_elem() {
+					if indexElem == nil {
+						continue
+					}
+
+					// Extract column name or expression
+					var expression string
+					if colid := indexElem.Colid(); colid != nil {
+						// Simple column reference
+						expression = pgparser.NormalizePostgreSQLColid(colid)
+					} else if funcExpr := indexElem.Func_expr_windowless(); funcExpr != nil {
+						// Function expression
+						expression = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(funcExpr)
+					} else if aExpr := indexElem.A_expr(); aExpr != nil {
+						// General expression (in parentheses)
+						expression = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(aExpr)
+					}
+
+					if expression != "" {
+						index.Expressions = append(index.Expressions, expression)
+
+						// Extract sort order (ASC/DESC) from index element options
+						isDescending := false
+						if options := indexElem.Index_elem_options(); options != nil {
+							if ascDesc := options.Opt_asc_desc(); ascDesc != nil {
+								if ascDesc.DESC() != nil {
+									isDescending = true
+								}
+								// ASC is default, so we don't need to check for it explicitly
+							}
+						}
+						index.Descending = append(index.Descending, isDescending)
+					}
+				}
+			}
+
+			// Add the index to the table
+			if tableMetadata.Indexes == nil {
+				tableMetadata.Indexes = []*storepb.IndexMetadata{}
+			}
+			tableMetadata.Indexes = append(tableMetadata.Indexes, index)
+		}
+	}
+}
+
+// extractSequenceOption extracts sequence options
+func (*metadataExtractor) extractSequenceOption(ctx parser.ISeqoptelemContext, sequence *storepb.SequenceMetadata) {
+	if ctx == nil || sequence == nil {
+		return
+	}
+
+	switch {
+	case ctx.AS() != nil && ctx.Simpletypename() != nil:
+		// Data type - preserve the original case
+		sequence.DataType = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Simpletypename())
+	case ctx.INCREMENT() != nil && ctx.Numericonly() != nil:
+		// INCREMENT BY
+		sequence.Increment = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Numericonly())
+	case ctx.MINVALUE() != nil && ctx.Numericonly() != nil:
+		// MINVALUE
+		sequence.MinValue = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Numericonly())
+	case ctx.MAXVALUE() != nil && ctx.Numericonly() != nil:
+		// MAXVALUE
+		sequence.MaxValue = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Numericonly())
+	case ctx.START() != nil && ctx.Numericonly() != nil:
+		// START WITH
+		sequence.Start = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Numericonly())
+	case ctx.CACHE() != nil && ctx.Numericonly() != nil:
+		// CACHE
+		sequence.CacheSize = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Numericonly())
+	case ctx.CYCLE() != nil:
+		// CYCLE
+		sequence.Cycle = true
+	case ctx.NO() != nil && ctx.CYCLE() != nil:
+		// NO CYCLE
+		sequence.Cycle = false
+	}
+}
+
+// createIdentitySequence creates an identity sequence for a column with GENERATED AS IDENTITY
+func (e *metadataExtractor) createIdentitySequence(table *storepb.TableMetadata, column *storepb.ColumnMetadata, schemaName string) {
+	// Create identity sequence name following PostgreSQL conventions
+	// Format: {table_name}_{column_name}_seq
+	sequenceName := fmt.Sprintf("%s_%s_seq", table.Name, column.Name)
+
+	// Determine sequence data type and limits based on column type
+	// For identity columns, use positive ranges starting from 1
+	var dataType, minValue, maxValue string
+	switch strings.ToUpper(column.Type) {
+	case "SMALLINT", "INT2":
+		dataType = "smallint"
+		minValue = "1"
+		maxValue = "32767"
+	case "INTEGER", "INT", "INT4":
+		dataType = "integer"
+		minValue = "1"
+		maxValue = "2147483647"
+	case "BIGINT", "INT8":
+		dataType = "bigint"
+		minValue = "1"
+		maxValue = "9223372036854775807"
+	default:
+		// Default to bigint for unknown types
+		dataType = "bigint"
+		minValue = "1"
+		maxValue = "9223372036854775807"
+	}
+
+	// Create the sequence metadata
+	sequence := &storepb.SequenceMetadata{
+		Name:        sequenceName,
+		DataType:    dataType,
+		Start:       "1",
+		Increment:   "1",
+		MinValue:    minValue,
+		MaxValue:    maxValue,
+		Cycle:       false,
+		CacheSize:   "1",
+		OwnerTable:  table.Name,
+		OwnerColumn: column.Name,
+	}
+
+	// Add the sequence to the schema
+	schema := e.getOrCreateSchema(schemaName)
+	if schema.Sequences == nil {
+		schema.Sequences = []*storepb.SequenceMetadata{}
+	}
+	schema.Sequences = append(schema.Sequences, sequence)
+
+	// Store in the sequences map for reference
+	sequenceKey := fmt.Sprintf("%s.%s", schemaName, sequenceName)
+	e.sequences[sequenceKey] = sequence
+}
+
+// extractSchemaAndEnumName extracts schema and enum name from Any_name context
+func (e *metadataExtractor) extractSchemaAndEnumName(ctx parser.IAny_nameContext) (string, string) {
+	if ctx == nil {
+		return e.currentSchema, ""
+	}
+
+	parts := pgparser.NormalizePostgreSQLAnyName(ctx)
+	if len(parts) == 1 {
+		return e.currentSchema, parts[0]
+	} else if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return e.currentSchema, ""
+}
+
+// extractStringConstant extracts string value from Sconst context
+func extractStringConstant(ctx parser.ISconstContext) string {
+	if ctx == nil {
+		return ""
+	}
+	// Get the text and remove surrounding quotes
+	text := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	if len(text) >= 2 && text[0] == '\'' && text[len(text)-1] == '\'' {
+		// Remove surrounding single quotes and handle escaped quotes
+		result := text[1 : len(text)-1]
+		result = strings.ReplaceAll(result, "''", "'")
+		return result
+	}
+	return text
+}
+
+// TODO: Add support for more PostgreSQL constructs if needed
+// (e.g., triggers, materialized views, custom types, etc.)
