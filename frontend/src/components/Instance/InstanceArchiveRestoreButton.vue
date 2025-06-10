@@ -47,37 +47,22 @@
 </template>
 
 <script setup lang="ts">
+import { NCheckbox } from "naive-ui";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useInstanceV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification, useInstanceV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { NCheckbox } from "naive-ui";
-import { computed, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
-
-interface LocalState {
-  showFeatureModal: boolean;
-}
 
 const props = defineProps<{
   instance: ComposedInstance;
 }>();
 
-const state = reactive<LocalState>({
-  showFeatureModal: false,
-});
-
 const { t } = useI18n();
 const instanceStore = useInstanceV1Store();
-const actuatorStore = useActuatorV1Store();
-const subscriptionStore = useSubscriptionV1Store();
 
 const force = ref(false);
 
@@ -93,23 +78,17 @@ const archiveOrRestoreInstance = async (archive: boolean) => {
     await instanceStore.archiveInstance(props.instance, force.value);
     pushNotification({
       module: "bytebase",
-      style: "SUCCESS",
-      title: t("instance.successfully-archived-instance-updatedinstance-name", [
+      style: "INFO",
+      title: t("instance.successfully-archived-instance", [
         props.instance.title,
       ]),
     });
   } else {
-    if (
-      subscriptionStore.instanceCountLimit <= actuatorStore.totalInstanceCount
-    ) {
-      state.showFeatureModal = true;
-      return;
-    }
     await instanceStore.restoreInstance(props.instance);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: t("instance.successfully-archived-instance-updatedinstance-name", [
+      title: t("instance.successfully-retored-instance", [
         props.instance.title,
       ]),
     });
