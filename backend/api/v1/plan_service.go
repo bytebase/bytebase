@@ -766,9 +766,28 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *v1pb.RunPlanCh
 		return nil, status.Errorf(codes.NotFound, "plan not found")
 	}
 
-	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
+	var planCheckRuns []*store.PlanCheckRunMessage
+	if request.SpecId != nil {
+		var foundSpec *storepb.PlanConfig_Spec
+		for _, spec := range plan.Config.GetSpecs() {
+			if spec.Id == *request.SpecId {
+				foundSpec = spec
+				break
+			}
+		}
+		if foundSpec == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "spec with id %q not found in plan", *request.SpecId)
+		}
+		planCheckRuns, err = getPlanCheckRunsFromSpec(ctx, s.store, plan, foundSpec)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for spec, error: %v", err)
+		}
+	} else {
+		// If spec ID is not provided, run plan check runs for all specs in the plan.
+		planCheckRuns, err = getPlanCheckRunsFromPlan(ctx, s.store, plan)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
+		}
 	}
 	if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)

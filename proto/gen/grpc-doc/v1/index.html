@@ -1927,10 +1927,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan.Step"><span class="badge">M</span>Plan.Step</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PlanCheckRun"><span class="badge">M</span>PlanCheckRun</a>
                 </li>
               
@@ -21515,37 +21511,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
 
         
       
-        <h3 id="bytebase.v1.Plan.Step">Plan.Step</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>specs</td>
-                  <td><a href="#bytebase.v1.Plan.Spec">Plan.Spec</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.PlanCheckRun">PlanCheckRun</h3>
         <p></p>
 
@@ -21778,6 +21743,15 @@ To supersede `line` and `column` above. </p></td>
                   <td></td>
                   <td><p>The plan to run plan checks.
 Format: projects/{project}/plans/{plan} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>spec_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The UUID of the specific spec to run plan checks for.
+This should match the spec.id field in Plan.Spec.
+If not set, all specs in the plan will be used. </p></td>
                 </tr>
               
             </tbody>

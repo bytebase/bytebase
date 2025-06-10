@@ -227,11 +227,6 @@ message Plan {
 
   repeated Spec specs = 14;
 
-  message Step {
-    string title = 2;
-    repeated Spec specs = 1;
-  }
-
   message Spec {
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
@@ -389,6 +384,11 @@ message RunPlanChecksRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Plan"}
   ];
+
+  // The UUID of the specific spec to run plan checks for.
+  // This should match the spec.id field in Plan.Spec.
+  // If not set, all specs in the plan will be used.
+  optional string spec_id = 2;
 }
 
 message RunPlanChecksResponse {}

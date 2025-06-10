@@ -12421,6 +12421,12 @@ components:
                     description: |-
                         The plan to run plan checks.
                          Format: projects/{project}/plans/{plan}
+                specId:
+                    type: string
+                    description: |-
+                        The UUID of the specific spec to run plan checks for.
+                         This should match the spec.id field in Plan.Spec.
+                         If not set, all specs in the plan will be used.
         RunPlanChecksResponse:
             type: object
             properties: {}
