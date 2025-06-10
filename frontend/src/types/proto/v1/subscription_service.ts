@@ -123,6 +123,617 @@ export interface PlanLimitConfig {
   type: PlanType;
   maximumInstanceCount: number;
   maximumSeatCount: number;
+  features: PlanLimitConfig_Feature[];
+}
+
+/** Feature represents the available features in Bytebase */
+export enum PlanLimitConfig_Feature {
+  FEATURE_UNSPECIFIED = "FEATURE_UNSPECIFIED",
+  /** DATABASE_CHANGE - Database Change Management */
+  DATABASE_CHANGE = "DATABASE_CHANGE",
+  GIT_BASED_SCHEMA_VERSION_CONTROL = "GIT_BASED_SCHEMA_VERSION_CONTROL",
+  DECLARATIVE_SCHEMA_MIGRATION = "DECLARATIVE_SCHEMA_MIGRATION",
+  COMPARE_AND_SYNC_SCHEMA = "COMPARE_AND_SYNC_SCHEMA",
+  ONLINE_SCHEMA_CHANGE = "ONLINE_SCHEMA_CHANGE",
+  PRE_DEPLOYMENT_SQL_REVIEW = "PRE_DEPLOYMENT_SQL_REVIEW",
+  AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES = "AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES",
+  ONE_CLICK_DATA_ROLLBACK = "ONE_CLICK_DATA_ROLLBACK",
+  MULTI_DATABASE_BATCH_CHANGES = "MULTI_DATABASE_BATCH_CHANGES",
+  PROGRESSIVE_ENVIRONMENT_DEPLOYMENT = "PROGRESSIVE_ENVIRONMENT_DEPLOYMENT",
+  SCHEDULED_ROLLOUT_TIME = "SCHEDULED_ROLLOUT_TIME",
+  DATABASE_CHANGELOG = "DATABASE_CHANGELOG",
+  SCHEMA_DRIFT_DETECTION = "SCHEMA_DRIFT_DETECTION",
+  CHANGELIST = "CHANGELIST",
+  SCHEMA_TEMPLATE = "SCHEMA_TEMPLATE",
+  ROLLOUT_POLICY = "ROLLOUT_POLICY",
+  /** WEB_BASED_SQL_EDITOR - SQL Editor & Development */
+  WEB_BASED_SQL_EDITOR = "WEB_BASED_SQL_EDITOR",
+  SQL_EDITOR_ADMIN_MODE = "SQL_EDITOR_ADMIN_MODE",
+  NATURAL_LANGUAGE_TO_SQL = "NATURAL_LANGUAGE_TO_SQL",
+  AI_QUERY_EXPLANATION = "AI_QUERY_EXPLANATION",
+  AI_QUERY_SUGGESTIONS = "AI_QUERY_SUGGESTIONS",
+  AUTO_COMPLETE = "AUTO_COMPLETE",
+  SCHEMA_DIAGRAM = "SCHEMA_DIAGRAM",
+  SCHEMA_EDITOR = "SCHEMA_EDITOR",
+  DATA_EXPORT = "DATA_EXPORT",
+  QUERY_HISTORY = "QUERY_HISTORY",
+  SAVED_AND_SHARED_SQL_SCRIPTS = "SAVED_AND_SHARED_SQL_SCRIPTS",
+  SQL_EDITOR_DDL_DML_RESTRICTION = "SQL_EDITOR_DDL_DML_RESTRICTION",
+  BATCH_QUERY = "BATCH_QUERY",
+  INSTANCE_READ_ONLY_CONNECTION = "INSTANCE_READ_ONLY_CONNECTION",
+  RESTRICT_COPYING_DATA = "RESTRICT_COPYING_DATA",
+  /** IAM - Security & Compliance */
+  IAM = "IAM",
+  INSTANCE_SSL_CONNECTION = "INSTANCE_SSL_CONNECTION",
+  INSTANCE_CONNECTION_OVER_SSH_TUNNEL = "INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
+  INSTANCE_CONNECTION_IAM_AUTHENTICATION = "INSTANCE_CONNECTION_IAM_AUTHENTICATION",
+  GOOGLE_AND_GITHUB_SSO = "GOOGLE_AND_GITHUB_SSO",
+  USER_GROUPS = "USER_GROUPS",
+  DISALLOW_SELF_SERVICE_SIGNUP = "DISALLOW_SELF_SERVICE_SIGNUP",
+  DATABASE_SECRET_VARIABLES = "DATABASE_SECRET_VARIABLES",
+  QUERY_DATASOURCE_RESTRICTION = "QUERY_DATASOURCE_RESTRICTION",
+  CUSTOM_INSTANCE_SYNC_TIME = "CUSTOM_INSTANCE_SYNC_TIME",
+  CUSTOM_INSTANCE_CONNECTION_LIMIT = "CUSTOM_INSTANCE_CONNECTION_LIMIT",
+  RISK_ASSESSMENT = "RISK_ASSESSMENT",
+  APPROVAL_WORKFLOW = "APPROVAL_WORKFLOW",
+  AUDIT_LOG = "AUDIT_LOG",
+  ENTERPRISE_SSO = "ENTERPRISE_SSO",
+  TWO_FA = "TWO_FA",
+  PASSWORD_RESTRICTIONS = "PASSWORD_RESTRICTIONS",
+  CUSTOM_ROLES = "CUSTOM_ROLES",
+  REQUEST_ROLE_WORKFLOW = "REQUEST_ROLE_WORKFLOW",
+  DATA_MASKING = "DATA_MASKING",
+  DATA_CLASSIFICATION = "DATA_CLASSIFICATION",
+  SCIM = "SCIM",
+  DIRECTORY_SYNC_ENTRA_ID = "DIRECTORY_SYNC_ENTRA_ID",
+  DIRECTORY_SYNC_OKTA = "DIRECTORY_SYNC_OKTA",
+  SIGN_IN_FREQUENCY_CONTROL = "SIGN_IN_FREQUENCY_CONTROL",
+  EXTERNAL_SECRET_MANAGER = "EXTERNAL_SECRET_MANAGER",
+  USER_EMAIL_DOMAIN_RESTRICTION = "USER_EMAIL_DOMAIN_RESTRICTION",
+  /** ENVIRONMENT_MANAGEMENT - Administration & Support */
+  ENVIRONMENT_MANAGEMENT = "ENVIRONMENT_MANAGEMENT",
+  IM_NOTIFICATIONS = "IM_NOTIFICATIONS",
+  TERRAFORM_PROVIDER = "TERRAFORM_PROVIDER",
+  DATABASE_GROUPS = "DATABASE_GROUPS",
+  ENVIRONMENT_TIERS = "ENVIRONMENT_TIERS",
+  API_INTEGRATION_GUIDANCE = "API_INTEGRATION_GUIDANCE",
+  CUSTOM_LOGO = "CUSTOM_LOGO",
+  WATERMARK = "WATERMARK",
+  ROADMAP_PRIORITIZATION = "ROADMAP_PRIORITIZATION",
+  CUSTOM_MSA = "CUSTOM_MSA",
+  COMMUNITY_SUPPORT = "COMMUNITY_SUPPORT",
+  EMAIL_SUPPORT = "EMAIL_SUPPORT",
+  DEDICATED_SUPPORT_WITH_SLA = "DEDICATED_SUPPORT_WITH_SLA",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function planLimitConfig_FeatureFromJSON(object: any): PlanLimitConfig_Feature {
+  switch (object) {
+    case 0:
+    case "FEATURE_UNSPECIFIED":
+      return PlanLimitConfig_Feature.FEATURE_UNSPECIFIED;
+    case 1:
+    case "DATABASE_CHANGE":
+      return PlanLimitConfig_Feature.DATABASE_CHANGE;
+    case 2:
+    case "GIT_BASED_SCHEMA_VERSION_CONTROL":
+      return PlanLimitConfig_Feature.GIT_BASED_SCHEMA_VERSION_CONTROL;
+    case 3:
+    case "DECLARATIVE_SCHEMA_MIGRATION":
+      return PlanLimitConfig_Feature.DECLARATIVE_SCHEMA_MIGRATION;
+    case 4:
+    case "COMPARE_AND_SYNC_SCHEMA":
+      return PlanLimitConfig_Feature.COMPARE_AND_SYNC_SCHEMA;
+    case 5:
+    case "ONLINE_SCHEMA_CHANGE":
+      return PlanLimitConfig_Feature.ONLINE_SCHEMA_CHANGE;
+    case 6:
+    case "PRE_DEPLOYMENT_SQL_REVIEW":
+      return PlanLimitConfig_Feature.PRE_DEPLOYMENT_SQL_REVIEW;
+    case 7:
+    case "AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES":
+      return PlanLimitConfig_Feature.AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES;
+    case 8:
+    case "ONE_CLICK_DATA_ROLLBACK":
+      return PlanLimitConfig_Feature.ONE_CLICK_DATA_ROLLBACK;
+    case 9:
+    case "MULTI_DATABASE_BATCH_CHANGES":
+      return PlanLimitConfig_Feature.MULTI_DATABASE_BATCH_CHANGES;
+    case 10:
+    case "PROGRESSIVE_ENVIRONMENT_DEPLOYMENT":
+      return PlanLimitConfig_Feature.PROGRESSIVE_ENVIRONMENT_DEPLOYMENT;
+    case 11:
+    case "SCHEDULED_ROLLOUT_TIME":
+      return PlanLimitConfig_Feature.SCHEDULED_ROLLOUT_TIME;
+    case 12:
+    case "DATABASE_CHANGELOG":
+      return PlanLimitConfig_Feature.DATABASE_CHANGELOG;
+    case 13:
+    case "SCHEMA_DRIFT_DETECTION":
+      return PlanLimitConfig_Feature.SCHEMA_DRIFT_DETECTION;
+    case 14:
+    case "CHANGELIST":
+      return PlanLimitConfig_Feature.CHANGELIST;
+    case 15:
+    case "SCHEMA_TEMPLATE":
+      return PlanLimitConfig_Feature.SCHEMA_TEMPLATE;
+    case 16:
+    case "ROLLOUT_POLICY":
+      return PlanLimitConfig_Feature.ROLLOUT_POLICY;
+    case 17:
+    case "WEB_BASED_SQL_EDITOR":
+      return PlanLimitConfig_Feature.WEB_BASED_SQL_EDITOR;
+    case 18:
+    case "SQL_EDITOR_ADMIN_MODE":
+      return PlanLimitConfig_Feature.SQL_EDITOR_ADMIN_MODE;
+    case 19:
+    case "NATURAL_LANGUAGE_TO_SQL":
+      return PlanLimitConfig_Feature.NATURAL_LANGUAGE_TO_SQL;
+    case 20:
+    case "AI_QUERY_EXPLANATION":
+      return PlanLimitConfig_Feature.AI_QUERY_EXPLANATION;
+    case 21:
+    case "AI_QUERY_SUGGESTIONS":
+      return PlanLimitConfig_Feature.AI_QUERY_SUGGESTIONS;
+    case 22:
+    case "AUTO_COMPLETE":
+      return PlanLimitConfig_Feature.AUTO_COMPLETE;
+    case 23:
+    case "SCHEMA_DIAGRAM":
+      return PlanLimitConfig_Feature.SCHEMA_DIAGRAM;
+    case 24:
+    case "SCHEMA_EDITOR":
+      return PlanLimitConfig_Feature.SCHEMA_EDITOR;
+    case 25:
+    case "DATA_EXPORT":
+      return PlanLimitConfig_Feature.DATA_EXPORT;
+    case 26:
+    case "QUERY_HISTORY":
+      return PlanLimitConfig_Feature.QUERY_HISTORY;
+    case 27:
+    case "SAVED_AND_SHARED_SQL_SCRIPTS":
+      return PlanLimitConfig_Feature.SAVED_AND_SHARED_SQL_SCRIPTS;
+    case 28:
+    case "SQL_EDITOR_DDL_DML_RESTRICTION":
+      return PlanLimitConfig_Feature.SQL_EDITOR_DDL_DML_RESTRICTION;
+    case 29:
+    case "BATCH_QUERY":
+      return PlanLimitConfig_Feature.BATCH_QUERY;
+    case 30:
+    case "INSTANCE_READ_ONLY_CONNECTION":
+      return PlanLimitConfig_Feature.INSTANCE_READ_ONLY_CONNECTION;
+    case 31:
+    case "RESTRICT_COPYING_DATA":
+      return PlanLimitConfig_Feature.RESTRICT_COPYING_DATA;
+    case 32:
+    case "IAM":
+      return PlanLimitConfig_Feature.IAM;
+    case 33:
+    case "INSTANCE_SSL_CONNECTION":
+      return PlanLimitConfig_Feature.INSTANCE_SSL_CONNECTION;
+    case 34:
+    case "INSTANCE_CONNECTION_OVER_SSH_TUNNEL":
+      return PlanLimitConfig_Feature.INSTANCE_CONNECTION_OVER_SSH_TUNNEL;
+    case 35:
+    case "INSTANCE_CONNECTION_IAM_AUTHENTICATION":
+      return PlanLimitConfig_Feature.INSTANCE_CONNECTION_IAM_AUTHENTICATION;
+    case 36:
+    case "GOOGLE_AND_GITHUB_SSO":
+      return PlanLimitConfig_Feature.GOOGLE_AND_GITHUB_SSO;
+    case 37:
+    case "USER_GROUPS":
+      return PlanLimitConfig_Feature.USER_GROUPS;
+    case 38:
+    case "DISALLOW_SELF_SERVICE_SIGNUP":
+      return PlanLimitConfig_Feature.DISALLOW_SELF_SERVICE_SIGNUP;
+    case 39:
+    case "DATABASE_SECRET_VARIABLES":
+      return PlanLimitConfig_Feature.DATABASE_SECRET_VARIABLES;
+    case 40:
+    case "QUERY_DATASOURCE_RESTRICTION":
+      return PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION;
+    case 41:
+    case "CUSTOM_INSTANCE_SYNC_TIME":
+      return PlanLimitConfig_Feature.CUSTOM_INSTANCE_SYNC_TIME;
+    case 42:
+    case "CUSTOM_INSTANCE_CONNECTION_LIMIT":
+      return PlanLimitConfig_Feature.CUSTOM_INSTANCE_CONNECTION_LIMIT;
+    case 43:
+    case "RISK_ASSESSMENT":
+      return PlanLimitConfig_Feature.RISK_ASSESSMENT;
+    case 44:
+    case "APPROVAL_WORKFLOW":
+      return PlanLimitConfig_Feature.APPROVAL_WORKFLOW;
+    case 45:
+    case "AUDIT_LOG":
+      return PlanLimitConfig_Feature.AUDIT_LOG;
+    case 46:
+    case "ENTERPRISE_SSO":
+      return PlanLimitConfig_Feature.ENTERPRISE_SSO;
+    case 47:
+    case "TWO_FA":
+      return PlanLimitConfig_Feature.TWO_FA;
+    case 48:
+    case "PASSWORD_RESTRICTIONS":
+      return PlanLimitConfig_Feature.PASSWORD_RESTRICTIONS;
+    case 49:
+    case "CUSTOM_ROLES":
+      return PlanLimitConfig_Feature.CUSTOM_ROLES;
+    case 50:
+    case "REQUEST_ROLE_WORKFLOW":
+      return PlanLimitConfig_Feature.REQUEST_ROLE_WORKFLOW;
+    case 51:
+    case "DATA_MASKING":
+      return PlanLimitConfig_Feature.DATA_MASKING;
+    case 52:
+    case "DATA_CLASSIFICATION":
+      return PlanLimitConfig_Feature.DATA_CLASSIFICATION;
+    case 53:
+    case "SCIM":
+      return PlanLimitConfig_Feature.SCIM;
+    case 54:
+    case "DIRECTORY_SYNC_ENTRA_ID":
+      return PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID;
+    case 55:
+    case "DIRECTORY_SYNC_OKTA":
+      return PlanLimitConfig_Feature.DIRECTORY_SYNC_OKTA;
+    case 56:
+    case "SIGN_IN_FREQUENCY_CONTROL":
+      return PlanLimitConfig_Feature.SIGN_IN_FREQUENCY_CONTROL;
+    case 57:
+    case "EXTERNAL_SECRET_MANAGER":
+      return PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER;
+    case 58:
+    case "USER_EMAIL_DOMAIN_RESTRICTION":
+      return PlanLimitConfig_Feature.USER_EMAIL_DOMAIN_RESTRICTION;
+    case 59:
+    case "ENVIRONMENT_MANAGEMENT":
+      return PlanLimitConfig_Feature.ENVIRONMENT_MANAGEMENT;
+    case 60:
+    case "IM_NOTIFICATIONS":
+      return PlanLimitConfig_Feature.IM_NOTIFICATIONS;
+    case 61:
+    case "TERRAFORM_PROVIDER":
+      return PlanLimitConfig_Feature.TERRAFORM_PROVIDER;
+    case 62:
+    case "DATABASE_GROUPS":
+      return PlanLimitConfig_Feature.DATABASE_GROUPS;
+    case 63:
+    case "ENVIRONMENT_TIERS":
+      return PlanLimitConfig_Feature.ENVIRONMENT_TIERS;
+    case 64:
+    case "API_INTEGRATION_GUIDANCE":
+      return PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE;
+    case 65:
+    case "CUSTOM_LOGO":
+      return PlanLimitConfig_Feature.CUSTOM_LOGO;
+    case 66:
+    case "WATERMARK":
+      return PlanLimitConfig_Feature.WATERMARK;
+    case 67:
+    case "ROADMAP_PRIORITIZATION":
+      return PlanLimitConfig_Feature.ROADMAP_PRIORITIZATION;
+    case 68:
+    case "CUSTOM_MSA":
+      return PlanLimitConfig_Feature.CUSTOM_MSA;
+    case 69:
+    case "COMMUNITY_SUPPORT":
+      return PlanLimitConfig_Feature.COMMUNITY_SUPPORT;
+    case 70:
+    case "EMAIL_SUPPORT":
+      return PlanLimitConfig_Feature.EMAIL_SUPPORT;
+    case 71:
+    case "DEDICATED_SUPPORT_WITH_SLA":
+      return PlanLimitConfig_Feature.DEDICATED_SUPPORT_WITH_SLA;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PlanLimitConfig_Feature.UNRECOGNIZED;
+  }
+}
+
+export function planLimitConfig_FeatureToJSON(object: PlanLimitConfig_Feature): string {
+  switch (object) {
+    case PlanLimitConfig_Feature.FEATURE_UNSPECIFIED:
+      return "FEATURE_UNSPECIFIED";
+    case PlanLimitConfig_Feature.DATABASE_CHANGE:
+      return "DATABASE_CHANGE";
+    case PlanLimitConfig_Feature.GIT_BASED_SCHEMA_VERSION_CONTROL:
+      return "GIT_BASED_SCHEMA_VERSION_CONTROL";
+    case PlanLimitConfig_Feature.DECLARATIVE_SCHEMA_MIGRATION:
+      return "DECLARATIVE_SCHEMA_MIGRATION";
+    case PlanLimitConfig_Feature.COMPARE_AND_SYNC_SCHEMA:
+      return "COMPARE_AND_SYNC_SCHEMA";
+    case PlanLimitConfig_Feature.ONLINE_SCHEMA_CHANGE:
+      return "ONLINE_SCHEMA_CHANGE";
+    case PlanLimitConfig_Feature.PRE_DEPLOYMENT_SQL_REVIEW:
+      return "PRE_DEPLOYMENT_SQL_REVIEW";
+    case PlanLimitConfig_Feature.AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES:
+      return "AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES";
+    case PlanLimitConfig_Feature.ONE_CLICK_DATA_ROLLBACK:
+      return "ONE_CLICK_DATA_ROLLBACK";
+    case PlanLimitConfig_Feature.MULTI_DATABASE_BATCH_CHANGES:
+      return "MULTI_DATABASE_BATCH_CHANGES";
+    case PlanLimitConfig_Feature.PROGRESSIVE_ENVIRONMENT_DEPLOYMENT:
+      return "PROGRESSIVE_ENVIRONMENT_DEPLOYMENT";
+    case PlanLimitConfig_Feature.SCHEDULED_ROLLOUT_TIME:
+      return "SCHEDULED_ROLLOUT_TIME";
+    case PlanLimitConfig_Feature.DATABASE_CHANGELOG:
+      return "DATABASE_CHANGELOG";
+    case PlanLimitConfig_Feature.SCHEMA_DRIFT_DETECTION:
+      return "SCHEMA_DRIFT_DETECTION";
+    case PlanLimitConfig_Feature.CHANGELIST:
+      return "CHANGELIST";
+    case PlanLimitConfig_Feature.SCHEMA_TEMPLATE:
+      return "SCHEMA_TEMPLATE";
+    case PlanLimitConfig_Feature.ROLLOUT_POLICY:
+      return "ROLLOUT_POLICY";
+    case PlanLimitConfig_Feature.WEB_BASED_SQL_EDITOR:
+      return "WEB_BASED_SQL_EDITOR";
+    case PlanLimitConfig_Feature.SQL_EDITOR_ADMIN_MODE:
+      return "SQL_EDITOR_ADMIN_MODE";
+    case PlanLimitConfig_Feature.NATURAL_LANGUAGE_TO_SQL:
+      return "NATURAL_LANGUAGE_TO_SQL";
+    case PlanLimitConfig_Feature.AI_QUERY_EXPLANATION:
+      return "AI_QUERY_EXPLANATION";
+    case PlanLimitConfig_Feature.AI_QUERY_SUGGESTIONS:
+      return "AI_QUERY_SUGGESTIONS";
+    case PlanLimitConfig_Feature.AUTO_COMPLETE:
+      return "AUTO_COMPLETE";
+    case PlanLimitConfig_Feature.SCHEMA_DIAGRAM:
+      return "SCHEMA_DIAGRAM";
+    case PlanLimitConfig_Feature.SCHEMA_EDITOR:
+      return "SCHEMA_EDITOR";
+    case PlanLimitConfig_Feature.DATA_EXPORT:
+      return "DATA_EXPORT";
+    case PlanLimitConfig_Feature.QUERY_HISTORY:
+      return "QUERY_HISTORY";
+    case PlanLimitConfig_Feature.SAVED_AND_SHARED_SQL_SCRIPTS:
+      return "SAVED_AND_SHARED_SQL_SCRIPTS";
+    case PlanLimitConfig_Feature.SQL_EDITOR_DDL_DML_RESTRICTION:
+      return "SQL_EDITOR_DDL_DML_RESTRICTION";
+    case PlanLimitConfig_Feature.BATCH_QUERY:
+      return "BATCH_QUERY";
+    case PlanLimitConfig_Feature.INSTANCE_READ_ONLY_CONNECTION:
+      return "INSTANCE_READ_ONLY_CONNECTION";
+    case PlanLimitConfig_Feature.RESTRICT_COPYING_DATA:
+      return "RESTRICT_COPYING_DATA";
+    case PlanLimitConfig_Feature.IAM:
+      return "IAM";
+    case PlanLimitConfig_Feature.INSTANCE_SSL_CONNECTION:
+      return "INSTANCE_SSL_CONNECTION";
+    case PlanLimitConfig_Feature.INSTANCE_CONNECTION_OVER_SSH_TUNNEL:
+      return "INSTANCE_CONNECTION_OVER_SSH_TUNNEL";
+    case PlanLimitConfig_Feature.INSTANCE_CONNECTION_IAM_AUTHENTICATION:
+      return "INSTANCE_CONNECTION_IAM_AUTHENTICATION";
+    case PlanLimitConfig_Feature.GOOGLE_AND_GITHUB_SSO:
+      return "GOOGLE_AND_GITHUB_SSO";
+    case PlanLimitConfig_Feature.USER_GROUPS:
+      return "USER_GROUPS";
+    case PlanLimitConfig_Feature.DISALLOW_SELF_SERVICE_SIGNUP:
+      return "DISALLOW_SELF_SERVICE_SIGNUP";
+    case PlanLimitConfig_Feature.DATABASE_SECRET_VARIABLES:
+      return "DATABASE_SECRET_VARIABLES";
+    case PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION:
+      return "QUERY_DATASOURCE_RESTRICTION";
+    case PlanLimitConfig_Feature.CUSTOM_INSTANCE_SYNC_TIME:
+      return "CUSTOM_INSTANCE_SYNC_TIME";
+    case PlanLimitConfig_Feature.CUSTOM_INSTANCE_CONNECTION_LIMIT:
+      return "CUSTOM_INSTANCE_CONNECTION_LIMIT";
+    case PlanLimitConfig_Feature.RISK_ASSESSMENT:
+      return "RISK_ASSESSMENT";
+    case PlanLimitConfig_Feature.APPROVAL_WORKFLOW:
+      return "APPROVAL_WORKFLOW";
+    case PlanLimitConfig_Feature.AUDIT_LOG:
+      return "AUDIT_LOG";
+    case PlanLimitConfig_Feature.ENTERPRISE_SSO:
+      return "ENTERPRISE_SSO";
+    case PlanLimitConfig_Feature.TWO_FA:
+      return "TWO_FA";
+    case PlanLimitConfig_Feature.PASSWORD_RESTRICTIONS:
+      return "PASSWORD_RESTRICTIONS";
+    case PlanLimitConfig_Feature.CUSTOM_ROLES:
+      return "CUSTOM_ROLES";
+    case PlanLimitConfig_Feature.REQUEST_ROLE_WORKFLOW:
+      return "REQUEST_ROLE_WORKFLOW";
+    case PlanLimitConfig_Feature.DATA_MASKING:
+      return "DATA_MASKING";
+    case PlanLimitConfig_Feature.DATA_CLASSIFICATION:
+      return "DATA_CLASSIFICATION";
+    case PlanLimitConfig_Feature.SCIM:
+      return "SCIM";
+    case PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID:
+      return "DIRECTORY_SYNC_ENTRA_ID";
+    case PlanLimitConfig_Feature.DIRECTORY_SYNC_OKTA:
+      return "DIRECTORY_SYNC_OKTA";
+    case PlanLimitConfig_Feature.SIGN_IN_FREQUENCY_CONTROL:
+      return "SIGN_IN_FREQUENCY_CONTROL";
+    case PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER:
+      return "EXTERNAL_SECRET_MANAGER";
+    case PlanLimitConfig_Feature.USER_EMAIL_DOMAIN_RESTRICTION:
+      return "USER_EMAIL_DOMAIN_RESTRICTION";
+    case PlanLimitConfig_Feature.ENVIRONMENT_MANAGEMENT:
+      return "ENVIRONMENT_MANAGEMENT";
+    case PlanLimitConfig_Feature.IM_NOTIFICATIONS:
+      return "IM_NOTIFICATIONS";
+    case PlanLimitConfig_Feature.TERRAFORM_PROVIDER:
+      return "TERRAFORM_PROVIDER";
+    case PlanLimitConfig_Feature.DATABASE_GROUPS:
+      return "DATABASE_GROUPS";
+    case PlanLimitConfig_Feature.ENVIRONMENT_TIERS:
+      return "ENVIRONMENT_TIERS";
+    case PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE:
+      return "API_INTEGRATION_GUIDANCE";
+    case PlanLimitConfig_Feature.CUSTOM_LOGO:
+      return "CUSTOM_LOGO";
+    case PlanLimitConfig_Feature.WATERMARK:
+      return "WATERMARK";
+    case PlanLimitConfig_Feature.ROADMAP_PRIORITIZATION:
+      return "ROADMAP_PRIORITIZATION";
+    case PlanLimitConfig_Feature.CUSTOM_MSA:
+      return "CUSTOM_MSA";
+    case PlanLimitConfig_Feature.COMMUNITY_SUPPORT:
+      return "COMMUNITY_SUPPORT";
+    case PlanLimitConfig_Feature.EMAIL_SUPPORT:
+      return "EMAIL_SUPPORT";
+    case PlanLimitConfig_Feature.DEDICATED_SUPPORT_WITH_SLA:
+      return "DEDICATED_SUPPORT_WITH_SLA";
+    case PlanLimitConfig_Feature.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function planLimitConfig_FeatureToNumber(object: PlanLimitConfig_Feature): number {
+  switch (object) {
+    case PlanLimitConfig_Feature.FEATURE_UNSPECIFIED:
+      return 0;
+    case PlanLimitConfig_Feature.DATABASE_CHANGE:
+      return 1;
+    case PlanLimitConfig_Feature.GIT_BASED_SCHEMA_VERSION_CONTROL:
+      return 2;
+    case PlanLimitConfig_Feature.DECLARATIVE_SCHEMA_MIGRATION:
+      return 3;
+    case PlanLimitConfig_Feature.COMPARE_AND_SYNC_SCHEMA:
+      return 4;
+    case PlanLimitConfig_Feature.ONLINE_SCHEMA_CHANGE:
+      return 5;
+    case PlanLimitConfig_Feature.PRE_DEPLOYMENT_SQL_REVIEW:
+      return 6;
+    case PlanLimitConfig_Feature.AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES:
+      return 7;
+    case PlanLimitConfig_Feature.ONE_CLICK_DATA_ROLLBACK:
+      return 8;
+    case PlanLimitConfig_Feature.MULTI_DATABASE_BATCH_CHANGES:
+      return 9;
+    case PlanLimitConfig_Feature.PROGRESSIVE_ENVIRONMENT_DEPLOYMENT:
+      return 10;
+    case PlanLimitConfig_Feature.SCHEDULED_ROLLOUT_TIME:
+      return 11;
+    case PlanLimitConfig_Feature.DATABASE_CHANGELOG:
+      return 12;
+    case PlanLimitConfig_Feature.SCHEMA_DRIFT_DETECTION:
+      return 13;
+    case PlanLimitConfig_Feature.CHANGELIST:
+      return 14;
+    case PlanLimitConfig_Feature.SCHEMA_TEMPLATE:
+      return 15;
+    case PlanLimitConfig_Feature.ROLLOUT_POLICY:
+      return 16;
+    case PlanLimitConfig_Feature.WEB_BASED_SQL_EDITOR:
+      return 17;
+    case PlanLimitConfig_Feature.SQL_EDITOR_ADMIN_MODE:
+      return 18;
+    case PlanLimitConfig_Feature.NATURAL_LANGUAGE_TO_SQL:
+      return 19;
+    case PlanLimitConfig_Feature.AI_QUERY_EXPLANATION:
+      return 20;
+    case PlanLimitConfig_Feature.AI_QUERY_SUGGESTIONS:
+      return 21;
+    case PlanLimitConfig_Feature.AUTO_COMPLETE:
+      return 22;
+    case PlanLimitConfig_Feature.SCHEMA_DIAGRAM:
+      return 23;
+    case PlanLimitConfig_Feature.SCHEMA_EDITOR:
+      return 24;
+    case PlanLimitConfig_Feature.DATA_EXPORT:
+      return 25;
+    case PlanLimitConfig_Feature.QUERY_HISTORY:
+      return 26;
+    case PlanLimitConfig_Feature.SAVED_AND_SHARED_SQL_SCRIPTS:
+      return 27;
+    case PlanLimitConfig_Feature.SQL_EDITOR_DDL_DML_RESTRICTION:
+      return 28;
+    case PlanLimitConfig_Feature.BATCH_QUERY:
+      return 29;
+    case PlanLimitConfig_Feature.INSTANCE_READ_ONLY_CONNECTION:
+      return 30;
+    case PlanLimitConfig_Feature.RESTRICT_COPYING_DATA:
+      return 31;
+    case PlanLimitConfig_Feature.IAM:
+      return 32;
+    case PlanLimitConfig_Feature.INSTANCE_SSL_CONNECTION:
+      return 33;
+    case PlanLimitConfig_Feature.INSTANCE_CONNECTION_OVER_SSH_TUNNEL:
+      return 34;
+    case PlanLimitConfig_Feature.INSTANCE_CONNECTION_IAM_AUTHENTICATION:
+      return 35;
+    case PlanLimitConfig_Feature.GOOGLE_AND_GITHUB_SSO:
+      return 36;
+    case PlanLimitConfig_Feature.USER_GROUPS:
+      return 37;
+    case PlanLimitConfig_Feature.DISALLOW_SELF_SERVICE_SIGNUP:
+      return 38;
+    case PlanLimitConfig_Feature.DATABASE_SECRET_VARIABLES:
+      return 39;
+    case PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION:
+      return 40;
+    case PlanLimitConfig_Feature.CUSTOM_INSTANCE_SYNC_TIME:
+      return 41;
+    case PlanLimitConfig_Feature.CUSTOM_INSTANCE_CONNECTION_LIMIT:
+      return 42;
+    case PlanLimitConfig_Feature.RISK_ASSESSMENT:
+      return 43;
+    case PlanLimitConfig_Feature.APPROVAL_WORKFLOW:
+      return 44;
+    case PlanLimitConfig_Feature.AUDIT_LOG:
+      return 45;
+    case PlanLimitConfig_Feature.ENTERPRISE_SSO:
+      return 46;
+    case PlanLimitConfig_Feature.TWO_FA:
+      return 47;
+    case PlanLimitConfig_Feature.PASSWORD_RESTRICTIONS:
+      return 48;
+    case PlanLimitConfig_Feature.CUSTOM_ROLES:
+      return 49;
+    case PlanLimitConfig_Feature.REQUEST_ROLE_WORKFLOW:
+      return 50;
+    case PlanLimitConfig_Feature.DATA_MASKING:
+      return 51;
+    case PlanLimitConfig_Feature.DATA_CLASSIFICATION:
+      return 52;
+    case PlanLimitConfig_Feature.SCIM:
+      return 53;
+    case PlanLimitConfig_Feature.DIRECTORY_SYNC_ENTRA_ID:
+      return 54;
+    case PlanLimitConfig_Feature.DIRECTORY_SYNC_OKTA:
+      return 55;
+    case PlanLimitConfig_Feature.SIGN_IN_FREQUENCY_CONTROL:
+      return 56;
+    case PlanLimitConfig_Feature.EXTERNAL_SECRET_MANAGER:
+      return 57;
+    case PlanLimitConfig_Feature.USER_EMAIL_DOMAIN_RESTRICTION:
+      return 58;
+    case PlanLimitConfig_Feature.ENVIRONMENT_MANAGEMENT:
+      return 59;
+    case PlanLimitConfig_Feature.IM_NOTIFICATIONS:
+      return 60;
+    case PlanLimitConfig_Feature.TERRAFORM_PROVIDER:
+      return 61;
+    case PlanLimitConfig_Feature.DATABASE_GROUPS:
+      return 62;
+    case PlanLimitConfig_Feature.ENVIRONMENT_TIERS:
+      return 63;
+    case PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE:
+      return 64;
+    case PlanLimitConfig_Feature.CUSTOM_LOGO:
+      return 65;
+    case PlanLimitConfig_Feature.WATERMARK:
+      return 66;
+    case PlanLimitConfig_Feature.ROADMAP_PRIORITIZATION:
+      return 67;
+    case PlanLimitConfig_Feature.CUSTOM_MSA:
+      return 68;
+    case PlanLimitConfig_Feature.COMMUNITY_SUPPORT:
+      return 69;
+    case PlanLimitConfig_Feature.EMAIL_SUPPORT:
+      return 70;
+    case PlanLimitConfig_Feature.DEDICATED_SUPPORT_WITH_SLA:
+      return 71;
+    case PlanLimitConfig_Feature.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 function createBaseGetSubscriptionRequest(): GetSubscriptionRequest {
@@ -746,7 +1357,7 @@ export const PlanConfig: MessageFns<PlanConfig> = {
 };
 
 function createBasePlanLimitConfig(): PlanLimitConfig {
-  return { type: PlanType.PLAN_TYPE_UNSPECIFIED, maximumInstanceCount: 0, maximumSeatCount: 0 };
+  return { type: PlanType.PLAN_TYPE_UNSPECIFIED, maximumInstanceCount: 0, maximumSeatCount: 0, features: [] };
 }
 
 export const PlanLimitConfig: MessageFns<PlanLimitConfig> = {
@@ -760,6 +1371,11 @@ export const PlanLimitConfig: MessageFns<PlanLimitConfig> = {
     if (message.maximumSeatCount !== 0) {
       writer.uint32(24).int32(message.maximumSeatCount);
     }
+    writer.uint32(34).fork();
+    for (const v of message.features) {
+      writer.int32(planLimitConfig_FeatureToNumber(v));
+    }
+    writer.join();
     return writer;
   },
 
@@ -794,6 +1410,24 @@ export const PlanLimitConfig: MessageFns<PlanLimitConfig> = {
           message.maximumSeatCount = reader.int32();
           continue;
         }
+        case 4: {
+          if (tag === 32) {
+            message.features.push(planLimitConfig_FeatureFromJSON(reader.int32()));
+
+            continue;
+          }
+
+          if (tag === 34) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.features.push(planLimitConfig_FeatureFromJSON(reader.int32()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -814,6 +1448,9 @@ export const PlanLimitConfig: MessageFns<PlanLimitConfig> = {
     if (message.maximumSeatCount !== 0) {
       obj.maximumSeatCount = Math.round(message.maximumSeatCount);
     }
+    if (message.features?.length) {
+      obj.features = message.features.map((e) => planLimitConfig_FeatureToJSON(e));
+    }
     return obj;
   },
 
@@ -825,6 +1462,7 @@ export const PlanLimitConfig: MessageFns<PlanLimitConfig> = {
     message.type = object.type ?? PlanType.PLAN_TYPE_UNSPECIFIED;
     message.maximumInstanceCount = object.maximumInstanceCount ?? 0;
     message.maximumSeatCount = object.maximumSeatCount ?? 0;
+    message.features = object.features?.map((e) => e) || [];
     return message;
   },
 };
