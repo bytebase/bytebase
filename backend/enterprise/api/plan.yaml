@@ -1,7 +1,7 @@
 plans:
   - type: FREE
-    maximum_instance_count: 10
-    maximum_seat_count: 20
+    maximumInstanceCount: 10
+    maximumSeatCount: 20
     features:
       # Database Change Management
       - DATABASE_CHANGE
@@ -43,8 +43,8 @@ plans:
       - TERRAFORM_PROVIDER
       - COMMUNITY_SUPPORT
   - type: TEAM
-    maximum_instance_count: 10
-    maximum_seat_count: 20
+    maximumInstanceCount: 10
+    maximumSeatCount: 20
     features:
       # Database Change Management
       - DATABASE_CHANGE
@@ -98,8 +98,8 @@ plans:
       - DATABASE_GROUPS
       - EMAIL_SUPPORT
   - type: ENTERPRISE
-    maximum_instance_count: -1
-    maximum_seat_count: -1
+    maximumInstanceCount: -1
+    maximumSeatCount: -1
     features:
       # Database Change Management
       - DATABASE_CHANGE
