@@ -168,11 +168,6 @@ export interface Plan {
   deployment: Plan_Deployment | undefined;
 }
 
-export interface Plan_Step {
-  title: string;
-  specs: Plan_Spec[];
-}
-
 export interface Plan_Spec {
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
@@ -394,6 +389,12 @@ export interface RunPlanChecksRequest {
    * Format: projects/{project}/plans/{plan}
    */
   name: string;
+  /**
+   * The UUID of the specific spec to run plan checks for.
+   * This should match the spec.id field in Plan.Spec.
+   * If not set, all specs in the plan will be used.
+   */
+  specId?: string | undefined;
 }
 
 export interface RunPlanChecksResponse {
@@ -1416,75 +1417,6 @@ export const Plan: MessageFns<Plan> = {
   },
 };
 
-function createBasePlan_Step(): Plan_Step {
-  return { title: "", specs: [] };
-}
-
-export const Plan_Step: MessageFns<Plan_Step> = {
-  encode(message: Plan_Step, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.title !== "") {
-      writer.uint32(18).string(message.title);
-    }
-    for (const v of message.specs) {
-      Plan_Spec.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Plan_Step {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_Step();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.title = reader.string();
-          continue;
-        }
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.specs.push(Plan_Spec.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  toJSON(message: Plan_Step): unknown {
-    const obj: any = {};
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.specs?.length) {
-      obj.specs = message.specs.map((e) => Plan_Spec.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_Step>): Plan_Step {
-    return Plan_Step.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_Step>): Plan_Step {
-    const message = createBasePlan_Step();
-    message.title = object.title ?? "";
-    message.specs = object.specs?.map((e) => Plan_Spec.fromPartial(e)) || [];
-    return message;
-  },
-};
-
 function createBasePlan_Spec(): Plan_Spec {
   return { id: "", createDatabaseConfig: undefined, changeDatabaseConfig: undefined, exportDataConfig: undefined };
 }
@@ -2460,13 +2392,16 @@ export const ListPlanCheckRunsResponse: MessageFns<ListPlanCheckRunsResponse> = 
 };
 
 function createBaseRunPlanChecksRequest(): RunPlanChecksRequest {
-  return { name: "" };
+  return { name: "", specId: undefined };
 }
 
 export const RunPlanChecksRequest: MessageFns<RunPlanChecksRequest> = {
   encode(message: RunPlanChecksRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.specId !== undefined) {
+      writer.uint32(18).string(message.specId);
     }
     return writer;
   },
@@ -2486,6 +2421,14 @@ export const RunPlanChecksRequest: MessageFns<RunPlanChecksRequest> = {
           message.name = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.specId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2500,6 +2443,9 @@ export const RunPlanChecksRequest: MessageFns<RunPlanChecksRequest> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
+    if (message.specId !== undefined) {
+      obj.specId = message.specId;
+    }
     return obj;
   },
 
@@ -2509,6 +2455,7 @@ export const RunPlanChecksRequest: MessageFns<RunPlanChecksRequest> = {
   fromPartial(object: DeepPartial<RunPlanChecksRequest>): RunPlanChecksRequest {
     const message = createBaseRunPlanChecksRequest();
     message.name = object.name ?? "";
+    message.specId = object.specId ?? undefined;
     return message;
   },
 };
