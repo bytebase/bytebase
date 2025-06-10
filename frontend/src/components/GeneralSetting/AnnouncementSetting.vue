@@ -5,7 +5,7 @@
         <h1 class="text-2xl font-bold">
           {{ title }}
         </h1>
-        <FeatureBadge feature="bb.feature.announcement" />
+        <FeatureBadge :feature="PlanLimitConfig_Feature.DASHBOARD_ANNOUNCEMENT" />
       </div>
 
       <span v-if="!allowEdit" class="text-sm text-gray-400">
@@ -107,6 +107,7 @@ import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Announcement } from "@/types/proto/v1/setting_service";
 import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { FeatureBadge } from "../FeatureGuard";
 
 const props = defineProps<{
@@ -115,7 +116,7 @@ const props = defineProps<{
 }>();
 
 const settingV1Store = useSettingV1Store();
-const hasAnnouncementFeature = featureToRef("bb.feature.announcement");
+const hasAnnouncementFeature = featureToRef(PlanLimitConfig_Feature.DASHBOARD_ANNOUNCEMENT);
 
 const rawAnnouncement = computed(() =>
   cloneDeep(

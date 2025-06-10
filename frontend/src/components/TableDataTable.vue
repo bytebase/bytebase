@@ -43,6 +43,7 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { bytesToString, hasSchemaProperty } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
@@ -100,7 +101,7 @@ const classificationConfig = computed(() => {
   );
 });
 
-const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const hasSensitiveDataFeature = featureToRef(PlanLimitConfig_Feature.DATA_MASKING);
 
 const engine = computed(() => props.database.instanceResource.engine);
 

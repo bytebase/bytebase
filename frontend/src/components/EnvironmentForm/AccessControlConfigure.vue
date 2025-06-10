@@ -4,7 +4,8 @@
       <label>
         {{ $t("environment.access-control.title") }}
       </label>
-      <FeatureBadge feature="bb.feature.access-control" />
+      // TODO(d): fix this feature control.
+      <FeatureBadge :feature="PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION" />
     </div>
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
@@ -96,18 +97,19 @@
 </template>
 
 <script setup lang="ts">
-import { isEqual, cloneDeep } from "lodash-es";
-import { NRadioGroup, NRadio } from "naive-ui";
-import { computed, watchEffect, reactive } from "vue";
 import { hasFeature, usePolicyV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   DataSourceQueryPolicy,
-  DisableCopyDataPolicy,
   DataSourceQueryPolicy_Restriction,
+  DisableCopyDataPolicy,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { cloneDeep, isEqual } from "lodash-es";
+import { NRadio, NRadioGroup } from "naive-ui";
+import { computed, reactive, watchEffect } from "vue";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 
@@ -168,7 +170,7 @@ const adminDataSourceQueruRestrictionEnabled = computed(() => {
 });
 
 const hasAccessControlFeature = computed(() =>
-  hasFeature("bb.feature.access-control")
+  hasFeature(PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION)
 );
 
 const allowUpdatePolicy = computed(() => {

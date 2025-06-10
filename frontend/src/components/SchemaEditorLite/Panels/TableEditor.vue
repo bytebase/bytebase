@@ -49,7 +49,7 @@
             >
               <template #icon>
                 <PlusIcon class="w-4 h-auto mr-1 text-gray-400" />
-                <FeatureBadge feature="bb.feature.schema-template" />
+                <FeatureBadge :feature="PlanLimitConfig_Feature.SCHEMA_TEMPLATE" />
               </template>
               {{ $t("schema-editor.actions.add-from-template") }}
             </NButton>
@@ -184,7 +184,7 @@
     </DrawerContent>
   </Drawer>
   <FeatureModal
-    feature="bb.feature.schema-template"
+    :feature="PlanLimitConfig_Feature.SCHEMA_TEMPLATE"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -201,6 +201,7 @@ import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature, pushNotification } from "@/store/modules";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import type { ComposedDatabase } from "@/types";
 import {
   DatabaseCatalog,
@@ -412,7 +413,7 @@ const handleApplyColumnTemplate = (
   template: SchemaTemplateSetting_FieldTemplate
 ) => {
   state.showSchemaTemplateDrawer = false;
-  if (!hasFeature("bb.feature.schema-template")) {
+  if (!hasFeature(PlanLimitConfig_Feature.SCHEMA_TEMPLATE)) {
     state.showFeatureModal = true;
     return;
   }

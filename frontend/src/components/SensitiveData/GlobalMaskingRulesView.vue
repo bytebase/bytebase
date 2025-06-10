@@ -143,6 +143,7 @@ import {
   PolicyResourceType,
   MaskingRulePolicy_MaskingRule,
 } from "@/types/proto/v1/org_policy_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import {
   arraySwap,
   hasWorkspacePermissionV2,
@@ -182,7 +183,7 @@ const policyStore = usePolicyV1Store();
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
-const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const hasSensitiveDataFeature = featureToRef(PlanLimitConfig_Feature.DATA_MASKING);
 const layout = {
   mainContainerRef: ref<HTMLDivElement>(),
 };

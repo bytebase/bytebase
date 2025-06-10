@@ -8,7 +8,7 @@
         {{ $t("instance.maximum-connections.self") }}
       </label>
       <FeatureBadge
-        feature="bb.feature.custom-instance-synchronization"
+        :feature="PlanLimitConfig_Feature.CUSTOM_INSTANCE_CONNECTION_LIMIT"
         :instance="instance"
       />
     </div>
@@ -63,6 +63,7 @@
 import { NInputNumber, NRadio } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useSubscriptionV1Store } from "@/store";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { FeatureBadge } from "../FeatureGuard";
 import { useInstanceFormContext } from "./context";
 
@@ -89,7 +90,7 @@ const { instance, hideAdvancedFeatures } = useInstanceFormContext();
 
 const hasFeature = computed(() => {
   return subscriptionStore.hasInstanceFeature(
-    "bb.feature.custom-instance-synchronization",
+    PlanLimitConfig_Feature.CUSTOM_INSTANCE_CONNECTION_LIMIT,
     instance.value
   );
 });

@@ -24,6 +24,7 @@ import {
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import type {
   ColumnMetadata,
   TableMetadata,
@@ -63,7 +64,7 @@ const engine = computed(() => {
 const subscriptionV1Store = useSubscriptionV1Store();
 
 const hasSensitiveDataFeature = computed(() => {
-  return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
+  return subscriptionV1Store.hasFeature(PlanLimitConfig_Feature.DATA_MASKING);
 });
 
 const showSensitiveColumn = computed(() => {

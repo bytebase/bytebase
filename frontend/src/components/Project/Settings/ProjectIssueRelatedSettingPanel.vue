@@ -266,23 +266,23 @@
 </template>
 
 <script setup lang="tsx">
-import { isEqual, cloneDeep } from "lodash-es";
-import { TriangleAlertIcon } from "lucide-vue-next";
-import {
-  NDynamicTags,
-  NTag,
-  NColorPicker,
-  NTooltip,
-  NInputNumber,
-} from "naive-ui";
-import { computed, reactive, ref } from "vue";
 import { Switch } from "@/components/v2";
-import { hasFeature, useProjectV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import {
   Label,
   Project_ExecutionRetryPolicy,
 } from "@/types/proto/v1/project_service";
+import { cloneDeep, isEqual } from "lodash-es";
+import { TriangleAlertIcon } from "lucide-vue-next";
+import {
+  NColorPicker,
+  NDynamicTags,
+  NInputNumber,
+  NTag,
+  NTooltip,
+} from "naive-ui";
+import { computed, reactive, ref } from "vue";
 
 interface LocalState {
   issueLabels: Label[];
@@ -333,7 +333,7 @@ const labelValues = computed(() => state.issueLabels.map((l) => l.value));
 const valueChanged = computed(() => !isEqual(state, getInitialLocalState()));
 
 const allowUpdateIssueProjectSetting = computed(() => {
-  return props.allowEdit && hasFeature("bb.feature.issue-project-setting");
+  return props.allowEdit;
 });
 
 const onLabelsUpdate = (values: string[]) => {

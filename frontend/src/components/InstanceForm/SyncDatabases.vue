@@ -7,10 +7,6 @@
       <label class="textlabel">
         {{ $t("instance.sync-databases.self") }}
       </label>
-      <FeatureBadge
-        feature="bb.feature.custom-instance-synchronization"
-        :instance="instance"
-      />
     </div>
     <div class="textinfolabel">
       {{ $t("instance.sync-databases.description") }}
@@ -18,7 +14,7 @@
     <div class="space-y-2">
       <NCheckbox
         v-model:checked="state.syncAll"
-        :disabled="!allowEdit || !hasFeature"
+        :disabled="!allowEdit"
       >
         {{ $t("instance.sync-databases.sync-all") }}
       </NCheckbox>
@@ -28,7 +24,7 @@
           <SearchBox
             v-model:value="state.searchText"
             style="max-width: 100%"
-            :disabled="!hasFeature"
+            :disabled="false"
             :placeholder="$t('instance.sync-databases.search-database')"
           />
           <NTree
@@ -42,7 +38,7 @@
             :data="treeData"
             :show-irrelevant-nodes="false"
             :render-label="renderLabel"
-            :disabled="!allowEdit || !hasFeature"
+            :disabled="!allowEdit"
             v-model:checked-keys="state.selectedDatabases"
           />
           <NInput
@@ -50,7 +46,7 @@
             size="small"
             :placeholder="$t('instance.sync-databases.add-database')"
             v-model:value="state.inputDatabase"
-            :disabled="!allowEdit || !hasFeature"
+            :disabled="!allowEdit"
             @keydown="handleKeyDown"
           />
         </div>
@@ -60,14 +56,13 @@
 </template>
 
 <script lang="tsx" setup>
-import { NInput, NCheckbox, NTree } from "naive-ui";
-import type { TreeOption } from "naive-ui";
-import { computed, reactive, watch, h } from "vue";
 import { BBSpin } from "@/bbkit";
 import { SearchBox } from "@/components/v2";
-import { useInstanceV1Store, useSubscriptionV1Store } from "@/store";
+import { useInstanceV1Store } from "@/store";
 import { getHighlightHTMLByKeyWords } from "@/utils";
-import { FeatureBadge } from "../FeatureGuard";
+import type { TreeOption } from "naive-ui";
+import { NCheckbox, NInput, NTree } from "naive-ui";
+import { computed, h, reactive, watch } from "vue";
 import { useInstanceFormContext } from "./context";
 
 const props = withDefaults(
@@ -95,7 +90,6 @@ interface LocalState {
   inputDatabase: string;
 }
 
-const subscriptionStore = useSubscriptionV1Store();
 const { hideAdvancedFeatures, pendingCreateInstance, instance } =
   useInstanceFormContext();
 const instanceStore = useInstanceV1Store();
@@ -111,13 +105,6 @@ const state = reactive<LocalState>({
 
 const targetInstance = computed(() => {
   return props.isCreating ? pendingCreateInstance.value : instance.value;
-});
-
-const hasFeature = computed(() => {
-  return subscriptionStore.hasInstanceFeature(
-    "bb.feature.custom-instance-synchronization",
-    targetInstance.value
-  );
 });
 
 const fetchAllDatabases = async () => {

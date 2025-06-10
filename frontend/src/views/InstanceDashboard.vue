@@ -2,7 +2,7 @@
   <div class="flex flex-col space-y-4">
     <FeatureAttention
       v-if="remainingInstanceCount <= 3"
-      feature="bb.feature.instance-count"
+      :feature="PlanLimitConfig_Feature.IAM"
       :description="instanceCountAttention"
     />
     <div class="px-4 flex items-center space-x-2">
@@ -64,17 +64,12 @@
 
   <FeatureModal
     :open="state.showFeatureModal"
-    :feature="'bb.feature.instance-count'"
+    :feature="PlanLimitConfig_Feature.IAM"
     @cancel="state.showFeatureModal = false"
   />
 </template>
 
 <script lang="tsx" setup>
-import { PlusIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
@@ -84,20 +79,25 @@ import {
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
-import { InstanceOperations, PagedInstanceTable } from "@/components/v2";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { Drawer, DrawerContent, InstanceOperations, PagedInstanceTable } from "@/components/v2";
 import {
-  useAppFeature,
-  useUIStateStore,
-  useSubscriptionV1Store,
-  useInstanceV1Store,
   useActuatorV1Store,
+  useAppFeature,
+  useInstanceV1Store,
+  useSubscriptionV1Store,
+  useUIStateStore,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import type { Instance } from "@/types/proto/v1/instance_service";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
+import { PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
+import { computed, onMounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
 interface LocalState {
   params: SearchParams;

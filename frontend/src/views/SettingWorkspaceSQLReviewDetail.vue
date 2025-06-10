@@ -1,5 +1,5 @@
 <template>
-  <FeatureAttention class="mb-4" feature="bb.feature.sql-review" />
+  <FeatureAttention class="mb-4" :feature="PlanLimitConfig_Feature.PRE_DEPLOYMENT_SQL_REVIEW" />
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"
@@ -165,6 +165,7 @@ import {
 } from "@/bbkit";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { SQLReviewCreation } from "@/components/SQLReview";
+import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import SQLReviewAttachResourcesPanel from "@/components/SQLReview/components/SQLReviewAttachResourcesPanel.vue";
 import SQLReviewTabsByEngine from "@/components/SQLReview/components/SQLReviewTabsByEngine.vue";
 import SQLRuleTableWithFilter from "@/components/SQLReview/components/SQLRuleTableWithFilter.vue";
