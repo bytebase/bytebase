@@ -11,6 +11,7 @@ import {
   isCollectionOperator,
   isCompareOperator,
   isEqualityOperator,
+  isDictionaryOperator,
 } from "./operator";
 
 export enum ExprType {
@@ -21,6 +22,11 @@ export enum ExprType {
 
 interface BaseConditionExpr {
   type: ExprType.Condition;
+}
+
+export interface DirectoryExpr extends BaseConditionExpr {
+  operator: EqualityOperator;
+  args: [StringFactor, string /* key */, string /* value */];
 }
 
 export interface EqualityExpr extends BaseConditionExpr {
@@ -47,7 +53,8 @@ export type ConditionExpr =
   | EqualityExpr
   | CompareExpr
   | CollectionExpr
-  | StringExpr;
+  | StringExpr
+  | DirectoryExpr;
 
 // RawStringExpr is used to represent a string that is unable to be parsed as a condition.
 export type RawStringExpr = {
@@ -73,6 +80,14 @@ export const isConditionGroupExpr = (
 
 export const isConditionExpr = (expr: SimpleExpr): expr is ConditionExpr => {
   return expr.type === ExprType.Condition;
+};
+
+export const isDirectoryExpr = (expr: SimpleExpr): expr is DirectoryExpr => {
+  return (
+    isConditionExpr(expr) &&
+    isDictionaryOperator(expr.operator) &&
+    expr.args.length === 3
+  );
 };
 
 export const isEqualityExpr = (expr: SimpleExpr): expr is EqualityExpr => {

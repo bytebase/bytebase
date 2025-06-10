@@ -19929,6 +19929,7 @@ database_name: the database name.
 table_name: the table name.
 column_name: the column name.
 classification_level: the classification level.
+database_labels: the database label, only support &#34;==&#34; operator.
 
 Each variable support following operations:
 ==: the value equals the target.
@@ -19940,7 +19941,8 @@ For example:
 environment_id == &#34;test&#34; &amp;&amp; project_id == &#34;sample-project&#34;
 instance_id == &#34;sample-instance&#34; &amp;&amp; database_name == &#34;employee&#34; &amp;&amp; table_name in [&#34;table1&#34;, &#34;table2&#34;]
 environment_id != &#34;test&#34; || !(project_id in [&#34;poject1&#34;, &#34;prject2&#34;])
-instance_id == &#34;sample-instance&#34; &amp;&amp; (database_name == &#34;db1&#34; || database_name == &#34;db2&#34;) </p></td>
+instance_id == &#34;sample-instance&#34; &amp;&amp; (database_name == &#34;db1&#34; || database_name == &#34;db2&#34;)
+database_labels[&#34;tenant&#34;] == &#34;bytebase&#34; || database_labels[&#34;region&#34;] == &#34;asia&#34; </p></td>
                 </tr>
               
                 <tr>

@@ -1,8 +1,11 @@
 import { uniq } from "lodash-es";
 import type { Factor } from "./factor";
 
-export const NegativeOperatorList = ["!_"] as const;
-export type NegativeOperator = (typeof NegativeOperatorList)[number];
+const NegativeOperatorList = ["!_"] as const;
+type NegativeOperator = (typeof NegativeOperatorList)[number];
+
+export const DictionaryOperatorList = ["_[_]"] as const;
+type DictionaryOperator = (typeof DictionaryOperatorList)[number];
 
 export const LogicalOperatorList = ["_&&_", "_||_"] as const;
 export type LogicalOperator = (typeof LogicalOperatorList)[number];
@@ -29,8 +32,17 @@ export type ConditionOperator =
   | CompareOperator
   | CollectionOperator
   | StringOperator;
-export type Operator = LogicalOperator | NegativeOperator | ConditionOperator;
+export type Operator =
+  | LogicalOperator
+  | NegativeOperator
+  | ConditionOperator
+  | DictionaryOperator;
 
+export const isDictionaryOperator = (
+  op: Operator
+): op is DictionaryOperator => {
+  return DictionaryOperatorList.includes(op as DictionaryOperator);
+};
 export const isNegativeOperator = (op: Operator): op is NegativeOperator => {
   return NegativeOperatorList.includes(op as NegativeOperator);
 };
@@ -99,6 +111,7 @@ const OperatorList: Record<Factor, Operator[]> = {
   ]),
   sql_statement: uniq([...StringOperatorList]),
   classification_level: uniq([...CollectionOperatorList]),
+  database_labels: uniq([...DictionaryOperatorList]),
 
   // Database group related fields.
   "resource.environment_name": uniq([

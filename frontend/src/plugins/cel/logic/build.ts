@@ -1,8 +1,15 @@
 import { head } from "lodash-es";
 import { celServiceClient } from "@/grpcweb";
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import type { ConditionExpr, ConditionGroupExpr, SimpleExpr } from "../types";
+import type {
+  ConditionExpr,
+  ConditionGroupExpr,
+  DirectoryExpr,
+  SimpleExpr,
+  Operator,
+} from "../types";
 import {
+  isDirectoryExpr,
   isEqualityExpr,
   isCollectionExpr,
   isConditionExpr,
@@ -11,6 +18,7 @@ import {
   isStringExpr,
   ExprType,
   isRawStringExpr,
+  DictionaryOperatorList,
 } from "../types";
 
 const seq = {
@@ -52,6 +60,14 @@ export const buildCELExpr = async (
     throw new Error(`unexpected type "${String(expr)}"`);
   };
   const convertCondition = (condition: ConditionExpr): CELExpr => {
+    if (isDirectoryExpr(condition)) {
+      const { args } = condition;
+      const [factor, key, value] = args;
+      return wrapCallExpr("_==_", [
+        wrapDirectoryExpr({ factor, key }),
+        wrapConstExpr(value),
+      ]);
+    }
     if (isEqualityExpr(condition)) {
       const { operator, args } = condition;
       const [factor, value] = args;
@@ -168,8 +184,21 @@ const wrapIdentExpr = (name: string): CELExpr => {
   });
 };
 
+const wrapDirectoryExpr = ({
+  factor,
+  key,
+}: {
+  factor: string;
+  key: string;
+}): CELExpr => {
+  return wrapCallExpr(DictionaryOperatorList[0], [
+    wrapIdentExpr(factor),
+    wrapConstExpr(key),
+  ]);
+};
+
 const wrapCallExpr = (
-  operator: string,
+  operator: Operator,
   args: CELExpr[],
   target?: CELExpr
 ): CELExpr => {

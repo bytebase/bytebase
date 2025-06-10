@@ -62,6 +62,7 @@ var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("table_name", cel.StringType),
 	cel.Variable("column_name", cel.StringType),
 	cel.Variable("classification_level", cel.StringType),
+	cel.Variable("database_labels", cel.MapType(cel.StringType, cel.StringType)),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 

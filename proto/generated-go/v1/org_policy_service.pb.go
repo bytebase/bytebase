@@ -1531,6 +1531,7 @@ type MaskingRulePolicy_MaskingRule struct {
 	// table_name: the table name.
 	// column_name: the column name.
 	// classification_level: the classification level.
+	// database_labels: the database label, only support "==" operator.
 	//
 	// Each variable support following operations:
 	// ==: the value equals the target.
@@ -1543,6 +1544,7 @@ type MaskingRulePolicy_MaskingRule struct {
 	// instance_id == "sample-instance" && database_name == "employee" && table_name in ["table1", "table2"]
 	// environment_id != "test" || !(project_id in ["poject1", "prject2"])
 	// instance_id == "sample-instance" && (database_name == "db1" || database_name == "db2")
+	// database_labels["tenant"] == "bytebase" || database_labels["region"] == "asia"
 	Condition     *expr.Expr `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
 	SemanticType  string     `protobuf:"bytes,3,opt,name=semantic_type,json=semanticType,proto3" json:"semantic_type,omitempty"`
 	unknownFields protoimpl.UnknownFields

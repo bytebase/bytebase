@@ -17,6 +17,12 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		ProjectID:              "bytebase",
 		InstanceID:             "neon-host",
 		DatabaseName:           "bb",
+		Metadata: &storepb.DatabaseMetadata{
+			Labels: map[string]string{
+				"tenant": "bytebase",
+				"region": "asia",
+			},
+		},
 	}
 
 	defaultProjectDatabaseDataClassificationID := "2b599739-41da-4c35-a9ff-4a73c6cfe32c"
@@ -95,6 +101,30 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					{
 						// Classification hit.
 						Condition:    &expr.Expr{Expression: `(table_name == "no_table") || (classification_level == "S2")`},
+						SemanticType: "default",
+					},
+				},
+			},
+			filteredMaskingExceptions:               []*storepb.MaskingExceptionPolicy_MaskingException{},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want: "default",
+		},
+		{
+			description:     "Follow The Global Masking Rule",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog: &storepb.ColumnCatalog{
+				Classification: "1-1-1",
+			},
+			maskingRulePolicy: &storepb.MaskingRulePolicy{
+				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+					{
+						// database label hit.
+						Condition:    &expr.Expr{Expression: `database_labels["tenant"] == "bytebase"`},
 						SemanticType: "default",
 					},
 				},

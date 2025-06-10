@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4 w-full">
     <div
-      class="flex flex-col md:flex-row items-start md:items-stretch gap-x-4 gap-y-4 overflow-hidden"
+      class="flex flex-col lg:flex-row items-start lg:items-stretch gap-x-4 gap-y-4 overflow-hidden"
     >
       <div class="flex-1 space-y-2 overflow-x-hidden overflow-y-auto">
         <div class="flex items-center h-[36px]">
