@@ -863,18 +863,22 @@ type Release_File struct {
 	// The unique identifier for the file.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// The path of the file. e.g. `2.2/V0001_create_table.sql`.
-	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Path       string                  `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Type       ReleaseFileType         `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.ReleaseFileType" json:"type,omitempty"`
+	Version    string                  `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	ChangeType Release_File_ChangeType `protobuf:"varint,9,opt,name=change_type,json=changeType,proto3,enum=bytebase.v1.Release_File_ChangeType" json:"change_type,omitempty"`
+	// For inputs, we must either use `sheet` or `statement`.
+	// For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
+	//
 	// The sheet that holds the content.
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,3,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	// The SHA256 hash value of the sheet.
-	SheetSha256 string                  `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	Type        ReleaseFileType         `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.ReleaseFileType" json:"type,omitempty"`
-	Version     string                  `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	ChangeType  Release_File_ChangeType `protobuf:"varint,9,opt,name=change_type,json=changeType,proto3,enum=bytebase.v1.Release_File_ChangeType" json:"change_type,omitempty"`
-	// The statement is used for preview or check purpose.
-	Statement     []byte `protobuf:"bytes,7,opt,name=statement,proto3" json:"statement,omitempty"`
-	StatementSize int64  `protobuf:"varint,8,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
+	// The raw SQL statement content.
+	Statement []byte `protobuf:"bytes,7,opt,name=statement,proto3" json:"statement,omitempty"`
+	// The SHA256 hash value of the sheet content or the statement.
+	SheetSha256 string `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
+	// The size of the statement in bytes.
+	StatementSize int64 `protobuf:"varint,8,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -923,20 +927,6 @@ func (x *Release_File) GetPath() string {
 	return ""
 }
 
-func (x *Release_File) GetSheet() string {
-	if x != nil {
-		return x.Sheet
-	}
-	return ""
-}
-
-func (x *Release_File) GetSheetSha256() string {
-	if x != nil {
-		return x.SheetSha256
-	}
-	return ""
-}
-
 func (x *Release_File) GetType() ReleaseFileType {
 	if x != nil {
 		return x.Type
@@ -958,11 +948,25 @@ func (x *Release_File) GetChangeType() Release_File_ChangeType {
 	return Release_File_CHANGE_TYPE_UNSPECIFIED
 }
 
+func (x *Release_File) GetSheet() string {
+	if x != nil {
+		return x.Sheet
+	}
+	return ""
+}
+
 func (x *Release_File) GetStatement() []byte {
 	if x != nil {
 		return x.Statement
 	}
 	return nil
+}
+
+func (x *Release_File) GetSheetSha256() string {
+	if x != nil {
+		return x.SheetSha256
+	}
+	return ""
 }
 
 func (x *Release_File) GetStatementSize() int64 {
@@ -1091,15 +1095,15 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x04\xe2A\x01\x03R\x05state\x1a\xac\x03\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04path\x18\x02 \x01(\tR\x04path\x12-\n" +
-	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
-	"\x12bytebase.com/SheetR\x05sheet\x12'\n" +
-	"\fsheet_sha256\x18\x04 \x01(\tB\x04\xe2A\x01\x03R\vsheetSha256\x120\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\x120\n" +
 	"\x04type\x18\x05 \x01(\x0e2\x1c.bytebase.v1.ReleaseFileTypeR\x04type\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12E\n" +
 	"\vchange_type\x18\t \x01(\x0e2$.bytebase.v1.Release.File.ChangeTypeR\n" +
-	"changeType\x12\x1c\n" +
-	"\tstatement\x18\a \x01(\fR\tstatement\x12+\n" +
+	"changeType\x12-\n" +
+	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
+	"\x12bytebase.com/SheetR\x05sheet\x12\x1c\n" +
+	"\tstatement\x18\a \x01(\fR\tstatement\x12'\n" +
+	"\fsheet_sha256\x18\x04 \x01(\tB\x04\xe2A\x01\x03R\vsheetSha256\x12+\n" +
 	"\x0estatement_size\x18\b \x01(\x03B\x04\xe2A\x01\x03R\rstatementSize\"J\n" +
 	"\n" +
 	"ChangeType\x12\x1b\n" +

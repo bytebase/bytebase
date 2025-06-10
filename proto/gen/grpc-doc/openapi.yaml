@@ -11956,15 +11956,6 @@ components:
                 path:
                     type: string
                     description: The path of the file. e.g. `2.2/V0001_create_table.sql`.
-                sheet:
-                    type: string
-                    description: |-
-                        The sheet that holds the content.
-                         Format: projects/{project}/sheets/{sheet}
-                sheetSha256:
-                    readOnly: true
-                    type: string
-                    description: The SHA256 hash value of the sheet.
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
@@ -11981,13 +11972,26 @@ components:
                         - DML
                     type: string
                     format: enum
+                sheet:
+                    type: string
+                    description: |-
+                        For inputs, we must either use `sheet` or `statement`.
+                         For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
+
+                         The sheet that holds the content.
+                         Format: projects/{project}/sheets/{sheet}
                 statement:
                     type: string
-                    description: The statement is used for preview or check purpose.
+                    description: The raw SQL statement content.
                     format: bytes
+                sheetSha256:
+                    readOnly: true
+                    type: string
+                    description: The SHA256 hash value of the sheet content or the statement.
                 statementSize:
                     readOnly: true
                     type: string
+                    description: The size of the statement in bytes.
         Release_VCSSource:
             type: object
             properties:
