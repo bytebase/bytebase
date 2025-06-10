@@ -2081,6 +2081,20 @@
     "upgrade-trial": "您可以直接将现有的试用升级到这个版本。",
     "contact-to-upgrade": "请联系工作空间所有者来升级到试用版。",
     "upgrade-now": "现在升级",
+    "usage": {
+      "instance-count": {
+        "title": "实例数量限制",
+        "remaining": "当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。",
+        "runoutof": "已用尽全部 {total} 个实例额度。",
+        "upgrade": "@:{'subscription.upgrade'}来获取更多实例额度。"
+      },
+      "user-count": {
+        "title": "用户数量限制",
+        "remaining": "当前总用户额度为 {total}，目前仅剩 {count} 个份额可用。",
+        "runoutof": "已用尽全部 {total} 个用户额度。",
+        "upgrade": "@:{'subscription.upgrade'}来获取无限的用户额度。"
+      }
+    },
     "instance-assignment": {
       "license": "证书",
       "assign-license": "分配证书",

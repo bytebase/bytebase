@@ -2081,6 +2081,20 @@
     "upgrade-trial": "Bạn có thể nâng cấp bản dùng thử miễn phí của mình lên gói này.",
     "contact-to-upgrade": "Liên hệ với quản trị viên Không gian làm việc của bạn để nâng cấp gói.",
     "upgrade-now": "Nâng cấp ngay",
+        "usage": {
+      "instance-count": {
+        "title": "Giới hạn số lượng phiên bản",
+        "remaining": "Tổng hạn ngạch phiên bản của bạn là {total}, chỉ còn lại {count} phiên bản.",
+        "runoutof": "Bạn đã hết hạn ngạch {total} phiên bản của mình.",
+        "upgrade": "@:{'subscription.upgrade'} để có thêm hạn ngạch phiên bản."
+      },
+      "user-count": {
+        "title": "Giới hạn số lượng người dùng",
+        "remaining": "Tổng hạn ngạch người dùng của bạn là {total}, chỉ còn lại {count} người dùng.",
+        "runoutof": "Bạn đã hết hạn ngạch {total} người dùng của mình.",
+        "upgrade": "@:{'subscription.upgrade'} để có hạn ngạch người dùng không giới hạn."
+      }
+    },
     "instance-assignment": {
       "license": "Giấy phép",
       "assign-license": "Gán giấy phép",
