@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -48,15 +47,24 @@ func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *v1pb.GetSu
 // GetFeatureMatrix gets the feature metric.
 func (*SubscriptionService) GetFeatureMatrix(_ context.Context, _ *v1pb.GetFeatureMatrixRequest) (*v1pb.FeatureMatrix, error) {
 	resp := &v1pb.FeatureMatrix{}
-	for key, val := range base.FeatureMatrix {
-		matrix := map[string]bool{}
-		for i, enabled := range val {
-			// Convert array index to PlanType (0=FREE, 1=TEAM, 2=ENTERPRISE)
-			plan := v1pb.PlanType(i + 1) // +1 because proto enums start at 1
-			matrix[plan.String()] = enabled
+
+	// Create a map to collect features
+	featureMap := make(map[v1pb.PlanLimitConfig_Feature]map[string]bool)
+
+	// Iterate through all plans and features
+	for planType, features := range enterprise.PlanFeatureMatrix {
+		for feature, enabled := range features {
+			if featureMap[feature] == nil {
+				featureMap[feature] = make(map[string]bool)
+			}
+			featureMap[feature][planType.String()] = enabled
 		}
+	}
+
+	// Convert to response format
+	for feature, matrix := range featureMap {
 		resp.Features = append(resp.Features, &v1pb.Feature{
-			Name:   string(key),
+			Name:   feature.String(),
 			Matrix: matrix,
 		})
 	}

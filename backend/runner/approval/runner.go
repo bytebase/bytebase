@@ -17,7 +17,6 @@ import (
 	celtypes "github.com/google/cel-go/common/types"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -28,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // Runner is the runner for finding approval templates for issues.
@@ -137,7 +137,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		// no need to find if
 		// - feature is not enabled
 		// - approval setting rules are empty
-		if r.licenseService.IsFeatureEnabled(base.FeatureCustomApproval) != nil || len(approvalSetting.Rules) == 0 {
+		if r.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_APPROVAL_WORKFLOW) != nil || len(approvalSetting.Rules) == 0 {
 			// nolint:nilerr
 			return nil, 0, true, nil
 		}

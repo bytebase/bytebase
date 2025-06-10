@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -66,9 +65,9 @@ type LicenseService interface {
 	// LoadSubscription will load subscription.
 	LoadSubscription(ctx context.Context) *Subscription
 	// IsFeatureEnabled returns whether a feature is enabled.
-	IsFeatureEnabled(feature base.FeatureType) error
+	IsFeatureEnabled(feature v1pb.PlanLimitConfig_Feature) error
 	// IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
-	IsFeatureEnabledForInstance(feature base.FeatureType, instance *store.InstanceMessage) error
+	IsFeatureEnabledForInstance(feature v1pb.PlanLimitConfig_Feature, instance *store.InstanceMessage) error
 	// GetEffectivePlan gets the effective plan.
 	GetEffectivePlan() v1pb.PlanType
 	// GetPlanLimitValue gets the limit value for the plan.
