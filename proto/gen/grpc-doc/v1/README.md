@@ -206,10 +206,6 @@
     - [IssueService](#bytebase-v1-IssueService)
   
 - [v1/subscription_service.proto](#v1_subscription_service-proto)
-    - [Feature](#bytebase-v1-Feature)
-    - [Feature.MatrixEntry](#bytebase-v1-Feature-MatrixEntry)
-    - [FeatureMatrix](#bytebase-v1-FeatureMatrix)
-    - [GetFeatureMatrixRequest](#bytebase-v1-GetFeatureMatrixRequest)
     - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
     - [PatchSubscription](#bytebase-v1-PatchSubscription)
     - [PlanConfig](#bytebase-v1-PlanConfig)
@@ -3924,63 +3920,6 @@ ANY means approving any node will proceed.
 
 
 
-<a name="bytebase-v1-Feature"></a>
-
-### Feature
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Name is the feature name. |
-| matrix | [Feature.MatrixEntry](#bytebase-v1-Feature-MatrixEntry) | repeated | Matrix is the feature matrix for different plan. The key is the plan enum in string value. |
-
-
-
-
-
-
-<a name="bytebase-v1-Feature-MatrixEntry"></a>
-
-### Feature.MatrixEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-FeatureMatrix"></a>
-
-### FeatureMatrix
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| features | [Feature](#bytebase-v1-Feature) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetFeatureMatrixRequest"></a>
-
-### GetFeatureMatrixRequest
-
-
-
-
-
-
-
 <a name="bytebase-v1-GetSubscriptionRequest"></a>
 
 ### GetSubscriptionRequest
@@ -4117,48 +4056,49 @@ PlanFeature represents the available features in Bytebase
 | FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION | 28 |  |
 | FEATURE_BATCH_QUERY | 29 |  |
 | FEATURE_INSTANCE_READ_ONLY_CONNECTION | 30 |  |
-| FEATURE_RESTRICT_COPYING_DATA | 31 |  |
-| FEATURE_IAM | 32 | Security &amp; Compliance |
-| FEATURE_INSTANCE_SSL_CONNECTION | 33 |  |
-| FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL | 34 |  |
-| FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION | 35 |  |
-| FEATURE_GOOGLE_AND_GITHUB_SSO | 36 |  |
-| FEATURE_USER_GROUPS | 37 |  |
-| FEATURE_DISALLOW_SELF_SERVICE_SIGNUP | 38 |  |
-| FEATURE_DATABASE_SECRET_VARIABLES | 39 |  |
-| FEATURE_QUERY_DATASOURCE_RESTRICTION | 40 |  |
-| FEATURE_CUSTOM_INSTANCE_SYNC_TIME | 41 |  |
-| FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT | 42 |  |
-| FEATURE_RISK_ASSESSMENT | 43 |  |
-| FEATURE_APPROVAL_WORKFLOW | 44 |  |
-| FEATURE_AUDIT_LOG | 45 |  |
-| FEATURE_ENTERPRISE_SSO | 46 |  |
-| FEATURE_TWO_FA | 47 |  |
-| FEATURE_PASSWORD_RESTRICTIONS | 48 |  |
-| FEATURE_DISALLOW_PASSWORD_SIGNIN | 49 |  |
-| FEATURE_CUSTOM_ROLES | 50 |  |
-| FEATURE_REQUEST_ROLE_WORKFLOW | 51 |  |
-| FEATURE_DATA_MASKING | 52 |  |
-| FEATURE_DATA_CLASSIFICATION | 53 |  |
-| FEATURE_SCIM | 54 |  |
-| FEATURE_DIRECTORY_SYNC | 55 |  |
-| FEATURE_SIGN_IN_FREQUENCY_CONTROL | 56 |  |
-| FEATURE_EXTERNAL_SECRET_MANAGER | 57 |  |
-| FEATURE_USER_EMAIL_DOMAIN_RESTRICTION | 58 |  |
-| FEATURE_ENVIRONMENT_MANAGEMENT | 59 | Administration &amp; Support |
-| FEATURE_IM_NOTIFICATIONS | 60 |  |
-| FEATURE_TERRAFORM_PROVIDER | 61 |  |
-| FEATURE_DATABASE_GROUPS | 62 |  |
-| FEATURE_ENVIRONMENT_TIERS | 63 |  |
-| FEATURE_DASHBOARD_ANNOUNCEMENT | 64 |  |
-| FEATURE_API_INTEGRATION_GUIDANCE | 65 |  |
-| FEATURE_CUSTOM_LOGO | 66 |  |
-| FEATURE_WATERMARK | 67 |  |
-| FEATURE_ROADMAP_PRIORITIZATION | 68 |  |
-| FEATURE_CUSTOM_MSA | 69 |  |
-| FEATURE_COMMUNITY_SUPPORT | 70 |  |
-| FEATURE_EMAIL_SUPPORT | 71 |  |
-| FEATURE_DEDICATED_SUPPORT_WITH_SLA | 72 |  |
+| FEATURE_QUERY_POLICY | 31 |  |
+| FEATURE_RESTRICT_COPYING_DATA | 32 |  |
+| FEATURE_IAM | 33 | Security &amp; Compliance |
+| FEATURE_INSTANCE_SSL_CONNECTION | 34 |  |
+| FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL | 35 |  |
+| FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION | 36 |  |
+| FEATURE_GOOGLE_AND_GITHUB_SSO | 37 |  |
+| FEATURE_USER_GROUPS | 38 |  |
+| FEATURE_DISALLOW_SELF_SERVICE_SIGNUP | 39 |  |
+| FEATURE_DATABASE_SECRET_VARIABLES | 40 |  |
+| FEATURE_QUERY_DATASOURCE_RESTRICTION | 41 |  |
+| FEATURE_CUSTOM_INSTANCE_SYNC_TIME | 42 |  |
+| FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT | 43 |  |
+| FEATURE_RISK_ASSESSMENT | 44 |  |
+| FEATURE_APPROVAL_WORKFLOW | 45 |  |
+| FEATURE_AUDIT_LOG | 46 |  |
+| FEATURE_ENTERPRISE_SSO | 47 |  |
+| FEATURE_TWO_FA | 48 |  |
+| FEATURE_PASSWORD_RESTRICTIONS | 49 |  |
+| FEATURE_DISALLOW_PASSWORD_SIGNIN | 50 |  |
+| FEATURE_CUSTOM_ROLES | 51 |  |
+| FEATURE_REQUEST_ROLE_WORKFLOW | 52 |  |
+| FEATURE_DATA_MASKING | 53 |  |
+| FEATURE_DATA_CLASSIFICATION | 54 |  |
+| FEATURE_SCIM | 55 |  |
+| FEATURE_DIRECTORY_SYNC | 56 |  |
+| FEATURE_SIGN_IN_FREQUENCY_CONTROL | 57 |  |
+| FEATURE_EXTERNAL_SECRET_MANAGER | 58 |  |
+| FEATURE_USER_EMAIL_DOMAIN_RESTRICTION | 59 |  |
+| FEATURE_ENVIRONMENT_MANAGEMENT | 60 | Administration &amp; Support |
+| FEATURE_IM_NOTIFICATIONS | 61 |  |
+| FEATURE_TERRAFORM_PROVIDER | 62 |  |
+| FEATURE_DATABASE_GROUPS | 63 |  |
+| FEATURE_ENVIRONMENT_TIERS | 64 |  |
+| FEATURE_DASHBOARD_ANNOUNCEMENT | 65 |  |
+| FEATURE_API_INTEGRATION_GUIDANCE | 66 |  |
+| FEATURE_CUSTOM_LOGO | 67 |  |
+| FEATURE_WATERMARK | 68 |  |
+| FEATURE_ROADMAP_PRIORITIZATION | 69 |  |
+| FEATURE_CUSTOM_MSA | 70 |  |
+| FEATURE_COMMUNITY_SUPPORT | 71 |  |
+| FEATURE_EMAIL_SUPPORT | 72 |  |
+| FEATURE_DEDICATED_SUPPORT_WITH_SLA | 73 |  |
 
 
 
@@ -4188,7 +4128,6 @@ PlanFeature represents the available features in Bytebase
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
-| GetFeatureMatrix | [GetFeatureMatrixRequest](#bytebase-v1-GetFeatureMatrixRequest) | [FeatureMatrix](#bytebase-v1-FeatureMatrix) |  |
 | UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
 
  

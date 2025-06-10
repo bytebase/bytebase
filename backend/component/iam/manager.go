@@ -12,7 +12,6 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 //go:embed acl.yaml
@@ -53,11 +52,6 @@ func NewManager(store *store.Store, licenseService enterprise.LicenseService) (*
 // CEL on the binding is not considered.
 // When multiple projects are specified, the user should have permission on every projects.
 func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
-	if m.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_IAM) != nil {
-		// nolint
-		return true, nil
-	}
-
 	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return false, err

@@ -176,49 +176,23 @@
 </template>
 
 <script lang="ts" setup>
-import type { ColumnDef } from "@tanstack/vue-table";
-import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useVueTable,
-} from "@tanstack/vue-table";
-import { useDebounceFn, useLocalStorage } from "@vueuse/core";
-import dayjs from "dayjs";
-import { isEmpty } from "lodash-es";
-import { ExternalLinkIcon } from "lucide-vue-next";
-import { NFormItem } from "naive-ui";
-import {
-  NButton,
-  NInput,
-  NSwitch,
-  NPagination,
-  NTooltip,
-  type SelectOption,
-  NSelect,
-} from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import type {
-  ExportOption,
   DownloadContent,
+  ExportOption,
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useSQLEditorTabStore,
-  featureToRef,
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorStore,
   useAppFeature,
+  useConnectionOfCurrentSQLEditorTab,
   usePolicyByParentAndType,
-  useStorageStore,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
   useSQLStore,
+  useStorageStore
 } from "@/store";
 import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
 import {
@@ -226,11 +200,9 @@ import {
   isValidDatabaseName,
   isValidInstanceName,
 } from "@/types";
-import { ExportFormat } from "@/types/proto/v1/common";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine, ExportFormat } from "@/types/proto/v1/common";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type {
   QueryResult,
   QueryRow,
@@ -246,6 +218,25 @@ import {
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
+import type { ColumnDef } from "@tanstack/vue-table";
+import {
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useVueTable,
+} from "@tanstack/vue-table";
+import { useDebounceFn, useLocalStorage } from "@vueuse/core";
+import dayjs from "dayjs";
+import { isEmpty } from "lodash-es";
+import { ExternalLinkIcon } from "lucide-vue-next";
+import {
+  NButton, NFormItem, NInput, NPagination, NSelect, NSwitch, NTooltip,
+  type SelectOption
+} from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import DataBlock from "./DataBlock.vue";
 import DataTable from "./DataTable";
 import { provideSelectionContext } from "./DataTable/common/selection-logic";
@@ -329,12 +320,6 @@ const showSearchFeature = computed(() => {
 const allowToRequestExportData = computed(() => {
   const { database } = props;
   if (!database) {
-    return false;
-  }
-
-  // The current plan doesn't have access control feature.
-  // Developers can not self-helped to request export.
-  if (!featureToRef(PlanFeature.FEATURE_IAM).value) {
     return false;
   }
 

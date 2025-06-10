@@ -105,7 +105,6 @@
                 @click="state.showFieldTemplateDrawer = true"
               >
                 <template #icon>
-                  <FeatureBadge :feature="PlanFeature.FEATURE_SCHEMA_TEMPLATE" />
                   <PlusIcon class="w-4 h-4 text-control-placeholder" />
                 </template>
                 {{ $t("schema-editor.actions.add-from-template") }}
@@ -178,21 +177,14 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual, cloneDeep, pull } from "lodash-es";
-import { PlusIcon, XIcon, PencilIcon } from "lucide-vue-next";
-import type { SelectOption } from "naive-ui";
-import { NButton, NInput } from "naive-ui";
-import { computed, reactive, ref, toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import {
   TableColumnEditor,
   provideSchemaEditorContext,
-  upsertColumnPrimaryKey,
-  removeColumnPrimaryKey,
   removeColumnFromAllForeignKeys,
-  type EditTarget,
+  removeColumnPrimaryKey,
+  upsertColumnPrimaryKey,
   type EditStatus,
+  type EditTarget,
 } from "@/components/SchemaEditorLite";
 import {
   Drawer,
@@ -201,24 +193,30 @@ import {
   InstanceEngineRadioGrid,
   MiniActionButton,
 } from "@/components/v2";
-import { useSettingV1Store, pushNotification } from "@/store";
+import { pushNotification, useSettingV1Store } from "@/store";
 import { unknownProject } from "@/types";
 import { TableCatalog } from "@/types/proto/v1/database_catalog_service";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import {
+  SchemaTemplateSetting,
   SchemaTemplateSetting_TableTemplate,
+  Setting_SettingName,
   type SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
-import { SchemaTemplateSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
+import { cloneDeep, isEqual, pull } from "lodash-es";
+import { PencilIcon, PlusIcon, XIcon } from "lucide-vue-next";
+import type { SelectOption } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
+import { computed, reactive, ref, toRef } from "vue";
+import { useI18n } from "vue-i18n";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
 import {
-  engineList,
   categoryList,
   classificationConfig,
+  engineList,
   mockMetadataFromTableTemplate,
   rebuildTableTemplateFromMetadata,
 } from "./utils";

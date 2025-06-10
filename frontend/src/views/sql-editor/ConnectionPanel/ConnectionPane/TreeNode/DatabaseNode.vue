@@ -36,12 +36,11 @@ import { LinkIcon } from "lucide-vue-next";
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import { hasFeature, useAppFeature, useSQLEditorTabStore } from "@/store";
+import { useAppFeature, useSQLEditorTabStore } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
 
@@ -77,9 +76,7 @@ const database = computed(
 const canQuery = computed(() => isDatabaseV1Queryable(database.value));
 
 const showRequestQueryButton = computed(() => {
-  // Developer self-helped request query is guarded by "Access Control" feature
   return (
-    hasFeature(PlanFeature.FEATURE_IAM) &&
     !disallowRequestQuery.value &&
     !canQuery.value
   );

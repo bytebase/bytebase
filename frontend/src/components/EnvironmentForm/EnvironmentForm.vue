@@ -9,10 +9,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
-import { toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import { onBeforeRouteLeave } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { hasFeature } from "@/store";
 import { VirtualRoleType } from "@/types";
@@ -20,6 +16,10 @@ import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { Environment } from "@/types/v1/environment";
+import { useEventListener } from "@vueuse/core";
+import { toRef } from "vue";
+import { useI18n } from "vue-i18n";
+import { onBeforeRouteLeave } from "vue-router";
 import { FeatureModal } from "../FeatureGuard";
 import { provideEnvironmentFormContext } from "./context";
 
@@ -96,10 +96,6 @@ useEmitteryEventListener(events, "create", (params) => {
         return;
       }
     }
-    if (!hasFeature(PlanFeature.FEATURE_ROLLOUT_POLICY)) {
-      missingFeature.value = PlanFeature.FEATURE_ROLLOUT_POLICY;
-      return;
-    }
   }
 
   emit("create", params);
@@ -125,10 +121,6 @@ useEmitteryEventListener(events, "update-policy", (params) => {
           missingFeature.value = PlanFeature.FEATURE_APPROVAL_WORKFLOW;
           return;
         }
-      }
-      if (!hasFeature(PlanFeature.FEATURE_ROLLOUT_POLICY)) {
-        missingFeature.value = PlanFeature.FEATURE_ROLLOUT_POLICY;
-        return;
       }
     }
   }

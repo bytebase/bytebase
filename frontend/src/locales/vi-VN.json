@@ -880,12 +880,6 @@
       "closed": "đã đóng",
       "close": "Đóng"
     },
-    "sdl": {
-      "schema-change": "Thay đổi lược đồ",
-      "generated-ddl-statements": "Câu lệnh DDL được tạo",
-      "full-schema": "Lược đồ đầy đủ",
-      "left-schema-may-change": "Lược đồ ở bên trái có thể thay đổi trước khi vấn đề được áp dụng."
-    },
     "approval-flow": {
       "self": "Quy trình phê duyệt",
       "tooltip": "Người phê duyệt sẽ xem xét và phê duyệt vấn đề theo thứ tự được chỉ định trong quy trình. Vấn đề chỉ có thể được áp dụng sau khi tất cả các bước trong quy trình đã được phê duyệt. Bạn có thể định cấu hình quy trình phê duyệt tùy chỉnh cho từng rủi ro.",
@@ -2152,7 +2146,6 @@
     "delete": "Xóa chính sách đánh giá SQL",
     "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",
     "not-available-for-free": "Quy tắc không khả dụng cho {plan}",
-    "unlock-full-feature": "Mở khóa hơn 100 quy tắc lint SQL",
     "search-by-name": "Tìm kiếm theo tên",
     "attach-resource": {
       "no-linked-resources": "Không có tài nguyên nào được đính kèm",

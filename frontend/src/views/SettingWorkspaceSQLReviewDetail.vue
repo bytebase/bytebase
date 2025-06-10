@@ -1,5 +1,4 @@
 <template>
-  <FeatureAttention class="mb-4" :feature="PlanFeature.FEATURE_PRE_DEPLOYMENT_SQL_REVIEW" />
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"
@@ -144,18 +143,6 @@
 </template>
 
 <script lang="tsx" setup>
-import { useTitle } from "@vueuse/core";
-import { NButton } from "naive-ui";
-import {
-  computed,
-  reactive,
-  watch,
-  watchEffect,
-  onMounted,
-  nextTick,
-} from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter, useRoute } from "vue-router";
 import {
   BBAlert,
   BBAttention,
@@ -163,9 +150,7 @@ import {
   BBButtonConfirm,
   BBTextField,
 } from "@/bbkit";
-import { FeatureAttention } from "@/components/FeatureGuard";
 import { SQLReviewCreation } from "@/components/SQLReview";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import SQLReviewAttachResourcesPanel from "@/components/SQLReview/components/SQLReviewAttachResourcesPanel.vue";
 import SQLReviewTabsByEngine from "@/components/SQLReview/components/SQLReviewTabsByEngine.vue";
 import SQLRuleTableWithFilter from "@/components/SQLReview/components/SQLRuleTableWithFilter.vue";
@@ -179,14 +164,26 @@ import {
 } from "@/store";
 import type { RuleTemplateV2 } from "@/types";
 import {
-  unknown,
-  UNKNOWN_ID,
+  convertRuleMapToPolicyRuleList,
   getRuleMapByEngine,
   ruleIsAvailableInSubscription,
-  convertRuleMapToPolicyRuleList,
+  unknown,
+  UNKNOWN_ID,
 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV2, sqlReviewNameFromSlug } from "@/utils";
+import { useTitle } from "@vueuse/core";
+import { NButton } from "naive-ui";
+import {
+  computed,
+  nextTick,
+  onMounted,
+  reactive,
+  watch,
+  watchEffect,
+} from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 
 const props = defineProps<{
   sqlReviewPolicySlug: string;
