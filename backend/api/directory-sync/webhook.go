@@ -18,11 +18,11 @@ import (
 	"github.com/labstack/echo/v4"
 
 	v1api "github.com/bytebase/bytebase/backend/api/v1"
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const entraIDSource = "Entra ID"
@@ -36,7 +36,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -103,7 +103,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -134,7 +134,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -190,7 +190,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -222,7 +222,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -296,7 +296,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -334,7 +334,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -365,7 +365,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -418,7 +418,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 
@@ -443,7 +443,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(base.FeatureDirectorySync); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DIRECTORY_SYNC_ENTRA_ID); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 

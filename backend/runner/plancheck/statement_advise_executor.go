@@ -12,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 
-	"github.com/bytebase/bytebase/backend/base"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -21,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // NewStatementAdviseExecutor creates a plan check statement advise executor.
@@ -51,7 +51,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if config.ChangeDatabaseType == storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
 		return nil, errors.Errorf("change database type is unspecified")
 	}
-	if err := e.licenseService.IsFeatureEnabled(base.FeatureSQLReview); err != nil {
+	if err := e.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_PRE_DEPLOYMENT_SQL_REVIEW); err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{

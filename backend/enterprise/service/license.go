@@ -3,13 +3,13 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
@@ -85,29 +85,31 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subsc
 }
 
 // IsFeatureEnabled returns whether a feature is enabled.
-func (s *LicenseService) IsFeatureEnabled(feature base.FeatureType) error {
-	if !base.Feature(feature, s.GetEffectivePlan()) {
-		return errors.New(feature.AccessErrorMessage())
+func (s *LicenseService) IsFeatureEnabled(f v1pb.PlanLimitConfig_Feature) error {
+	plan := s.GetEffectivePlan()
+	features, ok := enterprise.PlanFeatureMatrix[plan]
+	if !ok || !features[f] {
+		return errors.New(accessErrorMessage(f))
 	}
 	return nil
 }
 
 // IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
-func (s *LicenseService) IsFeatureEnabledForInstance(feature base.FeatureType, instance *store.InstanceMessage) error {
+func (s *LicenseService) IsFeatureEnabledForInstance(f v1pb.PlanLimitConfig_Feature, instance *store.InstanceMessage) error {
 	plan := s.GetEffectivePlan()
 	// DONOT check instance license fo FREE plan.
 	if plan == v1pb.PlanType_FREE {
-		return s.IsFeatureEnabled(feature)
+		return s.IsFeatureEnabled(f)
 	}
-	if err := s.IsFeatureEnabled(feature); err != nil {
+	if err := s.IsFeatureEnabled(f); err != nil {
 		return err
 	}
-	if !base.InstanceLimitFeature[feature] {
+	if !instanceLimitFeature[f] {
 		// If the feature not exists in the limit map, we just need to check the feature for current plan.
 		return nil
 	}
 	if !instance.Metadata.GetActivation() {
-		return errors.Errorf(`feature "%s" is not available for instance %s, please assign license to the instance to enable it`, feature.Name(), instance.ResourceID)
+		return errors.Errorf(`feature "%s" is not available for instance %s, please assign license to the instance to enable it`, f.String(), instance.ResourceID)
 	}
 	return nil
 }
@@ -171,4 +173,31 @@ func (s *LicenseService) RefreshCache(ctx context.Context) {
 	s.cachedSubscription = nil
 	s.mu.Unlock()
 	s.LoadSubscription(ctx)
+}
+
+// Helper functions to avoid circular import
+
+// accessErrorMessage returns a error message with feature name and minimum supported plan.
+func accessErrorMessage(f v1pb.PlanLimitConfig_Feature) string {
+	plan := minimumSupportedPlan(f)
+	return fmt.Sprintf("%s is a %s feature, please upgrade to access it.", f.String(), plan.String())
+}
+
+// minimumSupportedPlan will find the minimum plan which supports the target feature.
+func minimumSupportedPlan(f v1pb.PlanLimitConfig_Feature) v1pb.PlanType {
+	// Check from lowest to highest plan
+	if enterprise.PlanFeatureMatrix[v1pb.PlanType_FREE][f] {
+		return v1pb.PlanType_FREE
+	}
+	if enterprise.PlanFeatureMatrix[v1pb.PlanType_TEAM][f] {
+		return v1pb.PlanType_TEAM
+	}
+	return v1pb.PlanType_ENTERPRISE
+}
+
+// instanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.
+var instanceLimitFeature = map[v1pb.PlanLimitConfig_Feature]bool{
+	v1pb.PlanLimitConfig_DATABASE_SECRET_VARIABLES:     true,
+	v1pb.PlanLimitConfig_INSTANCE_READ_ONLY_CONNECTION: true,
+	v1pb.PlanLimitConfig_DATA_MASKING:                  true,
 }

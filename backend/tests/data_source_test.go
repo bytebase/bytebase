@@ -52,7 +52,7 @@ func TestDataSource(t *testing.T) {
 			SslKey:   "",
 		},
 	})
-	a.ErrorContains(err, "Read replica connection is a ENTERPRISE feature")
+	a.ErrorContains(err, "TEAM feature, please upgrade to access it")
 
 	err = ctl.setLicense(ctx)
 	a.NoError(err)
@@ -87,7 +87,7 @@ func TestDataSource(t *testing.T) {
 			Paths: []string{"host", "port"},
 		},
 	})
-	a.ErrorContains(err, "Read replica connection is a ENTERPRISE feature")
+	a.ErrorContains(err, "TEAM feature, please upgrade to access it")
 
 	err = ctl.setLicense(ctx)
 	a.NoError(err)

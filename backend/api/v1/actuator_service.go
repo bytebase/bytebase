@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -333,16 +332,17 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	return &serverInfo, nil
 }
 
-func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureType, error) {
-	var features []base.FeatureType
+func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanLimitConfig_Feature, error) {
+	var features []v1pb.PlanLimitConfig_Feature
 
 	// idp
 	idps, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list identity providers")
 	}
+	// TODO(d): use fine-grained feature control for SSO.
 	if len(idps) > 0 {
-		features = append(features, base.FeatureSSO)
+		features = append(features, v1pb.PlanLimitConfig_ENTERPRISE_SSO)
 	}
 
 	// setting
@@ -351,7 +351,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureTy
 		return nil, errors.Wrapf(err, "failed to get branding logo setting")
 	}
 	if brandingLogo != nil && brandingLogo.Value != "" {
-		features = append(features, base.FeatureBranding)
+		features = append(features, v1pb.PlanLimitConfig_CUSTOM_LOGO)
 	}
 
 	watermark, err := s.store.GetSettingV2(ctx, storepb.SettingName_WATERMARK)
@@ -359,15 +359,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureTy
 		return nil, errors.Wrapf(err, "failed to get watermark setting")
 	}
 	if watermark != nil && watermark.Value == "1" {
-		features = append(features, base.FeatureWatermark)
-	}
-
-	aiSetting, err := s.store.GetAISetting(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get ai setting")
-	}
-	if aiSetting.ApiKey != "" {
-		features = append(features, base.FeatureAIAssistant)
+		features = append(features, v1pb.PlanLimitConfig_WATERMARK)
 	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -375,16 +367,16 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureTy
 		return nil, errors.Wrapf(err, "failed to get workspace general setting")
 	}
 	if setting.DisallowSignup && !s.profile.SaaS {
-		features = append(features, base.FeatureDisallowSignup)
+		features = append(features, v1pb.PlanLimitConfig_DISALLOW_SELF_SERVICE_SIGNUP)
 	}
 	if setting.Require_2Fa {
-		features = append(features, base.Feature2FA)
+		features = append(features, v1pb.PlanLimitConfig_TWO_FA)
 	}
 	if setting.GetTokenDuration().GetSeconds() > 0 && float64(setting.GetTokenDuration().GetSeconds()) != auth.DefaultTokenDuration.Seconds() {
-		features = append(features, base.FeatureSecureToken)
+		features = append(features, v1pb.PlanLimitConfig_SIGN_IN_FREQUENCY_CONTROL)
 	}
 	if setting.GetAnnouncement().GetText() != "" {
-		features = append(features, base.FeatureAnnouncement)
+		features = append(features, v1pb.PlanLimitConfig_DASHBOARD_ANNOUNCEMENT)
 	}
 
 	// environment tier
@@ -394,7 +386,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureTy
 	}
 	for _, env := range environments.GetEnvironments() {
 		if v, ok := env.Tags["protected"]; ok && v == "protected" {
-			features = append(features, base.FeatureEnvironmentTierPolicy)
+			features = append(features, v1pb.PlanLimitConfig_ENVIRONMENT_TIERS)
 			break
 		}
 	}
@@ -405,13 +397,13 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]base.FeatureTy
 		return nil, errors.Wrapf(err, "failed to list database groups")
 	}
 	if len(databaseGroups) > 0 {
-		features = append(features, base.FeatureDatabaseGrouping)
+		features = append(features, v1pb.PlanLimitConfig_DATABASE_GROUPS)
 	}
 	return features, nil
 }
 
-func (s *ActuatorService) getUnlicensedFeatures(features []base.FeatureType) []base.FeatureType {
-	var unlicensedFeatures []base.FeatureType
+func (s *ActuatorService) getUnlicensedFeatures(features []v1pb.PlanLimitConfig_Feature) []v1pb.PlanLimitConfig_Feature {
+	var unlicensedFeatures []v1pb.PlanLimitConfig_Feature
 	for _, feature := range features {
 		if err := s.licenseService.IsFeatureEnabled(feature); err != nil {
 			unlicensedFeatures = append(unlicensedFeatures, feature)

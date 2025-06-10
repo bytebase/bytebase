@@ -196,6 +196,7 @@ export enum PlanLimitConfig_Feature {
   TERRAFORM_PROVIDER = "TERRAFORM_PROVIDER",
   DATABASE_GROUPS = "DATABASE_GROUPS",
   ENVIRONMENT_TIERS = "ENVIRONMENT_TIERS",
+  DASHBOARD_ANNOUNCEMENT = "DASHBOARD_ANNOUNCEMENT",
   API_INTEGRATION_GUIDANCE = "API_INTEGRATION_GUIDANCE",
   CUSTOM_LOGO = "CUSTOM_LOGO",
   WATERMARK = "WATERMARK",
@@ -402,27 +403,30 @@ export function planLimitConfig_FeatureFromJSON(object: any): PlanLimitConfig_Fe
     case "ENVIRONMENT_TIERS":
       return PlanLimitConfig_Feature.ENVIRONMENT_TIERS;
     case 64:
+    case "DASHBOARD_ANNOUNCEMENT":
+      return PlanLimitConfig_Feature.DASHBOARD_ANNOUNCEMENT;
+    case 65:
     case "API_INTEGRATION_GUIDANCE":
       return PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE;
-    case 65:
+    case 66:
     case "CUSTOM_LOGO":
       return PlanLimitConfig_Feature.CUSTOM_LOGO;
-    case 66:
+    case 67:
     case "WATERMARK":
       return PlanLimitConfig_Feature.WATERMARK;
-    case 67:
+    case 68:
     case "ROADMAP_PRIORITIZATION":
       return PlanLimitConfig_Feature.ROADMAP_PRIORITIZATION;
-    case 68:
+    case 69:
     case "CUSTOM_MSA":
       return PlanLimitConfig_Feature.CUSTOM_MSA;
-    case 69:
+    case 70:
     case "COMMUNITY_SUPPORT":
       return PlanLimitConfig_Feature.COMMUNITY_SUPPORT;
-    case 70:
+    case 71:
     case "EMAIL_SUPPORT":
       return PlanLimitConfig_Feature.EMAIL_SUPPORT;
-    case 71:
+    case 72:
     case "DEDICATED_SUPPORT_WITH_SLA":
       return PlanLimitConfig_Feature.DEDICATED_SUPPORT_WITH_SLA;
     case -1:
@@ -562,6 +566,8 @@ export function planLimitConfig_FeatureToJSON(object: PlanLimitConfig_Feature): 
       return "DATABASE_GROUPS";
     case PlanLimitConfig_Feature.ENVIRONMENT_TIERS:
       return "ENVIRONMENT_TIERS";
+    case PlanLimitConfig_Feature.DASHBOARD_ANNOUNCEMENT:
+      return "DASHBOARD_ANNOUNCEMENT";
     case PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE:
       return "API_INTEGRATION_GUIDANCE";
     case PlanLimitConfig_Feature.CUSTOM_LOGO:
@@ -714,22 +720,24 @@ export function planLimitConfig_FeatureToNumber(object: PlanLimitConfig_Feature)
       return 62;
     case PlanLimitConfig_Feature.ENVIRONMENT_TIERS:
       return 63;
-    case PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE:
+    case PlanLimitConfig_Feature.DASHBOARD_ANNOUNCEMENT:
       return 64;
-    case PlanLimitConfig_Feature.CUSTOM_LOGO:
+    case PlanLimitConfig_Feature.API_INTEGRATION_GUIDANCE:
       return 65;
-    case PlanLimitConfig_Feature.WATERMARK:
+    case PlanLimitConfig_Feature.CUSTOM_LOGO:
       return 66;
-    case PlanLimitConfig_Feature.ROADMAP_PRIORITIZATION:
+    case PlanLimitConfig_Feature.WATERMARK:
       return 67;
-    case PlanLimitConfig_Feature.CUSTOM_MSA:
+    case PlanLimitConfig_Feature.ROADMAP_PRIORITIZATION:
       return 68;
-    case PlanLimitConfig_Feature.COMMUNITY_SUPPORT:
+    case PlanLimitConfig_Feature.CUSTOM_MSA:
       return 69;
-    case PlanLimitConfig_Feature.EMAIL_SUPPORT:
+    case PlanLimitConfig_Feature.COMMUNITY_SUPPORT:
       return 70;
-    case PlanLimitConfig_Feature.DEDICATED_SUPPORT_WITH_SLA:
+    case PlanLimitConfig_Feature.EMAIL_SUPPORT:
       return 71;
+    case PlanLimitConfig_Feature.DEDICATED_SUPPORT_WITH_SLA:
+      return 72;
     case PlanLimitConfig_Feature.UNRECOGNIZED:
     default:
       return -1;

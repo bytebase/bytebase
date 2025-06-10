@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -35,9 +34,6 @@ func NewReviewConfigService(store *store.Store, licenseService enterprise.Licens
 
 // CreateReviewConfig creates a new review config.
 func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v1pb.CreateReviewConfigRequest) (*v1pb.ReviewConfig, error) {
-	if err := s.licenseService.IsFeatureEnabled(base.FeatureSQLReview); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
 	if err := validateSQLReviewRules(request.ReviewConfig.Rules); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -90,9 +86,6 @@ func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, request *v1pb
 
 // UpdateReviewConfig updates the review config.
 func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v1pb.UpdateReviewConfigRequest) (*v1pb.ReviewConfig, error) {
-	if err := s.licenseService.IsFeatureEnabled(base.FeatureSQLReview); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
 	id, err := common.GetReviewConfigID(request.ReviewConfig.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

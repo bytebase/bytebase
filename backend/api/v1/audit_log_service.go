@@ -15,7 +15,6 @@ import (
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -40,7 +39,7 @@ func NewAuditLogService(store *store.Store, iamManager *iam.Manager, licenseServ
 }
 
 func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.SearchAuditLogsRequest) (*v1pb.SearchAuditLogsResponse, error) {
-	if err := s.licenseService.IsFeatureEnabled(base.FeatureAuditLog); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_AUDIT_LOG); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	filter, serr := s.getSearchAuditLogsFilter(ctx, request.Filter)
@@ -98,7 +97,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 }
 
 func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.ExportAuditLogsRequest) (*v1pb.ExportAuditLogsResponse, error) {
-	if err := s.licenseService.IsFeatureEnabled(base.FeatureAuditLog); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_AUDIT_LOG); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	if request.Filter == "" {

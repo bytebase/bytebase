@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/bytebase/bytebase/backend/base"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -39,7 +38,7 @@ func NewDatabaseGroupService(store *store.Store, profile *config.Profile, iamMan
 
 // CreateDatabaseGroup creates a database group.
 func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	if err := s.licenseService.IsFeatureEnabled(base.FeatureDatabaseGrouping); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DATABASE_GROUPS); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	projectResourceID, err := common.GetProjectID(request.Parent)
@@ -103,7 +102,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, request 
 
 // UpdateDatabaseGroup updates a database group.
 func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.UpdateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	if err := s.licenseService.IsFeatureEnabled(base.FeatureDatabaseGrouping); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanLimitConfig_DATABASE_GROUPS); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
