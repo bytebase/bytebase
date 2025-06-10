@@ -291,3 +291,21 @@
         }
       ]
     }
+- input: ""
+  metadata_result: |-
+    {
+      "schemas": [
+        {
+          "name": "public"
+        }
+      ]
+    }
+- input: "   \n\t  "
+  metadata_result: |-
+    {
+      "schemas": [
+        {
+          "name": "public"
+        }
+      ]
+    }
