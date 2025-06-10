@@ -1,7 +1,5 @@
 <template>
   <div class="w-full mx-auto space-y-4">
-    <FeatureAttention :feature="PlanFeature.FEATURE_IAM" />
-
     <NoPermissionPlaceholder
       v-if="permissionStore.onlyWorkspaceMember"
       class="py-6"
@@ -83,31 +81,29 @@
 </template>
 
 <script setup lang="ts">
-import { computedAsync } from "@vueuse/core";
-import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { FeatureAttention } from "@/components/FeatureGuard";
 import EditMemberRoleDrawer from "@/components/Member/EditMemberRoleDrawer.vue";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";
 import {
-  getMemberBindingsByRole,
   getMemberBindings,
+  getMemberBindingsByRole,
 } from "@/components/Member/utils";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { SearchBox } from "@/components/v2";
 import {
   pushNotification,
   useCurrentUserV1,
-  useWorkspaceV1Store,
   usePermissionStore,
+  useWorkspaceV1Store,
 } from "@/store";
 import { userBindingPrefix } from "@/types";
 import { User, UserType } from "@/types/proto/v1/user_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { computedAsync } from "@vueuse/core";
+import { NButton, NTabPane, NTabs, useDialog } from "naive-ui";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   searchText: string;

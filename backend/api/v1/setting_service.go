@@ -450,9 +450,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		storeSettingValue = string(bytes)
 
 	case storepb.SettingName_SCHEMA_TEMPLATE:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SCHEMA_TEMPLATE); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
-		}
 		schemaTemplateSetting := request.Setting.Value.GetSchemaTemplateSettingValue()
 		if schemaTemplateSetting == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting schema template setting")

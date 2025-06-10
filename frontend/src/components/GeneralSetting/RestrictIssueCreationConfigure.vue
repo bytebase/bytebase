@@ -26,15 +26,13 @@
 
 <script setup lang="ts">
 import {
-  hasFeature,
   usePolicyByParentAndType,
-  usePolicyV1Store,
+  usePolicyV1Store
 } from "@/store";
 import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { computed, ref, watch } from "vue";
 import { Switch } from "../v2";
@@ -55,8 +53,7 @@ const policyV1Store = usePolicyV1Store();
 const allowEdit = computed(() => {
   return (
     props.allowEdit &&
-    hasWorkspacePermissionV2("bb.policies.update") &&
-    hasFeature(PlanFeature.FEATURE_IAM)
+    hasWorkspacePermissionV2("bb.policies.update")
   );
 });
 

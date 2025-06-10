@@ -91,7 +91,7 @@
           trigger="click"
           placement="bottom-end"
           :show-arrow="false"
-          :disabled="!hasSharedSQLScriptFeature"
+          :disabled="false"
         >
           <template #trigger>
             <NPopover placement="bottom" trigger="hover">
@@ -111,7 +111,6 @@
               <template #default>
                 <div class="flex items-center gap-1">
                   <span>{{ $t("common.share") }}</span>
-                  <FeatureBadge :feature="PlanFeature.FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS" />
                 </div>
               </template>
             </NPopover>
@@ -146,25 +145,14 @@
 </template>
 
 <script lang="ts" setup>
+import { FeatureModal } from "@/components/FeatureGuard";
 import {
-  ChevronLeftIcon,
-  PlayIcon,
-  SaveIcon,
-  Share2Icon,
-} from "lucide-vue-next";
-import { NButtonGroup, NButton, NPopover, NTooltip } from "naive-ui";
-import { storeToRefs } from "pinia";
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
-import {
-  useUIStateStore,
-  featureToRef,
-  useSQLEditorTabStore,
-  useConnectionOfCurrentSQLEditorTab,
-  useWorkSheetStore,
   useAppFeature,
+  useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
+  useSQLEditorTabStore,
+  useUIStateStore,
+  useWorkSheetStore
 } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -172,7 +160,17 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
-import { keyboardShortcutStr, isWorksheetWritableV1 } from "@/utils";
+import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
+import {
+  ChevronLeftIcon,
+  PlayIcon,
+  SaveIcon,
+  Share2Icon,
+} from "lucide-vue-next";
+import { NButton, NButtonGroup, NPopover, NTooltip } from "naive-ui";
+import { storeToRefs } from "pinia";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import ContainerChooser from "./ContainerChooser.vue";
@@ -200,7 +198,6 @@ const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
 const { events } = useSQLEditorContext();
 const { resultRowsLimit } = storeToRefs(useSQLEditorStore());
-const hasSharedSQLScriptFeature = featureToRef(PlanFeature.FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS);
 const disallowShareWorksheet = useAppFeature(
   "bb.feature.sql-editor.disallow-share-worksheet"
 );
@@ -341,8 +338,5 @@ const handleClickSave = () => {
 };
 
 const handleShareButtonClick = () => {
-  if (!hasSharedSQLScriptFeature.value) {
-    state.requiredFeatureName = PlanFeature.FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS;
-  }
 };
 </script>

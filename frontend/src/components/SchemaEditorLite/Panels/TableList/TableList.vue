@@ -38,26 +38,11 @@
       </div>
     </DrawerContent>
   </Drawer>
-
-  <FeatureModal
-    :feature="PlanFeature.FEATURE_SCHEMA_TEMPLATE"
-    :open="state.showFeatureModal"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
-import { useElementSize } from "@vueuse/core";
-import { cloneDeep, pick } from "lodash-es";
-import type { DataTableColumn, DataTableInst } from "naive-ui";
-import { NCheckbox, NDataTable } from "naive-ui";
-import { computed, h, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
-import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
-import { hasFeature } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { ComposedDatabase } from "@/types";
 import {
   TableCatalog,
@@ -70,9 +55,15 @@ import type {
 } from "@/types/proto/v1/database_service";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
+import { useElementSize } from "@vueuse/core";
+import { cloneDeep, pick } from "lodash-es";
+import type { DataTableColumn, DataTableInst } from "naive-ui";
+import { NCheckbox, NDataTable } from "naive-ui";
+import { computed, h, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useSchemaEditorContext } from "../../context";
 import { markUUID } from "../common";
-import { SelectionCell, NameCell, OperationCell } from "./components";
+import { NameCell, OperationCell, SelectionCell } from "./components";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -376,10 +367,6 @@ const handleRestoreTable = (table: TableMetadata) => {
 
 const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   state.showSchemaTemplateDrawer = false;
-  if (!hasFeature(PlanFeature.FEATURE_SCHEMA_TEMPLATE)) {
-    state.showFeatureModal = true;
-    return;
-  }
   if (!template.table) {
     return;
   }
