@@ -4,8 +4,10 @@
       <label>
         {{ $t("environment.access-control.title") }}
       </label>
-      // TODO(d): fix this feature control.
-      <FeatureBadge :feature="PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION" />
+      <!-- TODO(d): fix this feature control. -->
+      <FeatureBadge
+        :feature="PlanLimitConfig_Feature.QUERY_DATASOURCE_RESTRICTION"
+      />
     </div>
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
@@ -97,6 +99,9 @@
 </template>
 
 <script setup lang="ts">
+import { cloneDeep, isEqual } from "lodash-es";
+import { NRadio, NRadioGroup } from "naive-ui";
+import { computed, reactive, watchEffect } from "vue";
 import { hasFeature, usePolicyV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -107,9 +112,6 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { PlanLimitConfig_Feature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { cloneDeep, isEqual } from "lodash-es";
-import { NRadio, NRadioGroup } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 
