@@ -880,12 +880,6 @@
       "closed": "cerrado",
       "close": "Cerca"
     },
-    "sdl": {
-      "schema-change": "Cambio de esquema",
-      "generated-ddl-statements": "Declaraciones DDL generadas",
-      "full-schema": "Esquema completo",
-      "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique la incidencia."
-    },
     "approval-flow": {
       "self": "Flujo de aprobación",
       "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
@@ -2152,7 +2146,6 @@
     "delete": "Eliminar política de revisión SQL",
     "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
     "not-available-for-free": "La regla no está disponible para {plan}",
-    "unlock-full-feature": "Desbloquear más de 100 reglas de validación de SQL",
     "search-by-name": "Buscar por nombre",
     "attach-resource": {
       "no-linked-resources": "Sin recursos adjuntos",

@@ -367,11 +367,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 	switch policy.Type {
 	case v1pb.PolicyType_ROLLOUT_POLICY:
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
-		if !rolloutPolicy.Automatic {
-			if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_ROLLOUT_POLICY); err != nil {
-				return "", status.Error(codes.PermissionDenied, err.Error())
-			}
-		}
 		payloadBytes, err := protojson.Marshal(rolloutPolicy)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal rollout policy")
@@ -400,7 +395,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_EXPORT:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return "", status.Error(codes.PermissionDenied, err.Error())
 		}
 		payload, err := convertToExportDataPolicyPayload(policy.GetExportDataPolicy())
@@ -413,7 +408,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_QUERY:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return "", status.Error(codes.PermissionDenied, err.Error())
 		}
 		payload, err := convertToQueryDataPolicyPayload(policy.GetQueryDataPolicy())

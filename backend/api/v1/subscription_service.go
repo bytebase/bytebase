@@ -44,34 +44,6 @@ func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *v1pb.GetSu
 	return s.loadSubscription(ctx)
 }
 
-// GetFeatureMatrix gets the feature metric.
-func (*SubscriptionService) GetFeatureMatrix(_ context.Context, _ *v1pb.GetFeatureMatrixRequest) (*v1pb.FeatureMatrix, error) {
-	resp := &v1pb.FeatureMatrix{}
-
-	// Create a map to collect features
-	featureMap := make(map[v1pb.PlanFeature]map[string]bool)
-
-	// Iterate through all plans and features
-	for planType, features := range enterprise.PlanFeatureMatrix {
-		for feature, enabled := range features {
-			if featureMap[feature] == nil {
-				featureMap[feature] = make(map[string]bool)
-			}
-			featureMap[feature][planType.String()] = enabled
-		}
-	}
-
-	// Convert to response format
-	for feature, matrix := range featureMap {
-		resp.Features = append(resp.Features, &v1pb.Feature{
-			Name:   feature.String(),
-			Matrix: matrix,
-		})
-	}
-
-	return resp, nil
-}
-
 // UpdateSubscription updates the subscription license.
 func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v1pb.UpdateSubscriptionRequest) (*v1pb.Subscription, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)

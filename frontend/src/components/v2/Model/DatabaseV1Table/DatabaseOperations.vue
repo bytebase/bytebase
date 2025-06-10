@@ -100,23 +100,6 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync } from "@vueuse/core";
-import {
-  UnlinkIcon,
-  RefreshCcwIcon,
-  TagIcon,
-  PencilIcon,
-  PenSquareIcon,
-  ArrowRightLeftIcon,
-  DownloadIcon,
-  ChevronsDownIcon,
-  SquareStackIcon,
-} from "lucide-vue-next";
-import { NButton, NTooltip, useDialog, NScrollbar } from "naive-ui";
-import type { VNode } from "vue";
-import { computed, h, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
@@ -126,12 +109,12 @@ import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useProjectV1Store,
-  useDatabaseV1Store,
-  useGracefulRequest,
-  useDBSchemaV1Store,
   pushNotification,
   useAppFeature,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
+  useGracefulRequest,
+  useProjectV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
@@ -140,15 +123,31 @@ import {
   UpdateDatabaseRequest,
 } from "@/types/proto/v1/database_service";
 import {
-  isArchivedDatabaseV1,
-  instanceV1HasAlterSchema,
   allowUsingSchemaEditor,
-  generateIssueTitle,
-  hasProjectPermissionV2,
   extractProjectResourceName,
+  generateIssueTitle,
   hasPermissionToCreateChangeDatabaseIssue,
   hasPermissionToCreateDataExportIssue,
+  hasProjectPermissionV2,
+  instanceV1HasAlterSchema
 } from "@/utils";
+import { computedAsync } from "@vueuse/core";
+import {
+  ArrowRightLeftIcon,
+  ChevronsDownIcon,
+  DownloadIcon,
+  PencilIcon,
+  PenSquareIcon,
+  RefreshCcwIcon,
+  SquareStackIcon,
+  TagIcon,
+  UnlinkIcon,
+} from "lucide-vue-next";
+import { NButton, NScrollbar, NTooltip, useDialog } from "naive-ui";
+import type { VNode } from "vue";
+import { computed, h, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
 interface DatabaseAction {
   icon: VNode;
@@ -252,7 +251,6 @@ const allowChangeData = computed(() => {
 const allowTransferOutProject = computed(() => {
   return props.databases.every(
     (db) =>
-      !isArchivedDatabaseV1(db) &&
       hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
   );
 });

@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	SubscriptionService_GetSubscription_FullMethodName    = "/bytebase.v1.SubscriptionService/GetSubscription"
-	SubscriptionService_GetFeatureMatrix_FullMethodName   = "/bytebase.v1.SubscriptionService/GetFeatureMatrix"
 	SubscriptionService_UpdateSubscription_FullMethodName = "/bytebase.v1.SubscriptionService/UpdateSubscription"
 )
 
@@ -29,7 +28,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SubscriptionServiceClient interface {
 	GetSubscription(ctx context.Context, in *GetSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
-	GetFeatureMatrix(ctx context.Context, in *GetFeatureMatrixRequest, opts ...grpc.CallOption) (*FeatureMatrix, error)
 	UpdateSubscription(ctx context.Context, in *UpdateSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
 }
 
@@ -51,16 +49,6 @@ func (c *subscriptionServiceClient) GetSubscription(ctx context.Context, in *Get
 	return out, nil
 }
 
-func (c *subscriptionServiceClient) GetFeatureMatrix(ctx context.Context, in *GetFeatureMatrixRequest, opts ...grpc.CallOption) (*FeatureMatrix, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FeatureMatrix)
-	err := c.cc.Invoke(ctx, SubscriptionService_GetFeatureMatrix_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *subscriptionServiceClient) UpdateSubscription(ctx context.Context, in *UpdateSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Subscription)
@@ -76,7 +64,6 @@ func (c *subscriptionServiceClient) UpdateSubscription(ctx context.Context, in *
 // for forward compatibility.
 type SubscriptionServiceServer interface {
 	GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error)
-	GetFeatureMatrix(context.Context, *GetFeatureMatrixRequest) (*FeatureMatrix, error)
 	UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*Subscription, error)
 	mustEmbedUnimplementedSubscriptionServiceServer()
 }
@@ -90,9 +77,6 @@ type UnimplementedSubscriptionServiceServer struct{}
 
 func (UnimplementedSubscriptionServiceServer) GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSubscription not implemented")
-}
-func (UnimplementedSubscriptionServiceServer) GetFeatureMatrix(context.Context, *GetFeatureMatrixRequest) (*FeatureMatrix, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetFeatureMatrix not implemented")
 }
 func (UnimplementedSubscriptionServiceServer) UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*Subscription, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSubscription not implemented")
@@ -136,24 +120,6 @@ func _SubscriptionService_GetSubscription_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SubscriptionService_GetFeatureMatrix_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetFeatureMatrixRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SubscriptionServiceServer).GetFeatureMatrix(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SubscriptionService_GetFeatureMatrix_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SubscriptionServiceServer).GetFeatureMatrix(ctx, req.(*GetFeatureMatrixRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SubscriptionService_UpdateSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateSubscriptionRequest)
 	if err := dec(in); err != nil {
@@ -182,10 +148,6 @@ var SubscriptionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSubscription",
 			Handler:    _SubscriptionService_GetSubscription_Handler,
-		},
-		{
-			MethodName: "GetFeatureMatrix",
-			Handler:    _SubscriptionService_GetFeatureMatrix_Handler,
 		},
 		{
 			MethodName: "UpdateSubscription",

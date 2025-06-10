@@ -50,27 +50,14 @@
       </div>
     </div>
   </div>
-
-  <FeatureModal
-    :feature="PlanFeature.FEATURE_COMPARE_AND_SYNC_SCHEMA"
-    :open="state.showFeatureModal"
-    :instance="database?.instanceResource"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="tsx" setup>
-import { head } from "lodash-es";
-import type { SelectOption } from "naive-ui";
-import { NSelect, NTag } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
+import { DatabaseSelect, EnvironmentSelect } from "@/components/v2";
 import {
-  useDatabaseV1Store,
-  useSubscriptionV1Store,
-  useDBSchemaV1Store,
   useChangelogStore,
+  useDBSchemaV1Store,
+  useDatabaseV1Store
 } from "@/store";
 import {
   UNKNOWN_ID,
@@ -83,14 +70,16 @@ import {
   Changelog_Type,
   changelog_TypeToJSON,
 } from "@/types/proto/v1/database_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import {
   extractChangelogUID,
   isValidChangelogName,
   mockLatestChangelog,
 } from "@/utils/v1/changelog";
-import { FeatureModal } from "../FeatureGuard";
-import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
+import { head } from "lodash-es";
+import type { SelectOption } from "naive-ui";
+import { NSelect, NTag } from "naive-ui";
+import { computed, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import { ALLOWED_ENGINES, type ChangelogSourceSchema } from "./types";
 
@@ -126,20 +115,7 @@ const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changelogStore = useChangelogStore();
 
-const database = computed(() => {
-  return isValidDatabaseName(state.databaseName)
-    ? databaseStore.getDatabaseByName(state.databaseName)
-    : undefined;
-});
-
 const isPreparingSchemaVersionOptions = ref(false);
-
-const hasSyncSchemaFeature = computed(() => {
-  return useSubscriptionV1Store().hasInstanceFeature(
-    PlanFeature.FEATURE_COMPARE_AND_SYNC_SCHEMA,
-    database.value?.instanceResource
-  );
-});
 
 const handleEnvironmentSelect = async (name: string | undefined) => {
   if (name !== state.environmentName) {
@@ -207,15 +183,8 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
     return "Latest version";
   }
 
-  const index = option.index as number;
   return (
     <div class="flex flex-row justify-start items-center truncate gap-1">
-      {index > 0 && (
-        <FeatureBadge
-          feature={PlanFeature.FEATURE_COMPARE_AND_SYNC_SCHEMA}
-          instance={database.value?.instanceResource}
-        />
-      )}
       <HumanizeDate
         class="text-control-light"
         date={getDateForPbTimestamp(changelog.createTime)}
@@ -266,13 +235,6 @@ const fallbackSchemaVersionOption = (value: string): SelectOption => {
 
 const handleSchemaVersionSelect = async (_: string, option: SelectOption) => {
   const changelog = option.changelog as Changelog;
-  const index = databaseChangelogList(state.databaseName as string).findIndex(
-    (c) => c.name === changelog.name
-  );
-  if (index > 0 && !hasSyncSchemaFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
   state.changelogName = changelog.name;
 };
 

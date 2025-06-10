@@ -89,7 +89,6 @@
                 </NTag>
               </div>
               <router-link
-                v-if="!hasRBACFeature"
                 :to="'/setting/subscription'"
                 class="normal-link"
               >
@@ -325,7 +324,6 @@ onUnmounted(() => {
   document.removeEventListener("keydown", keyboardHandler);
 });
 
-const hasRBACFeature = featureToRef(PlanFeature.FEATURE_IAM);
 const has2FAFeature = featureToRef(PlanFeature.FEATURE_TWO_FA);
 
 const isMFAEnabled = computed(() => {

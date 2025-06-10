@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // NewStatementAdviseExecutor creates a plan check statement advise executor.
@@ -50,22 +49,6 @@ type StatementAdviseExecutor struct {
 func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
 	if config.ChangeDatabaseType == storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
 		return nil, errors.Errorf("change database type is unspecified")
-	}
-	if err := e.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_PRE_DEPLOYMENT_SQL_REVIEW); err != nil {
-		// nolint:nilerr
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_WARNING,
-				Code:    advisor.Unsupported.Int32(),
-				Title:   "SQL review is disabled",
-				Content: err.Error(),
-				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line: 0,
-					},
-				},
-			},
-		}, nil
 	}
 
 	sheetUID := int(config.SheetUid)

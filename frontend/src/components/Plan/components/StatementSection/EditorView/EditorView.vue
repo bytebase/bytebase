@@ -10,13 +10,6 @@
             {{ statementTitle }}
           </span>
           <span v-if="isCreating" class="text-red-600">*</span>
-          <NButton
-            v-if="!isCreating && !hasFeature(PlanFeature.FEATURE_PRE_DEPLOYMENT_SQL_REVIEW)"
-            size="small"
-            @click.prevent="state.showFeatureModal = true"
-          >
-            🎈{{ $t("sql-review.unlock-full-feature") }}
-          </NButton>
         </div>
       </div>
       <div class="flex items-center justify-end gap-x-2">
@@ -174,25 +167,10 @@
       />
     </div>
   </BBModal>
-
-  <FeatureModal
-    :open="state.showFeatureModal"
-    :feature="PlanFeature.FEATURE_PRE_DEPLOYMENT_SQL_REVIEW"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head, isEmpty } from "lodash-es";
-import { ExpandIcon } from "lucide-vue-next";
-import { NButton, NTooltip, useDialog } from "naive-ui";
-import { v1 as uuidv1 } from "uuid";
-import { computed, reactive, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { BBAttention, BBModal } from "@/bbkit";
-import { FeatureModal } from "@/components/FeatureGuard";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import { ErrorList } from "@/components/Plan/components/common";
@@ -200,26 +178,32 @@ import {
   createEmptyLocalSheet,
   databaseEngineForSpec,
   databaseForSpec,
+  usePlanContext,
 } from "@/components/Plan/logic";
-import { usePlanContext } from "@/components/Plan/logic";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClient } from "@/grpcweb";
 import {
-  hasFeature,
   pushNotification,
   useCurrentProjectV1,
-  useSheetV1Store,
+  useSheetV1Store
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   getSheetStatement,
+  getStatementSize,
   setSheetStatement,
   useInstanceV1EditorLanguage,
-  getStatementSize,
 } from "@/utils";
+import { useElementSize } from "@vueuse/core";
+import { cloneDeep, head, isEmpty } from "lodash-es";
+import { ExpandIcon } from "lucide-vue-next";
+import { NButton, NTooltip, useDialog } from "naive-ui";
+import { v1 as uuidv1 } from "uuid";
+import { computed, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePlanSQLCheckContext } from "../../SQLCheckSection/context";
 import useSelectedSpec from "../../common/useSelectedSpec";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";

@@ -1,14 +1,12 @@
-import { checkQuerierPermission, hasFeature } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { checkQuerierPermission } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { QueryPermissionQueryAny, UNKNOWN_ID } from "@/types";
 import type { ComposedDatabase, QueryPermission } from "@/types";
+import { QueryPermissionQueryAny, UNKNOWN_ID } from "@/types";
 import {
-  hasPermissionToCreateChangeDatabaseIssue,
-  hasWorkspacePermissionV2,
+  hasWorkspacePermissionV2
 } from "../iam";
 import { extractProjectResourceName } from "./project";
 
@@ -42,26 +40,6 @@ export const extractDatabaseResourceName = (
     database: `${instanceNamePrefix}${instanceName}/${databaseNamePrefix}${databaseName}`,
     databaseName,
   };
-};
-
-// TODO(p0ny): remove
-export const isArchivedDatabaseV1 = (_db: ComposedDatabase): boolean => {
-  return false;
-};
-
-// isDatabaseV1Alterable checks if database alterable for user.
-export const isDatabaseV1Alterable = (database: ComposedDatabase): boolean => {
-  if (!hasFeature(PlanFeature.FEATURE_IAM)) {
-    // The current plan doesn't have access control feature.
-    // Fallback to true.
-    return true;
-  }
-
-  if (hasPermissionToCreateChangeDatabaseIssue(database)) {
-    return true;
-  }
-
-  return false;
 };
 
 // isDatabaseV1Queryable checks if database allowed to query in SQL Editor.

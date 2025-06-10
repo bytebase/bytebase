@@ -880,12 +880,6 @@
       "closed": "閉まっている",
       "close": "近い"
     },
-    "sdl": {
-      "schema-change": "スキーマの変更",
-      "generated-ddl-statements": "生成されたDDLステートメント",
-      "full-schema": "完全なスキーマ",
-      "left-schema-may-change": "左側のスキーマは、イシューが実行される前に変更される可能性があります。"
-    },
     "approval-flow": {
       "self": "承認の流れ",
       "tooltip": "承認者は、承認フローで指定された順序でイシューを確認し、承認する必要があります。イシューは、承認フローのすべてのステップが承認された後にのみ実行できます。リスクレベルごとに承認をカスタマイズできます。",
@@ -2152,7 +2146,6 @@
     "delete": "監査ポリシーの削除",
     "input-then-press-enter": "入力後、Enterを押して追加します",
     "not-available-for-free": "{plan}定期購入ではこのルールを使用できません",
-    "unlock-full-feature": "100 を超える SQL レビュー ルールのロックを解除する",
     "search-by-name": "名前で検索",
     "attach-resource": {
       "no-linked-resources": "リソースのバインドはありません",

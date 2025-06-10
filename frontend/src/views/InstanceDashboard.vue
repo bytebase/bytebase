@@ -64,25 +64,13 @@
       </DrawerContent>
     </InstanceForm>
   </Drawer>
-
-  <FeatureModal
-    :open="state.showFeatureModal"
-    :feature="PlanFeature.FEATURE_IAM"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="tsx" setup>
-import { PlusIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import { FeatureModal } from "@/components/FeatureGuard";
 import {
   InstanceForm,
   Form as InstanceFormBody,
@@ -105,8 +93,12 @@ import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import type { Instance } from "@/types/proto/v1/instance_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
+import { PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
+import { computed, onMounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
 interface LocalState {
   params: SearchParams;
