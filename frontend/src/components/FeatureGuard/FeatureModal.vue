@@ -125,10 +125,11 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     open: boolean;
-    feature: PlanLimitConfig_Feature;
+    feature?: PlanLimitConfig_Feature;
     instance?: Instance | InstanceResource;
   }>(),
   {
+    feature: PlanLimitConfig_Feature.FEATURE_UNSPECIFIED,
     instance: undefined,
   }
 );
