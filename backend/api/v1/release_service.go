@@ -2,6 +2,8 @@ package v1
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"slices"
 
@@ -66,7 +68,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
 	}
 
-	request.Release.Files, err = validateAndSanitizeReleaseFiles(request.Release.Files)
+	request.Release.Files, err = validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
 	}
@@ -76,9 +78,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	// Check versions.
 	for _, file := range request.Release.Files {
 		if file.Sheet == "" {
-			if file.Statement == nil {
-				return nil, status.Errorf(codes.InvalidArgument, "either sheet or statement must be set")
-			}
+			// statement must be present due to validation in validateAndSanitizeReleaseFiles
 			sheet := &store.SheetMessage{
 				Title:     fmt.Sprintf("File %s", file.Path),
 				Statement: string(file.Statement),
@@ -413,11 +413,50 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 	}
 }
 
-func validateAndSanitizeReleaseFiles(files []*v1pb.Release_File) ([]*v1pb.Release_File, error) {
+// validateAndSanitizeReleaseFiles validates and sanitizes the release files inputs.
+// It ensures that each file has either a sheet or a statement, and that the sheet is valid.
+// It also checks for duplicate versions and sorts the files by version.
+// If a sheet is provided, it populates the statement from the sheet.
+// If a statement is provided, it computes the sheetSha256 from the statement.
+// It returns an error if any validation fails.
+// The function also generates a unique ID for each file.
+// The files are sorted by version in ascending order.
+func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*v1pb.Release_File, error) {
 	versionSet := map[string]struct{}{}
 
 	for _, f := range files {
 		f.Id = uuid.NewString()
+
+		switch {
+		// Validate that either sheet or statement is provided
+		case f.Sheet == "" && len(f.Statement) == 0:
+			return nil, errors.Errorf("either sheet or statement must be set for file %q", f.Path)
+		case f.Sheet != "" && len(f.Statement) > 0:
+			return nil, errors.Errorf("cannot set both sheet and statement for file %q", f.Path)
+
+		// If sheet is provided but statement is not, populate statement from sheet
+		case f.Sheet != "":
+			_, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get sheet UID from %q", f.Sheet)
+			}
+			sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{
+				UID:      &sheetUID,
+				LoadFull: true,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
+			}
+			if sheet == nil {
+				return nil, errors.Errorf("sheet %q not found", f.Sheet)
+			}
+			f.Statement = []byte(sheet.Statement)
+			f.SheetSha256 = sheet.GetSha256Hex()
+		case len(f.Statement) > 0:
+			// populate sheetSha256 from statement
+			h := sha256.Sum256(f.Statement)
+			f.SheetSha256 = hex.EncodeToString(h[:])
+		}
 
 		switch f.Type {
 		case v1pb.ReleaseFileType_VERSIONED:
