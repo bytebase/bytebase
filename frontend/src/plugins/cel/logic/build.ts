@@ -4,7 +4,6 @@ import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import type {
   ConditionExpr,
   ConditionGroupExpr,
-  DirectoryExpr,
   SimpleExpr,
   Operator,
 } from "../types";
