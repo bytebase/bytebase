@@ -155,8 +155,8 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 	}
 	subscription := m.licenseService.LoadSubscription(ctx)
 	plan := subscription.Plan.String()
-	orgID := subscription.OrgId
-	orgName := subscription.OrgName
+	orgID := ""
+	orgName := ""
 
 	trial := "N"
 	if subscription.Trialing {

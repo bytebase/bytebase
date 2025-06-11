@@ -13209,9 +13209,6 @@ components:
                 trialing:
                     readOnly: true
                     type: boolean
-                orgId:
-                    readOnly: true
-                    type: string
                 orgName:
                     readOnly: true
                     type: string

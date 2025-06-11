@@ -3,53 +3,10 @@ package api
 
 import (
 	"context"
-	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
-
-// validPlans is a string array of valid plan types.
-var validPlans = []v1pb.PlanType{
-	v1pb.PlanType_TEAM,
-	v1pb.PlanType_ENTERPRISE,
-}
-
-// License is the API message for enterprise license.
-type License struct {
-	InstanceCount int
-	Seat          int
-	ExpiresTS     int64
-	IssuedTS      int64
-	Plan          v1pb.PlanType
-	Trialing      bool
-	OrgName       string
-}
-
-// Valid will check if license expired or has correct plan type.
-func (l *License) Valid() error {
-	if expireTime := time.Unix(l.ExpiresTS, 0); expireTime.Before(time.Now()) {
-		return errors.Errorf("license has expired at %v", expireTime)
-	}
-
-	return l.validPlanType()
-}
-
-func (l *License) validPlanType() error {
-	for _, plan := range validPlans {
-		if plan == l.Plan {
-			return nil
-		}
-	}
-
-	return errors.Errorf("plan %q is not valid, expect %s or %s",
-		l.Plan.String(),
-		v1pb.PlanType_TEAM.String(),
-		v1pb.PlanType_ENTERPRISE.String(),
-	)
-}
 
 // LicenseService is the service for enterprise license.
 type LicenseService interface {

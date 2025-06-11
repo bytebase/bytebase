@@ -3992,7 +3992,6 @@ PlanLimitConfig represents a single plan&#39;s configuration
 | expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan | [PlanType](#bytebase-v1-PlanType) |  |  |
 | trialing | [bool](#bool) |  |  |
-| org_id | [string](#string) |  |  |
 | org_name | [string](#string) |  |  |
 
 

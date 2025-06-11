@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
 	"github.com/bytebase/bytebase/backend/store"
@@ -39,6 +38,17 @@ type claims struct {
 	OrgName       string `json:"orgName"`
 	WorkspaceID   string `json:"workspaceId"`
 	jwt.RegisteredClaims
+}
+
+// licenseInfo is an internal type for JWT parsing
+type licenseInfo struct {
+	InstanceCount int
+	Seat          int
+	ExpiresTS     int64
+	IssuedTS      int64
+	Plan          v1pb.PlanType
+	Trialing      bool
+	OrgName       string
 }
 
 // NewProvider will create a new hub license provider.
@@ -101,7 +111,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 	}
 }
 
-func (p *Provider) fetchLicense(ctx context.Context) (*enterprise.License, error) {
+func (p *Provider) fetchLicense(ctx context.Context) (*licenseInfo, error) {
 	license, err := p.remoteProvider.FetchLicense(ctx)
 	if err != nil {
 		return nil, err
@@ -125,7 +135,7 @@ func (p *Provider) fetchLicense(ctx context.Context) (*enterprise.License, error
 }
 
 // loadLicense will load license and validate it.
-func (p *Provider) loadLicense(ctx context.Context) *enterprise.License {
+func (p *Provider) loadLicense(ctx context.Context) *licenseInfo {
 	license, err := p.findEnterpriseLicense(ctx)
 	if err != nil {
 		slog.Debug("failed to load enterprise license", log.BBError(err))
@@ -140,15 +150,15 @@ func (p *Provider) loadLicense(ctx context.Context) *enterprise.License {
 	if license == nil {
 		return nil
 	}
-	if err := license.Valid(); err != nil {
-		slog.Debug("license is invalid", log.BBError(err))
-		return nil
+
+	if expireTime := time.Unix(license.ExpiresTS, 0); expireTime.Before(time.Now()) {
+		slog.Debug("license has expired at %v", expireTime)
 	}
 
 	return license
 }
 
-func (p *Provider) parseLicense(ctx context.Context, license string) (*enterprise.License, error) {
+func (p *Provider) parseLicense(ctx context.Context, license string) (*licenseInfo, error) {
 	claim := &claims{}
 	if err := parseJWTToken(license, p.config.Version, p.config.PublicKey, claim); err != nil {
 		return nil, common.Wrap(err, common.Invalid)
@@ -157,7 +167,7 @@ func (p *Provider) parseLicense(ctx context.Context, license string) (*enterpris
 	return p.parseClaims(ctx, claim)
 }
 
-func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.License, error) {
+func (p *Provider) findEnterpriseLicense(ctx context.Context) (*licenseInfo, error) {
 	// Find enterprise license.
 	setting, err := p.store.GetSettingV2(ctx, storepb.SettingName_ENTERPRISE_LICENSE)
 	if err != nil {
@@ -183,7 +193,7 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.Licen
 }
 
 // parseClaims will valid and parse JWT claims to license instance.
-func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.License, error) {
+func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*licenseInfo, error) {
 	if p.config.Issuer != claim.Issuer {
 		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", p.config.Issuer, claim.Issuer)
 	}
@@ -191,10 +201,11 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.
 		return nil, common.Errorf(common.Invalid, "aud is not valid, expect %s but found '%v'", p.config.Audience, claim.Audience)
 	}
 
-	planType, err := convertPlanType(claim.Plan)
-	if err != nil {
-		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", planType)
+	v, ok := v1pb.PlanType_value[claim.Plan]
+	if !ok {
+		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", claim.Plan)
 	}
+	planType := v1pb.PlanType(v)
 
 	if claim.WorkspaceID != "" && planType == v1pb.PlanType_ENTERPRISE && !claim.Trialing {
 		workspaceID, err := p.store.GetWorkspaceID(ctx)
@@ -206,7 +217,7 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.
 		}
 	}
 
-	license := &enterprise.License{
+	license := &licenseInfo{
 		InstanceCount: claim.InstanceCount,
 		Seat:          claim.Seat,
 		ExpiresTS:     claim.ExpiresAt.Unix(),
@@ -217,17 +228,4 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.
 	}
 
 	return license, nil
-}
-
-func convertPlanType(candidate string) (v1pb.PlanType, error) {
-	switch candidate {
-	case "TEAM":
-		return v1pb.PlanType_TEAM, nil
-	case "ENTERPRISE":
-		return v1pb.PlanType_ENTERPRISE, nil
-	case "FREE":
-		return v1pb.PlanType_FREE, nil
-	default:
-		return v1pb.PlanType_FREE, errors.Errorf("cannot convert plan type %q", candidate)
-	}
 }

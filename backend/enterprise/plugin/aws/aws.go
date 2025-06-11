@@ -70,8 +70,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 		InstanceCount: 0,
 		SeatCount:     0,
 		Plan:          v1pb.PlanType_FREE,
-		OrgId:         aws.ToString(p.identity.Account),
-		OrgName:       aws.ToString(p.identity.Arn),
+		OrgName:       aws.ToString(p.identity.Account),
 	}
 
 	license, err := p.checkoutLicense(ctx)
