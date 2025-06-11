@@ -2067,7 +2067,6 @@
     "unknown-event": "Unexpected event type, OAuth failed."
   },
   "subscription": {
-    "upgrade": "Upgrade",
     "try-for-free": "Free trial",
     "inquire-enterprise-plan": "Inquire Enterprise Plan",
     "enterprise-free-trial": "{days}-day free Enterprise trial",
@@ -2127,6 +2126,7 @@
       "description": "You are using features unavailable in the {plan}. Upgrade now to ensure continued access:"
     },
     "disabled-feature": "Disabled Feature",
+    "upgrade": "Upgrade",
     "contact-us": "Contact us",
     "current": "Current",
     "expired": "Expired",
