@@ -27,6 +27,7 @@ func configureEchoRouters(
 	directorySyncServer *directorysync.Service,
 	mux *grpcruntime.ServeMux,
 	profile *config.Profile,
+	connectHandlers map[string]http.Handler,
 ) {
 	e.Use(recoverMiddleware)
 
@@ -76,6 +77,11 @@ func configureEchoRouters(
 		wsproxy.WithMaxRespBodyBufferSize(100*1024*1024),
 	)))
 	e.Any("/v1/*", echo.WrapHandler(mux))
+
+	// Register Connect RPC handlers
+	for path, handler := range connectHandlers {
+		e.Any(path+"*", echo.WrapHandler(handler))
+	}
 
 	// GRPC web proxy.
 	options := []grpcweb.Option{

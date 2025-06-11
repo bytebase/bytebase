@@ -11,6 +11,8 @@ require (
 	cloud.google.com/go/cloudsqlconn v1.17.1
 	cloud.google.com/go/secretmanager v1.14.7
 	cloud.google.com/go/spanner v1.82.0
+	connectrpc.com/connect v1.18.1
+	connectrpc.com/cors v0.1.0
 	gitee.com/chunanyong/dm v1.8.20
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.0
@@ -25,6 +27,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.35.4
 	github.com/beltran/gohive v1.8.0
 	github.com/blang/semver/v4 v4.0.0
+	github.com/bufbuild/connect-go v1.10.0
 	github.com/bytebase/cosmosdb-parser v0.0.0-20250317064006-c1dcb3ed4fa4
 	github.com/bytebase/doris-parser v0.0.0-20250512080703-bacdebf2f435
 	github.com/bytebase/google-sql-parser v0.0.0-20250116032737-689a327f9465
@@ -350,7 +353,7 @@ require (
 	github.com/prometheus/common v0.63.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/rs/cors v1.7.0 // indirect
+	github.com/rs/cors v1.7.0
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/segmentio/backo-go v1.0.1 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
