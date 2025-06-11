@@ -3,7 +3,7 @@
     <div class="textinfolabel">
       {{ $t("settings.sso.description") }}
       <a
-        href="https://bytebase.com/docs/administration/sso/overview?source=console"
+        href="https://www.bytebase.com/docs/administration/sso/overview?source=console"
         class="normal-link inline-flex flex-row items-center"
         target="_blank"
       >

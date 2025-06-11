@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	// Extract all the links prefix with https://bytebase.com or https://www.bytebase.com in frontend code.
+	// Extract all the links prefix with https://www.bytebase.com or https://www.bytebase.com in frontend code.
 	linkMatcher = regexp.MustCompile(`(?m)https?:\/\/(www\.)?bytebase.com([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)`)
 
 	ignores = map[string]bool{
@@ -33,7 +33,7 @@ var (
 	}
 
 	ignoreLinks = map[string]bool{
-		"https://bytebase.com/changelog/bytebase-": true,
+		"https://www.bytebase.com/changelog/bytebase-": true,
 	}
 
 	frontendDirectory = "../frontend"

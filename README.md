@@ -1,7 +1,7 @@
 <h1 align="center">
   <a
     target="_blank"
-    href="https://bytebase.com?source=github"
+    href="https://www.bytebase.com?source=github"
   >
     <img
       align="center"
@@ -13,8 +13,8 @@
 </h1>
 
 <p align="center">
-  <a href="https://bytebase.com/docs/get-started/self-host" target="_blank"><b>⚙️ Install</b></a> •
-  <a href="https://bytebase.com/docs/introduction/what-is-bytebase"><b>📚 Docs</b></a> •
+  <a href="https://www.bytebase.com/docs/get-started/self-host" target="_blank"><b>⚙️ Install</b></a> •
+  <a href="https://www.bytebase.com/docs/introduction/what-is-bytebase"><b>📚 Docs</b></a> •
   <a href="https://discord.gg/huyw7gRsyA"><b>💬 Discord</b></a> •
   <a href="https://www.bytebase.com/request-demo/"><b>🙋‍♀️ Book Demo</b></a>
 </p>
@@ -88,8 +88,8 @@
   Want to control the data access but don't know how?
 </p>
 
-|                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                                    |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | <b>All-in-one SQL Editor</b><br />Web-based IDE specifically for performing SQL specific tasks.<br /><br/><b>Data Masking</b><br />State-of-the-art [column level masking](https://www.bytebase.com/docs/sql-editor/mask-data) engine to cover complex situations like subquery, CTE.<br /><br /><b>Data Access Control</b><br />Organization level policy to centralize the [database permission](https://www.bytebase.com/docs/security/database-permission/overview). | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp" /> |
 
 <br />
@@ -100,8 +100,8 @@
   Want to avoid data leakage, change outage and detect malicious behavior but don't know how?
 </p>
 
-|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |                                                                                                        |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | <b>Centralize Change, Query and Admin Tasks</b><br />A single place to perform different tasks on different databases, thus enforce policy and monitor activity accordingly. <br /><br /><b>RBAC</b><br />[Two-level RBAC model](https://www.bytebase.com/docs/concepts/roles-and-permissions) mapping to the organization wide privileges and application team privileges respectively.<br /><br /><b>Drift detection and Audit Logging</b><br /> Capture all database schema drifts, user actions and system events and present them in a holistic view. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/grant-access.webp" /> |
 
 <br />
@@ -124,7 +124,7 @@
 
 Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase). The Bytebase family consists of these tools:
 
-- [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
+- [Bytebase Console](https://www.bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
 - [Bytebase API](https://www.bytebase.com/docs/api/overview): Provide both gRPC and RESTful API to manipulate every aspect of Bytebase.
 - [SQL Review GitHub Action](https://github.com/bytebase/sql-review-action): The GitHub Action to detect SQL anti-patterns and enforce a consistent SQL style guide during Pull Request.
 - [Terraform Bytebase Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs): The Terraform
@@ -367,5 +367,5 @@ Check out our [FAQ](https://www.bytebase.com/docs/faq).
 
 # 🙋 Contact Us
 
-- Interested in joining us? Check out our [jobs page](https://bytebase.com/jobs?source=github) for openings.
+- Interested in joining us? Check out our [jobs page](https://www.bytebase.com/jobs?source=github) for openings.
 - Want to solve your schema change and database management headache? Book a [30min demo](https://cal.com/bytebase/product-walkthrough) with one of our product experts.
