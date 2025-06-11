@@ -25,9 +25,9 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_EXPORT_CENTER,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
-  PROJECT_V1_ROUTE_REVIEW_CENTER,
   PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
+  PROJECT_V1_ROUTE_PLANS,
 } from "@/router/dashboard/projectV1";
 import { useAppFeature } from "@/store";
 import type { ComposedProject, MaybeRef } from "@/types";
@@ -128,9 +128,10 @@ export const useProjectSidebar = (
           databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
+        // TODO(claude): rename title to "Plans".
         title: t("review-center.self"),
         icon: () => h(SearchCodeIcon),
-        path: PROJECT_V1_ROUTE_REVIEW_CENTER,
+        path: PROJECT_V1_ROUTE_PLANS,
         type: "div",
         hide:
           isDefaultProject.value ||

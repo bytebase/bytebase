@@ -157,10 +157,10 @@ import { isValidReleaseName, getDateForPbTimestamp } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import { ReleaseFileType } from "@/types/proto/v1/release_service";
 import type { Release_File_ChangeType } from "@/types/proto/v1/release_service";
-import useSelectedSpec from "../../common/useSelectedSpec";
+import { usePlanSpecContext } from "../../SpecDetailView/context";
 
 const { t } = useI18n();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = usePlanSpecContext();
 
 const releaseName = computed(() => {
   return selectedSpec.value?.changeDatabaseConfig?.release || "";

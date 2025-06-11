@@ -1,1 +1,3 @@
-export { default as SpecDetailView } from "./SpecDetailView.vue";
+import SpecDetailView from "./SpecDetailView.vue";
+
+export default SpecDetailView;

@@ -43,15 +43,15 @@ import {
 } from "@/components/Plan/logic";
 import { usePlanContext } from "@/components/Plan/logic";
 import { planServiceClient } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
+  extractPlanUID,
   extractProjectResourceName,
   extractSheetUID,
   hasProjectPermissionV2,
-  planV1Slug,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -91,10 +91,10 @@ const doCreatePlan = async () => {
 
     nextTick(() => {
       router.push({
-        name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
           projectId: extractProjectResourceName(createdPlan.name),
-          planSlug: planV1Slug(createdPlan),
+          planId: extractPlanUID(createdPlan.name),
         },
       });
     });

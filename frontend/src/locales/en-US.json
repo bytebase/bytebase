@@ -1007,8 +1007,7 @@
     "navigator": {
       "overview": "Overview",
       "specifications": "Specifications",
-      "spec-number": "Spec {number}",
-      "no-specifications": "No specifications",
+      "checks": "Checks",
       "statement-empty": "Statement is empty"
     },
     "spec": {
@@ -1020,19 +1019,11 @@
         "database-change": "Database Change",
         "export-data": "Export Data",
         "unknown": "Unknown"
-      },
-      "status": {
-        "pass": "Pass",
-        "warn": "Warn",
-        "error": "Error"
       }
     },
     "targets": {
       "title": "Targets",
       "no-targets-found": "No targets found",
-      "no-targets": "No targets",
-      "one-target": "1 target",
-      "multiple-targets": "{count} targets",
       "one-database": "1 database",
       "multiple-databases": "{count} databases",
       "database-group": "Database Group",

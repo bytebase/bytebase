@@ -1007,8 +1007,7 @@
     "navigator": {
       "overview": "概述",
       "specifications": "变更项",
-      "spec-number": "变更项 {number}",
-      "no-specifications": "无变更项",
+      "checks": "检查",
       "statement-empty": "变更语句为空"
     },
     "spec": {
@@ -1020,19 +1019,11 @@
         "database-change": "数据库变更",
         "export-data": "导出数据",
         "unknown": "未知"
-      },
-      "status": {
-        "pass": "通过",
-        "warn": "警告",
-        "error": "错误"
       }
     },
     "targets": {
       "title": "变更对象",
       "no-targets-found": "未找到变更对象",
-      "no-targets": "没有变更对象",
-      "one-target": "1 个变更对象",
-      "multiple-targets": "{count} 个变更对象",
       "one-database": "1 个数据库",
       "multiple-databases": "{count} 个数据库",
       "database-group": "数据库组",

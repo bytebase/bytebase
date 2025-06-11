@@ -48,7 +48,7 @@
     />
     <div
       v-else
-      class="min-h-[4rem] max-h-[12rem] whitespace-pre-wrap px-[10px] py-[4.5px] border rounded"
+      class="min-h-[4rem] max-h-[12rem] whitespace-pre-wrap px-[10px] py-[4.5px] border rounded-md"
     >
       <template v-if="plan.description">
         <iframe

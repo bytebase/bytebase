@@ -6,7 +6,6 @@ import { usePlanStore } from "@/store/modules/v1/plan";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { emptyPlan } from "@/types/v1/issue/plan";
-import { uidFromSlug } from "@/utils";
 import { createPlanSkeleton } from "./create";
 
 export * from "./create";
@@ -14,17 +13,17 @@ export * from "./create";
 export * from "./util";
 
 export function useInitializePlan(
-  planSlug: MaybeRef<string>,
+  planId: MaybeRef<string>,
   project: MaybeRef<string> = "-",
   redirectNotFound: boolean = true
 ) {
   const isCreating = computed(() => {
-    return unref(planSlug).toLowerCase() === "create";
+    return unref(planId).toLowerCase() === "create";
   });
   const uid = computed(() => {
-    const slug = unref(planSlug);
-    if (slug.toLowerCase() === "create") return String(EMPTY_ID);
-    const uid = Number(uidFromSlug(slug));
+    const id = unref(planId);
+    if (id.toLowerCase() === "create") return String(EMPTY_ID);
+    const uid = Number(id);
     if (uid > 0) return String(uid);
     return String(UNKNOWN_ID);
   });
