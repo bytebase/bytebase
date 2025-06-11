@@ -73,169 +73,297 @@
   },
   "subscription": {
     "features": {
-      "bb-feature-external-secret-manager": {
-        "title": "Establecer secreto externo",
-        "desc": "Utilice Vault o una URL personalizada como secreto externo para la contraseña de la base de datos."
+      "FEATURE_DATABASE_CHANGE": {
+        "title": "Cambio de base de datos",
+        "desc": "Funcionalidad principal de gestión de cambios de base de datos."
       },
-      "bb-feature-task-schedule-time": {
-        "title": "Establecer horario de tareas",
-        "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
+      "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
+        "title": "Control de versiones de esquema basado en Git",
+        "desc": "Revise los cambios de SQL en las solicitudes de extracción de VCS con verificaciones automatizadas."
       },
-      "bb-feature-multi-tenancy": {
-        "title": "Modo Lote",
-        "desc": "Cambio por lotes de un grupo de bases de datos de diferentes inquilinos o particiones."
+      "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
+        "title": "Migración de esquema declarativa",
+        "desc": "Defina el estado de esquema deseado y deje que Bytebase maneje la migración."
       },
-      "bb-feature-rollout-policy": {
-        "title": "Política de implementación",
-        "desc": "La política de implementación controla si la tarea de cambio de esquema requiere una implementación manual."
+      "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
+        "title": "Comparar y sincronizar esquema",
+        "desc": "Compare esquemas entre bases de datos y sincronice las diferencias."
       },
-      "bb-feature-environment-tier-policy": {
-        "title": "Nivel de entorno",
-        "desc": "Marque el entorno como producción."
+      "FEATURE_ONLINE_SCHEMA_CHANGE": {
+        "title": "Cambio de esquema en línea",
+        "desc": "Realice cambios de esquema en tablas grandes con bloqueo mínimo."
       },
-      "bb-feature-sensitive-data": {
-        "title": "Datos sensibles",
-        "desc": "Marque las columnas de la tabla como datos sensibles y el resultado de la consulta de ellos se mostrará como \"******\"."
+      "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
+        "title": "Revisión de SQL",
+        "desc": "Aplique las mejores prácticas de SQL con más de 100 reglas de lint y verificaciones de coherencia de esquema."
       },
-      "bb-feature-access-control": {
-        "title": "Control de acceso a datos",
-        "desc": "Restringir el acceso de los usuarios a los datos, como prohibir a los usuarios copiar los resultados de consultas de datos."
+      "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
+        "title": "Copia de seguridad automática",
+        "desc": "Realice copias de seguridad automáticas de los datos antes de realizar cambios."
       },
-      "bb-feature-lgtm": {
-        "title": "Verificación LGTM",
-        "desc": "Comprueba si la incidencia tiene un comentario \"LGTM\"."
+      "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
+        "title": "Reversión de datos con un clic",
+        "desc": "Revierta rápidamente los cambios de datos con un solo clic."
       },
-      "bb-feature-im-approval": {
-        "title": "Aprobación IM",
-        "desc": "Aprobación de incidencias con integración de IM."
+      "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
+        "title": "Cambios por lotes en múltiples bases de datos",
+        "desc": "Aplique el mismo cambio a múltiples bases de datos en diferentes inquilinos o particiones."
       },
-      "bb-feature-sql-review": {
-        "title": "Desbloquee más de 100 verificaciones de revisión de SQL",
-        "desc": "Especifique las reglas de linting de SQL para adoptar las mejores prácticas de SQL y hacer cumplir la coherencia del esquema en toda la organización de ingeniería."
+      "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
+        "title": "Despliegue progresivo por entornos",
+        "desc": "Despliegue cambios progresivamente a través de diferentes entornos."
       },
-      "bb-feature-custom-approval": {
-        "title": "Aprobación personalizada",
-        "desc": "Configure el nivel de riesgo y el flujo de aprobación para diferentes tareas."
+      "FEATURE_SCHEDULED_ROLLOUT_TIME": {
+        "title": "Tiempo de despliegue programado",
+        "desc": "Programe cambios de base de datos para ejecutarse en un momento específico."
       },
-      "bb-feature-vcs-sql-review": {
-        "title": "Revisión de SQL en el flujo de trabajo de GitOps",
-        "desc": "Agregue la integración de revisión de SQL a la tubería del repositorio de VCS. La revisión de SQL se activará en la solicitud de extracción para los archivos SQL modificados."
+      "FEATURE_DATABASE_CHANGELOG": {
+        "title": "Registro de cambios de base de datos",
+        "desc": "Rastree todos los cambios de esquema y datos de la base de datos."
       },
-      "bb-feature-rbac": {
-        "title": "Gestión de roles",
-        "desc": "Permite asignar un rol particular (por ejemplo, DBA) a un miembro."
+      "FEATURE_SCHEMA_DRIFT_DETECTION": {
+        "title": "Detección de desviación de esquema",
+        "desc": "Detecte cambios de esquema fuera de banda e informe discrepancias."
       },
-      "bb-feature-custom-role": {
-        "title": "Roles personalizados",
-        "desc": "Definición de roles personalizados. \nPuede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado."
+      "FEATURE_CHANGELIST": {
+        "title": "Lista de cambios",
+        "desc": "Agrupe y gestione múltiples cambios de base de datos juntos."
       },
-      "bb-feature-watermark": {
-        "title": "Marca de agua",
-        "desc": "Muestra marcas de agua visibles en las páginas, incluyendo el nombre de usuario, ID y correo electrónico."
-      },
-      "bb-feature-audit-log": {
-        "title": "Registro de auditoría",
-        "desc": "Registra y consulta las operaciones realizadas por los usuarios en el espacio de trabajo."
-      },
-      "bb-feature-schema-drift": {
-        "title": "Desviación de esquema",
-        "desc": "Detecte cambios de esquema fuera de banda e informe la desviación del esquema."
-      },
-      "bb-feature-branding": {
-        "title": "Personalización",
-        "desc": "Personaliza el logo."
-      },
-      "bb-feature-online-migration": {
-        "title": "Migración en línea",
-        "desc": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos."
-      },
-      "bb-feature-sync-schema-all-versions": {
-        "title": "Sincronización de esquemas de todas las versiones",
-        "desc": "Selecciona cualquier versión de migración arbitraria de la base de datos y sincronízala con la base de datos de destino."
-      },
-      "bb-feature-read-replica-connection": {
-        "title": "Conexión a réplica de lectura",
-        "desc": "Conéctate a una réplica de lectura para obtener una fuente de datos de solo lectura."
-      },
-      "bb-feature-instance-ssh-connection": {
-        "title": "Instancia de Conexión SSH",
-        "desc": "Conéctese a una instancia a través de SSH."
-      },
-      "bb.feature.custom-instance-synchronization": {
-        "title": "Sincronización de instancias personalizadas",
-        "desc": "Personalice el intervalo de escaneo, las conexiones máximas y sincronice bases de datos específicas"
-      },
-      "bb-feature-index-advisor": {
-        "title": "Asesor de índice",
-        "desc": "El asesor de índices puede ayudarle a encontrar los índices que faltan en las consultas lentas."
-      },
-      "bb-feature-sso": {
-        "title": "Inicio de sesión único (SSO)",
-        "desc": "Permite a los usuarios autenticarse de manera segura en varias aplicaciones y sitios web mediante un único conjunto de credenciales."
-      },
-      "bb-feature-2fa": {
-        "title": "Autenticación de dos factores (2FA)",
-        "desc": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se requerirá ingresar el código de seguridad generado por tu aplicación autenticadora."
-      },
-      "bb-feature-plugin-openai": {
-        "title": "Aumento de AI",
-        "desc": "Editor de SQL aumentado con IA y características de asesoramiento de índice impulsadas por OpenAI."
-      },
-      "bb-feature-batch-query": {
-        "title": "Consulta por lotes",
-        "desc": "Consulta por lotes bases de datos adicionales en el mismo proyecto en el Editor SQL."
-      },
-      "bb-feature-shared-sql-script": {
-        "title": "Script SQL compartido",
-        "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
-      },
-      "bb-feature-announcement": {
-        "title": "Anuncio personalizado",
-        "desc": "Configurar un banner de anuncio."
-      },
-      "bb-feature-encrypted-secrets": {
-        "title": "Secretos Encriptados",
-        "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
-      },
-      "bb-feature-database-grouping": {
-        "title": "Grupo de base de datos",
-        "desc": "El grupo de base de datos le permite aplicar operaciones por lotes a las base de datos del grupo de base de datos."
-      },
-      "bb-feature-disallow-signup": {
-        "title": "Deshabilitar el registro de autoservicio",
-        "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
-      },
-      "bb-feature-disallow-password-signin": {
-        "title": "No permitir el inicio de sesión con correo electrónico y contraseña",
-        "desc": "Los usuarios no pueden iniciar sesión con correo electrónico y contraseña, solo se permite SSO."
-      },
-      "bb-feature-schema-template": {
+      "FEATURE_SCHEMA_TEMPLATE": {
         "title": "Plantilla de esquema",
-        "desc": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
+        "desc": "Cree plantillas de campos reutilizables para un diseño de esquema consistente."
       },
-      "bb-feature-secure-token": {
-        "title": "Frecuencia de inicio de sesión",
-        "desc": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente."
+      "FEATURE_ROLLOUT_POLICY": {
+        "title": "Política de despliegue",
+        "desc": "Controle si la tarea de cambio de esquema requiere despliegue manual."
       },
-      "bb-feature-issue-advanced-search": {
-        "title": "Búsqueda avanzada de problemas",
-        "desc": "Acceda a un historial de problemas ilimitado con búsqueda avanzada de problemas."
+      "FEATURE_WEB_BASED_SQL_EDITOR": {
+        "title": "Editor SQL basado en web",
+        "desc": "Ejecute consultas SQL directamente desde la interfaz web."
       },
-      "bb-feature-issue-project-setting": {
-        "title": "Configuración avanzada de proyectos de problemas",
-        "desc": "Personalice la configuración avanzada del proyecto de problemas, incluida la creación de restricciones de problemas y configuraciones de copia de seguridad predeterminadas."
+      "FEATURE_SQL_EDITOR_ADMIN_MODE": {
+        "title": "Modo administrador del editor SQL",
+        "desc": "Acceda a funciones administrativas en el editor SQL."
       },
-      "bb-feature-password-restriction": {
-        "title": "Restricción de contraseña",
-        "desc": "Permitir configurar la restricción de contraseña de los usuarios"
+      "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
+        "title": "Lenguaje natural a SQL",
+        "desc": "Convierta consultas en lenguaje natural a SQL usando IA."
       },
-      "bb-feature-directory-sync": {
+      "FEATURE_AI_QUERY_EXPLANATION": {
+        "title": "Explicación de consultas con IA",
+        "desc": "Obtenga explicaciones impulsadas por IA para consultas SQL complejas."
+      },
+      "FEATURE_AI_QUERY_SUGGESTIONS": {
+        "title": "Sugerencias de consultas con IA",
+        "desc": "Obtenga sugerencias de consultas y recomendaciones de índices impulsadas por IA."
+      },
+      "FEATURE_AUTO_COMPLETE": {
+        "title": "Autocompletado",
+        "desc": "Autocompletado inteligente de SQL en el editor."
+      },
+      "FEATURE_SCHEMA_DIAGRAM": {
+        "title": "Diagrama de esquema",
+        "desc": "Visualice el esquema de base de datos con diagramas interactivos."
+      },
+      "FEATURE_SCHEMA_EDITOR": {
+        "title": "Editor de esquema",
+        "desc": "Edición visual de esquema con interfaz de arrastrar y soltar."
+      },
+      "FEATURE_DATA_EXPORT": {
+        "title": "Exportación de datos",
+        "desc": "Exporte resultados de consultas en varios formatos."
+      },
+      "FEATURE_QUERY_HISTORY": {
+        "title": "Historial de consultas",
+        "desc": "Acceda al historial completo de ejecución de consultas con capacidades de búsqueda."
+      },
+      "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
+        "title": "Scripts SQL guardados y compartidos",
+        "desc": "Guarde y comparta scripts SQL con miembros del equipo."
+      },
+      "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION": {
+        "title": "Restricción DDL/DML del editor SQL",
+        "desc": "Restrinja operaciones DDL y DML en el editor SQL."
+      },
+      "FEATURE_BATCH_QUERY": {
+        "title": "Consulta por lotes",
+        "desc": "Ejecute consultas en múltiples bases de datos simultáneamente."
+      },
+      "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
+        "title": "Conexión de solo lectura",
+        "desc": "Conéctese a réplicas de lectura para operaciones de solo lectura."
+      },
+      "FEATURE_QUERY_POLICY": {
+        "title": "Política de consultas",
+        "desc": "Configure restricciones y permisos avanzados de consultas."
+      },
+      "FEATURE_RESTRICT_COPYING_DATA": {
+        "title": "Restringir copia de datos",
+        "desc": "Controle el acceso de usuarios para copiar datos de los resultados de consultas."
+      },
+      "FEATURE_IAM": {
+        "title": "Gestión de identidad y acceso",
+        "desc": "Sistema de control de acceso basado en roles de grano fino."
+      },
+      "FEATURE_INSTANCE_SSL_CONNECTION": {
+        "title": "Conexión SSL",
+        "desc": "Conexiones seguras a bases de datos con cifrado SSL/TLS."
+      },
+      "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
+        "title": "Conexión por túnel SSH",
+        "desc": "Conéctese a instancias a través de túneles SSH para mayor seguridad."
+      },
+      "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
+        "title": "Autenticación IAM",
+        "desc": "Use IAM del proveedor de nube para la autenticación de base de datos."
+      },
+      "FEATURE_GOOGLE_AND_GITHUB_SSO": {
+        "title": "SSO de Google y GitHub",
+        "desc": "Inicie sesión con cuentas de Google o GitHub."
+      },
+      "FEATURE_USER_GROUPS": {
+        "title": "Grupos de usuarios",
+        "desc": "Organice usuarios en grupos para una gestión más fácil."
+      },
+      "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
+        "title": "Deshabilitar registro de autoservicio",
+        "desc": "Requiera invitación del administrador para el registro de nuevos usuarios."
+      },
+      "FEATURE_DATABASE_SECRET_VARIABLES": {
+        "title": "Variables secretas de base de datos",
+        "desc": "Almacene y use secretos cifrados en scripts SQL."
+      },
+      "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
+        "title": "Restricción de fuente de datos de consultas",
+        "desc": "Restrinja qué fuentes de datos pueden consultar los usuarios."
+      },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "Tiempo de sincronización de instancia personalizado",
+        "desc": "Personalice los intervalos y configuraciones de sincronización de base de datos."
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "Límite de conexión de instancia personalizado",
+        "desc": "Configure límites máximos de conexión de base de datos."
+      },
+      "FEATURE_RISK_ASSESSMENT": {
+        "title": "Evaluación de riesgos",
+        "desc": "Evalúe y categorice el nivel de riesgo de los cambios de base de datos."
+      },
+      "FEATURE_APPROVAL_WORKFLOW": {
+        "title": "Flujo de trabajo de aprobación",
+        "desc": "Configure niveles de riesgo y flujos de aprobación para diferentes tareas."
+      },
+      "FEATURE_AUDIT_LOG": {
+        "title": "Registro de auditoría",
+        "desc": "Rastree todas las operaciones realizadas por usuarios en el espacio de trabajo."
+      },
+      "FEATURE_ENTERPRISE_SSO": {
+        "title": "SSO empresarial",
+        "desc": "Inicio de sesión único con proveedores SAML, OIDC y OAuth."
+      },
+      "FEATURE_TWO_FA": {
+        "title": "Autenticación de dos factores",
+        "desc": "Añada una capa extra de seguridad con verificación de aplicación autenticadora."
+      },
+      "FEATURE_PASSWORD_RESTRICTIONS": {
+        "title": "Restricciones de contraseña",
+        "desc": "Aplique requisitos de complejidad y seguridad de contraseña."
+      },
+      "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
+        "title": "Deshabilitar inicio de sesión con contraseña",
+        "desc": "Requiera solo autenticación SSO para el inicio de sesión de usuarios."
+      },
+      "FEATURE_CUSTOM_ROLES": {
+        "title": "Roles personalizados",
+        "desc": "Defina roles personalizados con permisos específicos para su organización."
+      },
+      "FEATURE_REQUEST_ROLE_WORKFLOW": {
+        "title": "Flujo de trabajo de solicitud de rol",
+        "desc": "Los usuarios pueden solicitar roles de proyecto con flujo de trabajo de aprobación."
+      },
+      "FEATURE_DATA_MASKING": {
+        "title": "Enmascaramiento de datos",
+        "desc": "Marque columnas de tabla como datos sensibles y enmascare resultados de consultas."
+      },
+      "FEATURE_DATA_CLASSIFICATION": {
+        "title": "Clasificación de datos",
+        "desc": "Clasifique y etiquete datos basándose en niveles de sensibilidad."
+      },
+      "FEATURE_SCIM": {
+        "title": "SCIM",
+        "desc": "Soporte para Sistema de Gestión de Identidad entre Dominios."
+      },
+      "FEATURE_DIRECTORY_SYNC": {
         "title": "Sincronización de directorios",
-        "desc": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) con su instancia de Bytebase"
+        "desc": "Sincronice usuarios y grupos desde Entra ID a Bytebase."
       },
-      "bb-feature-domain-restriction": {
-        "title": "Dominio de espacio de trabajo",
-        "desc": "Restrinja el inicio de sesión a usuarios con direcciones de correo electrónico de los dominios especificados."
+      "FEATURE_SIGN_IN_FREQUENCY_CONTROL": {
+        "title": "Control de frecuencia de inicio de sesión",
+        "desc": "Configure con qué frecuencia los usuarios deben volver a autenticarse."
+      },
+      "FEATURE_EXTERNAL_SECRET_MANAGER": {
+        "title": "Gestor de secretos externo",
+        "desc": "Use Vault o una URL personalizada como secreto externo para la contraseña de base de datos."
+      },
+      "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
+        "title": "Restricción de dominio de correo electrónico",
+        "desc": "Restrinja el inicio de sesión a usuarios de dominios de correo especificados."
+      },
+      "FEATURE_ENVIRONMENT_MANAGEMENT": {
+        "title": "Gestión de entornos",
+        "desc": "Gestione y configure diferentes entornos de despliegue."
+      },
+      "FEATURE_IM_NOTIFICATIONS": {
+        "title": "Notificaciones IM",
+        "desc": "Envíe notificaciones a plataformas IM como Slack y Teams."
+      },
+      "FEATURE_TERRAFORM_PROVIDER": {
+        "title": "Proveedor de Terraform",
+        "desc": "Gestione recursos de Bytebase usando Terraform."
+      },
+      "FEATURE_DATABASE_GROUPS": {
+        "title": "Grupos de bases de datos",
+        "desc": "Agrupe bases de datos para operaciones y gestión por lotes."
+      },
+      "FEATURE_ENVIRONMENT_TIERS": {
+        "title": "Niveles de entorno",
+        "desc": "Defina niveles de entorno como producción y desarrollo."
+      },
+      "FEATURE_DASHBOARD_ANNOUNCEMENT": {
+        "title": "Anuncio del panel",
+        "desc": "Muestre anuncios personalizados en el panel de control."
+      },
+      "FEATURE_API_INTEGRATION_GUIDANCE": {
+        "title": "Guía de integración API",
+        "desc": "Documentación y orientación para integraciones API."
+      },
+      "FEATURE_CUSTOM_LOGO": {
+        "title": "Logo personalizado",
+        "desc": "Personalice el logo para su organización."
+      },
+      "FEATURE_WATERMARK": {
+        "title": "Marca de agua",
+        "desc": "Muestre marcas de agua visibles con información del usuario en las páginas."
+      },
+      "FEATURE_ROADMAP_PRIORITIZATION": {
+        "title": "Priorización del roadmap",
+        "desc": "Influya en las prioridades de desarrollo de funciones."
+      },
+      "FEATURE_CUSTOM_MSA": {
+        "title": "MSA personalizado",
+        "desc": "Términos personalizados del Acuerdo de Servicio Maestro."
+      },
+      "FEATURE_COMMUNITY_SUPPORT": {
+        "title": "Soporte de la comunidad",
+        "desc": "Obtenga ayuda de la comunidad de Bytebase."
+      },
+      "FEATURE_EMAIL_SUPPORT": {
+        "title": "Soporte por correo electrónico",
+        "desc": "Soporte directo por correo del equipo de Bytebase."
+      },
+      "FEATURE_DEDICATED_SUPPORT_WITH_SLA": {
+        "title": "Soporte dedicado con SLA",
+        "desc": "Soporte prioritario con tiempos de respuesta garantizados."
       }
     }
   },

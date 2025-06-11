@@ -23,8 +23,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **Test**: Run `pnpm --dir frontend test`
 
 ### After Proto Changes
-1. **Format**: Run `cd proto && buf format -w`
-2. **Lint**: Run `cd proto && buf lint`
+1. **Format**: Run `buf format -w proto`
+2. **Lint**: Run `buf lint proto`
 3. **Generate**: Run `cd proto && buf generate`
 
 ## Build/Test Commands
@@ -37,8 +37,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Frontend lint: `pnpm --dir frontend lint`
 - Frontend type check: `pnpm --dir frontend type-check`
 - Frontend test: `pnpm --dir frontend test`
-- Proto format: `cd proto && buf format -w`
-- Proto lint: `cd proto && buf lint`
+- Proto format: `buf format -w proto`
+- Proto lint: `buf lint proto`
 - Proto generate: `cd proto && buf generate`
 - Go lint: `golangci-lint run --allow-parallel-runners`
 - Connect to Postgres: `psql -U bbdev bbdev`
