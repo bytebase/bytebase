@@ -2120,7 +2120,8 @@
     "overuse-warning": "{neededPlan} puede estar restringido en {currentPlan}, actualice ahora para asegurar un uso adecuado.",
     "overuse-modal": {
       "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones:"
-    }
+    },
+    "disabled-feature": "Función deshabilitada"
   },
   "sheet": {
     "mine": "Mío",

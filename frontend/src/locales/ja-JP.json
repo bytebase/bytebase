@@ -2120,7 +2120,8 @@
     "overuse-warning": "{neededPlan} は {currentPlan} で制限されます。通常どおり使用できるように、できるだけ早くアップグレードしてください。",
     "overuse-modal": {
       "description": "現在「{plan}」に含まれていない機能を使用しています。使用に影響を与えないように、すぐにアップグレードしてください。"
-    }
+    },
+    "disabled-feature": "無効な機能"
   },
   "sheet": {
     "mine": "マイワークシート",

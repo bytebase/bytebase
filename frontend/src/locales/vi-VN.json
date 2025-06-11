@@ -2081,7 +2081,7 @@
     "upgrade-trial": "Bạn có thể nâng cấp bản dùng thử miễn phí của mình lên gói này.",
     "contact-to-upgrade": "Liên hệ với quản trị viên Không gian làm việc của bạn để nâng cấp gói.",
     "upgrade-now": "Nâng cấp ngay",
-        "usage": {
+    "usage": {
       "instance-count": {
         "title": "Giới hạn số lượng phiên bản",
         "remaining": "Tổng hạn ngạch phiên bản của bạn là {total}, chỉ còn lại {count} phiên bản.",
@@ -2120,7 +2120,8 @@
     "overuse-warning": "{neededPlan} trên {currentPlan} sẽ bị hạn chế. Nâng cấp ngay để đảm bảo quyền truy cập liên tục.",
     "overuse-modal": {
       "description": "Bạn đang sử dụng các tính năng không có trong {plan}. Nâng cấp ngay để đảm bảo quyền truy cập liên tục:"
-    }
+    },
+    "disabled-feature": "Tính năng bị vô hiệu hóa"
   },
   "sheet": {
     "mine": "Của tôi",
