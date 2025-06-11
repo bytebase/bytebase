@@ -759,6 +759,10 @@ export const GetSubscriptionRequest: MessageFns<GetSubscriptionRequest> = {
     return message;
   },
 
+  fromJSON(_: any): GetSubscriptionRequest {
+    return {};
+  },
+
   toJSON(_: GetSubscriptionRequest): unknown {
     const obj: any = {};
     return obj;
@@ -807,6 +811,10 @@ export const UpdateSubscriptionRequest: MessageFns<UpdateSubscriptionRequest> = 
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): UpdateSubscriptionRequest {
+    return { patch: isSet(object.patch) ? PatchSubscription.fromJSON(object.patch) : undefined };
   },
 
   toJSON(message: UpdateSubscriptionRequest): unknown {
@@ -863,6 +871,10 @@ export const PatchSubscription: MessageFns<PatchSubscription> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): PatchSubscription {
+    return { license: isSet(object.license) ? globalThis.String(object.license) : "" };
   },
 
   toJSON(message: PatchSubscription): unknown {
@@ -1005,6 +1017,19 @@ export const Subscription: MessageFns<Subscription> = {
     return message;
   },
 
+  fromJSON(object: any): Subscription {
+    return {
+      seatCount: isSet(object.seatCount) ? globalThis.Number(object.seatCount) : 0,
+      instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
+      expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
+      startedTime: isSet(object.startedTime) ? fromJsonTimestamp(object.startedTime) : undefined,
+      plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : PlanType.PLAN_TYPE_UNSPECIFIED,
+      trialing: isSet(object.trialing) ? globalThis.Boolean(object.trialing) : false,
+      orgId: isSet(object.orgId) ? globalThis.String(object.orgId) : "",
+      orgName: isSet(object.orgName) ? globalThis.String(object.orgName) : "",
+    };
+  },
+
   toJSON(message: Subscription): unknown {
     const obj: any = {};
     if (message.seatCount !== 0) {
@@ -1114,6 +1139,15 @@ export const PlanConfig: MessageFns<PlanConfig> = {
     return message;
   },
 
+  fromJSON(object: any): PlanConfig {
+    return {
+      plans: globalThis.Array.isArray(object?.plans) ? object.plans.map((e: any) => PlanLimitConfig.fromJSON(e)) : [],
+      instanceFeatures: globalThis.Array.isArray(object?.instanceFeatures)
+        ? object.instanceFeatures.map((e: any) => planFeatureFromJSON(e))
+        : [],
+    };
+  },
+
   toJSON(message: PlanConfig): unknown {
     const obj: any = {};
     if (message.plans?.length) {
@@ -1215,6 +1249,17 @@ export const PlanLimitConfig: MessageFns<PlanLimitConfig> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): PlanLimitConfig {
+    return {
+      type: isSet(object.type) ? planTypeFromJSON(object.type) : PlanType.PLAN_TYPE_UNSPECIFIED,
+      maximumInstanceCount: isSet(object.maximumInstanceCount) ? globalThis.Number(object.maximumInstanceCount) : 0,
+      maximumSeatCount: isSet(object.maximumSeatCount) ? globalThis.Number(object.maximumSeatCount) : 0,
+      features: globalThis.Array.isArray(object?.features)
+        ? object.features.map((e: any) => planFeatureFromJSON(e))
+        : [],
+    };
   },
 
   toJSON(message: PlanLimitConfig): unknown {
@@ -1323,15 +1368,40 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
+function fromJsonTimestamp(o: any): Timestamp {
+  if (o instanceof globalThis.Date) {
+    return toTimestamp(o);
+  } else if (typeof o === "string") {
+    return toTimestamp(new globalThis.Date(o));
+  } else {
+    return Timestamp.fromJSON(o);
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
