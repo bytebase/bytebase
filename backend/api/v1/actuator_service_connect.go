@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-	v1connect "github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // ActuatorServiceConnectHandler implements the Connect RPC interface for ActuatorService.

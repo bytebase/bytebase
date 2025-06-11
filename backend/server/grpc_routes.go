@@ -24,7 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-	v1connect "github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // withCORS adds CORS support to a Connect HTTP handler following Connect RPC documentation.
