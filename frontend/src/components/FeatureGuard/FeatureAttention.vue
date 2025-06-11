@@ -134,9 +134,7 @@ const descriptionText = computed(() => {
   }
 
   if (!hasFeature.value) {
-    const startTrial = subscriptionStore.canUpgradeTrial
-      ? t("subscription.upgrade-trial")
-      : subscriptionStore.isTrialing
+    const startTrial = subscriptionStore.isTrialing
         ? ""
         : t("subscription.trial-for-days", {
             days: subscriptionStore.trialingDays,

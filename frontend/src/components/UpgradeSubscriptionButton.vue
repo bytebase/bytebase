@@ -16,14 +16,14 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
+import { NButton } from "naive-ui";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import WeChatQRModal from "./WeChatQRModal.vue";
 
 interface LocalState {
@@ -40,11 +40,8 @@ const { locale } = useLanguage();
 const subscriptionStore = useSubscriptionV1Store();
 
 const actionText = computed(() => {
-  if (!subscriptionStore.canTrial) {
+  if (!subscriptionStore.showTrial) {
     return t("subscription.upgrade");
-  }
-  if (subscriptionStore.canUpgradeTrial) {
-    return t("subscription.upgrade-trial-button");
   }
   return t("subscription.request-n-days-trial", {
     days: subscriptionStore.trialingDays,
@@ -52,7 +49,7 @@ const actionText = computed(() => {
 });
 
 const onClick = () => {
-  if (subscriptionStore.canTrial) {
+  if (subscriptionStore.showTrial) {
     if (locale.value === "zh-CN") {
       state.showQRCodeModal = true;
     } else {

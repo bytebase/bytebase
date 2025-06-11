@@ -28,7 +28,7 @@
       </p>
       <div class="mt-7 flex justify-end">
         <NButton
-          v-if="subscriptionStore.canTrial"
+          v-if="subscriptionStore.showTrial"
           type="primary"
           @click.prevent="trialSubscription"
         >
@@ -52,15 +52,15 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
-import { reactive } from "vue";
-import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
-import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
+import { ENTERPRISE_INQUIRE_LINK, planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { NButton } from "naive-ui";
+import { reactive } from "vue";
+import { useRouter } from "vue-router";
 import WeChatQRModal from "./WeChatQRModal.vue";
 
 interface LocalState {
