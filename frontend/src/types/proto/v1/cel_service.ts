@@ -63,6 +63,14 @@ export const BatchParseRequest: MessageFns<BatchParseRequest> = {
     return message;
   },
 
+  fromJSON(object: any): BatchParseRequest {
+    return {
+      expressions: globalThis.Array.isArray(object?.expressions)
+        ? object.expressions.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
   toJSON(message: BatchParseRequest): unknown {
     const obj: any = {};
     if (message.expressions?.length) {
@@ -115,6 +123,14 @@ export const BatchParseResponse: MessageFns<BatchParseResponse> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): BatchParseResponse {
+    return {
+      expressions: globalThis.Array.isArray(object?.expressions)
+        ? object.expressions.map((e: any) => Expr.fromJSON(e))
+        : [],
+    };
   },
 
   toJSON(message: BatchParseResponse): unknown {
@@ -171,6 +187,14 @@ export const BatchDeparseRequest: MessageFns<BatchDeparseRequest> = {
     return message;
   },
 
+  fromJSON(object: any): BatchDeparseRequest {
+    return {
+      expressions: globalThis.Array.isArray(object?.expressions)
+        ? object.expressions.map((e: any) => Expr.fromJSON(e))
+        : [],
+    };
+  },
+
   toJSON(message: BatchDeparseRequest): unknown {
     const obj: any = {};
     if (message.expressions?.length) {
@@ -223,6 +247,14 @@ export const BatchDeparseResponse: MessageFns<BatchDeparseResponse> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): BatchDeparseResponse {
+    return {
+      expressions: globalThis.Array.isArray(object?.expressions)
+        ? object.expressions.map((e: any) => globalThis.String(e))
+        : [],
+    };
   },
 
   toJSON(message: BatchDeparseResponse): unknown {
@@ -344,6 +376,7 @@ export type DeepPartial<T> = T extends Builtin ? T
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

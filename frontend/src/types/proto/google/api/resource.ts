@@ -433,6 +433,22 @@ export const ResourceDescriptor: MessageFns<ResourceDescriptor> = {
     return message;
   },
 
+  fromJSON(object: any): ResourceDescriptor {
+    return {
+      type: isSet(object.type) ? globalThis.String(object.type) : "",
+      pattern: globalThis.Array.isArray(object?.pattern) ? object.pattern.map((e: any) => globalThis.String(e)) : [],
+      nameField: isSet(object.nameField) ? globalThis.String(object.nameField) : "",
+      history: isSet(object.history)
+        ? resourceDescriptor_HistoryFromJSON(object.history)
+        : ResourceDescriptor_History.HISTORY_UNSPECIFIED,
+      plural: isSet(object.plural) ? globalThis.String(object.plural) : "",
+      singular: isSet(object.singular) ? globalThis.String(object.singular) : "",
+      style: globalThis.Array.isArray(object?.style)
+        ? object.style.map((e: any) => resourceDescriptor_StyleFromJSON(e))
+        : [],
+    };
+  },
+
   toJSON(message: ResourceDescriptor): unknown {
     const obj: any = {};
     if (message.type !== "") {
@@ -522,6 +538,13 @@ export const ResourceReference: MessageFns<ResourceReference> = {
     return message;
   },
 
+  fromJSON(object: any): ResourceReference {
+    return {
+      type: isSet(object.type) ? globalThis.String(object.type) : "",
+      childType: isSet(object.childType) ? globalThis.String(object.childType) : "",
+    };
+  },
+
   toJSON(message: ResourceReference): unknown {
     const obj: any = {};
     if (message.type !== "") {
@@ -552,9 +575,14 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

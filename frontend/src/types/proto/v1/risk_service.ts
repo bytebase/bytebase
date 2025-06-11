@@ -283,6 +283,13 @@ export const ListRisksRequest: MessageFns<ListRisksRequest> = {
     return message;
   },
 
+  fromJSON(object: any): ListRisksRequest {
+    return {
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
   toJSON(message: ListRisksRequest): unknown {
     const obj: any = {};
     if (message.pageSize !== 0) {
@@ -352,6 +359,13 @@ export const ListRisksResponse: MessageFns<ListRisksResponse> = {
     return message;
   },
 
+  fromJSON(object: any): ListRisksResponse {
+    return {
+      risks: globalThis.Array.isArray(object?.risks) ? object.risks.map((e: any) => Risk.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
   toJSON(message: ListRisksResponse): unknown {
     const obj: any = {};
     if (message.risks?.length) {
@@ -410,6 +424,10 @@ export const CreateRiskRequest: MessageFns<CreateRiskRequest> = {
     return message;
   },
 
+  fromJSON(object: any): CreateRiskRequest {
+    return { risk: isSet(object.risk) ? Risk.fromJSON(object.risk) : undefined };
+  },
+
   toJSON(message: CreateRiskRequest): unknown {
     const obj: any = {};
     if (message.risk !== undefined) {
@@ -462,6 +480,10 @@ export const GetRiskRequest: MessageFns<GetRiskRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): GetRiskRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetRiskRequest): unknown {
@@ -529,6 +551,13 @@ export const UpdateRiskRequest: MessageFns<UpdateRiskRequest> = {
     return message;
   },
 
+  fromJSON(object: any): UpdateRiskRequest {
+    return {
+      risk: isSet(object.risk) ? Risk.fromJSON(object.risk) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
   toJSON(message: UpdateRiskRequest): unknown {
     const obj: any = {};
     if (message.risk !== undefined) {
@@ -585,6 +614,10 @@ export const DeleteRiskRequest: MessageFns<DeleteRiskRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): DeleteRiskRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteRiskRequest): unknown {
@@ -694,6 +727,17 @@ export const Risk: MessageFns<Risk> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): Risk {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      source: isSet(object.source) ? risk_SourceFromJSON(object.source) : Risk_Source.SOURCE_UNSPECIFIED,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      active: isSet(object.active) ? globalThis.Boolean(object.active) : false,
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+    };
   },
 
   toJSON(message: Risk): unknown {
@@ -912,9 +956,14 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

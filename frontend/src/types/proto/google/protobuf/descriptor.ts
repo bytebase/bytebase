@@ -1322,6 +1322,26 @@ export const MessageOptions: MessageFns<MessageOptions> = {
     return message;
   },
 
+  fromJSON(object: any): MessageOptions {
+    return {
+      messageSetWireFormat: isSet(object.messageSetWireFormat)
+        ? globalThis.Boolean(object.messageSetWireFormat)
+        : false,
+      noStandardDescriptorAccessor: isSet(object.noStandardDescriptorAccessor)
+        ? globalThis.Boolean(object.noStandardDescriptorAccessor)
+        : false,
+      deprecated: isSet(object.deprecated) ? globalThis.Boolean(object.deprecated) : false,
+      mapEntry: isSet(object.mapEntry) ? globalThis.Boolean(object.mapEntry) : false,
+      deprecatedLegacyJsonFieldConflicts: isSet(object.deprecatedLegacyJsonFieldConflicts)
+        ? globalThis.Boolean(object.deprecatedLegacyJsonFieldConflicts)
+        : false,
+      features: isSet(object.features) ? FeatureSet.fromJSON(object.features) : undefined,
+      uninterpretedOption: globalThis.Array.isArray(object?.uninterpretedOption)
+        ? object.uninterpretedOption.map((e: any) => UninterpretedOption.fromJSON(e))
+        : [],
+    };
+  },
+
   toJSON(message: MessageOptions): unknown {
     const obj: any = {};
     if (message.messageSetWireFormat !== undefined && message.messageSetWireFormat !== false) {
@@ -1574,6 +1594,35 @@ export const FieldOptions: MessageFns<FieldOptions> = {
     return message;
   },
 
+  fromJSON(object: any): FieldOptions {
+    return {
+      ctype: isSet(object.ctype) ? fieldOptions_CTypeFromJSON(object.ctype) : FieldOptions_CType.STRING,
+      packed: isSet(object.packed) ? globalThis.Boolean(object.packed) : false,
+      jstype: isSet(object.jstype) ? fieldOptions_JSTypeFromJSON(object.jstype) : FieldOptions_JSType.JS_NORMAL,
+      lazy: isSet(object.lazy) ? globalThis.Boolean(object.lazy) : false,
+      unverifiedLazy: isSet(object.unverifiedLazy) ? globalThis.Boolean(object.unverifiedLazy) : false,
+      deprecated: isSet(object.deprecated) ? globalThis.Boolean(object.deprecated) : false,
+      weak: isSet(object.weak) ? globalThis.Boolean(object.weak) : false,
+      debugRedact: isSet(object.debugRedact) ? globalThis.Boolean(object.debugRedact) : false,
+      retention: isSet(object.retention)
+        ? fieldOptions_OptionRetentionFromJSON(object.retention)
+        : FieldOptions_OptionRetention.RETENTION_UNKNOWN,
+      targets: globalThis.Array.isArray(object?.targets)
+        ? object.targets.map((e: any) => fieldOptions_OptionTargetTypeFromJSON(e))
+        : [],
+      editionDefaults: globalThis.Array.isArray(object?.editionDefaults)
+        ? object.editionDefaults.map((e: any) => FieldOptions_EditionDefault.fromJSON(e))
+        : [],
+      features: isSet(object.features) ? FeatureSet.fromJSON(object.features) : undefined,
+      featureSupport: isSet(object.featureSupport)
+        ? FieldOptions_FeatureSupport.fromJSON(object.featureSupport)
+        : undefined,
+      uninterpretedOption: globalThis.Array.isArray(object?.uninterpretedOption)
+        ? object.uninterpretedOption.map((e: any) => UninterpretedOption.fromJSON(e))
+        : [],
+    };
+  },
+
   toJSON(message: FieldOptions): unknown {
     const obj: any = {};
     if (message.ctype !== undefined && message.ctype !== FieldOptions_CType.STRING) {
@@ -1695,6 +1744,13 @@ export const FieldOptions_EditionDefault: MessageFns<FieldOptions_EditionDefault
     return message;
   },
 
+  fromJSON(object: any): FieldOptions_EditionDefault {
+    return {
+      edition: isSet(object.edition) ? editionFromJSON(object.edition) : Edition.EDITION_UNKNOWN,
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
   toJSON(message: FieldOptions_EditionDefault): unknown {
     const obj: any = {};
     if (message.edition !== undefined && message.edition !== Edition.EDITION_UNKNOWN) {
@@ -1789,6 +1845,19 @@ export const FieldOptions_FeatureSupport: MessageFns<FieldOptions_FeatureSupport
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): FieldOptions_FeatureSupport {
+    return {
+      editionIntroduced: isSet(object.editionIntroduced)
+        ? editionFromJSON(object.editionIntroduced)
+        : Edition.EDITION_UNKNOWN,
+      editionDeprecated: isSet(object.editionDeprecated)
+        ? editionFromJSON(object.editionDeprecated)
+        : Edition.EDITION_UNKNOWN,
+      deprecationWarning: isSet(object.deprecationWarning) ? globalThis.String(object.deprecationWarning) : "",
+      editionRemoved: isSet(object.editionRemoved) ? editionFromJSON(object.editionRemoved) : Edition.EDITION_UNKNOWN,
+    };
   },
 
   toJSON(message: FieldOptions_FeatureSupport): unknown {
@@ -1896,6 +1965,19 @@ export const MethodOptions: MessageFns<MethodOptions> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): MethodOptions {
+    return {
+      deprecated: isSet(object.deprecated) ? globalThis.Boolean(object.deprecated) : false,
+      idempotencyLevel: isSet(object.idempotencyLevel)
+        ? methodOptions_IdempotencyLevelFromJSON(object.idempotencyLevel)
+        : MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN,
+      features: isSet(object.features) ? FeatureSet.fromJSON(object.features) : undefined,
+      uninterpretedOption: globalThis.Array.isArray(object?.uninterpretedOption)
+        ? object.uninterpretedOption.map((e: any) => UninterpretedOption.fromJSON(e))
+        : [],
+    };
   },
 
   toJSON(message: MethodOptions): unknown {
@@ -2043,6 +2125,20 @@ export const UninterpretedOption: MessageFns<UninterpretedOption> = {
     return message;
   },
 
+  fromJSON(object: any): UninterpretedOption {
+    return {
+      name: globalThis.Array.isArray(object?.name)
+        ? object.name.map((e: any) => UninterpretedOption_NamePart.fromJSON(e))
+        : [],
+      identifierValue: isSet(object.identifierValue) ? globalThis.String(object.identifierValue) : "",
+      positiveIntValue: isSet(object.positiveIntValue) ? Long.fromValue(object.positiveIntValue) : Long.UZERO,
+      negativeIntValue: isSet(object.negativeIntValue) ? Long.fromValue(object.negativeIntValue) : Long.ZERO,
+      doubleValue: isSet(object.doubleValue) ? globalThis.Number(object.doubleValue) : 0,
+      stringValue: isSet(object.stringValue) ? bytesFromBase64(object.stringValue) : new Uint8Array(0),
+      aggregateValue: isSet(object.aggregateValue) ? globalThis.String(object.aggregateValue) : "",
+    };
+  },
+
   toJSON(message: UninterpretedOption): unknown {
     const obj: any = {};
     if (message.name?.length) {
@@ -2134,6 +2230,13 @@ export const UninterpretedOption_NamePart: MessageFns<UninterpretedOption_NamePa
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): UninterpretedOption_NamePart {
+    return {
+      namePart: isSet(object.namePart) ? globalThis.String(object.namePart) : "",
+      isExtension: isSet(object.isExtension) ? globalThis.Boolean(object.isExtension) : false,
+    };
   },
 
   toJSON(message: UninterpretedOption_NamePart): unknown {
@@ -2282,6 +2385,32 @@ export const FeatureSet: MessageFns<FeatureSet> = {
     return message;
   },
 
+  fromJSON(object: any): FeatureSet {
+    return {
+      fieldPresence: isSet(object.fieldPresence)
+        ? featureSet_FieldPresenceFromJSON(object.fieldPresence)
+        : FeatureSet_FieldPresence.FIELD_PRESENCE_UNKNOWN,
+      enumType: isSet(object.enumType)
+        ? featureSet_EnumTypeFromJSON(object.enumType)
+        : FeatureSet_EnumType.ENUM_TYPE_UNKNOWN,
+      repeatedFieldEncoding: isSet(object.repeatedFieldEncoding)
+        ? featureSet_RepeatedFieldEncodingFromJSON(object.repeatedFieldEncoding)
+        : FeatureSet_RepeatedFieldEncoding.REPEATED_FIELD_ENCODING_UNKNOWN,
+      utf8Validation: isSet(object.utf8Validation)
+        ? featureSet_Utf8ValidationFromJSON(object.utf8Validation)
+        : FeatureSet_Utf8Validation.UTF8_VALIDATION_UNKNOWN,
+      messageEncoding: isSet(object.messageEncoding)
+        ? featureSet_MessageEncodingFromJSON(object.messageEncoding)
+        : FeatureSet_MessageEncoding.MESSAGE_ENCODING_UNKNOWN,
+      jsonFormat: isSet(object.jsonFormat)
+        ? featureSet_JsonFormatFromJSON(object.jsonFormat)
+        : FeatureSet_JsonFormat.JSON_FORMAT_UNKNOWN,
+      enforceNamingStyle: isSet(object.enforceNamingStyle)
+        ? featureSet_EnforceNamingStyleFromJSON(object.enforceNamingStyle)
+        : FeatureSet_EnforceNamingStyle.ENFORCE_NAMING_STYLE_UNKNOWN,
+    };
+  },
+
   toJSON(message: FeatureSet): unknown {
     const obj: any = {};
     if (
@@ -2340,6 +2469,15 @@ export const FeatureSet: MessageFns<FeatureSet> = {
   },
 };
 
+function bytesFromBase64(b64: string): Uint8Array {
+  const bin = globalThis.atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; ++i) {
+    arr[i] = bin.charCodeAt(i);
+  }
+  return arr;
+}
+
 function base64FromBytes(arr: Uint8Array): string {
   const bin: string[] = [];
   arr.forEach((byte) => {
@@ -2356,9 +2494,14 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
