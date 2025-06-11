@@ -7,6 +7,10 @@ plugins:
   - remote: buf.build/grpc/go
     out: generated-go
     opt: paths=source_relative
+  - remote: buf.build/bufbuild/connect-go:v1.10.0
+    out: generated-go
+    opt: 
+      - paths=source_relative
   - remote: buf.build/grpc-ecosystem/gateway
     out: generated-go
     opt: paths=source_relative
