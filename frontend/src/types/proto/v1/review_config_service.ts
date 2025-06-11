@@ -146,6 +146,13 @@ export const ListReviewConfigsRequest: MessageFns<ListReviewConfigsRequest> = {
     return message;
   },
 
+  fromJSON(object: any): ListReviewConfigsRequest {
+    return {
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
   toJSON(message: ListReviewConfigsRequest): unknown {
     const obj: any = {};
     if (message.pageSize !== 0) {
@@ -215,6 +222,15 @@ export const ListReviewConfigsResponse: MessageFns<ListReviewConfigsResponse> = 
     return message;
   },
 
+  fromJSON(object: any): ListReviewConfigsResponse {
+    return {
+      reviewConfigs: globalThis.Array.isArray(object?.reviewConfigs)
+        ? object.reviewConfigs.map((e: any) => ReviewConfig.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
   toJSON(message: ListReviewConfigsResponse): unknown {
     const obj: any = {};
     if (message.reviewConfigs?.length) {
@@ -271,6 +287,10 @@ export const CreateReviewConfigRequest: MessageFns<CreateReviewConfigRequest> = 
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): CreateReviewConfigRequest {
+    return { reviewConfig: isSet(object.reviewConfig) ? ReviewConfig.fromJSON(object.reviewConfig) : undefined };
   },
 
   toJSON(message: CreateReviewConfigRequest): unknown {
@@ -351,6 +371,14 @@ export const UpdateReviewConfigRequest: MessageFns<UpdateReviewConfigRequest> = 
     return message;
   },
 
+  fromJSON(object: any): UpdateReviewConfigRequest {
+    return {
+      reviewConfig: isSet(object.reviewConfig) ? ReviewConfig.fromJSON(object.reviewConfig) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
+    };
+  },
+
   toJSON(message: UpdateReviewConfigRequest): unknown {
     const obj: any = {};
     if (message.reviewConfig !== undefined) {
@@ -415,6 +443,10 @@ export const GetReviewConfigRequest: MessageFns<GetReviewConfigRequest> = {
     return message;
   },
 
+  fromJSON(object: any): GetReviewConfigRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
   toJSON(message: GetReviewConfigRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -467,6 +499,10 @@ export const DeleteReviewConfigRequest: MessageFns<DeleteReviewConfigRequest> = 
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): DeleteReviewConfigRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteReviewConfigRequest): unknown {
@@ -565,6 +601,18 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): ReviewConfig {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
+      rules: globalThis.Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
+      resources: globalThis.Array.isArray(object?.resources)
+        ? object.resources.map((e: any) => globalThis.String(e))
+        : [],
+    };
   },
 
   toJSON(message: ReviewConfig): unknown {
@@ -1037,9 +1085,14 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

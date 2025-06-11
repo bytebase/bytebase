@@ -136,6 +136,15 @@ export const Expr: MessageFns<Expr> = {
     return message;
   },
 
+  fromJSON(object: any): Expr {
+    return {
+      expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      location: isSet(object.location) ? globalThis.String(object.location) : "",
+    };
+  },
+
   toJSON(message: Expr): unknown {
     const obj: any = {};
     if (message.expression !== "") {
@@ -174,9 +183,14 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
