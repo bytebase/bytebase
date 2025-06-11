@@ -31,27 +31,14 @@ func NewDatabaseCatalogService(store *store.Store, licenseService enterprise.Lic
 
 // GetDatabaseCatalog gets a database catalog.
 func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, request *v1pb.GetDatabaseCatalogRequest) (*v1pb.DatabaseCatalog, error) {
-	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.Name, common.CatalogSuffix)
+	databaseResourceName, err := common.TrimSuffix(request.Name, common.CatalogSuffix)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	})
+
+	database, err := getDatabaseMessage(ctx, s.store, databaseResourceName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
@@ -68,28 +55,14 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, request
 
 // UpdateDatabaseCatalog updates a database catalog.
 func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, request *v1pb.UpdateDatabaseCatalogRequest) (*v1pb.DatabaseCatalog, error) {
-	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.GetCatalog().GetName(), common.CatalogSuffix)
+	databaseResourceName, err := common.TrimSuffix(request.GetCatalog().GetName(), common.CatalogSuffix)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	})
+	database, err := getDatabaseMessage(ctx, s.store, databaseResourceName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
 	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
@@ -102,7 +75,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, requ
 
 	databaseConfig := convertDatabaseCatalog(request.GetCatalog())
 	if err := s.store.UpdateDBSchema(ctx, database.InstanceID, database.DatabaseName, &store.UpdateDBSchemaMessage{Config: databaseConfig}); err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return request.GetCatalog(), nil

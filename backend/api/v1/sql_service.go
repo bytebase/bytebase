@@ -1440,32 +1440,19 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 		return nil, nil, nil, status.Error(codes.Internal, err.Error())
 	}
 
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(requestName)
+	database, err := getDatabaseMessage(ctx, s.store, requestName)
 	if err != nil {
-		return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, nil, status.Error(codes.Internal, err.Error())
 	}
 
-	find := &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	}
-	instance, err := s.store.GetInstanceV2(ctx, find)
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &database.InstanceID,
+	})
 	if err != nil {
 		return nil, nil, nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instance.ResourceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
-	}
-	if database == nil {
-		return nil, nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		return nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 	}
 
 	return user, instance, database, nil
@@ -1552,30 +1539,19 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024)
 	}
 
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
+	database, err := getDatabaseMessage(ctx, s.store, request.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
+		ResourceID: &database.InstanceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get database, error: %v", err)
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 	}
 
 	checkResponse := &v1pb.CheckResponse{}

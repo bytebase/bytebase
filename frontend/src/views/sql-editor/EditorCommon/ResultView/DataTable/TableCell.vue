@@ -13,7 +13,9 @@
       class="whitespace-nowrap font-mono text-start line-clamp-1"
       v-html="html"
     ></div>
-    <div class="absolute right-1 top-1/2 translate-y-[-45%] flex items-center gap-1">
+    <div
+      class="absolute right-1 top-1/2 translate-y-[-45%] flex items-center gap-1"
+    >
       <!-- Format button for binary data -->
       <NButton
         v-if="hasByteData && !props.columnFormatOverride"
@@ -26,7 +28,7 @@
           <IconCode class="w-3 h-3" />
         </template>
       </NButton>
-      
+
       <!-- Expand button for long content -->
       <NButton
         v-if="clickable"
@@ -40,7 +42,7 @@
         </template>
       </NButton>
     </div>
-    
+
     <!-- Format dropdown menu -->
     <NDropdown
       v-if="hasByteData"
@@ -63,14 +65,19 @@ import { Code as IconCode } from "lucide-vue-next";
 import { NButton, NDropdown } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed, nextTick, ref, onMounted } from "vue";
-import { getBinaryFormat, setBinaryFormat, setColumnType, detectBinaryFormat } from "./binary-format-store";
+import { useI18n } from "vue-i18n";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
+import {
+  getBinaryFormat,
+  setBinaryFormat,
+  setColumnType,
+  detectBinaryFormat,
+} from "./binary-format-store";
 import { useSelectionContext } from "./common/selection-logic";
-import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   table: Table<QueryRow>;
@@ -123,8 +130,9 @@ const isSingleBitValue = computed(() => {
 
 // Format options for the dropdown
 const formatOptions = computed(() => {
-  const currentFormat = formatOverride.value === null ? "DEFAULT" : formatOverride.value;
-  
+  const currentFormat =
+    formatOverride.value === null ? "DEFAULT" : formatOverride.value;
+
   const options = [
     {
       label: t("sql-editor.format-default"),
@@ -147,7 +155,7 @@ const formatOptions = computed(() => {
       disabled: false,
     },
   ];
-  
+
   // Only show boolean option for single-byte values
   if (isSingleBitValue.value) {
     options.splice(3, 0, {
@@ -156,14 +164,14 @@ const formatOptions = computed(() => {
       disabled: false,
     });
   }
-  
+
   // Add a checkmark to the currently selected option
-  options.forEach(option => {
+  options.forEach((option) => {
     if (option.key === currentFormat) {
       option.label = "✓ " + option.label;
     }
   });
-  
+
   return options;
 });
 
@@ -226,17 +234,20 @@ const classes = computed(() => {
 // Format the binary value based on selected format
 const formattedBinaryValue = computed(() => {
   if (!props.value?.bytesValue) return props.value;
-  
+
   // Deep clone the value to avoid mutating the original
   const newValue = { ...props.value };
-  
+
   // Determine the format to use - column override, cell override, or auto-detected format
   let actualFormat = null;
-  
+
   // If column has an override, use that
-  if (props.columnFormatOverride !== null && props.columnFormatOverride !== undefined) {
+  if (
+    props.columnFormatOverride !== null &&
+    props.columnFormatOverride !== undefined
+  ) {
     actualFormat = props.columnFormatOverride;
-  } 
+  }
   // Otherwise use the cell's override if set
   else if (formatOverride.value !== null) {
     actualFormat = formatOverride.value;
@@ -246,50 +257,54 @@ const formattedBinaryValue = computed(() => {
     // Auto-detect format based on content and column type
     actualFormat = detectBinaryFormat({
       bytesValue: newValue.bytesValue,
-      columnType: props.columnType
+      columnType: props.columnType,
     });
-    
+
     // Store the auto-detected format for use during copy operations
-    const databaseName = database.value?.name || '';
+    const databaseName = database.value?.name || "";
     setBinaryFormat({
       rowIndex: props.rowIndex,
       colIndex: props.colIndex,
       format: actualFormat,
       setIndex: props.setIndex,
-      databaseName
+      databaseName,
     });
   }
-  
+
   // Skip formatting for DEFAULT (auto) format
   if (actualFormat === "DEFAULT") {
     return newValue;
   }
-  
+
   // Ensure bytesValue exists before converting to array
   const byteArray = newValue.bytesValue ? Array.from(newValue.bytesValue) : [];
-  
+
   // Format based on selected format
   switch (actualFormat) {
     case "BINARY":
       // Format as binary string without spaces
       newValue.stringValue = byteArray
-        .map(byte => byte.toString(2).padStart(8, "0"))
+        .map((byte) => byte.toString(2).padStart(8, "0"))
         .join("");
       break;
     case "HEX":
       // Format as hex string
-      newValue.stringValue = "0x" + byteArray
-        .map(byte => byte.toString(16).toUpperCase().padStart(2, "0"))
-        .join("");
+      newValue.stringValue =
+        "0x" +
+        byteArray
+          .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+          .join("");
       break;
     case "TEXT":
       // Format as text
       try {
-        newValue.stringValue = new TextDecoder().decode(new Uint8Array(byteArray));
+        newValue.stringValue = new TextDecoder().decode(
+          new Uint8Array(byteArray)
+        );
       } catch {
         // Fallback to binary if text decoding fails
         newValue.stringValue = byteArray
-          .map(byte => byte.toString(2).padStart(8, "0"))
+          .map((byte) => byte.toString(2).padStart(8, "0"))
           .join("");
       }
       break;
@@ -300,22 +315,24 @@ const formattedBinaryValue = computed(() => {
       } else {
         // Fall back to BINARY for non-single-bit values
         newValue.stringValue = byteArray
-          .map(byte => byte.toString(2).padStart(8, "0"))
+          .map((byte) => byte.toString(2).padStart(8, "0"))
           .join("");
       }
       break;
   }
-  
+
   return newValue;
 });
 
 const html = computed(() => {
   // If it's binary data, use the formatted version
-  const valueToRender = hasByteData.value ? formattedBinaryValue.value : props.value;
-  
+  const valueToRender = hasByteData.value
+    ? formattedBinaryValue.value
+    : props.value;
+
   // Extract the display value
   const value = extractSQLRowValuePlain(valueToRender);
-  
+
   if (value === undefined) {
     return `<span class="text-gray-400 italic">UNSET</span>`;
   }
@@ -365,7 +382,7 @@ const showDetail = () => {
 // Display the format dropdown menu
 const showFormatDropdown = (e: MouseEvent) => {
   if (!cellRef.value) return;
-  
+
   // Position the dropdown relative to the click position
   dropdownX.value = e.clientX;
   dropdownY.value = e.clientY;
@@ -382,7 +399,7 @@ const handleContextMenu = (e: MouseEvent) => {
 // Handle format selection from dropdown
 const handleFormatSelect = (key: string) => {
   // Get database name to scope the format to this database
-  const databaseName = database.value?.name || '';
+  const databaseName = database.value?.name || "";
 
   // If DEFAULT is selected, remove the override
   if (key === "DEFAULT") {
@@ -393,7 +410,7 @@ const handleFormatSelect = (key: string) => {
       colIndex: props.colIndex,
       format: "DEFAULT",
       setIndex: props.setIndex,
-      databaseName
+      databaseName,
     });
   } else {
     // Otherwise set the override
@@ -404,12 +421,12 @@ const handleFormatSelect = (key: string) => {
       colIndex: props.colIndex,
       format: key,
       setIndex: props.setIndex,
-      databaseName
+      databaseName,
     });
   }
-  
+
   showFormatMenu.value = false;
-  
+
   // Force recomputation of html
   nextTick();
 };
@@ -417,7 +434,7 @@ const handleFormatSelect = (key: string) => {
 // On component mount, check for any stored formats and store column type
 onMounted(() => {
   // Get database name to scope the format to this database
-  const databaseName = database.value?.name || '';
+  const databaseName = database.value?.name || "";
 
   // Store column type information for later format detection
   if (props.columnType) {
@@ -425,10 +442,10 @@ onMounted(() => {
       colIndex: props.colIndex,
       columnType: props.columnType,
       setIndex: props.setIndex,
-      databaseName
+      databaseName,
     });
   }
-  
+
   // Only proceed if we have binary data
   if (hasByteData.value) {
     // Check for a saved format and apply it
@@ -436,25 +453,25 @@ onMounted(() => {
       rowIndex: props.rowIndex,
       colIndex: props.colIndex,
       setIndex: props.setIndex,
-      databaseName
+      databaseName,
     });
-    
+
     if (savedFormat && savedFormat !== "DEFAULT") {
       formatOverride.value = savedFormat;
     } else {
       // If no saved format yet, use our shared detection function
       const detectedFormat = detectBinaryFormat({
         bytesValue: props.value.bytesValue,
-        columnType: props.columnType
+        columnType: props.columnType,
       });
-      
+
       // Store this format immediately
       setBinaryFormat({
         rowIndex: props.rowIndex,
         colIndex: props.colIndex,
         format: detectedFormat,
         setIndex: props.setIndex,
-        databaseName
+        databaseName,
       });
     }
   }
