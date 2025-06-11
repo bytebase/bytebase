@@ -8,5 +8,5 @@ title: 「プロジェクト」とは何か？
 
 #### さらに詳しく
 
-- [プロジェクトの作成](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
-- [UI ワークフロー](https://www.bytebase.com/docs/change-database/change-workflow)
+- [プロジェクトの作成](https://docs.bytebase.com/get-started/step-by-step/create-a-project)
+- [UI ワークフロー](https://docs.bytebase.com/change-database/change-workflow)

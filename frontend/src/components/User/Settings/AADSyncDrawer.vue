@@ -9,7 +9,7 @@
           <div class="text-sm text-control-light">
             {{ $t(`settings.members.entra-sync.description`) }}
             <LearnMoreLink
-              url="https://www.bytebase.com/docs/administration/scim/overview?source=console"
+              url="https://docs.bytebase.com/administration/scim/overview?source=console"
               class="ml-1"
             />
           </div>
@@ -145,7 +145,8 @@ const hasPermission = computed(() =>
 
 const workspaceId = computed(() => {
   return (
-    settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID)?.value?.stringValue ?? ""
+    settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID)?.value
+      ?.stringValue ?? ""
   );
 });
 
@@ -162,8 +163,8 @@ const scimUrl = computed(() => {
 
 const scimToken = computed(() => {
   return (
-    settingV1Store.getSettingByName(Setting_SettingName.SCIM)?.value?.scimSetting
-      ?.token ?? ""
+    settingV1Store.getSettingByName(Setting_SettingName.SCIM)?.value
+      ?.scimSetting?.token ?? ""
   );
 });
 

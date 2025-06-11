@@ -51,7 +51,7 @@
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.global-rules.description") }}
       <LearnMoreLink
-        url="https://www.bytebase.com/docs/security/data-masking/overview/?source=console"
+        url="https://docs.bytebase.com/security/data-masking/overview/?source=console"
       />
     </div>
     <NEmpty

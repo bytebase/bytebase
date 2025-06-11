@@ -6,7 +6,7 @@
           {{ $t("settings.mail-delivery.description") }}
           <a
             class="normal-link inline-flex items-center"
-            href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
+            href="https://docs.bytebase.com/administration/mail-delivery?source=console"
             target="__BLANK"
           >
             {{ $t("common.learn-more") }}

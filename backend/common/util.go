@@ -32,7 +32,7 @@ const (
 	MinimumCompletedPlanCheckRun = 5
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
-	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
+	ExternalURLPlaceholder = "https://docs.bytebase.com/get-started/install/external-url"
 )
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

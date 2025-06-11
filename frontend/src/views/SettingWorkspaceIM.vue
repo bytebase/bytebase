@@ -4,7 +4,7 @@
       {{ $t("settings.im-integration.description") }}
       <a
         class="normal-link inline-flex items-center"
-        href="https://www.bytebase.com/docs/change-database/webhook?source=console"
+        href="https://docs.bytebase.com/change-database/webhook?source=console"
         target="__BLANK"
       >
         {{ $t("common.learn-more") }}
@@ -88,8 +88,8 @@ const settingStore = useSettingV1Store();
 
 const imSetting = computed(
   () =>
-    settingStore.getSettingByName(Setting_SettingName.APP_IM)?.value?.appImSettingValue ??
-    AppIMSetting.fromPartial({})
+    settingStore.getSettingByName(Setting_SettingName.APP_IM)?.value
+      ?.appImSettingValue ?? AppIMSetting.fromPartial({})
 );
 
 watch(
@@ -280,7 +280,7 @@ const imList = computed(() => {
                 placeholder={t("common.write-only")}
                 value={state.setting.dingtalk?.clientId ?? ""}
                 onUpdate:value={(val: string) => {
-                  state.setting.dingtalk!.clientId= val;
+                  state.setting.dingtalk!.clientId = val;
                 }}
               />
             </div>
@@ -309,7 +309,7 @@ const imList = computed(() => {
           </div>
         );
       },
-    }
+    },
   ];
 });
 

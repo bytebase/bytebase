@@ -6,5 +6,5 @@ title: What is 'Issue' ?
 
 #### Learn more
 
-- [Your first database change](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)
-- [Batch change](https://www.bytebase.com/docs/change-database/batch-change/)
+- [Your first database change](https://docs.bytebase.com/get-started/step-by-step/change-schema)
+- [Batch change](https://docs.bytebase.com/change-database/batch-change/)

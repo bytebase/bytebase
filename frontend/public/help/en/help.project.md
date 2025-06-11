@@ -8,5 +8,5 @@ title: What is 'project' ?
 
 #### Learn more
 
-- [Create a Project](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
-- [UI Workflow](https://www.bytebase.com/docs/change-database/change-workflow)
+- [Create a Project](https://docs.bytebase.com/get-started/step-by-step/create-a-project)
+- [UI Workflow](https://docs.bytebase.com/change-database/change-workflow)

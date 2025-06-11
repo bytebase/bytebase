@@ -8,4 +8,4 @@ title: 「インスタンス」とは？
 
 #### Learn more
 
-- [インスタンスの追加](https://www.bytebase.com/docs/get-started/step-by-step/add-an-instance)
+- [インスタンスの追加](https://docs.bytebase.com/get-started/step-by-step/add-an-instance)

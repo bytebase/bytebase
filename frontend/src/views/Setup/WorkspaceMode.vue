@@ -3,7 +3,7 @@
     <div class="mb-4 font-medium">
       {{ $t("settings.general.workspace.database-change-mode.description") }}
       <LearnMoreLink
-        url="https://www.bytebase.com/docs/administration/mode?source=console"
+        url="https://docs.bytebase.com/administration/mode?source=console"
         class="ml-1 text-sm"
       />
       <div class="text-control-placeholder text-sm">

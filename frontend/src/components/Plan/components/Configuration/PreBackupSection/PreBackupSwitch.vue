@@ -47,7 +47,7 @@ const disallowPreBackupLink = computed(() => {
   if (allowChange.value || !hasBackupUnavailable.value) {
     return undefined;
   }
-  return "https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console";
+  return "https://docs.bytebase.com/change-database/rollback-data-changes?source=console";
 });
 
 // Compute detailed errors for ErrorList
