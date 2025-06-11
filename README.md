@@ -182,7 +182,7 @@ Product tutorials are available at https://www.bytebase.com/tutorial.
 | --- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 🪶  | Dependency Free         | Start with a single command `./bytebase` without any external dependency. External PostgreSQL data store and others are optional.                                                                                                                                                                                                                      |
 | 🔗  | Integration First       | Solely focus on database management and leave the rest to others. We have native VCS integration with [GitHub/GitLab](https://www.bytebase.com/docs/vcs-integration/overview), [Terraform Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs), [webhook](https://www.bytebase.com/docs/change-database/webhook), and etc. |
-| 💂‍♀️  | Engineering Disciplined | Disciplined [bi-weekly release](https://www.bytebase.com/changelog) and [engineering practice](https://github.com/bytebase/bytebase/blob/main/docs/life-of-a-feature.md).                                                                                                                                                                              |
+| 💂‍♀️  | Engineering Disciplined | Disciplined [bi-weekly release](https://docs.bytebase.com/changelog) and [engineering practice](https://github.com/bytebase/bytebase/blob/main/docs/life-of-a-feature.md).                                                                                                                                                                             |
 
 <br />
 
@@ -316,7 +316,7 @@ Bytebase has the similar `Project` concept seen in GitLab/GitHub and provides na
 with GitLab/GitHub.
 
 Another key difference is Yearning, Archery are open source projects maintained by the individuals part-time. While Bytebase is open-sourced, it adopts an open-core model and is a commercialized product, supported
-by a [fully staffed team](https://www.bytebase.com/about#team) [releasing new version every 2 weeks](https://www.bytebase.com/changelog).
+by a [fully staffed team](https://www.bytebase.com/about#team) [releasing new version every 2 weeks](https://docs.bytebase.com/changelog).
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,cookieY/Yearning,hhyo/Archery&type=Date)](https://star-history.com/#bytebase/bytebase&cookieY/Yearning&hhyo/Archery&Date)
 

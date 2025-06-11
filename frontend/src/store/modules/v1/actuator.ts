@@ -68,7 +68,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       if (!version) {
         return "";
       }
-      return `https://www.bytebase.com/changelog/bytebase-${version.split(".").join("-")}/`;
+      return `https://docs.bytebase.com/changelog/bytebase-${version.split(".").join("-")}/`;
     },
     info: (state) => {
       return state.serverInfo;
