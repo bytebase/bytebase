@@ -19,6 +19,7 @@ plugins:
     opt: markdown,README.md,source_relative
   - remote: buf.build/bufbuild/es:v2.5.2
     out: ../frontend/src/types/proto-es
+    include_imports: true
     types:
       - bytebase.v1
   - remote: buf.build/community/stephenh-ts-proto:v2.3.0

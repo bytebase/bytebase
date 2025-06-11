@@ -1,3 +1,6 @@
+import { createClient } from '@connectrpc/connect';
+import { createConnectTransport } from '@connectrpc/connect-web';
+import { ActuatorService } from '@/types/proto-es/v1/actuator_service_pb';
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
@@ -229,3 +232,10 @@ export const instanceRoleServiceClient = clientFactory.create(
 //   web: true,
 // });
 // const { users } = await authServiceClient.listUsers({});
+
+
+const transport = createConnectTransport({
+  baseUrl: address,
+})
+
+export const actuatorServiceClientConnect = createClient(ActuatorService, transport)
