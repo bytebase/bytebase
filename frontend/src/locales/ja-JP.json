@@ -291,7 +291,11 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行の問題に分割することをアドバイスします。"
     },
-    "prior-backup-tips": "影響を受けるデータを事前にバックアップする"
+    "prior-backup-tips": "影響を受けるデータを事前にバックアップする",
+    "database-create": {
+      "created": "作成済み",
+      "pending": "保留中"
+    }
   },
   "task-run": {
     "status": {
@@ -2112,7 +2116,28 @@
     "overuse-modal": {
       "description": "現在「{plan}」に含まれていない機能を使用しています。使用に影響を与えないように、すぐにアップグレードしてください。"
     },
-    "disabled-feature": "無効な機能"
+    "disabled-feature": "無効な機能",
+    "upgrade": "アップグレード",
+    "contact-us": "お問い合わせ",
+    "current": "現在",
+    "expired": "期限切れ",
+    "expires-at": "有効期限",
+    "plan-compare": "プランを比較する",
+    "trialing": "トライアル中",
+    "unlimited": "無制限",
+    "max-instance-count": "最大インスタンス数",
+    "plan": {
+      "free": {
+        "title": "無料"
+      },
+      "team": {
+        "title": "チーム"
+      },
+      "enterprise": {
+        "title": "エンタープライズ"
+      },
+      "try": "無料でお試しください。"
+    }
   },
   "sheet": {
     "mine": "マイワークシート",
@@ -2185,7 +2210,16 @@
     "enabled-rules": "開かれたルールの数",
     "rule-detail": "ルールの詳細",
     "view-definition": "ビューの定義",
-    "all-checks-passed": "すべてのチェックに合格しました。"
+    "all-checks-passed": "すべてのチェックに合格しました",
+    "category": {
+      "builtin": "ビルトイン"
+    },
+    "level": {
+      "name": "レベル",
+      "error": "エラー",
+      "warning": "警告",
+      "disabled": "無効"
+    }
   },
   "audit-log": {
     "export-finished": "エクスポートが完了しました",

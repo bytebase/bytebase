@@ -291,7 +291,11 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "Đề nghị chia câu lệnh này thành một vấn đề di chuyển trực tuyến."
     },
-    "prior-backup-tips": "Sao lưu dữ liệu bị ảnh hưởng trước"
+    "prior-backup-tips": "Sao lưu dữ liệu bị ảnh hưởng trước thời hạn",
+    "database-create": {
+      "created": "Đã tạo",
+      "pending": "Đang chờ xử lý"
+    }
   },
   "task-run": {
     "status": {
@@ -2112,7 +2116,28 @@
     "overuse-modal": {
       "description": "Bạn đang sử dụng các tính năng không có trong {plan}. Nâng cấp ngay để đảm bảo quyền truy cập liên tục:"
     },
-    "disabled-feature": "Tính năng bị vô hiệu hóa"
+    "disabled-feature": "Tính năng bị vô hiệu hóa",
+    "upgrade": "Nâng cấp",
+    "contact-us": "Liên hệ chúng tôi",
+    "current": "Hiện tại",
+    "expired": "Đã hết hạn",
+    "expires-at": "Hết hạn vào",
+    "plan-compare": "So sánh các gói",
+    "trialing": "Đang dùng thử",
+    "unlimited": "Không giới hạn",
+    "max-instance-count": "Số lượng phiên bản tối đa",
+    "plan": {
+      "free": {
+        "title": "Miễn phí"
+      },
+      "team": {
+        "title": "Nhóm"
+      },
+      "enterprise": {
+        "title": "Doanh nghiệp"
+      },
+      "try": "Dùng thử miễn phí."
+    }
   },
   "sheet": {
     "mine": "Của tôi",
@@ -2185,7 +2210,16 @@
     "enabled-rules": "Quy tắc được bật",
     "rule-detail": "Chi tiết quy tắc",
     "view-definition": "Xem định nghĩa",
-    "all-checks-passed": "Đã qua tất cả các kiểm tra."
+    "all-checks-passed": "Tất cả kiểm tra đã vượt qua",
+    "category": {
+      "builtin": "Tích hợp sẵn"
+    },
+    "level": {
+      "name": "Cấp độ",
+      "error": "Lỗi",
+      "warning": "Cảnh báo",
+      "disabled": "Đã tắt"
+    }
   },
   "audit-log": {
     "export-finished": "Xuất hoàn tất",

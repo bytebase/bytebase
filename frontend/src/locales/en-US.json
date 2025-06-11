@@ -291,7 +291,11 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
-    "prior-backup-tips": "Backup affected data ahead of time"
+    "prior-backup-tips": "Backup affected data ahead of time",
+    "database-create": {
+      "created": "Created",
+      "pending": "Pending"
+    }
   },
   "task-run": {
     "status": {
@@ -2112,7 +2116,28 @@
     "overuse-modal": {
       "description": "You are using features unavailable in the {plan}. Upgrade now to ensure continued access:"
     },
-    "disabled-feature": "Disabled Feature"
+    "disabled-feature": "Disabled Feature",
+    "upgrade": "Upgrade",
+    "contact-us": "Contact us",
+    "current": "Current",
+    "expired": "Expired",
+    "expires-at": "Expires at",
+    "plan-compare": "Compare plans",
+    "trialing": "Trialing",
+    "unlimited": "Unlimited",
+    "max-instance-count": "Max Instance Count",
+    "plan": {
+      "free": {
+        "title": "Free"
+      },
+      "team": {
+        "title": "Team"
+      },
+      "enterprise": {
+        "title": "Enterprise"
+      },
+      "try": "Try it free."
+    }
   },
   "sheet": {
     "mine": "Mine",
@@ -2185,7 +2210,16 @@
     "enabled-rules": "Enabled rules",
     "rule-detail": "Rule detail",
     "view-definition": "View definition",
-    "all-checks-passed": "All checkes passed."
+    "all-checks-passed": "All checkes passed.",
+    "category": {
+      "builtin": "Built-in"
+    },
+    "level": {
+      "name": "Level",
+      "error": "Error",
+      "warning": "Warning",
+      "disabled": "Disabled"
+    }
   },
   "audit-log": {
     "export-finished": "Export finished",

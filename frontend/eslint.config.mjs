@@ -37,7 +37,7 @@ export default [
           enableFix: true,
         },
       ],
-      "@intlify/vue-i18n/no-missing-keys": "off",
+      "@intlify/vue-i18n/no-missing-keys": "error",
       "@intlify/vue-i18n/no-raw-text": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "vue/no-mutating-props": "error",
