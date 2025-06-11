@@ -2811,7 +2811,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x17BatchUpdateIssuesStatus\x12+.bytebase.v1.BatchUpdateIssuesStatusRequest\x1a,.bytebase.v1.BatchUpdateIssuesStatusResponse\"W\x8a\xea0\x10bb.issues.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/issues:batchUpdateStatus\x12\x7f\n" +
 	"\fApproveIssue\x12 .bytebase.v1.ApproveIssueRequest\x1a\x12.bytebase.v1.Issue\"9\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:approve\x12|\n" +
 	"\vRejectIssue\x12\x1f.bytebase.v1.RejectIssueRequest\x1a\x12.bytebase.v1.Issue\"8\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{name=projects/*/issues/*}:reject\x12\x7f\n" +
-	"\fRequestIssue\x12 .bytebase.v1.RequestIssueRequest\x1a\x12.bytebase.v1.Issue\"9\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:requestB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\fRequestIssue\x12 .bytebase.v1.RequestIssueRequest\x1a\x12.bytebase.v1.Issue\"9\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:requestB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_issue_service_proto_rawDescOnce sync.Once

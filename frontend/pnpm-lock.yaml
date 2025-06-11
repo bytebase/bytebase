@@ -34,6 +34,12 @@ importers:
       '@codingame/monaco-vscode-theme-service-override':
         specifier: 15.0.3
         version: 15.0.3
+      '@connectrpc/connect':
+        specifier: ^2.0.2
+        version: 2.0.2(@bufbuild/protobuf@2.5.1)
+      '@connectrpc/connect-web':
+        specifier: ^2.0.2
+        version: 2.0.2(@bufbuild/protobuf@2.5.1)(@connectrpc/connect@2.0.2(@bufbuild/protobuf@2.5.1))
       '@markdoc/markdoc':
         specifier: 0.5.2
         version: 0.5.2
@@ -1448,6 +1454,17 @@ packages:
 
   '@codingame/monaco-vscode-theme-service-override@15.0.3':
     resolution: {integrity: sha512-JZjKFgOvg4uSrvWU1wNwZKWXl93ZpZypDdXxPs9w9xcmDvRBMN97nZhg1nDWgZBqkgszbMlt+mkjvKCDk/SwnA==}
+
+  '@connectrpc/connect-web@2.0.2':
+    resolution: {integrity: sha512-QANMFPiL2o66BdBEctg4TsQLe5ozsBLqcle3dCBp7BwGlNGTY6NnNnqmt+YRnpeMW88GgomJwWNMGCrRD9pRKA==}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.2.0
+      '@connectrpc/connect': 2.0.2
+
+  '@connectrpc/connect@2.0.2':
+    resolution: {integrity: sha512-xZuylIUNvNlH52e/4eQsZvY4QZyDJRtEFEDnn/yBrv5Xi5ZZI/p8X+GAHH35ucVaBvv9u7OzHZo8+tEh1EFTxA==}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.2.0
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -6991,6 +7008,15 @@ snapshots:
       '@codingame/monaco-vscode-9d0168a3-519b-57f3-9bcc-89efc41f951a-common': 15.0.3
       '@codingame/monaco-vscode-api': 15.0.3
       '@codingame/monaco-vscode-files-service-override': 15.0.3
+
+  '@connectrpc/connect-web@2.0.2(@bufbuild/protobuf@2.5.1)(@connectrpc/connect@2.0.2(@bufbuild/protobuf@2.5.1))':
+    dependencies:
+      '@bufbuild/protobuf': 2.5.1
+      '@connectrpc/connect': 2.0.2(@bufbuild/protobuf@2.5.1)
+
+  '@connectrpc/connect@2.0.2(@bufbuild/protobuf@2.5.1)':
+    dependencies:
+      '@bufbuild/protobuf': 2.5.1
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:

@@ -484,7 +484,7 @@ const file_v1_iam_policy_proto_rawDesc = "" +
 	"\x12ACTION_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03ADD\x10\x01\x12\n" +
 	"\n" +
-	"\x06REMOVE\x10\x02B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x06REMOVE\x10\x02B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_iam_policy_proto_rawDescOnce sync.Once

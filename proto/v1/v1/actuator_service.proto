@@ -13,7 +13,7 @@ import "v1/common.proto";
 import "v1/setting_service.proto";
 import "v1/user_service.proto";
 
-option go_package = "generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service ActuatorService {
   rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {

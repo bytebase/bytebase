@@ -740,7 +740,7 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x10SearchWorksheets\x12$.bytebase.v1.SearchWorksheetsRequest\x1a%.bytebase.v1.SearchWorksheetsResponse\"$\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/worksheets:search\x12\xa0\x01\n" +
 	"\x0fUpdateWorksheet\x12#.bytebase.v1.UpdateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"P\xdaA\x15worksheet,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02.:\tworksheet2!/v1/{worksheet.name=worksheets/*}\x12\xca\x01\n" +
 	"\x18UpdateWorksheetOrganizer\x12,.bytebase.v1.UpdateWorksheetOrganizerRequest\x1a\x1f.bytebase.v1.WorksheetOrganizer\"_\xdaA\x15organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02=:\torganizer20/v1/{organizer.worksheet=worksheets/*}/organizer\x12z\n" +
-	"\x0fDeleteWorksheet\x12#.bytebase.v1.DeleteWorksheetRequest\x1a\x16.google.protobuf.Empty\"*\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19*\x17/v1/{name=worksheets/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x0fDeleteWorksheet\x12#.bytebase.v1.DeleteWorksheetRequest\x1a\x16.google.protobuf.Empty\"*\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19*\x17/v1/{name=worksheets/*}B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_worksheet_service_proto_rawDescOnce sync.Once

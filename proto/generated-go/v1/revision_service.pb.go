@@ -620,7 +620,7 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"U\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\xa8\x01\n" +
 	"\x0eCreateRevision\x12\".bytebase.v1.CreateRevisionRequest\x1a\x15.bytebase.v1.Revision\"[\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02::\brevision\"./v1/{parent=instances/*/databases/*}/revisions\x12\xcd\x01\n" +
 	"\x14BatchCreateRevisions\x12(.bytebase.v1.BatchCreateRevisionsRequest\x1a).bytebase.v1.BatchCreateRevisionsResponse\"`\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02?:\x01*\":/v1/{parent=instances/*/databases/*}/revisions:batchCreate\x12\xa6\x01\n" +
-	"\x0eDeleteRevision\x12\".bytebase.v1.DeleteRevisionRequest\x1a\x16.google.protobuf.Empty\"X\xdaA\x04name\x8a\xea0\x13bb.revisions.delete\x90\xea0\x01\x82\xd3\xe4\x93\x020*./v1/{name=instances/*/databases/*/revisions/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x0eDeleteRevision\x12\".bytebase.v1.DeleteRevisionRequest\x1a\x16.google.protobuf.Empty\"X\xdaA\x04name\x8a\xea0\x13bb.revisions.delete\x90\xea0\x01\x82\xd3\xe4\x93\x020*./v1/{name=instances/*/databases/*/revisions/*}B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_revision_service_proto_rawDescOnce sync.Once
