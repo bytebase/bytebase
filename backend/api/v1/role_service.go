@@ -11,7 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -22,11 +22,11 @@ type RoleService struct {
 	v1pb.UnimplementedRoleServiceServer
 	store          *store.Store
 	iamManager     *iam.Manager
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewRoleService returns a new instance of the role service.
-func NewRoleService(store *store.Store, iamManager *iam.Manager, licenseService enterprise.LicenseService) *RoleService {
+func NewRoleService(store *store.Store, iamManager *iam.Manager, licenseService *enterprise.LicenseService) *RoleService {
 	return &RoleService{
 		store:          store,
 		iamManager:     iamManager,

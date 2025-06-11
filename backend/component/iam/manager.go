@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -31,10 +31,10 @@ type Manager struct {
 	groupMembers    map[string]map[string]bool
 	PredefinedRoles []*store.RoleMessage
 	store           *store.Store
-	licenseService  enterprise.LicenseService
+	licenseService  *enterprise.LicenseService
 }
 
-func NewManager(store *store.Store, licenseService enterprise.LicenseService) (*Manager, error) {
+func NewManager(store *store.Store, licenseService *enterprise.LicenseService) (*Manager, error) {
 	predefinedRoles, err := loadPredefinedRoles()
 	if err != nil {
 		return nil, err

@@ -8,7 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -20,7 +20,7 @@ type SubscriptionService struct {
 	store          *store.Store
 	profile        *config.Profile
 	metricReporter *metricreport.Reporter
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewSubscriptionService creates a new SubscriptionService.
@@ -28,7 +28,7 @@ func NewSubscriptionService(
 	store *store.Store,
 	profile *config.Profile,
 	metricReporter *metricreport.Reporter,
-	licenseService enterprise.LicenseService) *SubscriptionService {
+	licenseService *enterprise.LicenseService) *SubscriptionService {
 	return &SubscriptionService{
 		store:          store,
 		profile:        profile,

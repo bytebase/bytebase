@@ -23,7 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -37,11 +37,11 @@ type Runner struct {
 	dbFactory      *dbfactory.DBFactory
 	stateCfg       *state.State
 	webhookManager *webhook.Manager
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, licenseService enterprise.LicenseService) *Runner {
+func NewRunner(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *Runner {
 	return &Runner{
 		store:          store,
 		sheetManager:   sheetManager,

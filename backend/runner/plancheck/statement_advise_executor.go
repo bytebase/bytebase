@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -27,7 +27,7 @@ func NewStatementAdviseExecutor(
 	store *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
-	licenseService enterprise.LicenseService,
+	licenseService *enterprise.LicenseService,
 ) Executor {
 	return &StatementAdviseExecutor{
 		store:          store,
@@ -42,7 +42,7 @@ type StatementAdviseExecutor struct {
 	store          *store.Store
 	sheetManager   *sheet.Manager
 	dbFactory      *dbfactory.DBFactory
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // Run will run the plan check statement advise executor once, and run its sub-advisors one-by-one.
