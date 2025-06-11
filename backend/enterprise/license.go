@@ -58,7 +58,8 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscriptio
 	s.mu.RUnlock()
 
 	if cached != nil {
-		if cached.Plan == v1pb.PlanType_FREE || isSubscriptionExpired(cached) {
+		// Invalidate the cache if expired.
+		if cached.ExpiresTime != nil && cached.ExpiresTime.AsTime().Before(time.Now()) {
 			// refresh expired subscription
 			s.mu.Lock()
 			s.cachedSubscription = nil
@@ -73,26 +74,32 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscriptio
 	// Cache the subscription.
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	// Double-check after acquiring write lock
-	if s.cachedSubscription != nil && s.cachedSubscription.Plan != v1pb.PlanType_FREE && !isSubscriptionExpired(s.cachedSubscription) {
-		return s.cachedSubscription
+
+	subscription := s.provider.LoadSubscription(ctx)
+	if subscription == nil {
+		// Never had a subscription, set to free plan.
+		subscription = &v1pb.Subscription{
+			Plan: v1pb.PlanType_FREE,
+		}
 	}
-	s.cachedSubscription = s.provider.LoadSubscription(ctx)
-	return s.cachedSubscription
+	// Switch to free plan if the subscription is expired.
+	if subscription.ExpiresTime != nil && subscription.ExpiresTime.AsTime().Before(time.Now()) {
+		subscription.Plan = v1pb.PlanType_FREE
+	}
+	s.cachedSubscription = subscription
+	return subscription
 }
 
-// isSubscriptionExpired returns if the subscription is expired.
-func isSubscriptionExpired(s *v1pb.Subscription) bool {
-	if s.Plan == v1pb.PlanType_FREE || s.ExpiresTime == nil {
-		return false
-	}
-	return s.ExpiresTime.AsTime().Before(time.Now())
+// GetEffectivePlan gets the effective plan.
+func (s *LicenseService) GetEffectivePlan() v1pb.PlanType {
+	ctx := context.Background()
+	return s.LoadSubscription(ctx).Plan
 }
 
 // IsFeatureEnabled returns whether a feature is enabled.
 func (s *LicenseService) IsFeatureEnabled(f v1pb.PlanFeature) error {
 	plan := s.GetEffectivePlan()
-	features, ok := PlanFeatureMatrix[plan]
+	features, ok := planFeatureMatrix[plan]
 	if !ok || !features[f] {
 		return errors.New(accessErrorMessage(f))
 	}
@@ -109,66 +116,48 @@ func (s *LicenseService) IsFeatureEnabledForInstance(f v1pb.PlanFeature, instanc
 	if err := s.IsFeatureEnabled(f); err != nil {
 		return err
 	}
-	if !instanceLimitFeature[f] {
-		// If the feature not exists in the limit map, we just need to check the feature for current plan.
-		return nil
-	}
 	if !instance.Metadata.GetActivation() {
 		return errors.Errorf(`feature "%s" is not available for instance %s, please assign license to the instance to enable it`, f.String(), instance.ResourceID)
 	}
 	return nil
 }
 
-// GetInstanceLicenseCount returns the instance count limit for current subscription.
-func (s *LicenseService) GetInstanceLicenseCount(ctx context.Context) int {
-	instanceCount := s.LoadSubscription(ctx).InstanceCount
-	if instanceCount < 0 {
+// GetActivatedInstanceLimit returns the activated instance limit for the current subscription.
+func (s *LicenseService) GetActivatedInstanceLimit(ctx context.Context) int {
+	limit := s.LoadSubscription(ctx).InstanceCount
+	if limit < 0 {
 		return math.MaxInt
 	}
-	return int(instanceCount)
+	return int(limit)
 }
 
-// GetEffectivePlan gets the effective plan.
-func (s *LicenseService) GetEffectivePlan() v1pb.PlanType {
-	ctx := context.Background()
+// GetUserLimit gets the user limit value for the plan.
+func (s *LicenseService) GetUserLimit(ctx context.Context) int {
 	subscription := s.LoadSubscription(ctx)
-	if subscription.ExpiresTime != nil && subscription.ExpiresTime.AsTime().Before(time.Now()) {
-		return v1pb.PlanType_FREE
+	limit := userLimitValues[subscription.Plan]
+	if subscription.Plan == v1pb.PlanType_FREE {
+		return limit
 	}
-	return subscription.Plan
+
+	// To be compatible with old licenses which don't have seat field set in the claim.
+	if subscription.SeatCount == 0 {
+		return math.MaxInt
+	}
+
+	// Unlimited seat license.
+	if subscription.SeatCount < 0 {
+		return math.MaxInt
+	}
+	return int(subscription.SeatCount)
 }
 
-// GetPlanLimitValue gets the limit value for the plan.
-func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name PlanLimit) int {
-	v, ok := PlanLimitValues[name]
-	if !ok {
-		return 0
-	}
+// GetInstanceLimit gets the instance limit value for the plan.
+func (s *LicenseService) GetInstanceLimit(ctx context.Context) int {
 	subscription := s.LoadSubscription(ctx)
-	limit := v[subscription.Plan]
+	limit := instanceLimitValues[subscription.Plan]
 	if limit == -1 {
 		limit = math.MaxInt
 	}
-
-	switch subscription.Plan {
-	case v1pb.PlanType_FREE:
-		return limit
-	case v1pb.PlanType_TEAM, v1pb.PlanType_ENTERPRISE:
-		switch name {
-		case PlanLimitMaximumInstance:
-			return limit
-		case PlanLimitMaximumUser:
-			if subscription.SeatCount == 0 {
-				// to compatible with old license.
-				return limit
-			}
-			if subscription.SeatCount < 0 {
-				return math.MaxInt
-			}
-			return int(subscription.SeatCount)
-		}
-	}
-
 	return limit
 }
 
@@ -180,8 +169,6 @@ func (s *LicenseService) RefreshCache(ctx context.Context) {
 	s.LoadSubscription(ctx)
 }
 
-// Helper functions to avoid circular import
-
 // accessErrorMessage returns a error message with feature name and minimum supported plan.
 func accessErrorMessage(f v1pb.PlanFeature) string {
 	plan := minimumSupportedPlan(f)
@@ -191,18 +178,11 @@ func accessErrorMessage(f v1pb.PlanFeature) string {
 // minimumSupportedPlan will find the minimum plan which supports the target feature.
 func minimumSupportedPlan(f v1pb.PlanFeature) v1pb.PlanType {
 	// Check from lowest to highest plan
-	if PlanFeatureMatrix[v1pb.PlanType_FREE][f] {
+	if planFeatureMatrix[v1pb.PlanType_FREE][f] {
 		return v1pb.PlanType_FREE
 	}
-	if PlanFeatureMatrix[v1pb.PlanType_TEAM][f] {
+	if planFeatureMatrix[v1pb.PlanType_TEAM][f] {
 		return v1pb.PlanType_TEAM
 	}
 	return v1pb.PlanType_ENTERPRISE
-}
-
-// instanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.
-var instanceLimitFeature = map[v1pb.PlanFeature]bool{
-	v1pb.PlanFeature_FEATURE_DATABASE_SECRET_VARIABLES:     true,
-	v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION: true,
-	v1pb.PlanFeature_FEATURE_DATA_MASKING:                  true,
 }
