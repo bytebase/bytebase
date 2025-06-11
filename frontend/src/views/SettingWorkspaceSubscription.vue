@@ -30,7 +30,7 @@
         <dd class="mt-1 text-3xl lg:text-4xl">{{ expireAt || "N/A" }}</dd>
       </div>
       <div
-        v-if="subscriptionStore.canTrial && allowEdit"
+        v-if="subscriptionStore.showTrial && allowEdit"
         class="flex flex-col text-left"
       >
         <div class="text-main">
@@ -118,7 +118,7 @@
         {{ $t("subscription.description") }}
         {{ $t("subscription.plan-compare") }}
         <LearnMoreLink url="https://www.bytebase.com/pricing?source=console" />
-        <span v-if="subscriptionStore.canTrial" class="ml-1">
+        <span v-if="subscriptionStore.showTrial" class="ml-1">
           <span class="text-accent cursor-pointer" @click="openTrialModal">
             {{ $t("subscription.plan.try") }}
           </span>
