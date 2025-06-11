@@ -65,7 +65,7 @@
               <span>
                 {{ getRuleLocalization(rule.type, rule.engine).title }}
                 <a
-                  :href="`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`"
+                  :href="`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`"
                   target="_blank"
                   class="inline-block"
                 >
@@ -257,7 +257,7 @@ const columns = computed(() => {
           <div class="flex items-center space-x-2">
             <span>{getRuleLocalization(rule.type, rule.engine).title}</span>
             <a
-              href={`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`}
+              href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
               target="_blank"
               class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
             >

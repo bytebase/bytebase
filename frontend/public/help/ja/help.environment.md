@@ -10,4 +10,4 @@ title: 「環境」とは何か？
 
 #### Learn more
 
-- [環境の設定](https://www.bytebase.com/docs/get-started/step-by-step/set-up-environments)
+- [環境の設定](https://docs.bytebase.com/get-started/step-by-step/set-up-environments)

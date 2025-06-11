@@ -1,11 +1,14 @@
 <template>
-  <FeatureAttention :feature="PlanFeature.FEATURE_RISK_ASSESSMENT" class="mb-4" />
+  <FeatureAttention
+    :feature="PlanFeature.FEATURE_RISK_ASSESSMENT"
+    class="mb-4"
+  />
 
   <div class="w-full space-y-4 text-sm">
     <div class="textinfolabel">
       {{ $t("custom-approval.risk.description") }}
       <a
-        href="https://www.bytebase.com/docs/administration/risk-center"
+        href="https://docs.bytebase.com/administration/risk-center"
         target="_blank"
         class="normal-link inline-flex flex-row items-center"
       >
@@ -29,6 +32,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, onMounted, reactive, ref, toRef } from "vue";
 import { BBSpin } from "@/bbkit";
 import {
   RiskCenter,
@@ -40,7 +44,6 @@ import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
 import { featureToRef, useRiskStore } from "@/store";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { computed, onMounted, reactive, ref, toRef } from "vue";
 
 interface LocalState {
   ready: boolean;
@@ -51,7 +54,9 @@ const state = reactive<LocalState>({
   ready: false,
   showFeatureModal: false,
 });
-const hasRiskAssessmentFeature = featureToRef(PlanFeature.FEATURE_RISK_ASSESSMENT);
+const hasRiskAssessmentFeature = featureToRef(
+  PlanFeature.FEATURE_RISK_ASSESSMENT
+);
 
 const allowAdmin = computed(() => {
   return hasWorkspacePermissionV2("bb.risks.update");

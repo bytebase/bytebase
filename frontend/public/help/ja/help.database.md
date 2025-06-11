@@ -8,4 +8,4 @@ title: 「データベース」とは何ですか?
 
 #### さらに詳しく
 
-- [プロジェクトの作成](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
+- [プロジェクトの作成](https://docs.bytebase.com/get-started/step-by-step/create-a-project)

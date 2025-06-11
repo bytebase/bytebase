@@ -303,7 +303,7 @@ const options = computed((): DropdownOption[] => [
         {
           class: "menu-item",
           target: "_blank",
-          href: "https://bytebase.com/docs/introduction/what-is-bytebase/?source=console",
+          href: "https://docs.bytebase.com/introduction/what-is-bytebase/?source=console",
         },
         t("common.help")
       );

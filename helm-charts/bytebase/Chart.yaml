@@ -3,7 +3,7 @@ name: bytebase
 version: 1.1.1
 description: Safe database schema change and version control for DevOps teams.
 type: application
-home: https://bytebase.com/
+home: https://www.bytebase.com/
 sources:
   - https://github.com/bytebase/bytebase
 icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo.svg

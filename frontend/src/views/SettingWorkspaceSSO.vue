@@ -3,7 +3,7 @@
     <div class="textinfolabel">
       {{ $t("settings.sso.description") }}
       <a
-        href="https://bytebase.com/docs/administration/sso/overview?source=console"
+        href="https://docs.bytebase.com/administration/sso/overview?source=console"
         class="normal-link inline-flex flex-row items-center"
         target="_blank"
       >
@@ -20,7 +20,10 @@
         <template #icon>
           <PlusIcon class="h-4 w-4" />
         </template>
-        <FeatureBadge :feature="PlanFeature.FEATURE_ENTERPRISE_SSO" class="mr-1 text-white" />
+        <FeatureBadge
+          :feature="PlanFeature.FEATURE_ENTERPRISE_SSO"
+          class="mr-1 text-white"
+        />
         {{ $t("settings.sso.create") }}
       </NButton>
     </div>

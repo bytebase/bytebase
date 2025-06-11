@@ -18,7 +18,7 @@
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.external-url.description") }}
           <LearnMoreLink
-            url="https://www.bytebase.com/docs/get-started/install/external-url?source=console"
+            url="https://docs.bytebase.com/get-started/install/external-url?source=console"
           />
         </div>
         <NTooltip placement="top-start" :disabled="allowEdit">
@@ -83,9 +83,7 @@ const updateNetworkSetting = async () => {
     payload: {
       externalUrl: state.externalUrl,
     },
-    updateMask: [
-      "value.workspace_profile_setting_value.external_url",
-    ],
+    updateMask: ["value.workspace_profile_setting_value.external_url"],
   });
 
   state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";

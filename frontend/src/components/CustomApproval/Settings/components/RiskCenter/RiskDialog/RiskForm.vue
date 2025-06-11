@@ -46,7 +46,7 @@
           <div class="text-sm text-control-light">
             {{ $t("cel.condition.description-tips") }}
             <LearnMoreLink
-              url="https://www.bytebase.com/docs/administration/risk-center/#configuration?source=console"
+              url="https://docs.bytebase.com/administration/risk-center/#configuration?source=console"
               class="ml-1"
             />
           </div>

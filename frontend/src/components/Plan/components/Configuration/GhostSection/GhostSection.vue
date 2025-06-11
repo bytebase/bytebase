@@ -16,7 +16,7 @@
               <template #link>
                 <!-- TODO: update docs for mariadb -->
                 <LearnMoreLink
-                  url="https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql?source=console"
+                  url="https://docs.bytebase.com/change-database/online-schema-migration-for-mysql?source=console"
                   color="light"
                   hide-when-embedded
                 />
@@ -49,10 +49,10 @@
 </template>
 
 <script lang="ts" setup>
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { WrenchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { ref } from "vue";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";
 import { useGhostSettingContext } from "./context";
@@ -60,5 +60,4 @@ import { useGhostSettingContext } from "./context";
 const showFlagsPanel = ref(false);
 
 const { allowChange, enabled } = useGhostSettingContext();
-
 </script>

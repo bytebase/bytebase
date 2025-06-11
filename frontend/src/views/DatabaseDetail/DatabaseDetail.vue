@@ -9,7 +9,7 @@
       type="warning"
       :title="$t('database.drifted.schema-drift-detected.self')"
       :description="$t('database.drifted.schema-drift-detected.description')"
-      :link="'https://www.bytebase.com/docs/change-database/drift-detection/?source=console'"
+      :link="'https://docs.bytebase.com/change-database/drift-detection/?source=console'"
       :action-text="
         database.project !== DEFAULT_PROJECT_NAME
           ? $t('database.drifted.new-baseline.self')
