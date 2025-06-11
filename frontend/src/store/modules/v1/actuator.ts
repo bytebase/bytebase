@@ -23,7 +23,7 @@ import { UserType } from "@/types/proto/v1/user_service";
 import { semverCompare } from "@/utils";
 
 const EXTERNAL_URL_PLACEHOLDER =
-  "https://www.bytebase.com/docs/get-started/install/external-url";
+  "https://docs.bytebase.com/get-started/install/external-url";
 const GITHUB_API_LIST_BYTEBASE_RELEASE =
   "https://api.github.com/repos/bytebase/bytebase/releases";
 
@@ -68,7 +68,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       if (!version) {
         return "";
       }
-      return `https://bytebase.com/changelog/bytebase-${version.split(".").join("-")}/`;
+      return `https://docs.bytebase.com/changelog/bytebase-${version.split(".").join("-")}/`;
     },
     info: (state) => {
       return state.serverInfo;
@@ -84,11 +84,11 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
     gitCommitBE: (state) => {
       const commit = state.serverInfo?.gitCommit ?? "";
-      return commit === "" ? "unknown": commit;
+      return commit === "" ? "unknown" : commit;
     },
     gitCommitFE: () => {
       const commit = import.meta.env.GIT_COMMIT ?? "";
-      return commit === "" ? "unknown": commit;
+      return commit === "" ? "unknown" : commit;
     },
     isDemo: (state) => {
       return state.serverInfo?.demo;
@@ -231,10 +231,10 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       if (Date.now() - this.serverInfoTs >= 1000 * 60 * 30) {
         await this.fetchServerInfo();
       }
-      if (this.gitCommitBE === 'unknown' || this.gitCommitFE === 'unknown') {
+      if (this.gitCommitBE === "unknown" || this.gitCommitFE === "unknown") {
         return false;
       }
-      return (this.gitCommitBE !== this.gitCommitFE)
+      return this.gitCommitBE !== this.gitCommitFE;
     },
     async fetchLatestRelease(): Promise<Release | undefined> {
       try {

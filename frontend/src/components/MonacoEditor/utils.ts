@@ -134,7 +134,7 @@ export const errorNotification = (err: unknown) => {
         h("p", {}, messages.description()),
         message ? h("p", {}, message) : null,
         h(LearnMoreLink, {
-          url: "https://www.bytebase.com/docs/administration/production-setup/#enable-https-and-websocket",
+          url: "https://docs.bytebase.com/administration/production-setup/#enable-https-and-websocket",
         }),
       ];
     },

@@ -565,7 +565,7 @@
         <p class="textinfolabel">
           {{ $t("settings.sso.form.user-information-mapping-description") }}
           <a
-            href="https://www.bytebase.com/docs/administration/sso/oauth2#user-information-field-mapping?source=console"
+            href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
             class="normal-link text-sm inline-flex flex-row items-center"
             target="_blank"
           >
@@ -838,11 +838,11 @@ const resourceId = computed(() => {
 
 const userDocLink = computed(() => {
   if (state.type === IdentityProviderType.OAUTH2) {
-    return "https://www.bytebase.com/docs/administration/sso/oauth2?source=console";
+    return "https://docs.bytebase.com/administration/sso/oauth2?source=console";
   } else if (state.type === IdentityProviderType.OIDC) {
-    return "https://www.bytebase.com/docs/administration/sso/oidc?source=console";
+    return "https://docs.bytebase.com/administration/sso/oidc?source=console";
   } else if (state.type === IdentityProviderType.LDAP) {
-    return "https://www.bytebase.com/docs/administration/sso/ldap?source=console";
+    return "https://docs.bytebase.com/administration/sso/ldap?source=console";
   }
   return "";
 });

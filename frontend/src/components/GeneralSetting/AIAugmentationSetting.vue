@@ -31,7 +31,7 @@
           <div class="mt-1 mb-3 text-sm text-gray-400">
             {{ $t("settings.general.workspace.ai-assistant.description") }}
             <LearnMoreLink
-              url="https://www.bytebase.com/docs/ai-assistant?source=console"
+              url="https://docs.bytebase.com/ai-assistant?source=console"
               class="ml-1 text-sm"
             />
           </div>
@@ -152,6 +152,10 @@
 </template>
 
 <script lang="ts" setup>
+import { NSelect, NTooltip } from "naive-ui";
+import scrollIntoView from "scroll-into-view-if-needed";
+import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Switch } from "@/components/v2";
@@ -161,10 +165,6 @@ import {
   AISetting_Provider,
   Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
-import { NSelect, NTooltip } from "naive-ui";
-import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
 
 interface LocalState {
   enabled: boolean;
@@ -192,7 +192,8 @@ const state = reactive<LocalState>({
 });
 
 const aiSetting = computed(
-  () => settingV1Store.getSettingByName(Setting_SettingName.AI)?.value?.aiSetting
+  () =>
+    settingV1Store.getSettingByName(Setting_SettingName.AI)?.value?.aiSetting
 );
 
 const getInitialState = (): LocalState => {

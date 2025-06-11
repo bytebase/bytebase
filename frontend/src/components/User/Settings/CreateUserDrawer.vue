@@ -11,7 +11,7 @@
               <div class="text-sm font-medium">{{ $t("common.type") }}</div>
               <a
                 v-if="!hideServiceAccount"
-                href="https://www.bytebase.com/docs/get-started/terraform?source=console"
+                href="https://docs.bytebase.com/get-started/terraform?source=console"
                 target="_blank"
               >
                 <heroicons-outline:question-mark-circle class="w-4 h-4" />

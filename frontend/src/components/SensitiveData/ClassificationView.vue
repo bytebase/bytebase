@@ -3,7 +3,7 @@
     <div class="text-sm text-control-light">
       {{ $t("database.classification.description") }}
       <LearnMoreLink
-        url="https://www.bytebase.com/docs/security/data-masking/data-classification?source=console"
+        url="https://docs.bytebase.com/security/data-masking/data-classification?source=console"
         class="ml-1"
       />
     </div>
@@ -99,13 +99,13 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
   DataClassificationSetting_DataClassificationConfig,
   Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import ClassificationTree from "../SchemaTemplate/ClassificationTree.vue";

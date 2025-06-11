@@ -8,4 +8,4 @@ title: What is 'Instance' ?
 
 #### Learn more
 
-- [Add an Instance](https://www.bytebase.com/docs/get-started/step-by-step/add-an-instance)
+- [Add an Instance](https://docs.bytebase.com/get-started/step-by-step/add-an-instance)

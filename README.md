@@ -1,7 +1,7 @@
 <h1 align="center">
   <a
     target="_blank"
-    href="https://bytebase.com?source=github"
+    href="https://www.bytebase.com?source=github"
   >
     <img
       align="center"
@@ -13,8 +13,8 @@
 </h1>
 
 <p align="center">
-  <a href="https://bytebase.com/docs/get-started/self-host" target="_blank"><b>⚙️ Install</b></a> •
-  <a href="https://bytebase.com/docs/introduction/what-is-bytebase"><b>📚 Docs</b></a> •
+  <a href="https://docs.bytebase.com/get-started/self-host" target="_blank"><b>⚙️ Install</b></a> •
+  <a href="https://docs.bytebase.com/introduction/what-is-bytebase"><b>📚 Docs</b></a> •
   <a href="https://discord.gg/huyw7gRsyA"><b>💬 Discord</b></a> •
   <a href="https://www.bytebase.com/request-demo/"><b>🙋‍♀️ Book Demo</b></a>
 </p>
@@ -76,9 +76,9 @@
   Want to formalize the database change process but don't know how?
 </p>
 
-|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                                                                                                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| <b>Standard Operating Procedure (SOP) </b><br />Standardize the database schema and data change process across different database systems, small or [large tables](https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql) and [different tenants](https://www.bytebase.com/docs/change-database/batch-change/#change-databases-from-multiple-tenants).<br /><br/><b>SQL Review</b><br />[100+ lint rules](https://www.bytebase.com/docs/sql-review/review-rules) to detect SQL anti-patterns and enforce consistent SQL style in the organization.<br /><br /><b>GitOps</b><br />[Point-and-click GitHub and GitLab integration](https://www.bytebase.com/docs/vcs-integration/overview) to enable GitOps workflow for changing database. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/issue-detail.webp" /> |
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                                                                                                      |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| <b>Standard Operating Procedure (SOP) </b><br />Standardize the database schema and data change process across different database systems, small or [large tables](https://docs.bytebase.com/change-database/online-schema-migration-for-mysql) and [different tenants](https://docs.bytebase.com/change-database/batch-change/#change-databases-from-multiple-tenants).<br /><br/><b>SQL Review</b><br />[100+ lint rules](https://docs.bytebase.com/sql-review/review-rules) to detect SQL anti-patterns and enforce consistent SQL style in the organization.<br /><br /><b>GitOps</b><br />[Point-and-click GitHub and GitLab integration](https://docs.bytebase.com/vcs-integration/overview) to enable GitOps workflow for changing database. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/issue-detail.webp" /> |
 
 <br />
 
@@ -88,9 +88,9 @@
   Want to control the data access but don't know how?
 </p>
 
-|                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                                    |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| <b>All-in-one SQL Editor</b><br />Web-based IDE specifically for performing SQL specific tasks.<br /><br/><b>Data Masking</b><br />State-of-the-art [column level masking](https://www.bytebase.com/docs/sql-editor/mask-data) engine to cover complex situations like subquery, CTE.<br /><br /><b>Data Access Control</b><br />Organization level policy to centralize the [database permission](https://www.bytebase.com/docs/security/database-permission/overview). | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp" /> |
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| <b>All-in-one SQL Editor</b><br />Web-based IDE specifically for performing SQL specific tasks.<br /><br/><b>Data Masking</b><br />State-of-the-art [column level masking](https://docs.bytebase.com/sql-editor/mask-data) engine to cover complex situations like subquery, CTE.<br /><br /><b>Data Access Control</b><br />Organization level policy to centralize the [database permission](https://docs.bytebase.com/security/database-permission/overview). | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp" /> |
 
 <br />
 
@@ -100,9 +100,9 @@
   Want to avoid data leakage, change outage and detect malicious behavior but don't know how?
 </p>
 
-|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |                                                                                                        |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| <b>Centralize Change, Query and Admin Tasks</b><br />A single place to perform different tasks on different databases, thus enforce policy and monitor activity accordingly. <br /><br /><b>RBAC</b><br />[Two-level RBAC model](https://www.bytebase.com/docs/concepts/roles-and-permissions) mapping to the organization wide privileges and application team privileges respectively.<br /><br /><b>Drift detection and Audit Logging</b><br /> Capture all database schema drifts, user actions and system events and present them in a holistic view. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/grant-access.webp" /> |
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| <b>Centralize Change, Query and Admin Tasks</b><br />A single place to perform different tasks on different databases, thus enforce policy and monitor activity accordingly. <br /><br /><b>RBAC</b><br />[Two-level RBAC model](https://docs.bytebase.com/concepts/roles-and-permissions) mapping to the organization wide privileges and application team privileges respectively.<br /><br /><b>Drift detection and Audit Logging</b><br /> Capture all database schema drifts, user actions and system events and present them in a holistic view. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/grant-access.webp" /> |
 
 <br />
 
@@ -112,9 +112,9 @@
   Want to enforce organization policy but don't know how?
 </p>
 
-|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                                                                                           |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| <b>Manage Database Resources</b><br /> A single place to manage environments, database instances, database users for application development, with optional [Terraform integration](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs). <br /><br /><b>Policy Enforcement</b><br />Enforce organization wide SQL Review policy, backup policy and data access policy.<br /><br/><b>SQL Editor Admin mode</b><br />[CLI like experience](https://www.bytebase.com/docs/sql-editor/admin-mode) without setting up bastion. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-review-policy.webp" /> |
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| <b>Manage Database Resources</b><br /> A single place to manage environments, database instances, database users for application development, with optional [Terraform integration](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs). <br /><br /><b>Policy Enforcement</b><br />Enforce organization wide SQL Review policy, backup policy and data access policy.<br /><br/><b>SQL Editor Admin mode</b><br />[CLI like experience](https://docs.bytebase.com/sql-editor/admin-mode) without setting up bastion. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-review-policy.webp" /> |
 
 <br />
 
@@ -124,8 +124,8 @@
 
 Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase). The Bytebase family consists of these tools:
 
-- [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
-- [Bytebase API](https://www.bytebase.com/docs/api/overview): Provide both gRPC and RESTful API to manipulate every aspect of Bytebase.
+- [Bytebase Console](https://www.bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
+- [Bytebase API](https://docs.bytebase.com/api/overview): Provide both gRPC and RESTful API to manipulate every aspect of Bytebase.
 - [SQL Review GitHub Action](https://github.com/bytebase/sql-review-action): The GitHub Action to detect SQL anti-patterns and enforce a consistent SQL style guide during Pull Request.
 - [Terraform Bytebase Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs): The Terraform
   provider enables team to manage Bytebase resources via Terraform. A typical setup involves teams using
@@ -147,9 +147,9 @@ Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **on
 
 # 🔧 Installation
 
-- [Docker](https://www.bytebase.com/docs/get-started/self-host/)
-- [Kubernetes](https://www.bytebase.com/docs/get-started/install/deploy-to-kubernetes)
-- [Build from source](https://www.bytebase.com/docs/get-started/install/build-from-source-code)
+- [Docker](https://docs.bytebase.com/get-started/self-host/)
+- [Kubernetes](https://docs.bytebase.com/get-started/install/deploy-to-kubernetes)
+- [Build from source](https://docs.bytebase.com/get-started/install/build-from-source-code)
 
 <br />
 
@@ -164,31 +164,31 @@ our product experts.
 
 # 👩‍🏫 Tutorials
 
-Product tutorials are available at https://www.bytebase.com/tutorial.
+Product tutorials are available at https://docs.bytebase.com/tutorials.
 
 ## Integrations
 
-- [Manage Supabase PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/supabase)
-- [Manage render PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/render)
-- [Manage Neon database](https://www.bytebase.com/docs/how-to/integrations/neon)
-- [Deploy to sealos](https://www.bytebase.com/docs/get-started/install/deploy-to-sealos)
-- [Deploy to Rainbond](https://www.bytebase.com/docs/get-started/install/deploy-to-rainbond)
+- [Manage Supabase PostgreSQL](https://docs.bytebase.com/integrations/supabase)
+- [Manage render PostgreSQL](https://docs.bytebase.com/integrations/render)
+- [Manage Neon database](https://docs.bytebase.com/integrations/neon)
+- [Deploy to sealos](https://docs.bytebase.com/get-started/install/deploy-to-sealos)
+- [Deploy to Rainbond](https://docs.bytebase.com/get-started/install/deploy-to-rainbond)
 
 <br />
 
 # 💎 Design Principles
 
-|     |                         |                                                                                                                                                                                                                                                                                                                                                        |
-| --- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 🪶  | Dependency Free         | Start with a single command `./bytebase` without any external dependency. External PostgreSQL data store and others are optional.                                                                                                                                                                                                                      |
-| 🔗  | Integration First       | Solely focus on database management and leave the rest to others. We have native VCS integration with [GitHub/GitLab](https://www.bytebase.com/docs/vcs-integration/overview), [Terraform Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs), [webhook](https://www.bytebase.com/docs/change-database/webhook), and etc. |
-| 💂‍♀️  | Engineering Disciplined | Disciplined [bi-weekly release](https://www.bytebase.com/changelog) and [engineering practice](https://github.com/bytebase/bytebase/blob/main/docs/life-of-a-feature.md).                                                                                                                                                                              |
+|     |                         |                                                                                                                                                                                                                                                                                                                                                |
+| --- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🪶  | Dependency Free         | Start with a single command `./bytebase` without any external dependency. External PostgreSQL data store and others are optional.                                                                                                                                                                                                              |
+| 🔗  | Integration First       | Solely focus on database management and leave the rest to others. We have native VCS integration with [GitHub/GitLab](https://docs.bytebase.com/vcs-integration/overview), [Terraform Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs), [webhook](https://docs.bytebase.com/change-database/webhook), and etc. |
+| 💂‍♀️  | Engineering Disciplined | Disciplined [bi-weekly release](https://docs.bytebase.com/changelog) and [engineering practice](https://github.com/bytebase/bytebase/blob/main/docs/life-of-a-feature.md).                                                                                                                                                                     |
 
 <br />
 
 # 🧩 Data Model
 
-More details in [Data Model Doc](https://www.bytebase.com/docs/concepts/data-model).
+More details in [Data Model Doc](https://docs.bytebase.com/concepts/data-model).
 
 <p align="center">
     <img
@@ -203,7 +203,7 @@ More details in [Data Model Doc](https://www.bytebase.com/docs/concepts/data-mod
 
 # 🎭 Roles
 
-More details in [Roles and Permissions Doc](https://www.bytebase.com/docs/concepts/roles-and-permissions).
+More details in [Roles and Permissions Doc](https://docs.bytebase.com/concepts/roles-and-permissions).
 
 Bytebase employs RBAC (role based access control) and provides two role sets at the workspace and project level:
 
@@ -316,7 +316,7 @@ Bytebase has the similar `Project` concept seen in GitLab/GitHub and provides na
 with GitLab/GitHub.
 
 Another key difference is Yearning, Archery are open source projects maintained by the individuals part-time. While Bytebase is open-sourced, it adopts an open-core model and is a commercialized product, supported
-by a [fully staffed team](https://www.bytebase.com/about#team) [releasing new version every 2 weeks](https://www.bytebase.com/changelog).
+by a [fully staffed team](https://www.bytebase.com/about#team) [releasing new version every 2 weeks](https://docs.bytebase.com/changelog).
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,cookieY/Yearning,hhyo/Archery&type=Date)](https://star-history.com/#bytebase/bytebase&cookieY/Yearning&hhyo/Archery&Date)
 
@@ -361,11 +361,11 @@ Jira is a general-purpose issue ticketing system. Bytebase is a database domain-
 
 # 🤔 Frequently Asked Questions (FAQs)
 
-Check out our [FAQ](https://www.bytebase.com/docs/faq).
+Check out our [FAQ](https://docs.bytebase.com/faq).
 
 <br />
 
 # 🙋 Contact Us
 
-- Interested in joining us? Check out our [jobs page](https://bytebase.com/jobs?source=github) for openings.
+- Interested in joining us? Check out our [jobs page](https://www.bytebase.com/jobs?source=github) for openings.
 - Want to solve your schema change and database management headache? Book a [30min demo](https://cal.com/bytebase/product-walkthrough) with one of our product experts.
