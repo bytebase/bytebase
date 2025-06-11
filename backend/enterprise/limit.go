@@ -13,24 +13,11 @@ import (
 //go:embed plan.yaml
 var planConfigStr string
 
-// PlanLimit is the type for plan limits.
-type PlanLimit int
+var userLimitValues = map[v1pb.PlanType]int{}
+var instanceLimitValues = map[v1pb.PlanType]int{}
 
-const (
-	// PlanLimitMaximumInstance is the key name for maximum number of instance for a plan.
-	PlanLimitMaximumInstance = iota
-	// PlanLimitMaximumUser is the key name for maximum number of user for a plan.
-	PlanLimitMaximumUser
-)
-
-// PlanLimitValues is the plan limit value mapping.
-var PlanLimitValues = map[PlanLimit]map[v1pb.PlanType]int{
-	PlanLimitMaximumInstance: {},
-	PlanLimitMaximumUser:     {},
-}
-
-// PlanFeatureMatrix maps plans to their available features
-var PlanFeatureMatrix = make(map[v1pb.PlanType]map[v1pb.PlanFeature]bool)
+// planFeatureMatrix maps plans to their available features
+var planFeatureMatrix = make(map[v1pb.PlanType]map[v1pb.PlanFeature]bool)
 
 func init() {
 	// First unmarshal YAML to a generic map, then convert to JSON for protojson
@@ -52,13 +39,12 @@ func init() {
 	}
 
 	for _, plan := range conf.Plans {
-		PlanLimitValues[PlanLimitMaximumInstance][plan.Type] = int(plan.MaximumInstanceCount)
-		PlanLimitValues[PlanLimitMaximumUser][plan.Type] = int(plan.MaximumSeatCount)
+		userLimitValues[plan.Type] = int(plan.MaximumSeatCount)
+		instanceLimitValues[plan.Type] = int(plan.MaximumInstanceCount)
 
-		// Initialize feature map for this plan
-		PlanFeatureMatrix[plan.Type] = make(map[v1pb.PlanFeature]bool)
+		planFeatureMatrix[plan.Type] = make(map[v1pb.PlanFeature]bool)
 		for _, feature := range plan.Features {
-			PlanFeatureMatrix[plan.Type][feature] = true
+			planFeatureMatrix[plan.Type][feature] = true
 		}
 	}
 }

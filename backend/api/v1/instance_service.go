@@ -321,14 +321,14 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return convertInstanceMessage(instanceMessage)
 	}
 
-	instanceCountLimit := s.licenseService.GetInstanceLicenseCount(ctx)
+	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx)
 	if instanceMessage.Metadata.GetActivation() {
 		count, err := s.store.GetActivatedInstanceCount(ctx)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		if count >= instanceCountLimit {
-			return nil, status.Errorf(codes.ResourceExhausted, instanceExceededError, instanceCountLimit)
+		if count >= activatedInstanceLimit {
+			return nil, status.Errorf(codes.ResourceExhausted, instanceExceededError, activatedInstanceLimit)
 		}
 	}
 
@@ -479,14 +479,14 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		}
 	}
 
-	instanceCountLimit := s.licenseService.GetInstanceLicenseCount(ctx)
+	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx)
 	if updateActivation {
 		count, err := s.store.GetActivatedInstanceCount(ctx)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		if count >= instanceCountLimit {
-			return nil, status.Errorf(codes.ResourceExhausted, instanceExceededError, instanceCountLimit)
+		if count >= activatedInstanceLimit {
+			return nil, status.Errorf(codes.ResourceExhausted, instanceExceededError, activatedInstanceLimit)
 		}
 	}
 
@@ -1414,7 +1414,7 @@ func convertV1DataSourceType(tp v1pb.DataSourceType) (storepb.DataSourceType, er
 }
 
 func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
-	instanceLimit := s.licenseService.GetPlanLimitValue(ctx, enterprise.PlanLimitMaximumInstance)
+	instanceLimit := s.licenseService.GetInstanceLimit(ctx)
 
 	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
 	if err != nil {

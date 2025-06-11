@@ -921,7 +921,7 @@ func generateRecoveryCodes(n int) ([]string, error) {
 }
 
 func (s *UserService) userCountGuard(ctx context.Context) error {
-	userLimit := s.licenseService.GetPlanLimitValue(ctx, enterprise.PlanLimitMaximumUser)
+	userLimit := s.licenseService.GetUserLimit(ctx)
 
 	count, err := s.store.CountActiveUsers(ctx)
 	if err != nil {
