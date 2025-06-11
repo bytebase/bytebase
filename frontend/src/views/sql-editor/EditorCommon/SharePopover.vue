@@ -153,23 +153,22 @@ const allowChangeAccess = computed(() => {
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
 
-const updateWorksheet = () => {
-  if (sheet.value) {
-    worksheetV1Store.patchWorksheet(
+const handleChangeAccess = async (option: AccessOption) => {
+  // only creator can change access
+  if (allowChangeAccess.value && sheet.value) {
+    currentAccess.value = option;
+    await worksheetV1Store.patchWorksheet(
       {
         name: sheet.value.name,
         visibility: currentAccess.value.value,
       },
       ["visibility"]
     );
-  }
-};
-
-const handleChangeAccess = (option: AccessOption) => {
-  // only creator can change access
-  if (allowChangeAccess.value) {
-    currentAccess.value = option;
-    updateWorksheet();
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
   }
   isShowAccessPopover.value = false;
 };
