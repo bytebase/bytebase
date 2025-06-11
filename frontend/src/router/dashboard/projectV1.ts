@@ -331,6 +331,8 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "",
             name: PROJECT_V1_ROUTE_PLANS,
             meta: {
+              // TODO(claude): rename title to "Plans" later.
+              title: () => t("review-center.self"),
               requiredPermissionList: () => [
                 "bb.databases.list",
                 "bb.plans.list",
