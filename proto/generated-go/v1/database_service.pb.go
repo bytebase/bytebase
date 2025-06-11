@@ -6136,7 +6136,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\fDeleteSecret\x12 .bytebase.v1.DeleteSecretRequest\x1a\x16.google.protobuf.Empty\"Y\x8a\xea0\x19bb.databaseSecrets.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02.*,/v1/{name=instances/*/databases/*/secrets/*}\x12\xb5\x01\n" +
 	"\x0eListChangelogs\x12\".bytebase.v1.ListChangelogsRequest\x1a#.bytebase.v1.ListChangelogsResponse\"Z\xdaA\x06parent\x8a\xea0\x12bb.changelogs.list\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{parent=instances/*/databases/*}/changelogs\x12\xa1\x01\n" +
 	"\fGetChangelog\x12 .bytebase.v1.GetChangelogRequest\x1a\x16.bytebase.v1.Changelog\"W\xdaA\x04name\x8a\xea0\x11bb.changelogs.get\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{name=instances/*/databases/*/changelogs/*}\x12\xba\x01\n" +
-	"\x0fGetSchemaString\x12#.bytebase.v1.GetSchemaStringRequest\x1a$.bytebase.v1.GetSchemaStringResponse\"\\\xdaA\x04name\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{name=instances/*/databases/*/schemaString}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x0fGetSchemaString\x12#.bytebase.v1.GetSchemaStringRequest\x1a$.bytebase.v1.GetSchemaStringResponse\"\\\xdaA\x04name\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{name=instances/*/databases/*/schemaString}B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_database_service_proto_rawDescOnce sync.Once

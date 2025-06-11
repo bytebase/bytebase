@@ -4,7 +4,7 @@ package bytebase.v1;
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 extend google.protobuf.MethodOptions {
   bool allow_without_credential = 100000;

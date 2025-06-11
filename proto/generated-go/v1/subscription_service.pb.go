@@ -801,7 +801,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10I2\xa3\x02\n" +
 	"\x13SubscriptionService\x12r\n" +
 	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1f\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\x97\x01\n" +
-	"\x12UpdateSubscription\x12&.bytebase.v1.UpdateSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\">\xdaA\x05patch\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x82\xd3\xe4\x93\x02\x19:\x05patch2\x10/v1/subscriptionB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x12UpdateSubscription\x12&.bytebase.v1.UpdateSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\">\xdaA\x05patch\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x82\xd3\xe4\x93\x02\x19:\x05patch2\x10/v1/subscriptionB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_subscription_service_proto_rawDescOnce sync.Once

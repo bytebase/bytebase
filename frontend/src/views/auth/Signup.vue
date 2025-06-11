@@ -48,7 +48,12 @@
             v-model:password="state.password"
             v-model:password-confirm="state.passwordConfirm"
             :show-learn-more="false"
-            :password-restriction="passwordRestriction"
+            :password-restriction="
+              PasswordRestrictionSetting.fromJSON(
+                toJson(PasswordRestrictionSettingSchema, passwordRestriction)
+              )
+              // TODO(es): remove after migration
+            "
           />
 
           <div>
@@ -140,6 +145,7 @@
 </template>
 
 <script lang="ts" setup>
+import { toJson } from "@bufbuild/protobuf";
 import { NButton, NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -149,6 +155,8 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useActuatorV1Store, useAuthStore } from "@/store";
+import { PasswordRestrictionSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
 import type { User } from "@/types/proto/v1/user_service";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";

@@ -3756,7 +3756,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\fListSettings\x12 .bytebase.v1.ListSettingsRequest\x1a!.bytebase.v1.ListSettingsResponse\"/\xdaA\x00\x8a\xea0\x10bb.settings.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/settings\x12\x7f\n" +
 	"\n" +
 	"GetSetting\x12\x1e.bytebase.v1.GetSettingRequest\x1a\x14.bytebase.v1.Setting\";\xdaA\x04name\x8a\xea0\x0fbb.settings.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=settings/*}\x12\x93\x01\n" +
-	"\rUpdateSetting\x12!.bytebase.v1.UpdateSettingRequest\x1a\x14.bytebase.v1.Setting\"I\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(:\asetting2\x1d/v1/{setting.name=settings/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\rUpdateSetting\x12!.bytebase.v1.UpdateSettingRequest\x1a\x14.bytebase.v1.Setting\"I\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(:\asetting2\x1d/v1/{setting.name=settings/*}B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_setting_service_proto_rawDescOnce sync.Once

@@ -589,7 +589,7 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"\vCreateGroup\x12\x1f.bytebase.v1.CreateGroupRequest\x1a\x12.bytebase.v1.Group\"=\xdaA\x05group\x8a\xea0\x10bb.groups.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x05group\"\n" +
 	"/v1/groups\x12\x9c\x01\n" +
 	"\vUpdateGroup\x12\x1f.bytebase.v1.UpdateGroupRequest\x1a\x12.bytebase.v1.Group\"X\xdaA\x11group,update_mask\x8a\xea0\x10bb.groups.update\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\":\x05group2\x19/v1/{group.name=groups/*}\x12\x86\x01\n" +
-	"\vDeleteGroup\x12\x1f.bytebase.v1.DeleteGroupRequest\x1a\x16.google.protobuf.Empty\">\xdaA\x04name\x8a\xea0\x10bb.groups.delete\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x15*\x13/v1/{name=groups/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\vDeleteGroup\x12\x1f.bytebase.v1.DeleteGroupRequest\x1a\x16.google.protobuf.Empty\">\xdaA\x04name\x8a\xea0\x10bb.groups.delete\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x15*\x13/v1/{name=groups/*}B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_group_service_proto_rawDescOnce sync.Once

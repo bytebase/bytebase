@@ -3809,7 +3809,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\rBatchRunTasks\x12!.bytebase.v1.BatchRunTasksRequest\x1a\".bytebase.v1.BatchRunTasksResponse\"R\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02?:\x01*\":/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun\x12\xae\x01\n" +
 	"\x0eBatchSkipTasks\x12\".bytebase.v1.BatchSkipTasksRequest\x1a#.bytebase.v1.BatchSkipTasksResponse\"S\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02@:\x01*\";/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip\x12\xca\x01\n" +
 	"\x13BatchCancelTaskRuns\x12'.bytebase.v1.BatchCancelTaskRunsRequest\x1a(.bytebase.v1.BatchCancelTaskRunsResponse\"`\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02M:\x01*\"H/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel\x12\xe9\x01\n" +
-	"\x16PreviewTaskRunRollback\x12*.bytebase.v1.PreviewTaskRunRollbackRequest\x1a+.bytebase.v1.PreviewTaskRunRollbackResponse\"v\xdaA\x04name\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02Q:\x01*\"L/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}:previewRollbackB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x16PreviewTaskRunRollback\x12*.bytebase.v1.PreviewTaskRunRollbackRequest\x1a+.bytebase.v1.PreviewTaskRunRollbackResponse\"v\xdaA\x04name\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02Q:\x01*\"L/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}:previewRollbackB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_rollout_service_proto_rawDescOnce sync.Once

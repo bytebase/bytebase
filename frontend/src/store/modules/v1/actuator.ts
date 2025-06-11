@@ -1,10 +1,11 @@
+import { create } from "@bufbuild/protobuf";
 import type { RemovableRef } from "@vueuse/core";
 import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import { defineStore } from "pinia";
 import semver from "semver";
 import { computed } from "vue";
-import { actuatorServiceClient } from "@/grpcweb";
+import { actuatorServiceClientConnect } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
   defaultAppProfile,
@@ -16,10 +17,12 @@ import {
 import type {
   ActuatorInfo,
   ResourcePackage,
-} from "@/types/proto/v1/actuator_service";
-import { State } from "@/types/proto/v1/common";
-import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
-import { UserType } from "@/types/proto/v1/user_service";
+} from "@/types/proto-es/v1/actuator_service_pb";
+import { State } from "@/types/proto-es/v1/common_pb";
+import {
+  PasswordRestrictionSettingSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { semverCompare } from "@/utils";
 
 const EXTERNAL_URL_PLACEHOLDER =
@@ -129,7 +132,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     passwordRestriction: (state) => {
       return (
         state.serverInfo?.passwordRestriction ??
-        PasswordRestrictionSetting.fromPartial({
+        create(PasswordRestrictionSettingSchema, {
           minLength: 8,
           requireLetter: true,
         })
@@ -174,19 +177,21 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
     async fetchServerInfo() {
       const [serverInfo, resourcePackage] = await Promise.all([
-        actuatorServiceClient.getActuatorInfo({}),
-        actuatorServiceClient.getResourcePackage({}),
+        actuatorServiceClientConnect.getActuatorInfo({}),
+        actuatorServiceClientConnect.getResourcePackage({}),
       ]);
       this.setServerInfo(serverInfo);
       this.resourcePackage = resourcePackage;
       return serverInfo;
     },
     async patchDebug({ debug }: { debug: boolean }) {
-      const serverInfo = await actuatorServiceClient.updateActuatorInfo({
+      const serverInfo = await actuatorServiceClientConnect.updateActuatorInfo({
         actuator: {
           debug,
         },
-        updateMask: ["debug"],
+        updateMask: {
+          paths: ["debug"],
+        },
       });
       this.setServerInfo(serverInfo);
     },
@@ -248,7 +253,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       }
     },
     async setupSample() {
-      await actuatorServiceClient.setupSample({});
+      await actuatorServiceClientConnect.setupSample({});
     },
     overrideAppFeatures(overrides: Partial<AppFeatures>) {
       Object.assign(this.appProfile.features, overrides);
