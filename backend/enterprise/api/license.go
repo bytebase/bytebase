@@ -3,7 +3,6 @@ package api
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,7 +19,6 @@ var validPlans = []v1pb.PlanType{
 
 // License is the API message for enterprise license.
 type License struct {
-	Subject       string
 	InstanceCount int
 	Seat          int
 	ExpiresTS     int64
@@ -51,11 +49,6 @@ func (l *License) validPlanType() error {
 		v1pb.PlanType_TEAM.String(),
 		v1pb.PlanType_ENTERPRISE.String(),
 	)
-}
-
-// OrgID extract the organization id from license subject.
-func (l *License) OrgID() string {
-	return strings.Split(l.Subject, ".")[0]
 }
 
 // LicenseService is the service for enterprise license.

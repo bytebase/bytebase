@@ -97,7 +97,6 @@ func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 		InstanceCount: int32(license.InstanceCount),
 		SeatCount:     int32(license.Seat),
 		Trialing:      license.Trialing,
-		OrgId:         license.OrgID(),
 		OrgName:       license.OrgName,
 	}
 }
@@ -213,7 +212,6 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.
 		ExpiresTS:     claim.ExpiresAt.Unix(),
 		IssuedTS:      claim.IssuedAt.Unix(),
 		Plan:          planType,
-		Subject:       claim.Subject,
 		Trialing:      claim.Trialing,
 		OrgName:       claim.OrgName,
 	}
