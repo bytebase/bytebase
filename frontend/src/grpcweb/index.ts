@@ -1,7 +1,6 @@
 import { createClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ActuatorService } from '@/types/proto-es/v1/actuator_service_pb';
-import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
@@ -176,11 +175,6 @@ export const celServiceClient = clientFactory.create(
 
 export const subscriptionServiceClient = clientFactory.create(
   SubscriptionServiceDefinition,
-  channel
-);
-
-export const actuatorServiceClient = clientFactory.create(
-  ActuatorServiceDefinition,
   channel
 );
 
