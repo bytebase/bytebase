@@ -23,7 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"
@@ -41,7 +41,7 @@ type SettingService struct {
 	v1pb.UnimplementedSettingServiceServer
 	store          *store.Store
 	profile        *config.Profile
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 	stateCfg       *state.State
 }
 
@@ -49,7 +49,7 @@ type SettingService struct {
 func NewSettingService(
 	store *store.Store,
 	profile *config.Profile,
-	licenseService enterprise.LicenseService,
+	licenseService *enterprise.LicenseService,
 	stateCfg *state.State,
 ) *SettingService {
 	return &SettingService{

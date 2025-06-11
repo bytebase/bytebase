@@ -1,5 +1,5 @@
-// Package service implements the enterprise license service.
-package service
+// Package enterprise implements the enterprise license service.
+package enterprise
 
 import (
 	"context"
@@ -11,13 +11,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
-
-var _ enterprise.LicenseService = (*LicenseService)(nil)
 
 // LicenseService is the service for enterprise license.
 type LicenseService struct {
@@ -95,7 +92,7 @@ func isSubscriptionExpired(s *v1pb.Subscription) bool {
 // IsFeatureEnabled returns whether a feature is enabled.
 func (s *LicenseService) IsFeatureEnabled(f v1pb.PlanFeature) error {
 	plan := s.GetEffectivePlan()
-	features, ok := enterprise.PlanFeatureMatrix[plan]
+	features, ok := PlanFeatureMatrix[plan]
 	if !ok || !features[f] {
 		return errors.New(accessErrorMessage(f))
 	}
@@ -142,8 +139,8 @@ func (s *LicenseService) GetEffectivePlan() v1pb.PlanType {
 }
 
 // GetPlanLimitValue gets the limit value for the plan.
-func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.PlanLimit) int {
-	v, ok := enterprise.PlanLimitValues[name]
+func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name PlanLimit) int {
+	v, ok := PlanLimitValues[name]
 	if !ok {
 		return 0
 	}
@@ -158,9 +155,9 @@ func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.
 		return limit
 	case v1pb.PlanType_TEAM, v1pb.PlanType_ENTERPRISE:
 		switch name {
-		case enterprise.PlanLimitMaximumInstance:
+		case PlanLimitMaximumInstance:
 			return limit
-		case enterprise.PlanLimitMaximumUser:
+		case PlanLimitMaximumUser:
 			if subscription.SeatCount == 0 {
 				// to compatible with old license.
 				return limit
@@ -194,10 +191,10 @@ func accessErrorMessage(f v1pb.PlanFeature) string {
 // minimumSupportedPlan will find the minimum plan which supports the target feature.
 func minimumSupportedPlan(f v1pb.PlanFeature) v1pb.PlanType {
 	// Check from lowest to highest plan
-	if enterprise.PlanFeatureMatrix[v1pb.PlanType_FREE][f] {
+	if PlanFeatureMatrix[v1pb.PlanType_FREE][f] {
 		return v1pb.PlanType_FREE
 	}
-	if enterprise.PlanFeatureMatrix[v1pb.PlanType_TEAM][f] {
+	if PlanFeatureMatrix[v1pb.PlanType_TEAM][f] {
 		return v1pb.PlanType_TEAM
 	}
 	return v1pb.PlanType_ENTERPRISE

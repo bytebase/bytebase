@@ -17,7 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -27,10 +27,10 @@ type AuditLogService struct {
 	v1pb.UnimplementedAuditLogServiceServer
 	store          *store.Store
 	iamManager     *iam.Manager
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
-func NewAuditLogService(store *store.Store, iamManager *iam.Manager, licenseService enterprise.LicenseService) *AuditLogService {
+func NewAuditLogService(store *store.Store, iamManager *iam.Manager, licenseService *enterprise.LicenseService) *AuditLogService {
 	return &AuditLogService{
 		store:          store,
 		iamManager:     iamManager,

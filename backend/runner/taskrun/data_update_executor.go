@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -28,7 +28,7 @@ import (
 )
 
 // NewDataUpdateExecutor creates a data update (DML) task executor.
-func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &DataUpdateExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -43,7 +43,7 @@ func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, l
 type DataUpdateExecutor struct {
 	store        *store.Store
 	dbFactory    *dbfactory.DBFactory
-	license      enterprise.LicenseService
+	license      *enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
 	profile      *config.Profile

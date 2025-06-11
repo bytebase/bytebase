@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -21,11 +21,11 @@ import (
 type ReviewConfigService struct {
 	v1pb.UnimplementedReviewConfigServiceServer
 	store          *store.Store
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewReviewConfigService creates a new ReviewConfigService.
-func NewReviewConfigService(store *store.Store, licenseService enterprise.LicenseService) *ReviewConfigService {
+func NewReviewConfigService(store *store.Store, licenseService *enterprise.LicenseService) *ReviewConfigService {
 	return &ReviewConfigService{
 		store:          store,
 		licenseService: licenseService,

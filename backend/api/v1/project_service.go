@@ -26,7 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -40,7 +40,7 @@ type ProjectService struct {
 	store          *store.Store
 	profile        *config.Profile
 	iamManager     *iam.Manager
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewProjectService creates a new ProjectService.
@@ -48,7 +48,7 @@ func NewProjectService(
 	store *store.Store,
 	profile *config.Profile,
 	iamManager *iam.Manager,
-	licenseService enterprise.LicenseService,
+	licenseService *enterprise.LicenseService,
 ) *ProjectService {
 	return &ProjectService{
 		store:          store,

@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -18,11 +18,11 @@ import (
 type RiskService struct {
 	v1pb.UnimplementedRiskServiceServer
 	store          *store.Store
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewRiskService creates a new RiskService.
-func NewRiskService(store *store.Store, licenseService enterprise.LicenseService) *RiskService {
+func NewRiskService(store *store.Store, licenseService *enterprise.LicenseService) *RiskService {
 	return &RiskService{
 		store:          store,
 		licenseService: licenseService,

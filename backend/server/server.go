@@ -39,8 +39,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/demo"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	enterprisesvc "github.com/bytebase/bytebase/backend/enterprise/service"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
@@ -76,7 +75,7 @@ type Server struct {
 	webhookManager *webhook.Manager
 	iamManager     *iam.Manager
 
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 
 	profile    *config.Profile
 	echoServer *echo.Echo
@@ -171,7 +170,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		slog.Warn("failed to backfill issue ts vector", log.BBError(err))
 	}
 
-	s.licenseService, err = enterprisesvc.NewLicenseService(profile.Mode, stores)
+	s.licenseService, err = enterprise.NewLicenseService(profile.Mode, stores)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
 	}

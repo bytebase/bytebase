@@ -13,7 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
@@ -26,11 +26,11 @@ import (
 type IdentityProviderService struct {
 	v1pb.UnimplementedIdentityProviderServiceServer
 	store          *store.Store
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewIdentityProviderService creates a new IdentityProviderService.
-func NewIdentityProviderService(store *store.Store, licenseService enterprise.LicenseService) *IdentityProviderService {
+func NewIdentityProviderService(store *store.Store, licenseService *enterprise.LicenseService) *IdentityProviderService {
 	return &IdentityProviderService{
 		store:          store,
 		licenseService: licenseService,

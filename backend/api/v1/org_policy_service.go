@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -39,11 +39,11 @@ var (
 type OrgPolicyService struct {
 	v1pb.UnimplementedOrgPolicyServiceServer
 	store          *store.Store
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewOrgPolicyService creates a new OrgPolicyService.
-func NewOrgPolicyService(store *store.Store, licenseService enterprise.LicenseService) *OrgPolicyService {
+func NewOrgPolicyService(store *store.Store, licenseService *enterprise.LicenseService) *OrgPolicyService {
 	return &OrgPolicyService{
 		store:          store,
 		licenseService: licenseService,

@@ -1,12 +1,12 @@
-//go:build aws
+//go:build !aws
 
-package service
+package enterprise
 
 import (
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
-	"github.com/bytebase/bytebase/backend/enterprise/plugin/aws"
+	"github.com/bytebase/bytebase/backend/enterprise/plugin/hub"
 )
 
 func getLicenseProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider, error) {
-	return aws.NewProvider(providerConfig)
+	return hub.NewProvider(providerConfig)
 }
