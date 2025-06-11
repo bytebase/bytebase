@@ -28,6 +28,11 @@
                   class="text-red-600 w-4 h-auto"
                 />
                 <BBSpin v-if="context.status === 'EXECUTING'" :size="10" />
+                <XIcon
+                  v-if="queryContexts.length > 1"
+                  class="text-gray-400 w-4 h-auto hover:text-gray-600"
+                  @click.stop="handleCloseTab(context.id)"
+                />
               </div>
             </template>
             {{ context.params.statement }}
@@ -60,7 +65,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { CircleAlertIcon } from "lucide-vue-next";
+import { CircleAlertIcon, XIcon } from "lucide-vue-next";
 import { NTabs, NTabPane, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -131,4 +136,14 @@ watch(
   },
   { immediate: true }
 );
+
+const handleCloseTab = (id: string) => {
+  const nextContext = tabStore.removeDatabaseQueryContext({
+    database: selectedDatabase.value?.name ?? "",
+    contextId: id,
+  });
+  if (selectedTab.value === id && nextContext) {
+    selectedTab.value = nextContext.id;
+  }
+};
 </script>
