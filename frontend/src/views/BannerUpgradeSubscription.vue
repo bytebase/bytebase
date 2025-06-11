@@ -50,7 +50,7 @@
       <ul class="list-disc list-inside">
         <li v-for="feature in unlicensedFeatures" :key="feature">
           {{
-            $t(`dynamic.subscription.features.${feature.split(".").join("-")}.title`)
+            $t(`dynamic.subscription.features.${feature}.title`)
           }}
           ({{
             $t(
@@ -71,20 +71,18 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
-import { reactive } from "vue";
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
-import { useSubscriptionV1Store, useActuatorV1Store } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { planTypeToString } from "@/types";
 import {
-  PlanType,
-  planTypeToNumber,
+  PlanFeature, PlanType,
+  planTypeToNumber
 } from "@/types/proto/v1/subscription_service";
+import { NButton } from "naive-ui";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
 interface LocalState {
   showModal: boolean;

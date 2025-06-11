@@ -2120,7 +2120,8 @@
     "overuse-warning": "{neededPlan} on {currentPlan} will be restricted. Upgrade now to ensure continued access.",
     "overuse-modal": {
       "description": "You are using features unavailable in the {plan}. Upgrade now to ensure continued access:"
-    }
+    },
+    "disabled-feature": "Disabled Feature"
   },
   "sheet": {
     "mine": "Mine",
