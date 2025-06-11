@@ -66,7 +66,7 @@
         >
           {{ $t("common.ok") }}
         </NButton>
-        <template v-else-if="subscriptionStore.canTrial">
+        <template v-else-if="subscriptionStore.showTrial">
           <NButton type="primary" @click.prevent="trialSubscription">
             {{
               $t("subscription.request-n-days-trial", {

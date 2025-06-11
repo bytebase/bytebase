@@ -149,21 +149,14 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       );
       return daysBeforeExpire / total < 0.5;
     },
-    canTrial(state): boolean {
+    showTrial(state): boolean {
       if (!this.isSelfHostLicense) {
         return false;
       }
       if (!state.subscription || this.isFreePlan) {
         return true;
       }
-      return this.canUpgradeTrial;
-    },
-    canUpgradeTrial(): boolean {
-      return (
-        this.isSelfHostLicense &&
-        this.isTrialing &&
-        this.currentPlan < PlanType.ENTERPRISE
-      );
+      return false;
     },
     isSelfHostLicense(): boolean {
       return import.meta.env.MODE.toLowerCase() !== "release-aws";
