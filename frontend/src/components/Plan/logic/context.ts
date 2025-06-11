@@ -2,27 +2,18 @@ import type Emittery from "emittery";
 import { v4 as uuidv4 } from "uuid";
 import type { InjectionKey, Ref } from "vue";
 import { inject, provide } from "vue";
-import type {
-  Plan,
-  Plan_Spec,
-  PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
+import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 
 export type PlanEvents = Emittery<{
   "status-changed": { eager: boolean };
-  "select-spec": { spec: Plan_Spec };
-  "select-target": { target: string };
 }>;
 
 export type PlanContext = {
   // Basic fields
   isCreating: Ref<boolean>;
-  ready: Ref<boolean>;
   plan: Ref<Plan>;
   planCheckRunList: Ref<PlanCheckRun[]>;
   // TODO(steven): save related issue/rollout for checking if the plan is changable.
-
-  selectedSpec: Ref<Plan_Spec | undefined>;
 
   // UI events
   events: PlanEvents;

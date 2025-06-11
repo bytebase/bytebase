@@ -1007,8 +1007,7 @@
     "navigator": {
       "overview": "Descripción general",
       "specifications": "Presupuesto",
-      "spec-number": "Especificación {number}",
-      "no-specifications": "Sin especificaciones",
+      "checks": "Cheques",
       "statement-empty": "La declaración está vacía"
     },
     "spec": {
@@ -1020,19 +1019,11 @@
         "database-change": "Cambio de base de datos",
         "export-data": "Exportar datos",
         "unknown": "Desconocido"
-      },
-      "status": {
-        "pass": "Aprobar",
-        "warn": "Advertir",
-        "error": "Error"
       }
     },
     "targets": {
       "title": "Objetivos",
       "no-targets-found": "No se encontraron objetivos",
-      "no-targets": "Sin objetivos",
-      "one-target": "1 objetivo",
-      "multiple-targets": "{count} objetivos",
       "one-database": "1 base de datos",
       "multiple-databases": "{count} bases de datos",
       "database-group": "Grupo de bases de datos",
