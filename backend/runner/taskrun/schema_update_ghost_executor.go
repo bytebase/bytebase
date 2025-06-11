@@ -17,7 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -26,7 +26,7 @@ import (
 )
 
 // NewSchemaUpdateGhostExecutor creates a schema update (gh-ost) task executor.
-func NewSchemaUpdateGhostExecutor(s *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+func NewSchemaUpdateGhostExecutor(s *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &SchemaUpdateGhostExecutor{
 		s:            s,
 		dbFactory:    dbFactory,
@@ -41,7 +41,7 @@ func NewSchemaUpdateGhostExecutor(s *store.Store, dbFactory *dbfactory.DBFactory
 type SchemaUpdateGhostExecutor struct {
 	s            *store.Store
 	dbFactory    *dbfactory.DBFactory
-	license      enterprise.LicenseService
+	license      *enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
 	profile      *config.Profile

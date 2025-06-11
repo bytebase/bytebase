@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -18,11 +18,11 @@ import (
 type DatabaseCatalogService struct {
 	v1pb.UnimplementedDatabaseCatalogServiceServer
 	store          *store.Store
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewDatabaseCatalogService creates a new DatabaseCatalogService.
-func NewDatabaseCatalogService(store *store.Store, licenseService enterprise.LicenseService) *DatabaseCatalogService {
+func NewDatabaseCatalogService(store *store.Store, licenseService *enterprise.LicenseService) *DatabaseCatalogService {
 	return &DatabaseCatalogService{
 		store:          store,
 		licenseService: licenseService,

@@ -20,7 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -36,7 +36,7 @@ type IssueService struct {
 	store          *store.Store
 	webhookManager *webhook.Manager
 	stateCfg       *state.State
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 	profile        *config.Profile
 	iamManager     *iam.Manager
 	metricReporter *metricreport.Reporter
@@ -47,7 +47,7 @@ func NewIssueService(
 	store *store.Store,
 	webhookManager *webhook.Manager,
 	stateCfg *state.State,
-	licenseService enterprise.LicenseService,
+	licenseService *enterprise.LicenseService,
 	profile *config.Profile,
 	iamManager *iam.Manager,
 	metricReporter *metricreport.Reporter,

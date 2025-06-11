@@ -25,7 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -56,7 +56,7 @@ const (
 type APIAuthInterceptor struct {
 	store          *store.Store
 	secret         string
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 	stateCfg       *state.State
 	profile        *config.Profile
 }
@@ -65,7 +65,7 @@ type APIAuthInterceptor struct {
 func New(
 	store *store.Store,
 	secret string,
-	licenseService enterprise.LicenseService,
+	licenseService *enterprise.LicenseService,
 	stateCfg *state.State,
 	profile *config.Profile,
 ) *APIAuthInterceptor {
