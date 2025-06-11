@@ -13197,10 +13197,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                startedTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
                 plan:
                     readOnly: true
                     enum:
@@ -13213,9 +13209,6 @@ components:
                 trialing:
                     readOnly: true
                     type: boolean
-                orgId:
-                    readOnly: true
-                    type: string
                 orgName:
                     readOnly: true
                     type: string
