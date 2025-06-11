@@ -2145,7 +2145,8 @@
         "title": "エンタープライズ"
       },
       "try": "無料でお試しください。"
-    }
+    },
+    "description": "ByteBaseライセンスをアップロードして、Pro/Enterprise機能のロックを解除できます。"
   },
   "sheet": {
     "mine": "マイワークシート",

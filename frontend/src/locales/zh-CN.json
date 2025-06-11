@@ -2145,7 +2145,8 @@
         "title": "企业版"
       },
       "try": "免费试用。"
-    }
+    },
+    "description": "您可以上传BYTEBASE许可证以解锁Pro/Enterprise功能。"
   },
   "sheet": {
     "mine": "我的",

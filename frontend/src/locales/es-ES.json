@@ -2145,7 +2145,8 @@
         "title": "Empresa"
       },
       "try": "Pruébalo gratis."
-    }
+    },
+    "description": "Puede cargar su licencia de ByteBase para desbloquear las funciones Pro/Enterprise."
   },
   "sheet": {
     "mine": "Mío",

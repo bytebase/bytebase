@@ -2145,7 +2145,8 @@
         "title": "Doanh nghiệp"
       },
       "try": "Dùng thử miễn phí."
-    }
+    },
+    "description": "Bạn có thể tải lên giấy phép bytebase của mình để mở khóa các tính năng Pro/Enterprise."
   },
   "sheet": {
     "mine": "Của tôi",
