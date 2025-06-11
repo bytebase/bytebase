@@ -2,7 +2,7 @@
   <div v-if="show" class="px-4 pt-3 flex flex-col gap-y-1 overflow-hidden">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1">
-        <h3 class="text-base font-medium">SQL Review</h3>
+        <h3 class="text-base font-medium">{{ $t("plan.checks.self") }}</h3>
       </div>
 
       <div class="flex items-center gap-4">
@@ -46,7 +46,7 @@
           <template #icon>
             <PlayIcon class="w-4 h-4" />
           </template>
-          Run Review
+          {{ $t("task.run-checks") }}
         </NButton>
       </div>
     </div>
@@ -80,7 +80,7 @@
               >
                 <div class="flex items-start justify-between">
                   <div class="text-sm font-medium text-main">
-                    {{ advice.title }}
+                    {{ getAdviceTitle(advice) }}
                   </div>
                   <component
                     :is="getStatusIcon(advice.status)"
@@ -132,6 +132,7 @@ import { getLocalSheetByName } from "@/components/Plan";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { releaseServiceClient } from "@/grpcweb";
+import { getRuleLocalization, ruleTemplateMapV2 } from "@/types";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import {
   ReleaseFileType,
@@ -312,4 +313,25 @@ watch(
     immediate: true,
   }
 );
+
+const getAdviceTitle = (advice: Advice): string => {
+  let title = advice.title;
+  const rule = getRuleTemplateByType(advice.title);
+  if (rule) {
+    const ruleLocalization = getRuleLocalization(rule.type, rule.engine);
+    if (ruleLocalization.title) {
+      title = ruleLocalization.title;
+    }
+  }
+  return title;
+};
+
+const getRuleTemplateByType = (type: string) => {
+  for (const mapByType of ruleTemplateMapV2.values()) {
+    if (mapByType.has(type)) {
+      return mapByType.get(type);
+    }
+  }
+  return;
+};
 </script>

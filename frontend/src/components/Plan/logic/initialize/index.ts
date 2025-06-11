@@ -1,8 +1,6 @@
-import type { MaybeRef } from "vue";
-import { computed, ref, unref, watch } from "vue";
-import type { LocationQuery } from "vue-router";
-import { useRoute, useRouter } from "vue-router";
-import { usePlanStore } from "@/store/modules/v1/plan";
+import { computed, ref, unref, watch, type MaybeRef } from "vue";
+import { useRoute, useRouter, type LocationQuery } from "vue-router";
+import { usePlanStore } from "@/store";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { emptyPlan } from "@/types/v1/issue/plan";
@@ -64,11 +62,6 @@ export function useInitializePlan(
           return;
         }
         plan.value = result.plan;
-        // Fetch plan check runs if not creating
-        if (uid !== String(EMPTY_ID)) {
-          const { fetchPlanCheckRuns } = usePlanStore();
-          planCheckRunList.value = await fetchPlanCheckRuns(result.plan);
-        }
         isInitializing.value = false;
       });
     },
