@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import type { RemovableRef } from "@vueuse/core";
 import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
@@ -18,7 +19,9 @@ import type {
   ResourcePackage,
 } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { PasswordRestrictionSetting } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  PasswordRestrictionSettingSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { semverCompare } from "@/utils";
 
@@ -84,11 +87,11 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
     gitCommitBE: (state) => {
       const commit = state.serverInfo?.gitCommit ?? "";
-      return commit === "" ? "unknown": commit;
+      return commit === "" ? "unknown" : commit;
     },
     gitCommitFE: () => {
       const commit = import.meta.env.GIT_COMMIT ?? "";
-      return commit === "" ? "unknown": commit;
+      return commit === "" ? "unknown" : commit;
     },
     isDemo: (state) => {
       return state.serverInfo?.demo;
@@ -129,10 +132,10 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     passwordRestriction: (state) => {
       return (
         state.serverInfo?.passwordRestriction ??
-        {
+        create(PasswordRestrictionSettingSchema, {
           minLength: 8,
           requireLetter: true,
-        } as PasswordRestrictionSetting
+        })
       );
     },
     activatedInstanceCount: (state) => {
@@ -187,8 +190,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
           debug,
         },
         updateMask: {
-         "paths": ["debug"],
-        }
+          paths: ["debug"],
+        },
       });
       this.setServerInfo(serverInfo);
     },
@@ -233,10 +236,10 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       if (Date.now() - this.serverInfoTs >= 1000 * 60 * 30) {
         await this.fetchServerInfo();
       }
-      if (this.gitCommitBE === 'unknown' || this.gitCommitFE === 'unknown') {
+      if (this.gitCommitBE === "unknown" || this.gitCommitFE === "unknown") {
         return false;
       }
-      return (this.gitCommitBE !== this.gitCommitFE)
+      return this.gitCommitBE !== this.gitCommitFE;
     },
     async fetchLatestRelease(): Promise<Release | undefined> {
       try {
