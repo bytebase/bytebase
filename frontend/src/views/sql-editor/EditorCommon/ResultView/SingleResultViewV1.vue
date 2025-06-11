@@ -144,9 +144,17 @@
     <div
       class="w-full flex items-center justify-between text-xs mt-1 gap-x-4 text-control-light"
     >
-      <div class="flex-1 truncate">
-        {{ result.statement }}
-      </div>
+      <NTooltip :disabled="!isSupported">
+        <template #trigger>
+          <div
+            class="truncate cursor-pointer hover:bg-gray-200"
+            @click="copyStatement"
+          >
+            {{ result.statement }}
+          </div>
+        </template>
+        {{ $t("common.click-to-copy") }}
+      </NTooltip>
       <div class="shrink-0 space-x-2">
         <NButton
           v-if="showVisualizeButton"
@@ -176,6 +184,32 @@
 </template>
 
 <script lang="ts" setup>
+import type { ColumnDef } from "@tanstack/vue-table";
+import {
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useVueTable,
+} from "@tanstack/vue-table";
+import { useClipboard } from "@vueuse/core";
+import { useDebounceFn, useLocalStorage } from "@vueuse/core";
+import dayjs from "dayjs";
+import { isEmpty } from "lodash-es";
+import { ExternalLinkIcon } from "lucide-vue-next";
+import {
+  NButton,
+  NFormItem,
+  NInput,
+  NPagination,
+  NSelect,
+  NSwitch,
+  NTooltip,
+  type SelectOption,
+} from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import type {
   DownloadContent,
@@ -192,7 +226,8 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
-  useStorageStore
+  useStorageStore,
+  pushNotification,
 } from "@/store";
 import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
 import {
@@ -218,25 +253,6 @@ import {
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
-import type { ColumnDef } from "@tanstack/vue-table";
-import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useVueTable,
-} from "@tanstack/vue-table";
-import { useDebounceFn, useLocalStorage } from "@vueuse/core";
-import dayjs from "dayjs";
-import { isEmpty } from "lodash-es";
-import { ExternalLinkIcon } from "lucide-vue-next";
-import {
-  NButton, NFormItem, NInput, NPagination, NSelect, NSwitch, NTooltip,
-  type SelectOption
-} from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import DataBlock from "./DataBlock.vue";
 import DataTable from "./DataTable";
 import { provideSelectionContext } from "./DataTable/common/selection-logic";
@@ -268,6 +284,23 @@ const state = reactive<LocalState>({
   search: "",
   vertical: false,
 });
+
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
+
+const copyStatement = () => {
+  if (!isSupported.value) {
+    return;
+  }
+  copyTextToClipboard(props.result.statement).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.copied"),
+    });
+  });
+};
 
 const { t } = useI18n();
 const router = useRouter();
