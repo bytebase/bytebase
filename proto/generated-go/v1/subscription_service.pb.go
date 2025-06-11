@@ -471,11 +471,9 @@ type Subscription struct {
 	SeatCount     int32                  `protobuf:"varint,1,opt,name=seat_count,json=seatCount,proto3" json:"seat_count,omitempty"`
 	InstanceCount int32                  `protobuf:"varint,2,opt,name=instance_count,json=instanceCount,proto3" json:"instance_count,omitempty"`
 	ExpiresTime   *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_time,json=expiresTime,proto3" json:"expires_time,omitempty"`
-	StartedTime   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=started_time,json=startedTime,proto3" json:"started_time,omitempty"`
-	Plan          PlanType               `protobuf:"varint,5,opt,name=plan,proto3,enum=bytebase.v1.PlanType" json:"plan,omitempty"`
-	Trialing      bool                   `protobuf:"varint,6,opt,name=trialing,proto3" json:"trialing,omitempty"`
-	OrgId         string                 `protobuf:"bytes,7,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
-	OrgName       string                 `protobuf:"bytes,8,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
+	Plan          PlanType               `protobuf:"varint,4,opt,name=plan,proto3,enum=bytebase.v1.PlanType" json:"plan,omitempty"`
+	Trialing      bool                   `protobuf:"varint,5,opt,name=trialing,proto3" json:"trialing,omitempty"`
+	OrgName       string                 `protobuf:"bytes,6,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -531,13 +529,6 @@ func (x *Subscription) GetExpiresTime() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *Subscription) GetStartedTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.StartedTime
-	}
-	return nil
-}
-
 func (x *Subscription) GetPlan() PlanType {
 	if x != nil {
 		return x.Plan
@@ -550,13 +541,6 @@ func (x *Subscription) GetTrialing() bool {
 		return x.Trialing
 	}
 	return false
-}
-
-func (x *Subscription) GetOrgId() string {
-	if x != nil {
-		return x.OrgId
-	}
-	return ""
 }
 
 func (x *Subscription) GetOrgName() string {
@@ -697,17 +681,15 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x19UpdateSubscriptionRequest\x124\n" +
 	"\x05patch\x18\x01 \x01(\v2\x1e.bytebase.v1.PatchSubscriptionR\x05patch\"-\n" +
 	"\x11PatchSubscription\x12\x18\n" +
-	"\alicense\x18\x01 \x01(\tR\alicense\"\xfb\x02\n" +
+	"\alicense\x18\x01 \x01(\tR\alicense\"\x99\x02\n" +
 	"\fSubscription\x12#\n" +
 	"\n" +
 	"seat_count\x18\x01 \x01(\x05B\x04\xe2A\x01\x03R\tseatCount\x12+\n" +
 	"\x0einstance_count\x18\x02 \x01(\x05B\x04\xe2A\x01\x03R\rinstanceCount\x12C\n" +
-	"\fexpires_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\vexpiresTime\x12C\n" +
-	"\fstarted_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\vstartedTime\x12/\n" +
-	"\x04plan\x18\x05 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x04\xe2A\x01\x03R\x04plan\x12 \n" +
-	"\btrialing\x18\x06 \x01(\bB\x04\xe2A\x01\x03R\btrialing\x12\x1b\n" +
-	"\x06org_id\x18\a \x01(\tB\x04\xe2A\x01\x03R\x05orgId\x12\x1f\n" +
-	"\borg_name\x18\b \x01(\tB\x04\xe2A\x01\x03R\aorgName\"\x87\x01\n" +
+	"\fexpires_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\vexpiresTime\x12/\n" +
+	"\x04plan\x18\x04 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x04\xe2A\x01\x03R\x04plan\x12 \n" +
+	"\btrialing\x18\x05 \x01(\bB\x04\xe2A\x01\x03R\btrialing\x12\x1f\n" +
+	"\borg_name\x18\x06 \x01(\tB\x04\xe2A\x01\x03R\aorgName\"\x87\x01\n" +
 	"\n" +
 	"PlanConfig\x122\n" +
 	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\x12E\n" +
@@ -829,23 +811,22 @@ var file_v1_subscription_service_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil),     // 8: google.protobuf.Timestamp
 }
 var file_v1_subscription_service_proto_depIdxs = []int32{
-	4,  // 0: bytebase.v1.UpdateSubscriptionRequest.patch:type_name -> bytebase.v1.PatchSubscription
-	8,  // 1: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
-	8,  // 2: bytebase.v1.Subscription.started_time:type_name -> google.protobuf.Timestamp
-	0,  // 3: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
-	7,  // 4: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
-	1,  // 5: bytebase.v1.PlanConfig.instance_features:type_name -> bytebase.v1.PlanFeature
-	0,  // 6: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
-	1,  // 7: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanFeature
-	2,  // 8: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
-	3,  // 9: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
-	5,  // 10: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
-	5,  // 11: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
-	10, // [10:12] is the sub-list for method output_type
-	8,  // [8:10] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	4, // 0: bytebase.v1.UpdateSubscriptionRequest.patch:type_name -> bytebase.v1.PatchSubscription
+	8, // 1: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
+	0, // 2: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
+	7, // 3: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
+	1, // 4: bytebase.v1.PlanConfig.instance_features:type_name -> bytebase.v1.PlanFeature
+	0, // 5: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
+	1, // 6: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanFeature
+	2, // 7: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
+	3, // 8: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
+	5, // 9: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
+	5, // 10: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
+	9, // [9:11] is the sub-list for method output_type
+	7, // [7:9] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_subscription_service_proto_init() }
