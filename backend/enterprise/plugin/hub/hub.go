@@ -93,22 +93,29 @@ func (p *Provider) StoreLicense(ctx context.Context, license string) error {
 
 // LoadSubscription will load the hub subscription.
 func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
-	license := p.loadLicense(ctx)
-	if license == nil {
-		return &v1pb.Subscription{
-			Plan: v1pb.PlanType_FREE,
-			// nil ExpiresTime means not expire, just for free plan
-			ExpiresTime: nil,
-			// Instance license count.
-			InstanceCount: 0,
-			SeatCount:     0,
-		}
+	license, err := p.findEnterpriseLicense(ctx)
+	if err != nil {
+		slog.Debug("failed to load enterprise license", log.BBError(err))
 	}
 
+	if license == nil {
+		license, err = p.fetchAndStoreLicense(ctx)
+		if err != nil {
+			slog.Debug("failed to fetch license", log.BBError(err))
+		}
+	}
+	if license == nil {
+		return nil
+	}
+
+	if err := validateSubscription(license); err != nil {
+		slog.Debug("license is invalid", log.BBError(err))
+		return nil
+	}
 	return license
 }
 
-func (p *Provider) fetchLicense(ctx context.Context) (*v1pb.Subscription, error) {
+func (p *Provider) fetchAndStoreLicense(ctx context.Context) (*v1pb.Subscription, error) {
 	license, err := p.remoteProvider.FetchLicense(ctx)
 	if err != nil {
 		return nil, err
@@ -129,31 +136,6 @@ func (p *Provider) fetchLicense(ctx context.Context) (*v1pb.Subscription, error)
 	}
 
 	return result, nil
-}
-
-// loadLicense will load license and validate it.
-func (p *Provider) loadLicense(ctx context.Context) *v1pb.Subscription {
-	license, err := p.findEnterpriseLicense(ctx)
-	if err != nil {
-		slog.Debug("failed to load enterprise license", log.BBError(err))
-	}
-
-	if license == nil {
-		license, err = p.fetchLicense(ctx)
-		if err != nil {
-			slog.Debug("failed to fetch license", log.BBError(err))
-		}
-	}
-	if license == nil {
-		return nil
-	}
-
-	if err := validateSubscription(license); err != nil {
-		slog.Debug("license is invalid", log.BBError(err))
-		return nil
-	}
-
-	return license
 }
 
 func (p *Provider) parseLicense(ctx context.Context, license string) (*v1pb.Subscription, error) {
