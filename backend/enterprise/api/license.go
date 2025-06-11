@@ -3,67 +3,17 @@ package api
 
 import (
 	"context"
-	"strings"
-	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// validPlans is a string array of valid plan types.
-var validPlans = []v1pb.PlanType{
-	v1pb.PlanType_TEAM,
-	v1pb.PlanType_ENTERPRISE,
-}
-
-// License is the API message for enterprise license.
-type License struct {
-	Subject       string
-	InstanceCount int
-	Seat          int
-	ExpiresTS     int64
-	IssuedTS      int64
-	Plan          v1pb.PlanType
-	Trialing      bool
-	OrgName       string
-}
-
-// Valid will check if license expired or has correct plan type.
-func (l *License) Valid() error {
-	if expireTime := time.Unix(l.ExpiresTS, 0); expireTime.Before(time.Now()) {
-		return errors.Errorf("license has expired at %v", expireTime)
-	}
-
-	return l.validPlanType()
-}
-
-func (l *License) validPlanType() error {
-	for _, plan := range validPlans {
-		if plan == l.Plan {
-			return nil
-		}
-	}
-
-	return errors.Errorf("plan %q is not valid, expect %s or %s",
-		l.Plan.String(),
-		v1pb.PlanType_TEAM.String(),
-		v1pb.PlanType_ENTERPRISE.String(),
-	)
-}
-
-// OrgID extract the organization id from license subject.
-func (l *License) OrgID() string {
-	return strings.Split(l.Subject, ".")[0]
-}
-
 // LicenseService is the service for enterprise license.
 type LicenseService interface {
 	// StoreLicense will store license into file.
-	StoreLicense(ctx context.Context, patch *SubscriptionPatch) error
+	StoreLicense(ctx context.Context, license string) error
 	// LoadSubscription will load subscription.
-	LoadSubscription(ctx context.Context) *Subscription
+	LoadSubscription(ctx context.Context) *v1pb.Subscription
 	// IsFeatureEnabled returns whether a feature is enabled.
 	IsFeatureEnabled(feature v1pb.PlanFeature) error
 	// IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.

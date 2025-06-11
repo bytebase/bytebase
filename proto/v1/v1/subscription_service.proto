@@ -55,15 +55,11 @@ message Subscription {
 
   google.protobuf.Timestamp expires_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp started_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  PlanType plan = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  PlanType plan = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool trialing = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  bool trialing = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  string org_id = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  string org_name = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string org_name = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // PlanFeature represents the available features in Bytebase
