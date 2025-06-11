@@ -2,7 +2,7 @@
   <div v-if="show" class="px-4 pt-3 flex flex-col gap-y-1 overflow-hidden">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1">
-        <h3 class="text-base font-medium">Checks</h3>
+        <h3 class="text-base font-medium">{{ $t("plan.checks.self") }}</h3>
       </div>
 
       <div class="flex items-center gap-2">
@@ -44,7 +44,7 @@
           <template #icon>
             <PlayIcon class="w-4 h-4" />
           </template>
-          Run Checks
+          {{ $t("task.run-checks") }}
         </NButton>
       </div>
     </div>
@@ -56,12 +56,12 @@
       </div>
 
       <!-- Check Results -->
-      <div v-else-if="checkRunsForSpec.length > 0" class="flex flex-wrap gap-6">
+      <div v-else-if="checkRunsForSpec.length > 0" class="flex flex-wrap gap-4">
         <!-- Group by Check Type -->
         <div
           v-for="(typeGroup, checkType) in groupedByType"
           :key="checkType"
-          class="inline-flex items-center gap-2"
+          class="inline-flex items-center gap-1"
           @click="selectedCheckType = checkType"
         >
           <component
@@ -108,10 +108,10 @@
         <div class="text-control-light">
           <div class="flex flex-row justify-start items-center gap-2">
             <CheckCircleIcon class="w-5 h-5 opacity-40" />
-            <span>No check results available</span>
+            <span>{{ $t("plan.checks.no-checks") }}</span>
           </div>
           <p v-if="allowRunChecks" class="text-sm mt-1">
-            Click "Run Checks" to validate this specification
+            {{ $t("plan.checks.click-to-run-checks") }}
           </p>
         </div>
       </div>

@@ -1,51 +1,73 @@
 <template>
   <div class="h-full flex flex-col">
     <!-- Header with filters -->
-    <div class="flex items-center justify-between px-4 py-3">
+    <div class="flex items-center justify-between px-4 py-2">
       <div class="flex items-center gap-4">
         <!-- Check result summary with icons -->
         <div class="flex items-center gap-3">
           <div
             v-if="statusCounts.success > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
-            :class="
+            :class="[
               selectedStatus &&
-              selectedStatus === PlanCheckRun_Result_Status.SUCCESS &&
-              'bg-gray-100 rounded-lg'
-            "
+                selectedStatus === PlanCheckRun_Result_Status.SUCCESS &&
+                'bg-gray-100 rounded-lg',
+              'text-lg text-success',
+            ]"
             @click="toggleSelectedStatus(PlanCheckRun_Result_Status.SUCCESS)"
           >
-            <CheckCircleIcon class="w-6 h-6 text-success" />
-            <span class="text-lg font-semibold text-success">{{
-              statusCounts.success
-            }}</span>
+            <CheckCircleIcon class="w-6 h-6" />
+            <span>
+              {{ $t("common.success") }}
+            </span>
+            <span class="font-semibold">
+              {{ statusCounts.success }}
+            </span>
           </div>
           <div
             v-if="statusCounts.warning > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
+            :class="[
+              selectedStatus &&
+                selectedStatus === PlanCheckRun_Result_Status.WARNING &&
+                'bg-gray-100 rounded-lg',
+              'text-lg text-warning',
+            ]"
             @click="toggleSelectedStatus(PlanCheckRun_Result_Status.WARNING)"
           >
-            <AlertCircleIcon class="w-6 h-6 text-warning" />
-            <span class="text-lg font-semibold text-success">{{
-              statusCounts.warning
-            }}</span>
+            <AlertCircleIcon class="w-6 h-6" />
+            <span>
+              {{ $t("common.warning") }}
+            </span>
+            <span class="font-semibold">
+              {{ statusCounts.warning }}
+            </span>
           </div>
           <div
             v-if="statusCounts.error > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
+            :class="[
+              selectedStatus &&
+                selectedStatus === PlanCheckRun_Result_Status.ERROR &&
+                'bg-gray-100 rounded-lg',
+              'text-lg text-error',
+            ]"
             @click="toggleSelectedStatus(PlanCheckRun_Result_Status.ERROR)"
           >
-            <XCircleIcon class="w-6 h-6 text-error" />
-            <span class="text-lg font-semibold text-success">{{
-              statusCounts.error
-            }}</span>
+            <XCircleIcon class="w-6 h-6" />
+            <span>
+              {{ $t("common.error") }}
+            </span>
+            <span class="font-semibold">
+              {{ statusCounts.error }}
+            </span>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Results List -->
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1 overflow-y-auto border-t mt-2">
       <div v-if="isLoading" class="flex items-center justify-center py-12">
         <BBSpin />
       </div>
@@ -77,19 +99,19 @@
           class="px-6 py-4"
         >
           <!-- Check Run Header -->
-          <div class="flex items-start justify-between mb-3">
+          <div class="flex items-start justify-between mb-2">
             <div class="flex items-center gap-3">
               <component
                 :is="getCheckTypeIcon(checkRun.type)"
                 class="w-5 h-5 text-control-light"
               />
               <div>
-                <div class="text-sm font-medium">
+                <span class="text-sm font-medium">
                   {{ getCheckTypeLabel(checkRun.type) }}
-                </div>
-                <div class="text-xs text-control-light">
+                </span>
+                <span class="text-xs text-control-light">
                   Target: {{ formatTarget(checkRun.target) }}
-                </div>
+                </span>
               </div>
             </div>
 

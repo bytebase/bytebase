@@ -11,7 +11,6 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import Emittery from "emittery";
 import { NSpin } from "naive-ui";
 import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
@@ -21,10 +20,6 @@ import {
   useInitializePlan,
 } from "@/components/Plan";
 import PlanDetailPage from "@/components/Plan/PlanDetailPage.vue";
-import {
-  providePlanCheckRunContext,
-  type PlanCheckRunEvents,
-} from "@/components/PlanCheckRun/context";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { isValidPlanName } from "@/utils";
 
@@ -38,15 +33,15 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-
 const { isCreating, plan, planCheckRunList, isInitializing } =
   useInitializePlan(toRef(props, "planId"), toRef(props, "projectId"));
-const ready = computed(() => {
-  return !isInitializing.value && !!plan.value;
-});
 const planBaseContext = useBasePlanContext({
   isCreating,
   plan,
+});
+
+const ready = computed(() => {
+  return !isInitializing.value && !!plan.value;
 });
 
 providePlanContext(
@@ -59,27 +54,13 @@ providePlanContext(
   true /* root */
 );
 
-providePlanCheckRunContext(
-  {
-    events: (() => {
-      const emittery: PlanCheckRunEvents = new Emittery();
-      emittery.on("status-changed", () => {
-        // If the status of plan checks changes, trigger a refresh.
-        planBaseContext.events?.emit("status-changed", { eager: true });
-      });
-      return emittery;
-    })(),
-  },
-  true /* root */
-);
-
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
 overrideMainContainerClass("!py-0 !px-0");
 
 const documentTitle = computed(() => {
   if (isCreating.value) {
-    return t("issue.new-issue");
+    return t("plan.new-plan");
   } else {
     if (ready.value && isValidPlanName(plan.value.name)) {
       return plan.value.title;

@@ -1,22 +1,36 @@
 import { computed, watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
+import { planServiceClient } from "@/grpcweb";
+import { useCurrentProjectV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
+import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "./context";
 
 export const usePollPlan = () => {
-  const { isCreating, plan, events } = usePlanContext();
+  const { project } = useCurrentProjectV1();
+  const { isCreating, plan, planCheckRunList, events } = usePlanContext();
   const planStore = usePlanStore();
 
   const shouldPollPlan = computed(() => {
     return !isCreating.value;
   });
 
-  const refreshPlan = () => {
+  const refreshPlan = async () => {
     if (!shouldPollPlan.value) return;
 
-    planStore
-      .fetchPlanByName(plan.value.name)
-      .then((updatedPlan) => (plan.value = updatedPlan));
+    const updatedPlan = await planStore.fetchPlanByName(plan.value.name);
+    plan.value = updatedPlan;
+
+    if (
+      !isCreating.value &&
+      hasProjectPermissionV2(project.value, "bb.planCheckRuns.list")
+    ) {
+      const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
+        parent: updatedPlan.name,
+        latestOnly: true,
+      });
+      planCheckRunList.value = planCheckRuns;
+    }
   };
 
   const poller = useProgressivePoll(refreshPlan, {
