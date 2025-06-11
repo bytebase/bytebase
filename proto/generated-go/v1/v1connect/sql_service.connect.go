@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// SQLServiceName is the fully-qualified name of the SQLService service.
@@ -57,16 +57,16 @@ const (
 
 // SQLServiceClient is a client for the bytebase.v1.SQLService service.
 type SQLServiceClient interface {
-	Query(context.Context, *connect_go.Request[v1.QueryRequest]) (*connect_go.Response[v1.QueryResponse], error)
-	AdminExecute(context.Context) *connect_go.BidiStreamForClient[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
+	Query(context.Context, *connect.Request[v1.QueryRequest]) (*connect.Response[v1.QueryResponse], error)
+	AdminExecute(context.Context) *connect.BidiStreamForClient[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
 	// SearchQueryHistories searches query histories for the caller.
-	SearchQueryHistories(context.Context, *connect_go.Request[v1.SearchQueryHistoriesRequest]) (*connect_go.Response[v1.SearchQueryHistoriesResponse], error)
-	Export(context.Context, *connect_go.Request[v1.ExportRequest]) (*connect_go.Response[v1.ExportResponse], error)
-	Check(context.Context, *connect_go.Request[v1.CheckRequest]) (*connect_go.Response[v1.CheckResponse], error)
-	ParseMyBatisMapper(context.Context, *connect_go.Request[v1.ParseMyBatisMapperRequest]) (*connect_go.Response[v1.ParseMyBatisMapperResponse], error)
-	Pretty(context.Context, *connect_go.Request[v1.PrettyRequest]) (*connect_go.Response[v1.PrettyResponse], error)
-	DiffMetadata(context.Context, *connect_go.Request[v1.DiffMetadataRequest]) (*connect_go.Response[v1.DiffMetadataResponse], error)
-	AICompletion(context.Context, *connect_go.Request[v1.AICompletionRequest]) (*connect_go.Response[v1.AICompletionResponse], error)
+	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
+	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
+	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
+	ParseMyBatisMapper(context.Context, *connect.Request[v1.ParseMyBatisMapperRequest]) (*connect.Response[v1.ParseMyBatisMapperResponse], error)
+	Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error)
+	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
+	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
 }
 
 // NewSQLServiceClient constructs a client for the bytebase.v1.SQLService service. By default, it
@@ -76,127 +76,137 @@ type SQLServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewSQLServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) SQLServiceClient {
+func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) SQLServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	sQLServiceMethods := v1.File_v1_sql_service_proto.Services().ByName("SQLService").Methods()
 	return &sQLServiceClient{
-		query: connect_go.NewClient[v1.QueryRequest, v1.QueryResponse](
+		query: connect.NewClient[v1.QueryRequest, v1.QueryResponse](
 			httpClient,
 			baseURL+SQLServiceQueryProcedure,
-			opts...,
+			connect.WithSchema(sQLServiceMethods.ByName("Query")),
+			connect.WithClientOptions(opts...),
 		),
-		adminExecute: connect_go.NewClient[v1.AdminExecuteRequest, v1.AdminExecuteResponse](
+		adminExecute: connect.NewClient[v1.AdminExecuteRequest, v1.AdminExecuteResponse](
 			httpClient,
 			baseURL+SQLServiceAdminExecuteProcedure,
-			opts...,
+			connect.WithSchema(sQLServiceMethods.ByName("AdminExecute")),
+			connect.WithClientOptions(opts...),
 		),
-		searchQueryHistories: connect_go.NewClient[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse](
+		searchQueryHistories: connect.NewClient[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse](
 			httpClient,
 			baseURL+SQLServiceSearchQueryHistoriesProcedure,
-			opts...,
+			connect.WithSchema(sQLServiceMethods.ByName("SearchQueryHistories")),
+			connect.WithClientOptions(opts...),
 		),
-		export: connect_go.NewClient[v1.ExportRequest, v1.ExportResponse](
+		export: connect.NewClient[v1.ExportRequest, v1.ExportResponse](
 			httpClient,
 			baseURL+SQLServiceExportProcedure,
-			opts...,
+			connect.WithSchema(sQLServiceMethods.ByName("Export")),
+			connect.WithClientOptions(opts...),
 		),
-		check: connect_go.NewClient[v1.CheckRequest, v1.CheckResponse](
+		check: connect.NewClient[v1.CheckRequest, v1.CheckResponse](
 			httpClient,
 			baseURL+SQLServiceCheckProcedure,
-			opts...,
+			connect.WithSchema(sQLServiceMethods.ByName("Check")),
+			connect.WithClientOptions(opts...),
 		),
-		parseMyBatisMapper: connect_go.NewClient[v1.ParseMyBatisMapperRequest, v1.ParseMyBatisMapperResponse](
+		parseMyBatisMapper: connect.NewClient[v1.ParseMyBatisMapperRequest, v1.ParseMyBatisMapperResponse](
 			httpClient,
 			baseURL+SQLServiceParseMyBatisMapperProcedure,
-			opts...,
+			connect.WithSchema(sQLServiceMethods.ByName("ParseMyBatisMapper")),
+			connect.WithClientOptions(opts...),
 		),
-		pretty: connect_go.NewClient[v1.PrettyRequest, v1.PrettyResponse](
+		pretty: connect.NewClient[v1.PrettyRequest, v1.PrettyResponse](
 			httpClient,
 			baseURL+SQLServicePrettyProcedure,
-			opts...,
+			connect.WithSchema(sQLServiceMethods.ByName("Pretty")),
+			connect.WithClientOptions(opts...),
 		),
-		diffMetadata: connect_go.NewClient[v1.DiffMetadataRequest, v1.DiffMetadataResponse](
+		diffMetadata: connect.NewClient[v1.DiffMetadataRequest, v1.DiffMetadataResponse](
 			httpClient,
 			baseURL+SQLServiceDiffMetadataProcedure,
-			opts...,
+			connect.WithSchema(sQLServiceMethods.ByName("DiffMetadata")),
+			connect.WithClientOptions(opts...),
 		),
-		aICompletion: connect_go.NewClient[v1.AICompletionRequest, v1.AICompletionResponse](
+		aICompletion: connect.NewClient[v1.AICompletionRequest, v1.AICompletionResponse](
 			httpClient,
 			baseURL+SQLServiceAICompletionProcedure,
-			opts...,
+			connect.WithSchema(sQLServiceMethods.ByName("AICompletion")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // sQLServiceClient implements SQLServiceClient.
 type sQLServiceClient struct {
-	query                *connect_go.Client[v1.QueryRequest, v1.QueryResponse]
-	adminExecute         *connect_go.Client[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
-	searchQueryHistories *connect_go.Client[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse]
-	export               *connect_go.Client[v1.ExportRequest, v1.ExportResponse]
-	check                *connect_go.Client[v1.CheckRequest, v1.CheckResponse]
-	parseMyBatisMapper   *connect_go.Client[v1.ParseMyBatisMapperRequest, v1.ParseMyBatisMapperResponse]
-	pretty               *connect_go.Client[v1.PrettyRequest, v1.PrettyResponse]
-	diffMetadata         *connect_go.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
-	aICompletion         *connect_go.Client[v1.AICompletionRequest, v1.AICompletionResponse]
+	query                *connect.Client[v1.QueryRequest, v1.QueryResponse]
+	adminExecute         *connect.Client[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
+	searchQueryHistories *connect.Client[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse]
+	export               *connect.Client[v1.ExportRequest, v1.ExportResponse]
+	check                *connect.Client[v1.CheckRequest, v1.CheckResponse]
+	parseMyBatisMapper   *connect.Client[v1.ParseMyBatisMapperRequest, v1.ParseMyBatisMapperResponse]
+	pretty               *connect.Client[v1.PrettyRequest, v1.PrettyResponse]
+	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
+	aICompletion         *connect.Client[v1.AICompletionRequest, v1.AICompletionResponse]
 }
 
 // Query calls bytebase.v1.SQLService.Query.
-func (c *sQLServiceClient) Query(ctx context.Context, req *connect_go.Request[v1.QueryRequest]) (*connect_go.Response[v1.QueryResponse], error) {
+func (c *sQLServiceClient) Query(ctx context.Context, req *connect.Request[v1.QueryRequest]) (*connect.Response[v1.QueryResponse], error) {
 	return c.query.CallUnary(ctx, req)
 }
 
 // AdminExecute calls bytebase.v1.SQLService.AdminExecute.
-func (c *sQLServiceClient) AdminExecute(ctx context.Context) *connect_go.BidiStreamForClient[v1.AdminExecuteRequest, v1.AdminExecuteResponse] {
+func (c *sQLServiceClient) AdminExecute(ctx context.Context) *connect.BidiStreamForClient[v1.AdminExecuteRequest, v1.AdminExecuteResponse] {
 	return c.adminExecute.CallBidiStream(ctx)
 }
 
 // SearchQueryHistories calls bytebase.v1.SQLService.SearchQueryHistories.
-func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, req *connect_go.Request[v1.SearchQueryHistoriesRequest]) (*connect_go.Response[v1.SearchQueryHistoriesResponse], error) {
+func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, req *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error) {
 	return c.searchQueryHistories.CallUnary(ctx, req)
 }
 
 // Export calls bytebase.v1.SQLService.Export.
-func (c *sQLServiceClient) Export(ctx context.Context, req *connect_go.Request[v1.ExportRequest]) (*connect_go.Response[v1.ExportResponse], error) {
+func (c *sQLServiceClient) Export(ctx context.Context, req *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
 	return c.export.CallUnary(ctx, req)
 }
 
 // Check calls bytebase.v1.SQLService.Check.
-func (c *sQLServiceClient) Check(ctx context.Context, req *connect_go.Request[v1.CheckRequest]) (*connect_go.Response[v1.CheckResponse], error) {
+func (c *sQLServiceClient) Check(ctx context.Context, req *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error) {
 	return c.check.CallUnary(ctx, req)
 }
 
 // ParseMyBatisMapper calls bytebase.v1.SQLService.ParseMyBatisMapper.
-func (c *sQLServiceClient) ParseMyBatisMapper(ctx context.Context, req *connect_go.Request[v1.ParseMyBatisMapperRequest]) (*connect_go.Response[v1.ParseMyBatisMapperResponse], error) {
+func (c *sQLServiceClient) ParseMyBatisMapper(ctx context.Context, req *connect.Request[v1.ParseMyBatisMapperRequest]) (*connect.Response[v1.ParseMyBatisMapperResponse], error) {
 	return c.parseMyBatisMapper.CallUnary(ctx, req)
 }
 
 // Pretty calls bytebase.v1.SQLService.Pretty.
-func (c *sQLServiceClient) Pretty(ctx context.Context, req *connect_go.Request[v1.PrettyRequest]) (*connect_go.Response[v1.PrettyResponse], error) {
+func (c *sQLServiceClient) Pretty(ctx context.Context, req *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error) {
 	return c.pretty.CallUnary(ctx, req)
 }
 
 // DiffMetadata calls bytebase.v1.SQLService.DiffMetadata.
-func (c *sQLServiceClient) DiffMetadata(ctx context.Context, req *connect_go.Request[v1.DiffMetadataRequest]) (*connect_go.Response[v1.DiffMetadataResponse], error) {
+func (c *sQLServiceClient) DiffMetadata(ctx context.Context, req *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
 	return c.diffMetadata.CallUnary(ctx, req)
 }
 
 // AICompletion calls bytebase.v1.SQLService.AICompletion.
-func (c *sQLServiceClient) AICompletion(ctx context.Context, req *connect_go.Request[v1.AICompletionRequest]) (*connect_go.Response[v1.AICompletionResponse], error) {
+func (c *sQLServiceClient) AICompletion(ctx context.Context, req *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error) {
 	return c.aICompletion.CallUnary(ctx, req)
 }
 
 // SQLServiceHandler is an implementation of the bytebase.v1.SQLService service.
 type SQLServiceHandler interface {
-	Query(context.Context, *connect_go.Request[v1.QueryRequest]) (*connect_go.Response[v1.QueryResponse], error)
-	AdminExecute(context.Context, *connect_go.BidiStream[v1.AdminExecuteRequest, v1.AdminExecuteResponse]) error
+	Query(context.Context, *connect.Request[v1.QueryRequest]) (*connect.Response[v1.QueryResponse], error)
+	AdminExecute(context.Context, *connect.BidiStream[v1.AdminExecuteRequest, v1.AdminExecuteResponse]) error
 	// SearchQueryHistories searches query histories for the caller.
-	SearchQueryHistories(context.Context, *connect_go.Request[v1.SearchQueryHistoriesRequest]) (*connect_go.Response[v1.SearchQueryHistoriesResponse], error)
-	Export(context.Context, *connect_go.Request[v1.ExportRequest]) (*connect_go.Response[v1.ExportResponse], error)
-	Check(context.Context, *connect_go.Request[v1.CheckRequest]) (*connect_go.Response[v1.CheckResponse], error)
-	ParseMyBatisMapper(context.Context, *connect_go.Request[v1.ParseMyBatisMapperRequest]) (*connect_go.Response[v1.ParseMyBatisMapperResponse], error)
-	Pretty(context.Context, *connect_go.Request[v1.PrettyRequest]) (*connect_go.Response[v1.PrettyResponse], error)
-	DiffMetadata(context.Context, *connect_go.Request[v1.DiffMetadataRequest]) (*connect_go.Response[v1.DiffMetadataResponse], error)
-	AICompletion(context.Context, *connect_go.Request[v1.AICompletionRequest]) (*connect_go.Response[v1.AICompletionResponse], error)
+	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
+	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
+	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
+	ParseMyBatisMapper(context.Context, *connect.Request[v1.ParseMyBatisMapperRequest]) (*connect.Response[v1.ParseMyBatisMapperResponse], error)
+	Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error)
+	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
+	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
 }
 
 // NewSQLServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -204,51 +214,61 @@ type SQLServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	sQLServiceQueryHandler := connect_go.NewUnaryHandler(
+func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	sQLServiceMethods := v1.File_v1_sql_service_proto.Services().ByName("SQLService").Methods()
+	sQLServiceQueryHandler := connect.NewUnaryHandler(
 		SQLServiceQueryProcedure,
 		svc.Query,
-		opts...,
+		connect.WithSchema(sQLServiceMethods.ByName("Query")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceAdminExecuteHandler := connect_go.NewBidiStreamHandler(
+	sQLServiceAdminExecuteHandler := connect.NewBidiStreamHandler(
 		SQLServiceAdminExecuteProcedure,
 		svc.AdminExecute,
-		opts...,
+		connect.WithSchema(sQLServiceMethods.ByName("AdminExecute")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceSearchQueryHistoriesHandler := connect_go.NewUnaryHandler(
+	sQLServiceSearchQueryHistoriesHandler := connect.NewUnaryHandler(
 		SQLServiceSearchQueryHistoriesProcedure,
 		svc.SearchQueryHistories,
-		opts...,
+		connect.WithSchema(sQLServiceMethods.ByName("SearchQueryHistories")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceExportHandler := connect_go.NewUnaryHandler(
+	sQLServiceExportHandler := connect.NewUnaryHandler(
 		SQLServiceExportProcedure,
 		svc.Export,
-		opts...,
+		connect.WithSchema(sQLServiceMethods.ByName("Export")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceCheckHandler := connect_go.NewUnaryHandler(
+	sQLServiceCheckHandler := connect.NewUnaryHandler(
 		SQLServiceCheckProcedure,
 		svc.Check,
-		opts...,
+		connect.WithSchema(sQLServiceMethods.ByName("Check")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceParseMyBatisMapperHandler := connect_go.NewUnaryHandler(
+	sQLServiceParseMyBatisMapperHandler := connect.NewUnaryHandler(
 		SQLServiceParseMyBatisMapperProcedure,
 		svc.ParseMyBatisMapper,
-		opts...,
+		connect.WithSchema(sQLServiceMethods.ByName("ParseMyBatisMapper")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sQLServicePrettyHandler := connect_go.NewUnaryHandler(
+	sQLServicePrettyHandler := connect.NewUnaryHandler(
 		SQLServicePrettyProcedure,
 		svc.Pretty,
-		opts...,
+		connect.WithSchema(sQLServiceMethods.ByName("Pretty")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceDiffMetadataHandler := connect_go.NewUnaryHandler(
+	sQLServiceDiffMetadataHandler := connect.NewUnaryHandler(
 		SQLServiceDiffMetadataProcedure,
 		svc.DiffMetadata,
-		opts...,
+		connect.WithSchema(sQLServiceMethods.ByName("DiffMetadata")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceAICompletionHandler := connect_go.NewUnaryHandler(
+	sQLServiceAICompletionHandler := connect.NewUnaryHandler(
 		SQLServiceAICompletionProcedure,
 		svc.AICompletion,
-		opts...,
+		connect.WithSchema(sQLServiceMethods.ByName("AICompletion")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.SQLService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -279,38 +299,38 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect_go.HandlerOptio
 // UnimplementedSQLServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSQLServiceHandler struct{}
 
-func (UnimplementedSQLServiceHandler) Query(context.Context, *connect_go.Request[v1.QueryRequest]) (*connect_go.Response[v1.QueryResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Query is not implemented"))
+func (UnimplementedSQLServiceHandler) Query(context.Context, *connect.Request[v1.QueryRequest]) (*connect.Response[v1.QueryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Query is not implemented"))
 }
 
-func (UnimplementedSQLServiceHandler) AdminExecute(context.Context, *connect_go.BidiStream[v1.AdminExecuteRequest, v1.AdminExecuteResponse]) error {
-	return connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SQLService.AdminExecute is not implemented"))
+func (UnimplementedSQLServiceHandler) AdminExecute(context.Context, *connect.BidiStream[v1.AdminExecuteRequest, v1.AdminExecuteResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.AdminExecute is not implemented"))
 }
 
-func (UnimplementedSQLServiceHandler) SearchQueryHistories(context.Context, *connect_go.Request[v1.SearchQueryHistoriesRequest]) (*connect_go.Response[v1.SearchQueryHistoriesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SQLService.SearchQueryHistories is not implemented"))
+func (UnimplementedSQLServiceHandler) SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.SearchQueryHistories is not implemented"))
 }
 
-func (UnimplementedSQLServiceHandler) Export(context.Context, *connect_go.Request[v1.ExportRequest]) (*connect_go.Response[v1.ExportResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Export is not implemented"))
+func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Export is not implemented"))
 }
 
-func (UnimplementedSQLServiceHandler) Check(context.Context, *connect_go.Request[v1.CheckRequest]) (*connect_go.Response[v1.CheckResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Check is not implemented"))
+func (UnimplementedSQLServiceHandler) Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Check is not implemented"))
 }
 
-func (UnimplementedSQLServiceHandler) ParseMyBatisMapper(context.Context, *connect_go.Request[v1.ParseMyBatisMapperRequest]) (*connect_go.Response[v1.ParseMyBatisMapperResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SQLService.ParseMyBatisMapper is not implemented"))
+func (UnimplementedSQLServiceHandler) ParseMyBatisMapper(context.Context, *connect.Request[v1.ParseMyBatisMapperRequest]) (*connect.Response[v1.ParseMyBatisMapperResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.ParseMyBatisMapper is not implemented"))
 }
 
-func (UnimplementedSQLServiceHandler) Pretty(context.Context, *connect_go.Request[v1.PrettyRequest]) (*connect_go.Response[v1.PrettyResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Pretty is not implemented"))
+func (UnimplementedSQLServiceHandler) Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Pretty is not implemented"))
 }
 
-func (UnimplementedSQLServiceHandler) DiffMetadata(context.Context, *connect_go.Request[v1.DiffMetadataRequest]) (*connect_go.Response[v1.DiffMetadataResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SQLService.DiffMetadata is not implemented"))
+func (UnimplementedSQLServiceHandler) DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.DiffMetadata is not implemented"))
 }
 
-func (UnimplementedSQLServiceHandler) AICompletion(context.Context, *connect_go.Request[v1.AICompletionRequest]) (*connect_go.Response[v1.AICompletionResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SQLService.AICompletion is not implemented"))
+func (UnimplementedSQLServiceHandler) AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.AICompletion is not implemented"))
 }

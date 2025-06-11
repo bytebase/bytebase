@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// InstanceServiceName is the fully-qualified name of the InstanceService service.
@@ -77,19 +77,19 @@ const (
 
 // InstanceServiceClient is a client for the bytebase.v1.InstanceService service.
 type InstanceServiceClient interface {
-	GetInstance(context.Context, *connect_go.Request[v1.GetInstanceRequest]) (*connect_go.Response[v1.Instance], error)
-	ListInstances(context.Context, *connect_go.Request[v1.ListInstancesRequest]) (*connect_go.Response[v1.ListInstancesResponse], error)
-	CreateInstance(context.Context, *connect_go.Request[v1.CreateInstanceRequest]) (*connect_go.Response[v1.Instance], error)
-	UpdateInstance(context.Context, *connect_go.Request[v1.UpdateInstanceRequest]) (*connect_go.Response[v1.Instance], error)
-	DeleteInstance(context.Context, *connect_go.Request[v1.DeleteInstanceRequest]) (*connect_go.Response[emptypb.Empty], error)
-	UndeleteInstance(context.Context, *connect_go.Request[v1.UndeleteInstanceRequest]) (*connect_go.Response[v1.Instance], error)
-	SyncInstance(context.Context, *connect_go.Request[v1.SyncInstanceRequest]) (*connect_go.Response[v1.SyncInstanceResponse], error)
-	ListInstanceDatabase(context.Context, *connect_go.Request[v1.ListInstanceDatabaseRequest]) (*connect_go.Response[v1.ListInstanceDatabaseResponse], error)
-	BatchSyncInstances(context.Context, *connect_go.Request[v1.BatchSyncInstancesRequest]) (*connect_go.Response[v1.BatchSyncInstancesResponse], error)
-	BatchUpdateInstances(context.Context, *connect_go.Request[v1.BatchUpdateInstancesRequest]) (*connect_go.Response[v1.BatchUpdateInstancesResponse], error)
-	AddDataSource(context.Context, *connect_go.Request[v1.AddDataSourceRequest]) (*connect_go.Response[v1.Instance], error)
-	RemoveDataSource(context.Context, *connect_go.Request[v1.RemoveDataSourceRequest]) (*connect_go.Response[v1.Instance], error)
-	UpdateDataSource(context.Context, *connect_go.Request[v1.UpdateDataSourceRequest]) (*connect_go.Response[v1.Instance], error)
+	GetInstance(context.Context, *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error)
+	ListInstances(context.Context, *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error)
+	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	DeleteInstance(context.Context, *connect.Request[v1.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error)
+	UndeleteInstance(context.Context, *connect.Request[v1.UndeleteInstanceRequest]) (*connect.Response[v1.Instance], error)
+	SyncInstance(context.Context, *connect.Request[v1.SyncInstanceRequest]) (*connect.Response[v1.SyncInstanceResponse], error)
+	ListInstanceDatabase(context.Context, *connect.Request[v1.ListInstanceDatabaseRequest]) (*connect.Response[v1.ListInstanceDatabaseResponse], error)
+	BatchSyncInstances(context.Context, *connect.Request[v1.BatchSyncInstancesRequest]) (*connect.Response[v1.BatchSyncInstancesResponse], error)
+	BatchUpdateInstances(context.Context, *connect.Request[v1.BatchUpdateInstancesRequest]) (*connect.Response[v1.BatchUpdateInstancesResponse], error)
+	AddDataSource(context.Context, *connect.Request[v1.AddDataSourceRequest]) (*connect.Response[v1.Instance], error)
+	RemoveDataSource(context.Context, *connect.Request[v1.RemoveDataSourceRequest]) (*connect.Response[v1.Instance], error)
+	UpdateDataSource(context.Context, *connect.Request[v1.UpdateDataSourceRequest]) (*connect.Response[v1.Instance], error)
 }
 
 // NewInstanceServiceClient constructs a client for the bytebase.v1.InstanceService service. By
@@ -99,174 +99,188 @@ type InstanceServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewInstanceServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) InstanceServiceClient {
+func NewInstanceServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) InstanceServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	instanceServiceMethods := v1.File_v1_instance_service_proto.Services().ByName("InstanceService").Methods()
 	return &instanceServiceClient{
-		getInstance: connect_go.NewClient[v1.GetInstanceRequest, v1.Instance](
+		getInstance: connect.NewClient[v1.GetInstanceRequest, v1.Instance](
 			httpClient,
 			baseURL+InstanceServiceGetInstanceProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("GetInstance")),
+			connect.WithClientOptions(opts...),
 		),
-		listInstances: connect_go.NewClient[v1.ListInstancesRequest, v1.ListInstancesResponse](
+		listInstances: connect.NewClient[v1.ListInstancesRequest, v1.ListInstancesResponse](
 			httpClient,
 			baseURL+InstanceServiceListInstancesProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("ListInstances")),
+			connect.WithClientOptions(opts...),
 		),
-		createInstance: connect_go.NewClient[v1.CreateInstanceRequest, v1.Instance](
+		createInstance: connect.NewClient[v1.CreateInstanceRequest, v1.Instance](
 			httpClient,
 			baseURL+InstanceServiceCreateInstanceProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("CreateInstance")),
+			connect.WithClientOptions(opts...),
 		),
-		updateInstance: connect_go.NewClient[v1.UpdateInstanceRequest, v1.Instance](
+		updateInstance: connect.NewClient[v1.UpdateInstanceRequest, v1.Instance](
 			httpClient,
 			baseURL+InstanceServiceUpdateInstanceProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("UpdateInstance")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteInstance: connect_go.NewClient[v1.DeleteInstanceRequest, emptypb.Empty](
+		deleteInstance: connect.NewClient[v1.DeleteInstanceRequest, emptypb.Empty](
 			httpClient,
 			baseURL+InstanceServiceDeleteInstanceProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("DeleteInstance")),
+			connect.WithClientOptions(opts...),
 		),
-		undeleteInstance: connect_go.NewClient[v1.UndeleteInstanceRequest, v1.Instance](
+		undeleteInstance: connect.NewClient[v1.UndeleteInstanceRequest, v1.Instance](
 			httpClient,
 			baseURL+InstanceServiceUndeleteInstanceProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("UndeleteInstance")),
+			connect.WithClientOptions(opts...),
 		),
-		syncInstance: connect_go.NewClient[v1.SyncInstanceRequest, v1.SyncInstanceResponse](
+		syncInstance: connect.NewClient[v1.SyncInstanceRequest, v1.SyncInstanceResponse](
 			httpClient,
 			baseURL+InstanceServiceSyncInstanceProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("SyncInstance")),
+			connect.WithClientOptions(opts...),
 		),
-		listInstanceDatabase: connect_go.NewClient[v1.ListInstanceDatabaseRequest, v1.ListInstanceDatabaseResponse](
+		listInstanceDatabase: connect.NewClient[v1.ListInstanceDatabaseRequest, v1.ListInstanceDatabaseResponse](
 			httpClient,
 			baseURL+InstanceServiceListInstanceDatabaseProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("ListInstanceDatabase")),
+			connect.WithClientOptions(opts...),
 		),
-		batchSyncInstances: connect_go.NewClient[v1.BatchSyncInstancesRequest, v1.BatchSyncInstancesResponse](
+		batchSyncInstances: connect.NewClient[v1.BatchSyncInstancesRequest, v1.BatchSyncInstancesResponse](
 			httpClient,
 			baseURL+InstanceServiceBatchSyncInstancesProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("BatchSyncInstances")),
+			connect.WithClientOptions(opts...),
 		),
-		batchUpdateInstances: connect_go.NewClient[v1.BatchUpdateInstancesRequest, v1.BatchUpdateInstancesResponse](
+		batchUpdateInstances: connect.NewClient[v1.BatchUpdateInstancesRequest, v1.BatchUpdateInstancesResponse](
 			httpClient,
 			baseURL+InstanceServiceBatchUpdateInstancesProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("BatchUpdateInstances")),
+			connect.WithClientOptions(opts...),
 		),
-		addDataSource: connect_go.NewClient[v1.AddDataSourceRequest, v1.Instance](
+		addDataSource: connect.NewClient[v1.AddDataSourceRequest, v1.Instance](
 			httpClient,
 			baseURL+InstanceServiceAddDataSourceProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("AddDataSource")),
+			connect.WithClientOptions(opts...),
 		),
-		removeDataSource: connect_go.NewClient[v1.RemoveDataSourceRequest, v1.Instance](
+		removeDataSource: connect.NewClient[v1.RemoveDataSourceRequest, v1.Instance](
 			httpClient,
 			baseURL+InstanceServiceRemoveDataSourceProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("RemoveDataSource")),
+			connect.WithClientOptions(opts...),
 		),
-		updateDataSource: connect_go.NewClient[v1.UpdateDataSourceRequest, v1.Instance](
+		updateDataSource: connect.NewClient[v1.UpdateDataSourceRequest, v1.Instance](
 			httpClient,
 			baseURL+InstanceServiceUpdateDataSourceProcedure,
-			opts...,
+			connect.WithSchema(instanceServiceMethods.ByName("UpdateDataSource")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // instanceServiceClient implements InstanceServiceClient.
 type instanceServiceClient struct {
-	getInstance          *connect_go.Client[v1.GetInstanceRequest, v1.Instance]
-	listInstances        *connect_go.Client[v1.ListInstancesRequest, v1.ListInstancesResponse]
-	createInstance       *connect_go.Client[v1.CreateInstanceRequest, v1.Instance]
-	updateInstance       *connect_go.Client[v1.UpdateInstanceRequest, v1.Instance]
-	deleteInstance       *connect_go.Client[v1.DeleteInstanceRequest, emptypb.Empty]
-	undeleteInstance     *connect_go.Client[v1.UndeleteInstanceRequest, v1.Instance]
-	syncInstance         *connect_go.Client[v1.SyncInstanceRequest, v1.SyncInstanceResponse]
-	listInstanceDatabase *connect_go.Client[v1.ListInstanceDatabaseRequest, v1.ListInstanceDatabaseResponse]
-	batchSyncInstances   *connect_go.Client[v1.BatchSyncInstancesRequest, v1.BatchSyncInstancesResponse]
-	batchUpdateInstances *connect_go.Client[v1.BatchUpdateInstancesRequest, v1.BatchUpdateInstancesResponse]
-	addDataSource        *connect_go.Client[v1.AddDataSourceRequest, v1.Instance]
-	removeDataSource     *connect_go.Client[v1.RemoveDataSourceRequest, v1.Instance]
-	updateDataSource     *connect_go.Client[v1.UpdateDataSourceRequest, v1.Instance]
+	getInstance          *connect.Client[v1.GetInstanceRequest, v1.Instance]
+	listInstances        *connect.Client[v1.ListInstancesRequest, v1.ListInstancesResponse]
+	createInstance       *connect.Client[v1.CreateInstanceRequest, v1.Instance]
+	updateInstance       *connect.Client[v1.UpdateInstanceRequest, v1.Instance]
+	deleteInstance       *connect.Client[v1.DeleteInstanceRequest, emptypb.Empty]
+	undeleteInstance     *connect.Client[v1.UndeleteInstanceRequest, v1.Instance]
+	syncInstance         *connect.Client[v1.SyncInstanceRequest, v1.SyncInstanceResponse]
+	listInstanceDatabase *connect.Client[v1.ListInstanceDatabaseRequest, v1.ListInstanceDatabaseResponse]
+	batchSyncInstances   *connect.Client[v1.BatchSyncInstancesRequest, v1.BatchSyncInstancesResponse]
+	batchUpdateInstances *connect.Client[v1.BatchUpdateInstancesRequest, v1.BatchUpdateInstancesResponse]
+	addDataSource        *connect.Client[v1.AddDataSourceRequest, v1.Instance]
+	removeDataSource     *connect.Client[v1.RemoveDataSourceRequest, v1.Instance]
+	updateDataSource     *connect.Client[v1.UpdateDataSourceRequest, v1.Instance]
 }
 
 // GetInstance calls bytebase.v1.InstanceService.GetInstance.
-func (c *instanceServiceClient) GetInstance(ctx context.Context, req *connect_go.Request[v1.GetInstanceRequest]) (*connect_go.Response[v1.Instance], error) {
+func (c *instanceServiceClient) GetInstance(ctx context.Context, req *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error) {
 	return c.getInstance.CallUnary(ctx, req)
 }
 
 // ListInstances calls bytebase.v1.InstanceService.ListInstances.
-func (c *instanceServiceClient) ListInstances(ctx context.Context, req *connect_go.Request[v1.ListInstancesRequest]) (*connect_go.Response[v1.ListInstancesResponse], error) {
+func (c *instanceServiceClient) ListInstances(ctx context.Context, req *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error) {
 	return c.listInstances.CallUnary(ctx, req)
 }
 
 // CreateInstance calls bytebase.v1.InstanceService.CreateInstance.
-func (c *instanceServiceClient) CreateInstance(ctx context.Context, req *connect_go.Request[v1.CreateInstanceRequest]) (*connect_go.Response[v1.Instance], error) {
+func (c *instanceServiceClient) CreateInstance(ctx context.Context, req *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error) {
 	return c.createInstance.CallUnary(ctx, req)
 }
 
 // UpdateInstance calls bytebase.v1.InstanceService.UpdateInstance.
-func (c *instanceServiceClient) UpdateInstance(ctx context.Context, req *connect_go.Request[v1.UpdateInstanceRequest]) (*connect_go.Response[v1.Instance], error) {
+func (c *instanceServiceClient) UpdateInstance(ctx context.Context, req *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error) {
 	return c.updateInstance.CallUnary(ctx, req)
 }
 
 // DeleteInstance calls bytebase.v1.InstanceService.DeleteInstance.
-func (c *instanceServiceClient) DeleteInstance(ctx context.Context, req *connect_go.Request[v1.DeleteInstanceRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *instanceServiceClient) DeleteInstance(ctx context.Context, req *connect.Request[v1.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteInstance.CallUnary(ctx, req)
 }
 
 // UndeleteInstance calls bytebase.v1.InstanceService.UndeleteInstance.
-func (c *instanceServiceClient) UndeleteInstance(ctx context.Context, req *connect_go.Request[v1.UndeleteInstanceRequest]) (*connect_go.Response[v1.Instance], error) {
+func (c *instanceServiceClient) UndeleteInstance(ctx context.Context, req *connect.Request[v1.UndeleteInstanceRequest]) (*connect.Response[v1.Instance], error) {
 	return c.undeleteInstance.CallUnary(ctx, req)
 }
 
 // SyncInstance calls bytebase.v1.InstanceService.SyncInstance.
-func (c *instanceServiceClient) SyncInstance(ctx context.Context, req *connect_go.Request[v1.SyncInstanceRequest]) (*connect_go.Response[v1.SyncInstanceResponse], error) {
+func (c *instanceServiceClient) SyncInstance(ctx context.Context, req *connect.Request[v1.SyncInstanceRequest]) (*connect.Response[v1.SyncInstanceResponse], error) {
 	return c.syncInstance.CallUnary(ctx, req)
 }
 
 // ListInstanceDatabase calls bytebase.v1.InstanceService.ListInstanceDatabase.
-func (c *instanceServiceClient) ListInstanceDatabase(ctx context.Context, req *connect_go.Request[v1.ListInstanceDatabaseRequest]) (*connect_go.Response[v1.ListInstanceDatabaseResponse], error) {
+func (c *instanceServiceClient) ListInstanceDatabase(ctx context.Context, req *connect.Request[v1.ListInstanceDatabaseRequest]) (*connect.Response[v1.ListInstanceDatabaseResponse], error) {
 	return c.listInstanceDatabase.CallUnary(ctx, req)
 }
 
 // BatchSyncInstances calls bytebase.v1.InstanceService.BatchSyncInstances.
-func (c *instanceServiceClient) BatchSyncInstances(ctx context.Context, req *connect_go.Request[v1.BatchSyncInstancesRequest]) (*connect_go.Response[v1.BatchSyncInstancesResponse], error) {
+func (c *instanceServiceClient) BatchSyncInstances(ctx context.Context, req *connect.Request[v1.BatchSyncInstancesRequest]) (*connect.Response[v1.BatchSyncInstancesResponse], error) {
 	return c.batchSyncInstances.CallUnary(ctx, req)
 }
 
 // BatchUpdateInstances calls bytebase.v1.InstanceService.BatchUpdateInstances.
-func (c *instanceServiceClient) BatchUpdateInstances(ctx context.Context, req *connect_go.Request[v1.BatchUpdateInstancesRequest]) (*connect_go.Response[v1.BatchUpdateInstancesResponse], error) {
+func (c *instanceServiceClient) BatchUpdateInstances(ctx context.Context, req *connect.Request[v1.BatchUpdateInstancesRequest]) (*connect.Response[v1.BatchUpdateInstancesResponse], error) {
 	return c.batchUpdateInstances.CallUnary(ctx, req)
 }
 
 // AddDataSource calls bytebase.v1.InstanceService.AddDataSource.
-func (c *instanceServiceClient) AddDataSource(ctx context.Context, req *connect_go.Request[v1.AddDataSourceRequest]) (*connect_go.Response[v1.Instance], error) {
+func (c *instanceServiceClient) AddDataSource(ctx context.Context, req *connect.Request[v1.AddDataSourceRequest]) (*connect.Response[v1.Instance], error) {
 	return c.addDataSource.CallUnary(ctx, req)
 }
 
 // RemoveDataSource calls bytebase.v1.InstanceService.RemoveDataSource.
-func (c *instanceServiceClient) RemoveDataSource(ctx context.Context, req *connect_go.Request[v1.RemoveDataSourceRequest]) (*connect_go.Response[v1.Instance], error) {
+func (c *instanceServiceClient) RemoveDataSource(ctx context.Context, req *connect.Request[v1.RemoveDataSourceRequest]) (*connect.Response[v1.Instance], error) {
 	return c.removeDataSource.CallUnary(ctx, req)
 }
 
 // UpdateDataSource calls bytebase.v1.InstanceService.UpdateDataSource.
-func (c *instanceServiceClient) UpdateDataSource(ctx context.Context, req *connect_go.Request[v1.UpdateDataSourceRequest]) (*connect_go.Response[v1.Instance], error) {
+func (c *instanceServiceClient) UpdateDataSource(ctx context.Context, req *connect.Request[v1.UpdateDataSourceRequest]) (*connect.Response[v1.Instance], error) {
 	return c.updateDataSource.CallUnary(ctx, req)
 }
 
 // InstanceServiceHandler is an implementation of the bytebase.v1.InstanceService service.
 type InstanceServiceHandler interface {
-	GetInstance(context.Context, *connect_go.Request[v1.GetInstanceRequest]) (*connect_go.Response[v1.Instance], error)
-	ListInstances(context.Context, *connect_go.Request[v1.ListInstancesRequest]) (*connect_go.Response[v1.ListInstancesResponse], error)
-	CreateInstance(context.Context, *connect_go.Request[v1.CreateInstanceRequest]) (*connect_go.Response[v1.Instance], error)
-	UpdateInstance(context.Context, *connect_go.Request[v1.UpdateInstanceRequest]) (*connect_go.Response[v1.Instance], error)
-	DeleteInstance(context.Context, *connect_go.Request[v1.DeleteInstanceRequest]) (*connect_go.Response[emptypb.Empty], error)
-	UndeleteInstance(context.Context, *connect_go.Request[v1.UndeleteInstanceRequest]) (*connect_go.Response[v1.Instance], error)
-	SyncInstance(context.Context, *connect_go.Request[v1.SyncInstanceRequest]) (*connect_go.Response[v1.SyncInstanceResponse], error)
-	ListInstanceDatabase(context.Context, *connect_go.Request[v1.ListInstanceDatabaseRequest]) (*connect_go.Response[v1.ListInstanceDatabaseResponse], error)
-	BatchSyncInstances(context.Context, *connect_go.Request[v1.BatchSyncInstancesRequest]) (*connect_go.Response[v1.BatchSyncInstancesResponse], error)
-	BatchUpdateInstances(context.Context, *connect_go.Request[v1.BatchUpdateInstancesRequest]) (*connect_go.Response[v1.BatchUpdateInstancesResponse], error)
-	AddDataSource(context.Context, *connect_go.Request[v1.AddDataSourceRequest]) (*connect_go.Response[v1.Instance], error)
-	RemoveDataSource(context.Context, *connect_go.Request[v1.RemoveDataSourceRequest]) (*connect_go.Response[v1.Instance], error)
-	UpdateDataSource(context.Context, *connect_go.Request[v1.UpdateDataSourceRequest]) (*connect_go.Response[v1.Instance], error)
+	GetInstance(context.Context, *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error)
+	ListInstances(context.Context, *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error)
+	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	DeleteInstance(context.Context, *connect.Request[v1.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error)
+	UndeleteInstance(context.Context, *connect.Request[v1.UndeleteInstanceRequest]) (*connect.Response[v1.Instance], error)
+	SyncInstance(context.Context, *connect.Request[v1.SyncInstanceRequest]) (*connect.Response[v1.SyncInstanceResponse], error)
+	ListInstanceDatabase(context.Context, *connect.Request[v1.ListInstanceDatabaseRequest]) (*connect.Response[v1.ListInstanceDatabaseResponse], error)
+	BatchSyncInstances(context.Context, *connect.Request[v1.BatchSyncInstancesRequest]) (*connect.Response[v1.BatchSyncInstancesResponse], error)
+	BatchUpdateInstances(context.Context, *connect.Request[v1.BatchUpdateInstancesRequest]) (*connect.Response[v1.BatchUpdateInstancesResponse], error)
+	AddDataSource(context.Context, *connect.Request[v1.AddDataSourceRequest]) (*connect.Response[v1.Instance], error)
+	RemoveDataSource(context.Context, *connect.Request[v1.RemoveDataSourceRequest]) (*connect.Response[v1.Instance], error)
+	UpdateDataSource(context.Context, *connect.Request[v1.UpdateDataSourceRequest]) (*connect.Response[v1.Instance], error)
 }
 
 // NewInstanceServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -274,71 +288,85 @@ type InstanceServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewInstanceServiceHandler(svc InstanceServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	instanceServiceGetInstanceHandler := connect_go.NewUnaryHandler(
+func NewInstanceServiceHandler(svc InstanceServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	instanceServiceMethods := v1.File_v1_instance_service_proto.Services().ByName("InstanceService").Methods()
+	instanceServiceGetInstanceHandler := connect.NewUnaryHandler(
 		InstanceServiceGetInstanceProcedure,
 		svc.GetInstance,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("GetInstance")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceListInstancesHandler := connect_go.NewUnaryHandler(
+	instanceServiceListInstancesHandler := connect.NewUnaryHandler(
 		InstanceServiceListInstancesProcedure,
 		svc.ListInstances,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("ListInstances")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceCreateInstanceHandler := connect_go.NewUnaryHandler(
+	instanceServiceCreateInstanceHandler := connect.NewUnaryHandler(
 		InstanceServiceCreateInstanceProcedure,
 		svc.CreateInstance,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("CreateInstance")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceUpdateInstanceHandler := connect_go.NewUnaryHandler(
+	instanceServiceUpdateInstanceHandler := connect.NewUnaryHandler(
 		InstanceServiceUpdateInstanceProcedure,
 		svc.UpdateInstance,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("UpdateInstance")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceDeleteInstanceHandler := connect_go.NewUnaryHandler(
+	instanceServiceDeleteInstanceHandler := connect.NewUnaryHandler(
 		InstanceServiceDeleteInstanceProcedure,
 		svc.DeleteInstance,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("DeleteInstance")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceUndeleteInstanceHandler := connect_go.NewUnaryHandler(
+	instanceServiceUndeleteInstanceHandler := connect.NewUnaryHandler(
 		InstanceServiceUndeleteInstanceProcedure,
 		svc.UndeleteInstance,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("UndeleteInstance")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceSyncInstanceHandler := connect_go.NewUnaryHandler(
+	instanceServiceSyncInstanceHandler := connect.NewUnaryHandler(
 		InstanceServiceSyncInstanceProcedure,
 		svc.SyncInstance,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("SyncInstance")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceListInstanceDatabaseHandler := connect_go.NewUnaryHandler(
+	instanceServiceListInstanceDatabaseHandler := connect.NewUnaryHandler(
 		InstanceServiceListInstanceDatabaseProcedure,
 		svc.ListInstanceDatabase,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("ListInstanceDatabase")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceBatchSyncInstancesHandler := connect_go.NewUnaryHandler(
+	instanceServiceBatchSyncInstancesHandler := connect.NewUnaryHandler(
 		InstanceServiceBatchSyncInstancesProcedure,
 		svc.BatchSyncInstances,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("BatchSyncInstances")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceBatchUpdateInstancesHandler := connect_go.NewUnaryHandler(
+	instanceServiceBatchUpdateInstancesHandler := connect.NewUnaryHandler(
 		InstanceServiceBatchUpdateInstancesProcedure,
 		svc.BatchUpdateInstances,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("BatchUpdateInstances")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceAddDataSourceHandler := connect_go.NewUnaryHandler(
+	instanceServiceAddDataSourceHandler := connect.NewUnaryHandler(
 		InstanceServiceAddDataSourceProcedure,
 		svc.AddDataSource,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("AddDataSource")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceRemoveDataSourceHandler := connect_go.NewUnaryHandler(
+	instanceServiceRemoveDataSourceHandler := connect.NewUnaryHandler(
 		InstanceServiceRemoveDataSourceProcedure,
 		svc.RemoveDataSource,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("RemoveDataSource")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceServiceUpdateDataSourceHandler := connect_go.NewUnaryHandler(
+	instanceServiceUpdateDataSourceHandler := connect.NewUnaryHandler(
 		InstanceServiceUpdateDataSourceProcedure,
 		svc.UpdateDataSource,
-		opts...,
+		connect.WithSchema(instanceServiceMethods.ByName("UpdateDataSource")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.InstanceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -377,54 +405,54 @@ func NewInstanceServiceHandler(svc InstanceServiceHandler, opts ...connect_go.Ha
 // UnimplementedInstanceServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedInstanceServiceHandler struct{}
 
-func (UnimplementedInstanceServiceHandler) GetInstance(context.Context, *connect_go.Request[v1.GetInstanceRequest]) (*connect_go.Response[v1.Instance], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.GetInstance is not implemented"))
+func (UnimplementedInstanceServiceHandler) GetInstance(context.Context, *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.GetInstance is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) ListInstances(context.Context, *connect_go.Request[v1.ListInstancesRequest]) (*connect_go.Response[v1.ListInstancesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.ListInstances is not implemented"))
+func (UnimplementedInstanceServiceHandler) ListInstances(context.Context, *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.ListInstances is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) CreateInstance(context.Context, *connect_go.Request[v1.CreateInstanceRequest]) (*connect_go.Response[v1.Instance], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.CreateInstance is not implemented"))
+func (UnimplementedInstanceServiceHandler) CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.CreateInstance is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) UpdateInstance(context.Context, *connect_go.Request[v1.UpdateInstanceRequest]) (*connect_go.Response[v1.Instance], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.UpdateInstance is not implemented"))
+func (UnimplementedInstanceServiceHandler) UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.UpdateInstance is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) DeleteInstance(context.Context, *connect_go.Request[v1.DeleteInstanceRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.DeleteInstance is not implemented"))
+func (UnimplementedInstanceServiceHandler) DeleteInstance(context.Context, *connect.Request[v1.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.DeleteInstance is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) UndeleteInstance(context.Context, *connect_go.Request[v1.UndeleteInstanceRequest]) (*connect_go.Response[v1.Instance], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.UndeleteInstance is not implemented"))
+func (UnimplementedInstanceServiceHandler) UndeleteInstance(context.Context, *connect.Request[v1.UndeleteInstanceRequest]) (*connect.Response[v1.Instance], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.UndeleteInstance is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) SyncInstance(context.Context, *connect_go.Request[v1.SyncInstanceRequest]) (*connect_go.Response[v1.SyncInstanceResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.SyncInstance is not implemented"))
+func (UnimplementedInstanceServiceHandler) SyncInstance(context.Context, *connect.Request[v1.SyncInstanceRequest]) (*connect.Response[v1.SyncInstanceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.SyncInstance is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) ListInstanceDatabase(context.Context, *connect_go.Request[v1.ListInstanceDatabaseRequest]) (*connect_go.Response[v1.ListInstanceDatabaseResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.ListInstanceDatabase is not implemented"))
+func (UnimplementedInstanceServiceHandler) ListInstanceDatabase(context.Context, *connect.Request[v1.ListInstanceDatabaseRequest]) (*connect.Response[v1.ListInstanceDatabaseResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.ListInstanceDatabase is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) BatchSyncInstances(context.Context, *connect_go.Request[v1.BatchSyncInstancesRequest]) (*connect_go.Response[v1.BatchSyncInstancesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.BatchSyncInstances is not implemented"))
+func (UnimplementedInstanceServiceHandler) BatchSyncInstances(context.Context, *connect.Request[v1.BatchSyncInstancesRequest]) (*connect.Response[v1.BatchSyncInstancesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.BatchSyncInstances is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) BatchUpdateInstances(context.Context, *connect_go.Request[v1.BatchUpdateInstancesRequest]) (*connect_go.Response[v1.BatchUpdateInstancesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.BatchUpdateInstances is not implemented"))
+func (UnimplementedInstanceServiceHandler) BatchUpdateInstances(context.Context, *connect.Request[v1.BatchUpdateInstancesRequest]) (*connect.Response[v1.BatchUpdateInstancesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.BatchUpdateInstances is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) AddDataSource(context.Context, *connect_go.Request[v1.AddDataSourceRequest]) (*connect_go.Response[v1.Instance], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.AddDataSource is not implemented"))
+func (UnimplementedInstanceServiceHandler) AddDataSource(context.Context, *connect.Request[v1.AddDataSourceRequest]) (*connect.Response[v1.Instance], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.AddDataSource is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) RemoveDataSource(context.Context, *connect_go.Request[v1.RemoveDataSourceRequest]) (*connect_go.Response[v1.Instance], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.RemoveDataSource is not implemented"))
+func (UnimplementedInstanceServiceHandler) RemoveDataSource(context.Context, *connect.Request[v1.RemoveDataSourceRequest]) (*connect.Response[v1.Instance], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.RemoveDataSource is not implemented"))
 }
 
-func (UnimplementedInstanceServiceHandler) UpdateDataSource(context.Context, *connect_go.Request[v1.UpdateDataSourceRequest]) (*connect_go.Response[v1.Instance], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.UpdateDataSource is not implemented"))
+func (UnimplementedInstanceServiceHandler) UpdateDataSource(context.Context, *connect.Request[v1.UpdateDataSourceRequest]) (*connect.Response[v1.Instance], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.UpdateDataSource is not implemented"))
 }

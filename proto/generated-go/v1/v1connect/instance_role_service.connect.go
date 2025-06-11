@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// InstanceRoleServiceName is the fully-qualified name of the InstanceRoleService service.
@@ -43,8 +43,8 @@ const (
 
 // InstanceRoleServiceClient is a client for the bytebase.v1.InstanceRoleService service.
 type InstanceRoleServiceClient interface {
-	GetInstanceRole(context.Context, *connect_go.Request[v1.GetInstanceRoleRequest]) (*connect_go.Response[v1.InstanceRole], error)
-	ListInstanceRoles(context.Context, *connect_go.Request[v1.ListInstanceRolesRequest]) (*connect_go.Response[v1.ListInstanceRolesResponse], error)
+	GetInstanceRole(context.Context, *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error)
+	ListInstanceRoles(context.Context, *connect.Request[v1.ListInstanceRolesRequest]) (*connect.Response[v1.ListInstanceRolesResponse], error)
 }
 
 // NewInstanceRoleServiceClient constructs a client for the bytebase.v1.InstanceRoleService service.
@@ -54,42 +54,45 @@ type InstanceRoleServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewInstanceRoleServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) InstanceRoleServiceClient {
+func NewInstanceRoleServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) InstanceRoleServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	instanceRoleServiceMethods := v1.File_v1_instance_role_service_proto.Services().ByName("InstanceRoleService").Methods()
 	return &instanceRoleServiceClient{
-		getInstanceRole: connect_go.NewClient[v1.GetInstanceRoleRequest, v1.InstanceRole](
+		getInstanceRole: connect.NewClient[v1.GetInstanceRoleRequest, v1.InstanceRole](
 			httpClient,
 			baseURL+InstanceRoleServiceGetInstanceRoleProcedure,
-			opts...,
+			connect.WithSchema(instanceRoleServiceMethods.ByName("GetInstanceRole")),
+			connect.WithClientOptions(opts...),
 		),
-		listInstanceRoles: connect_go.NewClient[v1.ListInstanceRolesRequest, v1.ListInstanceRolesResponse](
+		listInstanceRoles: connect.NewClient[v1.ListInstanceRolesRequest, v1.ListInstanceRolesResponse](
 			httpClient,
 			baseURL+InstanceRoleServiceListInstanceRolesProcedure,
-			opts...,
+			connect.WithSchema(instanceRoleServiceMethods.ByName("ListInstanceRoles")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // instanceRoleServiceClient implements InstanceRoleServiceClient.
 type instanceRoleServiceClient struct {
-	getInstanceRole   *connect_go.Client[v1.GetInstanceRoleRequest, v1.InstanceRole]
-	listInstanceRoles *connect_go.Client[v1.ListInstanceRolesRequest, v1.ListInstanceRolesResponse]
+	getInstanceRole   *connect.Client[v1.GetInstanceRoleRequest, v1.InstanceRole]
+	listInstanceRoles *connect.Client[v1.ListInstanceRolesRequest, v1.ListInstanceRolesResponse]
 }
 
 // GetInstanceRole calls bytebase.v1.InstanceRoleService.GetInstanceRole.
-func (c *instanceRoleServiceClient) GetInstanceRole(ctx context.Context, req *connect_go.Request[v1.GetInstanceRoleRequest]) (*connect_go.Response[v1.InstanceRole], error) {
+func (c *instanceRoleServiceClient) GetInstanceRole(ctx context.Context, req *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error) {
 	return c.getInstanceRole.CallUnary(ctx, req)
 }
 
 // ListInstanceRoles calls bytebase.v1.InstanceRoleService.ListInstanceRoles.
-func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, req *connect_go.Request[v1.ListInstanceRolesRequest]) (*connect_go.Response[v1.ListInstanceRolesResponse], error) {
+func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, req *connect.Request[v1.ListInstanceRolesRequest]) (*connect.Response[v1.ListInstanceRolesResponse], error) {
 	return c.listInstanceRoles.CallUnary(ctx, req)
 }
 
 // InstanceRoleServiceHandler is an implementation of the bytebase.v1.InstanceRoleService service.
 type InstanceRoleServiceHandler interface {
-	GetInstanceRole(context.Context, *connect_go.Request[v1.GetInstanceRoleRequest]) (*connect_go.Response[v1.InstanceRole], error)
-	ListInstanceRoles(context.Context, *connect_go.Request[v1.ListInstanceRolesRequest]) (*connect_go.Response[v1.ListInstanceRolesResponse], error)
+	GetInstanceRole(context.Context, *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error)
+	ListInstanceRoles(context.Context, *connect.Request[v1.ListInstanceRolesRequest]) (*connect.Response[v1.ListInstanceRolesResponse], error)
 }
 
 // NewInstanceRoleServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -97,16 +100,19 @@ type InstanceRoleServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewInstanceRoleServiceHandler(svc InstanceRoleServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	instanceRoleServiceGetInstanceRoleHandler := connect_go.NewUnaryHandler(
+func NewInstanceRoleServiceHandler(svc InstanceRoleServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	instanceRoleServiceMethods := v1.File_v1_instance_role_service_proto.Services().ByName("InstanceRoleService").Methods()
+	instanceRoleServiceGetInstanceRoleHandler := connect.NewUnaryHandler(
 		InstanceRoleServiceGetInstanceRoleProcedure,
 		svc.GetInstanceRole,
-		opts...,
+		connect.WithSchema(instanceRoleServiceMethods.ByName("GetInstanceRole")),
+		connect.WithHandlerOptions(opts...),
 	)
-	instanceRoleServiceListInstanceRolesHandler := connect_go.NewUnaryHandler(
+	instanceRoleServiceListInstanceRolesHandler := connect.NewUnaryHandler(
 		InstanceRoleServiceListInstanceRolesProcedure,
 		svc.ListInstanceRoles,
-		opts...,
+		connect.WithSchema(instanceRoleServiceMethods.ByName("ListInstanceRoles")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.InstanceRoleService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -123,10 +129,10 @@ func NewInstanceRoleServiceHandler(svc InstanceRoleServiceHandler, opts ...conne
 // UnimplementedInstanceRoleServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedInstanceRoleServiceHandler struct{}
 
-func (UnimplementedInstanceRoleServiceHandler) GetInstanceRole(context.Context, *connect_go.Request[v1.GetInstanceRoleRequest]) (*connect_go.Response[v1.InstanceRole], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceRoleService.GetInstanceRole is not implemented"))
+func (UnimplementedInstanceRoleServiceHandler) GetInstanceRole(context.Context, *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceRoleService.GetInstanceRole is not implemented"))
 }
 
-func (UnimplementedInstanceRoleServiceHandler) ListInstanceRoles(context.Context, *connect_go.Request[v1.ListInstanceRolesRequest]) (*connect_go.Response[v1.ListInstanceRolesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.InstanceRoleService.ListInstanceRoles is not implemented"))
+func (UnimplementedInstanceRoleServiceHandler) ListInstanceRoles(context.Context, *connect.Request[v1.ListInstanceRolesRequest]) (*connect.Response[v1.ListInstanceRolesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceRoleService.ListInstanceRoles is not implemented"))
 }

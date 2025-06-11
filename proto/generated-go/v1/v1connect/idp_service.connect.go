@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// IdentityProviderServiceName is the fully-qualified name of the IdentityProviderService service.
@@ -56,12 +56,12 @@ const (
 
 // IdentityProviderServiceClient is a client for the bytebase.v1.IdentityProviderService service.
 type IdentityProviderServiceClient interface {
-	GetIdentityProvider(context.Context, *connect_go.Request[v1.GetIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error)
-	ListIdentityProviders(context.Context, *connect_go.Request[v1.ListIdentityProvidersRequest]) (*connect_go.Response[v1.ListIdentityProvidersResponse], error)
-	CreateIdentityProvider(context.Context, *connect_go.Request[v1.CreateIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error)
-	UpdateIdentityProvider(context.Context, *connect_go.Request[v1.UpdateIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error)
-	DeleteIdentityProvider(context.Context, *connect_go.Request[v1.DeleteIdentityProviderRequest]) (*connect_go.Response[emptypb.Empty], error)
-	TestIdentityProvider(context.Context, *connect_go.Request[v1.TestIdentityProviderRequest]) (*connect_go.Response[v1.TestIdentityProviderResponse], error)
+	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
+	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[emptypb.Empty], error)
+	TestIdentityProvider(context.Context, *connect.Request[v1.TestIdentityProviderRequest]) (*connect.Response[v1.TestIdentityProviderResponse], error)
 }
 
 // NewIdentityProviderServiceClient constructs a client for the bytebase.v1.IdentityProviderService
@@ -71,91 +71,98 @@ type IdentityProviderServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewIdentityProviderServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) IdentityProviderServiceClient {
+func NewIdentityProviderServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) IdentityProviderServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	identityProviderServiceMethods := v1.File_v1_idp_service_proto.Services().ByName("IdentityProviderService").Methods()
 	return &identityProviderServiceClient{
-		getIdentityProvider: connect_go.NewClient[v1.GetIdentityProviderRequest, v1.IdentityProvider](
+		getIdentityProvider: connect.NewClient[v1.GetIdentityProviderRequest, v1.IdentityProvider](
 			httpClient,
 			baseURL+IdentityProviderServiceGetIdentityProviderProcedure,
-			opts...,
+			connect.WithSchema(identityProviderServiceMethods.ByName("GetIdentityProvider")),
+			connect.WithClientOptions(opts...),
 		),
-		listIdentityProviders: connect_go.NewClient[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse](
+		listIdentityProviders: connect.NewClient[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse](
 			httpClient,
 			baseURL+IdentityProviderServiceListIdentityProvidersProcedure,
-			opts...,
+			connect.WithSchema(identityProviderServiceMethods.ByName("ListIdentityProviders")),
+			connect.WithClientOptions(opts...),
 		),
-		createIdentityProvider: connect_go.NewClient[v1.CreateIdentityProviderRequest, v1.IdentityProvider](
+		createIdentityProvider: connect.NewClient[v1.CreateIdentityProviderRequest, v1.IdentityProvider](
 			httpClient,
 			baseURL+IdentityProviderServiceCreateIdentityProviderProcedure,
-			opts...,
+			connect.WithSchema(identityProviderServiceMethods.ByName("CreateIdentityProvider")),
+			connect.WithClientOptions(opts...),
 		),
-		updateIdentityProvider: connect_go.NewClient[v1.UpdateIdentityProviderRequest, v1.IdentityProvider](
+		updateIdentityProvider: connect.NewClient[v1.UpdateIdentityProviderRequest, v1.IdentityProvider](
 			httpClient,
 			baseURL+IdentityProviderServiceUpdateIdentityProviderProcedure,
-			opts...,
+			connect.WithSchema(identityProviderServiceMethods.ByName("UpdateIdentityProvider")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteIdentityProvider: connect_go.NewClient[v1.DeleteIdentityProviderRequest, emptypb.Empty](
+		deleteIdentityProvider: connect.NewClient[v1.DeleteIdentityProviderRequest, emptypb.Empty](
 			httpClient,
 			baseURL+IdentityProviderServiceDeleteIdentityProviderProcedure,
-			opts...,
+			connect.WithSchema(identityProviderServiceMethods.ByName("DeleteIdentityProvider")),
+			connect.WithClientOptions(opts...),
 		),
-		testIdentityProvider: connect_go.NewClient[v1.TestIdentityProviderRequest, v1.TestIdentityProviderResponse](
+		testIdentityProvider: connect.NewClient[v1.TestIdentityProviderRequest, v1.TestIdentityProviderResponse](
 			httpClient,
 			baseURL+IdentityProviderServiceTestIdentityProviderProcedure,
-			opts...,
+			connect.WithSchema(identityProviderServiceMethods.ByName("TestIdentityProvider")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // identityProviderServiceClient implements IdentityProviderServiceClient.
 type identityProviderServiceClient struct {
-	getIdentityProvider    *connect_go.Client[v1.GetIdentityProviderRequest, v1.IdentityProvider]
-	listIdentityProviders  *connect_go.Client[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse]
-	createIdentityProvider *connect_go.Client[v1.CreateIdentityProviderRequest, v1.IdentityProvider]
-	updateIdentityProvider *connect_go.Client[v1.UpdateIdentityProviderRequest, v1.IdentityProvider]
-	deleteIdentityProvider *connect_go.Client[v1.DeleteIdentityProviderRequest, emptypb.Empty]
-	testIdentityProvider   *connect_go.Client[v1.TestIdentityProviderRequest, v1.TestIdentityProviderResponse]
+	getIdentityProvider    *connect.Client[v1.GetIdentityProviderRequest, v1.IdentityProvider]
+	listIdentityProviders  *connect.Client[v1.ListIdentityProvidersRequest, v1.ListIdentityProvidersResponse]
+	createIdentityProvider *connect.Client[v1.CreateIdentityProviderRequest, v1.IdentityProvider]
+	updateIdentityProvider *connect.Client[v1.UpdateIdentityProviderRequest, v1.IdentityProvider]
+	deleteIdentityProvider *connect.Client[v1.DeleteIdentityProviderRequest, emptypb.Empty]
+	testIdentityProvider   *connect.Client[v1.TestIdentityProviderRequest, v1.TestIdentityProviderResponse]
 }
 
 // GetIdentityProvider calls bytebase.v1.IdentityProviderService.GetIdentityProvider.
-func (c *identityProviderServiceClient) GetIdentityProvider(ctx context.Context, req *connect_go.Request[v1.GetIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error) {
+func (c *identityProviderServiceClient) GetIdentityProvider(ctx context.Context, req *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error) {
 	return c.getIdentityProvider.CallUnary(ctx, req)
 }
 
 // ListIdentityProviders calls bytebase.v1.IdentityProviderService.ListIdentityProviders.
-func (c *identityProviderServiceClient) ListIdentityProviders(ctx context.Context, req *connect_go.Request[v1.ListIdentityProvidersRequest]) (*connect_go.Response[v1.ListIdentityProvidersResponse], error) {
+func (c *identityProviderServiceClient) ListIdentityProviders(ctx context.Context, req *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error) {
 	return c.listIdentityProviders.CallUnary(ctx, req)
 }
 
 // CreateIdentityProvider calls bytebase.v1.IdentityProviderService.CreateIdentityProvider.
-func (c *identityProviderServiceClient) CreateIdentityProvider(ctx context.Context, req *connect_go.Request[v1.CreateIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error) {
+func (c *identityProviderServiceClient) CreateIdentityProvider(ctx context.Context, req *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error) {
 	return c.createIdentityProvider.CallUnary(ctx, req)
 }
 
 // UpdateIdentityProvider calls bytebase.v1.IdentityProviderService.UpdateIdentityProvider.
-func (c *identityProviderServiceClient) UpdateIdentityProvider(ctx context.Context, req *connect_go.Request[v1.UpdateIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error) {
+func (c *identityProviderServiceClient) UpdateIdentityProvider(ctx context.Context, req *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error) {
 	return c.updateIdentityProvider.CallUnary(ctx, req)
 }
 
 // DeleteIdentityProvider calls bytebase.v1.IdentityProviderService.DeleteIdentityProvider.
-func (c *identityProviderServiceClient) DeleteIdentityProvider(ctx context.Context, req *connect_go.Request[v1.DeleteIdentityProviderRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *identityProviderServiceClient) DeleteIdentityProvider(ctx context.Context, req *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteIdentityProvider.CallUnary(ctx, req)
 }
 
 // TestIdentityProvider calls bytebase.v1.IdentityProviderService.TestIdentityProvider.
-func (c *identityProviderServiceClient) TestIdentityProvider(ctx context.Context, req *connect_go.Request[v1.TestIdentityProviderRequest]) (*connect_go.Response[v1.TestIdentityProviderResponse], error) {
+func (c *identityProviderServiceClient) TestIdentityProvider(ctx context.Context, req *connect.Request[v1.TestIdentityProviderRequest]) (*connect.Response[v1.TestIdentityProviderResponse], error) {
 	return c.testIdentityProvider.CallUnary(ctx, req)
 }
 
 // IdentityProviderServiceHandler is an implementation of the bytebase.v1.IdentityProviderService
 // service.
 type IdentityProviderServiceHandler interface {
-	GetIdentityProvider(context.Context, *connect_go.Request[v1.GetIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error)
-	ListIdentityProviders(context.Context, *connect_go.Request[v1.ListIdentityProvidersRequest]) (*connect_go.Response[v1.ListIdentityProvidersResponse], error)
-	CreateIdentityProvider(context.Context, *connect_go.Request[v1.CreateIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error)
-	UpdateIdentityProvider(context.Context, *connect_go.Request[v1.UpdateIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error)
-	DeleteIdentityProvider(context.Context, *connect_go.Request[v1.DeleteIdentityProviderRequest]) (*connect_go.Response[emptypb.Empty], error)
-	TestIdentityProvider(context.Context, *connect_go.Request[v1.TestIdentityProviderRequest]) (*connect_go.Response[v1.TestIdentityProviderResponse], error)
+	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
+	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[emptypb.Empty], error)
+	TestIdentityProvider(context.Context, *connect.Request[v1.TestIdentityProviderRequest]) (*connect.Response[v1.TestIdentityProviderResponse], error)
 }
 
 // NewIdentityProviderServiceHandler builds an HTTP handler from the service implementation. It
@@ -163,36 +170,43 @@ type IdentityProviderServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewIdentityProviderServiceHandler(svc IdentityProviderServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	identityProviderServiceGetIdentityProviderHandler := connect_go.NewUnaryHandler(
+func NewIdentityProviderServiceHandler(svc IdentityProviderServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	identityProviderServiceMethods := v1.File_v1_idp_service_proto.Services().ByName("IdentityProviderService").Methods()
+	identityProviderServiceGetIdentityProviderHandler := connect.NewUnaryHandler(
 		IdentityProviderServiceGetIdentityProviderProcedure,
 		svc.GetIdentityProvider,
-		opts...,
+		connect.WithSchema(identityProviderServiceMethods.ByName("GetIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
 	)
-	identityProviderServiceListIdentityProvidersHandler := connect_go.NewUnaryHandler(
+	identityProviderServiceListIdentityProvidersHandler := connect.NewUnaryHandler(
 		IdentityProviderServiceListIdentityProvidersProcedure,
 		svc.ListIdentityProviders,
-		opts...,
+		connect.WithSchema(identityProviderServiceMethods.ByName("ListIdentityProviders")),
+		connect.WithHandlerOptions(opts...),
 	)
-	identityProviderServiceCreateIdentityProviderHandler := connect_go.NewUnaryHandler(
+	identityProviderServiceCreateIdentityProviderHandler := connect.NewUnaryHandler(
 		IdentityProviderServiceCreateIdentityProviderProcedure,
 		svc.CreateIdentityProvider,
-		opts...,
+		connect.WithSchema(identityProviderServiceMethods.ByName("CreateIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
 	)
-	identityProviderServiceUpdateIdentityProviderHandler := connect_go.NewUnaryHandler(
+	identityProviderServiceUpdateIdentityProviderHandler := connect.NewUnaryHandler(
 		IdentityProviderServiceUpdateIdentityProviderProcedure,
 		svc.UpdateIdentityProvider,
-		opts...,
+		connect.WithSchema(identityProviderServiceMethods.ByName("UpdateIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
 	)
-	identityProviderServiceDeleteIdentityProviderHandler := connect_go.NewUnaryHandler(
+	identityProviderServiceDeleteIdentityProviderHandler := connect.NewUnaryHandler(
 		IdentityProviderServiceDeleteIdentityProviderProcedure,
 		svc.DeleteIdentityProvider,
-		opts...,
+		connect.WithSchema(identityProviderServiceMethods.ByName("DeleteIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
 	)
-	identityProviderServiceTestIdentityProviderHandler := connect_go.NewUnaryHandler(
+	identityProviderServiceTestIdentityProviderHandler := connect.NewUnaryHandler(
 		IdentityProviderServiceTestIdentityProviderProcedure,
 		svc.TestIdentityProvider,
-		opts...,
+		connect.WithSchema(identityProviderServiceMethods.ByName("TestIdentityProvider")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.IdentityProviderService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -217,26 +231,26 @@ func NewIdentityProviderServiceHandler(svc IdentityProviderServiceHandler, opts 
 // UnimplementedIdentityProviderServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedIdentityProviderServiceHandler struct{}
 
-func (UnimplementedIdentityProviderServiceHandler) GetIdentityProvider(context.Context, *connect_go.Request[v1.GetIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.GetIdentityProvider is not implemented"))
+func (UnimplementedIdentityProviderServiceHandler) GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.GetIdentityProvider is not implemented"))
 }
 
-func (UnimplementedIdentityProviderServiceHandler) ListIdentityProviders(context.Context, *connect_go.Request[v1.ListIdentityProvidersRequest]) (*connect_go.Response[v1.ListIdentityProvidersResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.ListIdentityProviders is not implemented"))
+func (UnimplementedIdentityProviderServiceHandler) ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.ListIdentityProviders is not implemented"))
 }
 
-func (UnimplementedIdentityProviderServiceHandler) CreateIdentityProvider(context.Context, *connect_go.Request[v1.CreateIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.CreateIdentityProvider is not implemented"))
+func (UnimplementedIdentityProviderServiceHandler) CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.CreateIdentityProvider is not implemented"))
 }
 
-func (UnimplementedIdentityProviderServiceHandler) UpdateIdentityProvider(context.Context, *connect_go.Request[v1.UpdateIdentityProviderRequest]) (*connect_go.Response[v1.IdentityProvider], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.UpdateIdentityProvider is not implemented"))
+func (UnimplementedIdentityProviderServiceHandler) UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.UpdateIdentityProvider is not implemented"))
 }
 
-func (UnimplementedIdentityProviderServiceHandler) DeleteIdentityProvider(context.Context, *connect_go.Request[v1.DeleteIdentityProviderRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.DeleteIdentityProvider is not implemented"))
+func (UnimplementedIdentityProviderServiceHandler) DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.DeleteIdentityProvider is not implemented"))
 }
 
-func (UnimplementedIdentityProviderServiceHandler) TestIdentityProvider(context.Context, *connect_go.Request[v1.TestIdentityProviderRequest]) (*connect_go.Response[v1.TestIdentityProviderResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.TestIdentityProvider is not implemented"))
+func (UnimplementedIdentityProviderServiceHandler) TestIdentityProvider(context.Context, *connect.Request[v1.TestIdentityProviderRequest]) (*connect.Response[v1.TestIdentityProviderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IdentityProviderService.TestIdentityProvider is not implemented"))
 }

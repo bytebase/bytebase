@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// AuditLogServiceName is the fully-qualified name of the AuditLogService service.
@@ -43,8 +43,8 @@ const (
 
 // AuditLogServiceClient is a client for the bytebase.v1.AuditLogService service.
 type AuditLogServiceClient interface {
-	SearchAuditLogs(context.Context, *connect_go.Request[v1.SearchAuditLogsRequest]) (*connect_go.Response[v1.SearchAuditLogsResponse], error)
-	ExportAuditLogs(context.Context, *connect_go.Request[v1.ExportAuditLogsRequest]) (*connect_go.Response[v1.ExportAuditLogsResponse], error)
+	SearchAuditLogs(context.Context, *connect.Request[v1.SearchAuditLogsRequest]) (*connect.Response[v1.SearchAuditLogsResponse], error)
+	ExportAuditLogs(context.Context, *connect.Request[v1.ExportAuditLogsRequest]) (*connect.Response[v1.ExportAuditLogsResponse], error)
 }
 
 // NewAuditLogServiceClient constructs a client for the bytebase.v1.AuditLogService service. By
@@ -54,42 +54,45 @@ type AuditLogServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewAuditLogServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) AuditLogServiceClient {
+func NewAuditLogServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) AuditLogServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	auditLogServiceMethods := v1.File_v1_audit_log_service_proto.Services().ByName("AuditLogService").Methods()
 	return &auditLogServiceClient{
-		searchAuditLogs: connect_go.NewClient[v1.SearchAuditLogsRequest, v1.SearchAuditLogsResponse](
+		searchAuditLogs: connect.NewClient[v1.SearchAuditLogsRequest, v1.SearchAuditLogsResponse](
 			httpClient,
 			baseURL+AuditLogServiceSearchAuditLogsProcedure,
-			opts...,
+			connect.WithSchema(auditLogServiceMethods.ByName("SearchAuditLogs")),
+			connect.WithClientOptions(opts...),
 		),
-		exportAuditLogs: connect_go.NewClient[v1.ExportAuditLogsRequest, v1.ExportAuditLogsResponse](
+		exportAuditLogs: connect.NewClient[v1.ExportAuditLogsRequest, v1.ExportAuditLogsResponse](
 			httpClient,
 			baseURL+AuditLogServiceExportAuditLogsProcedure,
-			opts...,
+			connect.WithSchema(auditLogServiceMethods.ByName("ExportAuditLogs")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // auditLogServiceClient implements AuditLogServiceClient.
 type auditLogServiceClient struct {
-	searchAuditLogs *connect_go.Client[v1.SearchAuditLogsRequest, v1.SearchAuditLogsResponse]
-	exportAuditLogs *connect_go.Client[v1.ExportAuditLogsRequest, v1.ExportAuditLogsResponse]
+	searchAuditLogs *connect.Client[v1.SearchAuditLogsRequest, v1.SearchAuditLogsResponse]
+	exportAuditLogs *connect.Client[v1.ExportAuditLogsRequest, v1.ExportAuditLogsResponse]
 }
 
 // SearchAuditLogs calls bytebase.v1.AuditLogService.SearchAuditLogs.
-func (c *auditLogServiceClient) SearchAuditLogs(ctx context.Context, req *connect_go.Request[v1.SearchAuditLogsRequest]) (*connect_go.Response[v1.SearchAuditLogsResponse], error) {
+func (c *auditLogServiceClient) SearchAuditLogs(ctx context.Context, req *connect.Request[v1.SearchAuditLogsRequest]) (*connect.Response[v1.SearchAuditLogsResponse], error) {
 	return c.searchAuditLogs.CallUnary(ctx, req)
 }
 
 // ExportAuditLogs calls bytebase.v1.AuditLogService.ExportAuditLogs.
-func (c *auditLogServiceClient) ExportAuditLogs(ctx context.Context, req *connect_go.Request[v1.ExportAuditLogsRequest]) (*connect_go.Response[v1.ExportAuditLogsResponse], error) {
+func (c *auditLogServiceClient) ExportAuditLogs(ctx context.Context, req *connect.Request[v1.ExportAuditLogsRequest]) (*connect.Response[v1.ExportAuditLogsResponse], error) {
 	return c.exportAuditLogs.CallUnary(ctx, req)
 }
 
 // AuditLogServiceHandler is an implementation of the bytebase.v1.AuditLogService service.
 type AuditLogServiceHandler interface {
-	SearchAuditLogs(context.Context, *connect_go.Request[v1.SearchAuditLogsRequest]) (*connect_go.Response[v1.SearchAuditLogsResponse], error)
-	ExportAuditLogs(context.Context, *connect_go.Request[v1.ExportAuditLogsRequest]) (*connect_go.Response[v1.ExportAuditLogsResponse], error)
+	SearchAuditLogs(context.Context, *connect.Request[v1.SearchAuditLogsRequest]) (*connect.Response[v1.SearchAuditLogsResponse], error)
+	ExportAuditLogs(context.Context, *connect.Request[v1.ExportAuditLogsRequest]) (*connect.Response[v1.ExportAuditLogsResponse], error)
 }
 
 // NewAuditLogServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -97,16 +100,19 @@ type AuditLogServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewAuditLogServiceHandler(svc AuditLogServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	auditLogServiceSearchAuditLogsHandler := connect_go.NewUnaryHandler(
+func NewAuditLogServiceHandler(svc AuditLogServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	auditLogServiceMethods := v1.File_v1_audit_log_service_proto.Services().ByName("AuditLogService").Methods()
+	auditLogServiceSearchAuditLogsHandler := connect.NewUnaryHandler(
 		AuditLogServiceSearchAuditLogsProcedure,
 		svc.SearchAuditLogs,
-		opts...,
+		connect.WithSchema(auditLogServiceMethods.ByName("SearchAuditLogs")),
+		connect.WithHandlerOptions(opts...),
 	)
-	auditLogServiceExportAuditLogsHandler := connect_go.NewUnaryHandler(
+	auditLogServiceExportAuditLogsHandler := connect.NewUnaryHandler(
 		AuditLogServiceExportAuditLogsProcedure,
 		svc.ExportAuditLogs,
-		opts...,
+		connect.WithSchema(auditLogServiceMethods.ByName("ExportAuditLogs")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.AuditLogService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -123,10 +129,10 @@ func NewAuditLogServiceHandler(svc AuditLogServiceHandler, opts ...connect_go.Ha
 // UnimplementedAuditLogServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuditLogServiceHandler struct{}
 
-func (UnimplementedAuditLogServiceHandler) SearchAuditLogs(context.Context, *connect_go.Request[v1.SearchAuditLogsRequest]) (*connect_go.Response[v1.SearchAuditLogsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.AuditLogService.SearchAuditLogs is not implemented"))
+func (UnimplementedAuditLogServiceHandler) SearchAuditLogs(context.Context, *connect.Request[v1.SearchAuditLogsRequest]) (*connect.Response[v1.SearchAuditLogsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuditLogService.SearchAuditLogs is not implemented"))
 }
 
-func (UnimplementedAuditLogServiceHandler) ExportAuditLogs(context.Context, *connect_go.Request[v1.ExportAuditLogsRequest]) (*connect_go.Response[v1.ExportAuditLogsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.AuditLogService.ExportAuditLogs is not implemented"))
+func (UnimplementedAuditLogServiceHandler) ExportAuditLogs(context.Context, *connect.Request[v1.ExportAuditLogsRequest]) (*connect.Response[v1.ExportAuditLogsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuditLogService.ExportAuditLogs is not implemented"))
 }

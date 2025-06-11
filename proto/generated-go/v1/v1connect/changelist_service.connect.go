@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ChangelistServiceName is the fully-qualified name of the ChangelistService service.
@@ -53,11 +53,11 @@ const (
 
 // ChangelistServiceClient is a client for the bytebase.v1.ChangelistService service.
 type ChangelistServiceClient interface {
-	CreateChangelist(context.Context, *connect_go.Request[v1.CreateChangelistRequest]) (*connect_go.Response[v1.Changelist], error)
-	GetChangelist(context.Context, *connect_go.Request[v1.GetChangelistRequest]) (*connect_go.Response[v1.Changelist], error)
-	ListChangelists(context.Context, *connect_go.Request[v1.ListChangelistsRequest]) (*connect_go.Response[v1.ListChangelistsResponse], error)
-	UpdateChangelist(context.Context, *connect_go.Request[v1.UpdateChangelistRequest]) (*connect_go.Response[v1.Changelist], error)
-	DeleteChangelist(context.Context, *connect_go.Request[v1.DeleteChangelistRequest]) (*connect_go.Response[emptypb.Empty], error)
+	CreateChangelist(context.Context, *connect.Request[v1.CreateChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	GetChangelist(context.Context, *connect.Request[v1.GetChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	ListChangelists(context.Context, *connect.Request[v1.ListChangelistsRequest]) (*connect.Response[v1.ListChangelistsResponse], error)
+	UpdateChangelist(context.Context, *connect.Request[v1.UpdateChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	DeleteChangelist(context.Context, *connect.Request[v1.DeleteChangelistRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewChangelistServiceClient constructs a client for the bytebase.v1.ChangelistService service. By
@@ -67,78 +67,84 @@ type ChangelistServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewChangelistServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) ChangelistServiceClient {
+func NewChangelistServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ChangelistServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	changelistServiceMethods := v1.File_v1_changelist_service_proto.Services().ByName("ChangelistService").Methods()
 	return &changelistServiceClient{
-		createChangelist: connect_go.NewClient[v1.CreateChangelistRequest, v1.Changelist](
+		createChangelist: connect.NewClient[v1.CreateChangelistRequest, v1.Changelist](
 			httpClient,
 			baseURL+ChangelistServiceCreateChangelistProcedure,
-			opts...,
+			connect.WithSchema(changelistServiceMethods.ByName("CreateChangelist")),
+			connect.WithClientOptions(opts...),
 		),
-		getChangelist: connect_go.NewClient[v1.GetChangelistRequest, v1.Changelist](
+		getChangelist: connect.NewClient[v1.GetChangelistRequest, v1.Changelist](
 			httpClient,
 			baseURL+ChangelistServiceGetChangelistProcedure,
-			opts...,
+			connect.WithSchema(changelistServiceMethods.ByName("GetChangelist")),
+			connect.WithClientOptions(opts...),
 		),
-		listChangelists: connect_go.NewClient[v1.ListChangelistsRequest, v1.ListChangelistsResponse](
+		listChangelists: connect.NewClient[v1.ListChangelistsRequest, v1.ListChangelistsResponse](
 			httpClient,
 			baseURL+ChangelistServiceListChangelistsProcedure,
-			opts...,
+			connect.WithSchema(changelistServiceMethods.ByName("ListChangelists")),
+			connect.WithClientOptions(opts...),
 		),
-		updateChangelist: connect_go.NewClient[v1.UpdateChangelistRequest, v1.Changelist](
+		updateChangelist: connect.NewClient[v1.UpdateChangelistRequest, v1.Changelist](
 			httpClient,
 			baseURL+ChangelistServiceUpdateChangelistProcedure,
-			opts...,
+			connect.WithSchema(changelistServiceMethods.ByName("UpdateChangelist")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteChangelist: connect_go.NewClient[v1.DeleteChangelistRequest, emptypb.Empty](
+		deleteChangelist: connect.NewClient[v1.DeleteChangelistRequest, emptypb.Empty](
 			httpClient,
 			baseURL+ChangelistServiceDeleteChangelistProcedure,
-			opts...,
+			connect.WithSchema(changelistServiceMethods.ByName("DeleteChangelist")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // changelistServiceClient implements ChangelistServiceClient.
 type changelistServiceClient struct {
-	createChangelist *connect_go.Client[v1.CreateChangelistRequest, v1.Changelist]
-	getChangelist    *connect_go.Client[v1.GetChangelistRequest, v1.Changelist]
-	listChangelists  *connect_go.Client[v1.ListChangelistsRequest, v1.ListChangelistsResponse]
-	updateChangelist *connect_go.Client[v1.UpdateChangelistRequest, v1.Changelist]
-	deleteChangelist *connect_go.Client[v1.DeleteChangelistRequest, emptypb.Empty]
+	createChangelist *connect.Client[v1.CreateChangelistRequest, v1.Changelist]
+	getChangelist    *connect.Client[v1.GetChangelistRequest, v1.Changelist]
+	listChangelists  *connect.Client[v1.ListChangelistsRequest, v1.ListChangelistsResponse]
+	updateChangelist *connect.Client[v1.UpdateChangelistRequest, v1.Changelist]
+	deleteChangelist *connect.Client[v1.DeleteChangelistRequest, emptypb.Empty]
 }
 
 // CreateChangelist calls bytebase.v1.ChangelistService.CreateChangelist.
-func (c *changelistServiceClient) CreateChangelist(ctx context.Context, req *connect_go.Request[v1.CreateChangelistRequest]) (*connect_go.Response[v1.Changelist], error) {
+func (c *changelistServiceClient) CreateChangelist(ctx context.Context, req *connect.Request[v1.CreateChangelistRequest]) (*connect.Response[v1.Changelist], error) {
 	return c.createChangelist.CallUnary(ctx, req)
 }
 
 // GetChangelist calls bytebase.v1.ChangelistService.GetChangelist.
-func (c *changelistServiceClient) GetChangelist(ctx context.Context, req *connect_go.Request[v1.GetChangelistRequest]) (*connect_go.Response[v1.Changelist], error) {
+func (c *changelistServiceClient) GetChangelist(ctx context.Context, req *connect.Request[v1.GetChangelistRequest]) (*connect.Response[v1.Changelist], error) {
 	return c.getChangelist.CallUnary(ctx, req)
 }
 
 // ListChangelists calls bytebase.v1.ChangelistService.ListChangelists.
-func (c *changelistServiceClient) ListChangelists(ctx context.Context, req *connect_go.Request[v1.ListChangelistsRequest]) (*connect_go.Response[v1.ListChangelistsResponse], error) {
+func (c *changelistServiceClient) ListChangelists(ctx context.Context, req *connect.Request[v1.ListChangelistsRequest]) (*connect.Response[v1.ListChangelistsResponse], error) {
 	return c.listChangelists.CallUnary(ctx, req)
 }
 
 // UpdateChangelist calls bytebase.v1.ChangelistService.UpdateChangelist.
-func (c *changelistServiceClient) UpdateChangelist(ctx context.Context, req *connect_go.Request[v1.UpdateChangelistRequest]) (*connect_go.Response[v1.Changelist], error) {
+func (c *changelistServiceClient) UpdateChangelist(ctx context.Context, req *connect.Request[v1.UpdateChangelistRequest]) (*connect.Response[v1.Changelist], error) {
 	return c.updateChangelist.CallUnary(ctx, req)
 }
 
 // DeleteChangelist calls bytebase.v1.ChangelistService.DeleteChangelist.
-func (c *changelistServiceClient) DeleteChangelist(ctx context.Context, req *connect_go.Request[v1.DeleteChangelistRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *changelistServiceClient) DeleteChangelist(ctx context.Context, req *connect.Request[v1.DeleteChangelistRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteChangelist.CallUnary(ctx, req)
 }
 
 // ChangelistServiceHandler is an implementation of the bytebase.v1.ChangelistService service.
 type ChangelistServiceHandler interface {
-	CreateChangelist(context.Context, *connect_go.Request[v1.CreateChangelistRequest]) (*connect_go.Response[v1.Changelist], error)
-	GetChangelist(context.Context, *connect_go.Request[v1.GetChangelistRequest]) (*connect_go.Response[v1.Changelist], error)
-	ListChangelists(context.Context, *connect_go.Request[v1.ListChangelistsRequest]) (*connect_go.Response[v1.ListChangelistsResponse], error)
-	UpdateChangelist(context.Context, *connect_go.Request[v1.UpdateChangelistRequest]) (*connect_go.Response[v1.Changelist], error)
-	DeleteChangelist(context.Context, *connect_go.Request[v1.DeleteChangelistRequest]) (*connect_go.Response[emptypb.Empty], error)
+	CreateChangelist(context.Context, *connect.Request[v1.CreateChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	GetChangelist(context.Context, *connect.Request[v1.GetChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	ListChangelists(context.Context, *connect.Request[v1.ListChangelistsRequest]) (*connect.Response[v1.ListChangelistsResponse], error)
+	UpdateChangelist(context.Context, *connect.Request[v1.UpdateChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	DeleteChangelist(context.Context, *connect.Request[v1.DeleteChangelistRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewChangelistServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -146,31 +152,37 @@ type ChangelistServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewChangelistServiceHandler(svc ChangelistServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	changelistServiceCreateChangelistHandler := connect_go.NewUnaryHandler(
+func NewChangelistServiceHandler(svc ChangelistServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	changelistServiceMethods := v1.File_v1_changelist_service_proto.Services().ByName("ChangelistService").Methods()
+	changelistServiceCreateChangelistHandler := connect.NewUnaryHandler(
 		ChangelistServiceCreateChangelistProcedure,
 		svc.CreateChangelist,
-		opts...,
+		connect.WithSchema(changelistServiceMethods.ByName("CreateChangelist")),
+		connect.WithHandlerOptions(opts...),
 	)
-	changelistServiceGetChangelistHandler := connect_go.NewUnaryHandler(
+	changelistServiceGetChangelistHandler := connect.NewUnaryHandler(
 		ChangelistServiceGetChangelistProcedure,
 		svc.GetChangelist,
-		opts...,
+		connect.WithSchema(changelistServiceMethods.ByName("GetChangelist")),
+		connect.WithHandlerOptions(opts...),
 	)
-	changelistServiceListChangelistsHandler := connect_go.NewUnaryHandler(
+	changelistServiceListChangelistsHandler := connect.NewUnaryHandler(
 		ChangelistServiceListChangelistsProcedure,
 		svc.ListChangelists,
-		opts...,
+		connect.WithSchema(changelistServiceMethods.ByName("ListChangelists")),
+		connect.WithHandlerOptions(opts...),
 	)
-	changelistServiceUpdateChangelistHandler := connect_go.NewUnaryHandler(
+	changelistServiceUpdateChangelistHandler := connect.NewUnaryHandler(
 		ChangelistServiceUpdateChangelistProcedure,
 		svc.UpdateChangelist,
-		opts...,
+		connect.WithSchema(changelistServiceMethods.ByName("UpdateChangelist")),
+		connect.WithHandlerOptions(opts...),
 	)
-	changelistServiceDeleteChangelistHandler := connect_go.NewUnaryHandler(
+	changelistServiceDeleteChangelistHandler := connect.NewUnaryHandler(
 		ChangelistServiceDeleteChangelistProcedure,
 		svc.DeleteChangelist,
-		opts...,
+		connect.WithSchema(changelistServiceMethods.ByName("DeleteChangelist")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.ChangelistService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -193,22 +205,22 @@ func NewChangelistServiceHandler(svc ChangelistServiceHandler, opts ...connect_g
 // UnimplementedChangelistServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedChangelistServiceHandler struct{}
 
-func (UnimplementedChangelistServiceHandler) CreateChangelist(context.Context, *connect_go.Request[v1.CreateChangelistRequest]) (*connect_go.Response[v1.Changelist], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.CreateChangelist is not implemented"))
+func (UnimplementedChangelistServiceHandler) CreateChangelist(context.Context, *connect.Request[v1.CreateChangelistRequest]) (*connect.Response[v1.Changelist], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.CreateChangelist is not implemented"))
 }
 
-func (UnimplementedChangelistServiceHandler) GetChangelist(context.Context, *connect_go.Request[v1.GetChangelistRequest]) (*connect_go.Response[v1.Changelist], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.GetChangelist is not implemented"))
+func (UnimplementedChangelistServiceHandler) GetChangelist(context.Context, *connect.Request[v1.GetChangelistRequest]) (*connect.Response[v1.Changelist], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.GetChangelist is not implemented"))
 }
 
-func (UnimplementedChangelistServiceHandler) ListChangelists(context.Context, *connect_go.Request[v1.ListChangelistsRequest]) (*connect_go.Response[v1.ListChangelistsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.ListChangelists is not implemented"))
+func (UnimplementedChangelistServiceHandler) ListChangelists(context.Context, *connect.Request[v1.ListChangelistsRequest]) (*connect.Response[v1.ListChangelistsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.ListChangelists is not implemented"))
 }
 
-func (UnimplementedChangelistServiceHandler) UpdateChangelist(context.Context, *connect_go.Request[v1.UpdateChangelistRequest]) (*connect_go.Response[v1.Changelist], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.UpdateChangelist is not implemented"))
+func (UnimplementedChangelistServiceHandler) UpdateChangelist(context.Context, *connect.Request[v1.UpdateChangelistRequest]) (*connect.Response[v1.Changelist], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.UpdateChangelist is not implemented"))
 }
 
-func (UnimplementedChangelistServiceHandler) DeleteChangelist(context.Context, *connect_go.Request[v1.DeleteChangelistRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.DeleteChangelist is not implemented"))
+func (UnimplementedChangelistServiceHandler) DeleteChangelist(context.Context, *connect.Request[v1.DeleteChangelistRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ChangelistService.DeleteChangelist is not implemented"))
 }

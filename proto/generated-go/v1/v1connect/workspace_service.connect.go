@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// WorkspaceServiceName is the fully-qualified name of the WorkspaceService service.
@@ -43,8 +43,8 @@ const (
 
 // WorkspaceServiceClient is a client for the bytebase.v1.WorkspaceService service.
 type WorkspaceServiceClient interface {
-	GetIamPolicy(context.Context, *connect_go.Request[v1.GetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error)
-	SetIamPolicy(context.Context, *connect_go.Request[v1.SetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error)
+	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 }
 
 // NewWorkspaceServiceClient constructs a client for the bytebase.v1.WorkspaceService service. By
@@ -54,42 +54,45 @@ type WorkspaceServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewWorkspaceServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) WorkspaceServiceClient {
+func NewWorkspaceServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) WorkspaceServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	workspaceServiceMethods := v1.File_v1_workspace_service_proto.Services().ByName("WorkspaceService").Methods()
 	return &workspaceServiceClient{
-		getIamPolicy: connect_go.NewClient[v1.GetIamPolicyRequest, v1.IamPolicy](
+		getIamPolicy: connect.NewClient[v1.GetIamPolicyRequest, v1.IamPolicy](
 			httpClient,
 			baseURL+WorkspaceServiceGetIamPolicyProcedure,
-			opts...,
+			connect.WithSchema(workspaceServiceMethods.ByName("GetIamPolicy")),
+			connect.WithClientOptions(opts...),
 		),
-		setIamPolicy: connect_go.NewClient[v1.SetIamPolicyRequest, v1.IamPolicy](
+		setIamPolicy: connect.NewClient[v1.SetIamPolicyRequest, v1.IamPolicy](
 			httpClient,
 			baseURL+WorkspaceServiceSetIamPolicyProcedure,
-			opts...,
+			connect.WithSchema(workspaceServiceMethods.ByName("SetIamPolicy")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // workspaceServiceClient implements WorkspaceServiceClient.
 type workspaceServiceClient struct {
-	getIamPolicy *connect_go.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
-	setIamPolicy *connect_go.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
+	getIamPolicy *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
+	setIamPolicy *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
 }
 
 // GetIamPolicy calls bytebase.v1.WorkspaceService.GetIamPolicy.
-func (c *workspaceServiceClient) GetIamPolicy(ctx context.Context, req *connect_go.Request[v1.GetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error) {
+func (c *workspaceServiceClient) GetIamPolicy(ctx context.Context, req *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
 	return c.getIamPolicy.CallUnary(ctx, req)
 }
 
 // SetIamPolicy calls bytebase.v1.WorkspaceService.SetIamPolicy.
-func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, req *connect_go.Request[v1.SetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error) {
+func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, req *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
 	return c.setIamPolicy.CallUnary(ctx, req)
 }
 
 // WorkspaceServiceHandler is an implementation of the bytebase.v1.WorkspaceService service.
 type WorkspaceServiceHandler interface {
-	GetIamPolicy(context.Context, *connect_go.Request[v1.GetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error)
-	SetIamPolicy(context.Context, *connect_go.Request[v1.SetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error)
+	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 }
 
 // NewWorkspaceServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -97,16 +100,19 @@ type WorkspaceServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	workspaceServiceGetIamPolicyHandler := connect_go.NewUnaryHandler(
+func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	workspaceServiceMethods := v1.File_v1_workspace_service_proto.Services().ByName("WorkspaceService").Methods()
+	workspaceServiceGetIamPolicyHandler := connect.NewUnaryHandler(
 		WorkspaceServiceGetIamPolicyProcedure,
 		svc.GetIamPolicy,
-		opts...,
+		connect.WithSchema(workspaceServiceMethods.ByName("GetIamPolicy")),
+		connect.WithHandlerOptions(opts...),
 	)
-	workspaceServiceSetIamPolicyHandler := connect_go.NewUnaryHandler(
+	workspaceServiceSetIamPolicyHandler := connect.NewUnaryHandler(
 		WorkspaceServiceSetIamPolicyProcedure,
 		svc.SetIamPolicy,
-		opts...,
+		connect.WithSchema(workspaceServiceMethods.ByName("SetIamPolicy")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.WorkspaceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -123,10 +129,10 @@ func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect_go.
 // UnimplementedWorkspaceServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedWorkspaceServiceHandler struct{}
 
-func (UnimplementedWorkspaceServiceHandler) GetIamPolicy(context.Context, *connect_go.Request[v1.GetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.GetIamPolicy is not implemented"))
+func (UnimplementedWorkspaceServiceHandler) GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.GetIamPolicy is not implemented"))
 }
 
-func (UnimplementedWorkspaceServiceHandler) SetIamPolicy(context.Context, *connect_go.Request[v1.SetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.SetIamPolicy is not implemented"))
+func (UnimplementedWorkspaceServiceHandler) SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.SetIamPolicy is not implemented"))
 }

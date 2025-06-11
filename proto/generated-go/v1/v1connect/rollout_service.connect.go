@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// RolloutServiceName is the fully-qualified name of the RolloutService service.
@@ -73,27 +73,27 @@ const (
 
 // RolloutServiceClient is a client for the bytebase.v1.RolloutService service.
 type RolloutServiceClient interface {
-	GetRollout(context.Context, *connect_go.Request[v1.GetRolloutRequest]) (*connect_go.Response[v1.Rollout], error)
-	ListRollouts(context.Context, *connect_go.Request[v1.ListRolloutsRequest]) (*connect_go.Response[v1.ListRolloutsResponse], error)
+	GetRollout(context.Context, *connect.Request[v1.GetRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
 	// CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
-	CreateRollout(context.Context, *connect_go.Request[v1.CreateRolloutRequest]) (*connect_go.Response[v1.Rollout], error)
-	PreviewRollout(context.Context, *connect_go.Request[v1.PreviewRolloutRequest]) (*connect_go.Response[v1.Rollout], error)
-	ListTaskRuns(context.Context, *connect_go.Request[v1.ListTaskRunsRequest]) (*connect_go.Response[v1.ListTaskRunsResponse], error)
-	GetTaskRun(context.Context, *connect_go.Request[v1.GetTaskRunRequest]) (*connect_go.Response[v1.TaskRun], error)
-	GetTaskRunLog(context.Context, *connect_go.Request[v1.GetTaskRunLogRequest]) (*connect_go.Response[v1.TaskRunLog], error)
-	GetTaskRunSession(context.Context, *connect_go.Request[v1.GetTaskRunSessionRequest]) (*connect_go.Response[v1.TaskRunSession], error)
+	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	PreviewRollout(context.Context, *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	ListTaskRuns(context.Context, *connect.Request[v1.ListTaskRunsRequest]) (*connect.Response[v1.ListTaskRunsResponse], error)
+	GetTaskRun(context.Context, *connect.Request[v1.GetTaskRunRequest]) (*connect.Response[v1.TaskRun], error)
+	GetTaskRunLog(context.Context, *connect.Request[v1.GetTaskRunLogRequest]) (*connect.Response[v1.TaskRunLog], error)
+	GetTaskRunSession(context.Context, *connect.Request[v1.GetTaskRunSessionRequest]) (*connect.Response[v1.TaskRunSession], error)
 	// BatchRunTasks creates task runs for the specified tasks.
 	// DataExport issue only allows the creator to run the task.
 	// Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
 	// Follow role-based rollout policy for the environment.
-	BatchRunTasks(context.Context, *connect_go.Request[v1.BatchRunTasksRequest]) (*connect_go.Response[v1.BatchRunTasksResponse], error)
+	BatchRunTasks(context.Context, *connect.Request[v1.BatchRunTasksRequest]) (*connect.Response[v1.BatchRunTasksResponse], error)
 	// BatchSkipTasks skips the specified tasks.
 	// The access is the same as BatchRunTasks().
-	BatchSkipTasks(context.Context, *connect_go.Request[v1.BatchSkipTasksRequest]) (*connect_go.Response[v1.BatchSkipTasksResponse], error)
+	BatchSkipTasks(context.Context, *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error)
 	// BatchCancelTaskRuns cancels the specified task runs in batch.
 	// The access is the same as BatchRunTasks().
-	BatchCancelTaskRuns(context.Context, *connect_go.Request[v1.BatchCancelTaskRunsRequest]) (*connect_go.Response[v1.BatchCancelTaskRunsResponse], error)
-	PreviewTaskRunRollback(context.Context, *connect_go.Request[v1.PreviewTaskRunRollbackRequest]) (*connect_go.Response[v1.PreviewTaskRunRollbackResponse], error)
+	BatchCancelTaskRuns(context.Context, *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error)
+	PreviewTaskRunRollback(context.Context, *connect.Request[v1.PreviewTaskRunRollbackRequest]) (*connect.Response[v1.PreviewTaskRunRollbackResponse], error)
 }
 
 // NewRolloutServiceClient constructs a client for the bytebase.v1.RolloutService service. By
@@ -103,171 +103,184 @@ type RolloutServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewRolloutServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) RolloutServiceClient {
+func NewRolloutServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RolloutServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	rolloutServiceMethods := v1.File_v1_rollout_service_proto.Services().ByName("RolloutService").Methods()
 	return &rolloutServiceClient{
-		getRollout: connect_go.NewClient[v1.GetRolloutRequest, v1.Rollout](
+		getRollout: connect.NewClient[v1.GetRolloutRequest, v1.Rollout](
 			httpClient,
 			baseURL+RolloutServiceGetRolloutProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("GetRollout")),
+			connect.WithClientOptions(opts...),
 		),
-		listRollouts: connect_go.NewClient[v1.ListRolloutsRequest, v1.ListRolloutsResponse](
+		listRollouts: connect.NewClient[v1.ListRolloutsRequest, v1.ListRolloutsResponse](
 			httpClient,
 			baseURL+RolloutServiceListRolloutsProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("ListRollouts")),
+			connect.WithClientOptions(opts...),
 		),
-		createRollout: connect_go.NewClient[v1.CreateRolloutRequest, v1.Rollout](
+		createRollout: connect.NewClient[v1.CreateRolloutRequest, v1.Rollout](
 			httpClient,
 			baseURL+RolloutServiceCreateRolloutProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("CreateRollout")),
+			connect.WithClientOptions(opts...),
 		),
-		previewRollout: connect_go.NewClient[v1.PreviewRolloutRequest, v1.Rollout](
+		previewRollout: connect.NewClient[v1.PreviewRolloutRequest, v1.Rollout](
 			httpClient,
 			baseURL+RolloutServicePreviewRolloutProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("PreviewRollout")),
+			connect.WithClientOptions(opts...),
 		),
-		listTaskRuns: connect_go.NewClient[v1.ListTaskRunsRequest, v1.ListTaskRunsResponse](
+		listTaskRuns: connect.NewClient[v1.ListTaskRunsRequest, v1.ListTaskRunsResponse](
 			httpClient,
 			baseURL+RolloutServiceListTaskRunsProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("ListTaskRuns")),
+			connect.WithClientOptions(opts...),
 		),
-		getTaskRun: connect_go.NewClient[v1.GetTaskRunRequest, v1.TaskRun](
+		getTaskRun: connect.NewClient[v1.GetTaskRunRequest, v1.TaskRun](
 			httpClient,
 			baseURL+RolloutServiceGetTaskRunProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("GetTaskRun")),
+			connect.WithClientOptions(opts...),
 		),
-		getTaskRunLog: connect_go.NewClient[v1.GetTaskRunLogRequest, v1.TaskRunLog](
+		getTaskRunLog: connect.NewClient[v1.GetTaskRunLogRequest, v1.TaskRunLog](
 			httpClient,
 			baseURL+RolloutServiceGetTaskRunLogProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("GetTaskRunLog")),
+			connect.WithClientOptions(opts...),
 		),
-		getTaskRunSession: connect_go.NewClient[v1.GetTaskRunSessionRequest, v1.TaskRunSession](
+		getTaskRunSession: connect.NewClient[v1.GetTaskRunSessionRequest, v1.TaskRunSession](
 			httpClient,
 			baseURL+RolloutServiceGetTaskRunSessionProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("GetTaskRunSession")),
+			connect.WithClientOptions(opts...),
 		),
-		batchRunTasks: connect_go.NewClient[v1.BatchRunTasksRequest, v1.BatchRunTasksResponse](
+		batchRunTasks: connect.NewClient[v1.BatchRunTasksRequest, v1.BatchRunTasksResponse](
 			httpClient,
 			baseURL+RolloutServiceBatchRunTasksProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("BatchRunTasks")),
+			connect.WithClientOptions(opts...),
 		),
-		batchSkipTasks: connect_go.NewClient[v1.BatchSkipTasksRequest, v1.BatchSkipTasksResponse](
+		batchSkipTasks: connect.NewClient[v1.BatchSkipTasksRequest, v1.BatchSkipTasksResponse](
 			httpClient,
 			baseURL+RolloutServiceBatchSkipTasksProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("BatchSkipTasks")),
+			connect.WithClientOptions(opts...),
 		),
-		batchCancelTaskRuns: connect_go.NewClient[v1.BatchCancelTaskRunsRequest, v1.BatchCancelTaskRunsResponse](
+		batchCancelTaskRuns: connect.NewClient[v1.BatchCancelTaskRunsRequest, v1.BatchCancelTaskRunsResponse](
 			httpClient,
 			baseURL+RolloutServiceBatchCancelTaskRunsProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("BatchCancelTaskRuns")),
+			connect.WithClientOptions(opts...),
 		),
-		previewTaskRunRollback: connect_go.NewClient[v1.PreviewTaskRunRollbackRequest, v1.PreviewTaskRunRollbackResponse](
+		previewTaskRunRollback: connect.NewClient[v1.PreviewTaskRunRollbackRequest, v1.PreviewTaskRunRollbackResponse](
 			httpClient,
 			baseURL+RolloutServicePreviewTaskRunRollbackProcedure,
-			opts...,
+			connect.WithSchema(rolloutServiceMethods.ByName("PreviewTaskRunRollback")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // rolloutServiceClient implements RolloutServiceClient.
 type rolloutServiceClient struct {
-	getRollout             *connect_go.Client[v1.GetRolloutRequest, v1.Rollout]
-	listRollouts           *connect_go.Client[v1.ListRolloutsRequest, v1.ListRolloutsResponse]
-	createRollout          *connect_go.Client[v1.CreateRolloutRequest, v1.Rollout]
-	previewRollout         *connect_go.Client[v1.PreviewRolloutRequest, v1.Rollout]
-	listTaskRuns           *connect_go.Client[v1.ListTaskRunsRequest, v1.ListTaskRunsResponse]
-	getTaskRun             *connect_go.Client[v1.GetTaskRunRequest, v1.TaskRun]
-	getTaskRunLog          *connect_go.Client[v1.GetTaskRunLogRequest, v1.TaskRunLog]
-	getTaskRunSession      *connect_go.Client[v1.GetTaskRunSessionRequest, v1.TaskRunSession]
-	batchRunTasks          *connect_go.Client[v1.BatchRunTasksRequest, v1.BatchRunTasksResponse]
-	batchSkipTasks         *connect_go.Client[v1.BatchSkipTasksRequest, v1.BatchSkipTasksResponse]
-	batchCancelTaskRuns    *connect_go.Client[v1.BatchCancelTaskRunsRequest, v1.BatchCancelTaskRunsResponse]
-	previewTaskRunRollback *connect_go.Client[v1.PreviewTaskRunRollbackRequest, v1.PreviewTaskRunRollbackResponse]
+	getRollout             *connect.Client[v1.GetRolloutRequest, v1.Rollout]
+	listRollouts           *connect.Client[v1.ListRolloutsRequest, v1.ListRolloutsResponse]
+	createRollout          *connect.Client[v1.CreateRolloutRequest, v1.Rollout]
+	previewRollout         *connect.Client[v1.PreviewRolloutRequest, v1.Rollout]
+	listTaskRuns           *connect.Client[v1.ListTaskRunsRequest, v1.ListTaskRunsResponse]
+	getTaskRun             *connect.Client[v1.GetTaskRunRequest, v1.TaskRun]
+	getTaskRunLog          *connect.Client[v1.GetTaskRunLogRequest, v1.TaskRunLog]
+	getTaskRunSession      *connect.Client[v1.GetTaskRunSessionRequest, v1.TaskRunSession]
+	batchRunTasks          *connect.Client[v1.BatchRunTasksRequest, v1.BatchRunTasksResponse]
+	batchSkipTasks         *connect.Client[v1.BatchSkipTasksRequest, v1.BatchSkipTasksResponse]
+	batchCancelTaskRuns    *connect.Client[v1.BatchCancelTaskRunsRequest, v1.BatchCancelTaskRunsResponse]
+	previewTaskRunRollback *connect.Client[v1.PreviewTaskRunRollbackRequest, v1.PreviewTaskRunRollbackResponse]
 }
 
 // GetRollout calls bytebase.v1.RolloutService.GetRollout.
-func (c *rolloutServiceClient) GetRollout(ctx context.Context, req *connect_go.Request[v1.GetRolloutRequest]) (*connect_go.Response[v1.Rollout], error) {
+func (c *rolloutServiceClient) GetRollout(ctx context.Context, req *connect.Request[v1.GetRolloutRequest]) (*connect.Response[v1.Rollout], error) {
 	return c.getRollout.CallUnary(ctx, req)
 }
 
 // ListRollouts calls bytebase.v1.RolloutService.ListRollouts.
-func (c *rolloutServiceClient) ListRollouts(ctx context.Context, req *connect_go.Request[v1.ListRolloutsRequest]) (*connect_go.Response[v1.ListRolloutsResponse], error) {
+func (c *rolloutServiceClient) ListRollouts(ctx context.Context, req *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error) {
 	return c.listRollouts.CallUnary(ctx, req)
 }
 
 // CreateRollout calls bytebase.v1.RolloutService.CreateRollout.
-func (c *rolloutServiceClient) CreateRollout(ctx context.Context, req *connect_go.Request[v1.CreateRolloutRequest]) (*connect_go.Response[v1.Rollout], error) {
+func (c *rolloutServiceClient) CreateRollout(ctx context.Context, req *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error) {
 	return c.createRollout.CallUnary(ctx, req)
 }
 
 // PreviewRollout calls bytebase.v1.RolloutService.PreviewRollout.
-func (c *rolloutServiceClient) PreviewRollout(ctx context.Context, req *connect_go.Request[v1.PreviewRolloutRequest]) (*connect_go.Response[v1.Rollout], error) {
+func (c *rolloutServiceClient) PreviewRollout(ctx context.Context, req *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error) {
 	return c.previewRollout.CallUnary(ctx, req)
 }
 
 // ListTaskRuns calls bytebase.v1.RolloutService.ListTaskRuns.
-func (c *rolloutServiceClient) ListTaskRuns(ctx context.Context, req *connect_go.Request[v1.ListTaskRunsRequest]) (*connect_go.Response[v1.ListTaskRunsResponse], error) {
+func (c *rolloutServiceClient) ListTaskRuns(ctx context.Context, req *connect.Request[v1.ListTaskRunsRequest]) (*connect.Response[v1.ListTaskRunsResponse], error) {
 	return c.listTaskRuns.CallUnary(ctx, req)
 }
 
 // GetTaskRun calls bytebase.v1.RolloutService.GetTaskRun.
-func (c *rolloutServiceClient) GetTaskRun(ctx context.Context, req *connect_go.Request[v1.GetTaskRunRequest]) (*connect_go.Response[v1.TaskRun], error) {
+func (c *rolloutServiceClient) GetTaskRun(ctx context.Context, req *connect.Request[v1.GetTaskRunRequest]) (*connect.Response[v1.TaskRun], error) {
 	return c.getTaskRun.CallUnary(ctx, req)
 }
 
 // GetTaskRunLog calls bytebase.v1.RolloutService.GetTaskRunLog.
-func (c *rolloutServiceClient) GetTaskRunLog(ctx context.Context, req *connect_go.Request[v1.GetTaskRunLogRequest]) (*connect_go.Response[v1.TaskRunLog], error) {
+func (c *rolloutServiceClient) GetTaskRunLog(ctx context.Context, req *connect.Request[v1.GetTaskRunLogRequest]) (*connect.Response[v1.TaskRunLog], error) {
 	return c.getTaskRunLog.CallUnary(ctx, req)
 }
 
 // GetTaskRunSession calls bytebase.v1.RolloutService.GetTaskRunSession.
-func (c *rolloutServiceClient) GetTaskRunSession(ctx context.Context, req *connect_go.Request[v1.GetTaskRunSessionRequest]) (*connect_go.Response[v1.TaskRunSession], error) {
+func (c *rolloutServiceClient) GetTaskRunSession(ctx context.Context, req *connect.Request[v1.GetTaskRunSessionRequest]) (*connect.Response[v1.TaskRunSession], error) {
 	return c.getTaskRunSession.CallUnary(ctx, req)
 }
 
 // BatchRunTasks calls bytebase.v1.RolloutService.BatchRunTasks.
-func (c *rolloutServiceClient) BatchRunTasks(ctx context.Context, req *connect_go.Request[v1.BatchRunTasksRequest]) (*connect_go.Response[v1.BatchRunTasksResponse], error) {
+func (c *rolloutServiceClient) BatchRunTasks(ctx context.Context, req *connect.Request[v1.BatchRunTasksRequest]) (*connect.Response[v1.BatchRunTasksResponse], error) {
 	return c.batchRunTasks.CallUnary(ctx, req)
 }
 
 // BatchSkipTasks calls bytebase.v1.RolloutService.BatchSkipTasks.
-func (c *rolloutServiceClient) BatchSkipTasks(ctx context.Context, req *connect_go.Request[v1.BatchSkipTasksRequest]) (*connect_go.Response[v1.BatchSkipTasksResponse], error) {
+func (c *rolloutServiceClient) BatchSkipTasks(ctx context.Context, req *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error) {
 	return c.batchSkipTasks.CallUnary(ctx, req)
 }
 
 // BatchCancelTaskRuns calls bytebase.v1.RolloutService.BatchCancelTaskRuns.
-func (c *rolloutServiceClient) BatchCancelTaskRuns(ctx context.Context, req *connect_go.Request[v1.BatchCancelTaskRunsRequest]) (*connect_go.Response[v1.BatchCancelTaskRunsResponse], error) {
+func (c *rolloutServiceClient) BatchCancelTaskRuns(ctx context.Context, req *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error) {
 	return c.batchCancelTaskRuns.CallUnary(ctx, req)
 }
 
 // PreviewTaskRunRollback calls bytebase.v1.RolloutService.PreviewTaskRunRollback.
-func (c *rolloutServiceClient) PreviewTaskRunRollback(ctx context.Context, req *connect_go.Request[v1.PreviewTaskRunRollbackRequest]) (*connect_go.Response[v1.PreviewTaskRunRollbackResponse], error) {
+func (c *rolloutServiceClient) PreviewTaskRunRollback(ctx context.Context, req *connect.Request[v1.PreviewTaskRunRollbackRequest]) (*connect.Response[v1.PreviewTaskRunRollbackResponse], error) {
 	return c.previewTaskRunRollback.CallUnary(ctx, req)
 }
 
 // RolloutServiceHandler is an implementation of the bytebase.v1.RolloutService service.
 type RolloutServiceHandler interface {
-	GetRollout(context.Context, *connect_go.Request[v1.GetRolloutRequest]) (*connect_go.Response[v1.Rollout], error)
-	ListRollouts(context.Context, *connect_go.Request[v1.ListRolloutsRequest]) (*connect_go.Response[v1.ListRolloutsResponse], error)
+	GetRollout(context.Context, *connect.Request[v1.GetRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
 	// CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
-	CreateRollout(context.Context, *connect_go.Request[v1.CreateRolloutRequest]) (*connect_go.Response[v1.Rollout], error)
-	PreviewRollout(context.Context, *connect_go.Request[v1.PreviewRolloutRequest]) (*connect_go.Response[v1.Rollout], error)
-	ListTaskRuns(context.Context, *connect_go.Request[v1.ListTaskRunsRequest]) (*connect_go.Response[v1.ListTaskRunsResponse], error)
-	GetTaskRun(context.Context, *connect_go.Request[v1.GetTaskRunRequest]) (*connect_go.Response[v1.TaskRun], error)
-	GetTaskRunLog(context.Context, *connect_go.Request[v1.GetTaskRunLogRequest]) (*connect_go.Response[v1.TaskRunLog], error)
-	GetTaskRunSession(context.Context, *connect_go.Request[v1.GetTaskRunSessionRequest]) (*connect_go.Response[v1.TaskRunSession], error)
+	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	PreviewRollout(context.Context, *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	ListTaskRuns(context.Context, *connect.Request[v1.ListTaskRunsRequest]) (*connect.Response[v1.ListTaskRunsResponse], error)
+	GetTaskRun(context.Context, *connect.Request[v1.GetTaskRunRequest]) (*connect.Response[v1.TaskRun], error)
+	GetTaskRunLog(context.Context, *connect.Request[v1.GetTaskRunLogRequest]) (*connect.Response[v1.TaskRunLog], error)
+	GetTaskRunSession(context.Context, *connect.Request[v1.GetTaskRunSessionRequest]) (*connect.Response[v1.TaskRunSession], error)
 	// BatchRunTasks creates task runs for the specified tasks.
 	// DataExport issue only allows the creator to run the task.
 	// Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
 	// Follow role-based rollout policy for the environment.
-	BatchRunTasks(context.Context, *connect_go.Request[v1.BatchRunTasksRequest]) (*connect_go.Response[v1.BatchRunTasksResponse], error)
+	BatchRunTasks(context.Context, *connect.Request[v1.BatchRunTasksRequest]) (*connect.Response[v1.BatchRunTasksResponse], error)
 	// BatchSkipTasks skips the specified tasks.
 	// The access is the same as BatchRunTasks().
-	BatchSkipTasks(context.Context, *connect_go.Request[v1.BatchSkipTasksRequest]) (*connect_go.Response[v1.BatchSkipTasksResponse], error)
+	BatchSkipTasks(context.Context, *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error)
 	// BatchCancelTaskRuns cancels the specified task runs in batch.
 	// The access is the same as BatchRunTasks().
-	BatchCancelTaskRuns(context.Context, *connect_go.Request[v1.BatchCancelTaskRunsRequest]) (*connect_go.Response[v1.BatchCancelTaskRunsResponse], error)
-	PreviewTaskRunRollback(context.Context, *connect_go.Request[v1.PreviewTaskRunRollbackRequest]) (*connect_go.Response[v1.PreviewTaskRunRollbackResponse], error)
+	BatchCancelTaskRuns(context.Context, *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error)
+	PreviewTaskRunRollback(context.Context, *connect.Request[v1.PreviewTaskRunRollbackRequest]) (*connect.Response[v1.PreviewTaskRunRollbackResponse], error)
 }
 
 // NewRolloutServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -275,66 +288,79 @@ type RolloutServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewRolloutServiceHandler(svc RolloutServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	rolloutServiceGetRolloutHandler := connect_go.NewUnaryHandler(
+func NewRolloutServiceHandler(svc RolloutServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	rolloutServiceMethods := v1.File_v1_rollout_service_proto.Services().ByName("RolloutService").Methods()
+	rolloutServiceGetRolloutHandler := connect.NewUnaryHandler(
 		RolloutServiceGetRolloutProcedure,
 		svc.GetRollout,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("GetRollout")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServiceListRolloutsHandler := connect_go.NewUnaryHandler(
+	rolloutServiceListRolloutsHandler := connect.NewUnaryHandler(
 		RolloutServiceListRolloutsProcedure,
 		svc.ListRollouts,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("ListRollouts")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServiceCreateRolloutHandler := connect_go.NewUnaryHandler(
+	rolloutServiceCreateRolloutHandler := connect.NewUnaryHandler(
 		RolloutServiceCreateRolloutProcedure,
 		svc.CreateRollout,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("CreateRollout")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServicePreviewRolloutHandler := connect_go.NewUnaryHandler(
+	rolloutServicePreviewRolloutHandler := connect.NewUnaryHandler(
 		RolloutServicePreviewRolloutProcedure,
 		svc.PreviewRollout,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("PreviewRollout")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServiceListTaskRunsHandler := connect_go.NewUnaryHandler(
+	rolloutServiceListTaskRunsHandler := connect.NewUnaryHandler(
 		RolloutServiceListTaskRunsProcedure,
 		svc.ListTaskRuns,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("ListTaskRuns")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServiceGetTaskRunHandler := connect_go.NewUnaryHandler(
+	rolloutServiceGetTaskRunHandler := connect.NewUnaryHandler(
 		RolloutServiceGetTaskRunProcedure,
 		svc.GetTaskRun,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("GetTaskRun")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServiceGetTaskRunLogHandler := connect_go.NewUnaryHandler(
+	rolloutServiceGetTaskRunLogHandler := connect.NewUnaryHandler(
 		RolloutServiceGetTaskRunLogProcedure,
 		svc.GetTaskRunLog,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("GetTaskRunLog")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServiceGetTaskRunSessionHandler := connect_go.NewUnaryHandler(
+	rolloutServiceGetTaskRunSessionHandler := connect.NewUnaryHandler(
 		RolloutServiceGetTaskRunSessionProcedure,
 		svc.GetTaskRunSession,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("GetTaskRunSession")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServiceBatchRunTasksHandler := connect_go.NewUnaryHandler(
+	rolloutServiceBatchRunTasksHandler := connect.NewUnaryHandler(
 		RolloutServiceBatchRunTasksProcedure,
 		svc.BatchRunTasks,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("BatchRunTasks")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServiceBatchSkipTasksHandler := connect_go.NewUnaryHandler(
+	rolloutServiceBatchSkipTasksHandler := connect.NewUnaryHandler(
 		RolloutServiceBatchSkipTasksProcedure,
 		svc.BatchSkipTasks,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("BatchSkipTasks")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServiceBatchCancelTaskRunsHandler := connect_go.NewUnaryHandler(
+	rolloutServiceBatchCancelTaskRunsHandler := connect.NewUnaryHandler(
 		RolloutServiceBatchCancelTaskRunsProcedure,
 		svc.BatchCancelTaskRuns,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("BatchCancelTaskRuns")),
+		connect.WithHandlerOptions(opts...),
 	)
-	rolloutServicePreviewTaskRunRollbackHandler := connect_go.NewUnaryHandler(
+	rolloutServicePreviewTaskRunRollbackHandler := connect.NewUnaryHandler(
 		RolloutServicePreviewTaskRunRollbackProcedure,
 		svc.PreviewTaskRunRollback,
-		opts...,
+		connect.WithSchema(rolloutServiceMethods.ByName("PreviewTaskRunRollback")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.RolloutService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -371,50 +397,50 @@ func NewRolloutServiceHandler(svc RolloutServiceHandler, opts ...connect_go.Hand
 // UnimplementedRolloutServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedRolloutServiceHandler struct{}
 
-func (UnimplementedRolloutServiceHandler) GetRollout(context.Context, *connect_go.Request[v1.GetRolloutRequest]) (*connect_go.Response[v1.Rollout], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.GetRollout is not implemented"))
+func (UnimplementedRolloutServiceHandler) GetRollout(context.Context, *connect.Request[v1.GetRolloutRequest]) (*connect.Response[v1.Rollout], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.GetRollout is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) ListRollouts(context.Context, *connect_go.Request[v1.ListRolloutsRequest]) (*connect_go.Response[v1.ListRolloutsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.ListRollouts is not implemented"))
+func (UnimplementedRolloutServiceHandler) ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.ListRollouts is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) CreateRollout(context.Context, *connect_go.Request[v1.CreateRolloutRequest]) (*connect_go.Response[v1.Rollout], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.CreateRollout is not implemented"))
+func (UnimplementedRolloutServiceHandler) CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.CreateRollout is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) PreviewRollout(context.Context, *connect_go.Request[v1.PreviewRolloutRequest]) (*connect_go.Response[v1.Rollout], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.PreviewRollout is not implemented"))
+func (UnimplementedRolloutServiceHandler) PreviewRollout(context.Context, *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.PreviewRollout is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) ListTaskRuns(context.Context, *connect_go.Request[v1.ListTaskRunsRequest]) (*connect_go.Response[v1.ListTaskRunsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.ListTaskRuns is not implemented"))
+func (UnimplementedRolloutServiceHandler) ListTaskRuns(context.Context, *connect.Request[v1.ListTaskRunsRequest]) (*connect.Response[v1.ListTaskRunsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.ListTaskRuns is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) GetTaskRun(context.Context, *connect_go.Request[v1.GetTaskRunRequest]) (*connect_go.Response[v1.TaskRun], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.GetTaskRun is not implemented"))
+func (UnimplementedRolloutServiceHandler) GetTaskRun(context.Context, *connect.Request[v1.GetTaskRunRequest]) (*connect.Response[v1.TaskRun], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.GetTaskRun is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) GetTaskRunLog(context.Context, *connect_go.Request[v1.GetTaskRunLogRequest]) (*connect_go.Response[v1.TaskRunLog], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.GetTaskRunLog is not implemented"))
+func (UnimplementedRolloutServiceHandler) GetTaskRunLog(context.Context, *connect.Request[v1.GetTaskRunLogRequest]) (*connect.Response[v1.TaskRunLog], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.GetTaskRunLog is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) GetTaskRunSession(context.Context, *connect_go.Request[v1.GetTaskRunSessionRequest]) (*connect_go.Response[v1.TaskRunSession], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.GetTaskRunSession is not implemented"))
+func (UnimplementedRolloutServiceHandler) GetTaskRunSession(context.Context, *connect.Request[v1.GetTaskRunSessionRequest]) (*connect.Response[v1.TaskRunSession], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.GetTaskRunSession is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) BatchRunTasks(context.Context, *connect_go.Request[v1.BatchRunTasksRequest]) (*connect_go.Response[v1.BatchRunTasksResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.BatchRunTasks is not implemented"))
+func (UnimplementedRolloutServiceHandler) BatchRunTasks(context.Context, *connect.Request[v1.BatchRunTasksRequest]) (*connect.Response[v1.BatchRunTasksResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.BatchRunTasks is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) BatchSkipTasks(context.Context, *connect_go.Request[v1.BatchSkipTasksRequest]) (*connect_go.Response[v1.BatchSkipTasksResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.BatchSkipTasks is not implemented"))
+func (UnimplementedRolloutServiceHandler) BatchSkipTasks(context.Context, *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.BatchSkipTasks is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) BatchCancelTaskRuns(context.Context, *connect_go.Request[v1.BatchCancelTaskRunsRequest]) (*connect_go.Response[v1.BatchCancelTaskRunsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.BatchCancelTaskRuns is not implemented"))
+func (UnimplementedRolloutServiceHandler) BatchCancelTaskRuns(context.Context, *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.BatchCancelTaskRuns is not implemented"))
 }
 
-func (UnimplementedRolloutServiceHandler) PreviewTaskRunRollback(context.Context, *connect_go.Request[v1.PreviewTaskRunRollbackRequest]) (*connect_go.Response[v1.PreviewTaskRunRollbackResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.PreviewTaskRunRollback is not implemented"))
+func (UnimplementedRolloutServiceHandler) PreviewTaskRunRollback(context.Context, *connect.Request[v1.PreviewTaskRunRollbackRequest]) (*connect.Response[v1.PreviewTaskRunRollbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.PreviewTaskRunRollback is not implemented"))
 }

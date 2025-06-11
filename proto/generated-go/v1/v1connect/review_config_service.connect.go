@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ReviewConfigServiceName is the fully-qualified name of the ReviewConfigService service.
@@ -53,11 +53,11 @@ const (
 
 // ReviewConfigServiceClient is a client for the bytebase.v1.ReviewConfigService service.
 type ReviewConfigServiceClient interface {
-	CreateReviewConfig(context.Context, *connect_go.Request[v1.CreateReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error)
-	ListReviewConfigs(context.Context, *connect_go.Request[v1.ListReviewConfigsRequest]) (*connect_go.Response[v1.ListReviewConfigsResponse], error)
-	GetReviewConfig(context.Context, *connect_go.Request[v1.GetReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error)
-	UpdateReviewConfig(context.Context, *connect_go.Request[v1.UpdateReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error)
-	DeleteReviewConfig(context.Context, *connect_go.Request[v1.DeleteReviewConfigRequest]) (*connect_go.Response[emptypb.Empty], error)
+	CreateReviewConfig(context.Context, *connect.Request[v1.CreateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	ListReviewConfigs(context.Context, *connect.Request[v1.ListReviewConfigsRequest]) (*connect.Response[v1.ListReviewConfigsResponse], error)
+	GetReviewConfig(context.Context, *connect.Request[v1.GetReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	UpdateReviewConfig(context.Context, *connect.Request[v1.UpdateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	DeleteReviewConfig(context.Context, *connect.Request[v1.DeleteReviewConfigRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewReviewConfigServiceClient constructs a client for the bytebase.v1.ReviewConfigService service.
@@ -67,78 +67,84 @@ type ReviewConfigServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewReviewConfigServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) ReviewConfigServiceClient {
+func NewReviewConfigServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ReviewConfigServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	reviewConfigServiceMethods := v1.File_v1_review_config_service_proto.Services().ByName("ReviewConfigService").Methods()
 	return &reviewConfigServiceClient{
-		createReviewConfig: connect_go.NewClient[v1.CreateReviewConfigRequest, v1.ReviewConfig](
+		createReviewConfig: connect.NewClient[v1.CreateReviewConfigRequest, v1.ReviewConfig](
 			httpClient,
 			baseURL+ReviewConfigServiceCreateReviewConfigProcedure,
-			opts...,
+			connect.WithSchema(reviewConfigServiceMethods.ByName("CreateReviewConfig")),
+			connect.WithClientOptions(opts...),
 		),
-		listReviewConfigs: connect_go.NewClient[v1.ListReviewConfigsRequest, v1.ListReviewConfigsResponse](
+		listReviewConfigs: connect.NewClient[v1.ListReviewConfigsRequest, v1.ListReviewConfigsResponse](
 			httpClient,
 			baseURL+ReviewConfigServiceListReviewConfigsProcedure,
-			opts...,
+			connect.WithSchema(reviewConfigServiceMethods.ByName("ListReviewConfigs")),
+			connect.WithClientOptions(opts...),
 		),
-		getReviewConfig: connect_go.NewClient[v1.GetReviewConfigRequest, v1.ReviewConfig](
+		getReviewConfig: connect.NewClient[v1.GetReviewConfigRequest, v1.ReviewConfig](
 			httpClient,
 			baseURL+ReviewConfigServiceGetReviewConfigProcedure,
-			opts...,
+			connect.WithSchema(reviewConfigServiceMethods.ByName("GetReviewConfig")),
+			connect.WithClientOptions(opts...),
 		),
-		updateReviewConfig: connect_go.NewClient[v1.UpdateReviewConfigRequest, v1.ReviewConfig](
+		updateReviewConfig: connect.NewClient[v1.UpdateReviewConfigRequest, v1.ReviewConfig](
 			httpClient,
 			baseURL+ReviewConfigServiceUpdateReviewConfigProcedure,
-			opts...,
+			connect.WithSchema(reviewConfigServiceMethods.ByName("UpdateReviewConfig")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteReviewConfig: connect_go.NewClient[v1.DeleteReviewConfigRequest, emptypb.Empty](
+		deleteReviewConfig: connect.NewClient[v1.DeleteReviewConfigRequest, emptypb.Empty](
 			httpClient,
 			baseURL+ReviewConfigServiceDeleteReviewConfigProcedure,
-			opts...,
+			connect.WithSchema(reviewConfigServiceMethods.ByName("DeleteReviewConfig")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // reviewConfigServiceClient implements ReviewConfigServiceClient.
 type reviewConfigServiceClient struct {
-	createReviewConfig *connect_go.Client[v1.CreateReviewConfigRequest, v1.ReviewConfig]
-	listReviewConfigs  *connect_go.Client[v1.ListReviewConfigsRequest, v1.ListReviewConfigsResponse]
-	getReviewConfig    *connect_go.Client[v1.GetReviewConfigRequest, v1.ReviewConfig]
-	updateReviewConfig *connect_go.Client[v1.UpdateReviewConfigRequest, v1.ReviewConfig]
-	deleteReviewConfig *connect_go.Client[v1.DeleteReviewConfigRequest, emptypb.Empty]
+	createReviewConfig *connect.Client[v1.CreateReviewConfigRequest, v1.ReviewConfig]
+	listReviewConfigs  *connect.Client[v1.ListReviewConfigsRequest, v1.ListReviewConfigsResponse]
+	getReviewConfig    *connect.Client[v1.GetReviewConfigRequest, v1.ReviewConfig]
+	updateReviewConfig *connect.Client[v1.UpdateReviewConfigRequest, v1.ReviewConfig]
+	deleteReviewConfig *connect.Client[v1.DeleteReviewConfigRequest, emptypb.Empty]
 }
 
 // CreateReviewConfig calls bytebase.v1.ReviewConfigService.CreateReviewConfig.
-func (c *reviewConfigServiceClient) CreateReviewConfig(ctx context.Context, req *connect_go.Request[v1.CreateReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error) {
+func (c *reviewConfigServiceClient) CreateReviewConfig(ctx context.Context, req *connect.Request[v1.CreateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error) {
 	return c.createReviewConfig.CallUnary(ctx, req)
 }
 
 // ListReviewConfigs calls bytebase.v1.ReviewConfigService.ListReviewConfigs.
-func (c *reviewConfigServiceClient) ListReviewConfigs(ctx context.Context, req *connect_go.Request[v1.ListReviewConfigsRequest]) (*connect_go.Response[v1.ListReviewConfigsResponse], error) {
+func (c *reviewConfigServiceClient) ListReviewConfigs(ctx context.Context, req *connect.Request[v1.ListReviewConfigsRequest]) (*connect.Response[v1.ListReviewConfigsResponse], error) {
 	return c.listReviewConfigs.CallUnary(ctx, req)
 }
 
 // GetReviewConfig calls bytebase.v1.ReviewConfigService.GetReviewConfig.
-func (c *reviewConfigServiceClient) GetReviewConfig(ctx context.Context, req *connect_go.Request[v1.GetReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error) {
+func (c *reviewConfigServiceClient) GetReviewConfig(ctx context.Context, req *connect.Request[v1.GetReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error) {
 	return c.getReviewConfig.CallUnary(ctx, req)
 }
 
 // UpdateReviewConfig calls bytebase.v1.ReviewConfigService.UpdateReviewConfig.
-func (c *reviewConfigServiceClient) UpdateReviewConfig(ctx context.Context, req *connect_go.Request[v1.UpdateReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error) {
+func (c *reviewConfigServiceClient) UpdateReviewConfig(ctx context.Context, req *connect.Request[v1.UpdateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error) {
 	return c.updateReviewConfig.CallUnary(ctx, req)
 }
 
 // DeleteReviewConfig calls bytebase.v1.ReviewConfigService.DeleteReviewConfig.
-func (c *reviewConfigServiceClient) DeleteReviewConfig(ctx context.Context, req *connect_go.Request[v1.DeleteReviewConfigRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *reviewConfigServiceClient) DeleteReviewConfig(ctx context.Context, req *connect.Request[v1.DeleteReviewConfigRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteReviewConfig.CallUnary(ctx, req)
 }
 
 // ReviewConfigServiceHandler is an implementation of the bytebase.v1.ReviewConfigService service.
 type ReviewConfigServiceHandler interface {
-	CreateReviewConfig(context.Context, *connect_go.Request[v1.CreateReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error)
-	ListReviewConfigs(context.Context, *connect_go.Request[v1.ListReviewConfigsRequest]) (*connect_go.Response[v1.ListReviewConfigsResponse], error)
-	GetReviewConfig(context.Context, *connect_go.Request[v1.GetReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error)
-	UpdateReviewConfig(context.Context, *connect_go.Request[v1.UpdateReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error)
-	DeleteReviewConfig(context.Context, *connect_go.Request[v1.DeleteReviewConfigRequest]) (*connect_go.Response[emptypb.Empty], error)
+	CreateReviewConfig(context.Context, *connect.Request[v1.CreateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	ListReviewConfigs(context.Context, *connect.Request[v1.ListReviewConfigsRequest]) (*connect.Response[v1.ListReviewConfigsResponse], error)
+	GetReviewConfig(context.Context, *connect.Request[v1.GetReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	UpdateReviewConfig(context.Context, *connect.Request[v1.UpdateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	DeleteReviewConfig(context.Context, *connect.Request[v1.DeleteReviewConfigRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewReviewConfigServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -146,31 +152,37 @@ type ReviewConfigServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewReviewConfigServiceHandler(svc ReviewConfigServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	reviewConfigServiceCreateReviewConfigHandler := connect_go.NewUnaryHandler(
+func NewReviewConfigServiceHandler(svc ReviewConfigServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	reviewConfigServiceMethods := v1.File_v1_review_config_service_proto.Services().ByName("ReviewConfigService").Methods()
+	reviewConfigServiceCreateReviewConfigHandler := connect.NewUnaryHandler(
 		ReviewConfigServiceCreateReviewConfigProcedure,
 		svc.CreateReviewConfig,
-		opts...,
+		connect.WithSchema(reviewConfigServiceMethods.ByName("CreateReviewConfig")),
+		connect.WithHandlerOptions(opts...),
 	)
-	reviewConfigServiceListReviewConfigsHandler := connect_go.NewUnaryHandler(
+	reviewConfigServiceListReviewConfigsHandler := connect.NewUnaryHandler(
 		ReviewConfigServiceListReviewConfigsProcedure,
 		svc.ListReviewConfigs,
-		opts...,
+		connect.WithSchema(reviewConfigServiceMethods.ByName("ListReviewConfigs")),
+		connect.WithHandlerOptions(opts...),
 	)
-	reviewConfigServiceGetReviewConfigHandler := connect_go.NewUnaryHandler(
+	reviewConfigServiceGetReviewConfigHandler := connect.NewUnaryHandler(
 		ReviewConfigServiceGetReviewConfigProcedure,
 		svc.GetReviewConfig,
-		opts...,
+		connect.WithSchema(reviewConfigServiceMethods.ByName("GetReviewConfig")),
+		connect.WithHandlerOptions(opts...),
 	)
-	reviewConfigServiceUpdateReviewConfigHandler := connect_go.NewUnaryHandler(
+	reviewConfigServiceUpdateReviewConfigHandler := connect.NewUnaryHandler(
 		ReviewConfigServiceUpdateReviewConfigProcedure,
 		svc.UpdateReviewConfig,
-		opts...,
+		connect.WithSchema(reviewConfigServiceMethods.ByName("UpdateReviewConfig")),
+		connect.WithHandlerOptions(opts...),
 	)
-	reviewConfigServiceDeleteReviewConfigHandler := connect_go.NewUnaryHandler(
+	reviewConfigServiceDeleteReviewConfigHandler := connect.NewUnaryHandler(
 		ReviewConfigServiceDeleteReviewConfigProcedure,
 		svc.DeleteReviewConfig,
-		opts...,
+		connect.WithSchema(reviewConfigServiceMethods.ByName("DeleteReviewConfig")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.ReviewConfigService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -193,22 +205,22 @@ func NewReviewConfigServiceHandler(svc ReviewConfigServiceHandler, opts ...conne
 // UnimplementedReviewConfigServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedReviewConfigServiceHandler struct{}
 
-func (UnimplementedReviewConfigServiceHandler) CreateReviewConfig(context.Context, *connect_go.Request[v1.CreateReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.CreateReviewConfig is not implemented"))
+func (UnimplementedReviewConfigServiceHandler) CreateReviewConfig(context.Context, *connect.Request[v1.CreateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.CreateReviewConfig is not implemented"))
 }
 
-func (UnimplementedReviewConfigServiceHandler) ListReviewConfigs(context.Context, *connect_go.Request[v1.ListReviewConfigsRequest]) (*connect_go.Response[v1.ListReviewConfigsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.ListReviewConfigs is not implemented"))
+func (UnimplementedReviewConfigServiceHandler) ListReviewConfigs(context.Context, *connect.Request[v1.ListReviewConfigsRequest]) (*connect.Response[v1.ListReviewConfigsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.ListReviewConfigs is not implemented"))
 }
 
-func (UnimplementedReviewConfigServiceHandler) GetReviewConfig(context.Context, *connect_go.Request[v1.GetReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.GetReviewConfig is not implemented"))
+func (UnimplementedReviewConfigServiceHandler) GetReviewConfig(context.Context, *connect.Request[v1.GetReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.GetReviewConfig is not implemented"))
 }
 
-func (UnimplementedReviewConfigServiceHandler) UpdateReviewConfig(context.Context, *connect_go.Request[v1.UpdateReviewConfigRequest]) (*connect_go.Response[v1.ReviewConfig], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.UpdateReviewConfig is not implemented"))
+func (UnimplementedReviewConfigServiceHandler) UpdateReviewConfig(context.Context, *connect.Request[v1.UpdateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.UpdateReviewConfig is not implemented"))
 }
 
-func (UnimplementedReviewConfigServiceHandler) DeleteReviewConfig(context.Context, *connect_go.Request[v1.DeleteReviewConfigRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.DeleteReviewConfig is not implemented"))
+func (UnimplementedReviewConfigServiceHandler) DeleteReviewConfig(context.Context, *connect.Request[v1.DeleteReviewConfigRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReviewConfigService.DeleteReviewConfig is not implemented"))
 }

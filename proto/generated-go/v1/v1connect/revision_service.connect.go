@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// RevisionServiceName is the fully-qualified name of the RevisionService service.
@@ -53,11 +53,11 @@ const (
 
 // RevisionServiceClient is a client for the bytebase.v1.RevisionService service.
 type RevisionServiceClient interface {
-	ListRevisions(context.Context, *connect_go.Request[v1.ListRevisionsRequest]) (*connect_go.Response[v1.ListRevisionsResponse], error)
-	GetRevision(context.Context, *connect_go.Request[v1.GetRevisionRequest]) (*connect_go.Response[v1.Revision], error)
-	CreateRevision(context.Context, *connect_go.Request[v1.CreateRevisionRequest]) (*connect_go.Response[v1.Revision], error)
-	BatchCreateRevisions(context.Context, *connect_go.Request[v1.BatchCreateRevisionsRequest]) (*connect_go.Response[v1.BatchCreateRevisionsResponse], error)
-	DeleteRevision(context.Context, *connect_go.Request[v1.DeleteRevisionRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ListRevisions(context.Context, *connect.Request[v1.ListRevisionsRequest]) (*connect.Response[v1.ListRevisionsResponse], error)
+	GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error)
+	CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error)
+	BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error)
+	DeleteRevision(context.Context, *connect.Request[v1.DeleteRevisionRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewRevisionServiceClient constructs a client for the bytebase.v1.RevisionService service. By
@@ -67,78 +67,84 @@ type RevisionServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewRevisionServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) RevisionServiceClient {
+func NewRevisionServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RevisionServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	revisionServiceMethods := v1.File_v1_revision_service_proto.Services().ByName("RevisionService").Methods()
 	return &revisionServiceClient{
-		listRevisions: connect_go.NewClient[v1.ListRevisionsRequest, v1.ListRevisionsResponse](
+		listRevisions: connect.NewClient[v1.ListRevisionsRequest, v1.ListRevisionsResponse](
 			httpClient,
 			baseURL+RevisionServiceListRevisionsProcedure,
-			opts...,
+			connect.WithSchema(revisionServiceMethods.ByName("ListRevisions")),
+			connect.WithClientOptions(opts...),
 		),
-		getRevision: connect_go.NewClient[v1.GetRevisionRequest, v1.Revision](
+		getRevision: connect.NewClient[v1.GetRevisionRequest, v1.Revision](
 			httpClient,
 			baseURL+RevisionServiceGetRevisionProcedure,
-			opts...,
+			connect.WithSchema(revisionServiceMethods.ByName("GetRevision")),
+			connect.WithClientOptions(opts...),
 		),
-		createRevision: connect_go.NewClient[v1.CreateRevisionRequest, v1.Revision](
+		createRevision: connect.NewClient[v1.CreateRevisionRequest, v1.Revision](
 			httpClient,
 			baseURL+RevisionServiceCreateRevisionProcedure,
-			opts...,
+			connect.WithSchema(revisionServiceMethods.ByName("CreateRevision")),
+			connect.WithClientOptions(opts...),
 		),
-		batchCreateRevisions: connect_go.NewClient[v1.BatchCreateRevisionsRequest, v1.BatchCreateRevisionsResponse](
+		batchCreateRevisions: connect.NewClient[v1.BatchCreateRevisionsRequest, v1.BatchCreateRevisionsResponse](
 			httpClient,
 			baseURL+RevisionServiceBatchCreateRevisionsProcedure,
-			opts...,
+			connect.WithSchema(revisionServiceMethods.ByName("BatchCreateRevisions")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteRevision: connect_go.NewClient[v1.DeleteRevisionRequest, emptypb.Empty](
+		deleteRevision: connect.NewClient[v1.DeleteRevisionRequest, emptypb.Empty](
 			httpClient,
 			baseURL+RevisionServiceDeleteRevisionProcedure,
-			opts...,
+			connect.WithSchema(revisionServiceMethods.ByName("DeleteRevision")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // revisionServiceClient implements RevisionServiceClient.
 type revisionServiceClient struct {
-	listRevisions        *connect_go.Client[v1.ListRevisionsRequest, v1.ListRevisionsResponse]
-	getRevision          *connect_go.Client[v1.GetRevisionRequest, v1.Revision]
-	createRevision       *connect_go.Client[v1.CreateRevisionRequest, v1.Revision]
-	batchCreateRevisions *connect_go.Client[v1.BatchCreateRevisionsRequest, v1.BatchCreateRevisionsResponse]
-	deleteRevision       *connect_go.Client[v1.DeleteRevisionRequest, emptypb.Empty]
+	listRevisions        *connect.Client[v1.ListRevisionsRequest, v1.ListRevisionsResponse]
+	getRevision          *connect.Client[v1.GetRevisionRequest, v1.Revision]
+	createRevision       *connect.Client[v1.CreateRevisionRequest, v1.Revision]
+	batchCreateRevisions *connect.Client[v1.BatchCreateRevisionsRequest, v1.BatchCreateRevisionsResponse]
+	deleteRevision       *connect.Client[v1.DeleteRevisionRequest, emptypb.Empty]
 }
 
 // ListRevisions calls bytebase.v1.RevisionService.ListRevisions.
-func (c *revisionServiceClient) ListRevisions(ctx context.Context, req *connect_go.Request[v1.ListRevisionsRequest]) (*connect_go.Response[v1.ListRevisionsResponse], error) {
+func (c *revisionServiceClient) ListRevisions(ctx context.Context, req *connect.Request[v1.ListRevisionsRequest]) (*connect.Response[v1.ListRevisionsResponse], error) {
 	return c.listRevisions.CallUnary(ctx, req)
 }
 
 // GetRevision calls bytebase.v1.RevisionService.GetRevision.
-func (c *revisionServiceClient) GetRevision(ctx context.Context, req *connect_go.Request[v1.GetRevisionRequest]) (*connect_go.Response[v1.Revision], error) {
+func (c *revisionServiceClient) GetRevision(ctx context.Context, req *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error) {
 	return c.getRevision.CallUnary(ctx, req)
 }
 
 // CreateRevision calls bytebase.v1.RevisionService.CreateRevision.
-func (c *revisionServiceClient) CreateRevision(ctx context.Context, req *connect_go.Request[v1.CreateRevisionRequest]) (*connect_go.Response[v1.Revision], error) {
+func (c *revisionServiceClient) CreateRevision(ctx context.Context, req *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error) {
 	return c.createRevision.CallUnary(ctx, req)
 }
 
 // BatchCreateRevisions calls bytebase.v1.RevisionService.BatchCreateRevisions.
-func (c *revisionServiceClient) BatchCreateRevisions(ctx context.Context, req *connect_go.Request[v1.BatchCreateRevisionsRequest]) (*connect_go.Response[v1.BatchCreateRevisionsResponse], error) {
+func (c *revisionServiceClient) BatchCreateRevisions(ctx context.Context, req *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error) {
 	return c.batchCreateRevisions.CallUnary(ctx, req)
 }
 
 // DeleteRevision calls bytebase.v1.RevisionService.DeleteRevision.
-func (c *revisionServiceClient) DeleteRevision(ctx context.Context, req *connect_go.Request[v1.DeleteRevisionRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *revisionServiceClient) DeleteRevision(ctx context.Context, req *connect.Request[v1.DeleteRevisionRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteRevision.CallUnary(ctx, req)
 }
 
 // RevisionServiceHandler is an implementation of the bytebase.v1.RevisionService service.
 type RevisionServiceHandler interface {
-	ListRevisions(context.Context, *connect_go.Request[v1.ListRevisionsRequest]) (*connect_go.Response[v1.ListRevisionsResponse], error)
-	GetRevision(context.Context, *connect_go.Request[v1.GetRevisionRequest]) (*connect_go.Response[v1.Revision], error)
-	CreateRevision(context.Context, *connect_go.Request[v1.CreateRevisionRequest]) (*connect_go.Response[v1.Revision], error)
-	BatchCreateRevisions(context.Context, *connect_go.Request[v1.BatchCreateRevisionsRequest]) (*connect_go.Response[v1.BatchCreateRevisionsResponse], error)
-	DeleteRevision(context.Context, *connect_go.Request[v1.DeleteRevisionRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ListRevisions(context.Context, *connect.Request[v1.ListRevisionsRequest]) (*connect.Response[v1.ListRevisionsResponse], error)
+	GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error)
+	CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error)
+	BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error)
+	DeleteRevision(context.Context, *connect.Request[v1.DeleteRevisionRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewRevisionServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -146,31 +152,37 @@ type RevisionServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewRevisionServiceHandler(svc RevisionServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	revisionServiceListRevisionsHandler := connect_go.NewUnaryHandler(
+func NewRevisionServiceHandler(svc RevisionServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	revisionServiceMethods := v1.File_v1_revision_service_proto.Services().ByName("RevisionService").Methods()
+	revisionServiceListRevisionsHandler := connect.NewUnaryHandler(
 		RevisionServiceListRevisionsProcedure,
 		svc.ListRevisions,
-		opts...,
+		connect.WithSchema(revisionServiceMethods.ByName("ListRevisions")),
+		connect.WithHandlerOptions(opts...),
 	)
-	revisionServiceGetRevisionHandler := connect_go.NewUnaryHandler(
+	revisionServiceGetRevisionHandler := connect.NewUnaryHandler(
 		RevisionServiceGetRevisionProcedure,
 		svc.GetRevision,
-		opts...,
+		connect.WithSchema(revisionServiceMethods.ByName("GetRevision")),
+		connect.WithHandlerOptions(opts...),
 	)
-	revisionServiceCreateRevisionHandler := connect_go.NewUnaryHandler(
+	revisionServiceCreateRevisionHandler := connect.NewUnaryHandler(
 		RevisionServiceCreateRevisionProcedure,
 		svc.CreateRevision,
-		opts...,
+		connect.WithSchema(revisionServiceMethods.ByName("CreateRevision")),
+		connect.WithHandlerOptions(opts...),
 	)
-	revisionServiceBatchCreateRevisionsHandler := connect_go.NewUnaryHandler(
+	revisionServiceBatchCreateRevisionsHandler := connect.NewUnaryHandler(
 		RevisionServiceBatchCreateRevisionsProcedure,
 		svc.BatchCreateRevisions,
-		opts...,
+		connect.WithSchema(revisionServiceMethods.ByName("BatchCreateRevisions")),
+		connect.WithHandlerOptions(opts...),
 	)
-	revisionServiceDeleteRevisionHandler := connect_go.NewUnaryHandler(
+	revisionServiceDeleteRevisionHandler := connect.NewUnaryHandler(
 		RevisionServiceDeleteRevisionProcedure,
 		svc.DeleteRevision,
-		opts...,
+		connect.WithSchema(revisionServiceMethods.ByName("DeleteRevision")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.RevisionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -193,22 +205,22 @@ func NewRevisionServiceHandler(svc RevisionServiceHandler, opts ...connect_go.Ha
 // UnimplementedRevisionServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedRevisionServiceHandler struct{}
 
-func (UnimplementedRevisionServiceHandler) ListRevisions(context.Context, *connect_go.Request[v1.ListRevisionsRequest]) (*connect_go.Response[v1.ListRevisionsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.ListRevisions is not implemented"))
+func (UnimplementedRevisionServiceHandler) ListRevisions(context.Context, *connect.Request[v1.ListRevisionsRequest]) (*connect.Response[v1.ListRevisionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.ListRevisions is not implemented"))
 }
 
-func (UnimplementedRevisionServiceHandler) GetRevision(context.Context, *connect_go.Request[v1.GetRevisionRequest]) (*connect_go.Response[v1.Revision], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.GetRevision is not implemented"))
+func (UnimplementedRevisionServiceHandler) GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.GetRevision is not implemented"))
 }
 
-func (UnimplementedRevisionServiceHandler) CreateRevision(context.Context, *connect_go.Request[v1.CreateRevisionRequest]) (*connect_go.Response[v1.Revision], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.CreateRevision is not implemented"))
+func (UnimplementedRevisionServiceHandler) CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.CreateRevision is not implemented"))
 }
 
-func (UnimplementedRevisionServiceHandler) BatchCreateRevisions(context.Context, *connect_go.Request[v1.BatchCreateRevisionsRequest]) (*connect_go.Response[v1.BatchCreateRevisionsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.BatchCreateRevisions is not implemented"))
+func (UnimplementedRevisionServiceHandler) BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.BatchCreateRevisions is not implemented"))
 }
 
-func (UnimplementedRevisionServiceHandler) DeleteRevision(context.Context, *connect_go.Request[v1.DeleteRevisionRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.DeleteRevision is not implemented"))
+func (UnimplementedRevisionServiceHandler) DeleteRevision(context.Context, *connect.Request[v1.DeleteRevisionRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.DeleteRevision is not implemented"))
 }

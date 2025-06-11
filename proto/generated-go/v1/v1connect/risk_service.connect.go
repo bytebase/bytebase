@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// RiskServiceName is the fully-qualified name of the RiskService service.
@@ -48,11 +48,11 @@ const (
 
 // RiskServiceClient is a client for the bytebase.v1.RiskService service.
 type RiskServiceClient interface {
-	ListRisks(context.Context, *connect_go.Request[v1.ListRisksRequest]) (*connect_go.Response[v1.ListRisksResponse], error)
-	CreateRisk(context.Context, *connect_go.Request[v1.CreateRiskRequest]) (*connect_go.Response[v1.Risk], error)
-	GetRisk(context.Context, *connect_go.Request[v1.GetRiskRequest]) (*connect_go.Response[v1.Risk], error)
-	UpdateRisk(context.Context, *connect_go.Request[v1.UpdateRiskRequest]) (*connect_go.Response[v1.Risk], error)
-	DeleteRisk(context.Context, *connect_go.Request[v1.DeleteRiskRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ListRisks(context.Context, *connect.Request[v1.ListRisksRequest]) (*connect.Response[v1.ListRisksResponse], error)
+	CreateRisk(context.Context, *connect.Request[v1.CreateRiskRequest]) (*connect.Response[v1.Risk], error)
+	GetRisk(context.Context, *connect.Request[v1.GetRiskRequest]) (*connect.Response[v1.Risk], error)
+	UpdateRisk(context.Context, *connect.Request[v1.UpdateRiskRequest]) (*connect.Response[v1.Risk], error)
+	DeleteRisk(context.Context, *connect.Request[v1.DeleteRiskRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewRiskServiceClient constructs a client for the bytebase.v1.RiskService service. By default, it
@@ -62,78 +62,84 @@ type RiskServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewRiskServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) RiskServiceClient {
+func NewRiskServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RiskServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	riskServiceMethods := v1.File_v1_risk_service_proto.Services().ByName("RiskService").Methods()
 	return &riskServiceClient{
-		listRisks: connect_go.NewClient[v1.ListRisksRequest, v1.ListRisksResponse](
+		listRisks: connect.NewClient[v1.ListRisksRequest, v1.ListRisksResponse](
 			httpClient,
 			baseURL+RiskServiceListRisksProcedure,
-			opts...,
+			connect.WithSchema(riskServiceMethods.ByName("ListRisks")),
+			connect.WithClientOptions(opts...),
 		),
-		createRisk: connect_go.NewClient[v1.CreateRiskRequest, v1.Risk](
+		createRisk: connect.NewClient[v1.CreateRiskRequest, v1.Risk](
 			httpClient,
 			baseURL+RiskServiceCreateRiskProcedure,
-			opts...,
+			connect.WithSchema(riskServiceMethods.ByName("CreateRisk")),
+			connect.WithClientOptions(opts...),
 		),
-		getRisk: connect_go.NewClient[v1.GetRiskRequest, v1.Risk](
+		getRisk: connect.NewClient[v1.GetRiskRequest, v1.Risk](
 			httpClient,
 			baseURL+RiskServiceGetRiskProcedure,
-			opts...,
+			connect.WithSchema(riskServiceMethods.ByName("GetRisk")),
+			connect.WithClientOptions(opts...),
 		),
-		updateRisk: connect_go.NewClient[v1.UpdateRiskRequest, v1.Risk](
+		updateRisk: connect.NewClient[v1.UpdateRiskRequest, v1.Risk](
 			httpClient,
 			baseURL+RiskServiceUpdateRiskProcedure,
-			opts...,
+			connect.WithSchema(riskServiceMethods.ByName("UpdateRisk")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteRisk: connect_go.NewClient[v1.DeleteRiskRequest, emptypb.Empty](
+		deleteRisk: connect.NewClient[v1.DeleteRiskRequest, emptypb.Empty](
 			httpClient,
 			baseURL+RiskServiceDeleteRiskProcedure,
-			opts...,
+			connect.WithSchema(riskServiceMethods.ByName("DeleteRisk")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // riskServiceClient implements RiskServiceClient.
 type riskServiceClient struct {
-	listRisks  *connect_go.Client[v1.ListRisksRequest, v1.ListRisksResponse]
-	createRisk *connect_go.Client[v1.CreateRiskRequest, v1.Risk]
-	getRisk    *connect_go.Client[v1.GetRiskRequest, v1.Risk]
-	updateRisk *connect_go.Client[v1.UpdateRiskRequest, v1.Risk]
-	deleteRisk *connect_go.Client[v1.DeleteRiskRequest, emptypb.Empty]
+	listRisks  *connect.Client[v1.ListRisksRequest, v1.ListRisksResponse]
+	createRisk *connect.Client[v1.CreateRiskRequest, v1.Risk]
+	getRisk    *connect.Client[v1.GetRiskRequest, v1.Risk]
+	updateRisk *connect.Client[v1.UpdateRiskRequest, v1.Risk]
+	deleteRisk *connect.Client[v1.DeleteRiskRequest, emptypb.Empty]
 }
 
 // ListRisks calls bytebase.v1.RiskService.ListRisks.
-func (c *riskServiceClient) ListRisks(ctx context.Context, req *connect_go.Request[v1.ListRisksRequest]) (*connect_go.Response[v1.ListRisksResponse], error) {
+func (c *riskServiceClient) ListRisks(ctx context.Context, req *connect.Request[v1.ListRisksRequest]) (*connect.Response[v1.ListRisksResponse], error) {
 	return c.listRisks.CallUnary(ctx, req)
 }
 
 // CreateRisk calls bytebase.v1.RiskService.CreateRisk.
-func (c *riskServiceClient) CreateRisk(ctx context.Context, req *connect_go.Request[v1.CreateRiskRequest]) (*connect_go.Response[v1.Risk], error) {
+func (c *riskServiceClient) CreateRisk(ctx context.Context, req *connect.Request[v1.CreateRiskRequest]) (*connect.Response[v1.Risk], error) {
 	return c.createRisk.CallUnary(ctx, req)
 }
 
 // GetRisk calls bytebase.v1.RiskService.GetRisk.
-func (c *riskServiceClient) GetRisk(ctx context.Context, req *connect_go.Request[v1.GetRiskRequest]) (*connect_go.Response[v1.Risk], error) {
+func (c *riskServiceClient) GetRisk(ctx context.Context, req *connect.Request[v1.GetRiskRequest]) (*connect.Response[v1.Risk], error) {
 	return c.getRisk.CallUnary(ctx, req)
 }
 
 // UpdateRisk calls bytebase.v1.RiskService.UpdateRisk.
-func (c *riskServiceClient) UpdateRisk(ctx context.Context, req *connect_go.Request[v1.UpdateRiskRequest]) (*connect_go.Response[v1.Risk], error) {
+func (c *riskServiceClient) UpdateRisk(ctx context.Context, req *connect.Request[v1.UpdateRiskRequest]) (*connect.Response[v1.Risk], error) {
 	return c.updateRisk.CallUnary(ctx, req)
 }
 
 // DeleteRisk calls bytebase.v1.RiskService.DeleteRisk.
-func (c *riskServiceClient) DeleteRisk(ctx context.Context, req *connect_go.Request[v1.DeleteRiskRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *riskServiceClient) DeleteRisk(ctx context.Context, req *connect.Request[v1.DeleteRiskRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteRisk.CallUnary(ctx, req)
 }
 
 // RiskServiceHandler is an implementation of the bytebase.v1.RiskService service.
 type RiskServiceHandler interface {
-	ListRisks(context.Context, *connect_go.Request[v1.ListRisksRequest]) (*connect_go.Response[v1.ListRisksResponse], error)
-	CreateRisk(context.Context, *connect_go.Request[v1.CreateRiskRequest]) (*connect_go.Response[v1.Risk], error)
-	GetRisk(context.Context, *connect_go.Request[v1.GetRiskRequest]) (*connect_go.Response[v1.Risk], error)
-	UpdateRisk(context.Context, *connect_go.Request[v1.UpdateRiskRequest]) (*connect_go.Response[v1.Risk], error)
-	DeleteRisk(context.Context, *connect_go.Request[v1.DeleteRiskRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ListRisks(context.Context, *connect.Request[v1.ListRisksRequest]) (*connect.Response[v1.ListRisksResponse], error)
+	CreateRisk(context.Context, *connect.Request[v1.CreateRiskRequest]) (*connect.Response[v1.Risk], error)
+	GetRisk(context.Context, *connect.Request[v1.GetRiskRequest]) (*connect.Response[v1.Risk], error)
+	UpdateRisk(context.Context, *connect.Request[v1.UpdateRiskRequest]) (*connect.Response[v1.Risk], error)
+	DeleteRisk(context.Context, *connect.Request[v1.DeleteRiskRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewRiskServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -141,31 +147,37 @@ type RiskServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewRiskServiceHandler(svc RiskServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	riskServiceListRisksHandler := connect_go.NewUnaryHandler(
+func NewRiskServiceHandler(svc RiskServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	riskServiceMethods := v1.File_v1_risk_service_proto.Services().ByName("RiskService").Methods()
+	riskServiceListRisksHandler := connect.NewUnaryHandler(
 		RiskServiceListRisksProcedure,
 		svc.ListRisks,
-		opts...,
+		connect.WithSchema(riskServiceMethods.ByName("ListRisks")),
+		connect.WithHandlerOptions(opts...),
 	)
-	riskServiceCreateRiskHandler := connect_go.NewUnaryHandler(
+	riskServiceCreateRiskHandler := connect.NewUnaryHandler(
 		RiskServiceCreateRiskProcedure,
 		svc.CreateRisk,
-		opts...,
+		connect.WithSchema(riskServiceMethods.ByName("CreateRisk")),
+		connect.WithHandlerOptions(opts...),
 	)
-	riskServiceGetRiskHandler := connect_go.NewUnaryHandler(
+	riskServiceGetRiskHandler := connect.NewUnaryHandler(
 		RiskServiceGetRiskProcedure,
 		svc.GetRisk,
-		opts...,
+		connect.WithSchema(riskServiceMethods.ByName("GetRisk")),
+		connect.WithHandlerOptions(opts...),
 	)
-	riskServiceUpdateRiskHandler := connect_go.NewUnaryHandler(
+	riskServiceUpdateRiskHandler := connect.NewUnaryHandler(
 		RiskServiceUpdateRiskProcedure,
 		svc.UpdateRisk,
-		opts...,
+		connect.WithSchema(riskServiceMethods.ByName("UpdateRisk")),
+		connect.WithHandlerOptions(opts...),
 	)
-	riskServiceDeleteRiskHandler := connect_go.NewUnaryHandler(
+	riskServiceDeleteRiskHandler := connect.NewUnaryHandler(
 		RiskServiceDeleteRiskProcedure,
 		svc.DeleteRisk,
-		opts...,
+		connect.WithSchema(riskServiceMethods.ByName("DeleteRisk")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.RiskService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -188,22 +200,22 @@ func NewRiskServiceHandler(svc RiskServiceHandler, opts ...connect_go.HandlerOpt
 // UnimplementedRiskServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedRiskServiceHandler struct{}
 
-func (UnimplementedRiskServiceHandler) ListRisks(context.Context, *connect_go.Request[v1.ListRisksRequest]) (*connect_go.Response[v1.ListRisksResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RiskService.ListRisks is not implemented"))
+func (UnimplementedRiskServiceHandler) ListRisks(context.Context, *connect.Request[v1.ListRisksRequest]) (*connect.Response[v1.ListRisksResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RiskService.ListRisks is not implemented"))
 }
 
-func (UnimplementedRiskServiceHandler) CreateRisk(context.Context, *connect_go.Request[v1.CreateRiskRequest]) (*connect_go.Response[v1.Risk], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RiskService.CreateRisk is not implemented"))
+func (UnimplementedRiskServiceHandler) CreateRisk(context.Context, *connect.Request[v1.CreateRiskRequest]) (*connect.Response[v1.Risk], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RiskService.CreateRisk is not implemented"))
 }
 
-func (UnimplementedRiskServiceHandler) GetRisk(context.Context, *connect_go.Request[v1.GetRiskRequest]) (*connect_go.Response[v1.Risk], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RiskService.GetRisk is not implemented"))
+func (UnimplementedRiskServiceHandler) GetRisk(context.Context, *connect.Request[v1.GetRiskRequest]) (*connect.Response[v1.Risk], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RiskService.GetRisk is not implemented"))
 }
 
-func (UnimplementedRiskServiceHandler) UpdateRisk(context.Context, *connect_go.Request[v1.UpdateRiskRequest]) (*connect_go.Response[v1.Risk], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RiskService.UpdateRisk is not implemented"))
+func (UnimplementedRiskServiceHandler) UpdateRisk(context.Context, *connect.Request[v1.UpdateRiskRequest]) (*connect.Response[v1.Risk], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RiskService.UpdateRisk is not implemented"))
 }
 
-func (UnimplementedRiskServiceHandler) DeleteRisk(context.Context, *connect_go.Request[v1.DeleteRiskRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RiskService.DeleteRisk is not implemented"))
+func (UnimplementedRiskServiceHandler) DeleteRisk(context.Context, *connect.Request[v1.DeleteRiskRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RiskService.DeleteRisk is not implemented"))
 }

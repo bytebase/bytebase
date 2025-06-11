@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// OrgPolicyServiceName is the fully-qualified name of the OrgPolicyService service.
@@ -53,11 +53,11 @@ const (
 
 // OrgPolicyServiceClient is a client for the bytebase.v1.OrgPolicyService service.
 type OrgPolicyServiceClient interface {
-	GetPolicy(context.Context, *connect_go.Request[v1.GetPolicyRequest]) (*connect_go.Response[v1.Policy], error)
-	ListPolicies(context.Context, *connect_go.Request[v1.ListPoliciesRequest]) (*connect_go.Response[v1.ListPoliciesResponse], error)
-	CreatePolicy(context.Context, *connect_go.Request[v1.CreatePolicyRequest]) (*connect_go.Response[v1.Policy], error)
-	UpdatePolicy(context.Context, *connect_go.Request[v1.UpdatePolicyRequest]) (*connect_go.Response[v1.Policy], error)
-	DeletePolicy(context.Context, *connect_go.Request[v1.DeletePolicyRequest]) (*connect_go.Response[emptypb.Empty], error)
+	GetPolicy(context.Context, *connect.Request[v1.GetPolicyRequest]) (*connect.Response[v1.Policy], error)
+	ListPolicies(context.Context, *connect.Request[v1.ListPoliciesRequest]) (*connect.Response[v1.ListPoliciesResponse], error)
+	CreatePolicy(context.Context, *connect.Request[v1.CreatePolicyRequest]) (*connect.Response[v1.Policy], error)
+	UpdatePolicy(context.Context, *connect.Request[v1.UpdatePolicyRequest]) (*connect.Response[v1.Policy], error)
+	DeletePolicy(context.Context, *connect.Request[v1.DeletePolicyRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewOrgPolicyServiceClient constructs a client for the bytebase.v1.OrgPolicyService service. By
@@ -67,78 +67,84 @@ type OrgPolicyServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewOrgPolicyServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) OrgPolicyServiceClient {
+func NewOrgPolicyServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) OrgPolicyServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	orgPolicyServiceMethods := v1.File_v1_org_policy_service_proto.Services().ByName("OrgPolicyService").Methods()
 	return &orgPolicyServiceClient{
-		getPolicy: connect_go.NewClient[v1.GetPolicyRequest, v1.Policy](
+		getPolicy: connect.NewClient[v1.GetPolicyRequest, v1.Policy](
 			httpClient,
 			baseURL+OrgPolicyServiceGetPolicyProcedure,
-			opts...,
+			connect.WithSchema(orgPolicyServiceMethods.ByName("GetPolicy")),
+			connect.WithClientOptions(opts...),
 		),
-		listPolicies: connect_go.NewClient[v1.ListPoliciesRequest, v1.ListPoliciesResponse](
+		listPolicies: connect.NewClient[v1.ListPoliciesRequest, v1.ListPoliciesResponse](
 			httpClient,
 			baseURL+OrgPolicyServiceListPoliciesProcedure,
-			opts...,
+			connect.WithSchema(orgPolicyServiceMethods.ByName("ListPolicies")),
+			connect.WithClientOptions(opts...),
 		),
-		createPolicy: connect_go.NewClient[v1.CreatePolicyRequest, v1.Policy](
+		createPolicy: connect.NewClient[v1.CreatePolicyRequest, v1.Policy](
 			httpClient,
 			baseURL+OrgPolicyServiceCreatePolicyProcedure,
-			opts...,
+			connect.WithSchema(orgPolicyServiceMethods.ByName("CreatePolicy")),
+			connect.WithClientOptions(opts...),
 		),
-		updatePolicy: connect_go.NewClient[v1.UpdatePolicyRequest, v1.Policy](
+		updatePolicy: connect.NewClient[v1.UpdatePolicyRequest, v1.Policy](
 			httpClient,
 			baseURL+OrgPolicyServiceUpdatePolicyProcedure,
-			opts...,
+			connect.WithSchema(orgPolicyServiceMethods.ByName("UpdatePolicy")),
+			connect.WithClientOptions(opts...),
 		),
-		deletePolicy: connect_go.NewClient[v1.DeletePolicyRequest, emptypb.Empty](
+		deletePolicy: connect.NewClient[v1.DeletePolicyRequest, emptypb.Empty](
 			httpClient,
 			baseURL+OrgPolicyServiceDeletePolicyProcedure,
-			opts...,
+			connect.WithSchema(orgPolicyServiceMethods.ByName("DeletePolicy")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // orgPolicyServiceClient implements OrgPolicyServiceClient.
 type orgPolicyServiceClient struct {
-	getPolicy    *connect_go.Client[v1.GetPolicyRequest, v1.Policy]
-	listPolicies *connect_go.Client[v1.ListPoliciesRequest, v1.ListPoliciesResponse]
-	createPolicy *connect_go.Client[v1.CreatePolicyRequest, v1.Policy]
-	updatePolicy *connect_go.Client[v1.UpdatePolicyRequest, v1.Policy]
-	deletePolicy *connect_go.Client[v1.DeletePolicyRequest, emptypb.Empty]
+	getPolicy    *connect.Client[v1.GetPolicyRequest, v1.Policy]
+	listPolicies *connect.Client[v1.ListPoliciesRequest, v1.ListPoliciesResponse]
+	createPolicy *connect.Client[v1.CreatePolicyRequest, v1.Policy]
+	updatePolicy *connect.Client[v1.UpdatePolicyRequest, v1.Policy]
+	deletePolicy *connect.Client[v1.DeletePolicyRequest, emptypb.Empty]
 }
 
 // GetPolicy calls bytebase.v1.OrgPolicyService.GetPolicy.
-func (c *orgPolicyServiceClient) GetPolicy(ctx context.Context, req *connect_go.Request[v1.GetPolicyRequest]) (*connect_go.Response[v1.Policy], error) {
+func (c *orgPolicyServiceClient) GetPolicy(ctx context.Context, req *connect.Request[v1.GetPolicyRequest]) (*connect.Response[v1.Policy], error) {
 	return c.getPolicy.CallUnary(ctx, req)
 }
 
 // ListPolicies calls bytebase.v1.OrgPolicyService.ListPolicies.
-func (c *orgPolicyServiceClient) ListPolicies(ctx context.Context, req *connect_go.Request[v1.ListPoliciesRequest]) (*connect_go.Response[v1.ListPoliciesResponse], error) {
+func (c *orgPolicyServiceClient) ListPolicies(ctx context.Context, req *connect.Request[v1.ListPoliciesRequest]) (*connect.Response[v1.ListPoliciesResponse], error) {
 	return c.listPolicies.CallUnary(ctx, req)
 }
 
 // CreatePolicy calls bytebase.v1.OrgPolicyService.CreatePolicy.
-func (c *orgPolicyServiceClient) CreatePolicy(ctx context.Context, req *connect_go.Request[v1.CreatePolicyRequest]) (*connect_go.Response[v1.Policy], error) {
+func (c *orgPolicyServiceClient) CreatePolicy(ctx context.Context, req *connect.Request[v1.CreatePolicyRequest]) (*connect.Response[v1.Policy], error) {
 	return c.createPolicy.CallUnary(ctx, req)
 }
 
 // UpdatePolicy calls bytebase.v1.OrgPolicyService.UpdatePolicy.
-func (c *orgPolicyServiceClient) UpdatePolicy(ctx context.Context, req *connect_go.Request[v1.UpdatePolicyRequest]) (*connect_go.Response[v1.Policy], error) {
+func (c *orgPolicyServiceClient) UpdatePolicy(ctx context.Context, req *connect.Request[v1.UpdatePolicyRequest]) (*connect.Response[v1.Policy], error) {
 	return c.updatePolicy.CallUnary(ctx, req)
 }
 
 // DeletePolicy calls bytebase.v1.OrgPolicyService.DeletePolicy.
-func (c *orgPolicyServiceClient) DeletePolicy(ctx context.Context, req *connect_go.Request[v1.DeletePolicyRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *orgPolicyServiceClient) DeletePolicy(ctx context.Context, req *connect.Request[v1.DeletePolicyRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deletePolicy.CallUnary(ctx, req)
 }
 
 // OrgPolicyServiceHandler is an implementation of the bytebase.v1.OrgPolicyService service.
 type OrgPolicyServiceHandler interface {
-	GetPolicy(context.Context, *connect_go.Request[v1.GetPolicyRequest]) (*connect_go.Response[v1.Policy], error)
-	ListPolicies(context.Context, *connect_go.Request[v1.ListPoliciesRequest]) (*connect_go.Response[v1.ListPoliciesResponse], error)
-	CreatePolicy(context.Context, *connect_go.Request[v1.CreatePolicyRequest]) (*connect_go.Response[v1.Policy], error)
-	UpdatePolicy(context.Context, *connect_go.Request[v1.UpdatePolicyRequest]) (*connect_go.Response[v1.Policy], error)
-	DeletePolicy(context.Context, *connect_go.Request[v1.DeletePolicyRequest]) (*connect_go.Response[emptypb.Empty], error)
+	GetPolicy(context.Context, *connect.Request[v1.GetPolicyRequest]) (*connect.Response[v1.Policy], error)
+	ListPolicies(context.Context, *connect.Request[v1.ListPoliciesRequest]) (*connect.Response[v1.ListPoliciesResponse], error)
+	CreatePolicy(context.Context, *connect.Request[v1.CreatePolicyRequest]) (*connect.Response[v1.Policy], error)
+	UpdatePolicy(context.Context, *connect.Request[v1.UpdatePolicyRequest]) (*connect.Response[v1.Policy], error)
+	DeletePolicy(context.Context, *connect.Request[v1.DeletePolicyRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewOrgPolicyServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -146,31 +152,37 @@ type OrgPolicyServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewOrgPolicyServiceHandler(svc OrgPolicyServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	orgPolicyServiceGetPolicyHandler := connect_go.NewUnaryHandler(
+func NewOrgPolicyServiceHandler(svc OrgPolicyServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	orgPolicyServiceMethods := v1.File_v1_org_policy_service_proto.Services().ByName("OrgPolicyService").Methods()
+	orgPolicyServiceGetPolicyHandler := connect.NewUnaryHandler(
 		OrgPolicyServiceGetPolicyProcedure,
 		svc.GetPolicy,
-		opts...,
+		connect.WithSchema(orgPolicyServiceMethods.ByName("GetPolicy")),
+		connect.WithHandlerOptions(opts...),
 	)
-	orgPolicyServiceListPoliciesHandler := connect_go.NewUnaryHandler(
+	orgPolicyServiceListPoliciesHandler := connect.NewUnaryHandler(
 		OrgPolicyServiceListPoliciesProcedure,
 		svc.ListPolicies,
-		opts...,
+		connect.WithSchema(orgPolicyServiceMethods.ByName("ListPolicies")),
+		connect.WithHandlerOptions(opts...),
 	)
-	orgPolicyServiceCreatePolicyHandler := connect_go.NewUnaryHandler(
+	orgPolicyServiceCreatePolicyHandler := connect.NewUnaryHandler(
 		OrgPolicyServiceCreatePolicyProcedure,
 		svc.CreatePolicy,
-		opts...,
+		connect.WithSchema(orgPolicyServiceMethods.ByName("CreatePolicy")),
+		connect.WithHandlerOptions(opts...),
 	)
-	orgPolicyServiceUpdatePolicyHandler := connect_go.NewUnaryHandler(
+	orgPolicyServiceUpdatePolicyHandler := connect.NewUnaryHandler(
 		OrgPolicyServiceUpdatePolicyProcedure,
 		svc.UpdatePolicy,
-		opts...,
+		connect.WithSchema(orgPolicyServiceMethods.ByName("UpdatePolicy")),
+		connect.WithHandlerOptions(opts...),
 	)
-	orgPolicyServiceDeletePolicyHandler := connect_go.NewUnaryHandler(
+	orgPolicyServiceDeletePolicyHandler := connect.NewUnaryHandler(
 		OrgPolicyServiceDeletePolicyProcedure,
 		svc.DeletePolicy,
-		opts...,
+		connect.WithSchema(orgPolicyServiceMethods.ByName("DeletePolicy")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.OrgPolicyService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -193,22 +205,22 @@ func NewOrgPolicyServiceHandler(svc OrgPolicyServiceHandler, opts ...connect_go.
 // UnimplementedOrgPolicyServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedOrgPolicyServiceHandler struct{}
 
-func (UnimplementedOrgPolicyServiceHandler) GetPolicy(context.Context, *connect_go.Request[v1.GetPolicyRequest]) (*connect_go.Response[v1.Policy], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.GetPolicy is not implemented"))
+func (UnimplementedOrgPolicyServiceHandler) GetPolicy(context.Context, *connect.Request[v1.GetPolicyRequest]) (*connect.Response[v1.Policy], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.GetPolicy is not implemented"))
 }
 
-func (UnimplementedOrgPolicyServiceHandler) ListPolicies(context.Context, *connect_go.Request[v1.ListPoliciesRequest]) (*connect_go.Response[v1.ListPoliciesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.ListPolicies is not implemented"))
+func (UnimplementedOrgPolicyServiceHandler) ListPolicies(context.Context, *connect.Request[v1.ListPoliciesRequest]) (*connect.Response[v1.ListPoliciesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.ListPolicies is not implemented"))
 }
 
-func (UnimplementedOrgPolicyServiceHandler) CreatePolicy(context.Context, *connect_go.Request[v1.CreatePolicyRequest]) (*connect_go.Response[v1.Policy], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.CreatePolicy is not implemented"))
+func (UnimplementedOrgPolicyServiceHandler) CreatePolicy(context.Context, *connect.Request[v1.CreatePolicyRequest]) (*connect.Response[v1.Policy], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.CreatePolicy is not implemented"))
 }
 
-func (UnimplementedOrgPolicyServiceHandler) UpdatePolicy(context.Context, *connect_go.Request[v1.UpdatePolicyRequest]) (*connect_go.Response[v1.Policy], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.UpdatePolicy is not implemented"))
+func (UnimplementedOrgPolicyServiceHandler) UpdatePolicy(context.Context, *connect.Request[v1.UpdatePolicyRequest]) (*connect.Response[v1.Policy], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.UpdatePolicy is not implemented"))
 }
 
-func (UnimplementedOrgPolicyServiceHandler) DeletePolicy(context.Context, *connect_go.Request[v1.DeletePolicyRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.DeletePolicy is not implemented"))
+func (UnimplementedOrgPolicyServiceHandler) DeletePolicy(context.Context, *connect.Request[v1.DeletePolicyRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.OrgPolicyService.DeletePolicy is not implemented"))
 }

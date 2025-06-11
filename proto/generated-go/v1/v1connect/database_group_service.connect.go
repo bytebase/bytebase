@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// DatabaseGroupServiceName is the fully-qualified name of the DatabaseGroupService service.
@@ -53,11 +53,11 @@ const (
 
 // DatabaseGroupServiceClient is a client for the bytebase.v1.DatabaseGroupService service.
 type DatabaseGroupServiceClient interface {
-	ListDatabaseGroups(context.Context, *connect_go.Request[v1.ListDatabaseGroupsRequest]) (*connect_go.Response[v1.ListDatabaseGroupsResponse], error)
-	GetDatabaseGroup(context.Context, *connect_go.Request[v1.GetDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error)
-	CreateDatabaseGroup(context.Context, *connect_go.Request[v1.CreateDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error)
-	UpdateDatabaseGroup(context.Context, *connect_go.Request[v1.UpdateDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error)
-	DeleteDatabaseGroup(context.Context, *connect_go.Request[v1.DeleteDatabaseGroupRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ListDatabaseGroups(context.Context, *connect.Request[v1.ListDatabaseGroupsRequest]) (*connect.Response[v1.ListDatabaseGroupsResponse], error)
+	GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	UpdateDatabaseGroup(context.Context, *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	DeleteDatabaseGroup(context.Context, *connect.Request[v1.DeleteDatabaseGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewDatabaseGroupServiceClient constructs a client for the bytebase.v1.DatabaseGroupService
@@ -67,78 +67,84 @@ type DatabaseGroupServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewDatabaseGroupServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) DatabaseGroupServiceClient {
+func NewDatabaseGroupServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) DatabaseGroupServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	databaseGroupServiceMethods := v1.File_v1_database_group_service_proto.Services().ByName("DatabaseGroupService").Methods()
 	return &databaseGroupServiceClient{
-		listDatabaseGroups: connect_go.NewClient[v1.ListDatabaseGroupsRequest, v1.ListDatabaseGroupsResponse](
+		listDatabaseGroups: connect.NewClient[v1.ListDatabaseGroupsRequest, v1.ListDatabaseGroupsResponse](
 			httpClient,
 			baseURL+DatabaseGroupServiceListDatabaseGroupsProcedure,
-			opts...,
+			connect.WithSchema(databaseGroupServiceMethods.ByName("ListDatabaseGroups")),
+			connect.WithClientOptions(opts...),
 		),
-		getDatabaseGroup: connect_go.NewClient[v1.GetDatabaseGroupRequest, v1.DatabaseGroup](
+		getDatabaseGroup: connect.NewClient[v1.GetDatabaseGroupRequest, v1.DatabaseGroup](
 			httpClient,
 			baseURL+DatabaseGroupServiceGetDatabaseGroupProcedure,
-			opts...,
+			connect.WithSchema(databaseGroupServiceMethods.ByName("GetDatabaseGroup")),
+			connect.WithClientOptions(opts...),
 		),
-		createDatabaseGroup: connect_go.NewClient[v1.CreateDatabaseGroupRequest, v1.DatabaseGroup](
+		createDatabaseGroup: connect.NewClient[v1.CreateDatabaseGroupRequest, v1.DatabaseGroup](
 			httpClient,
 			baseURL+DatabaseGroupServiceCreateDatabaseGroupProcedure,
-			opts...,
+			connect.WithSchema(databaseGroupServiceMethods.ByName("CreateDatabaseGroup")),
+			connect.WithClientOptions(opts...),
 		),
-		updateDatabaseGroup: connect_go.NewClient[v1.UpdateDatabaseGroupRequest, v1.DatabaseGroup](
+		updateDatabaseGroup: connect.NewClient[v1.UpdateDatabaseGroupRequest, v1.DatabaseGroup](
 			httpClient,
 			baseURL+DatabaseGroupServiceUpdateDatabaseGroupProcedure,
-			opts...,
+			connect.WithSchema(databaseGroupServiceMethods.ByName("UpdateDatabaseGroup")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteDatabaseGroup: connect_go.NewClient[v1.DeleteDatabaseGroupRequest, emptypb.Empty](
+		deleteDatabaseGroup: connect.NewClient[v1.DeleteDatabaseGroupRequest, emptypb.Empty](
 			httpClient,
 			baseURL+DatabaseGroupServiceDeleteDatabaseGroupProcedure,
-			opts...,
+			connect.WithSchema(databaseGroupServiceMethods.ByName("DeleteDatabaseGroup")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // databaseGroupServiceClient implements DatabaseGroupServiceClient.
 type databaseGroupServiceClient struct {
-	listDatabaseGroups  *connect_go.Client[v1.ListDatabaseGroupsRequest, v1.ListDatabaseGroupsResponse]
-	getDatabaseGroup    *connect_go.Client[v1.GetDatabaseGroupRequest, v1.DatabaseGroup]
-	createDatabaseGroup *connect_go.Client[v1.CreateDatabaseGroupRequest, v1.DatabaseGroup]
-	updateDatabaseGroup *connect_go.Client[v1.UpdateDatabaseGroupRequest, v1.DatabaseGroup]
-	deleteDatabaseGroup *connect_go.Client[v1.DeleteDatabaseGroupRequest, emptypb.Empty]
+	listDatabaseGroups  *connect.Client[v1.ListDatabaseGroupsRequest, v1.ListDatabaseGroupsResponse]
+	getDatabaseGroup    *connect.Client[v1.GetDatabaseGroupRequest, v1.DatabaseGroup]
+	createDatabaseGroup *connect.Client[v1.CreateDatabaseGroupRequest, v1.DatabaseGroup]
+	updateDatabaseGroup *connect.Client[v1.UpdateDatabaseGroupRequest, v1.DatabaseGroup]
+	deleteDatabaseGroup *connect.Client[v1.DeleteDatabaseGroupRequest, emptypb.Empty]
 }
 
 // ListDatabaseGroups calls bytebase.v1.DatabaseGroupService.ListDatabaseGroups.
-func (c *databaseGroupServiceClient) ListDatabaseGroups(ctx context.Context, req *connect_go.Request[v1.ListDatabaseGroupsRequest]) (*connect_go.Response[v1.ListDatabaseGroupsResponse], error) {
+func (c *databaseGroupServiceClient) ListDatabaseGroups(ctx context.Context, req *connect.Request[v1.ListDatabaseGroupsRequest]) (*connect.Response[v1.ListDatabaseGroupsResponse], error) {
 	return c.listDatabaseGroups.CallUnary(ctx, req)
 }
 
 // GetDatabaseGroup calls bytebase.v1.DatabaseGroupService.GetDatabaseGroup.
-func (c *databaseGroupServiceClient) GetDatabaseGroup(ctx context.Context, req *connect_go.Request[v1.GetDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error) {
+func (c *databaseGroupServiceClient) GetDatabaseGroup(ctx context.Context, req *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error) {
 	return c.getDatabaseGroup.CallUnary(ctx, req)
 }
 
 // CreateDatabaseGroup calls bytebase.v1.DatabaseGroupService.CreateDatabaseGroup.
-func (c *databaseGroupServiceClient) CreateDatabaseGroup(ctx context.Context, req *connect_go.Request[v1.CreateDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error) {
+func (c *databaseGroupServiceClient) CreateDatabaseGroup(ctx context.Context, req *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error) {
 	return c.createDatabaseGroup.CallUnary(ctx, req)
 }
 
 // UpdateDatabaseGroup calls bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup.
-func (c *databaseGroupServiceClient) UpdateDatabaseGroup(ctx context.Context, req *connect_go.Request[v1.UpdateDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error) {
+func (c *databaseGroupServiceClient) UpdateDatabaseGroup(ctx context.Context, req *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error) {
 	return c.updateDatabaseGroup.CallUnary(ctx, req)
 }
 
 // DeleteDatabaseGroup calls bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup.
-func (c *databaseGroupServiceClient) DeleteDatabaseGroup(ctx context.Context, req *connect_go.Request[v1.DeleteDatabaseGroupRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *databaseGroupServiceClient) DeleteDatabaseGroup(ctx context.Context, req *connect.Request[v1.DeleteDatabaseGroupRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteDatabaseGroup.CallUnary(ctx, req)
 }
 
 // DatabaseGroupServiceHandler is an implementation of the bytebase.v1.DatabaseGroupService service.
 type DatabaseGroupServiceHandler interface {
-	ListDatabaseGroups(context.Context, *connect_go.Request[v1.ListDatabaseGroupsRequest]) (*connect_go.Response[v1.ListDatabaseGroupsResponse], error)
-	GetDatabaseGroup(context.Context, *connect_go.Request[v1.GetDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error)
-	CreateDatabaseGroup(context.Context, *connect_go.Request[v1.CreateDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error)
-	UpdateDatabaseGroup(context.Context, *connect_go.Request[v1.UpdateDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error)
-	DeleteDatabaseGroup(context.Context, *connect_go.Request[v1.DeleteDatabaseGroupRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ListDatabaseGroups(context.Context, *connect.Request[v1.ListDatabaseGroupsRequest]) (*connect.Response[v1.ListDatabaseGroupsResponse], error)
+	GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	UpdateDatabaseGroup(context.Context, *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	DeleteDatabaseGroup(context.Context, *connect.Request[v1.DeleteDatabaseGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewDatabaseGroupServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -146,31 +152,37 @@ type DatabaseGroupServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewDatabaseGroupServiceHandler(svc DatabaseGroupServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	databaseGroupServiceListDatabaseGroupsHandler := connect_go.NewUnaryHandler(
+func NewDatabaseGroupServiceHandler(svc DatabaseGroupServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	databaseGroupServiceMethods := v1.File_v1_database_group_service_proto.Services().ByName("DatabaseGroupService").Methods()
+	databaseGroupServiceListDatabaseGroupsHandler := connect.NewUnaryHandler(
 		DatabaseGroupServiceListDatabaseGroupsProcedure,
 		svc.ListDatabaseGroups,
-		opts...,
+		connect.WithSchema(databaseGroupServiceMethods.ByName("ListDatabaseGroups")),
+		connect.WithHandlerOptions(opts...),
 	)
-	databaseGroupServiceGetDatabaseGroupHandler := connect_go.NewUnaryHandler(
+	databaseGroupServiceGetDatabaseGroupHandler := connect.NewUnaryHandler(
 		DatabaseGroupServiceGetDatabaseGroupProcedure,
 		svc.GetDatabaseGroup,
-		opts...,
+		connect.WithSchema(databaseGroupServiceMethods.ByName("GetDatabaseGroup")),
+		connect.WithHandlerOptions(opts...),
 	)
-	databaseGroupServiceCreateDatabaseGroupHandler := connect_go.NewUnaryHandler(
+	databaseGroupServiceCreateDatabaseGroupHandler := connect.NewUnaryHandler(
 		DatabaseGroupServiceCreateDatabaseGroupProcedure,
 		svc.CreateDatabaseGroup,
-		opts...,
+		connect.WithSchema(databaseGroupServiceMethods.ByName("CreateDatabaseGroup")),
+		connect.WithHandlerOptions(opts...),
 	)
-	databaseGroupServiceUpdateDatabaseGroupHandler := connect_go.NewUnaryHandler(
+	databaseGroupServiceUpdateDatabaseGroupHandler := connect.NewUnaryHandler(
 		DatabaseGroupServiceUpdateDatabaseGroupProcedure,
 		svc.UpdateDatabaseGroup,
-		opts...,
+		connect.WithSchema(databaseGroupServiceMethods.ByName("UpdateDatabaseGroup")),
+		connect.WithHandlerOptions(opts...),
 	)
-	databaseGroupServiceDeleteDatabaseGroupHandler := connect_go.NewUnaryHandler(
+	databaseGroupServiceDeleteDatabaseGroupHandler := connect.NewUnaryHandler(
 		DatabaseGroupServiceDeleteDatabaseGroupProcedure,
 		svc.DeleteDatabaseGroup,
-		opts...,
+		connect.WithSchema(databaseGroupServiceMethods.ByName("DeleteDatabaseGroup")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.DatabaseGroupService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -193,22 +205,22 @@ func NewDatabaseGroupServiceHandler(svc DatabaseGroupServiceHandler, opts ...con
 // UnimplementedDatabaseGroupServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedDatabaseGroupServiceHandler struct{}
 
-func (UnimplementedDatabaseGroupServiceHandler) ListDatabaseGroups(context.Context, *connect_go.Request[v1.ListDatabaseGroupsRequest]) (*connect_go.Response[v1.ListDatabaseGroupsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.ListDatabaseGroups is not implemented"))
+func (UnimplementedDatabaseGroupServiceHandler) ListDatabaseGroups(context.Context, *connect.Request[v1.ListDatabaseGroupsRequest]) (*connect.Response[v1.ListDatabaseGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.ListDatabaseGroups is not implemented"))
 }
 
-func (UnimplementedDatabaseGroupServiceHandler) GetDatabaseGroup(context.Context, *connect_go.Request[v1.GetDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.GetDatabaseGroup is not implemented"))
+func (UnimplementedDatabaseGroupServiceHandler) GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.GetDatabaseGroup is not implemented"))
 }
 
-func (UnimplementedDatabaseGroupServiceHandler) CreateDatabaseGroup(context.Context, *connect_go.Request[v1.CreateDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.CreateDatabaseGroup is not implemented"))
+func (UnimplementedDatabaseGroupServiceHandler) CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.CreateDatabaseGroup is not implemented"))
 }
 
-func (UnimplementedDatabaseGroupServiceHandler) UpdateDatabaseGroup(context.Context, *connect_go.Request[v1.UpdateDatabaseGroupRequest]) (*connect_go.Response[v1.DatabaseGroup], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup is not implemented"))
+func (UnimplementedDatabaseGroupServiceHandler) UpdateDatabaseGroup(context.Context, *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup is not implemented"))
 }
 
-func (UnimplementedDatabaseGroupServiceHandler) DeleteDatabaseGroup(context.Context, *connect_go.Request[v1.DeleteDatabaseGroupRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup is not implemented"))
+func (UnimplementedDatabaseGroupServiceHandler) DeleteDatabaseGroup(context.Context, *connect.Request[v1.DeleteDatabaseGroupRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup is not implemented"))
 }

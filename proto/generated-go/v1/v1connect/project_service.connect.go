@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ProjectServiceName is the fully-qualified name of the ProjectService service.
@@ -80,21 +80,21 @@ const (
 
 // ProjectServiceClient is a client for the bytebase.v1.ProjectService service.
 type ProjectServiceClient interface {
-	GetProject(context.Context, *connect_go.Request[v1.GetProjectRequest]) (*connect_go.Response[v1.Project], error)
-	ListProjects(context.Context, *connect_go.Request[v1.ListProjectsRequest]) (*connect_go.Response[v1.ListProjectsResponse], error)
-	SearchProjects(context.Context, *connect_go.Request[v1.SearchProjectsRequest]) (*connect_go.Response[v1.SearchProjectsResponse], error)
-	CreateProject(context.Context, *connect_go.Request[v1.CreateProjectRequest]) (*connect_go.Response[v1.Project], error)
-	UpdateProject(context.Context, *connect_go.Request[v1.UpdateProjectRequest]) (*connect_go.Response[v1.Project], error)
-	DeleteProject(context.Context, *connect_go.Request[v1.DeleteProjectRequest]) (*connect_go.Response[emptypb.Empty], error)
-	UndeleteProject(context.Context, *connect_go.Request[v1.UndeleteProjectRequest]) (*connect_go.Response[v1.Project], error)
-	GetIamPolicy(context.Context, *connect_go.Request[v1.GetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error)
+	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)
+	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error)
+	UpdateProject(context.Context, *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error)
+	DeleteProject(context.Context, *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error)
+	UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error)
+	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 	// Deprecated.
-	BatchGetIamPolicy(context.Context, *connect_go.Request[v1.BatchGetIamPolicyRequest]) (*connect_go.Response[v1.BatchGetIamPolicyResponse], error)
-	SetIamPolicy(context.Context, *connect_go.Request[v1.SetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error)
-	AddWebhook(context.Context, *connect_go.Request[v1.AddWebhookRequest]) (*connect_go.Response[v1.Project], error)
-	UpdateWebhook(context.Context, *connect_go.Request[v1.UpdateWebhookRequest]) (*connect_go.Response[v1.Project], error)
-	RemoveWebhook(context.Context, *connect_go.Request[v1.RemoveWebhookRequest]) (*connect_go.Response[v1.Project], error)
-	TestWebhook(context.Context, *connect_go.Request[v1.TestWebhookRequest]) (*connect_go.Response[v1.TestWebhookResponse], error)
+	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
+	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	AddWebhook(context.Context, *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error)
+	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error)
+	RemoveWebhook(context.Context, *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error)
+	TestWebhook(context.Context, *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error)
 }
 
 // NewProjectServiceClient constructs a client for the bytebase.v1.ProjectService service. By
@@ -104,187 +104,202 @@ type ProjectServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewProjectServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) ProjectServiceClient {
+func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ProjectServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	projectServiceMethods := v1.File_v1_project_service_proto.Services().ByName("ProjectService").Methods()
 	return &projectServiceClient{
-		getProject: connect_go.NewClient[v1.GetProjectRequest, v1.Project](
+		getProject: connect.NewClient[v1.GetProjectRequest, v1.Project](
 			httpClient,
 			baseURL+ProjectServiceGetProjectProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("GetProject")),
+			connect.WithClientOptions(opts...),
 		),
-		listProjects: connect_go.NewClient[v1.ListProjectsRequest, v1.ListProjectsResponse](
+		listProjects: connect.NewClient[v1.ListProjectsRequest, v1.ListProjectsResponse](
 			httpClient,
 			baseURL+ProjectServiceListProjectsProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("ListProjects")),
+			connect.WithClientOptions(opts...),
 		),
-		searchProjects: connect_go.NewClient[v1.SearchProjectsRequest, v1.SearchProjectsResponse](
+		searchProjects: connect.NewClient[v1.SearchProjectsRequest, v1.SearchProjectsResponse](
 			httpClient,
 			baseURL+ProjectServiceSearchProjectsProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("SearchProjects")),
+			connect.WithClientOptions(opts...),
 		),
-		createProject: connect_go.NewClient[v1.CreateProjectRequest, v1.Project](
+		createProject: connect.NewClient[v1.CreateProjectRequest, v1.Project](
 			httpClient,
 			baseURL+ProjectServiceCreateProjectProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("CreateProject")),
+			connect.WithClientOptions(opts...),
 		),
-		updateProject: connect_go.NewClient[v1.UpdateProjectRequest, v1.Project](
+		updateProject: connect.NewClient[v1.UpdateProjectRequest, v1.Project](
 			httpClient,
 			baseURL+ProjectServiceUpdateProjectProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("UpdateProject")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteProject: connect_go.NewClient[v1.DeleteProjectRequest, emptypb.Empty](
+		deleteProject: connect.NewClient[v1.DeleteProjectRequest, emptypb.Empty](
 			httpClient,
 			baseURL+ProjectServiceDeleteProjectProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("DeleteProject")),
+			connect.WithClientOptions(opts...),
 		),
-		undeleteProject: connect_go.NewClient[v1.UndeleteProjectRequest, v1.Project](
+		undeleteProject: connect.NewClient[v1.UndeleteProjectRequest, v1.Project](
 			httpClient,
 			baseURL+ProjectServiceUndeleteProjectProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("UndeleteProject")),
+			connect.WithClientOptions(opts...),
 		),
-		getIamPolicy: connect_go.NewClient[v1.GetIamPolicyRequest, v1.IamPolicy](
+		getIamPolicy: connect.NewClient[v1.GetIamPolicyRequest, v1.IamPolicy](
 			httpClient,
 			baseURL+ProjectServiceGetIamPolicyProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("GetIamPolicy")),
+			connect.WithClientOptions(opts...),
 		),
-		batchGetIamPolicy: connect_go.NewClient[v1.BatchGetIamPolicyRequest, v1.BatchGetIamPolicyResponse](
+		batchGetIamPolicy: connect.NewClient[v1.BatchGetIamPolicyRequest, v1.BatchGetIamPolicyResponse](
 			httpClient,
 			baseURL+ProjectServiceBatchGetIamPolicyProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("BatchGetIamPolicy")),
+			connect.WithClientOptions(opts...),
 		),
-		setIamPolicy: connect_go.NewClient[v1.SetIamPolicyRequest, v1.IamPolicy](
+		setIamPolicy: connect.NewClient[v1.SetIamPolicyRequest, v1.IamPolicy](
 			httpClient,
 			baseURL+ProjectServiceSetIamPolicyProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("SetIamPolicy")),
+			connect.WithClientOptions(opts...),
 		),
-		addWebhook: connect_go.NewClient[v1.AddWebhookRequest, v1.Project](
+		addWebhook: connect.NewClient[v1.AddWebhookRequest, v1.Project](
 			httpClient,
 			baseURL+ProjectServiceAddWebhookProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("AddWebhook")),
+			connect.WithClientOptions(opts...),
 		),
-		updateWebhook: connect_go.NewClient[v1.UpdateWebhookRequest, v1.Project](
+		updateWebhook: connect.NewClient[v1.UpdateWebhookRequest, v1.Project](
 			httpClient,
 			baseURL+ProjectServiceUpdateWebhookProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("UpdateWebhook")),
+			connect.WithClientOptions(opts...),
 		),
-		removeWebhook: connect_go.NewClient[v1.RemoveWebhookRequest, v1.Project](
+		removeWebhook: connect.NewClient[v1.RemoveWebhookRequest, v1.Project](
 			httpClient,
 			baseURL+ProjectServiceRemoveWebhookProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("RemoveWebhook")),
+			connect.WithClientOptions(opts...),
 		),
-		testWebhook: connect_go.NewClient[v1.TestWebhookRequest, v1.TestWebhookResponse](
+		testWebhook: connect.NewClient[v1.TestWebhookRequest, v1.TestWebhookResponse](
 			httpClient,
 			baseURL+ProjectServiceTestWebhookProcedure,
-			opts...,
+			connect.WithSchema(projectServiceMethods.ByName("TestWebhook")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // projectServiceClient implements ProjectServiceClient.
 type projectServiceClient struct {
-	getProject        *connect_go.Client[v1.GetProjectRequest, v1.Project]
-	listProjects      *connect_go.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
-	searchProjects    *connect_go.Client[v1.SearchProjectsRequest, v1.SearchProjectsResponse]
-	createProject     *connect_go.Client[v1.CreateProjectRequest, v1.Project]
-	updateProject     *connect_go.Client[v1.UpdateProjectRequest, v1.Project]
-	deleteProject     *connect_go.Client[v1.DeleteProjectRequest, emptypb.Empty]
-	undeleteProject   *connect_go.Client[v1.UndeleteProjectRequest, v1.Project]
-	getIamPolicy      *connect_go.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
-	batchGetIamPolicy *connect_go.Client[v1.BatchGetIamPolicyRequest, v1.BatchGetIamPolicyResponse]
-	setIamPolicy      *connect_go.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
-	addWebhook        *connect_go.Client[v1.AddWebhookRequest, v1.Project]
-	updateWebhook     *connect_go.Client[v1.UpdateWebhookRequest, v1.Project]
-	removeWebhook     *connect_go.Client[v1.RemoveWebhookRequest, v1.Project]
-	testWebhook       *connect_go.Client[v1.TestWebhookRequest, v1.TestWebhookResponse]
+	getProject        *connect.Client[v1.GetProjectRequest, v1.Project]
+	listProjects      *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
+	searchProjects    *connect.Client[v1.SearchProjectsRequest, v1.SearchProjectsResponse]
+	createProject     *connect.Client[v1.CreateProjectRequest, v1.Project]
+	updateProject     *connect.Client[v1.UpdateProjectRequest, v1.Project]
+	deleteProject     *connect.Client[v1.DeleteProjectRequest, emptypb.Empty]
+	undeleteProject   *connect.Client[v1.UndeleteProjectRequest, v1.Project]
+	getIamPolicy      *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
+	batchGetIamPolicy *connect.Client[v1.BatchGetIamPolicyRequest, v1.BatchGetIamPolicyResponse]
+	setIamPolicy      *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
+	addWebhook        *connect.Client[v1.AddWebhookRequest, v1.Project]
+	updateWebhook     *connect.Client[v1.UpdateWebhookRequest, v1.Project]
+	removeWebhook     *connect.Client[v1.RemoveWebhookRequest, v1.Project]
+	testWebhook       *connect.Client[v1.TestWebhookRequest, v1.TestWebhookResponse]
 }
 
 // GetProject calls bytebase.v1.ProjectService.GetProject.
-func (c *projectServiceClient) GetProject(ctx context.Context, req *connect_go.Request[v1.GetProjectRequest]) (*connect_go.Response[v1.Project], error) {
+func (c *projectServiceClient) GetProject(ctx context.Context, req *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error) {
 	return c.getProject.CallUnary(ctx, req)
 }
 
 // ListProjects calls bytebase.v1.ProjectService.ListProjects.
-func (c *projectServiceClient) ListProjects(ctx context.Context, req *connect_go.Request[v1.ListProjectsRequest]) (*connect_go.Response[v1.ListProjectsResponse], error) {
+func (c *projectServiceClient) ListProjects(ctx context.Context, req *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error) {
 	return c.listProjects.CallUnary(ctx, req)
 }
 
 // SearchProjects calls bytebase.v1.ProjectService.SearchProjects.
-func (c *projectServiceClient) SearchProjects(ctx context.Context, req *connect_go.Request[v1.SearchProjectsRequest]) (*connect_go.Response[v1.SearchProjectsResponse], error) {
+func (c *projectServiceClient) SearchProjects(ctx context.Context, req *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error) {
 	return c.searchProjects.CallUnary(ctx, req)
 }
 
 // CreateProject calls bytebase.v1.ProjectService.CreateProject.
-func (c *projectServiceClient) CreateProject(ctx context.Context, req *connect_go.Request[v1.CreateProjectRequest]) (*connect_go.Response[v1.Project], error) {
+func (c *projectServiceClient) CreateProject(ctx context.Context, req *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error) {
 	return c.createProject.CallUnary(ctx, req)
 }
 
 // UpdateProject calls bytebase.v1.ProjectService.UpdateProject.
-func (c *projectServiceClient) UpdateProject(ctx context.Context, req *connect_go.Request[v1.UpdateProjectRequest]) (*connect_go.Response[v1.Project], error) {
+func (c *projectServiceClient) UpdateProject(ctx context.Context, req *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error) {
 	return c.updateProject.CallUnary(ctx, req)
 }
 
 // DeleteProject calls bytebase.v1.ProjectService.DeleteProject.
-func (c *projectServiceClient) DeleteProject(ctx context.Context, req *connect_go.Request[v1.DeleteProjectRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *projectServiceClient) DeleteProject(ctx context.Context, req *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteProject.CallUnary(ctx, req)
 }
 
 // UndeleteProject calls bytebase.v1.ProjectService.UndeleteProject.
-func (c *projectServiceClient) UndeleteProject(ctx context.Context, req *connect_go.Request[v1.UndeleteProjectRequest]) (*connect_go.Response[v1.Project], error) {
+func (c *projectServiceClient) UndeleteProject(ctx context.Context, req *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error) {
 	return c.undeleteProject.CallUnary(ctx, req)
 }
 
 // GetIamPolicy calls bytebase.v1.ProjectService.GetIamPolicy.
-func (c *projectServiceClient) GetIamPolicy(ctx context.Context, req *connect_go.Request[v1.GetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error) {
+func (c *projectServiceClient) GetIamPolicy(ctx context.Context, req *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
 	return c.getIamPolicy.CallUnary(ctx, req)
 }
 
 // BatchGetIamPolicy calls bytebase.v1.ProjectService.BatchGetIamPolicy.
-func (c *projectServiceClient) BatchGetIamPolicy(ctx context.Context, req *connect_go.Request[v1.BatchGetIamPolicyRequest]) (*connect_go.Response[v1.BatchGetIamPolicyResponse], error) {
+func (c *projectServiceClient) BatchGetIamPolicy(ctx context.Context, req *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error) {
 	return c.batchGetIamPolicy.CallUnary(ctx, req)
 }
 
 // SetIamPolicy calls bytebase.v1.ProjectService.SetIamPolicy.
-func (c *projectServiceClient) SetIamPolicy(ctx context.Context, req *connect_go.Request[v1.SetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error) {
+func (c *projectServiceClient) SetIamPolicy(ctx context.Context, req *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
 	return c.setIamPolicy.CallUnary(ctx, req)
 }
 
 // AddWebhook calls bytebase.v1.ProjectService.AddWebhook.
-func (c *projectServiceClient) AddWebhook(ctx context.Context, req *connect_go.Request[v1.AddWebhookRequest]) (*connect_go.Response[v1.Project], error) {
+func (c *projectServiceClient) AddWebhook(ctx context.Context, req *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error) {
 	return c.addWebhook.CallUnary(ctx, req)
 }
 
 // UpdateWebhook calls bytebase.v1.ProjectService.UpdateWebhook.
-func (c *projectServiceClient) UpdateWebhook(ctx context.Context, req *connect_go.Request[v1.UpdateWebhookRequest]) (*connect_go.Response[v1.Project], error) {
+func (c *projectServiceClient) UpdateWebhook(ctx context.Context, req *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error) {
 	return c.updateWebhook.CallUnary(ctx, req)
 }
 
 // RemoveWebhook calls bytebase.v1.ProjectService.RemoveWebhook.
-func (c *projectServiceClient) RemoveWebhook(ctx context.Context, req *connect_go.Request[v1.RemoveWebhookRequest]) (*connect_go.Response[v1.Project], error) {
+func (c *projectServiceClient) RemoveWebhook(ctx context.Context, req *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error) {
 	return c.removeWebhook.CallUnary(ctx, req)
 }
 
 // TestWebhook calls bytebase.v1.ProjectService.TestWebhook.
-func (c *projectServiceClient) TestWebhook(ctx context.Context, req *connect_go.Request[v1.TestWebhookRequest]) (*connect_go.Response[v1.TestWebhookResponse], error) {
+func (c *projectServiceClient) TestWebhook(ctx context.Context, req *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error) {
 	return c.testWebhook.CallUnary(ctx, req)
 }
 
 // ProjectServiceHandler is an implementation of the bytebase.v1.ProjectService service.
 type ProjectServiceHandler interface {
-	GetProject(context.Context, *connect_go.Request[v1.GetProjectRequest]) (*connect_go.Response[v1.Project], error)
-	ListProjects(context.Context, *connect_go.Request[v1.ListProjectsRequest]) (*connect_go.Response[v1.ListProjectsResponse], error)
-	SearchProjects(context.Context, *connect_go.Request[v1.SearchProjectsRequest]) (*connect_go.Response[v1.SearchProjectsResponse], error)
-	CreateProject(context.Context, *connect_go.Request[v1.CreateProjectRequest]) (*connect_go.Response[v1.Project], error)
-	UpdateProject(context.Context, *connect_go.Request[v1.UpdateProjectRequest]) (*connect_go.Response[v1.Project], error)
-	DeleteProject(context.Context, *connect_go.Request[v1.DeleteProjectRequest]) (*connect_go.Response[emptypb.Empty], error)
-	UndeleteProject(context.Context, *connect_go.Request[v1.UndeleteProjectRequest]) (*connect_go.Response[v1.Project], error)
-	GetIamPolicy(context.Context, *connect_go.Request[v1.GetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error)
+	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)
+	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error)
+	UpdateProject(context.Context, *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error)
+	DeleteProject(context.Context, *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error)
+	UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error)
+	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 	// Deprecated.
-	BatchGetIamPolicy(context.Context, *connect_go.Request[v1.BatchGetIamPolicyRequest]) (*connect_go.Response[v1.BatchGetIamPolicyResponse], error)
-	SetIamPolicy(context.Context, *connect_go.Request[v1.SetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error)
-	AddWebhook(context.Context, *connect_go.Request[v1.AddWebhookRequest]) (*connect_go.Response[v1.Project], error)
-	UpdateWebhook(context.Context, *connect_go.Request[v1.UpdateWebhookRequest]) (*connect_go.Response[v1.Project], error)
-	RemoveWebhook(context.Context, *connect_go.Request[v1.RemoveWebhookRequest]) (*connect_go.Response[v1.Project], error)
-	TestWebhook(context.Context, *connect_go.Request[v1.TestWebhookRequest]) (*connect_go.Response[v1.TestWebhookResponse], error)
+	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
+	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	AddWebhook(context.Context, *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error)
+	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error)
+	RemoveWebhook(context.Context, *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error)
+	TestWebhook(context.Context, *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error)
 }
 
 // NewProjectServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -292,76 +307,91 @@ type ProjectServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	projectServiceGetProjectHandler := connect_go.NewUnaryHandler(
+func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	projectServiceMethods := v1.File_v1_project_service_proto.Services().ByName("ProjectService").Methods()
+	projectServiceGetProjectHandler := connect.NewUnaryHandler(
 		ProjectServiceGetProjectProcedure,
 		svc.GetProject,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("GetProject")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceListProjectsHandler := connect_go.NewUnaryHandler(
+	projectServiceListProjectsHandler := connect.NewUnaryHandler(
 		ProjectServiceListProjectsProcedure,
 		svc.ListProjects,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("ListProjects")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceSearchProjectsHandler := connect_go.NewUnaryHandler(
+	projectServiceSearchProjectsHandler := connect.NewUnaryHandler(
 		ProjectServiceSearchProjectsProcedure,
 		svc.SearchProjects,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("SearchProjects")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceCreateProjectHandler := connect_go.NewUnaryHandler(
+	projectServiceCreateProjectHandler := connect.NewUnaryHandler(
 		ProjectServiceCreateProjectProcedure,
 		svc.CreateProject,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("CreateProject")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceUpdateProjectHandler := connect_go.NewUnaryHandler(
+	projectServiceUpdateProjectHandler := connect.NewUnaryHandler(
 		ProjectServiceUpdateProjectProcedure,
 		svc.UpdateProject,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("UpdateProject")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceDeleteProjectHandler := connect_go.NewUnaryHandler(
+	projectServiceDeleteProjectHandler := connect.NewUnaryHandler(
 		ProjectServiceDeleteProjectProcedure,
 		svc.DeleteProject,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("DeleteProject")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceUndeleteProjectHandler := connect_go.NewUnaryHandler(
+	projectServiceUndeleteProjectHandler := connect.NewUnaryHandler(
 		ProjectServiceUndeleteProjectProcedure,
 		svc.UndeleteProject,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("UndeleteProject")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceGetIamPolicyHandler := connect_go.NewUnaryHandler(
+	projectServiceGetIamPolicyHandler := connect.NewUnaryHandler(
 		ProjectServiceGetIamPolicyProcedure,
 		svc.GetIamPolicy,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("GetIamPolicy")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceBatchGetIamPolicyHandler := connect_go.NewUnaryHandler(
+	projectServiceBatchGetIamPolicyHandler := connect.NewUnaryHandler(
 		ProjectServiceBatchGetIamPolicyProcedure,
 		svc.BatchGetIamPolicy,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("BatchGetIamPolicy")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceSetIamPolicyHandler := connect_go.NewUnaryHandler(
+	projectServiceSetIamPolicyHandler := connect.NewUnaryHandler(
 		ProjectServiceSetIamPolicyProcedure,
 		svc.SetIamPolicy,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("SetIamPolicy")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceAddWebhookHandler := connect_go.NewUnaryHandler(
+	projectServiceAddWebhookHandler := connect.NewUnaryHandler(
 		ProjectServiceAddWebhookProcedure,
 		svc.AddWebhook,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("AddWebhook")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceUpdateWebhookHandler := connect_go.NewUnaryHandler(
+	projectServiceUpdateWebhookHandler := connect.NewUnaryHandler(
 		ProjectServiceUpdateWebhookProcedure,
 		svc.UpdateWebhook,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("UpdateWebhook")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceRemoveWebhookHandler := connect_go.NewUnaryHandler(
+	projectServiceRemoveWebhookHandler := connect.NewUnaryHandler(
 		ProjectServiceRemoveWebhookProcedure,
 		svc.RemoveWebhook,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("RemoveWebhook")),
+		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceTestWebhookHandler := connect_go.NewUnaryHandler(
+	projectServiceTestWebhookHandler := connect.NewUnaryHandler(
 		ProjectServiceTestWebhookProcedure,
 		svc.TestWebhook,
-		opts...,
+		connect.WithSchema(projectServiceMethods.ByName("TestWebhook")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.ProjectService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -402,58 +432,58 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect_go.Hand
 // UnimplementedProjectServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedProjectServiceHandler struct{}
 
-func (UnimplementedProjectServiceHandler) GetProject(context.Context, *connect_go.Request[v1.GetProjectRequest]) (*connect_go.Response[v1.Project], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.GetProject is not implemented"))
+func (UnimplementedProjectServiceHandler) GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.GetProject is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) ListProjects(context.Context, *connect_go.Request[v1.ListProjectsRequest]) (*connect_go.Response[v1.ListProjectsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.ListProjects is not implemented"))
+func (UnimplementedProjectServiceHandler) ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.ListProjects is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) SearchProjects(context.Context, *connect_go.Request[v1.SearchProjectsRequest]) (*connect_go.Response[v1.SearchProjectsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.SearchProjects is not implemented"))
+func (UnimplementedProjectServiceHandler) SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.SearchProjects is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) CreateProject(context.Context, *connect_go.Request[v1.CreateProjectRequest]) (*connect_go.Response[v1.Project], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.CreateProject is not implemented"))
+func (UnimplementedProjectServiceHandler) CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.CreateProject is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) UpdateProject(context.Context, *connect_go.Request[v1.UpdateProjectRequest]) (*connect_go.Response[v1.Project], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.UpdateProject is not implemented"))
+func (UnimplementedProjectServiceHandler) UpdateProject(context.Context, *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.UpdateProject is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) DeleteProject(context.Context, *connect_go.Request[v1.DeleteProjectRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.DeleteProject is not implemented"))
+func (UnimplementedProjectServiceHandler) DeleteProject(context.Context, *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.DeleteProject is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) UndeleteProject(context.Context, *connect_go.Request[v1.UndeleteProjectRequest]) (*connect_go.Response[v1.Project], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.UndeleteProject is not implemented"))
+func (UnimplementedProjectServiceHandler) UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.UndeleteProject is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) GetIamPolicy(context.Context, *connect_go.Request[v1.GetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.GetIamPolicy is not implemented"))
+func (UnimplementedProjectServiceHandler) GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.GetIamPolicy is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) BatchGetIamPolicy(context.Context, *connect_go.Request[v1.BatchGetIamPolicyRequest]) (*connect_go.Response[v1.BatchGetIamPolicyResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.BatchGetIamPolicy is not implemented"))
+func (UnimplementedProjectServiceHandler) BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.BatchGetIamPolicy is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) SetIamPolicy(context.Context, *connect_go.Request[v1.SetIamPolicyRequest]) (*connect_go.Response[v1.IamPolicy], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.SetIamPolicy is not implemented"))
+func (UnimplementedProjectServiceHandler) SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.SetIamPolicy is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) AddWebhook(context.Context, *connect_go.Request[v1.AddWebhookRequest]) (*connect_go.Response[v1.Project], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.AddWebhook is not implemented"))
+func (UnimplementedProjectServiceHandler) AddWebhook(context.Context, *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.AddWebhook is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) UpdateWebhook(context.Context, *connect_go.Request[v1.UpdateWebhookRequest]) (*connect_go.Response[v1.Project], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.UpdateWebhook is not implemented"))
+func (UnimplementedProjectServiceHandler) UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.UpdateWebhook is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) RemoveWebhook(context.Context, *connect_go.Request[v1.RemoveWebhookRequest]) (*connect_go.Response[v1.Project], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.RemoveWebhook is not implemented"))
+func (UnimplementedProjectServiceHandler) RemoveWebhook(context.Context, *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.RemoveWebhook is not implemented"))
 }
 
-func (UnimplementedProjectServiceHandler) TestWebhook(context.Context, *connect_go.Request[v1.TestWebhookRequest]) (*connect_go.Response[v1.TestWebhookResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.TestWebhook is not implemented"))
+func (UnimplementedProjectServiceHandler) TestWebhook(context.Context, *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.TestWebhook is not implemented"))
 }

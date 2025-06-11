@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// GroupServiceName is the fully-qualified name of the GroupService service.
@@ -51,13 +51,13 @@ const (
 
 // GroupServiceClient is a client for the bytebase.v1.GroupService service.
 type GroupServiceClient interface {
-	GetGroup(context.Context, *connect_go.Request[v1.GetGroupRequest]) (*connect_go.Response[v1.Group], error)
-	ListGroups(context.Context, *connect_go.Request[v1.ListGroupsRequest]) (*connect_go.Response[v1.ListGroupsResponse], error)
-	CreateGroup(context.Context, *connect_go.Request[v1.CreateGroupRequest]) (*connect_go.Response[v1.Group], error)
+	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
+	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
+	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error)
 	// UpdateGroup updates the group.
 	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
-	UpdateGroup(context.Context, *connect_go.Request[v1.UpdateGroupRequest]) (*connect_go.Response[v1.Group], error)
-	DeleteGroup(context.Context, *connect_go.Request[v1.DeleteGroupRequest]) (*connect_go.Response[emptypb.Empty], error)
+	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error)
+	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewGroupServiceClient constructs a client for the bytebase.v1.GroupService service. By default,
@@ -67,80 +67,86 @@ type GroupServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewGroupServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) GroupServiceClient {
+func NewGroupServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) GroupServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	groupServiceMethods := v1.File_v1_group_service_proto.Services().ByName("GroupService").Methods()
 	return &groupServiceClient{
-		getGroup: connect_go.NewClient[v1.GetGroupRequest, v1.Group](
+		getGroup: connect.NewClient[v1.GetGroupRequest, v1.Group](
 			httpClient,
 			baseURL+GroupServiceGetGroupProcedure,
-			opts...,
+			connect.WithSchema(groupServiceMethods.ByName("GetGroup")),
+			connect.WithClientOptions(opts...),
 		),
-		listGroups: connect_go.NewClient[v1.ListGroupsRequest, v1.ListGroupsResponse](
+		listGroups: connect.NewClient[v1.ListGroupsRequest, v1.ListGroupsResponse](
 			httpClient,
 			baseURL+GroupServiceListGroupsProcedure,
-			opts...,
+			connect.WithSchema(groupServiceMethods.ByName("ListGroups")),
+			connect.WithClientOptions(opts...),
 		),
-		createGroup: connect_go.NewClient[v1.CreateGroupRequest, v1.Group](
+		createGroup: connect.NewClient[v1.CreateGroupRequest, v1.Group](
 			httpClient,
 			baseURL+GroupServiceCreateGroupProcedure,
-			opts...,
+			connect.WithSchema(groupServiceMethods.ByName("CreateGroup")),
+			connect.WithClientOptions(opts...),
 		),
-		updateGroup: connect_go.NewClient[v1.UpdateGroupRequest, v1.Group](
+		updateGroup: connect.NewClient[v1.UpdateGroupRequest, v1.Group](
 			httpClient,
 			baseURL+GroupServiceUpdateGroupProcedure,
-			opts...,
+			connect.WithSchema(groupServiceMethods.ByName("UpdateGroup")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteGroup: connect_go.NewClient[v1.DeleteGroupRequest, emptypb.Empty](
+		deleteGroup: connect.NewClient[v1.DeleteGroupRequest, emptypb.Empty](
 			httpClient,
 			baseURL+GroupServiceDeleteGroupProcedure,
-			opts...,
+			connect.WithSchema(groupServiceMethods.ByName("DeleteGroup")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // groupServiceClient implements GroupServiceClient.
 type groupServiceClient struct {
-	getGroup    *connect_go.Client[v1.GetGroupRequest, v1.Group]
-	listGroups  *connect_go.Client[v1.ListGroupsRequest, v1.ListGroupsResponse]
-	createGroup *connect_go.Client[v1.CreateGroupRequest, v1.Group]
-	updateGroup *connect_go.Client[v1.UpdateGroupRequest, v1.Group]
-	deleteGroup *connect_go.Client[v1.DeleteGroupRequest, emptypb.Empty]
+	getGroup    *connect.Client[v1.GetGroupRequest, v1.Group]
+	listGroups  *connect.Client[v1.ListGroupsRequest, v1.ListGroupsResponse]
+	createGroup *connect.Client[v1.CreateGroupRequest, v1.Group]
+	updateGroup *connect.Client[v1.UpdateGroupRequest, v1.Group]
+	deleteGroup *connect.Client[v1.DeleteGroupRequest, emptypb.Empty]
 }
 
 // GetGroup calls bytebase.v1.GroupService.GetGroup.
-func (c *groupServiceClient) GetGroup(ctx context.Context, req *connect_go.Request[v1.GetGroupRequest]) (*connect_go.Response[v1.Group], error) {
+func (c *groupServiceClient) GetGroup(ctx context.Context, req *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error) {
 	return c.getGroup.CallUnary(ctx, req)
 }
 
 // ListGroups calls bytebase.v1.GroupService.ListGroups.
-func (c *groupServiceClient) ListGroups(ctx context.Context, req *connect_go.Request[v1.ListGroupsRequest]) (*connect_go.Response[v1.ListGroupsResponse], error) {
+func (c *groupServiceClient) ListGroups(ctx context.Context, req *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error) {
 	return c.listGroups.CallUnary(ctx, req)
 }
 
 // CreateGroup calls bytebase.v1.GroupService.CreateGroup.
-func (c *groupServiceClient) CreateGroup(ctx context.Context, req *connect_go.Request[v1.CreateGroupRequest]) (*connect_go.Response[v1.Group], error) {
+func (c *groupServiceClient) CreateGroup(ctx context.Context, req *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error) {
 	return c.createGroup.CallUnary(ctx, req)
 }
 
 // UpdateGroup calls bytebase.v1.GroupService.UpdateGroup.
-func (c *groupServiceClient) UpdateGroup(ctx context.Context, req *connect_go.Request[v1.UpdateGroupRequest]) (*connect_go.Response[v1.Group], error) {
+func (c *groupServiceClient) UpdateGroup(ctx context.Context, req *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error) {
 	return c.updateGroup.CallUnary(ctx, req)
 }
 
 // DeleteGroup calls bytebase.v1.GroupService.DeleteGroup.
-func (c *groupServiceClient) DeleteGroup(ctx context.Context, req *connect_go.Request[v1.DeleteGroupRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *groupServiceClient) DeleteGroup(ctx context.Context, req *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteGroup.CallUnary(ctx, req)
 }
 
 // GroupServiceHandler is an implementation of the bytebase.v1.GroupService service.
 type GroupServiceHandler interface {
-	GetGroup(context.Context, *connect_go.Request[v1.GetGroupRequest]) (*connect_go.Response[v1.Group], error)
-	ListGroups(context.Context, *connect_go.Request[v1.ListGroupsRequest]) (*connect_go.Response[v1.ListGroupsResponse], error)
-	CreateGroup(context.Context, *connect_go.Request[v1.CreateGroupRequest]) (*connect_go.Response[v1.Group], error)
+	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
+	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
+	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error)
 	// UpdateGroup updates the group.
 	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
-	UpdateGroup(context.Context, *connect_go.Request[v1.UpdateGroupRequest]) (*connect_go.Response[v1.Group], error)
-	DeleteGroup(context.Context, *connect_go.Request[v1.DeleteGroupRequest]) (*connect_go.Response[emptypb.Empty], error)
+	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error)
+	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewGroupServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -148,31 +154,37 @@ type GroupServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewGroupServiceHandler(svc GroupServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	groupServiceGetGroupHandler := connect_go.NewUnaryHandler(
+func NewGroupServiceHandler(svc GroupServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	groupServiceMethods := v1.File_v1_group_service_proto.Services().ByName("GroupService").Methods()
+	groupServiceGetGroupHandler := connect.NewUnaryHandler(
 		GroupServiceGetGroupProcedure,
 		svc.GetGroup,
-		opts...,
+		connect.WithSchema(groupServiceMethods.ByName("GetGroup")),
+		connect.WithHandlerOptions(opts...),
 	)
-	groupServiceListGroupsHandler := connect_go.NewUnaryHandler(
+	groupServiceListGroupsHandler := connect.NewUnaryHandler(
 		GroupServiceListGroupsProcedure,
 		svc.ListGroups,
-		opts...,
+		connect.WithSchema(groupServiceMethods.ByName("ListGroups")),
+		connect.WithHandlerOptions(opts...),
 	)
-	groupServiceCreateGroupHandler := connect_go.NewUnaryHandler(
+	groupServiceCreateGroupHandler := connect.NewUnaryHandler(
 		GroupServiceCreateGroupProcedure,
 		svc.CreateGroup,
-		opts...,
+		connect.WithSchema(groupServiceMethods.ByName("CreateGroup")),
+		connect.WithHandlerOptions(opts...),
 	)
-	groupServiceUpdateGroupHandler := connect_go.NewUnaryHandler(
+	groupServiceUpdateGroupHandler := connect.NewUnaryHandler(
 		GroupServiceUpdateGroupProcedure,
 		svc.UpdateGroup,
-		opts...,
+		connect.WithSchema(groupServiceMethods.ByName("UpdateGroup")),
+		connect.WithHandlerOptions(opts...),
 	)
-	groupServiceDeleteGroupHandler := connect_go.NewUnaryHandler(
+	groupServiceDeleteGroupHandler := connect.NewUnaryHandler(
 		GroupServiceDeleteGroupProcedure,
 		svc.DeleteGroup,
-		opts...,
+		connect.WithSchema(groupServiceMethods.ByName("DeleteGroup")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.GroupService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -195,22 +207,22 @@ func NewGroupServiceHandler(svc GroupServiceHandler, opts ...connect_go.HandlerO
 // UnimplementedGroupServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedGroupServiceHandler struct{}
 
-func (UnimplementedGroupServiceHandler) GetGroup(context.Context, *connect_go.Request[v1.GetGroupRequest]) (*connect_go.Response[v1.Group], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.GroupService.GetGroup is not implemented"))
+func (UnimplementedGroupServiceHandler) GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.GroupService.GetGroup is not implemented"))
 }
 
-func (UnimplementedGroupServiceHandler) ListGroups(context.Context, *connect_go.Request[v1.ListGroupsRequest]) (*connect_go.Response[v1.ListGroupsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.GroupService.ListGroups is not implemented"))
+func (UnimplementedGroupServiceHandler) ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.GroupService.ListGroups is not implemented"))
 }
 
-func (UnimplementedGroupServiceHandler) CreateGroup(context.Context, *connect_go.Request[v1.CreateGroupRequest]) (*connect_go.Response[v1.Group], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.GroupService.CreateGroup is not implemented"))
+func (UnimplementedGroupServiceHandler) CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.GroupService.CreateGroup is not implemented"))
 }
 
-func (UnimplementedGroupServiceHandler) UpdateGroup(context.Context, *connect_go.Request[v1.UpdateGroupRequest]) (*connect_go.Response[v1.Group], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.GroupService.UpdateGroup is not implemented"))
+func (UnimplementedGroupServiceHandler) UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.GroupService.UpdateGroup is not implemented"))
 }
 
-func (UnimplementedGroupServiceHandler) DeleteGroup(context.Context, *connect_go.Request[v1.DeleteGroupRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.GroupService.DeleteGroup is not implemented"))
+func (UnimplementedGroupServiceHandler) DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.GroupService.DeleteGroup is not implemented"))
 }

@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// UserServiceName is the fully-qualified name of the UserService service.
@@ -59,26 +59,26 @@ const (
 type UserServiceClient interface {
 	// Get the user.
 	// Any authenticated user can get the user.
-	GetUser(context.Context, *connect_go.Request[v1.GetUserRequest]) (*connect_go.Response[v1.User], error)
+	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.User], error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
-	BatchGetUsers(context.Context, *connect_go.Request[v1.BatchGetUsersRequest]) (*connect_go.Response[v1.BatchGetUsersResponse], error)
+	BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error)
 	// Get the current authenticated user.
-	GetCurrentUser(context.Context, *connect_go.Request[emptypb.Empty]) (*connect_go.Response[v1.User], error)
+	GetCurrentUser(context.Context, *connect.Request[emptypb.Empty]) (*connect.Response[v1.User], error)
 	// List all users.
 	// Any authenticated user can list users.
-	ListUsers(context.Context, *connect_go.Request[v1.ListUsersRequest]) (*connect_go.Response[v1.ListUsersResponse], error)
+	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	// Create a user.
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
-	CreateUser(context.Context, *connect_go.Request[v1.CreateUserRequest]) (*connect_go.Response[v1.User], error)
+	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-	UpdateUser(context.Context, *connect_go.Request[v1.UpdateUserRequest]) (*connect_go.Response[v1.User], error)
+	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
 	// Only the user with bb.users.delete permission on the workspace can delete the user.
 	// The last remaining workspace admin cannot be deleted.
-	DeleteUser(context.Context, *connect_go.Request[v1.DeleteUserRequest]) (*connect_go.Response[emptypb.Empty], error)
+	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error)
 	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
-	UndeleteUser(context.Context, *connect_go.Request[v1.UndeleteUserRequest]) (*connect_go.Response[v1.User], error)
+	UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error)
 }
 
 // NewUserServiceClient constructs a client for the bytebase.v1.UserService service. By default, it
@@ -88,101 +88,110 @@ type UserServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewUserServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) UserServiceClient {
+func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) UserServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	userServiceMethods := v1.File_v1_user_service_proto.Services().ByName("UserService").Methods()
 	return &userServiceClient{
-		getUser: connect_go.NewClient[v1.GetUserRequest, v1.User](
+		getUser: connect.NewClient[v1.GetUserRequest, v1.User](
 			httpClient,
 			baseURL+UserServiceGetUserProcedure,
-			opts...,
+			connect.WithSchema(userServiceMethods.ByName("GetUser")),
+			connect.WithClientOptions(opts...),
 		),
-		batchGetUsers: connect_go.NewClient[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse](
+		batchGetUsers: connect.NewClient[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse](
 			httpClient,
 			baseURL+UserServiceBatchGetUsersProcedure,
-			opts...,
+			connect.WithSchema(userServiceMethods.ByName("BatchGetUsers")),
+			connect.WithClientOptions(opts...),
 		),
-		getCurrentUser: connect_go.NewClient[emptypb.Empty, v1.User](
+		getCurrentUser: connect.NewClient[emptypb.Empty, v1.User](
 			httpClient,
 			baseURL+UserServiceGetCurrentUserProcedure,
-			opts...,
+			connect.WithSchema(userServiceMethods.ByName("GetCurrentUser")),
+			connect.WithClientOptions(opts...),
 		),
-		listUsers: connect_go.NewClient[v1.ListUsersRequest, v1.ListUsersResponse](
+		listUsers: connect.NewClient[v1.ListUsersRequest, v1.ListUsersResponse](
 			httpClient,
 			baseURL+UserServiceListUsersProcedure,
-			opts...,
+			connect.WithSchema(userServiceMethods.ByName("ListUsers")),
+			connect.WithClientOptions(opts...),
 		),
-		createUser: connect_go.NewClient[v1.CreateUserRequest, v1.User](
+		createUser: connect.NewClient[v1.CreateUserRequest, v1.User](
 			httpClient,
 			baseURL+UserServiceCreateUserProcedure,
-			opts...,
+			connect.WithSchema(userServiceMethods.ByName("CreateUser")),
+			connect.WithClientOptions(opts...),
 		),
-		updateUser: connect_go.NewClient[v1.UpdateUserRequest, v1.User](
+		updateUser: connect.NewClient[v1.UpdateUserRequest, v1.User](
 			httpClient,
 			baseURL+UserServiceUpdateUserProcedure,
-			opts...,
+			connect.WithSchema(userServiceMethods.ByName("UpdateUser")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteUser: connect_go.NewClient[v1.DeleteUserRequest, emptypb.Empty](
+		deleteUser: connect.NewClient[v1.DeleteUserRequest, emptypb.Empty](
 			httpClient,
 			baseURL+UserServiceDeleteUserProcedure,
-			opts...,
+			connect.WithSchema(userServiceMethods.ByName("DeleteUser")),
+			connect.WithClientOptions(opts...),
 		),
-		undeleteUser: connect_go.NewClient[v1.UndeleteUserRequest, v1.User](
+		undeleteUser: connect.NewClient[v1.UndeleteUserRequest, v1.User](
 			httpClient,
 			baseURL+UserServiceUndeleteUserProcedure,
-			opts...,
+			connect.WithSchema(userServiceMethods.ByName("UndeleteUser")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // userServiceClient implements UserServiceClient.
 type userServiceClient struct {
-	getUser        *connect_go.Client[v1.GetUserRequest, v1.User]
-	batchGetUsers  *connect_go.Client[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse]
-	getCurrentUser *connect_go.Client[emptypb.Empty, v1.User]
-	listUsers      *connect_go.Client[v1.ListUsersRequest, v1.ListUsersResponse]
-	createUser     *connect_go.Client[v1.CreateUserRequest, v1.User]
-	updateUser     *connect_go.Client[v1.UpdateUserRequest, v1.User]
-	deleteUser     *connect_go.Client[v1.DeleteUserRequest, emptypb.Empty]
-	undeleteUser   *connect_go.Client[v1.UndeleteUserRequest, v1.User]
+	getUser        *connect.Client[v1.GetUserRequest, v1.User]
+	batchGetUsers  *connect.Client[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse]
+	getCurrentUser *connect.Client[emptypb.Empty, v1.User]
+	listUsers      *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
+	createUser     *connect.Client[v1.CreateUserRequest, v1.User]
+	updateUser     *connect.Client[v1.UpdateUserRequest, v1.User]
+	deleteUser     *connect.Client[v1.DeleteUserRequest, emptypb.Empty]
+	undeleteUser   *connect.Client[v1.UndeleteUserRequest, v1.User]
 }
 
 // GetUser calls bytebase.v1.UserService.GetUser.
-func (c *userServiceClient) GetUser(ctx context.Context, req *connect_go.Request[v1.GetUserRequest]) (*connect_go.Response[v1.User], error) {
+func (c *userServiceClient) GetUser(ctx context.Context, req *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.User], error) {
 	return c.getUser.CallUnary(ctx, req)
 }
 
 // BatchGetUsers calls bytebase.v1.UserService.BatchGetUsers.
-func (c *userServiceClient) BatchGetUsers(ctx context.Context, req *connect_go.Request[v1.BatchGetUsersRequest]) (*connect_go.Response[v1.BatchGetUsersResponse], error) {
+func (c *userServiceClient) BatchGetUsers(ctx context.Context, req *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error) {
 	return c.batchGetUsers.CallUnary(ctx, req)
 }
 
 // GetCurrentUser calls bytebase.v1.UserService.GetCurrentUser.
-func (c *userServiceClient) GetCurrentUser(ctx context.Context, req *connect_go.Request[emptypb.Empty]) (*connect_go.Response[v1.User], error) {
+func (c *userServiceClient) GetCurrentUser(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[v1.User], error) {
 	return c.getCurrentUser.CallUnary(ctx, req)
 }
 
 // ListUsers calls bytebase.v1.UserService.ListUsers.
-func (c *userServiceClient) ListUsers(ctx context.Context, req *connect_go.Request[v1.ListUsersRequest]) (*connect_go.Response[v1.ListUsersResponse], error) {
+func (c *userServiceClient) ListUsers(ctx context.Context, req *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error) {
 	return c.listUsers.CallUnary(ctx, req)
 }
 
 // CreateUser calls bytebase.v1.UserService.CreateUser.
-func (c *userServiceClient) CreateUser(ctx context.Context, req *connect_go.Request[v1.CreateUserRequest]) (*connect_go.Response[v1.User], error) {
+func (c *userServiceClient) CreateUser(ctx context.Context, req *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error) {
 	return c.createUser.CallUnary(ctx, req)
 }
 
 // UpdateUser calls bytebase.v1.UserService.UpdateUser.
-func (c *userServiceClient) UpdateUser(ctx context.Context, req *connect_go.Request[v1.UpdateUserRequest]) (*connect_go.Response[v1.User], error) {
+func (c *userServiceClient) UpdateUser(ctx context.Context, req *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error) {
 	return c.updateUser.CallUnary(ctx, req)
 }
 
 // DeleteUser calls bytebase.v1.UserService.DeleteUser.
-func (c *userServiceClient) DeleteUser(ctx context.Context, req *connect_go.Request[v1.DeleteUserRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *userServiceClient) DeleteUser(ctx context.Context, req *connect.Request[v1.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteUser.CallUnary(ctx, req)
 }
 
 // UndeleteUser calls bytebase.v1.UserService.UndeleteUser.
-func (c *userServiceClient) UndeleteUser(ctx context.Context, req *connect_go.Request[v1.UndeleteUserRequest]) (*connect_go.Response[v1.User], error) {
+func (c *userServiceClient) UndeleteUser(ctx context.Context, req *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error) {
 	return c.undeleteUser.CallUnary(ctx, req)
 }
 
@@ -190,26 +199,26 @@ func (c *userServiceClient) UndeleteUser(ctx context.Context, req *connect_go.Re
 type UserServiceHandler interface {
 	// Get the user.
 	// Any authenticated user can get the user.
-	GetUser(context.Context, *connect_go.Request[v1.GetUserRequest]) (*connect_go.Response[v1.User], error)
+	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.User], error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
-	BatchGetUsers(context.Context, *connect_go.Request[v1.BatchGetUsersRequest]) (*connect_go.Response[v1.BatchGetUsersResponse], error)
+	BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error)
 	// Get the current authenticated user.
-	GetCurrentUser(context.Context, *connect_go.Request[emptypb.Empty]) (*connect_go.Response[v1.User], error)
+	GetCurrentUser(context.Context, *connect.Request[emptypb.Empty]) (*connect.Response[v1.User], error)
 	// List all users.
 	// Any authenticated user can list users.
-	ListUsers(context.Context, *connect_go.Request[v1.ListUsersRequest]) (*connect_go.Response[v1.ListUsersResponse], error)
+	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	// Create a user.
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
-	CreateUser(context.Context, *connect_go.Request[v1.CreateUserRequest]) (*connect_go.Response[v1.User], error)
+	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-	UpdateUser(context.Context, *connect_go.Request[v1.UpdateUserRequest]) (*connect_go.Response[v1.User], error)
+	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
 	// Only the user with bb.users.delete permission on the workspace can delete the user.
 	// The last remaining workspace admin cannot be deleted.
-	DeleteUser(context.Context, *connect_go.Request[v1.DeleteUserRequest]) (*connect_go.Response[emptypb.Empty], error)
+	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error)
 	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
-	UndeleteUser(context.Context, *connect_go.Request[v1.UndeleteUserRequest]) (*connect_go.Response[v1.User], error)
+	UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -217,46 +226,55 @@ type UserServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewUserServiceHandler(svc UserServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	userServiceGetUserHandler := connect_go.NewUnaryHandler(
+func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	userServiceMethods := v1.File_v1_user_service_proto.Services().ByName("UserService").Methods()
+	userServiceGetUserHandler := connect.NewUnaryHandler(
 		UserServiceGetUserProcedure,
 		svc.GetUser,
-		opts...,
+		connect.WithSchema(userServiceMethods.ByName("GetUser")),
+		connect.WithHandlerOptions(opts...),
 	)
-	userServiceBatchGetUsersHandler := connect_go.NewUnaryHandler(
+	userServiceBatchGetUsersHandler := connect.NewUnaryHandler(
 		UserServiceBatchGetUsersProcedure,
 		svc.BatchGetUsers,
-		opts...,
+		connect.WithSchema(userServiceMethods.ByName("BatchGetUsers")),
+		connect.WithHandlerOptions(opts...),
 	)
-	userServiceGetCurrentUserHandler := connect_go.NewUnaryHandler(
+	userServiceGetCurrentUserHandler := connect.NewUnaryHandler(
 		UserServiceGetCurrentUserProcedure,
 		svc.GetCurrentUser,
-		opts...,
+		connect.WithSchema(userServiceMethods.ByName("GetCurrentUser")),
+		connect.WithHandlerOptions(opts...),
 	)
-	userServiceListUsersHandler := connect_go.NewUnaryHandler(
+	userServiceListUsersHandler := connect.NewUnaryHandler(
 		UserServiceListUsersProcedure,
 		svc.ListUsers,
-		opts...,
+		connect.WithSchema(userServiceMethods.ByName("ListUsers")),
+		connect.WithHandlerOptions(opts...),
 	)
-	userServiceCreateUserHandler := connect_go.NewUnaryHandler(
+	userServiceCreateUserHandler := connect.NewUnaryHandler(
 		UserServiceCreateUserProcedure,
 		svc.CreateUser,
-		opts...,
+		connect.WithSchema(userServiceMethods.ByName("CreateUser")),
+		connect.WithHandlerOptions(opts...),
 	)
-	userServiceUpdateUserHandler := connect_go.NewUnaryHandler(
+	userServiceUpdateUserHandler := connect.NewUnaryHandler(
 		UserServiceUpdateUserProcedure,
 		svc.UpdateUser,
-		opts...,
+		connect.WithSchema(userServiceMethods.ByName("UpdateUser")),
+		connect.WithHandlerOptions(opts...),
 	)
-	userServiceDeleteUserHandler := connect_go.NewUnaryHandler(
+	userServiceDeleteUserHandler := connect.NewUnaryHandler(
 		UserServiceDeleteUserProcedure,
 		svc.DeleteUser,
-		opts...,
+		connect.WithSchema(userServiceMethods.ByName("DeleteUser")),
+		connect.WithHandlerOptions(opts...),
 	)
-	userServiceUndeleteUserHandler := connect_go.NewUnaryHandler(
+	userServiceUndeleteUserHandler := connect.NewUnaryHandler(
 		UserServiceUndeleteUserProcedure,
 		svc.UndeleteUser,
-		opts...,
+		connect.WithSchema(userServiceMethods.ByName("UndeleteUser")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -285,34 +303,34 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect_go.HandlerOpt
 // UnimplementedUserServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedUserServiceHandler struct{}
 
-func (UnimplementedUserServiceHandler) GetUser(context.Context, *connect_go.Request[v1.GetUserRequest]) (*connect_go.Response[v1.User], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.UserService.GetUser is not implemented"))
+func (UnimplementedUserServiceHandler) GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.GetUser is not implemented"))
 }
 
-func (UnimplementedUserServiceHandler) BatchGetUsers(context.Context, *connect_go.Request[v1.BatchGetUsersRequest]) (*connect_go.Response[v1.BatchGetUsersResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.UserService.BatchGetUsers is not implemented"))
+func (UnimplementedUserServiceHandler) BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.BatchGetUsers is not implemented"))
 }
 
-func (UnimplementedUserServiceHandler) GetCurrentUser(context.Context, *connect_go.Request[emptypb.Empty]) (*connect_go.Response[v1.User], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.UserService.GetCurrentUser is not implemented"))
+func (UnimplementedUserServiceHandler) GetCurrentUser(context.Context, *connect.Request[emptypb.Empty]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.GetCurrentUser is not implemented"))
 }
 
-func (UnimplementedUserServiceHandler) ListUsers(context.Context, *connect_go.Request[v1.ListUsersRequest]) (*connect_go.Response[v1.ListUsersResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.UserService.ListUsers is not implemented"))
+func (UnimplementedUserServiceHandler) ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.ListUsers is not implemented"))
 }
 
-func (UnimplementedUserServiceHandler) CreateUser(context.Context, *connect_go.Request[v1.CreateUserRequest]) (*connect_go.Response[v1.User], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.UserService.CreateUser is not implemented"))
+func (UnimplementedUserServiceHandler) CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.CreateUser is not implemented"))
 }
 
-func (UnimplementedUserServiceHandler) UpdateUser(context.Context, *connect_go.Request[v1.UpdateUserRequest]) (*connect_go.Response[v1.User], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.UserService.UpdateUser is not implemented"))
+func (UnimplementedUserServiceHandler) UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.UpdateUser is not implemented"))
 }
 
-func (UnimplementedUserServiceHandler) DeleteUser(context.Context, *connect_go.Request[v1.DeleteUserRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.UserService.DeleteUser is not implemented"))
+func (UnimplementedUserServiceHandler) DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.DeleteUser is not implemented"))
 }
 
-func (UnimplementedUserServiceHandler) UndeleteUser(context.Context, *connect_go.Request[v1.UndeleteUserRequest]) (*connect_go.Response[v1.User], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.UserService.UndeleteUser is not implemented"))
+func (UnimplementedUserServiceHandler) UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.UndeleteUser is not implemented"))
 }

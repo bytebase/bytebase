@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// RoleServiceName is the fully-qualified name of the RoleService service.
@@ -48,11 +48,11 @@ const (
 
 // RoleServiceClient is a client for the bytebase.v1.RoleService service.
 type RoleServiceClient interface {
-	ListRoles(context.Context, *connect_go.Request[v1.ListRolesRequest]) (*connect_go.Response[v1.ListRolesResponse], error)
-	GetRole(context.Context, *connect_go.Request[v1.GetRoleRequest]) (*connect_go.Response[v1.Role], error)
-	CreateRole(context.Context, *connect_go.Request[v1.CreateRoleRequest]) (*connect_go.Response[v1.Role], error)
-	UpdateRole(context.Context, *connect_go.Request[v1.UpdateRoleRequest]) (*connect_go.Response[v1.Role], error)
-	DeleteRole(context.Context, *connect_go.Request[v1.DeleteRoleRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
+	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.Role], error)
+	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error)
+	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error)
+	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewRoleServiceClient constructs a client for the bytebase.v1.RoleService service. By default, it
@@ -62,78 +62,84 @@ type RoleServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewRoleServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) RoleServiceClient {
+func NewRoleServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RoleServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	roleServiceMethods := v1.File_v1_role_service_proto.Services().ByName("RoleService").Methods()
 	return &roleServiceClient{
-		listRoles: connect_go.NewClient[v1.ListRolesRequest, v1.ListRolesResponse](
+		listRoles: connect.NewClient[v1.ListRolesRequest, v1.ListRolesResponse](
 			httpClient,
 			baseURL+RoleServiceListRolesProcedure,
-			opts...,
+			connect.WithSchema(roleServiceMethods.ByName("ListRoles")),
+			connect.WithClientOptions(opts...),
 		),
-		getRole: connect_go.NewClient[v1.GetRoleRequest, v1.Role](
+		getRole: connect.NewClient[v1.GetRoleRequest, v1.Role](
 			httpClient,
 			baseURL+RoleServiceGetRoleProcedure,
-			opts...,
+			connect.WithSchema(roleServiceMethods.ByName("GetRole")),
+			connect.WithClientOptions(opts...),
 		),
-		createRole: connect_go.NewClient[v1.CreateRoleRequest, v1.Role](
+		createRole: connect.NewClient[v1.CreateRoleRequest, v1.Role](
 			httpClient,
 			baseURL+RoleServiceCreateRoleProcedure,
-			opts...,
+			connect.WithSchema(roleServiceMethods.ByName("CreateRole")),
+			connect.WithClientOptions(opts...),
 		),
-		updateRole: connect_go.NewClient[v1.UpdateRoleRequest, v1.Role](
+		updateRole: connect.NewClient[v1.UpdateRoleRequest, v1.Role](
 			httpClient,
 			baseURL+RoleServiceUpdateRoleProcedure,
-			opts...,
+			connect.WithSchema(roleServiceMethods.ByName("UpdateRole")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteRole: connect_go.NewClient[v1.DeleteRoleRequest, emptypb.Empty](
+		deleteRole: connect.NewClient[v1.DeleteRoleRequest, emptypb.Empty](
 			httpClient,
 			baseURL+RoleServiceDeleteRoleProcedure,
-			opts...,
+			connect.WithSchema(roleServiceMethods.ByName("DeleteRole")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // roleServiceClient implements RoleServiceClient.
 type roleServiceClient struct {
-	listRoles  *connect_go.Client[v1.ListRolesRequest, v1.ListRolesResponse]
-	getRole    *connect_go.Client[v1.GetRoleRequest, v1.Role]
-	createRole *connect_go.Client[v1.CreateRoleRequest, v1.Role]
-	updateRole *connect_go.Client[v1.UpdateRoleRequest, v1.Role]
-	deleteRole *connect_go.Client[v1.DeleteRoleRequest, emptypb.Empty]
+	listRoles  *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
+	getRole    *connect.Client[v1.GetRoleRequest, v1.Role]
+	createRole *connect.Client[v1.CreateRoleRequest, v1.Role]
+	updateRole *connect.Client[v1.UpdateRoleRequest, v1.Role]
+	deleteRole *connect.Client[v1.DeleteRoleRequest, emptypb.Empty]
 }
 
 // ListRoles calls bytebase.v1.RoleService.ListRoles.
-func (c *roleServiceClient) ListRoles(ctx context.Context, req *connect_go.Request[v1.ListRolesRequest]) (*connect_go.Response[v1.ListRolesResponse], error) {
+func (c *roleServiceClient) ListRoles(ctx context.Context, req *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error) {
 	return c.listRoles.CallUnary(ctx, req)
 }
 
 // GetRole calls bytebase.v1.RoleService.GetRole.
-func (c *roleServiceClient) GetRole(ctx context.Context, req *connect_go.Request[v1.GetRoleRequest]) (*connect_go.Response[v1.Role], error) {
+func (c *roleServiceClient) GetRole(ctx context.Context, req *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.Role], error) {
 	return c.getRole.CallUnary(ctx, req)
 }
 
 // CreateRole calls bytebase.v1.RoleService.CreateRole.
-func (c *roleServiceClient) CreateRole(ctx context.Context, req *connect_go.Request[v1.CreateRoleRequest]) (*connect_go.Response[v1.Role], error) {
+func (c *roleServiceClient) CreateRole(ctx context.Context, req *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error) {
 	return c.createRole.CallUnary(ctx, req)
 }
 
 // UpdateRole calls bytebase.v1.RoleService.UpdateRole.
-func (c *roleServiceClient) UpdateRole(ctx context.Context, req *connect_go.Request[v1.UpdateRoleRequest]) (*connect_go.Response[v1.Role], error) {
+func (c *roleServiceClient) UpdateRole(ctx context.Context, req *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error) {
 	return c.updateRole.CallUnary(ctx, req)
 }
 
 // DeleteRole calls bytebase.v1.RoleService.DeleteRole.
-func (c *roleServiceClient) DeleteRole(ctx context.Context, req *connect_go.Request[v1.DeleteRoleRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *roleServiceClient) DeleteRole(ctx context.Context, req *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteRole.CallUnary(ctx, req)
 }
 
 // RoleServiceHandler is an implementation of the bytebase.v1.RoleService service.
 type RoleServiceHandler interface {
-	ListRoles(context.Context, *connect_go.Request[v1.ListRolesRequest]) (*connect_go.Response[v1.ListRolesResponse], error)
-	GetRole(context.Context, *connect_go.Request[v1.GetRoleRequest]) (*connect_go.Response[v1.Role], error)
-	CreateRole(context.Context, *connect_go.Request[v1.CreateRoleRequest]) (*connect_go.Response[v1.Role], error)
-	UpdateRole(context.Context, *connect_go.Request[v1.UpdateRoleRequest]) (*connect_go.Response[v1.Role], error)
-	DeleteRole(context.Context, *connect_go.Request[v1.DeleteRoleRequest]) (*connect_go.Response[emptypb.Empty], error)
+	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
+	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.Role], error)
+	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error)
+	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error)
+	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewRoleServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -141,31 +147,37 @@ type RoleServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewRoleServiceHandler(svc RoleServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	roleServiceListRolesHandler := connect_go.NewUnaryHandler(
+func NewRoleServiceHandler(svc RoleServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	roleServiceMethods := v1.File_v1_role_service_proto.Services().ByName("RoleService").Methods()
+	roleServiceListRolesHandler := connect.NewUnaryHandler(
 		RoleServiceListRolesProcedure,
 		svc.ListRoles,
-		opts...,
+		connect.WithSchema(roleServiceMethods.ByName("ListRoles")),
+		connect.WithHandlerOptions(opts...),
 	)
-	roleServiceGetRoleHandler := connect_go.NewUnaryHandler(
+	roleServiceGetRoleHandler := connect.NewUnaryHandler(
 		RoleServiceGetRoleProcedure,
 		svc.GetRole,
-		opts...,
+		connect.WithSchema(roleServiceMethods.ByName("GetRole")),
+		connect.WithHandlerOptions(opts...),
 	)
-	roleServiceCreateRoleHandler := connect_go.NewUnaryHandler(
+	roleServiceCreateRoleHandler := connect.NewUnaryHandler(
 		RoleServiceCreateRoleProcedure,
 		svc.CreateRole,
-		opts...,
+		connect.WithSchema(roleServiceMethods.ByName("CreateRole")),
+		connect.WithHandlerOptions(opts...),
 	)
-	roleServiceUpdateRoleHandler := connect_go.NewUnaryHandler(
+	roleServiceUpdateRoleHandler := connect.NewUnaryHandler(
 		RoleServiceUpdateRoleProcedure,
 		svc.UpdateRole,
-		opts...,
+		connect.WithSchema(roleServiceMethods.ByName("UpdateRole")),
+		connect.WithHandlerOptions(opts...),
 	)
-	roleServiceDeleteRoleHandler := connect_go.NewUnaryHandler(
+	roleServiceDeleteRoleHandler := connect.NewUnaryHandler(
 		RoleServiceDeleteRoleProcedure,
 		svc.DeleteRole,
-		opts...,
+		connect.WithSchema(roleServiceMethods.ByName("DeleteRole")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.RoleService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -188,22 +200,22 @@ func NewRoleServiceHandler(svc RoleServiceHandler, opts ...connect_go.HandlerOpt
 // UnimplementedRoleServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedRoleServiceHandler struct{}
 
-func (UnimplementedRoleServiceHandler) ListRoles(context.Context, *connect_go.Request[v1.ListRolesRequest]) (*connect_go.Response[v1.ListRolesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RoleService.ListRoles is not implemented"))
+func (UnimplementedRoleServiceHandler) ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RoleService.ListRoles is not implemented"))
 }
 
-func (UnimplementedRoleServiceHandler) GetRole(context.Context, *connect_go.Request[v1.GetRoleRequest]) (*connect_go.Response[v1.Role], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RoleService.GetRole is not implemented"))
+func (UnimplementedRoleServiceHandler) GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.Role], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RoleService.GetRole is not implemented"))
 }
 
-func (UnimplementedRoleServiceHandler) CreateRole(context.Context, *connect_go.Request[v1.CreateRoleRequest]) (*connect_go.Response[v1.Role], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RoleService.CreateRole is not implemented"))
+func (UnimplementedRoleServiceHandler) CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RoleService.CreateRole is not implemented"))
 }
 
-func (UnimplementedRoleServiceHandler) UpdateRole(context.Context, *connect_go.Request[v1.UpdateRoleRequest]) (*connect_go.Response[v1.Role], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RoleService.UpdateRole is not implemented"))
+func (UnimplementedRoleServiceHandler) UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RoleService.UpdateRole is not implemented"))
 }
 
-func (UnimplementedRoleServiceHandler) DeleteRole(context.Context, *connect_go.Request[v1.DeleteRoleRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.RoleService.DeleteRole is not implemented"))
+func (UnimplementedRoleServiceHandler) DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RoleService.DeleteRole is not implemented"))
 }

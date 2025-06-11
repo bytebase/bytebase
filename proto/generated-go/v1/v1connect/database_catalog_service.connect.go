@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// DatabaseCatalogServiceName is the fully-qualified name of the DatabaseCatalogService service.
@@ -43,8 +43,8 @@ const (
 
 // DatabaseCatalogServiceClient is a client for the bytebase.v1.DatabaseCatalogService service.
 type DatabaseCatalogServiceClient interface {
-	GetDatabaseCatalog(context.Context, *connect_go.Request[v1.GetDatabaseCatalogRequest]) (*connect_go.Response[v1.DatabaseCatalog], error)
-	UpdateDatabaseCatalog(context.Context, *connect_go.Request[v1.UpdateDatabaseCatalogRequest]) (*connect_go.Response[v1.DatabaseCatalog], error)
+	GetDatabaseCatalog(context.Context, *connect.Request[v1.GetDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error)
+	UpdateDatabaseCatalog(context.Context, *connect.Request[v1.UpdateDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error)
 }
 
 // NewDatabaseCatalogServiceClient constructs a client for the bytebase.v1.DatabaseCatalogService
@@ -54,43 +54,46 @@ type DatabaseCatalogServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewDatabaseCatalogServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) DatabaseCatalogServiceClient {
+func NewDatabaseCatalogServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) DatabaseCatalogServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	databaseCatalogServiceMethods := v1.File_v1_database_catalog_service_proto.Services().ByName("DatabaseCatalogService").Methods()
 	return &databaseCatalogServiceClient{
-		getDatabaseCatalog: connect_go.NewClient[v1.GetDatabaseCatalogRequest, v1.DatabaseCatalog](
+		getDatabaseCatalog: connect.NewClient[v1.GetDatabaseCatalogRequest, v1.DatabaseCatalog](
 			httpClient,
 			baseURL+DatabaseCatalogServiceGetDatabaseCatalogProcedure,
-			opts...,
+			connect.WithSchema(databaseCatalogServiceMethods.ByName("GetDatabaseCatalog")),
+			connect.WithClientOptions(opts...),
 		),
-		updateDatabaseCatalog: connect_go.NewClient[v1.UpdateDatabaseCatalogRequest, v1.DatabaseCatalog](
+		updateDatabaseCatalog: connect.NewClient[v1.UpdateDatabaseCatalogRequest, v1.DatabaseCatalog](
 			httpClient,
 			baseURL+DatabaseCatalogServiceUpdateDatabaseCatalogProcedure,
-			opts...,
+			connect.WithSchema(databaseCatalogServiceMethods.ByName("UpdateDatabaseCatalog")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // databaseCatalogServiceClient implements DatabaseCatalogServiceClient.
 type databaseCatalogServiceClient struct {
-	getDatabaseCatalog    *connect_go.Client[v1.GetDatabaseCatalogRequest, v1.DatabaseCatalog]
-	updateDatabaseCatalog *connect_go.Client[v1.UpdateDatabaseCatalogRequest, v1.DatabaseCatalog]
+	getDatabaseCatalog    *connect.Client[v1.GetDatabaseCatalogRequest, v1.DatabaseCatalog]
+	updateDatabaseCatalog *connect.Client[v1.UpdateDatabaseCatalogRequest, v1.DatabaseCatalog]
 }
 
 // GetDatabaseCatalog calls bytebase.v1.DatabaseCatalogService.GetDatabaseCatalog.
-func (c *databaseCatalogServiceClient) GetDatabaseCatalog(ctx context.Context, req *connect_go.Request[v1.GetDatabaseCatalogRequest]) (*connect_go.Response[v1.DatabaseCatalog], error) {
+func (c *databaseCatalogServiceClient) GetDatabaseCatalog(ctx context.Context, req *connect.Request[v1.GetDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error) {
 	return c.getDatabaseCatalog.CallUnary(ctx, req)
 }
 
 // UpdateDatabaseCatalog calls bytebase.v1.DatabaseCatalogService.UpdateDatabaseCatalog.
-func (c *databaseCatalogServiceClient) UpdateDatabaseCatalog(ctx context.Context, req *connect_go.Request[v1.UpdateDatabaseCatalogRequest]) (*connect_go.Response[v1.DatabaseCatalog], error) {
+func (c *databaseCatalogServiceClient) UpdateDatabaseCatalog(ctx context.Context, req *connect.Request[v1.UpdateDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error) {
 	return c.updateDatabaseCatalog.CallUnary(ctx, req)
 }
 
 // DatabaseCatalogServiceHandler is an implementation of the bytebase.v1.DatabaseCatalogService
 // service.
 type DatabaseCatalogServiceHandler interface {
-	GetDatabaseCatalog(context.Context, *connect_go.Request[v1.GetDatabaseCatalogRequest]) (*connect_go.Response[v1.DatabaseCatalog], error)
-	UpdateDatabaseCatalog(context.Context, *connect_go.Request[v1.UpdateDatabaseCatalogRequest]) (*connect_go.Response[v1.DatabaseCatalog], error)
+	GetDatabaseCatalog(context.Context, *connect.Request[v1.GetDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error)
+	UpdateDatabaseCatalog(context.Context, *connect.Request[v1.UpdateDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error)
 }
 
 // NewDatabaseCatalogServiceHandler builds an HTTP handler from the service implementation. It
@@ -98,16 +101,19 @@ type DatabaseCatalogServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewDatabaseCatalogServiceHandler(svc DatabaseCatalogServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	databaseCatalogServiceGetDatabaseCatalogHandler := connect_go.NewUnaryHandler(
+func NewDatabaseCatalogServiceHandler(svc DatabaseCatalogServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	databaseCatalogServiceMethods := v1.File_v1_database_catalog_service_proto.Services().ByName("DatabaseCatalogService").Methods()
+	databaseCatalogServiceGetDatabaseCatalogHandler := connect.NewUnaryHandler(
 		DatabaseCatalogServiceGetDatabaseCatalogProcedure,
 		svc.GetDatabaseCatalog,
-		opts...,
+		connect.WithSchema(databaseCatalogServiceMethods.ByName("GetDatabaseCatalog")),
+		connect.WithHandlerOptions(opts...),
 	)
-	databaseCatalogServiceUpdateDatabaseCatalogHandler := connect_go.NewUnaryHandler(
+	databaseCatalogServiceUpdateDatabaseCatalogHandler := connect.NewUnaryHandler(
 		DatabaseCatalogServiceUpdateDatabaseCatalogProcedure,
 		svc.UpdateDatabaseCatalog,
-		opts...,
+		connect.WithSchema(databaseCatalogServiceMethods.ByName("UpdateDatabaseCatalog")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.DatabaseCatalogService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -124,10 +130,10 @@ func NewDatabaseCatalogServiceHandler(svc DatabaseCatalogServiceHandler, opts ..
 // UnimplementedDatabaseCatalogServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedDatabaseCatalogServiceHandler struct{}
 
-func (UnimplementedDatabaseCatalogServiceHandler) GetDatabaseCatalog(context.Context, *connect_go.Request[v1.GetDatabaseCatalogRequest]) (*connect_go.Response[v1.DatabaseCatalog], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.DatabaseCatalogService.GetDatabaseCatalog is not implemented"))
+func (UnimplementedDatabaseCatalogServiceHandler) GetDatabaseCatalog(context.Context, *connect.Request[v1.GetDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseCatalogService.GetDatabaseCatalog is not implemented"))
 }
 
-func (UnimplementedDatabaseCatalogServiceHandler) UpdateDatabaseCatalog(context.Context, *connect_go.Request[v1.UpdateDatabaseCatalogRequest]) (*connect_go.Response[v1.DatabaseCatalog], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.DatabaseCatalogService.UpdateDatabaseCatalog is not implemented"))
+func (UnimplementedDatabaseCatalogServiceHandler) UpdateDatabaseCatalog(context.Context, *connect.Request[v1.UpdateDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseCatalogService.UpdateDatabaseCatalog is not implemented"))
 }

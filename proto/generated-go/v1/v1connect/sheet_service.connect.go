@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// SheetServiceName is the fully-qualified name of the SheetService service.
@@ -48,10 +48,10 @@ const (
 
 // SheetServiceClient is a client for the bytebase.v1.SheetService service.
 type SheetServiceClient interface {
-	CreateSheet(context.Context, *connect_go.Request[v1.CreateSheetRequest]) (*connect_go.Response[v1.Sheet], error)
-	BatchCreateSheets(context.Context, *connect_go.Request[v1.BatchCreateSheetsRequest]) (*connect_go.Response[v1.BatchCreateSheetsResponse], error)
-	GetSheet(context.Context, *connect_go.Request[v1.GetSheetRequest]) (*connect_go.Response[v1.Sheet], error)
-	UpdateSheet(context.Context, *connect_go.Request[v1.UpdateSheetRequest]) (*connect_go.Response[v1.Sheet], error)
+	CreateSheet(context.Context, *connect.Request[v1.CreateSheetRequest]) (*connect.Response[v1.Sheet], error)
+	BatchCreateSheets(context.Context, *connect.Request[v1.BatchCreateSheetsRequest]) (*connect.Response[v1.BatchCreateSheetsResponse], error)
+	GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error)
+	UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error)
 }
 
 // NewSheetServiceClient constructs a client for the bytebase.v1.SheetService service. By default,
@@ -61,66 +61,71 @@ type SheetServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewSheetServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) SheetServiceClient {
+func NewSheetServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) SheetServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	sheetServiceMethods := v1.File_v1_sheet_service_proto.Services().ByName("SheetService").Methods()
 	return &sheetServiceClient{
-		createSheet: connect_go.NewClient[v1.CreateSheetRequest, v1.Sheet](
+		createSheet: connect.NewClient[v1.CreateSheetRequest, v1.Sheet](
 			httpClient,
 			baseURL+SheetServiceCreateSheetProcedure,
-			opts...,
+			connect.WithSchema(sheetServiceMethods.ByName("CreateSheet")),
+			connect.WithClientOptions(opts...),
 		),
-		batchCreateSheets: connect_go.NewClient[v1.BatchCreateSheetsRequest, v1.BatchCreateSheetsResponse](
+		batchCreateSheets: connect.NewClient[v1.BatchCreateSheetsRequest, v1.BatchCreateSheetsResponse](
 			httpClient,
 			baseURL+SheetServiceBatchCreateSheetsProcedure,
-			opts...,
+			connect.WithSchema(sheetServiceMethods.ByName("BatchCreateSheets")),
+			connect.WithClientOptions(opts...),
 		),
-		getSheet: connect_go.NewClient[v1.GetSheetRequest, v1.Sheet](
+		getSheet: connect.NewClient[v1.GetSheetRequest, v1.Sheet](
 			httpClient,
 			baseURL+SheetServiceGetSheetProcedure,
-			opts...,
+			connect.WithSchema(sheetServiceMethods.ByName("GetSheet")),
+			connect.WithClientOptions(opts...),
 		),
-		updateSheet: connect_go.NewClient[v1.UpdateSheetRequest, v1.Sheet](
+		updateSheet: connect.NewClient[v1.UpdateSheetRequest, v1.Sheet](
 			httpClient,
 			baseURL+SheetServiceUpdateSheetProcedure,
-			opts...,
+			connect.WithSchema(sheetServiceMethods.ByName("UpdateSheet")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // sheetServiceClient implements SheetServiceClient.
 type sheetServiceClient struct {
-	createSheet       *connect_go.Client[v1.CreateSheetRequest, v1.Sheet]
-	batchCreateSheets *connect_go.Client[v1.BatchCreateSheetsRequest, v1.BatchCreateSheetsResponse]
-	getSheet          *connect_go.Client[v1.GetSheetRequest, v1.Sheet]
-	updateSheet       *connect_go.Client[v1.UpdateSheetRequest, v1.Sheet]
+	createSheet       *connect.Client[v1.CreateSheetRequest, v1.Sheet]
+	batchCreateSheets *connect.Client[v1.BatchCreateSheetsRequest, v1.BatchCreateSheetsResponse]
+	getSheet          *connect.Client[v1.GetSheetRequest, v1.Sheet]
+	updateSheet       *connect.Client[v1.UpdateSheetRequest, v1.Sheet]
 }
 
 // CreateSheet calls bytebase.v1.SheetService.CreateSheet.
-func (c *sheetServiceClient) CreateSheet(ctx context.Context, req *connect_go.Request[v1.CreateSheetRequest]) (*connect_go.Response[v1.Sheet], error) {
+func (c *sheetServiceClient) CreateSheet(ctx context.Context, req *connect.Request[v1.CreateSheetRequest]) (*connect.Response[v1.Sheet], error) {
 	return c.createSheet.CallUnary(ctx, req)
 }
 
 // BatchCreateSheets calls bytebase.v1.SheetService.BatchCreateSheets.
-func (c *sheetServiceClient) BatchCreateSheets(ctx context.Context, req *connect_go.Request[v1.BatchCreateSheetsRequest]) (*connect_go.Response[v1.BatchCreateSheetsResponse], error) {
+func (c *sheetServiceClient) BatchCreateSheets(ctx context.Context, req *connect.Request[v1.BatchCreateSheetsRequest]) (*connect.Response[v1.BatchCreateSheetsResponse], error) {
 	return c.batchCreateSheets.CallUnary(ctx, req)
 }
 
 // GetSheet calls bytebase.v1.SheetService.GetSheet.
-func (c *sheetServiceClient) GetSheet(ctx context.Context, req *connect_go.Request[v1.GetSheetRequest]) (*connect_go.Response[v1.Sheet], error) {
+func (c *sheetServiceClient) GetSheet(ctx context.Context, req *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error) {
 	return c.getSheet.CallUnary(ctx, req)
 }
 
 // UpdateSheet calls bytebase.v1.SheetService.UpdateSheet.
-func (c *sheetServiceClient) UpdateSheet(ctx context.Context, req *connect_go.Request[v1.UpdateSheetRequest]) (*connect_go.Response[v1.Sheet], error) {
+func (c *sheetServiceClient) UpdateSheet(ctx context.Context, req *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error) {
 	return c.updateSheet.CallUnary(ctx, req)
 }
 
 // SheetServiceHandler is an implementation of the bytebase.v1.SheetService service.
 type SheetServiceHandler interface {
-	CreateSheet(context.Context, *connect_go.Request[v1.CreateSheetRequest]) (*connect_go.Response[v1.Sheet], error)
-	BatchCreateSheets(context.Context, *connect_go.Request[v1.BatchCreateSheetsRequest]) (*connect_go.Response[v1.BatchCreateSheetsResponse], error)
-	GetSheet(context.Context, *connect_go.Request[v1.GetSheetRequest]) (*connect_go.Response[v1.Sheet], error)
-	UpdateSheet(context.Context, *connect_go.Request[v1.UpdateSheetRequest]) (*connect_go.Response[v1.Sheet], error)
+	CreateSheet(context.Context, *connect.Request[v1.CreateSheetRequest]) (*connect.Response[v1.Sheet], error)
+	BatchCreateSheets(context.Context, *connect.Request[v1.BatchCreateSheetsRequest]) (*connect.Response[v1.BatchCreateSheetsResponse], error)
+	GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error)
+	UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error)
 }
 
 // NewSheetServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -128,26 +133,31 @@ type SheetServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewSheetServiceHandler(svc SheetServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	sheetServiceCreateSheetHandler := connect_go.NewUnaryHandler(
+func NewSheetServiceHandler(svc SheetServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	sheetServiceMethods := v1.File_v1_sheet_service_proto.Services().ByName("SheetService").Methods()
+	sheetServiceCreateSheetHandler := connect.NewUnaryHandler(
 		SheetServiceCreateSheetProcedure,
 		svc.CreateSheet,
-		opts...,
+		connect.WithSchema(sheetServiceMethods.ByName("CreateSheet")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sheetServiceBatchCreateSheetsHandler := connect_go.NewUnaryHandler(
+	sheetServiceBatchCreateSheetsHandler := connect.NewUnaryHandler(
 		SheetServiceBatchCreateSheetsProcedure,
 		svc.BatchCreateSheets,
-		opts...,
+		connect.WithSchema(sheetServiceMethods.ByName("BatchCreateSheets")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sheetServiceGetSheetHandler := connect_go.NewUnaryHandler(
+	sheetServiceGetSheetHandler := connect.NewUnaryHandler(
 		SheetServiceGetSheetProcedure,
 		svc.GetSheet,
-		opts...,
+		connect.WithSchema(sheetServiceMethods.ByName("GetSheet")),
+		connect.WithHandlerOptions(opts...),
 	)
-	sheetServiceUpdateSheetHandler := connect_go.NewUnaryHandler(
+	sheetServiceUpdateSheetHandler := connect.NewUnaryHandler(
 		SheetServiceUpdateSheetProcedure,
 		svc.UpdateSheet,
-		opts...,
+		connect.WithSchema(sheetServiceMethods.ByName("UpdateSheet")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.SheetService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -168,18 +178,18 @@ func NewSheetServiceHandler(svc SheetServiceHandler, opts ...connect_go.HandlerO
 // UnimplementedSheetServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSheetServiceHandler struct{}
 
-func (UnimplementedSheetServiceHandler) CreateSheet(context.Context, *connect_go.Request[v1.CreateSheetRequest]) (*connect_go.Response[v1.Sheet], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SheetService.CreateSheet is not implemented"))
+func (UnimplementedSheetServiceHandler) CreateSheet(context.Context, *connect.Request[v1.CreateSheetRequest]) (*connect.Response[v1.Sheet], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SheetService.CreateSheet is not implemented"))
 }
 
-func (UnimplementedSheetServiceHandler) BatchCreateSheets(context.Context, *connect_go.Request[v1.BatchCreateSheetsRequest]) (*connect_go.Response[v1.BatchCreateSheetsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SheetService.BatchCreateSheets is not implemented"))
+func (UnimplementedSheetServiceHandler) BatchCreateSheets(context.Context, *connect.Request[v1.BatchCreateSheetsRequest]) (*connect.Response[v1.BatchCreateSheetsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SheetService.BatchCreateSheets is not implemented"))
 }
 
-func (UnimplementedSheetServiceHandler) GetSheet(context.Context, *connect_go.Request[v1.GetSheetRequest]) (*connect_go.Response[v1.Sheet], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SheetService.GetSheet is not implemented"))
+func (UnimplementedSheetServiceHandler) GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SheetService.GetSheet is not implemented"))
 }
 
-func (UnimplementedSheetServiceHandler) UpdateSheet(context.Context, *connect_go.Request[v1.UpdateSheetRequest]) (*connect_go.Response[v1.Sheet], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SheetService.UpdateSheet is not implemented"))
+func (UnimplementedSheetServiceHandler) UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SheetService.UpdateSheet is not implemented"))
 }

@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// WorksheetServiceName is the fully-qualified name of the WorksheetService service.
@@ -57,29 +57,29 @@ const (
 // WorksheetServiceClient is a client for the bytebase.v1.WorksheetService service.
 type WorksheetServiceClient interface {
 	// Create a personal worksheet used in SQL Editor.
-	CreateWorksheet(context.Context, *connect_go.Request[v1.CreateWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error)
+	CreateWorksheet(context.Context, *connect.Request[v1.CreateWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Get a worksheet by name.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.get permission on the workspace;
 	// - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	GetWorksheet(context.Context, *connect_go.Request[v1.GetWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error)
+	GetWorksheet(context.Context, *connect.Request[v1.GetWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
-	SearchWorksheets(context.Context, *connect_go.Request[v1.SearchWorksheetsRequest]) (*connect_go.Response[v1.SearchWorksheetsResponse], error)
+	SearchWorksheets(context.Context, *connect.Request[v1.SearchWorksheetsRequest]) (*connect.Response[v1.SearchWorksheetsResponse], error)
 	// Update a worksheet.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.manage permission on the workspace;
 	// - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	UpdateWorksheet(context.Context, *connect_go.Request[v1.UpdateWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error)
+	UpdateWorksheet(context.Context, *connect.Request[v1.UpdateWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Update the organizer of a worksheet.
 	// The access is the same as UpdateWorksheet method.
-	UpdateWorksheetOrganizer(context.Context, *connect_go.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect_go.Response[v1.WorksheetOrganizer], error)
+	UpdateWorksheetOrganizer(context.Context, *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
-	DeleteWorksheet(context.Context, *connect_go.Request[v1.DeleteWorksheetRequest]) (*connect_go.Response[emptypb.Empty], error)
+	DeleteWorksheet(context.Context, *connect.Request[v1.DeleteWorksheetRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewWorksheetServiceClient constructs a client for the bytebase.v1.WorksheetService service. By
@@ -89,108 +89,115 @@ type WorksheetServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewWorksheetServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) WorksheetServiceClient {
+func NewWorksheetServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) WorksheetServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	worksheetServiceMethods := v1.File_v1_worksheet_service_proto.Services().ByName("WorksheetService").Methods()
 	return &worksheetServiceClient{
-		createWorksheet: connect_go.NewClient[v1.CreateWorksheetRequest, v1.Worksheet](
+		createWorksheet: connect.NewClient[v1.CreateWorksheetRequest, v1.Worksheet](
 			httpClient,
 			baseURL+WorksheetServiceCreateWorksheetProcedure,
-			opts...,
+			connect.WithSchema(worksheetServiceMethods.ByName("CreateWorksheet")),
+			connect.WithClientOptions(opts...),
 		),
-		getWorksheet: connect_go.NewClient[v1.GetWorksheetRequest, v1.Worksheet](
+		getWorksheet: connect.NewClient[v1.GetWorksheetRequest, v1.Worksheet](
 			httpClient,
 			baseURL+WorksheetServiceGetWorksheetProcedure,
-			opts...,
+			connect.WithSchema(worksheetServiceMethods.ByName("GetWorksheet")),
+			connect.WithClientOptions(opts...),
 		),
-		searchWorksheets: connect_go.NewClient[v1.SearchWorksheetsRequest, v1.SearchWorksheetsResponse](
+		searchWorksheets: connect.NewClient[v1.SearchWorksheetsRequest, v1.SearchWorksheetsResponse](
 			httpClient,
 			baseURL+WorksheetServiceSearchWorksheetsProcedure,
-			opts...,
+			connect.WithSchema(worksheetServiceMethods.ByName("SearchWorksheets")),
+			connect.WithClientOptions(opts...),
 		),
-		updateWorksheet: connect_go.NewClient[v1.UpdateWorksheetRequest, v1.Worksheet](
+		updateWorksheet: connect.NewClient[v1.UpdateWorksheetRequest, v1.Worksheet](
 			httpClient,
 			baseURL+WorksheetServiceUpdateWorksheetProcedure,
-			opts...,
+			connect.WithSchema(worksheetServiceMethods.ByName("UpdateWorksheet")),
+			connect.WithClientOptions(opts...),
 		),
-		updateWorksheetOrganizer: connect_go.NewClient[v1.UpdateWorksheetOrganizerRequest, v1.WorksheetOrganizer](
+		updateWorksheetOrganizer: connect.NewClient[v1.UpdateWorksheetOrganizerRequest, v1.WorksheetOrganizer](
 			httpClient,
 			baseURL+WorksheetServiceUpdateWorksheetOrganizerProcedure,
-			opts...,
+			connect.WithSchema(worksheetServiceMethods.ByName("UpdateWorksheetOrganizer")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteWorksheet: connect_go.NewClient[v1.DeleteWorksheetRequest, emptypb.Empty](
+		deleteWorksheet: connect.NewClient[v1.DeleteWorksheetRequest, emptypb.Empty](
 			httpClient,
 			baseURL+WorksheetServiceDeleteWorksheetProcedure,
-			opts...,
+			connect.WithSchema(worksheetServiceMethods.ByName("DeleteWorksheet")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // worksheetServiceClient implements WorksheetServiceClient.
 type worksheetServiceClient struct {
-	createWorksheet          *connect_go.Client[v1.CreateWorksheetRequest, v1.Worksheet]
-	getWorksheet             *connect_go.Client[v1.GetWorksheetRequest, v1.Worksheet]
-	searchWorksheets         *connect_go.Client[v1.SearchWorksheetsRequest, v1.SearchWorksheetsResponse]
-	updateWorksheet          *connect_go.Client[v1.UpdateWorksheetRequest, v1.Worksheet]
-	updateWorksheetOrganizer *connect_go.Client[v1.UpdateWorksheetOrganizerRequest, v1.WorksheetOrganizer]
-	deleteWorksheet          *connect_go.Client[v1.DeleteWorksheetRequest, emptypb.Empty]
+	createWorksheet          *connect.Client[v1.CreateWorksheetRequest, v1.Worksheet]
+	getWorksheet             *connect.Client[v1.GetWorksheetRequest, v1.Worksheet]
+	searchWorksheets         *connect.Client[v1.SearchWorksheetsRequest, v1.SearchWorksheetsResponse]
+	updateWorksheet          *connect.Client[v1.UpdateWorksheetRequest, v1.Worksheet]
+	updateWorksheetOrganizer *connect.Client[v1.UpdateWorksheetOrganizerRequest, v1.WorksheetOrganizer]
+	deleteWorksheet          *connect.Client[v1.DeleteWorksheetRequest, emptypb.Empty]
 }
 
 // CreateWorksheet calls bytebase.v1.WorksheetService.CreateWorksheet.
-func (c *worksheetServiceClient) CreateWorksheet(ctx context.Context, req *connect_go.Request[v1.CreateWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error) {
+func (c *worksheetServiceClient) CreateWorksheet(ctx context.Context, req *connect.Request[v1.CreateWorksheetRequest]) (*connect.Response[v1.Worksheet], error) {
 	return c.createWorksheet.CallUnary(ctx, req)
 }
 
 // GetWorksheet calls bytebase.v1.WorksheetService.GetWorksheet.
-func (c *worksheetServiceClient) GetWorksheet(ctx context.Context, req *connect_go.Request[v1.GetWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error) {
+func (c *worksheetServiceClient) GetWorksheet(ctx context.Context, req *connect.Request[v1.GetWorksheetRequest]) (*connect.Response[v1.Worksheet], error) {
 	return c.getWorksheet.CallUnary(ctx, req)
 }
 
 // SearchWorksheets calls bytebase.v1.WorksheetService.SearchWorksheets.
-func (c *worksheetServiceClient) SearchWorksheets(ctx context.Context, req *connect_go.Request[v1.SearchWorksheetsRequest]) (*connect_go.Response[v1.SearchWorksheetsResponse], error) {
+func (c *worksheetServiceClient) SearchWorksheets(ctx context.Context, req *connect.Request[v1.SearchWorksheetsRequest]) (*connect.Response[v1.SearchWorksheetsResponse], error) {
 	return c.searchWorksheets.CallUnary(ctx, req)
 }
 
 // UpdateWorksheet calls bytebase.v1.WorksheetService.UpdateWorksheet.
-func (c *worksheetServiceClient) UpdateWorksheet(ctx context.Context, req *connect_go.Request[v1.UpdateWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error) {
+func (c *worksheetServiceClient) UpdateWorksheet(ctx context.Context, req *connect.Request[v1.UpdateWorksheetRequest]) (*connect.Response[v1.Worksheet], error) {
 	return c.updateWorksheet.CallUnary(ctx, req)
 }
 
 // UpdateWorksheetOrganizer calls bytebase.v1.WorksheetService.UpdateWorksheetOrganizer.
-func (c *worksheetServiceClient) UpdateWorksheetOrganizer(ctx context.Context, req *connect_go.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect_go.Response[v1.WorksheetOrganizer], error) {
+func (c *worksheetServiceClient) UpdateWorksheetOrganizer(ctx context.Context, req *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error) {
 	return c.updateWorksheetOrganizer.CallUnary(ctx, req)
 }
 
 // DeleteWorksheet calls bytebase.v1.WorksheetService.DeleteWorksheet.
-func (c *worksheetServiceClient) DeleteWorksheet(ctx context.Context, req *connect_go.Request[v1.DeleteWorksheetRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *worksheetServiceClient) DeleteWorksheet(ctx context.Context, req *connect.Request[v1.DeleteWorksheetRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteWorksheet.CallUnary(ctx, req)
 }
 
 // WorksheetServiceHandler is an implementation of the bytebase.v1.WorksheetService service.
 type WorksheetServiceHandler interface {
 	// Create a personal worksheet used in SQL Editor.
-	CreateWorksheet(context.Context, *connect_go.Request[v1.CreateWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error)
+	CreateWorksheet(context.Context, *connect.Request[v1.CreateWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Get a worksheet by name.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.get permission on the workspace;
 	// - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	GetWorksheet(context.Context, *connect_go.Request[v1.GetWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error)
+	GetWorksheet(context.Context, *connect.Request[v1.GetWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
-	SearchWorksheets(context.Context, *connect_go.Request[v1.SearchWorksheetsRequest]) (*connect_go.Response[v1.SearchWorksheetsResponse], error)
+	SearchWorksheets(context.Context, *connect.Request[v1.SearchWorksheetsRequest]) (*connect.Response[v1.SearchWorksheetsResponse], error)
 	// Update a worksheet.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.manage permission on the workspace;
 	// - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	UpdateWorksheet(context.Context, *connect_go.Request[v1.UpdateWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error)
+	UpdateWorksheet(context.Context, *connect.Request[v1.UpdateWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Update the organizer of a worksheet.
 	// The access is the same as UpdateWorksheet method.
-	UpdateWorksheetOrganizer(context.Context, *connect_go.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect_go.Response[v1.WorksheetOrganizer], error)
+	UpdateWorksheetOrganizer(context.Context, *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
-	DeleteWorksheet(context.Context, *connect_go.Request[v1.DeleteWorksheetRequest]) (*connect_go.Response[emptypb.Empty], error)
+	DeleteWorksheet(context.Context, *connect.Request[v1.DeleteWorksheetRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewWorksheetServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -198,36 +205,43 @@ type WorksheetServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewWorksheetServiceHandler(svc WorksheetServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	worksheetServiceCreateWorksheetHandler := connect_go.NewUnaryHandler(
+func NewWorksheetServiceHandler(svc WorksheetServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	worksheetServiceMethods := v1.File_v1_worksheet_service_proto.Services().ByName("WorksheetService").Methods()
+	worksheetServiceCreateWorksheetHandler := connect.NewUnaryHandler(
 		WorksheetServiceCreateWorksheetProcedure,
 		svc.CreateWorksheet,
-		opts...,
+		connect.WithSchema(worksheetServiceMethods.ByName("CreateWorksheet")),
+		connect.WithHandlerOptions(opts...),
 	)
-	worksheetServiceGetWorksheetHandler := connect_go.NewUnaryHandler(
+	worksheetServiceGetWorksheetHandler := connect.NewUnaryHandler(
 		WorksheetServiceGetWorksheetProcedure,
 		svc.GetWorksheet,
-		opts...,
+		connect.WithSchema(worksheetServiceMethods.ByName("GetWorksheet")),
+		connect.WithHandlerOptions(opts...),
 	)
-	worksheetServiceSearchWorksheetsHandler := connect_go.NewUnaryHandler(
+	worksheetServiceSearchWorksheetsHandler := connect.NewUnaryHandler(
 		WorksheetServiceSearchWorksheetsProcedure,
 		svc.SearchWorksheets,
-		opts...,
+		connect.WithSchema(worksheetServiceMethods.ByName("SearchWorksheets")),
+		connect.WithHandlerOptions(opts...),
 	)
-	worksheetServiceUpdateWorksheetHandler := connect_go.NewUnaryHandler(
+	worksheetServiceUpdateWorksheetHandler := connect.NewUnaryHandler(
 		WorksheetServiceUpdateWorksheetProcedure,
 		svc.UpdateWorksheet,
-		opts...,
+		connect.WithSchema(worksheetServiceMethods.ByName("UpdateWorksheet")),
+		connect.WithHandlerOptions(opts...),
 	)
-	worksheetServiceUpdateWorksheetOrganizerHandler := connect_go.NewUnaryHandler(
+	worksheetServiceUpdateWorksheetOrganizerHandler := connect.NewUnaryHandler(
 		WorksheetServiceUpdateWorksheetOrganizerProcedure,
 		svc.UpdateWorksheetOrganizer,
-		opts...,
+		connect.WithSchema(worksheetServiceMethods.ByName("UpdateWorksheetOrganizer")),
+		connect.WithHandlerOptions(opts...),
 	)
-	worksheetServiceDeleteWorksheetHandler := connect_go.NewUnaryHandler(
+	worksheetServiceDeleteWorksheetHandler := connect.NewUnaryHandler(
 		WorksheetServiceDeleteWorksheetProcedure,
 		svc.DeleteWorksheet,
-		opts...,
+		connect.WithSchema(worksheetServiceMethods.ByName("DeleteWorksheet")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.WorksheetService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -252,26 +266,26 @@ func NewWorksheetServiceHandler(svc WorksheetServiceHandler, opts ...connect_go.
 // UnimplementedWorksheetServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedWorksheetServiceHandler struct{}
 
-func (UnimplementedWorksheetServiceHandler) CreateWorksheet(context.Context, *connect_go.Request[v1.CreateWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.CreateWorksheet is not implemented"))
+func (UnimplementedWorksheetServiceHandler) CreateWorksheet(context.Context, *connect.Request[v1.CreateWorksheetRequest]) (*connect.Response[v1.Worksheet], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.CreateWorksheet is not implemented"))
 }
 
-func (UnimplementedWorksheetServiceHandler) GetWorksheet(context.Context, *connect_go.Request[v1.GetWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.GetWorksheet is not implemented"))
+func (UnimplementedWorksheetServiceHandler) GetWorksheet(context.Context, *connect.Request[v1.GetWorksheetRequest]) (*connect.Response[v1.Worksheet], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.GetWorksheet is not implemented"))
 }
 
-func (UnimplementedWorksheetServiceHandler) SearchWorksheets(context.Context, *connect_go.Request[v1.SearchWorksheetsRequest]) (*connect_go.Response[v1.SearchWorksheetsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.SearchWorksheets is not implemented"))
+func (UnimplementedWorksheetServiceHandler) SearchWorksheets(context.Context, *connect.Request[v1.SearchWorksheetsRequest]) (*connect.Response[v1.SearchWorksheetsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.SearchWorksheets is not implemented"))
 }
 
-func (UnimplementedWorksheetServiceHandler) UpdateWorksheet(context.Context, *connect_go.Request[v1.UpdateWorksheetRequest]) (*connect_go.Response[v1.Worksheet], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.UpdateWorksheet is not implemented"))
+func (UnimplementedWorksheetServiceHandler) UpdateWorksheet(context.Context, *connect.Request[v1.UpdateWorksheetRequest]) (*connect.Response[v1.Worksheet], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.UpdateWorksheet is not implemented"))
 }
 
-func (UnimplementedWorksheetServiceHandler) UpdateWorksheetOrganizer(context.Context, *connect_go.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect_go.Response[v1.WorksheetOrganizer], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.UpdateWorksheetOrganizer is not implemented"))
+func (UnimplementedWorksheetServiceHandler) UpdateWorksheetOrganizer(context.Context, *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.UpdateWorksheetOrganizer is not implemented"))
 }
 
-func (UnimplementedWorksheetServiceHandler) DeleteWorksheet(context.Context, *connect_go.Request[v1.DeleteWorksheetRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.DeleteWorksheet is not implemented"))
+func (UnimplementedWorksheetServiceHandler) DeleteWorksheet(context.Context, *connect.Request[v1.DeleteWorksheetRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorksheetService.DeleteWorksheet is not implemented"))
 }

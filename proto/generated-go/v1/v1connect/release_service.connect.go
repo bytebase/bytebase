@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ReleaseServiceName is the fully-qualified name of the ReleaseService service.
@@ -59,13 +59,13 @@ const (
 
 // ReleaseServiceClient is a client for the bytebase.v1.ReleaseService service.
 type ReleaseServiceClient interface {
-	GetRelease(context.Context, *connect_go.Request[v1.GetReleaseRequest]) (*connect_go.Response[v1.Release], error)
-	ListReleases(context.Context, *connect_go.Request[v1.ListReleasesRequest]) (*connect_go.Response[v1.ListReleasesResponse], error)
-	CreateRelease(context.Context, *connect_go.Request[v1.CreateReleaseRequest]) (*connect_go.Response[v1.Release], error)
-	UpdateRelease(context.Context, *connect_go.Request[v1.UpdateReleaseRequest]) (*connect_go.Response[v1.Release], error)
-	DeleteRelease(context.Context, *connect_go.Request[v1.DeleteReleaseRequest]) (*connect_go.Response[emptypb.Empty], error)
-	UndeleteRelease(context.Context, *connect_go.Request[v1.UndeleteReleaseRequest]) (*connect_go.Response[v1.Release], error)
-	CheckRelease(context.Context, *connect_go.Request[v1.CheckReleaseRequest]) (*connect_go.Response[v1.CheckReleaseResponse], error)
+	GetRelease(context.Context, *connect.Request[v1.GetReleaseRequest]) (*connect.Response[v1.Release], error)
+	ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error)
+	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
+	UpdateRelease(context.Context, *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error)
+	DeleteRelease(context.Context, *connect.Request[v1.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error)
+	UndeleteRelease(context.Context, *connect.Request[v1.UndeleteReleaseRequest]) (*connect.Response[v1.Release], error)
+	CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error)
 }
 
 // NewReleaseServiceClient constructs a client for the bytebase.v1.ReleaseService service. By
@@ -75,102 +75,110 @@ type ReleaseServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewReleaseServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) ReleaseServiceClient {
+func NewReleaseServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ReleaseServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	releaseServiceMethods := v1.File_v1_release_service_proto.Services().ByName("ReleaseService").Methods()
 	return &releaseServiceClient{
-		getRelease: connect_go.NewClient[v1.GetReleaseRequest, v1.Release](
+		getRelease: connect.NewClient[v1.GetReleaseRequest, v1.Release](
 			httpClient,
 			baseURL+ReleaseServiceGetReleaseProcedure,
-			opts...,
+			connect.WithSchema(releaseServiceMethods.ByName("GetRelease")),
+			connect.WithClientOptions(opts...),
 		),
-		listReleases: connect_go.NewClient[v1.ListReleasesRequest, v1.ListReleasesResponse](
+		listReleases: connect.NewClient[v1.ListReleasesRequest, v1.ListReleasesResponse](
 			httpClient,
 			baseURL+ReleaseServiceListReleasesProcedure,
-			opts...,
+			connect.WithSchema(releaseServiceMethods.ByName("ListReleases")),
+			connect.WithClientOptions(opts...),
 		),
-		createRelease: connect_go.NewClient[v1.CreateReleaseRequest, v1.Release](
+		createRelease: connect.NewClient[v1.CreateReleaseRequest, v1.Release](
 			httpClient,
 			baseURL+ReleaseServiceCreateReleaseProcedure,
-			opts...,
+			connect.WithSchema(releaseServiceMethods.ByName("CreateRelease")),
+			connect.WithClientOptions(opts...),
 		),
-		updateRelease: connect_go.NewClient[v1.UpdateReleaseRequest, v1.Release](
+		updateRelease: connect.NewClient[v1.UpdateReleaseRequest, v1.Release](
 			httpClient,
 			baseURL+ReleaseServiceUpdateReleaseProcedure,
-			opts...,
+			connect.WithSchema(releaseServiceMethods.ByName("UpdateRelease")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteRelease: connect_go.NewClient[v1.DeleteReleaseRequest, emptypb.Empty](
+		deleteRelease: connect.NewClient[v1.DeleteReleaseRequest, emptypb.Empty](
 			httpClient,
 			baseURL+ReleaseServiceDeleteReleaseProcedure,
-			opts...,
+			connect.WithSchema(releaseServiceMethods.ByName("DeleteRelease")),
+			connect.WithClientOptions(opts...),
 		),
-		undeleteRelease: connect_go.NewClient[v1.UndeleteReleaseRequest, v1.Release](
+		undeleteRelease: connect.NewClient[v1.UndeleteReleaseRequest, v1.Release](
 			httpClient,
 			baseURL+ReleaseServiceUndeleteReleaseProcedure,
-			opts...,
+			connect.WithSchema(releaseServiceMethods.ByName("UndeleteRelease")),
+			connect.WithClientOptions(opts...),
 		),
-		checkRelease: connect_go.NewClient[v1.CheckReleaseRequest, v1.CheckReleaseResponse](
+		checkRelease: connect.NewClient[v1.CheckReleaseRequest, v1.CheckReleaseResponse](
 			httpClient,
 			baseURL+ReleaseServiceCheckReleaseProcedure,
-			opts...,
+			connect.WithSchema(releaseServiceMethods.ByName("CheckRelease")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // releaseServiceClient implements ReleaseServiceClient.
 type releaseServiceClient struct {
-	getRelease      *connect_go.Client[v1.GetReleaseRequest, v1.Release]
-	listReleases    *connect_go.Client[v1.ListReleasesRequest, v1.ListReleasesResponse]
-	createRelease   *connect_go.Client[v1.CreateReleaseRequest, v1.Release]
-	updateRelease   *connect_go.Client[v1.UpdateReleaseRequest, v1.Release]
-	deleteRelease   *connect_go.Client[v1.DeleteReleaseRequest, emptypb.Empty]
-	undeleteRelease *connect_go.Client[v1.UndeleteReleaseRequest, v1.Release]
-	checkRelease    *connect_go.Client[v1.CheckReleaseRequest, v1.CheckReleaseResponse]
+	getRelease      *connect.Client[v1.GetReleaseRequest, v1.Release]
+	listReleases    *connect.Client[v1.ListReleasesRequest, v1.ListReleasesResponse]
+	createRelease   *connect.Client[v1.CreateReleaseRequest, v1.Release]
+	updateRelease   *connect.Client[v1.UpdateReleaseRequest, v1.Release]
+	deleteRelease   *connect.Client[v1.DeleteReleaseRequest, emptypb.Empty]
+	undeleteRelease *connect.Client[v1.UndeleteReleaseRequest, v1.Release]
+	checkRelease    *connect.Client[v1.CheckReleaseRequest, v1.CheckReleaseResponse]
 }
 
 // GetRelease calls bytebase.v1.ReleaseService.GetRelease.
-func (c *releaseServiceClient) GetRelease(ctx context.Context, req *connect_go.Request[v1.GetReleaseRequest]) (*connect_go.Response[v1.Release], error) {
+func (c *releaseServiceClient) GetRelease(ctx context.Context, req *connect.Request[v1.GetReleaseRequest]) (*connect.Response[v1.Release], error) {
 	return c.getRelease.CallUnary(ctx, req)
 }
 
 // ListReleases calls bytebase.v1.ReleaseService.ListReleases.
-func (c *releaseServiceClient) ListReleases(ctx context.Context, req *connect_go.Request[v1.ListReleasesRequest]) (*connect_go.Response[v1.ListReleasesResponse], error) {
+func (c *releaseServiceClient) ListReleases(ctx context.Context, req *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error) {
 	return c.listReleases.CallUnary(ctx, req)
 }
 
 // CreateRelease calls bytebase.v1.ReleaseService.CreateRelease.
-func (c *releaseServiceClient) CreateRelease(ctx context.Context, req *connect_go.Request[v1.CreateReleaseRequest]) (*connect_go.Response[v1.Release], error) {
+func (c *releaseServiceClient) CreateRelease(ctx context.Context, req *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error) {
 	return c.createRelease.CallUnary(ctx, req)
 }
 
 // UpdateRelease calls bytebase.v1.ReleaseService.UpdateRelease.
-func (c *releaseServiceClient) UpdateRelease(ctx context.Context, req *connect_go.Request[v1.UpdateReleaseRequest]) (*connect_go.Response[v1.Release], error) {
+func (c *releaseServiceClient) UpdateRelease(ctx context.Context, req *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error) {
 	return c.updateRelease.CallUnary(ctx, req)
 }
 
 // DeleteRelease calls bytebase.v1.ReleaseService.DeleteRelease.
-func (c *releaseServiceClient) DeleteRelease(ctx context.Context, req *connect_go.Request[v1.DeleteReleaseRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *releaseServiceClient) DeleteRelease(ctx context.Context, req *connect.Request[v1.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteRelease.CallUnary(ctx, req)
 }
 
 // UndeleteRelease calls bytebase.v1.ReleaseService.UndeleteRelease.
-func (c *releaseServiceClient) UndeleteRelease(ctx context.Context, req *connect_go.Request[v1.UndeleteReleaseRequest]) (*connect_go.Response[v1.Release], error) {
+func (c *releaseServiceClient) UndeleteRelease(ctx context.Context, req *connect.Request[v1.UndeleteReleaseRequest]) (*connect.Response[v1.Release], error) {
 	return c.undeleteRelease.CallUnary(ctx, req)
 }
 
 // CheckRelease calls bytebase.v1.ReleaseService.CheckRelease.
-func (c *releaseServiceClient) CheckRelease(ctx context.Context, req *connect_go.Request[v1.CheckReleaseRequest]) (*connect_go.Response[v1.CheckReleaseResponse], error) {
+func (c *releaseServiceClient) CheckRelease(ctx context.Context, req *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error) {
 	return c.checkRelease.CallUnary(ctx, req)
 }
 
 // ReleaseServiceHandler is an implementation of the bytebase.v1.ReleaseService service.
 type ReleaseServiceHandler interface {
-	GetRelease(context.Context, *connect_go.Request[v1.GetReleaseRequest]) (*connect_go.Response[v1.Release], error)
-	ListReleases(context.Context, *connect_go.Request[v1.ListReleasesRequest]) (*connect_go.Response[v1.ListReleasesResponse], error)
-	CreateRelease(context.Context, *connect_go.Request[v1.CreateReleaseRequest]) (*connect_go.Response[v1.Release], error)
-	UpdateRelease(context.Context, *connect_go.Request[v1.UpdateReleaseRequest]) (*connect_go.Response[v1.Release], error)
-	DeleteRelease(context.Context, *connect_go.Request[v1.DeleteReleaseRequest]) (*connect_go.Response[emptypb.Empty], error)
-	UndeleteRelease(context.Context, *connect_go.Request[v1.UndeleteReleaseRequest]) (*connect_go.Response[v1.Release], error)
-	CheckRelease(context.Context, *connect_go.Request[v1.CheckReleaseRequest]) (*connect_go.Response[v1.CheckReleaseResponse], error)
+	GetRelease(context.Context, *connect.Request[v1.GetReleaseRequest]) (*connect.Response[v1.Release], error)
+	ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error)
+	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
+	UpdateRelease(context.Context, *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error)
+	DeleteRelease(context.Context, *connect.Request[v1.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error)
+	UndeleteRelease(context.Context, *connect.Request[v1.UndeleteReleaseRequest]) (*connect.Response[v1.Release], error)
+	CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error)
 }
 
 // NewReleaseServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -178,41 +186,49 @@ type ReleaseServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewReleaseServiceHandler(svc ReleaseServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	releaseServiceGetReleaseHandler := connect_go.NewUnaryHandler(
+func NewReleaseServiceHandler(svc ReleaseServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	releaseServiceMethods := v1.File_v1_release_service_proto.Services().ByName("ReleaseService").Methods()
+	releaseServiceGetReleaseHandler := connect.NewUnaryHandler(
 		ReleaseServiceGetReleaseProcedure,
 		svc.GetRelease,
-		opts...,
+		connect.WithSchema(releaseServiceMethods.ByName("GetRelease")),
+		connect.WithHandlerOptions(opts...),
 	)
-	releaseServiceListReleasesHandler := connect_go.NewUnaryHandler(
+	releaseServiceListReleasesHandler := connect.NewUnaryHandler(
 		ReleaseServiceListReleasesProcedure,
 		svc.ListReleases,
-		opts...,
+		connect.WithSchema(releaseServiceMethods.ByName("ListReleases")),
+		connect.WithHandlerOptions(opts...),
 	)
-	releaseServiceCreateReleaseHandler := connect_go.NewUnaryHandler(
+	releaseServiceCreateReleaseHandler := connect.NewUnaryHandler(
 		ReleaseServiceCreateReleaseProcedure,
 		svc.CreateRelease,
-		opts...,
+		connect.WithSchema(releaseServiceMethods.ByName("CreateRelease")),
+		connect.WithHandlerOptions(opts...),
 	)
-	releaseServiceUpdateReleaseHandler := connect_go.NewUnaryHandler(
+	releaseServiceUpdateReleaseHandler := connect.NewUnaryHandler(
 		ReleaseServiceUpdateReleaseProcedure,
 		svc.UpdateRelease,
-		opts...,
+		connect.WithSchema(releaseServiceMethods.ByName("UpdateRelease")),
+		connect.WithHandlerOptions(opts...),
 	)
-	releaseServiceDeleteReleaseHandler := connect_go.NewUnaryHandler(
+	releaseServiceDeleteReleaseHandler := connect.NewUnaryHandler(
 		ReleaseServiceDeleteReleaseProcedure,
 		svc.DeleteRelease,
-		opts...,
+		connect.WithSchema(releaseServiceMethods.ByName("DeleteRelease")),
+		connect.WithHandlerOptions(opts...),
 	)
-	releaseServiceUndeleteReleaseHandler := connect_go.NewUnaryHandler(
+	releaseServiceUndeleteReleaseHandler := connect.NewUnaryHandler(
 		ReleaseServiceUndeleteReleaseProcedure,
 		svc.UndeleteRelease,
-		opts...,
+		connect.WithSchema(releaseServiceMethods.ByName("UndeleteRelease")),
+		connect.WithHandlerOptions(opts...),
 	)
-	releaseServiceCheckReleaseHandler := connect_go.NewUnaryHandler(
+	releaseServiceCheckReleaseHandler := connect.NewUnaryHandler(
 		ReleaseServiceCheckReleaseProcedure,
 		svc.CheckRelease,
-		opts...,
+		connect.WithSchema(releaseServiceMethods.ByName("CheckRelease")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.ReleaseService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -239,30 +255,30 @@ func NewReleaseServiceHandler(svc ReleaseServiceHandler, opts ...connect_go.Hand
 // UnimplementedReleaseServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedReleaseServiceHandler struct{}
 
-func (UnimplementedReleaseServiceHandler) GetRelease(context.Context, *connect_go.Request[v1.GetReleaseRequest]) (*connect_go.Response[v1.Release], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.GetRelease is not implemented"))
+func (UnimplementedReleaseServiceHandler) GetRelease(context.Context, *connect.Request[v1.GetReleaseRequest]) (*connect.Response[v1.Release], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.GetRelease is not implemented"))
 }
 
-func (UnimplementedReleaseServiceHandler) ListReleases(context.Context, *connect_go.Request[v1.ListReleasesRequest]) (*connect_go.Response[v1.ListReleasesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.ListReleases is not implemented"))
+func (UnimplementedReleaseServiceHandler) ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.ListReleases is not implemented"))
 }
 
-func (UnimplementedReleaseServiceHandler) CreateRelease(context.Context, *connect_go.Request[v1.CreateReleaseRequest]) (*connect_go.Response[v1.Release], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.CreateRelease is not implemented"))
+func (UnimplementedReleaseServiceHandler) CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.CreateRelease is not implemented"))
 }
 
-func (UnimplementedReleaseServiceHandler) UpdateRelease(context.Context, *connect_go.Request[v1.UpdateReleaseRequest]) (*connect_go.Response[v1.Release], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.UpdateRelease is not implemented"))
+func (UnimplementedReleaseServiceHandler) UpdateRelease(context.Context, *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.UpdateRelease is not implemented"))
 }
 
-func (UnimplementedReleaseServiceHandler) DeleteRelease(context.Context, *connect_go.Request[v1.DeleteReleaseRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.DeleteRelease is not implemented"))
+func (UnimplementedReleaseServiceHandler) DeleteRelease(context.Context, *connect.Request[v1.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.DeleteRelease is not implemented"))
 }
 
-func (UnimplementedReleaseServiceHandler) UndeleteRelease(context.Context, *connect_go.Request[v1.UndeleteReleaseRequest]) (*connect_go.Response[v1.Release], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.UndeleteRelease is not implemented"))
+func (UnimplementedReleaseServiceHandler) UndeleteRelease(context.Context, *connect.Request[v1.UndeleteReleaseRequest]) (*connect.Response[v1.Release], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.UndeleteRelease is not implemented"))
 }
 
-func (UnimplementedReleaseServiceHandler) CheckRelease(context.Context, *connect_go.Request[v1.CheckReleaseRequest]) (*connect_go.Response[v1.CheckReleaseResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.CheckRelease is not implemented"))
+func (UnimplementedReleaseServiceHandler) CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.CheckRelease is not implemented"))
 }

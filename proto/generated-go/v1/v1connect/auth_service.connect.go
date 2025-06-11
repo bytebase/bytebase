@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// AuthServiceName is the fully-qualified name of the AuthService service.
@@ -42,8 +42,8 @@ const (
 
 // AuthServiceClient is a client for the bytebase.v1.AuthService service.
 type AuthServiceClient interface {
-	Login(context.Context, *connect_go.Request[v1.LoginRequest]) (*connect_go.Response[v1.LoginResponse], error)
-	Logout(context.Context, *connect_go.Request[v1.LogoutRequest]) (*connect_go.Response[emptypb.Empty], error)
+	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
+	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewAuthServiceClient constructs a client for the bytebase.v1.AuthService service. By default, it
@@ -53,42 +53,45 @@ type AuthServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewAuthServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) AuthServiceClient {
+func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) AuthServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	authServiceMethods := v1.File_v1_auth_service_proto.Services().ByName("AuthService").Methods()
 	return &authServiceClient{
-		login: connect_go.NewClient[v1.LoginRequest, v1.LoginResponse](
+		login: connect.NewClient[v1.LoginRequest, v1.LoginResponse](
 			httpClient,
 			baseURL+AuthServiceLoginProcedure,
-			opts...,
+			connect.WithSchema(authServiceMethods.ByName("Login")),
+			connect.WithClientOptions(opts...),
 		),
-		logout: connect_go.NewClient[v1.LogoutRequest, emptypb.Empty](
+		logout: connect.NewClient[v1.LogoutRequest, emptypb.Empty](
 			httpClient,
 			baseURL+AuthServiceLogoutProcedure,
-			opts...,
+			connect.WithSchema(authServiceMethods.ByName("Logout")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	login  *connect_go.Client[v1.LoginRequest, v1.LoginResponse]
-	logout *connect_go.Client[v1.LogoutRequest, emptypb.Empty]
+	login  *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	logout *connect.Client[v1.LogoutRequest, emptypb.Empty]
 }
 
 // Login calls bytebase.v1.AuthService.Login.
-func (c *authServiceClient) Login(ctx context.Context, req *connect_go.Request[v1.LoginRequest]) (*connect_go.Response[v1.LoginResponse], error) {
+func (c *authServiceClient) Login(ctx context.Context, req *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
 	return c.login.CallUnary(ctx, req)
 }
 
 // Logout calls bytebase.v1.AuthService.Logout.
-func (c *authServiceClient) Logout(ctx context.Context, req *connect_go.Request[v1.LogoutRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *authServiceClient) Logout(ctx context.Context, req *connect.Request[v1.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.logout.CallUnary(ctx, req)
 }
 
 // AuthServiceHandler is an implementation of the bytebase.v1.AuthService service.
 type AuthServiceHandler interface {
-	Login(context.Context, *connect_go.Request[v1.LoginRequest]) (*connect_go.Response[v1.LoginResponse], error)
-	Logout(context.Context, *connect_go.Request[v1.LogoutRequest]) (*connect_go.Response[emptypb.Empty], error)
+	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
+	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -96,16 +99,19 @@ type AuthServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	authServiceLoginHandler := connect_go.NewUnaryHandler(
+func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	authServiceMethods := v1.File_v1_auth_service_proto.Services().ByName("AuthService").Methods()
+	authServiceLoginHandler := connect.NewUnaryHandler(
 		AuthServiceLoginProcedure,
 		svc.Login,
-		opts...,
+		connect.WithSchema(authServiceMethods.ByName("Login")),
+		connect.WithHandlerOptions(opts...),
 	)
-	authServiceLogoutHandler := connect_go.NewUnaryHandler(
+	authServiceLogoutHandler := connect.NewUnaryHandler(
 		AuthServiceLogoutProcedure,
 		svc.Logout,
-		opts...,
+		connect.WithSchema(authServiceMethods.ByName("Logout")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -122,10 +128,10 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect_go.HandlerOpt
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
 
-func (UnimplementedAuthServiceHandler) Login(context.Context, *connect_go.Request[v1.LoginRequest]) (*connect_go.Response[v1.LoginResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.AuthService.Login is not implemented"))
+func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.Login is not implemented"))
 }
 
-func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect_go.Request[v1.LogoutRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.AuthService.Logout is not implemented"))
+func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.Logout is not implemented"))
 }

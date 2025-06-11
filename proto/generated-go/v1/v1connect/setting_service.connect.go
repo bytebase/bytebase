@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// SettingServiceName is the fully-qualified name of the SettingService service.
@@ -46,9 +46,9 @@ const (
 
 // SettingServiceClient is a client for the bytebase.v1.SettingService service.
 type SettingServiceClient interface {
-	ListSettings(context.Context, *connect_go.Request[v1.ListSettingsRequest]) (*connect_go.Response[v1.ListSettingsResponse], error)
-	GetSetting(context.Context, *connect_go.Request[v1.GetSettingRequest]) (*connect_go.Response[v1.Setting], error)
-	UpdateSetting(context.Context, *connect_go.Request[v1.UpdateSettingRequest]) (*connect_go.Response[v1.Setting], error)
+	ListSettings(context.Context, *connect.Request[v1.ListSettingsRequest]) (*connect.Response[v1.ListSettingsResponse], error)
+	GetSetting(context.Context, *connect.Request[v1.GetSettingRequest]) (*connect.Response[v1.Setting], error)
+	UpdateSetting(context.Context, *connect.Request[v1.UpdateSettingRequest]) (*connect.Response[v1.Setting], error)
 }
 
 // NewSettingServiceClient constructs a client for the bytebase.v1.SettingService service. By
@@ -58,54 +58,58 @@ type SettingServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewSettingServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) SettingServiceClient {
+func NewSettingServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) SettingServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	settingServiceMethods := v1.File_v1_setting_service_proto.Services().ByName("SettingService").Methods()
 	return &settingServiceClient{
-		listSettings: connect_go.NewClient[v1.ListSettingsRequest, v1.ListSettingsResponse](
+		listSettings: connect.NewClient[v1.ListSettingsRequest, v1.ListSettingsResponse](
 			httpClient,
 			baseURL+SettingServiceListSettingsProcedure,
-			opts...,
+			connect.WithSchema(settingServiceMethods.ByName("ListSettings")),
+			connect.WithClientOptions(opts...),
 		),
-		getSetting: connect_go.NewClient[v1.GetSettingRequest, v1.Setting](
+		getSetting: connect.NewClient[v1.GetSettingRequest, v1.Setting](
 			httpClient,
 			baseURL+SettingServiceGetSettingProcedure,
-			opts...,
+			connect.WithSchema(settingServiceMethods.ByName("GetSetting")),
+			connect.WithClientOptions(opts...),
 		),
-		updateSetting: connect_go.NewClient[v1.UpdateSettingRequest, v1.Setting](
+		updateSetting: connect.NewClient[v1.UpdateSettingRequest, v1.Setting](
 			httpClient,
 			baseURL+SettingServiceUpdateSettingProcedure,
-			opts...,
+			connect.WithSchema(settingServiceMethods.ByName("UpdateSetting")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // settingServiceClient implements SettingServiceClient.
 type settingServiceClient struct {
-	listSettings  *connect_go.Client[v1.ListSettingsRequest, v1.ListSettingsResponse]
-	getSetting    *connect_go.Client[v1.GetSettingRequest, v1.Setting]
-	updateSetting *connect_go.Client[v1.UpdateSettingRequest, v1.Setting]
+	listSettings  *connect.Client[v1.ListSettingsRequest, v1.ListSettingsResponse]
+	getSetting    *connect.Client[v1.GetSettingRequest, v1.Setting]
+	updateSetting *connect.Client[v1.UpdateSettingRequest, v1.Setting]
 }
 
 // ListSettings calls bytebase.v1.SettingService.ListSettings.
-func (c *settingServiceClient) ListSettings(ctx context.Context, req *connect_go.Request[v1.ListSettingsRequest]) (*connect_go.Response[v1.ListSettingsResponse], error) {
+func (c *settingServiceClient) ListSettings(ctx context.Context, req *connect.Request[v1.ListSettingsRequest]) (*connect.Response[v1.ListSettingsResponse], error) {
 	return c.listSettings.CallUnary(ctx, req)
 }
 
 // GetSetting calls bytebase.v1.SettingService.GetSetting.
-func (c *settingServiceClient) GetSetting(ctx context.Context, req *connect_go.Request[v1.GetSettingRequest]) (*connect_go.Response[v1.Setting], error) {
+func (c *settingServiceClient) GetSetting(ctx context.Context, req *connect.Request[v1.GetSettingRequest]) (*connect.Response[v1.Setting], error) {
 	return c.getSetting.CallUnary(ctx, req)
 }
 
 // UpdateSetting calls bytebase.v1.SettingService.UpdateSetting.
-func (c *settingServiceClient) UpdateSetting(ctx context.Context, req *connect_go.Request[v1.UpdateSettingRequest]) (*connect_go.Response[v1.Setting], error) {
+func (c *settingServiceClient) UpdateSetting(ctx context.Context, req *connect.Request[v1.UpdateSettingRequest]) (*connect.Response[v1.Setting], error) {
 	return c.updateSetting.CallUnary(ctx, req)
 }
 
 // SettingServiceHandler is an implementation of the bytebase.v1.SettingService service.
 type SettingServiceHandler interface {
-	ListSettings(context.Context, *connect_go.Request[v1.ListSettingsRequest]) (*connect_go.Response[v1.ListSettingsResponse], error)
-	GetSetting(context.Context, *connect_go.Request[v1.GetSettingRequest]) (*connect_go.Response[v1.Setting], error)
-	UpdateSetting(context.Context, *connect_go.Request[v1.UpdateSettingRequest]) (*connect_go.Response[v1.Setting], error)
+	ListSettings(context.Context, *connect.Request[v1.ListSettingsRequest]) (*connect.Response[v1.ListSettingsResponse], error)
+	GetSetting(context.Context, *connect.Request[v1.GetSettingRequest]) (*connect.Response[v1.Setting], error)
+	UpdateSetting(context.Context, *connect.Request[v1.UpdateSettingRequest]) (*connect.Response[v1.Setting], error)
 }
 
 // NewSettingServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -113,21 +117,25 @@ type SettingServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewSettingServiceHandler(svc SettingServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	settingServiceListSettingsHandler := connect_go.NewUnaryHandler(
+func NewSettingServiceHandler(svc SettingServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	settingServiceMethods := v1.File_v1_setting_service_proto.Services().ByName("SettingService").Methods()
+	settingServiceListSettingsHandler := connect.NewUnaryHandler(
 		SettingServiceListSettingsProcedure,
 		svc.ListSettings,
-		opts...,
+		connect.WithSchema(settingServiceMethods.ByName("ListSettings")),
+		connect.WithHandlerOptions(opts...),
 	)
-	settingServiceGetSettingHandler := connect_go.NewUnaryHandler(
+	settingServiceGetSettingHandler := connect.NewUnaryHandler(
 		SettingServiceGetSettingProcedure,
 		svc.GetSetting,
-		opts...,
+		connect.WithSchema(settingServiceMethods.ByName("GetSetting")),
+		connect.WithHandlerOptions(opts...),
 	)
-	settingServiceUpdateSettingHandler := connect_go.NewUnaryHandler(
+	settingServiceUpdateSettingHandler := connect.NewUnaryHandler(
 		SettingServiceUpdateSettingProcedure,
 		svc.UpdateSetting,
-		opts...,
+		connect.WithSchema(settingServiceMethods.ByName("UpdateSetting")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.SettingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -146,14 +154,14 @@ func NewSettingServiceHandler(svc SettingServiceHandler, opts ...connect_go.Hand
 // UnimplementedSettingServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSettingServiceHandler struct{}
 
-func (UnimplementedSettingServiceHandler) ListSettings(context.Context, *connect_go.Request[v1.ListSettingsRequest]) (*connect_go.Response[v1.ListSettingsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SettingService.ListSettings is not implemented"))
+func (UnimplementedSettingServiceHandler) ListSettings(context.Context, *connect.Request[v1.ListSettingsRequest]) (*connect.Response[v1.ListSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SettingService.ListSettings is not implemented"))
 }
 
-func (UnimplementedSettingServiceHandler) GetSetting(context.Context, *connect_go.Request[v1.GetSettingRequest]) (*connect_go.Response[v1.Setting], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SettingService.GetSetting is not implemented"))
+func (UnimplementedSettingServiceHandler) GetSetting(context.Context, *connect.Request[v1.GetSettingRequest]) (*connect.Response[v1.Setting], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SettingService.GetSetting is not implemented"))
 }
 
-func (UnimplementedSettingServiceHandler) UpdateSetting(context.Context, *connect_go.Request[v1.UpdateSettingRequest]) (*connect_go.Response[v1.Setting], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SettingService.UpdateSetting is not implemented"))
+func (UnimplementedSettingServiceHandler) UpdateSetting(context.Context, *connect.Request[v1.UpdateSettingRequest]) (*connect.Response[v1.Setting], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SettingService.UpdateSetting is not implemented"))
 }

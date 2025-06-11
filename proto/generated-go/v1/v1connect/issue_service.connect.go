@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// IssueServiceName is the fully-qualified name of the IssueService service.
@@ -71,25 +71,25 @@ const (
 
 // IssueServiceClient is a client for the bytebase.v1.IssueService service.
 type IssueServiceClient interface {
-	GetIssue(context.Context, *connect_go.Request[v1.GetIssueRequest]) (*connect_go.Response[v1.Issue], error)
-	CreateIssue(context.Context, *connect_go.Request[v1.CreateIssueRequest]) (*connect_go.Response[v1.Issue], error)
-	ListIssues(context.Context, *connect_go.Request[v1.ListIssuesRequest]) (*connect_go.Response[v1.ListIssuesResponse], error)
+	GetIssue(context.Context, *connect.Request[v1.GetIssueRequest]) (*connect.Response[v1.Issue], error)
+	CreateIssue(context.Context, *connect.Request[v1.CreateIssueRequest]) (*connect.Response[v1.Issue], error)
+	ListIssues(context.Context, *connect.Request[v1.ListIssuesRequest]) (*connect.Response[v1.ListIssuesResponse], error)
 	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
-	SearchIssues(context.Context, *connect_go.Request[v1.SearchIssuesRequest]) (*connect_go.Response[v1.SearchIssuesResponse], error)
-	UpdateIssue(context.Context, *connect_go.Request[v1.UpdateIssueRequest]) (*connect_go.Response[v1.Issue], error)
-	ListIssueComments(context.Context, *connect_go.Request[v1.ListIssueCommentsRequest]) (*connect_go.Response[v1.ListIssueCommentsResponse], error)
-	CreateIssueComment(context.Context, *connect_go.Request[v1.CreateIssueCommentRequest]) (*connect_go.Response[v1.IssueComment], error)
-	UpdateIssueComment(context.Context, *connect_go.Request[v1.UpdateIssueCommentRequest]) (*connect_go.Response[v1.IssueComment], error)
-	BatchUpdateIssuesStatus(context.Context, *connect_go.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect_go.Response[v1.BatchUpdateIssuesStatusResponse], error)
+	SearchIssues(context.Context, *connect.Request[v1.SearchIssuesRequest]) (*connect.Response[v1.SearchIssuesResponse], error)
+	UpdateIssue(context.Context, *connect.Request[v1.UpdateIssueRequest]) (*connect.Response[v1.Issue], error)
+	ListIssueComments(context.Context, *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error)
+	CreateIssueComment(context.Context, *connect.Request[v1.CreateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
+	UpdateIssueComment(context.Context, *connect.Request[v1.UpdateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
+	BatchUpdateIssuesStatus(context.Context, *connect.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect.Response[v1.BatchUpdateIssuesStatusResponse], error)
 	// ApproveIssue approves the issue.
 	// The access is based on approval flow.
-	ApproveIssue(context.Context, *connect_go.Request[v1.ApproveIssueRequest]) (*connect_go.Response[v1.Issue], error)
+	ApproveIssue(context.Context, *connect.Request[v1.ApproveIssueRequest]) (*connect.Response[v1.Issue], error)
 	// RejectIssue rejects the issue.
 	// The access is based on approval flow.
-	RejectIssue(context.Context, *connect_go.Request[v1.RejectIssueRequest]) (*connect_go.Response[v1.Issue], error)
+	RejectIssue(context.Context, *connect.Request[v1.RejectIssueRequest]) (*connect.Response[v1.Issue], error)
 	// RequestIssue requests the issue.
 	// The access is based on approval flow.
-	RequestIssue(context.Context, *connect_go.Request[v1.RequestIssueRequest]) (*connect_go.Response[v1.Issue], error)
+	RequestIssue(context.Context, *connect.Request[v1.RequestIssueRequest]) (*connect.Response[v1.Issue], error)
 }
 
 // NewIssueServiceClient constructs a client for the bytebase.v1.IssueService service. By default,
@@ -99,169 +99,182 @@ type IssueServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewIssueServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) IssueServiceClient {
+func NewIssueServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) IssueServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	issueServiceMethods := v1.File_v1_issue_service_proto.Services().ByName("IssueService").Methods()
 	return &issueServiceClient{
-		getIssue: connect_go.NewClient[v1.GetIssueRequest, v1.Issue](
+		getIssue: connect.NewClient[v1.GetIssueRequest, v1.Issue](
 			httpClient,
 			baseURL+IssueServiceGetIssueProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("GetIssue")),
+			connect.WithClientOptions(opts...),
 		),
-		createIssue: connect_go.NewClient[v1.CreateIssueRequest, v1.Issue](
+		createIssue: connect.NewClient[v1.CreateIssueRequest, v1.Issue](
 			httpClient,
 			baseURL+IssueServiceCreateIssueProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("CreateIssue")),
+			connect.WithClientOptions(opts...),
 		),
-		listIssues: connect_go.NewClient[v1.ListIssuesRequest, v1.ListIssuesResponse](
+		listIssues: connect.NewClient[v1.ListIssuesRequest, v1.ListIssuesResponse](
 			httpClient,
 			baseURL+IssueServiceListIssuesProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("ListIssues")),
+			connect.WithClientOptions(opts...),
 		),
-		searchIssues: connect_go.NewClient[v1.SearchIssuesRequest, v1.SearchIssuesResponse](
+		searchIssues: connect.NewClient[v1.SearchIssuesRequest, v1.SearchIssuesResponse](
 			httpClient,
 			baseURL+IssueServiceSearchIssuesProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("SearchIssues")),
+			connect.WithClientOptions(opts...),
 		),
-		updateIssue: connect_go.NewClient[v1.UpdateIssueRequest, v1.Issue](
+		updateIssue: connect.NewClient[v1.UpdateIssueRequest, v1.Issue](
 			httpClient,
 			baseURL+IssueServiceUpdateIssueProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("UpdateIssue")),
+			connect.WithClientOptions(opts...),
 		),
-		listIssueComments: connect_go.NewClient[v1.ListIssueCommentsRequest, v1.ListIssueCommentsResponse](
+		listIssueComments: connect.NewClient[v1.ListIssueCommentsRequest, v1.ListIssueCommentsResponse](
 			httpClient,
 			baseURL+IssueServiceListIssueCommentsProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("ListIssueComments")),
+			connect.WithClientOptions(opts...),
 		),
-		createIssueComment: connect_go.NewClient[v1.CreateIssueCommentRequest, v1.IssueComment](
+		createIssueComment: connect.NewClient[v1.CreateIssueCommentRequest, v1.IssueComment](
 			httpClient,
 			baseURL+IssueServiceCreateIssueCommentProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("CreateIssueComment")),
+			connect.WithClientOptions(opts...),
 		),
-		updateIssueComment: connect_go.NewClient[v1.UpdateIssueCommentRequest, v1.IssueComment](
+		updateIssueComment: connect.NewClient[v1.UpdateIssueCommentRequest, v1.IssueComment](
 			httpClient,
 			baseURL+IssueServiceUpdateIssueCommentProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("UpdateIssueComment")),
+			connect.WithClientOptions(opts...),
 		),
-		batchUpdateIssuesStatus: connect_go.NewClient[v1.BatchUpdateIssuesStatusRequest, v1.BatchUpdateIssuesStatusResponse](
+		batchUpdateIssuesStatus: connect.NewClient[v1.BatchUpdateIssuesStatusRequest, v1.BatchUpdateIssuesStatusResponse](
 			httpClient,
 			baseURL+IssueServiceBatchUpdateIssuesStatusProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("BatchUpdateIssuesStatus")),
+			connect.WithClientOptions(opts...),
 		),
-		approveIssue: connect_go.NewClient[v1.ApproveIssueRequest, v1.Issue](
+		approveIssue: connect.NewClient[v1.ApproveIssueRequest, v1.Issue](
 			httpClient,
 			baseURL+IssueServiceApproveIssueProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("ApproveIssue")),
+			connect.WithClientOptions(opts...),
 		),
-		rejectIssue: connect_go.NewClient[v1.RejectIssueRequest, v1.Issue](
+		rejectIssue: connect.NewClient[v1.RejectIssueRequest, v1.Issue](
 			httpClient,
 			baseURL+IssueServiceRejectIssueProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("RejectIssue")),
+			connect.WithClientOptions(opts...),
 		),
-		requestIssue: connect_go.NewClient[v1.RequestIssueRequest, v1.Issue](
+		requestIssue: connect.NewClient[v1.RequestIssueRequest, v1.Issue](
 			httpClient,
 			baseURL+IssueServiceRequestIssueProcedure,
-			opts...,
+			connect.WithSchema(issueServiceMethods.ByName("RequestIssue")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // issueServiceClient implements IssueServiceClient.
 type issueServiceClient struct {
-	getIssue                *connect_go.Client[v1.GetIssueRequest, v1.Issue]
-	createIssue             *connect_go.Client[v1.CreateIssueRequest, v1.Issue]
-	listIssues              *connect_go.Client[v1.ListIssuesRequest, v1.ListIssuesResponse]
-	searchIssues            *connect_go.Client[v1.SearchIssuesRequest, v1.SearchIssuesResponse]
-	updateIssue             *connect_go.Client[v1.UpdateIssueRequest, v1.Issue]
-	listIssueComments       *connect_go.Client[v1.ListIssueCommentsRequest, v1.ListIssueCommentsResponse]
-	createIssueComment      *connect_go.Client[v1.CreateIssueCommentRequest, v1.IssueComment]
-	updateIssueComment      *connect_go.Client[v1.UpdateIssueCommentRequest, v1.IssueComment]
-	batchUpdateIssuesStatus *connect_go.Client[v1.BatchUpdateIssuesStatusRequest, v1.BatchUpdateIssuesStatusResponse]
-	approveIssue            *connect_go.Client[v1.ApproveIssueRequest, v1.Issue]
-	rejectIssue             *connect_go.Client[v1.RejectIssueRequest, v1.Issue]
-	requestIssue            *connect_go.Client[v1.RequestIssueRequest, v1.Issue]
+	getIssue                *connect.Client[v1.GetIssueRequest, v1.Issue]
+	createIssue             *connect.Client[v1.CreateIssueRequest, v1.Issue]
+	listIssues              *connect.Client[v1.ListIssuesRequest, v1.ListIssuesResponse]
+	searchIssues            *connect.Client[v1.SearchIssuesRequest, v1.SearchIssuesResponse]
+	updateIssue             *connect.Client[v1.UpdateIssueRequest, v1.Issue]
+	listIssueComments       *connect.Client[v1.ListIssueCommentsRequest, v1.ListIssueCommentsResponse]
+	createIssueComment      *connect.Client[v1.CreateIssueCommentRequest, v1.IssueComment]
+	updateIssueComment      *connect.Client[v1.UpdateIssueCommentRequest, v1.IssueComment]
+	batchUpdateIssuesStatus *connect.Client[v1.BatchUpdateIssuesStatusRequest, v1.BatchUpdateIssuesStatusResponse]
+	approveIssue            *connect.Client[v1.ApproveIssueRequest, v1.Issue]
+	rejectIssue             *connect.Client[v1.RejectIssueRequest, v1.Issue]
+	requestIssue            *connect.Client[v1.RequestIssueRequest, v1.Issue]
 }
 
 // GetIssue calls bytebase.v1.IssueService.GetIssue.
-func (c *issueServiceClient) GetIssue(ctx context.Context, req *connect_go.Request[v1.GetIssueRequest]) (*connect_go.Response[v1.Issue], error) {
+func (c *issueServiceClient) GetIssue(ctx context.Context, req *connect.Request[v1.GetIssueRequest]) (*connect.Response[v1.Issue], error) {
 	return c.getIssue.CallUnary(ctx, req)
 }
 
 // CreateIssue calls bytebase.v1.IssueService.CreateIssue.
-func (c *issueServiceClient) CreateIssue(ctx context.Context, req *connect_go.Request[v1.CreateIssueRequest]) (*connect_go.Response[v1.Issue], error) {
+func (c *issueServiceClient) CreateIssue(ctx context.Context, req *connect.Request[v1.CreateIssueRequest]) (*connect.Response[v1.Issue], error) {
 	return c.createIssue.CallUnary(ctx, req)
 }
 
 // ListIssues calls bytebase.v1.IssueService.ListIssues.
-func (c *issueServiceClient) ListIssues(ctx context.Context, req *connect_go.Request[v1.ListIssuesRequest]) (*connect_go.Response[v1.ListIssuesResponse], error) {
+func (c *issueServiceClient) ListIssues(ctx context.Context, req *connect.Request[v1.ListIssuesRequest]) (*connect.Response[v1.ListIssuesResponse], error) {
 	return c.listIssues.CallUnary(ctx, req)
 }
 
 // SearchIssues calls bytebase.v1.IssueService.SearchIssues.
-func (c *issueServiceClient) SearchIssues(ctx context.Context, req *connect_go.Request[v1.SearchIssuesRequest]) (*connect_go.Response[v1.SearchIssuesResponse], error) {
+func (c *issueServiceClient) SearchIssues(ctx context.Context, req *connect.Request[v1.SearchIssuesRequest]) (*connect.Response[v1.SearchIssuesResponse], error) {
 	return c.searchIssues.CallUnary(ctx, req)
 }
 
 // UpdateIssue calls bytebase.v1.IssueService.UpdateIssue.
-func (c *issueServiceClient) UpdateIssue(ctx context.Context, req *connect_go.Request[v1.UpdateIssueRequest]) (*connect_go.Response[v1.Issue], error) {
+func (c *issueServiceClient) UpdateIssue(ctx context.Context, req *connect.Request[v1.UpdateIssueRequest]) (*connect.Response[v1.Issue], error) {
 	return c.updateIssue.CallUnary(ctx, req)
 }
 
 // ListIssueComments calls bytebase.v1.IssueService.ListIssueComments.
-func (c *issueServiceClient) ListIssueComments(ctx context.Context, req *connect_go.Request[v1.ListIssueCommentsRequest]) (*connect_go.Response[v1.ListIssueCommentsResponse], error) {
+func (c *issueServiceClient) ListIssueComments(ctx context.Context, req *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error) {
 	return c.listIssueComments.CallUnary(ctx, req)
 }
 
 // CreateIssueComment calls bytebase.v1.IssueService.CreateIssueComment.
-func (c *issueServiceClient) CreateIssueComment(ctx context.Context, req *connect_go.Request[v1.CreateIssueCommentRequest]) (*connect_go.Response[v1.IssueComment], error) {
+func (c *issueServiceClient) CreateIssueComment(ctx context.Context, req *connect.Request[v1.CreateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error) {
 	return c.createIssueComment.CallUnary(ctx, req)
 }
 
 // UpdateIssueComment calls bytebase.v1.IssueService.UpdateIssueComment.
-func (c *issueServiceClient) UpdateIssueComment(ctx context.Context, req *connect_go.Request[v1.UpdateIssueCommentRequest]) (*connect_go.Response[v1.IssueComment], error) {
+func (c *issueServiceClient) UpdateIssueComment(ctx context.Context, req *connect.Request[v1.UpdateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error) {
 	return c.updateIssueComment.CallUnary(ctx, req)
 }
 
 // BatchUpdateIssuesStatus calls bytebase.v1.IssueService.BatchUpdateIssuesStatus.
-func (c *issueServiceClient) BatchUpdateIssuesStatus(ctx context.Context, req *connect_go.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect_go.Response[v1.BatchUpdateIssuesStatusResponse], error) {
+func (c *issueServiceClient) BatchUpdateIssuesStatus(ctx context.Context, req *connect.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect.Response[v1.BatchUpdateIssuesStatusResponse], error) {
 	return c.batchUpdateIssuesStatus.CallUnary(ctx, req)
 }
 
 // ApproveIssue calls bytebase.v1.IssueService.ApproveIssue.
-func (c *issueServiceClient) ApproveIssue(ctx context.Context, req *connect_go.Request[v1.ApproveIssueRequest]) (*connect_go.Response[v1.Issue], error) {
+func (c *issueServiceClient) ApproveIssue(ctx context.Context, req *connect.Request[v1.ApproveIssueRequest]) (*connect.Response[v1.Issue], error) {
 	return c.approveIssue.CallUnary(ctx, req)
 }
 
 // RejectIssue calls bytebase.v1.IssueService.RejectIssue.
-func (c *issueServiceClient) RejectIssue(ctx context.Context, req *connect_go.Request[v1.RejectIssueRequest]) (*connect_go.Response[v1.Issue], error) {
+func (c *issueServiceClient) RejectIssue(ctx context.Context, req *connect.Request[v1.RejectIssueRequest]) (*connect.Response[v1.Issue], error) {
 	return c.rejectIssue.CallUnary(ctx, req)
 }
 
 // RequestIssue calls bytebase.v1.IssueService.RequestIssue.
-func (c *issueServiceClient) RequestIssue(ctx context.Context, req *connect_go.Request[v1.RequestIssueRequest]) (*connect_go.Response[v1.Issue], error) {
+func (c *issueServiceClient) RequestIssue(ctx context.Context, req *connect.Request[v1.RequestIssueRequest]) (*connect.Response[v1.Issue], error) {
 	return c.requestIssue.CallUnary(ctx, req)
 }
 
 // IssueServiceHandler is an implementation of the bytebase.v1.IssueService service.
 type IssueServiceHandler interface {
-	GetIssue(context.Context, *connect_go.Request[v1.GetIssueRequest]) (*connect_go.Response[v1.Issue], error)
-	CreateIssue(context.Context, *connect_go.Request[v1.CreateIssueRequest]) (*connect_go.Response[v1.Issue], error)
-	ListIssues(context.Context, *connect_go.Request[v1.ListIssuesRequest]) (*connect_go.Response[v1.ListIssuesResponse], error)
+	GetIssue(context.Context, *connect.Request[v1.GetIssueRequest]) (*connect.Response[v1.Issue], error)
+	CreateIssue(context.Context, *connect.Request[v1.CreateIssueRequest]) (*connect.Response[v1.Issue], error)
+	ListIssues(context.Context, *connect.Request[v1.ListIssuesRequest]) (*connect.Response[v1.ListIssuesResponse], error)
 	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
-	SearchIssues(context.Context, *connect_go.Request[v1.SearchIssuesRequest]) (*connect_go.Response[v1.SearchIssuesResponse], error)
-	UpdateIssue(context.Context, *connect_go.Request[v1.UpdateIssueRequest]) (*connect_go.Response[v1.Issue], error)
-	ListIssueComments(context.Context, *connect_go.Request[v1.ListIssueCommentsRequest]) (*connect_go.Response[v1.ListIssueCommentsResponse], error)
-	CreateIssueComment(context.Context, *connect_go.Request[v1.CreateIssueCommentRequest]) (*connect_go.Response[v1.IssueComment], error)
-	UpdateIssueComment(context.Context, *connect_go.Request[v1.UpdateIssueCommentRequest]) (*connect_go.Response[v1.IssueComment], error)
-	BatchUpdateIssuesStatus(context.Context, *connect_go.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect_go.Response[v1.BatchUpdateIssuesStatusResponse], error)
+	SearchIssues(context.Context, *connect.Request[v1.SearchIssuesRequest]) (*connect.Response[v1.SearchIssuesResponse], error)
+	UpdateIssue(context.Context, *connect.Request[v1.UpdateIssueRequest]) (*connect.Response[v1.Issue], error)
+	ListIssueComments(context.Context, *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error)
+	CreateIssueComment(context.Context, *connect.Request[v1.CreateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
+	UpdateIssueComment(context.Context, *connect.Request[v1.UpdateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
+	BatchUpdateIssuesStatus(context.Context, *connect.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect.Response[v1.BatchUpdateIssuesStatusResponse], error)
 	// ApproveIssue approves the issue.
 	// The access is based on approval flow.
-	ApproveIssue(context.Context, *connect_go.Request[v1.ApproveIssueRequest]) (*connect_go.Response[v1.Issue], error)
+	ApproveIssue(context.Context, *connect.Request[v1.ApproveIssueRequest]) (*connect.Response[v1.Issue], error)
 	// RejectIssue rejects the issue.
 	// The access is based on approval flow.
-	RejectIssue(context.Context, *connect_go.Request[v1.RejectIssueRequest]) (*connect_go.Response[v1.Issue], error)
+	RejectIssue(context.Context, *connect.Request[v1.RejectIssueRequest]) (*connect.Response[v1.Issue], error)
 	// RequestIssue requests the issue.
 	// The access is based on approval flow.
-	RequestIssue(context.Context, *connect_go.Request[v1.RequestIssueRequest]) (*connect_go.Response[v1.Issue], error)
+	RequestIssue(context.Context, *connect.Request[v1.RequestIssueRequest]) (*connect.Response[v1.Issue], error)
 }
 
 // NewIssueServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -269,66 +282,79 @@ type IssueServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewIssueServiceHandler(svc IssueServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	issueServiceGetIssueHandler := connect_go.NewUnaryHandler(
+func NewIssueServiceHandler(svc IssueServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	issueServiceMethods := v1.File_v1_issue_service_proto.Services().ByName("IssueService").Methods()
+	issueServiceGetIssueHandler := connect.NewUnaryHandler(
 		IssueServiceGetIssueProcedure,
 		svc.GetIssue,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("GetIssue")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceCreateIssueHandler := connect_go.NewUnaryHandler(
+	issueServiceCreateIssueHandler := connect.NewUnaryHandler(
 		IssueServiceCreateIssueProcedure,
 		svc.CreateIssue,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("CreateIssue")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceListIssuesHandler := connect_go.NewUnaryHandler(
+	issueServiceListIssuesHandler := connect.NewUnaryHandler(
 		IssueServiceListIssuesProcedure,
 		svc.ListIssues,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("ListIssues")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceSearchIssuesHandler := connect_go.NewUnaryHandler(
+	issueServiceSearchIssuesHandler := connect.NewUnaryHandler(
 		IssueServiceSearchIssuesProcedure,
 		svc.SearchIssues,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("SearchIssues")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceUpdateIssueHandler := connect_go.NewUnaryHandler(
+	issueServiceUpdateIssueHandler := connect.NewUnaryHandler(
 		IssueServiceUpdateIssueProcedure,
 		svc.UpdateIssue,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("UpdateIssue")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceListIssueCommentsHandler := connect_go.NewUnaryHandler(
+	issueServiceListIssueCommentsHandler := connect.NewUnaryHandler(
 		IssueServiceListIssueCommentsProcedure,
 		svc.ListIssueComments,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("ListIssueComments")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceCreateIssueCommentHandler := connect_go.NewUnaryHandler(
+	issueServiceCreateIssueCommentHandler := connect.NewUnaryHandler(
 		IssueServiceCreateIssueCommentProcedure,
 		svc.CreateIssueComment,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("CreateIssueComment")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceUpdateIssueCommentHandler := connect_go.NewUnaryHandler(
+	issueServiceUpdateIssueCommentHandler := connect.NewUnaryHandler(
 		IssueServiceUpdateIssueCommentProcedure,
 		svc.UpdateIssueComment,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("UpdateIssueComment")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceBatchUpdateIssuesStatusHandler := connect_go.NewUnaryHandler(
+	issueServiceBatchUpdateIssuesStatusHandler := connect.NewUnaryHandler(
 		IssueServiceBatchUpdateIssuesStatusProcedure,
 		svc.BatchUpdateIssuesStatus,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("BatchUpdateIssuesStatus")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceApproveIssueHandler := connect_go.NewUnaryHandler(
+	issueServiceApproveIssueHandler := connect.NewUnaryHandler(
 		IssueServiceApproveIssueProcedure,
 		svc.ApproveIssue,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("ApproveIssue")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceRejectIssueHandler := connect_go.NewUnaryHandler(
+	issueServiceRejectIssueHandler := connect.NewUnaryHandler(
 		IssueServiceRejectIssueProcedure,
 		svc.RejectIssue,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("RejectIssue")),
+		connect.WithHandlerOptions(opts...),
 	)
-	issueServiceRequestIssueHandler := connect_go.NewUnaryHandler(
+	issueServiceRequestIssueHandler := connect.NewUnaryHandler(
 		IssueServiceRequestIssueProcedure,
 		svc.RequestIssue,
-		opts...,
+		connect.WithSchema(issueServiceMethods.ByName("RequestIssue")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.IssueService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -365,50 +391,50 @@ func NewIssueServiceHandler(svc IssueServiceHandler, opts ...connect_go.HandlerO
 // UnimplementedIssueServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedIssueServiceHandler struct{}
 
-func (UnimplementedIssueServiceHandler) GetIssue(context.Context, *connect_go.Request[v1.GetIssueRequest]) (*connect_go.Response[v1.Issue], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.GetIssue is not implemented"))
+func (UnimplementedIssueServiceHandler) GetIssue(context.Context, *connect.Request[v1.GetIssueRequest]) (*connect.Response[v1.Issue], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.GetIssue is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) CreateIssue(context.Context, *connect_go.Request[v1.CreateIssueRequest]) (*connect_go.Response[v1.Issue], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.CreateIssue is not implemented"))
+func (UnimplementedIssueServiceHandler) CreateIssue(context.Context, *connect.Request[v1.CreateIssueRequest]) (*connect.Response[v1.Issue], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.CreateIssue is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) ListIssues(context.Context, *connect_go.Request[v1.ListIssuesRequest]) (*connect_go.Response[v1.ListIssuesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.ListIssues is not implemented"))
+func (UnimplementedIssueServiceHandler) ListIssues(context.Context, *connect.Request[v1.ListIssuesRequest]) (*connect.Response[v1.ListIssuesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.ListIssues is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) SearchIssues(context.Context, *connect_go.Request[v1.SearchIssuesRequest]) (*connect_go.Response[v1.SearchIssuesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.SearchIssues is not implemented"))
+func (UnimplementedIssueServiceHandler) SearchIssues(context.Context, *connect.Request[v1.SearchIssuesRequest]) (*connect.Response[v1.SearchIssuesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.SearchIssues is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) UpdateIssue(context.Context, *connect_go.Request[v1.UpdateIssueRequest]) (*connect_go.Response[v1.Issue], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.UpdateIssue is not implemented"))
+func (UnimplementedIssueServiceHandler) UpdateIssue(context.Context, *connect.Request[v1.UpdateIssueRequest]) (*connect.Response[v1.Issue], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.UpdateIssue is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) ListIssueComments(context.Context, *connect_go.Request[v1.ListIssueCommentsRequest]) (*connect_go.Response[v1.ListIssueCommentsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.ListIssueComments is not implemented"))
+func (UnimplementedIssueServiceHandler) ListIssueComments(context.Context, *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.ListIssueComments is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) CreateIssueComment(context.Context, *connect_go.Request[v1.CreateIssueCommentRequest]) (*connect_go.Response[v1.IssueComment], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.CreateIssueComment is not implemented"))
+func (UnimplementedIssueServiceHandler) CreateIssueComment(context.Context, *connect.Request[v1.CreateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.CreateIssueComment is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) UpdateIssueComment(context.Context, *connect_go.Request[v1.UpdateIssueCommentRequest]) (*connect_go.Response[v1.IssueComment], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.UpdateIssueComment is not implemented"))
+func (UnimplementedIssueServiceHandler) UpdateIssueComment(context.Context, *connect.Request[v1.UpdateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.UpdateIssueComment is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) BatchUpdateIssuesStatus(context.Context, *connect_go.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect_go.Response[v1.BatchUpdateIssuesStatusResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.BatchUpdateIssuesStatus is not implemented"))
+func (UnimplementedIssueServiceHandler) BatchUpdateIssuesStatus(context.Context, *connect.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect.Response[v1.BatchUpdateIssuesStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.BatchUpdateIssuesStatus is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) ApproveIssue(context.Context, *connect_go.Request[v1.ApproveIssueRequest]) (*connect_go.Response[v1.Issue], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.ApproveIssue is not implemented"))
+func (UnimplementedIssueServiceHandler) ApproveIssue(context.Context, *connect.Request[v1.ApproveIssueRequest]) (*connect.Response[v1.Issue], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.ApproveIssue is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) RejectIssue(context.Context, *connect_go.Request[v1.RejectIssueRequest]) (*connect_go.Response[v1.Issue], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.RejectIssue is not implemented"))
+func (UnimplementedIssueServiceHandler) RejectIssue(context.Context, *connect.Request[v1.RejectIssueRequest]) (*connect.Response[v1.Issue], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.RejectIssue is not implemented"))
 }
 
-func (UnimplementedIssueServiceHandler) RequestIssue(context.Context, *connect_go.Request[v1.RequestIssueRequest]) (*connect_go.Response[v1.Issue], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.IssueService.RequestIssue is not implemented"))
+func (UnimplementedIssueServiceHandler) RequestIssue(context.Context, *connect.Request[v1.RequestIssueRequest]) (*connect.Response[v1.Issue], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.RequestIssue is not implemented"))
 }

@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// SubscriptionServiceName is the fully-qualified name of the SubscriptionService service.
@@ -43,8 +43,8 @@ const (
 
 // SubscriptionServiceClient is a client for the bytebase.v1.SubscriptionService service.
 type SubscriptionServiceClient interface {
-	GetSubscription(context.Context, *connect_go.Request[v1.GetSubscriptionRequest]) (*connect_go.Response[v1.Subscription], error)
-	UpdateSubscription(context.Context, *connect_go.Request[v1.UpdateSubscriptionRequest]) (*connect_go.Response[v1.Subscription], error)
+	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 }
 
 // NewSubscriptionServiceClient constructs a client for the bytebase.v1.SubscriptionService service.
@@ -54,42 +54,45 @@ type SubscriptionServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewSubscriptionServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) SubscriptionServiceClient {
+func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) SubscriptionServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	subscriptionServiceMethods := v1.File_v1_subscription_service_proto.Services().ByName("SubscriptionService").Methods()
 	return &subscriptionServiceClient{
-		getSubscription: connect_go.NewClient[v1.GetSubscriptionRequest, v1.Subscription](
+		getSubscription: connect.NewClient[v1.GetSubscriptionRequest, v1.Subscription](
 			httpClient,
 			baseURL+SubscriptionServiceGetSubscriptionProcedure,
-			opts...,
+			connect.WithSchema(subscriptionServiceMethods.ByName("GetSubscription")),
+			connect.WithClientOptions(opts...),
 		),
-		updateSubscription: connect_go.NewClient[v1.UpdateSubscriptionRequest, v1.Subscription](
+		updateSubscription: connect.NewClient[v1.UpdateSubscriptionRequest, v1.Subscription](
 			httpClient,
 			baseURL+SubscriptionServiceUpdateSubscriptionProcedure,
-			opts...,
+			connect.WithSchema(subscriptionServiceMethods.ByName("UpdateSubscription")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // subscriptionServiceClient implements SubscriptionServiceClient.
 type subscriptionServiceClient struct {
-	getSubscription    *connect_go.Client[v1.GetSubscriptionRequest, v1.Subscription]
-	updateSubscription *connect_go.Client[v1.UpdateSubscriptionRequest, v1.Subscription]
+	getSubscription    *connect.Client[v1.GetSubscriptionRequest, v1.Subscription]
+	updateSubscription *connect.Client[v1.UpdateSubscriptionRequest, v1.Subscription]
 }
 
 // GetSubscription calls bytebase.v1.SubscriptionService.GetSubscription.
-func (c *subscriptionServiceClient) GetSubscription(ctx context.Context, req *connect_go.Request[v1.GetSubscriptionRequest]) (*connect_go.Response[v1.Subscription], error) {
+func (c *subscriptionServiceClient) GetSubscription(ctx context.Context, req *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error) {
 	return c.getSubscription.CallUnary(ctx, req)
 }
 
 // UpdateSubscription calls bytebase.v1.SubscriptionService.UpdateSubscription.
-func (c *subscriptionServiceClient) UpdateSubscription(ctx context.Context, req *connect_go.Request[v1.UpdateSubscriptionRequest]) (*connect_go.Response[v1.Subscription], error) {
+func (c *subscriptionServiceClient) UpdateSubscription(ctx context.Context, req *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error) {
 	return c.updateSubscription.CallUnary(ctx, req)
 }
 
 // SubscriptionServiceHandler is an implementation of the bytebase.v1.SubscriptionService service.
 type SubscriptionServiceHandler interface {
-	GetSubscription(context.Context, *connect_go.Request[v1.GetSubscriptionRequest]) (*connect_go.Response[v1.Subscription], error)
-	UpdateSubscription(context.Context, *connect_go.Request[v1.UpdateSubscriptionRequest]) (*connect_go.Response[v1.Subscription], error)
+	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 }
 
 // NewSubscriptionServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -97,16 +100,19 @@ type SubscriptionServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	subscriptionServiceGetSubscriptionHandler := connect_go.NewUnaryHandler(
+func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	subscriptionServiceMethods := v1.File_v1_subscription_service_proto.Services().ByName("SubscriptionService").Methods()
+	subscriptionServiceGetSubscriptionHandler := connect.NewUnaryHandler(
 		SubscriptionServiceGetSubscriptionProcedure,
 		svc.GetSubscription,
-		opts...,
+		connect.WithSchema(subscriptionServiceMethods.ByName("GetSubscription")),
+		connect.WithHandlerOptions(opts...),
 	)
-	subscriptionServiceUpdateSubscriptionHandler := connect_go.NewUnaryHandler(
+	subscriptionServiceUpdateSubscriptionHandler := connect.NewUnaryHandler(
 		SubscriptionServiceUpdateSubscriptionProcedure,
 		svc.UpdateSubscription,
-		opts...,
+		connect.WithSchema(subscriptionServiceMethods.ByName("UpdateSubscription")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.SubscriptionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -123,10 +129,10 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 // UnimplementedSubscriptionServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSubscriptionServiceHandler struct{}
 
-func (UnimplementedSubscriptionServiceHandler) GetSubscription(context.Context, *connect_go.Request[v1.GetSubscriptionRequest]) (*connect_go.Response[v1.Subscription], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.GetSubscription is not implemented"))
+func (UnimplementedSubscriptionServiceHandler) GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.GetSubscription is not implemented"))
 }
 
-func (UnimplementedSubscriptionServiceHandler) UpdateSubscription(context.Context, *connect_go.Request[v1.UpdateSubscriptionRequest]) (*connect_go.Response[v1.Subscription], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.UpdateSubscription is not implemented"))
+func (UnimplementedSubscriptionServiceHandler) UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.UpdateSubscription is not implemented"))
 }

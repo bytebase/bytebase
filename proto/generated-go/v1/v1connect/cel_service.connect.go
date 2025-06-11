@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	http "net/http"
 	strings "strings"
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// CelServiceName is the fully-qualified name of the CelService service.
@@ -41,8 +41,8 @@ const (
 
 // CelServiceClient is a client for the bytebase.v1.CelService service.
 type CelServiceClient interface {
-	BatchParse(context.Context, *connect_go.Request[v1.BatchParseRequest]) (*connect_go.Response[v1.BatchParseResponse], error)
-	BatchDeparse(context.Context, *connect_go.Request[v1.BatchDeparseRequest]) (*connect_go.Response[v1.BatchDeparseResponse], error)
+	BatchParse(context.Context, *connect.Request[v1.BatchParseRequest]) (*connect.Response[v1.BatchParseResponse], error)
+	BatchDeparse(context.Context, *connect.Request[v1.BatchDeparseRequest]) (*connect.Response[v1.BatchDeparseResponse], error)
 }
 
 // NewCelServiceClient constructs a client for the bytebase.v1.CelService service. By default, it
@@ -52,42 +52,45 @@ type CelServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewCelServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) CelServiceClient {
+func NewCelServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) CelServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	celServiceMethods := v1.File_v1_cel_service_proto.Services().ByName("CelService").Methods()
 	return &celServiceClient{
-		batchParse: connect_go.NewClient[v1.BatchParseRequest, v1.BatchParseResponse](
+		batchParse: connect.NewClient[v1.BatchParseRequest, v1.BatchParseResponse](
 			httpClient,
 			baseURL+CelServiceBatchParseProcedure,
-			opts...,
+			connect.WithSchema(celServiceMethods.ByName("BatchParse")),
+			connect.WithClientOptions(opts...),
 		),
-		batchDeparse: connect_go.NewClient[v1.BatchDeparseRequest, v1.BatchDeparseResponse](
+		batchDeparse: connect.NewClient[v1.BatchDeparseRequest, v1.BatchDeparseResponse](
 			httpClient,
 			baseURL+CelServiceBatchDeparseProcedure,
-			opts...,
+			connect.WithSchema(celServiceMethods.ByName("BatchDeparse")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // celServiceClient implements CelServiceClient.
 type celServiceClient struct {
-	batchParse   *connect_go.Client[v1.BatchParseRequest, v1.BatchParseResponse]
-	batchDeparse *connect_go.Client[v1.BatchDeparseRequest, v1.BatchDeparseResponse]
+	batchParse   *connect.Client[v1.BatchParseRequest, v1.BatchParseResponse]
+	batchDeparse *connect.Client[v1.BatchDeparseRequest, v1.BatchDeparseResponse]
 }
 
 // BatchParse calls bytebase.v1.CelService.BatchParse.
-func (c *celServiceClient) BatchParse(ctx context.Context, req *connect_go.Request[v1.BatchParseRequest]) (*connect_go.Response[v1.BatchParseResponse], error) {
+func (c *celServiceClient) BatchParse(ctx context.Context, req *connect.Request[v1.BatchParseRequest]) (*connect.Response[v1.BatchParseResponse], error) {
 	return c.batchParse.CallUnary(ctx, req)
 }
 
 // BatchDeparse calls bytebase.v1.CelService.BatchDeparse.
-func (c *celServiceClient) BatchDeparse(ctx context.Context, req *connect_go.Request[v1.BatchDeparseRequest]) (*connect_go.Response[v1.BatchDeparseResponse], error) {
+func (c *celServiceClient) BatchDeparse(ctx context.Context, req *connect.Request[v1.BatchDeparseRequest]) (*connect.Response[v1.BatchDeparseResponse], error) {
 	return c.batchDeparse.CallUnary(ctx, req)
 }
 
 // CelServiceHandler is an implementation of the bytebase.v1.CelService service.
 type CelServiceHandler interface {
-	BatchParse(context.Context, *connect_go.Request[v1.BatchParseRequest]) (*connect_go.Response[v1.BatchParseResponse], error)
-	BatchDeparse(context.Context, *connect_go.Request[v1.BatchDeparseRequest]) (*connect_go.Response[v1.BatchDeparseResponse], error)
+	BatchParse(context.Context, *connect.Request[v1.BatchParseRequest]) (*connect.Response[v1.BatchParseResponse], error)
+	BatchDeparse(context.Context, *connect.Request[v1.BatchDeparseRequest]) (*connect.Response[v1.BatchDeparseResponse], error)
 }
 
 // NewCelServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -95,16 +98,19 @@ type CelServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewCelServiceHandler(svc CelServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	celServiceBatchParseHandler := connect_go.NewUnaryHandler(
+func NewCelServiceHandler(svc CelServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	celServiceMethods := v1.File_v1_cel_service_proto.Services().ByName("CelService").Methods()
+	celServiceBatchParseHandler := connect.NewUnaryHandler(
 		CelServiceBatchParseProcedure,
 		svc.BatchParse,
-		opts...,
+		connect.WithSchema(celServiceMethods.ByName("BatchParse")),
+		connect.WithHandlerOptions(opts...),
 	)
-	celServiceBatchDeparseHandler := connect_go.NewUnaryHandler(
+	celServiceBatchDeparseHandler := connect.NewUnaryHandler(
 		CelServiceBatchDeparseProcedure,
 		svc.BatchDeparse,
-		opts...,
+		connect.WithSchema(celServiceMethods.ByName("BatchDeparse")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.CelService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -121,10 +127,10 @@ func NewCelServiceHandler(svc CelServiceHandler, opts ...connect_go.HandlerOptio
 // UnimplementedCelServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedCelServiceHandler struct{}
 
-func (UnimplementedCelServiceHandler) BatchParse(context.Context, *connect_go.Request[v1.BatchParseRequest]) (*connect_go.Response[v1.BatchParseResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.CelService.BatchParse is not implemented"))
+func (UnimplementedCelServiceHandler) BatchParse(context.Context, *connect.Request[v1.BatchParseRequest]) (*connect.Response[v1.BatchParseResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.CelService.BatchParse is not implemented"))
 }
 
-func (UnimplementedCelServiceHandler) BatchDeparse(context.Context, *connect_go.Request[v1.BatchDeparseRequest]) (*connect_go.Response[v1.BatchDeparseResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.CelService.BatchDeparse is not implemented"))
+func (UnimplementedCelServiceHandler) BatchDeparse(context.Context, *connect.Request[v1.BatchDeparseRequest]) (*connect.Response[v1.BatchDeparseResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.CelService.BatchDeparse is not implemented"))
 }

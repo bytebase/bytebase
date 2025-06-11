@@ -5,9 +5,9 @@
 package v1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ActuatorServiceName is the fully-qualified name of the ActuatorService service.
@@ -53,11 +53,11 @@ const (
 
 // ActuatorServiceClient is a client for the bytebase.v1.ActuatorService service.
 type ActuatorServiceClient interface {
-	GetActuatorInfo(context.Context, *connect_go.Request[v1.GetActuatorInfoRequest]) (*connect_go.Response[v1.ActuatorInfo], error)
-	UpdateActuatorInfo(context.Context, *connect_go.Request[v1.UpdateActuatorInfoRequest]) (*connect_go.Response[v1.ActuatorInfo], error)
-	SetupSample(context.Context, *connect_go.Request[v1.SetupSampleRequest]) (*connect_go.Response[emptypb.Empty], error)
-	DeleteCache(context.Context, *connect_go.Request[v1.DeleteCacheRequest]) (*connect_go.Response[emptypb.Empty], error)
-	GetResourcePackage(context.Context, *connect_go.Request[v1.GetResourcePackageRequest]) (*connect_go.Response[v1.ResourcePackage], error)
+	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
+	UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
+	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
+	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)
+	GetResourcePackage(context.Context, *connect.Request[v1.GetResourcePackageRequest]) (*connect.Response[v1.ResourcePackage], error)
 }
 
 // NewActuatorServiceClient constructs a client for the bytebase.v1.ActuatorService service. By
@@ -67,78 +67,84 @@ type ActuatorServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewActuatorServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) ActuatorServiceClient {
+func NewActuatorServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ActuatorServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
+	actuatorServiceMethods := v1.File_v1_actuator_service_proto.Services().ByName("ActuatorService").Methods()
 	return &actuatorServiceClient{
-		getActuatorInfo: connect_go.NewClient[v1.GetActuatorInfoRequest, v1.ActuatorInfo](
+		getActuatorInfo: connect.NewClient[v1.GetActuatorInfoRequest, v1.ActuatorInfo](
 			httpClient,
 			baseURL+ActuatorServiceGetActuatorInfoProcedure,
-			opts...,
+			connect.WithSchema(actuatorServiceMethods.ByName("GetActuatorInfo")),
+			connect.WithClientOptions(opts...),
 		),
-		updateActuatorInfo: connect_go.NewClient[v1.UpdateActuatorInfoRequest, v1.ActuatorInfo](
+		updateActuatorInfo: connect.NewClient[v1.UpdateActuatorInfoRequest, v1.ActuatorInfo](
 			httpClient,
 			baseURL+ActuatorServiceUpdateActuatorInfoProcedure,
-			opts...,
+			connect.WithSchema(actuatorServiceMethods.ByName("UpdateActuatorInfo")),
+			connect.WithClientOptions(opts...),
 		),
-		setupSample: connect_go.NewClient[v1.SetupSampleRequest, emptypb.Empty](
+		setupSample: connect.NewClient[v1.SetupSampleRequest, emptypb.Empty](
 			httpClient,
 			baseURL+ActuatorServiceSetupSampleProcedure,
-			opts...,
+			connect.WithSchema(actuatorServiceMethods.ByName("SetupSample")),
+			connect.WithClientOptions(opts...),
 		),
-		deleteCache: connect_go.NewClient[v1.DeleteCacheRequest, emptypb.Empty](
+		deleteCache: connect.NewClient[v1.DeleteCacheRequest, emptypb.Empty](
 			httpClient,
 			baseURL+ActuatorServiceDeleteCacheProcedure,
-			opts...,
+			connect.WithSchema(actuatorServiceMethods.ByName("DeleteCache")),
+			connect.WithClientOptions(opts...),
 		),
-		getResourcePackage: connect_go.NewClient[v1.GetResourcePackageRequest, v1.ResourcePackage](
+		getResourcePackage: connect.NewClient[v1.GetResourcePackageRequest, v1.ResourcePackage](
 			httpClient,
 			baseURL+ActuatorServiceGetResourcePackageProcedure,
-			opts...,
+			connect.WithSchema(actuatorServiceMethods.ByName("GetResourcePackage")),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // actuatorServiceClient implements ActuatorServiceClient.
 type actuatorServiceClient struct {
-	getActuatorInfo    *connect_go.Client[v1.GetActuatorInfoRequest, v1.ActuatorInfo]
-	updateActuatorInfo *connect_go.Client[v1.UpdateActuatorInfoRequest, v1.ActuatorInfo]
-	setupSample        *connect_go.Client[v1.SetupSampleRequest, emptypb.Empty]
-	deleteCache        *connect_go.Client[v1.DeleteCacheRequest, emptypb.Empty]
-	getResourcePackage *connect_go.Client[v1.GetResourcePackageRequest, v1.ResourcePackage]
+	getActuatorInfo    *connect.Client[v1.GetActuatorInfoRequest, v1.ActuatorInfo]
+	updateActuatorInfo *connect.Client[v1.UpdateActuatorInfoRequest, v1.ActuatorInfo]
+	setupSample        *connect.Client[v1.SetupSampleRequest, emptypb.Empty]
+	deleteCache        *connect.Client[v1.DeleteCacheRequest, emptypb.Empty]
+	getResourcePackage *connect.Client[v1.GetResourcePackageRequest, v1.ResourcePackage]
 }
 
 // GetActuatorInfo calls bytebase.v1.ActuatorService.GetActuatorInfo.
-func (c *actuatorServiceClient) GetActuatorInfo(ctx context.Context, req *connect_go.Request[v1.GetActuatorInfoRequest]) (*connect_go.Response[v1.ActuatorInfo], error) {
+func (c *actuatorServiceClient) GetActuatorInfo(ctx context.Context, req *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
 	return c.getActuatorInfo.CallUnary(ctx, req)
 }
 
 // UpdateActuatorInfo calls bytebase.v1.ActuatorService.UpdateActuatorInfo.
-func (c *actuatorServiceClient) UpdateActuatorInfo(ctx context.Context, req *connect_go.Request[v1.UpdateActuatorInfoRequest]) (*connect_go.Response[v1.ActuatorInfo], error) {
+func (c *actuatorServiceClient) UpdateActuatorInfo(ctx context.Context, req *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
 	return c.updateActuatorInfo.CallUnary(ctx, req)
 }
 
 // SetupSample calls bytebase.v1.ActuatorService.SetupSample.
-func (c *actuatorServiceClient) SetupSample(ctx context.Context, req *connect_go.Request[v1.SetupSampleRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *actuatorServiceClient) SetupSample(ctx context.Context, req *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.setupSample.CallUnary(ctx, req)
 }
 
 // DeleteCache calls bytebase.v1.ActuatorService.DeleteCache.
-func (c *actuatorServiceClient) DeleteCache(ctx context.Context, req *connect_go.Request[v1.DeleteCacheRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *actuatorServiceClient) DeleteCache(ctx context.Context, req *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteCache.CallUnary(ctx, req)
 }
 
 // GetResourcePackage calls bytebase.v1.ActuatorService.GetResourcePackage.
-func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, req *connect_go.Request[v1.GetResourcePackageRequest]) (*connect_go.Response[v1.ResourcePackage], error) {
+func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, req *connect.Request[v1.GetResourcePackageRequest]) (*connect.Response[v1.ResourcePackage], error) {
 	return c.getResourcePackage.CallUnary(ctx, req)
 }
 
 // ActuatorServiceHandler is an implementation of the bytebase.v1.ActuatorService service.
 type ActuatorServiceHandler interface {
-	GetActuatorInfo(context.Context, *connect_go.Request[v1.GetActuatorInfoRequest]) (*connect_go.Response[v1.ActuatorInfo], error)
-	UpdateActuatorInfo(context.Context, *connect_go.Request[v1.UpdateActuatorInfoRequest]) (*connect_go.Response[v1.ActuatorInfo], error)
-	SetupSample(context.Context, *connect_go.Request[v1.SetupSampleRequest]) (*connect_go.Response[emptypb.Empty], error)
-	DeleteCache(context.Context, *connect_go.Request[v1.DeleteCacheRequest]) (*connect_go.Response[emptypb.Empty], error)
-	GetResourcePackage(context.Context, *connect_go.Request[v1.GetResourcePackageRequest]) (*connect_go.Response[v1.ResourcePackage], error)
+	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
+	UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
+	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
+	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)
+	GetResourcePackage(context.Context, *connect.Request[v1.GetResourcePackageRequest]) (*connect.Response[v1.ResourcePackage], error)
 }
 
 // NewActuatorServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -146,31 +152,37 @@ type ActuatorServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	actuatorServiceGetActuatorInfoHandler := connect_go.NewUnaryHandler(
+func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	actuatorServiceMethods := v1.File_v1_actuator_service_proto.Services().ByName("ActuatorService").Methods()
+	actuatorServiceGetActuatorInfoHandler := connect.NewUnaryHandler(
 		ActuatorServiceGetActuatorInfoProcedure,
 		svc.GetActuatorInfo,
-		opts...,
+		connect.WithSchema(actuatorServiceMethods.ByName("GetActuatorInfo")),
+		connect.WithHandlerOptions(opts...),
 	)
-	actuatorServiceUpdateActuatorInfoHandler := connect_go.NewUnaryHandler(
+	actuatorServiceUpdateActuatorInfoHandler := connect.NewUnaryHandler(
 		ActuatorServiceUpdateActuatorInfoProcedure,
 		svc.UpdateActuatorInfo,
-		opts...,
+		connect.WithSchema(actuatorServiceMethods.ByName("UpdateActuatorInfo")),
+		connect.WithHandlerOptions(opts...),
 	)
-	actuatorServiceSetupSampleHandler := connect_go.NewUnaryHandler(
+	actuatorServiceSetupSampleHandler := connect.NewUnaryHandler(
 		ActuatorServiceSetupSampleProcedure,
 		svc.SetupSample,
-		opts...,
+		connect.WithSchema(actuatorServiceMethods.ByName("SetupSample")),
+		connect.WithHandlerOptions(opts...),
 	)
-	actuatorServiceDeleteCacheHandler := connect_go.NewUnaryHandler(
+	actuatorServiceDeleteCacheHandler := connect.NewUnaryHandler(
 		ActuatorServiceDeleteCacheProcedure,
 		svc.DeleteCache,
-		opts...,
+		connect.WithSchema(actuatorServiceMethods.ByName("DeleteCache")),
+		connect.WithHandlerOptions(opts...),
 	)
-	actuatorServiceGetResourcePackageHandler := connect_go.NewUnaryHandler(
+	actuatorServiceGetResourcePackageHandler := connect.NewUnaryHandler(
 		ActuatorServiceGetResourcePackageProcedure,
 		svc.GetResourcePackage,
-		opts...,
+		connect.WithSchema(actuatorServiceMethods.ByName("GetResourcePackage")),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.ActuatorService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -193,22 +205,22 @@ func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect_go.Ha
 // UnimplementedActuatorServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedActuatorServiceHandler struct{}
 
-func (UnimplementedActuatorServiceHandler) GetActuatorInfo(context.Context, *connect_go.Request[v1.GetActuatorInfoRequest]) (*connect_go.Response[v1.ActuatorInfo], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.GetActuatorInfo is not implemented"))
+func (UnimplementedActuatorServiceHandler) GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.GetActuatorInfo is not implemented"))
 }
 
-func (UnimplementedActuatorServiceHandler) UpdateActuatorInfo(context.Context, *connect_go.Request[v1.UpdateActuatorInfoRequest]) (*connect_go.Response[v1.ActuatorInfo], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.UpdateActuatorInfo is not implemented"))
+func (UnimplementedActuatorServiceHandler) UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.UpdateActuatorInfo is not implemented"))
 }
 
-func (UnimplementedActuatorServiceHandler) SetupSample(context.Context, *connect_go.Request[v1.SetupSampleRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.SetupSample is not implemented"))
+func (UnimplementedActuatorServiceHandler) SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.SetupSample is not implemented"))
 }
 
-func (UnimplementedActuatorServiceHandler) DeleteCache(context.Context, *connect_go.Request[v1.DeleteCacheRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.DeleteCache is not implemented"))
+func (UnimplementedActuatorServiceHandler) DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.DeleteCache is not implemented"))
 }
 
-func (UnimplementedActuatorServiceHandler) GetResourcePackage(context.Context, *connect_go.Request[v1.GetResourcePackageRequest]) (*connect_go.Response[v1.ResourcePackage], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.GetResourcePackage is not implemented"))
+func (UnimplementedActuatorServiceHandler) GetResourcePackage(context.Context, *connect.Request[v1.GetResourcePackageRequest]) (*connect.Response[v1.ResourcePackage], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.GetResourcePackage is not implemented"))
 }
