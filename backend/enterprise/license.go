@@ -58,7 +58,8 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscriptio
 	s.mu.RUnlock()
 
 	if cached != nil {
-		if cached.Plan == v1pb.PlanType_FREE || isSubscriptionExpired(cached) {
+		// Invalidate the cache if expired.
+		if cached.ExpiresTime != nil && cached.ExpiresTime.AsTime().Before(time.Now()) {
 			// refresh expired subscription
 			s.mu.Lock()
 			s.cachedSubscription = nil
@@ -73,30 +74,26 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscriptio
 	// Cache the subscription.
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	// Double-check after acquiring write lock
-	if s.cachedSubscription != nil && s.cachedSubscription.Plan != v1pb.PlanType_FREE && !isSubscriptionExpired(s.cachedSubscription) {
-		return s.cachedSubscription
+
+	subscription := s.provider.LoadSubscription(ctx)
+	if subscription == nil {
+		// Never had a subscription, set to free plan.
+		subscription = &v1pb.Subscription{
+			Plan: v1pb.PlanType_FREE,
+		}
 	}
-	s.cachedSubscription = s.provider.LoadSubscription(ctx)
-	return s.cachedSubscription
+	// Switch to free plan if the subscription is expired.
+	if subscription.ExpiresTime != nil && subscription.ExpiresTime.AsTime().Before(time.Now()) {
+		subscription.Plan = v1pb.PlanType_FREE
+	}
+	s.cachedSubscription = subscription
+	return subscription
 }
 
 // GetEffectivePlan gets the effective plan.
 func (s *LicenseService) GetEffectivePlan() v1pb.PlanType {
 	ctx := context.Background()
-	subscription := s.LoadSubscription(ctx)
-	if subscription.ExpiresTime != nil && subscription.ExpiresTime.AsTime().Before(time.Now()) {
-		return v1pb.PlanType_FREE
-	}
-	return subscription.Plan
-}
-
-// isSubscriptionExpired returns if the subscription is expired.
-func isSubscriptionExpired(s *v1pb.Subscription) bool {
-	if s.Plan == v1pb.PlanType_FREE || s.ExpiresTime == nil {
-		return false
-	}
-	return s.ExpiresTime.AsTime().Before(time.Now())
+	return s.LoadSubscription(ctx).Plan
 }
 
 // IsFeatureEnabled returns whether a feature is enabled.

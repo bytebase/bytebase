@@ -66,26 +66,22 @@ func (*Provider) StoreLicense(_ context.Context, _ string) error {
 
 // LoadSubscription will load the aws subscription.
 func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
-	subscription := &v1pb.Subscription{
-		InstanceCount: 0,
-		SeatCount:     0,
-		Plan:          v1pb.PlanType_FREE,
-		OrgName:       aws.ToString(p.identity.Account),
-	}
-
 	license, err := p.checkoutLicense(ctx)
 	if err != nil {
 		slog.Error("failed to checkout license",
 			log.BBError(err),
 		)
-		return subscription
+		return nil
 	}
 
 	if license.Status != types.LicenseStatusAvailable {
-		return subscription
+		return nil
 	}
 
-	subscription.Plan = v1pb.PlanType_ENTERPRISE
+	subscription := &v1pb.Subscription{
+		Plan:    v1pb.PlanType_ENTERPRISE,
+		OrgName: aws.ToString(p.identity.Account),
+	}
 
 	if v := license.Validity; v != nil {
 		end, err := time.Parse(time.RFC3339, aws.ToString(v.End))
@@ -94,9 +90,9 @@ func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 				slog.String("end", *v.Begin),
 				log.BBError(err),
 			)
-		} else {
-			subscription.ExpiresTime = timestamppb.New(end.UTC())
+			return nil
 		}
+		subscription.ExpiresTime = timestamppb.New(end.UTC())
 	}
 
 	for _, entitlement := range license.Entitlements {
