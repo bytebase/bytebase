@@ -291,7 +291,11 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea."
     },
-    "prior-backup-tips": "Haga una copia de seguridad de los datos afectados con anticipación"
+    "prior-backup-tips": "La copia de seguridad de los datos afectados con anticipación",
+    "database-create": {
+      "created": "Creado",
+      "pending": "Pendiente"
+    }
   },
   "task-run": {
     "status": {
@@ -2112,7 +2116,28 @@
     "overuse-modal": {
       "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones:"
     },
-    "disabled-feature": "Función deshabilitada"
+    "disabled-feature": "Función deshabilitada",
+    "upgrade": "Actualizar",
+    "contact-us": "Contáctanos",
+    "current": "Actual",
+    "expired": "Expirado",
+    "expires-at": "Expira el",
+    "plan-compare": "Comparar planes",
+    "trialing": "En período de prueba",
+    "unlimited": "Ilimitado",
+    "max-instance-count": "Cantidad máxima de instancias",
+    "plan": {
+      "free": {
+        "title": "Gratis"
+      },
+      "team": {
+        "title": "Equipo"
+      },
+      "enterprise": {
+        "title": "Empresa"
+      },
+      "try": "Pruébalo gratis."
+    }
   },
   "sheet": {
     "mine": "Mío",
@@ -2185,7 +2210,16 @@
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
     "view-definition": "Ver definición",
-    "all-checks-passed": "Todos los controles pasaron."
+    "all-checks-passed": "Todas las comprobaciones pasaron",
+    "category": {
+      "builtin": "Integrado"
+    },
+    "level": {
+      "name": "Nivel",
+      "error": "Error",
+      "warning": "Advertencia",
+      "disabled": "Deshabilitado"
+    }
   },
   "audit-log": {
     "export-finished": "Exportación finalizada",
