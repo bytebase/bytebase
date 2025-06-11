@@ -29,7 +29,7 @@ service DatabaseService {
       additional_bindings: {get: "/v1/{parent=instances/*}/databases:batchGet"}
     };
     option (bytebase.v1.permission) = "bb.databases.get";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
