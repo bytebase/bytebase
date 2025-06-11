@@ -128,27 +128,6 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       );
       return Math.max(expiresTime.diff(new Date(), "day"), 0);
     },
-    isNearExpireTime(state): boolean {
-      if (
-        !state.subscription ||
-        !state.subscription?.trialing ||
-        this.isFreePlan
-      ) {
-        return false;
-      }
-
-      const daysBeforeExpire = this.daysBeforeExpire;
-      if (daysBeforeExpire <= 0) return false;
-
-      const trialEndTime = dayjs(
-        getDateForPbTimestamp(state.subscription.expiresTime)
-      );
-      const total = trialEndTime.diff(
-        getDateForPbTimestamp(state.subscription.startedTime),
-        "day"
-      );
-      return daysBeforeExpire / total < 0.5;
-    },
     showTrial(state): boolean {
       if (!this.isSelfHostLicense) {
         return false;

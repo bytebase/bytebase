@@ -76,7 +76,6 @@ func (s *SubscriptionService) loadSubscription(ctx context.Context) (*v1pb.Subsc
 	}
 	if sub.Plan != v1pb.PlanType_FREE {
 		subscription.ExpiresTime = timestamppb.New(time.Unix(sub.ExpiresTS, 0))
-		subscription.StartedTime = timestamppb.New(time.Unix(sub.StartedTS, 0))
 	}
 
 	return subscription, nil

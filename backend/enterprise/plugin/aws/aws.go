@@ -89,16 +89,6 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 	subscription.Plan = v1pb.PlanType_ENTERPRISE
 
 	if v := license.Validity; v != nil {
-		begin, err := time.Parse(time.RFC3339, aws.ToString(v.Begin))
-		if err != nil {
-			slog.Error("failed to parse subscription begin time",
-				slog.String("begin", *v.Begin),
-				log.BBError(err),
-			)
-		} else {
-			subscription.StartedTS = begin.UTC().Unix()
-		}
-
 		end, err := time.Parse(time.RFC3339, aws.ToString(v.End))
 		if err != nil {
 			slog.Error("failed to parse subscription end time",

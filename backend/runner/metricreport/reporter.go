@@ -166,7 +166,6 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 	subscriptionStartDate := ""
 	subscriptionEndDate := ""
 	if subscription.Plan != v1pb.PlanType_FREE {
-		subscriptionStartDate = time.Unix(subscription.StartedTS, 0).Format(time.RFC3339)
 		subscriptionEndDate = time.Unix(subscription.ExpiresTS, 0).Format(time.RFC3339)
 	}
 

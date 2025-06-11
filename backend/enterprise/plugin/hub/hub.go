@@ -88,7 +88,6 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 	return &enterprise.Subscription{
 		Plan:          license.Plan,
 		ExpiresTS:     license.ExpiresTS,
-		StartedTS:     license.IssuedTS,
 		InstanceCount: license.InstanceCount,
 		Seat:          license.Seat,
 		Trialing:      license.Trialing,

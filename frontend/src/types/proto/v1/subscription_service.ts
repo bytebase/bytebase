@@ -713,7 +713,6 @@ export interface Subscription {
   seatCount: number;
   instanceCount: number;
   expiresTime: Timestamp | undefined;
-  startedTime: Timestamp | undefined;
   plan: PlanType;
   trialing: boolean;
   orgId: string;
@@ -900,7 +899,6 @@ function createBaseSubscription(): Subscription {
     seatCount: 0,
     instanceCount: 0,
     expiresTime: undefined,
-    startedTime: undefined,
     plan: PlanType.PLAN_TYPE_UNSPECIFIED,
     trialing: false,
     orgId: "",
@@ -918,9 +916,6 @@ export const Subscription: MessageFns<Subscription> = {
     }
     if (message.expiresTime !== undefined) {
       Timestamp.encode(message.expiresTime, writer.uint32(26).fork()).join();
-    }
-    if (message.startedTime !== undefined) {
-      Timestamp.encode(message.startedTime, writer.uint32(34).fork()).join();
     }
     if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
       writer.uint32(40).int32(planTypeToNumber(message.plan));
@@ -966,14 +961,6 @@ export const Subscription: MessageFns<Subscription> = {
           }
 
           message.expiresTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.startedTime = Timestamp.decode(reader, reader.uint32());
           continue;
         }
         case 5: {
@@ -1022,7 +1009,6 @@ export const Subscription: MessageFns<Subscription> = {
       seatCount: isSet(object.seatCount) ? globalThis.Number(object.seatCount) : 0,
       instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
       expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
-      startedTime: isSet(object.startedTime) ? fromJsonTimestamp(object.startedTime) : undefined,
       plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : PlanType.PLAN_TYPE_UNSPECIFIED,
       trialing: isSet(object.trialing) ? globalThis.Boolean(object.trialing) : false,
       orgId: isSet(object.orgId) ? globalThis.String(object.orgId) : "",
@@ -1040,9 +1026,6 @@ export const Subscription: MessageFns<Subscription> = {
     }
     if (message.expiresTime !== undefined) {
       obj.expiresTime = fromTimestamp(message.expiresTime).toISOString();
-    }
-    if (message.startedTime !== undefined) {
-      obj.startedTime = fromTimestamp(message.startedTime).toISOString();
     }
     if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
       obj.plan = planTypeToJSON(message.plan);
@@ -1068,9 +1051,6 @@ export const Subscription: MessageFns<Subscription> = {
     message.instanceCount = object.instanceCount ?? 0;
     message.expiresTime = (object.expiresTime !== undefined && object.expiresTime !== null)
       ? Timestamp.fromPartial(object.expiresTime)
-      : undefined;
-    message.startedTime = (object.startedTime !== undefined && object.startedTime !== null)
-      ? Timestamp.fromPartial(object.startedTime)
       : undefined;
     message.plan = object.plan ?? PlanType.PLAN_TYPE_UNSPECIFIED;
     message.trialing = object.trialing ?? false;

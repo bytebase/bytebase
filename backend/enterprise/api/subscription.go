@@ -17,7 +17,6 @@ type Subscription struct {
 	InstanceCount int
 	Seat          int
 	ExpiresTS     int64
-	StartedTS     int64
 	Plan          v1pb.PlanType
 	Trialing      bool
 	OrgID         string

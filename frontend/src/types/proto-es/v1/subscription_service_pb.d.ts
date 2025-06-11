@@ -75,11 +75,6 @@ export declare type Subscription = Message<"bytebase.v1.Subscription"> & {
   expiresTime?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp started_time = 4;
-   */
-  startedTime?: Timestamp;
-
-  /**
    * @generated from field: bytebase.v1.PlanType plan = 5;
    */
   plan: PlanType;

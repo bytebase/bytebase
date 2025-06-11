@@ -13197,10 +13197,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                startedTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
                 plan:
                     readOnly: true
                     enum:
