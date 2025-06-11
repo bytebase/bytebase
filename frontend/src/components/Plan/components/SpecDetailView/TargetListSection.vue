@@ -160,7 +160,9 @@ const project = computed(() => {
   return projectStore.getProjectByName(projectName);
 });
 
-// Only allow editing in creation mode or if the plan is editable
+// Only allow editing in creation mode or if the plan is editable.
+// An empty string for `plan.value.rollout` indicates that the plan is in a draft or uninitialized state,
+// which allows edits to be made.
 const allowEdit = computed(() => {
   return (isCreating.value || plan.value.rollout === "") && selectedSpec.value;
 });
