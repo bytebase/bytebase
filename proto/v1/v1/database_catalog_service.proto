@@ -8,7 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "v1/annotation.proto";
 
-option go_package = "generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service DatabaseCatalogService {
   rpc GetDatabaseCatalog(GetDatabaseCatalogRequest) returns (DatabaseCatalog) {

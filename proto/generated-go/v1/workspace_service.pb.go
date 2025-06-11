@@ -28,7 +28,7 @@ const file_v1_workspace_service_proto_rawDesc = "" +
 	"\x1av1/workspace_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x13v1/annotation.proto\x1a\x13v1/iam_policy.proto2\xd7\x02\n" +
 	"\x10WorkspaceService\x12\x9c\x01\n" +
 	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"R\x8a\xea0\x1abb.workspaces.getIamPolicy\x90\xea0\x01\x82\xd3\xe4\x93\x02*\x12(/v1/{resource=workspaces/*}:getIamPolicy\x12\xa3\x01\n" +
-	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"Y\x8a\xea0\x1abb.workspaces.setIamPolicy\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{resource=workspaces/*}:setIamPolicyB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"Y\x8a\xea0\x1abb.workspaces.setIamPolicy\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{resource=workspaces/*}:setIamPolicyB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var file_v1_workspace_service_proto_goTypes = []any{
 	(*GetIamPolicyRequest)(nil), // 0: bytebase.v1.GetIamPolicyRequest

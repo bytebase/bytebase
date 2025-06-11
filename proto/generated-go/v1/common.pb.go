@@ -480,7 +480,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x03CSV\x10\x01\x12\b\n" +
 	"\x04JSON\x10\x02\x12\a\n" +
 	"\x03SQL\x10\x03\x12\b\n" +
-	"\x04XLSX\x10\x04B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x04XLSX\x10\x04B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_common_proto_rawDescOnce sync.Once

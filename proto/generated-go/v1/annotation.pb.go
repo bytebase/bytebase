@@ -137,7 +137,7 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"permission:Z\n" +
 	"\vauth_method\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x8d\x06 \x01(\x0e2\x17.bytebase.v1.AuthMethodR\n" +
 	"authMethod:6\n" +
-	"\x05audit\x12\x1e.google.protobuf.MethodOptions\x18\xa3\x8d\x06 \x01(\bR\x05auditB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x05audit\x12\x1e.google.protobuf.MethodOptions\x18\xa3\x8d\x06 \x01(\bR\x05auditB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_annotation_proto_rawDescOnce sync.Once

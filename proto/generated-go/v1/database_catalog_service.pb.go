@@ -750,7 +750,7 @@ const file_v1_database_catalog_service_proto_rawDesc = "" +
 	"\x04kind2\xb3\x03\n" +
 	"\x16DatabaseCatalogService\x12\xb4\x01\n" +
 	"\x12GetDatabaseCatalog\x12&.bytebase.v1.GetDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"X\xdaA\x04name\x8a\xea0\x17bb.databaseCatalogs.get\x90\xea0\x01\x82\xd3\xe4\x93\x02,\x12*/v1/{name=instances/*/databases/*/catalog}\x12\xe1\x01\n" +
-	"\x15UpdateDatabaseCatalog\x12).bytebase.v1.UpdateDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"\x7f\xdaA\x13catalog,update_mask\x8a\xea0\x1abb.databaseCatalogs.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02=:\acatalog22/v1/{catalog.name=instances/*/databases/*/catalog}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x15UpdateDatabaseCatalog\x12).bytebase.v1.UpdateDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"\x7f\xdaA\x13catalog,update_mask\x8a\xea0\x1abb.databaseCatalogs.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02=:\acatalog22/v1/{catalog.name=instances/*/databases/*/catalog}B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_database_catalog_service_proto_rawDescOnce sync.Once
