@@ -9615,7 +9615,7 @@ export const DatabaseServiceDefinition = {
       options: {
         _unknownFields: {
           800010: [new Uint8Array([16, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 103, 101, 116])],
-          800016: [new Uint8Array([1])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               91,
