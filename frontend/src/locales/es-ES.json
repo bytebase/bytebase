@@ -2121,7 +2121,7 @@
     "overuse-modal": {
       "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones:"
     },
-    "disabled-feature": "Función de discapacitados"
+    "disabled-feature": "Función deshabilitada"
   },
   "sheet": {
     "mine": "Mío",
