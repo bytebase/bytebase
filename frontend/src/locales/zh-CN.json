@@ -291,7 +291,11 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
     },
-    "prior-backup-tips": "提前备份受影响的数据"
+    "prior-backup-tips": "备份提前影响数据",
+    "database-create": {
+      "created": "已创建",
+      "pending": "待创建"
+    }
   },
   "task-run": {
     "status": {
@@ -2112,7 +2116,28 @@
     "overuse-modal": {
       "description": "您正在使用当前「{plan}」不包含的功能。立即升级避免影响使用。"
     },
-    "disabled-feature": "禁用功能"
+    "disabled-feature": "禁用功能",
+    "upgrade": "升级",
+    "contact-us": "联系我们",
+    "current": "当前",
+    "expired": "已过期",
+    "expires-at": "过期时间",
+    "plan-compare": "比较方案",
+    "trialing": "试用中",
+    "unlimited": "无限制",
+    "max-instance-count": "最大实例数量",
+    "plan": {
+      "free": {
+        "title": "免费版"
+      },
+      "team": {
+        "title": "团队版"
+      },
+      "enterprise": {
+        "title": "企业版"
+      },
+      "try": "免费试用。"
+    }
   },
   "sheet": {
     "mine": "我的",
@@ -2185,7 +2210,16 @@
     "enabled-rules": "开启的规则数",
     "rule-detail": "规则详情",
     "view-definition": "查看定义",
-    "all-checks-passed": "所有检查都通过了。"
+    "all-checks-passed": "所有检查都通过了",
+    "category": {
+      "builtin": "内置"
+    },
+    "level": {
+      "name": "级别",
+      "error": "错误",
+      "warning": "警告",
+      "disabled": "已禁用"
+    }
   },
   "audit-log": {
     "export-finished": "导出完成",
