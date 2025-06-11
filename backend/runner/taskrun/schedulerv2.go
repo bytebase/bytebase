@@ -17,7 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -39,7 +39,7 @@ type SchedulerV2 struct {
 	webhookManager *webhook.Manager
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 }
 
 // NewSchedulerV2 will create a new scheduler.
@@ -48,7 +48,7 @@ func NewSchedulerV2(
 	stateCfg *state.State,
 	webhookManager *webhook.Manager,
 	profile *config.Profile,
-	licenseService enterprise.LicenseService,
+	licenseService *enterprise.LicenseService,
 ) *SchedulerV2 {
 	return &SchedulerV2{
 		store:          store,

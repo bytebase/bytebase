@@ -10,7 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -19,7 +19,7 @@ import (
 )
 
 // NewDataExportExecutor creates a data export task executor.
-func NewDataExportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+func NewDataExportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &DataExportExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
@@ -34,7 +34,7 @@ func NewDataExportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, l
 type DataExportExecutor struct {
 	store        *store.Store
 	dbFactory    *dbfactory.DBFactory
-	license      enterprise.LicenseService
+	license      *enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
 	profile      *config.Profile

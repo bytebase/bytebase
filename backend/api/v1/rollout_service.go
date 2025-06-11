@@ -22,7 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
@@ -36,7 +36,7 @@ type RolloutService struct {
 	v1pb.UnimplementedRolloutServiceServer
 	store          *store.Store
 	sheetManager   *sheet.Manager
-	licenseService enterprise.LicenseService
+	licenseService *enterprise.LicenseService
 	dbFactory      *dbfactory.DBFactory
 	stateCfg       *state.State
 	webhookManager *webhook.Manager
@@ -45,7 +45,7 @@ type RolloutService struct {
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
 	return &RolloutService{
 		store:          store,
 		sheetManager:   sheetManager,
