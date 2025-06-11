@@ -73,169 +73,297 @@
   },
   "subscription": {
     "features": {
-      "bb-feature-external-secret-manager": {
-        "title": "外部キーを設定する",
-        "desc": "データベース パスワードの外部キーとして Vault またはカスタム URL を設定します。"
+      "FEATURE_DATABASE_CHANGE": {
+        "title": "データベース変更",
+        "desc": "コアデータベース変更管理機能。"
       },
-      "bb-feature-task-schedule-time": {
-        "title": "タスクの実行時間を設定する",
-        "desc": "「タスク実行時刻の設定」では、特定の時刻に実行するタスクを設定できます"
+      "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
+        "title": "Gitベースのスキーマバージョン管理",
+        "desc": "自動チェック付きでVCSプルリクエストでSQLの変更をレビューします。"
       },
-      "bb-feature-multi-tenancy": {
-        "title": "バッチモード",
-        "desc": "異なるテナントまたはデータベース シャードに属するデータベースのグループに対するバッチ変更。"
+      "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
+        "title": "宣言的スキーマ移行",
+        "desc": "望ましいスキーマ状態を定義し、Bytebaseに移行を処理させます。"
       },
-      "bb-feature-rollout-policy": {
-        "title": "リリース戦略",
-        "desc": "「リリース戦略」は、データベーススキーマへの変更を手動でリリースする必要があるかどうかを制御できます。"
+      "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
+        "title": "スキーマの比較と同期",
+        "desc": "データベース間でスキーマを比較し、差分を同期します。"
       },
-      "bb-feature-environment-tier-policy": {
-        "title": "環境レベル",
-        "desc": "「環境レベル」では、環境を本番環境としてマークできます。"
+      "FEATURE_ONLINE_SCHEMA_CHANGE": {
+        "title": "オンラインスキーマ変更",
+        "desc": "最小限のロックで大規模なテーブルに対してスキーマ変更を実行します。"
       },
-      "bb-feature-sensitive-data": {
-        "title": "機密データ",
-        "desc": "データ テーブルの列を機密データとしてマークすると、クエリ結果に「******」として表示されます。"
+      "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
+        "title": "SQLレビュー",
+        "desc": "100以上のlintルールとスキーマ一貫性チェックでSQLベストプラクティスを適用します。"
       },
-      "bb-feature-access-control": {
-        "title": "データアクセス制御",
-        "desc": "ユーザーによるデータ クエリ結果のコピーの禁止など、データへのユーザー アクセスを制限します。"
+      "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
+        "title": "自動バックアップ",
+        "desc": "変更を加える前にデータを自動的にバックアップします。"
       },
-      "bb-feature-lgtm": {
-        "title": "LGTM検査",
-        "desc": "イシューに「LGTM」コメントがあるかどうかを確認してください。"
+      "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
+        "title": "ワンクリックデータロールバック",
+        "desc": "ワンクリックでデータ変更を素早くロールバックします。"
       },
-      "bb-feature-im-approval": {
-        "title": "IMの統合",
-        "desc": "統合された IM を使用してイシューを承認します。"
+      "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
+        "title": "複数データベースバッチ変更",
+        "desc": "異なるテナントやパーティション間で複数のデータベースに同じ変更を適用します。"
       },
-      "bb-feature-sql-review": {
-        "title": "100 を超える SQL 監査ポリシーのロックを解除します",
-        "desc": "さまざまな SQL lint ルールを設定して、研究開発組織に SQL のベスト プラクティスを実装し、スキーマ仕様の一貫性を確保します。"
+      "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
+        "title": "段階的環境デプロイメント",
+        "desc": "異なる環境を通じて段階的に変更をデプロイします。"
       },
-      "bb-feature-custom-approval": {
-        "title": "カスタム承認",
-        "desc": "さまざまなタスクのリスク レベルとカスタム承認フローを設定します。"
+      "FEATURE_SCHEDULED_ROLLOUT_TIME": {
+        "title": "スケジュールされたロールアウト時間",
+        "desc": "特定の時間に実行するようにデータベース変更をスケジュールします。"
       },
-      "bb-feature-vcs-sql-review": {
-        "title": "GitOps ワークフローでの SQL 監査",
-        "desc": "SQL 監査 CI を VCS リポジトリ パイプラインに追加して、プル リクエストで変更された SQL ファイルを自動的に監査します。"
+      "FEATURE_DATABASE_CHANGELOG": {
+        "title": "データベース変更ログ",
+        "desc": "すべてのデータベーススキーマとデータの変更を追跡します。"
       },
-      "bb-feature-rbac": {
-        "title": "役割管理",
-        "desc": "「ロール管理」では、DBAなどのメンバーに特定のロールを割り当てることができます。"
+      "FEATURE_SCHEMA_DRIFT_DETECTION": {
+        "title": "スキーマドリフト検出",
+        "desc": "帯域外のスキーマ変更を検出し、不一致を報告します。"
       },
-      "bb-feature-custom-role": {
-        "title": "カスタムロール",
-        "desc": "カスタム承認を設定するためにプロジェクト メンバーに適用できるカスタム ロールを定義します。"
+      "FEATURE_CHANGELIST": {
+        "title": "変更リスト",
+        "desc": "複数のデータベース変更をまとめてグループ化し管理します。"
       },
-      "bb-feature-watermark": {
-        "title": "ウォーターマークの設定",
-        "desc": "ユーザー名、ID、メールアドレスを含むページにウォーターマークを表示します。"
-      },
-      "bb-feature-audit-log": {
-        "title": "監査ログ",
-        "desc": "ワークスペースでユーザーが実行したアクションを記録およびクエリします。"
-      },
-      "bb-feature-schema-drift": {
-        "title": "スキーマの逸脱",
-        "desc": "予期しないスキーマ変更を検出し、スキーマの逸脱を報告します。"
-      },
-      "bb-feature-branding": {
-        "title": "カスタムブランド情報",
-        "desc": "カスタマイズされたロゴ"
-      },
-      "bb-feature-online-migration": {
-        "title": "オンラインでの大規模なテーブル変更",
-        "desc": "gh-ostをベースにしています。大きなテーブルの場合、テーブルのロック時間を数時間から数秒に短縮できます。"
-      },
-      "bb-feature-sync-schema-all-versions": {
-        "title": "データベーステーブルの同期",
-        "desc": "データベースのスキーマ バージョンを選択し、ターゲット データベースと同期します。"
-      },
-      "bb-feature-read-replica-connection": {
-        "title": "リードレプリカ接続",
-        "desc": "リードレプリカを使用して、読み取り専用データ ソースに接続します。"
-      },
-      "bb-feature-instance-ssh-connection": {
-        "title": "SSHインスタンス接続",
-        "desc": "SSH 経由でインスタンスに接続します。"
-      },
-      "bb.feature.custom-instance-synchronization": {
-        "title": "カスタムインスタンス同期",
-        "desc": "スキャン間隔、最大接続数、特定のデータベースの同期をカスタマイズします"
-      },
-      "bb-feature-index-advisor": {
-        "title": "インデックスの提案",
-        "desc": "インデックスの推奨事項により、クエリの遅延の原因となっているインデックスを検出し、関連する最適化の推奨事項を提供できます。"
-      },
-      "bb-feature-sso": {
-        "title": "シングル サインオン (SSO)",
-        "desc": "ユーザーが SSO を通じて Bytebase に安全にログインできるようにします。"
-      },
-      "bb-feature-2fa": {
-        "title": "二要素認証",
-        "desc": "2 要素認証は、システム メンバーに追加のセキュリティレイヤーを提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。"
-      },
-      "bb-feature-plugin-openai": {
-        "title": "AIの強化",
-        "desc": "OpenAI テクノロジーを活用した、AI で強化された SQL エディターとインデックス提案機能。"
-      },
-      "bb-feature-batch-query": {
-        "title": "バッチクエリ",
-        "desc": "SQL エディターで複数のデータベースに対してバッチ クエリを実行します。"
-      },
-      "bb-feature-shared-sql-script": {
-        "title": "共有SQLスクリプト",
-        "desc": "SQL スクリプトをプロジェクト メンバーと共有するか、誰でも利用できるようにします。"
-      },
-      "bb-feature-announcement": {
-        "title": "発表",
-        "desc": "お知らせバナーを設定します。"
-      },
-      "bb-feature-encrypted-secrets": {
-        "title": "秘密変数",
-        "desc": "シークレット変数をデータベースに保存し、イシューの SQL で使用します。"
-      },
-      "bb-feature-database-grouping": {
-        "title": "データベースのグループ化",
-        "desc": "データベースをグループ化すると、データベース グループ内のデータベースに対してバッチ操作を実行できます。"
-      },
-      "bb-feature-disallow-signup": {
-        "title": "セルフサービス登録を無効にする",
-        "desc": "無効化されると、新しいユーザーは自己登録できなくなり、管理者の招待を通じてのみアカウントを作成できます。"
-      },
-      "bb-feature-disallow-password-signin": {
-        "title": "メールアドレスとパスワードによるサインインを禁止する",
-        "desc": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。"
-      },
-      "bb-feature-schema-template": {
+      "FEATURE_SCHEMA_TEMPLATE": {
         "title": "スキーマテンプレート",
-        "desc": "スキーマの変更または設計時に適用できるスキーマ テンプレートを事前定義します。"
+        "desc": "一貫したスキーマ設計のための再利用可能なフィールドテンプレートを作成します。"
       },
-      "bb-feature-secure-token": {
-        "title": "ログイン頻度",
-        "desc": "ログイン頻度は、ユーザーが再度ログインする必要がある間隔を指定します。"
+      "FEATURE_ROLLOUT_POLICY": {
+        "title": "ロールアウトポリシー",
+        "desc": "スキーマ変更タスクが手動ロールアウトを必要とするかどうかを制御します。"
       },
-      "bb-feature-issue-advanced-search": {
-        "title": "イシューの詳細検索",
-        "desc": "高度な検索機能を使用して、無制限の過去のイシューにアクセスできます。"
+      "FEATURE_WEB_BASED_SQL_EDITOR": {
+        "title": "WebベースのSQLエディター",
+        "desc": "Webインターフェースから直接SQLクエリを実行します。"
       },
-      "bb-feature-issue-project-setting": {
-        "title": "高度な問題プロジェクト設定",
-        "desc": "高度な問題プロジェクト設定をカスタマイズします。問題制限の作成やデフォルトのバックアップ設定などが含まれます。"
+      "FEATURE_SQL_EDITOR_ADMIN_MODE": {
+        "title": "SQLエディター管理者モード",
+        "desc": "SQLエディターで管理機能にアクセスします。"
       },
-      "bb-feature-password-restriction": {
+      "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
+        "title": "自然言語からSQL",
+        "desc": "AIを使用して自然言語クエリをSQLに変換します。"
+      },
+      "FEATURE_AI_QUERY_EXPLANATION": {
+        "title": "AIクエリ説明",
+        "desc": "複雑なSQLクエリに対するAI駆動の説明を取得します。"
+      },
+      "FEATURE_AI_QUERY_SUGGESTIONS": {
+        "title": "AIクエリ提案",
+        "desc": "AI駆動のクエリ提案とインデックス推奨を取得します。"
+      },
+      "FEATURE_AUTO_COMPLETE": {
+        "title": "オートコンプリート",
+        "desc": "エディターでのインテリジェントSQLオートコンプリート。"
+      },
+      "FEATURE_SCHEMA_DIAGRAM": {
+        "title": "スキーマダイアグラム",
+        "desc": "インタラクティブなダイアグラムでデータベーススキーマを視覚化します。"
+      },
+      "FEATURE_SCHEMA_EDITOR": {
+        "title": "スキーマエディター",
+        "desc": "ドラッグアンドドロップインターフェースでビジュアルスキーマ編集。"
+      },
+      "FEATURE_DATA_EXPORT": {
+        "title": "データエクスポート",
+        "desc": "さまざまな形式でクエリ結果をエクスポートします。"
+      },
+      "FEATURE_QUERY_HISTORY": {
+        "title": "クエリ履歴",
+        "desc": "検索機能を備えた完全なクエリ実行履歴にアクセスします。"
+      },
+      "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
+        "title": "保存および共有されたSQLスクリプト",
+        "desc": "チームメンバーとSQLスクリプトを保存して共有します。"
+      },
+      "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION": {
+        "title": "SQLエディターDDL/DML制限",
+        "desc": "SQLエディターでDDLおよびDML操作を制限します。"
+      },
+      "FEATURE_BATCH_QUERY": {
+        "title": "バッチクエリ",
+        "desc": "複数のデータベースで同時にクエリを実行します。"
+      },
+      "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
+        "title": "読み取り専用接続",
+        "desc": "読み取り専用操作のために読み取りレプリカに接続します。"
+      },
+      "FEATURE_QUERY_POLICY": {
+        "title": "クエリポリシー",
+        "desc": "高度なクエリ制限と権限を設定します。"
+      },
+      "FEATURE_RESTRICT_COPYING_DATA": {
+        "title": "データコピーの制限",
+        "desc": "クエリ結果からデータをコピーするユーザーアクセスを制御します。"
+      },
+      "FEATURE_IAM": {
+        "title": "アイデンティティとアクセス管理",
+        "desc": "きめ細かなロールベースのアクセス制御システム。"
+      },
+      "FEATURE_INSTANCE_SSL_CONNECTION": {
+        "title": "SSL接続",
+        "desc": "SSL/TLS暗号化による安全なデータベース接続。"
+      },
+      "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
+        "title": "SSHトンネル接続",
+        "desc": "セキュリティ強化のためSSHトンネルを介してインスタンスに接続します。"
+      },
+      "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
+        "title": "IAM認証",
+        "desc": "データベース認証にクラウドプロバイダーのIAMを使用します。"
+      },
+      "FEATURE_GOOGLE_AND_GITHUB_SSO": {
+        "title": "GoogleとGitHub SSO",
+        "desc": "GoogleまたはGitHubアカウントでサインインします。"
+      },
+      "FEATURE_USER_GROUPS": {
+        "title": "ユーザーグループ",
+        "desc": "管理を容易にするためにユーザーをグループに編成します。"
+      },
+      "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
+        "title": "セルフサービスサインアップを無効化",
+        "desc": "新しいユーザー登録に管理者の招待を必要とします。"
+      },
+      "FEATURE_DATABASE_SECRET_VARIABLES": {
+        "title": "データベースシークレット変数",
+        "desc": "暗号化されたシークレットをSQLスクリプトで保存して使用します。"
+      },
+      "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
+        "title": "クエリデータソース制限",
+        "desc": "ユーザーがクエリできるデータソースを制限します。"
+      },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "カスタムインスタンス同期時間",
+        "desc": "データベース同期間隔と設定をカスタマイズします。"
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "カスタムインスタンス接続制限",
+        "desc": "最大データベース接続制限を設定します。"
+      },
+      "FEATURE_RISK_ASSESSMENT": {
+        "title": "リスク評価",
+        "desc": "データベース変更のリスクレベルを評価し分類します。"
+      },
+      "FEATURE_APPROVAL_WORKFLOW": {
+        "title": "承認ワークフロー",
+        "desc": "異なるタスクのリスクレベルと承認フローを設定します。"
+      },
+      "FEATURE_AUDIT_LOG": {
+        "title": "監査ログ",
+        "desc": "ワークスペースでユーザーが実行したすべての操作を追跡します。"
+      },
+      "FEATURE_ENTERPRISE_SSO": {
+        "title": "エンタープライズSSO",
+        "desc": "SAML、OIDC、OAuthプロバイダーでのシングルサインオン。"
+      },
+      "FEATURE_TWO_FA": {
+        "title": "二要素認証",
+        "desc": "認証アプリ検証で追加のセキュリティレイヤーを追加します。"
+      },
+      "FEATURE_PASSWORD_RESTRICTIONS": {
         "title": "パスワード制限",
-        "desc": "ユーザーのパスワードの制限を設定できるようにする"
+        "desc": "パスワードの複雑さとセキュリティ要件を適用します。"
       },
-      "bb-feature-directory-sync": {
+      "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
+        "title": "パスワードサインインを無効化",
+        "desc": "ユーザーサインインにSSO認証のみを要求します。"
+      },
+      "FEATURE_CUSTOM_ROLES": {
+        "title": "カスタムロール",
+        "desc": "組織に特定の権限を持つカスタムロールを定義します。"
+      },
+      "FEATURE_REQUEST_ROLE_WORKFLOW": {
+        "title": "ロールリクエストワークフロー",
+        "desc": "ユーザーは承認ワークフローでプロジェクトロールをリクエストできます。"
+      },
+      "FEATURE_DATA_MASKING": {
+        "title": "データマスキング",
+        "desc": "テーブル列を機密データとしてマークし、クエリ結果をマスクします。"
+      },
+      "FEATURE_DATA_CLASSIFICATION": {
+        "title": "データ分類",
+        "desc": "感度レベルに基づいてデータを分類およびラベル付けします。"
+      },
+      "FEATURE_SCIM": {
+        "title": "SCIM",
+        "desc": "クロスドメインアイデンティティ管理のためのシステムサポート。"
+      },
+      "FEATURE_DIRECTORY_SYNC": {
         "title": "ディレクトリ同期",
-        "desc": "Entra ID (旧 Azure AD) のユーザーとグループを Bytebase インスタンスに同期します"
+        "desc": "Entra IDからBytebaseにユーザーとグループを同期します。"
       },
-      "bb-feature-domain-restriction": {
-        "title": "ワークスペースドメイン",
-        "desc": "指定されたドメインの電子メール アドレスを持つユーザーのみにサインインを制限します。"
+      "FEATURE_SIGN_IN_FREQUENCY_CONTROL": {
+        "title": "サインイン頻度制御",
+        "desc": "ユーザーが再認証する頻度を設定します。"
+      },
+      "FEATURE_EXTERNAL_SECRET_MANAGER": {
+        "title": "外部シークレットマネージャー",
+        "desc": "データベースパスワードの外部シークレットとしてVaultまたはカスタムURLを使用します。"
+      },
+      "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
+        "title": "メールドメイン制限",
+        "desc": "指定されたメールドメインのユーザーのみにサインインを制限します。"
+      },
+      "FEATURE_ENVIRONMENT_MANAGEMENT": {
+        "title": "環境管理",
+        "desc": "異なるデプロイメント環境を管理および設定します。"
+      },
+      "FEATURE_IM_NOTIFICATIONS": {
+        "title": "IM通知",
+        "desc": "SlackやTeamsなどのIMプラットフォームに通知を送信します。"
+      },
+      "FEATURE_TERRAFORM_PROVIDER": {
+        "title": "Terraformプロバイダー",
+        "desc": "Terraformを使用してBytebaseリソースを管理します。"
+      },
+      "FEATURE_DATABASE_GROUPS": {
+        "title": "データベースグループ",
+        "desc": "バッチ操作と管理のためにデータベースをグループ化します。"
+      },
+      "FEATURE_ENVIRONMENT_TIERS": {
+        "title": "環境ティア",
+        "desc": "本番環境や開発環境などの環境ティアを定義します。"
+      },
+      "FEATURE_DASHBOARD_ANNOUNCEMENT": {
+        "title": "ダッシュボードアナウンスメント",
+        "desc": "ダッシュボードにカスタムアナウンスメントを表示します。"
+      },
+      "FEATURE_API_INTEGRATION_GUIDANCE": {
+        "title": "API統合ガイダンス",
+        "desc": "API統合のドキュメントとガイダンス。"
+      },
+      "FEATURE_CUSTOM_LOGO": {
+        "title": "カスタムロゴ",
+        "desc": "組織のロゴをカスタマイズします。"
+      },
+      "FEATURE_WATERMARK": {
+        "title": "ウォーターマーク",
+        "desc": "ページにユーザー情報を含む可視ウォーターマークを表示します。"
+      },
+      "FEATURE_ROADMAP_PRIORITIZATION": {
+        "title": "ロードマップの優先順位付け",
+        "desc": "機能開発の優先順位に影響を与えます。"
+      },
+      "FEATURE_CUSTOM_MSA": {
+        "title": "カスタムMSA",
+        "desc": "カスタムマスターサービス契約条項。"
+      },
+      "FEATURE_COMMUNITY_SUPPORT": {
+        "title": "コミュニティサポート",
+        "desc": "Bytebaseコミュニティからヘルプを取得します。"
+      },
+      "FEATURE_EMAIL_SUPPORT": {
+        "title": "メールサポート",
+        "desc": "Bytebaseチームからの直接メールサポート。"
+      },
+      "FEATURE_DEDICATED_SUPPORT_WITH_SLA": {
+        "title": "SLA付き専用サポート",
+        "desc": "保証された応答時間での優先サポート。"
       }
     }
   },
