@@ -306,7 +306,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       return;
     }
     contexts.splice(index, 1);
-    return contexts[index];
+    return contexts[index] || contexts[index - 1];
   };
 
   const updateDatabaseQueryContext = ({
