@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -60,18 +60,17 @@ func NewProvider(_ *plugin.ProviderConfig) (plugin.LicenseProvider, error) {
 }
 
 // StoreLicense will store the aws license.
-func (*Provider) StoreLicense(_ context.Context, _ *enterprise.SubscriptionPatch) error {
+func (*Provider) StoreLicense(_ context.Context, _ string) error {
 	return nil
 }
 
 // LoadSubscription will load the aws subscription.
-func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscription {
-	subscription := &enterprise.Subscription{
+func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
+	subscription := &v1pb.Subscription{
 		InstanceCount: 0,
-		Seat:          0,
+		SeatCount:     0,
 		Plan:          v1pb.PlanType_FREE,
-		OrgID:         aws.ToString(p.identity.Account),
-		OrgName:       aws.ToString(p.identity.Arn),
+		OrgName:       aws.ToString(p.identity.Account),
 	}
 
 	license, err := p.checkoutLicense(ctx)
@@ -89,16 +88,6 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 	subscription.Plan = v1pb.PlanType_ENTERPRISE
 
 	if v := license.Validity; v != nil {
-		begin, err := time.Parse(time.RFC3339, aws.ToString(v.Begin))
-		if err != nil {
-			slog.Error("failed to parse subscription begin time",
-				slog.String("begin", *v.Begin),
-				log.BBError(err),
-			)
-		} else {
-			subscription.StartedTS = begin.UTC().Unix()
-		}
-
 		end, err := time.Parse(time.RFC3339, aws.ToString(v.End))
 		if err != nil {
 			slog.Error("failed to parse subscription end time",
@@ -106,7 +95,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 				log.BBError(err),
 			)
 		} else {
-			subscription.ExpiresTS = end.UTC().Unix()
+			subscription.ExpiresTime = timestamppb.New(end.UTC())
 		}
 	}
 
@@ -117,9 +106,9 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 		}
 		switch *name {
 		case "instance":
-			subscription.InstanceCount = int(aws.ToInt64(entitlement.MaxCount))
+			subscription.InstanceCount = int32(aws.ToInt64(entitlement.MaxCount))
 		case "seat":
-			subscription.Seat = int(aws.ToInt64(entitlement.MaxCount))
+			subscription.SeatCount = int32(aws.ToInt64(entitlement.MaxCount))
 		}
 	}
 

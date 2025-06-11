@@ -713,10 +713,8 @@ export interface Subscription {
   seatCount: number;
   instanceCount: number;
   expiresTime: Timestamp | undefined;
-  startedTime: Timestamp | undefined;
   plan: PlanType;
   trialing: boolean;
-  orgId: string;
   orgName: string;
 }
 
@@ -900,10 +898,8 @@ function createBaseSubscription(): Subscription {
     seatCount: 0,
     instanceCount: 0,
     expiresTime: undefined,
-    startedTime: undefined,
     plan: PlanType.PLAN_TYPE_UNSPECIFIED,
     trialing: false,
-    orgId: "",
     orgName: "",
   };
 }
@@ -919,20 +915,14 @@ export const Subscription: MessageFns<Subscription> = {
     if (message.expiresTime !== undefined) {
       Timestamp.encode(message.expiresTime, writer.uint32(26).fork()).join();
     }
-    if (message.startedTime !== undefined) {
-      Timestamp.encode(message.startedTime, writer.uint32(34).fork()).join();
-    }
     if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
-      writer.uint32(40).int32(planTypeToNumber(message.plan));
+      writer.uint32(32).int32(planTypeToNumber(message.plan));
     }
     if (message.trialing !== false) {
-      writer.uint32(48).bool(message.trialing);
-    }
-    if (message.orgId !== "") {
-      writer.uint32(58).string(message.orgId);
+      writer.uint32(40).bool(message.trialing);
     }
     if (message.orgName !== "") {
-      writer.uint32(66).string(message.orgName);
+      writer.uint32(50).string(message.orgName);
     }
     return writer;
   },
@@ -969,11 +959,11 @@ export const Subscription: MessageFns<Subscription> = {
           continue;
         }
         case 4: {
-          if (tag !== 34) {
+          if (tag !== 32) {
             break;
           }
 
-          message.startedTime = Timestamp.decode(reader, reader.uint32());
+          message.plan = planTypeFromJSON(reader.int32());
           continue;
         }
         case 5: {
@@ -981,27 +971,11 @@ export const Subscription: MessageFns<Subscription> = {
             break;
           }
 
-          message.plan = planTypeFromJSON(reader.int32());
-          continue;
-        }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
           message.trialing = reader.bool();
           continue;
         }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.orgId = reader.string();
-          continue;
-        }
-        case 8: {
-          if (tag !== 66) {
+        case 6: {
+          if (tag !== 50) {
             break;
           }
 
@@ -1022,10 +996,8 @@ export const Subscription: MessageFns<Subscription> = {
       seatCount: isSet(object.seatCount) ? globalThis.Number(object.seatCount) : 0,
       instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
       expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
-      startedTime: isSet(object.startedTime) ? fromJsonTimestamp(object.startedTime) : undefined,
       plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : PlanType.PLAN_TYPE_UNSPECIFIED,
       trialing: isSet(object.trialing) ? globalThis.Boolean(object.trialing) : false,
-      orgId: isSet(object.orgId) ? globalThis.String(object.orgId) : "",
       orgName: isSet(object.orgName) ? globalThis.String(object.orgName) : "",
     };
   },
@@ -1041,17 +1013,11 @@ export const Subscription: MessageFns<Subscription> = {
     if (message.expiresTime !== undefined) {
       obj.expiresTime = fromTimestamp(message.expiresTime).toISOString();
     }
-    if (message.startedTime !== undefined) {
-      obj.startedTime = fromTimestamp(message.startedTime).toISOString();
-    }
     if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
       obj.plan = planTypeToJSON(message.plan);
     }
     if (message.trialing !== false) {
       obj.trialing = message.trialing;
-    }
-    if (message.orgId !== "") {
-      obj.orgId = message.orgId;
     }
     if (message.orgName !== "") {
       obj.orgName = message.orgName;
@@ -1069,12 +1035,8 @@ export const Subscription: MessageFns<Subscription> = {
     message.expiresTime = (object.expiresTime !== undefined && object.expiresTime !== null)
       ? Timestamp.fromPartial(object.expiresTime)
       : undefined;
-    message.startedTime = (object.startedTime !== undefined && object.startedTime !== null)
-      ? Timestamp.fromPartial(object.startedTime)
-      : undefined;
     message.plan = object.plan ?? PlanType.PLAN_TYPE_UNSPECIFIED;
     message.trialing = object.trialing ?? false;
-    message.orgId = object.orgId ?? "";
     message.orgName = object.orgName ?? "";
     return message;
   },
