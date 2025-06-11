@@ -186,6 +186,13 @@ export const ListRolesRequest: MessageFns<ListRolesRequest> = {
     return message;
   },
 
+  fromJSON(object: any): ListRolesRequest {
+    return {
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
   toJSON(message: ListRolesRequest): unknown {
     const obj: any = {};
     if (message.pageSize !== 0) {
@@ -253,6 +260,13 @@ export const ListRolesResponse: MessageFns<ListRolesResponse> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): ListRolesResponse {
+    return {
+      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => Role.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
   },
 
   toJSON(message: ListRolesResponse): unknown {
@@ -324,6 +338,13 @@ export const CreateRoleRequest: MessageFns<CreateRoleRequest> = {
     return message;
   },
 
+  fromJSON(object: any): CreateRoleRequest {
+    return {
+      role: isSet(object.role) ? Role.fromJSON(object.role) : undefined,
+      roleId: isSet(object.roleId) ? globalThis.String(object.roleId) : "",
+    };
+  },
+
   toJSON(message: CreateRoleRequest): unknown {
     const obj: any = {};
     if (message.role !== undefined) {
@@ -380,6 +401,10 @@ export const GetRoleRequest: MessageFns<GetRoleRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): GetRoleRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetRoleRequest): unknown {
@@ -458,6 +483,14 @@ export const UpdateRoleRequest: MessageFns<UpdateRoleRequest> = {
     return message;
   },
 
+  fromJSON(object: any): UpdateRoleRequest {
+    return {
+      role: isSet(object.role) ? Role.fromJSON(object.role) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
+    };
+  },
+
   toJSON(message: UpdateRoleRequest): unknown {
     const obj: any = {};
     if (message.role !== undefined) {
@@ -518,6 +551,10 @@ export const DeleteRoleRequest: MessageFns<DeleteRoleRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): DeleteRoleRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteRoleRequest): unknown {
@@ -616,6 +653,18 @@ export const Role: MessageFns<Role> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): Role {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      permissions: globalThis.Array.isArray(object?.permissions)
+        ? object.permissions.map((e: any) => globalThis.String(e))
+        : [],
+      type: isSet(object.type) ? role_TypeFromJSON(object.type) : Role_Type.TYPE_UNSPECIFIED,
+    };
   },
 
   toJSON(message: Role): unknown {
@@ -827,9 +876,14 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
