@@ -70,6 +70,11 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 }
 
 func (s *DatabaseService) BatchGetDatabases(ctx context.Context, request *v1pb.BatchGetDatabasesRequest) (*v1pb.BatchGetDatabasesResponse, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
 	// TODO(steven): Filter out the databases based on `request.parent`.
 	databases := make([]*v1pb.Database, 0, len(request.Names))
 	for _, name := range request.Names {
@@ -78,6 +83,15 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, request *v1pb.B
 			return nil, status.Errorf(codes.Internal, "failed to get database %q with error: %v", name, err.Error())
 		}
 		if databaseMessage.Deleted {
+			// Ignore no deleted database.
+			continue
+		}
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesGet, user, databaseMessage.ProjectID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
+		}
+		if !ok {
+			// Ignore no permission database.
 			continue
 		}
 		database, err := s.convertToDatabase(ctx, databaseMessage)

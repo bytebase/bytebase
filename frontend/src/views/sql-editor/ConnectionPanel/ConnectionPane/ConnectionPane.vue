@@ -2,7 +2,7 @@
   <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
     <div class="w-full px-4 mt-4">
       <div
-        class="textinfolabel mb-2 w-full leading-4 flex flex-col 2xl:flex-row items-start 2xl:items-center gap-x-1"
+        class="textinfolabel mb-2 w-full leading-4 flex flex-col items-start gap-x-1"
       >
         <div class="flex items-center gap-x-1">
           <FeatureBadge :feature="PlanFeature.FEATURE_BATCH_QUERY" />
@@ -278,7 +278,9 @@ watch(
 );
 
 const hasBatchQueryFeature = featureToRef(PlanFeature.FEATURE_BATCH_QUERY);
-const hasDatabaseGroupFeature = featureToRef(PlanFeature.FEATURE_DATABASE_GROUPS);
+const hasDatabaseGroupFeature = featureToRef(
+  PlanFeature.FEATURE_DATABASE_GROUPS
+);
 
 const state = reactive<LocalState>({
   selectedDatabases: new Set(),
