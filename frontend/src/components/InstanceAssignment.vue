@@ -13,7 +13,7 @@
               }}
             </div>
             <LearnMoreLink
-              url="https://www.bytebase.com/docs/administration/license?source=console"
+              url="https://docs.bytebase.com/administration/license?source=console"
               class="ml-1 text-sm"
             />
           </div>

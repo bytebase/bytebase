@@ -3,7 +3,7 @@
     <NAlert type="info">
       <span>{{ $t("release.usage-description") }}</span>
       <LearnMoreLink
-        url="https://www.bytebase.com/docs/vcs-integration/release/?source=console"
+        url="https://docs.bytebase.com/vcs-integration/release/?source=console"
         class="ml-1"
       />
     </NAlert>

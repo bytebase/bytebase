@@ -6,5 +6,5 @@ title: 什么是「工单」 ?
 
 #### 了解更多
 
-- [您的一个数据库变更](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)
-- [批量变更](https://www.bytebase.com/docs/change-database/batch-change/)
+- [您的一个数据库变更](https://docs.bytebase.com/get-started/step-by-step/change-schema)
+- [批量变更](https://docs.bytebase.com/change-database/batch-change/)

@@ -180,7 +180,7 @@ const handleWantHelp = () => {
   if (locale.value === "zh-CN") {
     state.showQRCodeModal = true;
   } else {
-    window.open("https://www.bytebase.com/docs/faq#how-to-reach-us", "_blank");
+    window.open("https://docs.bytebase.com/faq#how-to-reach-us", "_blank");
   }
 };
 </script>

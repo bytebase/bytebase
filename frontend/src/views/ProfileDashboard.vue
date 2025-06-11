@@ -88,10 +88,7 @@
                   {{ displayRoleTitle(role) }}
                 </NTag>
               </div>
-              <router-link
-                :to="'/setting/subscription'"
-                class="normal-link"
-              >
+              <router-link :to="'/setting/subscription'" class="normal-link">
                 {{ $t("settings.profile.subscription") }}
               </router-link>
             </dd>
@@ -168,7 +165,7 @@
           {{ $t("two-factor.description") }}
           <LearnMoreLink
             class="ml-1"
-            url="https://www.bytebase.com/docs/administration/2fa?source=console"
+            url="https://docs.bytebase.com/administration/2fa?source=console"
           />
         </p>
         <template v-if="showRegenerateRecoveryCodes">
@@ -220,6 +217,13 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync, useTitle } from "@vueuse/core";
+import { cloneDeep, head, isEqual } from "lodash-es";
+import type { DropdownOption } from "naive-ui";
+import { NButton, NDropdown, NInput, NTag } from "naive-ui";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import EmailInput from "@/components/EmailInput.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
@@ -255,13 +259,6 @@ import {
   type User,
 } from "@/types/proto/v1/user_service";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
-import { computedAsync, useTitle } from "@vueuse/core";
-import { cloneDeep, head, isEqual } from "lodash-es";
-import type { DropdownOption } from "naive-ui";
-import { NButton, NDropdown, NInput, NTag } from "naive-ui";
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 
 interface LocalState {
   editing: boolean;

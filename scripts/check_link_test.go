@@ -33,7 +33,7 @@ var (
 	}
 
 	ignoreLinks = map[string]bool{
-		"https://bytebase.com/changelog/bytebase-": true,
+		"https://docs.bytebase.com/changelog/bytebase-": true,
 	}
 
 	frontendDirectory = "../frontend"

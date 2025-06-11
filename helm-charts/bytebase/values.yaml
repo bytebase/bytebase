@@ -8,7 +8,7 @@ bytebase:
   option:
     port: 8080
     data: "/var/opt/bytebase"
-    external-url: "https://www.bytebase.com/docs/get-started/install/external-url"
+    external-url: "https://docs.bytebase.com/get-started/install/external-url"
     disable-sample: false
     externalPg:
       url: ""
@@ -34,12 +34,12 @@ bytebase:
     storage: 2Gi
     storageClass: ""
   resources: {}
-#    limits:
-#      cpu: 2000m
-#      memory: 4Gi
-#    requests:
-#      cpu: 1000m
-#      memory: 1Gi
+  #    limits:
+  #      cpu: 2000m
+  #      memory: 4Gi
+  #    requests:
+  #      cpu: 1000m
+  #      memory: 1Gi
 
   # Additional Bytebase secret mounts
   # Defines additional mounts with secret. Secret must be manually created in the namespace.
@@ -65,7 +65,8 @@ bytebase:
   # Affinity for pod assignment (evaluated as template)
   # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
   #
-  affinity: {}
+  affinity:
+    {}
     # nodeAffinity:
     #   requiredDuringSchedulingIgnoredDuringExecution:
     #     nodeSelectorTerms:
