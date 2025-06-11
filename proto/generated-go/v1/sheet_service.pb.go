@@ -605,7 +605,7 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"T\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xb1\x01\n" +
 	"\x11BatchCreateSheets\x12%.bytebase.v1.BatchCreateSheetsRequest\x1a&.bytebase.v1.BatchCreateSheetsResponse\"M\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02/:\x01*\"*/v1/{parent=projects/*}/sheets:batchCreate\x12\x80\x01\n" +
 	"\bGetSheet\x12\x1c.bytebase.v1.GetSheetRequest\x1a\x12.bytebase.v1.Sheet\"B\xdaA\x04name\x8a\xea0\rbb.sheets.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/sheets/*}\x12\xa3\x01\n" +
-	"\vUpdateSheet\x12\x1f.bytebase.v1.UpdateSheetRequest\x1a\x12.bytebase.v1.Sheet\"_\xdaA\x11sheet,update_mask\x8a\xea0\x10bb.sheets.update\x90\xea0\x01\x82\xd3\xe4\x93\x02-:\x05sheet2$/v1/{sheet.name=projects/*/sheets/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\vUpdateSheet\x12\x1f.bytebase.v1.UpdateSheetRequest\x1a\x12.bytebase.v1.Sheet\"_\xdaA\x11sheet,update_mask\x8a\xea0\x10bb.sheets.update\x90\xea0\x01\x82\xd3\xe4\x93\x02-:\x05sheet2$/v1/{sheet.name=projects/*/sheets/*}B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_sheet_service_proto_rawDescOnce sync.Once

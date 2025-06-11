@@ -1690,7 +1690,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"AddWebhook\x12\x1e.bytebase.v1.AddWebhookRequest\x1a\x14.bytebase.v1.Project\"H\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/{project=projects/*}:addWebhook\x12\xbb\x01\n" +
 	"\rUpdateWebhook\x12!.bytebase.v1.UpdateWebhookRequest\x1a\x14.bytebase.v1.Project\"q\xdaA\x13webhook,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook\x12\xa5\x01\n" +
 	"\rRemoveWebhook\x12!.bytebase.v1.RemoveWebhookRequest\x1a\x14.bytebase.v1.Project\"[\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/{webhook.name=projects/*/webhooks/*}:removeWebhook\x12\x9b\x01\n" +
-	"\vTestWebhook\x12\x1f.bytebase.v1.TestWebhookRequest\x1a .bytebase.v1.TestWebhookResponse\"I\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02):\x01*\"$/v1/{project=projects/*}:testWebhookB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\vTestWebhook\x12\x1f.bytebase.v1.TestWebhookRequest\x1a .bytebase.v1.TestWebhookResponse\"I\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02):\x01*\"$/v1/{project=projects/*}:testWebhookB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_project_service_proto_rawDescOnce sync.Once

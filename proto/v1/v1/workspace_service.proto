@@ -6,7 +6,7 @@ import "google/api/annotations.proto";
 import "v1/annotation.proto";
 import "v1/iam_policy.proto";
 
-option go_package = "generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service WorkspaceService {
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {

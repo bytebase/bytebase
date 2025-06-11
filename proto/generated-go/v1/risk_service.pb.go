@@ -598,7 +598,7 @@ const file_v1_risk_service_proto_rawDesc = "" +
 	"\n" +
 	"UpdateRisk\x12\x1e.bytebase.v1.UpdateRiskRequest\x1a\x11.bytebase.v1.Risk\"S\xdaA\x10risk,update_mask\x8a\xea0\x0fbb.risks.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1f:\x04risk2\x17/v1/{risk.name=risks/*}\x12{\n" +
 	"\n" +
-	"DeleteRisk\x12\x1e.bytebase.v1.DeleteRiskRequest\x1a\x16.google.protobuf.Empty\"5\x8a\xea0\x0fbb.risks.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=risks/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"DeleteRisk\x12\x1e.bytebase.v1.DeleteRiskRequest\x1a\x16.google.protobuf.Empty\"5\x8a\xea0\x0fbb.risks.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=risks/*}B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_risk_service_proto_rawDescOnce sync.Once

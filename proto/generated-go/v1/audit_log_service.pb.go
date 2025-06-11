@@ -696,7 +696,7 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\x1acaller_supplied_user_agent\x18\x02 \x01(\tR\x17callerSuppliedUserAgent2\xa5\x03\n" +
 	"\x0fAuditLogService\x12\xc7\x01\n" +
 	"\x0fSearchAuditLogs\x12#.bytebase.v1.SearchAuditLogsRequest\x1a$.bytebase.v1.SearchAuditLogsResponse\"i\x8a\xea0\x13bb.auditLogs.search\x90\xea0\x01\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:search\"(/v1/{parent=projects/*}/auditLogs:search\x12\xc7\x01\n" +
-	"\x0fExportAuditLogs\x12#.bytebase.v1.ExportAuditLogsRequest\x1a$.bytebase.v1.ExportAuditLogsResponse\"i\x8a\xea0\x13bb.auditLogs.export\x90\xea0\x01\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:export\"(/v1/{parent=projects/*}/auditLogs:exportB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x0fExportAuditLogs\x12#.bytebase.v1.ExportAuditLogsRequest\x1a$.bytebase.v1.ExportAuditLogsResponse\"i\x8a\xea0\x13bb.auditLogs.export\x90\xea0\x01\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:export\"(/v1/{parent=projects/*}/auditLogs:exportB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_audit_log_service_proto_rawDescOnce sync.Once

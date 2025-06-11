@@ -216,7 +216,7 @@ const file_v1_cel_service_proto_rawDesc = "" +
 	"CelService\x12p\n" +
 	"\n" +
 	"BatchParse\x12\x1e.bytebase.v1.BatchParseRequest\x1a\x1f.bytebase.v1.BatchParseResponse\"!\x80\xea0\x01\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/cel/batchParse\x12x\n" +
-	"\fBatchDeparse\x12 .bytebase.v1.BatchDeparseRequest\x1a!.bytebase.v1.BatchDeparseResponse\"#\x80\xea0\x01\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/cel/batchDeparseB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\fBatchDeparse\x12 .bytebase.v1.BatchDeparseRequest\x1a!.bytebase.v1.BatchDeparseResponse\"#\x80\xea0\x01\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/cel/batchDeparseB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_cel_service_proto_rawDescOnce sync.Once

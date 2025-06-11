@@ -2904,7 +2904,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12ParseMyBatisMapper\x12&.bytebase.v1.ParseMyBatisMapperRequest\x1a'.bytebase.v1.ParseMyBatisMapperResponse\")\x80\xea0\x01\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/v1/sql/parseMyBatisMapper\x12`\n" +
 	"\x06Pretty\x12\x1a.bytebase.v1.PrettyRequest\x1a\x1b.bytebase.v1.PrettyResponse\"\x1d\x80\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/sql/pretty\x12\x81\x01\n" +
 	"\fDiffMetadata\x12 .bytebase.v1.DiffMetadataRequest\x1a!.bytebase.v1.DiffMetadataResponse\",\x80\xea0\x01\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/schemaDesign:diffMetadata\x12x\n" +
-	"\fAICompletion\x12 .bytebase.v1.AICompletionRequest\x1a!.bytebase.v1.AICompletionResponse\"#\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/sql/aiCompletionB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\fAICompletion\x12 .bytebase.v1.AICompletionRequest\x1a!.bytebase.v1.AICompletionResponse\"#\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/sql/aiCompletionB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_sql_service_proto_rawDescOnce sync.Once

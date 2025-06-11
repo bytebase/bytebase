@@ -12,7 +12,7 @@ import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
 
-option go_package = "generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service PlanService {
   rpc GetPlan(GetPlanRequest) returns (Plan) {

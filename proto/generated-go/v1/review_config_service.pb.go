@@ -461,7 +461,7 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\x11ListReviewConfigs\x12%.bytebase.v1.ListReviewConfigsRequest\x1a&.bytebase.v1.ListReviewConfigsResponse\"9\xdaA\x00\x8a\xea0\x15bb.reviewConfigs.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/reviewConfigs\x12\x98\x01\n" +
 	"\x0fGetReviewConfig\x12#.bytebase.v1.GetReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"E\xdaA\x04name\x8a\xea0\x14bb.reviewConfigs.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/{name=reviewConfigs/*}\x12\xd3\x01\n" +
 	"\x12UpdateReviewConfig\x12&.bytebase.v1.UpdateReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"z\xdaA\x19review_config,update_mask\x8a\xea0\x17bb.reviewConfigs.update\x90\xea0\x01\x82\xd3\xe4\x93\x029:\rreview_config2(/v1/{review_config.name=reviewConfigs/*}\x12\x9e\x01\n" +
-	"\x12DeleteReviewConfig\x12&.bytebase.v1.DeleteReviewConfigRequest\x1a\x16.google.protobuf.Empty\"H\xdaA\x04name\x8a\xea0\x17bb.reviewConfigs.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c*\x1a/v1/{name=reviewConfigs/*}B\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x12DeleteReviewConfig\x12&.bytebase.v1.DeleteReviewConfigRequest\x1a\x16.google.protobuf.Empty\"H\xdaA\x04name\x8a\xea0\x17bb.reviewConfigs.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c*\x1a/v1/{name=reviewConfigs/*}B4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_review_config_service_proto_rawDescOnce sync.Once

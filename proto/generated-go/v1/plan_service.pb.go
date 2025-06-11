@@ -2168,7 +2168,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"UpdatePlan\x12\x1e.bytebase.v1.UpdatePlanRequest\x1a\x11.bytebase.v1.Plan\"^\xdaA\x10plan,update_mask\x8a\xea0\x0fbb.plans.update\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02*:\x04plan2\"/v1/{plan.name=projects/*/plans/*}\x12\xbf\x01\n" +
 	"\x11ListPlanCheckRuns\x12%.bytebase.v1.ListPlanCheckRunsRequest\x1a&.bytebase.v1.ListPlanCheckRunsResponse\"[\xdaA\x06parent\x8a\xea0\x15bb.planCheckRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02/\x12-/v1/{parent=projects/*/plans/*}/planCheckRuns\x12\xb1\x01\n" +
 	"\rRunPlanChecks\x12!.bytebase.v1.RunPlanChecksRequest\x1a\".bytebase.v1.RunPlanChecksResponse\"Y\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/plans/*}:runPlanChecks\x12\xe2\x01\n" +
-	"\x18BatchCancelPlanCheckRuns\x12,.bytebase.v1.BatchCancelPlanCheckRunsRequest\x1a-.bytebase.v1.BatchCancelPlanCheckRunsResponse\"i\xdaA\x06parent\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x82\xd3\xe4\x93\x02>:\x01*\"9/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancelB\x11Z\x0fgenerated-go/v1b\x06proto3"
+	"\x18BatchCancelPlanCheckRuns\x12,.bytebase.v1.BatchCancelPlanCheckRunsRequest\x1a-.bytebase.v1.BatchCancelPlanCheckRunsResponse\"i\xdaA\x06parent\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x82\xd3\xe4\x93\x02>:\x01*\"9/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancelB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_plan_service_proto_rawDescOnce sync.Once
