@@ -4,11 +4,11 @@ import { usePlanStore } from "@/store/modules/v1/plan";
 import { usePlanContext } from "./context";
 
 export const usePollPlan = () => {
-  const { isCreating, ready, plan, events } = usePlanContext();
+  const { isCreating, plan, events } = usePlanContext();
   const planStore = usePlanStore();
 
   const shouldPollPlan = computed(() => {
-    return !isCreating.value && ready.value;
+    return !isCreating.value;
   });
 
   const refreshPlan = () => {

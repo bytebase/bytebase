@@ -1,20 +1,10 @@
 <template>
-  <div class="px-4 flex flex-col gap-y-2">
+  <div class="px-4 py-3 flex flex-col gap-y-2">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1">
-        <h3 class="text-base font-medium">{{ $t("plan.targets.title") }}</h3>
+        <h3 class="text-base font-medium">Targets</h3>
         <span class="text-control-light">({{ targets.length }})</span>
       </div>
-      <NButton
-        v-if="allowEdit"
-        size="small"
-        @click="showTargetsSelector = true"
-      >
-        <template #icon>
-          <EditIcon class="w-4 h-4" />
-        </template>
-        {{ $t("common.edit") }}
-      </NButton>
     </div>
 
     <div class="flex-1 overflow-y-auto">
@@ -29,7 +19,7 @@
         >
           <template #trigger>
             <div
-              class="inline-flex items-center gap-x-1.5 px-3 py-1.5 border rounded-lg transition-all cursor-default max-w-[20rem]"
+              class="inline-flex items-center gap-x-1.5 px-3 py-1.5 border rounded-lg hover:bg-control-bg-hover hover:border-control-border-hover transition-all cursor-default max-w-[20rem]"
             >
               <component
                 :is="item.icon"
@@ -66,11 +56,7 @@
                 <span>{{ item.instance }}</span>
               </div>
               <div v-if="item.environment">
-                {{
-                  $t("plan.targets.environment", {
-                    environment: item.environment,
-                  })
-                }}
+                Environment: {{ item.environment }}
               </div>
               <div v-if="item.description" class="pt-1 text-control-light">
                 {{ item.description }}
@@ -80,49 +66,25 @@
         </NTooltip>
       </div>
       <div v-else class="text-center text-control-light py-8">
-        {{ $t("plan.targets.no-targets-found") }}
+        No targets found
       </div>
     </div>
-
-    <TargetsSelectorDrawer
-      v-if="project"
-      v-model:show="showTargetsSelector"
-      :current-targets="targets"
-      @confirm="handleUpdateTargets"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  ServerIcon,
-  DatabaseIcon,
-  FolderIcon,
-  EditIcon,
-} from "lucide-vue-next";
-import { NEllipsis, NTooltip, NButton } from "naive-ui";
+import { ServerIcon, DatabaseIcon, FolderIcon } from "lucide-vue-next";
+import { NEllipsis, NTooltip } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
-import { planServiceClient } from "@/grpcweb";
 import {
   useInstanceV1Store,
   useDatabaseV1Store,
   useDBGroupStore,
-  useProjectV1Store,
-  pushNotification,
 } from "@/store";
-import {
-  extractInstanceResourceName,
-  instanceV1Name,
-  extractDatabaseResourceName,
-  extractDatabaseGroupName,
-  extractProjectResourceName,
-} from "@/utils";
-import { usePlanContext } from "../../logic/context";
-import { targetsForSpec } from "../../logic/plan";
-import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
-import { usePlanSpecContext } from "./context";
+import { extractInstanceResourceName, instanceV1Name } from "@/utils";
+import { targetsForSpec } from "../logic/plan";
+import { usePlanSpecContext } from "./SpecDetailView/context";
 
 interface TargetRow {
   target: string;
@@ -134,16 +96,12 @@ interface TargetRow {
   description?: string;
 }
 
-const { t } = useI18n();
-const { plan, isCreating, events } = usePlanContext();
 const { selectedSpec } = usePlanSpecContext();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
-const projectStore = useProjectV1Store();
 
 const isLoading = ref(false);
-const showTargetsSelector = ref(false);
 
 const targets = computed(() => {
   if (!selectedSpec.value) return [];
@@ -152,19 +110,6 @@ const targets = computed(() => {
 
 const isCreateDatabaseSpec = computed(() => {
   return !!selectedSpec.value?.createDatabaseConfig;
-});
-
-const project = computed(() => {
-  if (!plan.value?.name) return undefined;
-  const projectName = `projects/${extractProjectResourceName(plan.value.name)}`;
-  return projectStore.getProjectByName(projectName);
-});
-
-// Only allow editing in creation mode or if the plan is editable.
-// An empty string for `plan.value.rollout` indicates that the plan is in a draft or uninitialized state,
-// which allows edits to be made.
-const allowEdit = computed(() => {
-  return (isCreating.value || plan.value.rollout === "") && selectedSpec.value;
 });
 
 // Prepare data - fetch resources when targets change
@@ -225,15 +170,21 @@ const tableData = computed((): TargetRow[] => {
 
     // For database group targets
     if (target.includes("/databaseGroups/")) {
-      const groupName = extractDatabaseGroupName(target);
-      const dbGroup = dbGroupStore.getDBGroupByName(target);
+      const match = target.match(/projects\/([^/]+)\/databaseGroups\/([^/]+)/);
+      if (match) {
+        const [_, projectId, groupName] = match;
+        const dbGroup = dbGroupStore.getDBGroupByName(target);
 
-      return {
-        target,
-        type: "databaseGroup",
-        icon: FolderIcon,
-        name: dbGroup?.title || groupName,
-      };
+        return {
+          target,
+          type: "databaseGroup",
+          icon: FolderIcon,
+          name: dbGroup?.title || groupName,
+          description: dbGroup
+            ? `Database group in project ${projectId}`
+            : target,
+        };
+      }
     }
 
     // For regular database targets
@@ -241,16 +192,16 @@ const tableData = computed((): TargetRow[] => {
 
     if (!database) {
       // Fallback when database is not found
-      const { instance: instanceId, databaseName } =
-        extractDatabaseResourceName(target);
-      if (instanceId && databaseName) {
+      const match = target.match(/instances\/([^/]+)\/databases\/([^/]+)/);
+      if (match) {
+        const [_, instanceId, databaseName] = match;
         return {
           target,
           type: "database",
           icon: DatabaseIcon,
           name: databaseName,
           instance: instanceId,
-          description: t("plan.targets.database-not-found"),
+          description: "Database not found",
         };
       }
     }
@@ -264,43 +215,17 @@ const tableData = computed((): TargetRow[] => {
       name: database?.databaseName || target,
       instance: instance ? instanceV1Name(instance) : "",
       environment: database?.effectiveEnvironmentEntity?.title || "",
+      description: database?.labels?.["bb.database.description"] || "",
     };
   });
 });
 
 const getTypeLabel = (type: TargetRow["type"]) => {
   const typeLabels = {
-    instance: t("plan.targets.type.instance"),
-    database: t("plan.targets.type.database"),
-    databaseGroup: t("plan.targets.type.database-group"),
+    instance: "Instance",
+    database: "Database",
+    databaseGroup: "Database Group",
   };
   return typeLabels[type];
-};
-
-const handleUpdateTargets = async (targets: string[]) => {
-  if (!selectedSpec.value) return;
-
-  // Update the targets in the spec.
-  const config =
-    selectedSpec.value.changeDatabaseConfig ||
-    selectedSpec.value.exportDataConfig;
-  if (config) {
-    config.targets = targets;
-  }
-
-  if (!isCreating.value) {
-    await planServiceClient.updatePlan({
-      plan: plan.value,
-      updateMask: ["specs"],
-    });
-    events.emit("status-changed", {
-      eager: true,
-    });
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-  }
 };
 </script>

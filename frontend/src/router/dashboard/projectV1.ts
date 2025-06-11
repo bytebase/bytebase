@@ -17,6 +17,9 @@ export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
 export const PROJECT_V1_ROUTE_PLANS = `${PROJECT_V1_ROUTE_DASHBOARD}.plan`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
+export const PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.specs`;
+export const PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.spec.detail`;
+export const PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.check-runs`;
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
 export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-schema`;
@@ -27,8 +30,6 @@ export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.we
 export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
-export const PROJECT_V1_ROUTE_REVIEW_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.review-center`;
-export const PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.review-center.detail`;
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
 export const PROJECT_V1_ROUTE_RELEASE_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.release.create`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
@@ -323,59 +324,59 @@ const projectV1Routes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "review-center",
-        meta: {
-          title: () => t("review-center.self"),
-        },
+        path: "plans",
         props: true,
         children: [
           {
             path: "",
-            name: PROJECT_V1_ROUTE_REVIEW_CENTER,
+            name: PROJECT_V1_ROUTE_PLANS,
             meta: {
+              // TODO(claude): rename title to "Plans" later.
+              title: () => t("review-center.self"),
               requiredPermissionList: () => [
                 "bb.databases.list",
                 "bb.plans.list",
               ],
             },
-            props: true,
             component: () => import("@/views/ReviewCenter/index.vue"),
+            props: true,
           },
           {
-            path: ":planSlug",
-            name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
+            path: ":planId",
+            alias: [
+              ":planId/planCheckRuns",
+              ":planId/planCheckRuns/:planCheckRunId",
+            ],
+            name: PROJECT_V1_ROUTE_PLAN_DETAIL,
             meta: {
               requiredPermissionList: () => ["bb.plans.get"],
             },
             component: () => import("@/views/project/ProjectPlanDetail.vue"),
             props: true,
+            children: [
+              {
+                path: "specs",
+                name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+                component: () =>
+                  import("@/views/project/ProjectPlanDetail.vue"),
+                children: [
+                  {
+                    path: ":specId",
+                    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+                    component: () =>
+                      import("@/views/project/ProjectPlanDetail.vue"),
+                  },
+                ],
+              },
+              {
+                path: "planCheckRuns",
+                name: PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
+                component: () =>
+                  import("@/views/project/ProjectPlanDetail.vue"),
+              },
+            ],
           },
         ],
-      },
-      {
-        path: "plans",
-        name: PROJECT_V1_ROUTE_PLANS,
-        redirect(to) {
-          return {
-            name: PROJECT_V1_ROUTE_REVIEW_CENTER,
-            params: {
-              projectId: to.params.projectId,
-            },
-          };
-        },
-      },
-      {
-        path: "plans/:planSlug",
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-        redirect(to) {
-          return {
-            name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
-            params: {
-              projectId: to.params.projectId,
-              planSlug: to.params.planSlug,
-            },
-          };
-        },
       },
       {
         path: "releases",
