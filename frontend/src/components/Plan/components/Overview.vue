@@ -4,7 +4,7 @@
       <!-- Plan Header -->
       <div>
         <h2 class="text-2xl font-semibold mb-2">
-          {{ $t("plan.navigator.overview") }}
+          {{ $t("common.overview") }}
         </h2>
         <p class="text-control-light">
           {{ $t("plan.overview.description") }}
@@ -93,26 +93,22 @@
         <h2 class="text-lg font-semibold mb-3">
           {{ $t("plan.overview.affected-resources") }}
         </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="flex flex-row justify-start items-center gap-3">
           <div
             v-for="resource in affectedResources"
             :key="resource.name"
-            class="flex items-start gap-3 p-3 rounded-md border"
+            class="flex items-center gap-1 px-3 py-2 max-w-[50%] rounded-md border"
           >
-            <!-- Icon -->
             <InstanceV1EngineIcon
               v-if="resource.type === 'instance' && resource.instance"
               :instance="resource.instance"
               :tooltip="false"
               size="medium"
-              class="mt-0.5"
             />
             <FolderIcon
               v-else-if="resource.type === 'databaseGroup'"
               class="w-5 h-5 text-control mt-0.5"
             />
-
-            <!-- Content -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <!-- Instance info -->
@@ -130,7 +126,7 @@
                         : resource.name
                     }}
                   </span>
-                  <span class="text-sm text-control-light">
+                  <span class="text-sm text-control-light shrink-0">
                     {{
                       resource.databases.length === 1
                         ? t("plan.targets.one-database")

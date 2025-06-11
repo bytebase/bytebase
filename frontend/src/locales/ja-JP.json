@@ -151,6 +151,7 @@
     "view-doc": "ドキュメントを見る",
     "write-only": "書き込み専用",
     "sync": "同期する",
+    "succeed": "成功する",
     "success": "成功",
     "failed": "失敗",
     "load-more": "もっと読み込む",
@@ -994,6 +995,7 @@
     }
   },
   "plan": {
+    "new-plan": "新しい計画",
     "add-spec": "仕様を追加",
     "change-type": "変更タイプ",
     "schema-migration": "スキーマの移行",
@@ -1010,7 +1012,6 @@
       "affected-resources": "影響を受けるリソース"
     },
     "navigator": {
-      "overview": "概要",
       "specifications": "仕様",
       "checks": "小切手",
       "statement-empty": "ステートメントが空です"
@@ -1057,6 +1058,11 @@
       "some-databases-not-meeting-requirements": "一部のデータベース ({databases}) は要件を満たしていません",
       "some-databases-have-issues": "{count} データベースに問題があります | {count} データベースに問題があります",
       "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります"
+    },
+    "checks": {
+      "self": "小切手",
+      "no-checks": "チェック結果はありません",
+      "click-to-run-checks": "この仕様を検証するには、「チェックを実行」をクリックしてください"
     }
   },
   "quick-action": {
