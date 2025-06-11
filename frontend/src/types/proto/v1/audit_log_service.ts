@@ -339,6 +339,16 @@ export const SearchAuditLogsRequest: MessageFns<SearchAuditLogsRequest> = {
     return message;
   },
 
+  fromJSON(object: any): SearchAuditLogsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
   toJSON(message: SearchAuditLogsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -418,6 +428,15 @@ export const SearchAuditLogsResponse: MessageFns<SearchAuditLogsResponse> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): SearchAuditLogsResponse {
+    return {
+      auditLogs: globalThis.Array.isArray(object?.auditLogs)
+        ? object.auditLogs.map((e: any) => AuditLog.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
   },
 
   toJSON(message: SearchAuditLogsResponse): unknown {
@@ -533,6 +552,17 @@ export const ExportAuditLogsRequest: MessageFns<ExportAuditLogsRequest> = {
     return message;
   },
 
+  fromJSON(object: any): ExportAuditLogsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
   toJSON(message: ExportAuditLogsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -616,6 +646,13 @@ export const ExportAuditLogsResponse: MessageFns<ExportAuditLogsResponse> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): ExportAuditLogsResponse {
+    return {
+      content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
   },
 
   toJSON(message: ExportAuditLogsResponse): unknown {
@@ -798,6 +835,22 @@ export const AuditLog: MessageFns<AuditLog> = {
     return message;
   },
 
+  fromJSON(object: any): AuditLog {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      user: isSet(object.user) ? globalThis.String(object.user) : "",
+      method: isSet(object.method) ? globalThis.String(object.method) : "",
+      severity: isSet(object.severity) ? auditLog_SeverityFromJSON(object.severity) : AuditLog_Severity.DEFAULT,
+      resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
+      request: isSet(object.request) ? globalThis.String(object.request) : "",
+      response: isSet(object.response) ? globalThis.String(object.response) : "",
+      status: isSet(object.status) ? Status.fromJSON(object.status) : undefined,
+      serviceData: isSet(object.serviceData) ? Any.fromJSON(object.serviceData) : undefined,
+      requestMetadata: isSet(object.requestMetadata) ? RequestMetadata.fromJSON(object.requestMetadata) : undefined,
+    };
+  },
+
   toJSON(message: AuditLog): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -900,6 +953,10 @@ export const AuditData: MessageFns<AuditData> = {
     return message;
   },
 
+  fromJSON(object: any): AuditData {
+    return { policyDelta: isSet(object.policyDelta) ? PolicyDelta.fromJSON(object.policyDelta) : undefined };
+  },
+
   toJSON(message: AuditData): unknown {
     const obj: any = {};
     if (message.policyDelta !== undefined) {
@@ -965,6 +1022,15 @@ export const RequestMetadata: MessageFns<RequestMetadata> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): RequestMetadata {
+    return {
+      callerIp: isSet(object.callerIp) ? globalThis.String(object.callerIp) : "",
+      callerSuppliedUserAgent: isSet(object.callerSuppliedUserAgent)
+        ? globalThis.String(object.callerSuppliedUserAgent)
+        : "",
+    };
   },
 
   toJSON(message: RequestMetadata): unknown {
@@ -1202,6 +1268,15 @@ export const AuditLogServiceDefinition = {
   },
 } as const;
 
+function bytesFromBase64(b64: string): Uint8Array {
+  const bin = globalThis.atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; ++i) {
+    arr[i] = bin.charCodeAt(i);
+  }
+  return arr;
+}
+
 function base64FromBytes(arr: Uint8Array): string {
   const bin: string[] = [];
   arr.forEach((byte) => {
@@ -1218,15 +1293,40 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
+function fromJsonTimestamp(o: any): Timestamp {
+  if (o instanceof globalThis.Date) {
+    return toTimestamp(o);
+  } else if (typeof o === "string") {
+    return toTimestamp(new globalThis.Date(o));
+  } else {
+    return Timestamp.fromJSON(o);
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

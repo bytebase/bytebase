@@ -380,6 +380,10 @@ export const GetReleaseRequest: MessageFns<GetReleaseRequest> = {
     return message;
   },
 
+  fromJSON(object: any): GetReleaseRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
   toJSON(message: GetReleaseRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -467,6 +471,15 @@ export const ListReleasesRequest: MessageFns<ListReleasesRequest> = {
     return message;
   },
 
+  fromJSON(object: any): ListReleasesRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
+    };
+  },
+
   toJSON(message: ListReleasesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -544,6 +557,13 @@ export const ListReleasesResponse: MessageFns<ListReleasesResponse> = {
     return message;
   },
 
+  fromJSON(object: any): ListReleasesResponse {
+    return {
+      releases: globalThis.Array.isArray(object?.releases) ? object.releases.map((e: any) => Release.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
   toJSON(message: ListReleasesResponse): unknown {
     const obj: any = {};
     if (message.releases?.length) {
@@ -611,6 +631,13 @@ export const CreateReleaseRequest: MessageFns<CreateReleaseRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): CreateReleaseRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      release: isSet(object.release) ? Release.fromJSON(object.release) : undefined,
+    };
   },
 
   toJSON(message: CreateReleaseRequest): unknown {
@@ -684,6 +711,13 @@ export const UpdateReleaseRequest: MessageFns<UpdateReleaseRequest> = {
     return message;
   },
 
+  fromJSON(object: any): UpdateReleaseRequest {
+    return {
+      release: isSet(object.release) ? Release.fromJSON(object.release) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
   toJSON(message: UpdateReleaseRequest): unknown {
     const obj: any = {};
     if (message.release !== undefined) {
@@ -744,6 +778,10 @@ export const DeleteReleaseRequest: MessageFns<DeleteReleaseRequest> = {
     return message;
   },
 
+  fromJSON(object: any): DeleteReleaseRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
   toJSON(message: DeleteReleaseRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -796,6 +834,10 @@ export const UndeleteReleaseRequest: MessageFns<UndeleteReleaseRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): UndeleteReleaseRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: UndeleteReleaseRequest): unknown {
@@ -872,6 +914,14 @@ export const CheckReleaseRequest: MessageFns<CheckReleaseRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): CheckReleaseRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      release: isSet(object.release) ? Release.fromJSON(object.release) : undefined,
+      targets: globalThis.Array.isArray(object?.targets) ? object.targets.map((e: any) => globalThis.String(e)) : [],
+    };
   },
 
   toJSON(message: CheckReleaseRequest): unknown {
@@ -958,6 +1008,18 @@ export const CheckReleaseResponse: MessageFns<CheckReleaseResponse> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): CheckReleaseResponse {
+    return {
+      results: globalThis.Array.isArray(object?.results)
+        ? object.results.map((e: any) => CheckReleaseResponse_CheckResult.fromJSON(e))
+        : [],
+      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
+      riskLevel: isSet(object.riskLevel)
+        ? checkReleaseResponse_RiskLevelFromJSON(object.riskLevel)
+        : CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED,
+    };
   },
 
   toJSON(message: CheckReleaseResponse): unknown {
@@ -1070,6 +1132,18 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): CheckReleaseResponse_CheckResult {
+    return {
+      file: isSet(object.file) ? globalThis.String(object.file) : "",
+      target: isSet(object.target) ? globalThis.String(object.target) : "",
+      advices: globalThis.Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
+      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
+      riskLevel: isSet(object.riskLevel)
+        ? checkReleaseResponse_RiskLevelFromJSON(object.riskLevel)
+        : CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED,
+    };
   },
 
   toJSON(message: CheckReleaseResponse_CheckResult): unknown {
@@ -1214,6 +1288,18 @@ export const Release: MessageFns<Release> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): Release {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      files: globalThis.Array.isArray(object?.files) ? object.files.map((e: any) => Release_File.fromJSON(e)) : [],
+      vcsSource: isSet(object.vcsSource) ? Release_VCSSource.fromJSON(object.vcsSource) : undefined,
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
+    };
   },
 
   toJSON(message: Release): unknown {
@@ -1396,6 +1482,22 @@ export const Release_File: MessageFns<Release_File> = {
     return message;
   },
 
+  fromJSON(object: any): Release_File {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      path: isSet(object.path) ? globalThis.String(object.path) : "",
+      type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+      changeType: isSet(object.changeType)
+        ? release_File_ChangeTypeFromJSON(object.changeType)
+        : Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED,
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
+      statement: isSet(object.statement) ? bytesFromBase64(object.statement) : new Uint8Array(0),
+      sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
+      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
+    };
+  },
+
   toJSON(message: Release_File): unknown {
     const obj: any = {};
     if (message.id !== "") {
@@ -1493,6 +1595,13 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): Release_VCSSource {
+    return {
+      vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : VCSType.VCS_TYPE_UNSPECIFIED,
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+    };
   },
 
   toJSON(message: Release_VCSSource): unknown {
@@ -1991,6 +2100,15 @@ export const ReleaseServiceDefinition = {
   },
 } as const;
 
+function bytesFromBase64(b64: string): Uint8Array {
+  const bin = globalThis.atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; ++i) {
+    arr[i] = bin.charCodeAt(i);
+  }
+  return arr;
+}
+
 function base64FromBytes(arr: Uint8Array): string {
   const bin: string[] = [];
   arr.forEach((byte) => {
@@ -2007,15 +2125,40 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
+function fromJsonTimestamp(o: any): Timestamp {
+  if (o instanceof globalThis.Date) {
+    return toTimestamp(o);
+  } else if (typeof o === "string") {
+    return toTimestamp(new globalThis.Date(o));
+  } else {
+    return Timestamp.fromJSON(o);
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
