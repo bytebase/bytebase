@@ -151,6 +151,7 @@
     "view-doc": "Xem tài liệu",
     "write-only": "chỉ ghi",
     "sync": "Đồng bộ hóa",
+    "succeed": "Thành công",
     "success": "Thành công",
     "failed": "Thất bại",
     "load-more": "Tải thêm",
@@ -994,6 +995,7 @@
     }
   },
   "plan": {
+    "new-plan": "Kế hoạch mới",
     "add-spec": "Thêm thông số kỹ thuật",
     "change-type": "Thay đổi loại",
     "schema-migration": "Di chuyển lược đồ",
@@ -1010,7 +1012,6 @@
       "affected-resources": "Tài nguyên bị ảnh hưởng"
     },
     "navigator": {
-      "overview": "Tổng quan",
       "specifications": "Thông số kỹ thuật",
       "checks": "Kiểm tra",
       "statement-empty": "Câu lệnh trống rỗng"
@@ -1057,6 +1058,11 @@
       "some-databases-not-meeting-requirements": "Một số cơ sở dữ liệu ({databases}) không đáp ứng được yêu cầu",
       "some-databases-have-issues": "{count} cơ sở dữ liệu có vấn đề | {count} cơ sở dữ liệu có vấn đề",
       "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}"
+    },
+    "checks": {
+      "self": "Kiểm tra",
+      "no-checks": "Không có kết quả kiểm tra nào có sẵn",
+      "click-to-run-checks": "Nhấp vào \"Chạy kiểm tra\" để xác thực thông số kỹ thuật này"
     }
   },
   "quick-action": {

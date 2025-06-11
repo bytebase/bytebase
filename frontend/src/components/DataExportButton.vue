@@ -304,7 +304,7 @@ const doExport = () => {
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: t("common.success"),
+        title: t("common.succeed"),
         description: t("audit-log.export-finished"),
       });
     })

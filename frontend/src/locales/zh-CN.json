@@ -151,6 +151,7 @@
     "view-doc": "查看文档",
     "write-only": "仅写入",
     "sync": "同步",
+    "succeed": "成功",
     "success": "成功",
     "failed": "失败",
     "load-more": "加载更多",
@@ -994,6 +995,7 @@
     }
   },
   "plan": {
+    "new-plan": "新计划",
     "add-spec": "添加变更项",
     "change-type": "变更类型",
     "schema-migration": "Schema 变更",
@@ -1010,7 +1012,6 @@
       "affected-resources": "受影响的资源"
     },
     "navigator": {
-      "overview": "概述",
       "specifications": "变更项",
       "checks": "检查",
       "statement-empty": "变更语句为空"
@@ -1057,6 +1058,11 @@
       "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
       "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
       "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题"
+    },
+    "checks": {
+      "self": "检查",
+      "no-checks": "没有可用的检查结果",
+      "click-to-run-checks": "单击“运行检查”以验证此规范"
     }
   },
   "quick-action": {
