@@ -22,7 +22,7 @@ var _ enterprise.LicenseService = (*LicenseService)(nil)
 // LicenseService is the service for enterprise license.
 type LicenseService struct {
 	store              *store.Store
-	cachedSubscription *enterprise.Subscription
+	cachedSubscription *v1pb.Subscription
 	mu                 sync.RWMutex
 
 	provider plugin.LicenseProvider
@@ -45,8 +45,8 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 }
 
 // StoreLicense will store license into file.
-func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterprise.SubscriptionPatch) error {
-	if err := s.provider.StoreLicense(ctx, patch); err != nil {
+func (s *LicenseService) StoreLicense(ctx context.Context, license string) error {
+	if err := s.provider.StoreLicense(ctx, license); err != nil {
 		return err
 	}
 
@@ -55,13 +55,13 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterprise.Sub
 }
 
 // LoadSubscription will load subscription.
-func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subscription {
+func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 	s.mu.RLock()
 	cached := s.cachedSubscription
 	s.mu.RUnlock()
 
 	if cached != nil {
-		if cached.Plan == v1pb.PlanType_FREE || cached.IsExpired() {
+		if cached.Plan == v1pb.PlanType_FREE || isSubscriptionExpired(cached) {
 			// refresh expired subscription
 			s.mu.Lock()
 			s.cachedSubscription = nil
@@ -77,11 +77,19 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subsc
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// Double-check after acquiring write lock
-	if s.cachedSubscription != nil && s.cachedSubscription.Plan != v1pb.PlanType_FREE && !s.cachedSubscription.IsExpired() {
+	if s.cachedSubscription != nil && s.cachedSubscription.Plan != v1pb.PlanType_FREE && !isSubscriptionExpired(s.cachedSubscription) {
 		return s.cachedSubscription
 	}
 	s.cachedSubscription = s.provider.LoadSubscription(ctx)
 	return s.cachedSubscription
+}
+
+// isSubscriptionExpired returns if the subscription is expired.
+func isSubscriptionExpired(s *v1pb.Subscription) bool {
+	if s.Plan == v1pb.PlanType_FREE || s.ExpiresTime == nil {
+		return false
+	}
+	return s.ExpiresTime.AsTime().Before(time.Now())
 }
 
 // IsFeatureEnabled returns whether a feature is enabled.
@@ -97,7 +105,7 @@ func (s *LicenseService) IsFeatureEnabled(f v1pb.PlanFeature) error {
 // IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
 func (s *LicenseService) IsFeatureEnabledForInstance(f v1pb.PlanFeature, instance *store.InstanceMessage) error {
 	plan := s.GetEffectivePlan()
-	// DONOT check instance license fo FREE plan.
+	// DO NOT check instance license fo FREE plan.
 	if plan == v1pb.PlanType_FREE {
 		return s.IsFeatureEnabled(f)
 	}
@@ -120,14 +128,14 @@ func (s *LicenseService) GetInstanceLicenseCount(ctx context.Context) int {
 	if instanceCount < 0 {
 		return math.MaxInt
 	}
-	return instanceCount
+	return int(instanceCount)
 }
 
 // GetEffectivePlan gets the effective plan.
 func (s *LicenseService) GetEffectivePlan() v1pb.PlanType {
 	ctx := context.Background()
 	subscription := s.LoadSubscription(ctx)
-	if expireTime := time.Unix(subscription.ExpiresTS, 0); expireTime.Before(time.Now()) {
+	if subscription.ExpiresTime != nil && subscription.ExpiresTime.AsTime().Before(time.Now()) {
 		return v1pb.PlanType_FREE
 	}
 	return subscription.Plan
@@ -153,14 +161,14 @@ func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.
 		case enterprise.PlanLimitMaximumInstance:
 			return limit
 		case enterprise.PlanLimitMaximumUser:
-			if subscription.Seat == 0 {
+			if subscription.SeatCount == 0 {
 				// to compatible with old license.
 				return limit
 			}
-			if subscription.Seat < 0 {
+			if subscription.SeatCount < 0 {
 				return math.MaxInt
 			}
-			return subscription.Seat
+			return int(subscription.SeatCount)
 		}
 	}
 

@@ -155,7 +155,7 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 	}
 	subscription := m.licenseService.LoadSubscription(ctx)
 	plan := subscription.Plan.String()
-	orgID := subscription.OrgID
+	orgID := subscription.OrgId
 	orgName := subscription.OrgName
 
 	trial := "N"
@@ -165,8 +165,8 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 
 	subscriptionStartDate := ""
 	subscriptionEndDate := ""
-	if subscription.Plan != v1pb.PlanType_FREE {
-		subscriptionEndDate = time.Unix(subscription.ExpiresTS, 0).Format(time.RFC3339)
+	if subscription.Plan != v1pb.PlanType_FREE && subscription.ExpiresTime != nil {
+		subscriptionEndDate = subscription.ExpiresTime.AsTime().Format(time.RFC3339)
 	}
 
 	user, err := m.store.GetUserByID(ctx, common.PrincipalIDForFirstUser)

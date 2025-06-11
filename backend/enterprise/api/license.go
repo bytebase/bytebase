@@ -61,9 +61,9 @@ func (l *License) OrgID() string {
 // LicenseService is the service for enterprise license.
 type LicenseService interface {
 	// StoreLicense will store license into file.
-	StoreLicense(ctx context.Context, patch *SubscriptionPatch) error
+	StoreLicense(ctx context.Context, license string) error
 	// LoadSubscription will load subscription.
-	LoadSubscription(ctx context.Context) *Subscription
+	LoadSubscription(ctx context.Context) *v1pb.Subscription
 	// IsFeatureEnabled returns whether a feature is enabled.
 	IsFeatureEnabled(feature v1pb.PlanFeature) error
 	// IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.

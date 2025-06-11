@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -55,15 +56,15 @@ func NewProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider,
 }
 
 // StoreLicense will store the hub license.
-func (p *Provider) StoreLicense(ctx context.Context, patch *enterprise.SubscriptionPatch) error {
-	if patch.License != "" {
-		if _, err := p.parseLicense(ctx, patch.License); err != nil {
+func (p *Provider) StoreLicense(ctx context.Context, license string) error {
+	if license != "" {
+		if _, err := p.parseLicense(ctx, license); err != nil {
 			return err
 		}
 	}
 	if _, err := p.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  storepb.SettingName_ENTERPRISE_LICENSE,
-		Value: patch.License,
+		Value: license,
 	}); err != nil {
 		return err
 	}
@@ -72,26 +73,31 @@ func (p *Provider) StoreLicense(ctx context.Context, patch *enterprise.Subscript
 }
 
 // LoadSubscription will load the hub subscription.
-func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscription {
+func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 	license := p.loadLicense(ctx)
 	if license == nil {
-		return &enterprise.Subscription{
+		return &v1pb.Subscription{
 			Plan: v1pb.PlanType_FREE,
-			// -1 means not expire, just for free plan
-			ExpiresTS: -1,
+			// nil ExpiresTime means not expire, just for free plan
+			ExpiresTime: nil,
 			// Instance license count.
 			InstanceCount: 0,
-			Seat:          0,
+			SeatCount:     0,
 		}
 	}
 
-	return &enterprise.Subscription{
+	var expiresTime *timestamppb.Timestamp
+	if license.ExpiresTS > 0 {
+		expiresTime = timestamppb.New(time.Unix(license.ExpiresTS, 0))
+	}
+
+	return &v1pb.Subscription{
 		Plan:          license.Plan,
-		ExpiresTS:     license.ExpiresTS,
-		InstanceCount: license.InstanceCount,
-		Seat:          license.Seat,
+		ExpiresTime:   expiresTime,
+		InstanceCount: int32(license.InstanceCount),
+		SeatCount:     int32(license.Seat),
 		Trialing:      license.Trialing,
-		OrgID:         license.OrgID(),
+		OrgId:         license.OrgID(),
 		OrgName:       license.OrgName,
 	}
 }
