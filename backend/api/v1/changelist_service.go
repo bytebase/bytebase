@@ -63,7 +63,7 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &request.ChangelistId})
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if changelist != nil {
 		return nil, status.Errorf(codes.AlreadyExists, "changelist %q already exists", request.ChangelistId)
@@ -76,7 +76,7 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 		CreatorID:  principalID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	v1Changelist, err := s.convertStoreChangelist(ctx, changelist)
 	if err != nil {
@@ -103,7 +103,7 @@ func (s *ChangelistService) GetChangelist(ctx context.Context, request *v1pb.Get
 
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if changelist == nil {
 		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
@@ -138,7 +138,7 @@ func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.L
 		ProjectID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	resp := &v1pb.ListChangelistsResponse{}
@@ -176,7 +176,7 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 	}
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if changelist == nil {
 		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
@@ -205,7 +205,7 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 	}
 	update.Payload = newChangelist
 	if err := s.store.UpdateChangelist(ctx, update); err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	changelist, err = s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
@@ -236,14 +236,14 @@ func (s *ChangelistService) DeleteChangelist(ctx context.Context, request *v1pb.
 	}
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if changelist == nil {
 		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
 	}
 
 	if err := s.store.DeleteChangelist(ctx, project.ResourceID, changelistID); err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &emptypb.Empty{}, nil

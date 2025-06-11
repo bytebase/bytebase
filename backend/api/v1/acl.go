@@ -427,32 +427,3 @@ func toSnakeCase(str string) string {
 	return strings.ToLower(snake)
 }
 
-func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceName string) (*store.DatabaseMessage, error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(databaseResourceName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse %q", databaseResourceName)
-	}
-
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance not found")
-	}
-
-	find := &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-		ShowDeleted:     true,
-	}
-	database, err := s.GetDatabaseV2(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database %q not found", databaseResourceName)
-	}
-	return database, nil
-}
