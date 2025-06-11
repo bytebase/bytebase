@@ -40,15 +40,24 @@ type claims struct {
 	jwt.RegisteredClaims
 }
 
-// licenseInfo is an internal type for JWT parsing
-type licenseInfo struct {
-	InstanceCount int
-	Seat          int
-	ExpiresTS     int64
-	IssuedTS      int64
-	Plan          v1pb.PlanType
-	Trialing      bool
-	OrgName       string
+var validPlans = map[v1pb.PlanType]bool{
+	v1pb.PlanType_TEAM:       true,
+	v1pb.PlanType_ENTERPRISE: true,
+}
+
+// validateSubscription validates if the subscription is expired or has correct plan type.
+func validateSubscription(s *v1pb.Subscription) error {
+	if !validPlans[s.Plan] {
+		return errors.Errorf("plan %q is not valid, expect %s or %s",
+			s.Plan.String(),
+			v1pb.PlanType_TEAM.String(),
+			v1pb.PlanType_ENTERPRISE.String(),
+		)
+	}
+	if s.ExpiresTime != nil && s.ExpiresTime.AsTime().Before(time.Now()) {
+		return errors.Errorf("license has expired at %v", s.ExpiresTime.AsTime())
+	}
+	return nil
 }
 
 // NewProvider will create a new hub license provider.
@@ -96,22 +105,10 @@ func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 		}
 	}
 
-	var expiresTime *timestamppb.Timestamp
-	if license.ExpiresTS > 0 {
-		expiresTime = timestamppb.New(time.Unix(license.ExpiresTS, 0))
-	}
-
-	return &v1pb.Subscription{
-		Plan:          license.Plan,
-		ExpiresTime:   expiresTime,
-		InstanceCount: int32(license.InstanceCount),
-		SeatCount:     int32(license.Seat),
-		Trialing:      license.Trialing,
-		OrgName:       license.OrgName,
-	}
+	return license
 }
 
-func (p *Provider) fetchLicense(ctx context.Context) (*licenseInfo, error) {
+func (p *Provider) fetchLicense(ctx context.Context) (*v1pb.Subscription, error) {
 	license, err := p.remoteProvider.FetchLicense(ctx)
 	if err != nil {
 		return nil, err
@@ -135,7 +132,7 @@ func (p *Provider) fetchLicense(ctx context.Context) (*licenseInfo, error) {
 }
 
 // loadLicense will load license and validate it.
-func (p *Provider) loadLicense(ctx context.Context) *licenseInfo {
+func (p *Provider) loadLicense(ctx context.Context) *v1pb.Subscription {
 	license, err := p.findEnterpriseLicense(ctx)
 	if err != nil {
 		slog.Debug("failed to load enterprise license", log.BBError(err))
@@ -151,14 +148,15 @@ func (p *Provider) loadLicense(ctx context.Context) *licenseInfo {
 		return nil
 	}
 
-	if expireTime := time.Unix(license.ExpiresTS, 0); expireTime.Before(time.Now()) {
-		slog.Debug("license has expired at %v", expireTime)
+	if err := validateSubscription(license); err != nil {
+		slog.Debug("license is invalid", log.BBError(err))
+		return nil
 	}
 
 	return license
 }
 
-func (p *Provider) parseLicense(ctx context.Context, license string) (*licenseInfo, error) {
+func (p *Provider) parseLicense(ctx context.Context, license string) (*v1pb.Subscription, error) {
 	claim := &claims{}
 	if err := parseJWTToken(license, p.config.Version, p.config.PublicKey, claim); err != nil {
 		return nil, common.Wrap(err, common.Invalid)
@@ -167,7 +165,7 @@ func (p *Provider) parseLicense(ctx context.Context, license string) (*licenseIn
 	return p.parseClaims(ctx, claim)
 }
 
-func (p *Provider) findEnterpriseLicense(ctx context.Context) (*licenseInfo, error) {
+func (p *Provider) findEnterpriseLicense(ctx context.Context) (*v1pb.Subscription, error) {
 	// Find enterprise license.
 	setting, err := p.store.GetSettingV2(ctx, storepb.SettingName_ENTERPRISE_LICENSE)
 	if err != nil {
@@ -182,8 +180,8 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*licenseInfo, err
 			slog.Debug(
 				"Load valid license",
 				slog.String("plan", license.Plan.String()),
-				slog.Time("expiresAt", time.Unix(license.ExpiresTS, 0)),
-				slog.Int("instanceCount", license.InstanceCount),
+				slog.Time("expiresAt", license.ExpiresTime.AsTime()),
+				slog.Int("instanceCount", int(license.InstanceCount)),
 			)
 			return license, nil
 		}
@@ -193,7 +191,7 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*licenseInfo, err
 }
 
 // parseClaims will valid and parse JWT claims to license instance.
-func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*licenseInfo, error) {
+func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*v1pb.Subscription, error) {
 	if p.config.Issuer != claim.Issuer {
 		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", p.config.Issuer, claim.Issuer)
 	}
@@ -217,11 +215,15 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*licenseInfo
 		}
 	}
 
-	license := &licenseInfo{
-		InstanceCount: claim.InstanceCount,
-		Seat:          claim.Seat,
-		ExpiresTS:     claim.ExpiresAt.Unix(),
-		IssuedTS:      claim.IssuedAt.Unix(),
+	var expiresTime *timestamppb.Timestamp
+	if claim.ExpiresAt != nil && !claim.ExpiresAt.IsZero() {
+		expiresTime = timestamppb.New(claim.ExpiresAt.Time)
+	}
+
+	license := &v1pb.Subscription{
+		InstanceCount: int32(claim.InstanceCount),
+		SeatCount:     int32(claim.Seat),
+		ExpiresTime:   expiresTime,
 		Plan:          planType,
 		Trialing:      claim.Trialing,
 		OrgName:       claim.OrgName,
