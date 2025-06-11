@@ -230,6 +230,7 @@ export const instanceRoleServiceClient = clientFactory.create(
 
 const transport = createConnectTransport({
   baseUrl: address,
+  useBinaryFormat: true,
 })
 
 export const actuatorServiceClientConnect = createClient(ActuatorService, transport)
