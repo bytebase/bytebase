@@ -448,7 +448,7 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 		return nil, err
 	}
 
-	ok, err := s.canWriteWorksheet(ctx, worksheet)
+	ok, err := s.canReadWorksheet(ctx, worksheet)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check access with error: %v", err)
 	}
