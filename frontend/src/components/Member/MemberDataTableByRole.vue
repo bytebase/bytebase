@@ -6,8 +6,6 @@
     :row-key="(row) => row.name"
     :striped="true"
     :bordered="true"
-    :max-height="'calc(100vh - 15rem)'"
-    virtual-scroll
     default-expand-all
   />
 </template>

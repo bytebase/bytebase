@@ -7,8 +7,6 @@
     :bordered="true"
     :striped="true"
     :checked-row-keys="selectedBindings"
-    :max-height="'calc(100vh - 15rem)'"
-    virtual-scroll
     @update:checked-row-keys="handleMemberSelection"
   />
 </template>

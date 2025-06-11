@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full mx-auto space-y-4">
+  <div class="w-full mx-auto space-y-4 pb-4">
     <NoPermissionPlaceholder
       v-if="permissionStore.onlyWorkspaceMember"
       class="py-6"
@@ -81,6 +81,10 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
+import { NButton, NTabPane, NTabs, useDialog } from "naive-ui";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import EditMemberRoleDrawer from "@/components/Member/EditMemberRoleDrawer.vue";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
@@ -100,10 +104,6 @@ import {
 import { userBindingPrefix } from "@/types";
 import { User, UserType } from "@/types/proto/v1/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { computedAsync } from "@vueuse/core";
-import { NButton, NTabPane, NTabs, useDialog } from "naive-ui";
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 
 interface LocalState {
   searchText: string;
