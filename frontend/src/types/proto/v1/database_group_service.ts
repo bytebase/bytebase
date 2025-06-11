@@ -270,6 +270,17 @@ export const ListDatabaseGroupsRequest: MessageFns<ListDatabaseGroupsRequest> = 
     return message;
   },
 
+  fromJSON(object: any): ListDatabaseGroupsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      view: isSet(object.view)
+        ? databaseGroupViewFromJSON(object.view)
+        : DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED,
+    };
+  },
+
   toJSON(message: ListDatabaseGroupsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -347,6 +358,15 @@ export const ListDatabaseGroupsResponse: MessageFns<ListDatabaseGroupsResponse> 
     return message;
   },
 
+  fromJSON(object: any): ListDatabaseGroupsResponse {
+    return {
+      databaseGroups: globalThis.Array.isArray(object?.databaseGroups)
+        ? object.databaseGroups.map((e: any) => DatabaseGroup.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
   toJSON(message: ListDatabaseGroupsResponse): unknown {
     const obj: any = {};
     if (message.databaseGroups?.length) {
@@ -414,6 +434,15 @@ export const GetDatabaseGroupRequest: MessageFns<GetDatabaseGroupRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): GetDatabaseGroupRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      view: isSet(object.view)
+        ? databaseGroupViewFromJSON(object.view)
+        : DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED,
+    };
   },
 
   toJSON(message: GetDatabaseGroupRequest): unknown {
@@ -507,6 +536,15 @@ export const CreateDatabaseGroupRequest: MessageFns<CreateDatabaseGroupRequest> 
     return message;
   },
 
+  fromJSON(object: any): CreateDatabaseGroupRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      databaseGroup: isSet(object.databaseGroup) ? DatabaseGroup.fromJSON(object.databaseGroup) : undefined,
+      databaseGroupId: isSet(object.databaseGroupId) ? globalThis.String(object.databaseGroupId) : "",
+      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
+    };
+  },
+
   toJSON(message: CreateDatabaseGroupRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -586,6 +624,13 @@ export const UpdateDatabaseGroupRequest: MessageFns<UpdateDatabaseGroupRequest> 
     return message;
   },
 
+  fromJSON(object: any): UpdateDatabaseGroupRequest {
+    return {
+      databaseGroup: isSet(object.databaseGroup) ? DatabaseGroup.fromJSON(object.databaseGroup) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
   toJSON(message: UpdateDatabaseGroupRequest): unknown {
     const obj: any = {};
     if (message.databaseGroup !== undefined) {
@@ -644,6 +689,10 @@ export const DeleteDatabaseGroupRequest: MessageFns<DeleteDatabaseGroupRequest> 
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): DeleteDatabaseGroupRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteDatabaseGroupRequest): unknown {
@@ -744,6 +793,20 @@ export const DatabaseGroup: MessageFns<DatabaseGroup> = {
     return message;
   },
 
+  fromJSON(object: any): DatabaseGroup {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      databaseExpr: isSet(object.databaseExpr) ? Expr.fromJSON(object.databaseExpr) : undefined,
+      matchedDatabases: globalThis.Array.isArray(object?.matchedDatabases)
+        ? object.matchedDatabases.map((e: any) => DatabaseGroup_Database.fromJSON(e))
+        : [],
+      unmatchedDatabases: globalThis.Array.isArray(object?.unmatchedDatabases)
+        ? object.unmatchedDatabases.map((e: any) => DatabaseGroup_Database.fromJSON(e))
+        : [],
+    };
+  },
+
   toJSON(message: DatabaseGroup): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -814,6 +877,10 @@ export const DatabaseGroup_Database: MessageFns<DatabaseGroup_Database> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): DatabaseGroup_Database {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DatabaseGroup_Database): unknown {
@@ -1255,9 +1322,14 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

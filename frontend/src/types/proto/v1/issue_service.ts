@@ -973,6 +973,13 @@ export const GetIssueRequest: MessageFns<GetIssueRequest> = {
     return message;
   },
 
+  fromJSON(object: any): GetIssueRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      force: isSet(object.force) ? globalThis.Boolean(object.force) : false,
+    };
+  },
+
   toJSON(message: GetIssueRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1040,6 +1047,13 @@ export const CreateIssueRequest: MessageFns<CreateIssueRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): CreateIssueRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      issue: isSet(object.issue) ? Issue.fromJSON(object.issue) : undefined,
+    };
   },
 
   toJSON(message: CreateIssueRequest): unknown {
@@ -1144,6 +1158,16 @@ export const ListIssuesRequest: MessageFns<ListIssuesRequest> = {
     return message;
   },
 
+  fromJSON(object: any): ListIssuesRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
+    };
+  },
+
   toJSON(message: ListIssuesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1223,6 +1247,13 @@ export const ListIssuesResponse: MessageFns<ListIssuesResponse> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): ListIssuesResponse {
+    return {
+      issues: globalThis.Array.isArray(object?.issues) ? object.issues.map((e: any) => Issue.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
   },
 
   toJSON(message: ListIssuesResponse): unknown {
@@ -1327,6 +1358,16 @@ export const SearchIssuesRequest: MessageFns<SearchIssuesRequest> = {
     return message;
   },
 
+  fromJSON(object: any): SearchIssuesRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
+    };
+  },
+
   toJSON(message: SearchIssuesRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1408,6 +1449,13 @@ export const SearchIssuesResponse: MessageFns<SearchIssuesResponse> = {
     return message;
   },
 
+  fromJSON(object: any): SearchIssuesResponse {
+    return {
+      issues: globalThis.Array.isArray(object?.issues) ? object.issues.map((e: any) => Issue.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
   toJSON(message: SearchIssuesResponse): unknown {
     const obj: any = {};
     if (message.issues?.length) {
@@ -1475,6 +1523,13 @@ export const UpdateIssueRequest: MessageFns<UpdateIssueRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): UpdateIssueRequest {
+    return {
+      issue: isSet(object.issue) ? Issue.fromJSON(object.issue) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
   },
 
   toJSON(message: UpdateIssueRequest): unknown {
@@ -1568,6 +1623,15 @@ export const BatchUpdateIssuesStatusRequest: MessageFns<BatchUpdateIssuesStatusR
     return message;
   },
 
+  fromJSON(object: any): BatchUpdateIssuesStatusRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      issues: globalThis.Array.isArray(object?.issues) ? object.issues.map((e: any) => globalThis.String(e)) : [],
+      status: isSet(object.status) ? issueStatusFromJSON(object.status) : IssueStatus.ISSUE_STATUS_UNSPECIFIED,
+      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+    };
+  },
+
   toJSON(message: BatchUpdateIssuesStatusRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -1621,6 +1685,10 @@ export const BatchUpdateIssuesStatusResponse: MessageFns<BatchUpdateIssuesStatus
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(_: any): BatchUpdateIssuesStatusResponse {
+    return {};
   },
 
   toJSON(_: BatchUpdateIssuesStatusResponse): unknown {
@@ -1682,6 +1750,13 @@ export const ApproveIssueRequest: MessageFns<ApproveIssueRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): ApproveIssueRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+    };
   },
 
   toJSON(message: ApproveIssueRequest): unknown {
@@ -1753,6 +1828,13 @@ export const RejectIssueRequest: MessageFns<RejectIssueRequest> = {
     return message;
   },
 
+  fromJSON(object: any): RejectIssueRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+    };
+  },
+
   toJSON(message: RejectIssueRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -1820,6 +1902,13 @@ export const RequestIssueRequest: MessageFns<RequestIssueRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): RequestIssueRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+    };
   },
 
   toJSON(message: RequestIssueRequest): unknown {
@@ -2113,6 +2202,48 @@ export const Issue: MessageFns<Issue> = {
     return message;
   },
 
+  fromJSON(object: any): Issue {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      type: isSet(object.type) ? issue_TypeFromJSON(object.type) : Issue_Type.TYPE_UNSPECIFIED,
+      status: isSet(object.status) ? issueStatusFromJSON(object.status) : IssueStatus.ISSUE_STATUS_UNSPECIFIED,
+      approvers: globalThis.Array.isArray(object?.approvers)
+        ? object.approvers.map((e: any) => Issue_Approver.fromJSON(e))
+        : [],
+      approvalTemplates: globalThis.Array.isArray(object?.approvalTemplates)
+        ? object.approvalTemplates.map((e: any) => ApprovalTemplate.fromJSON(e))
+        : [],
+      approvalFindingDone: isSet(object.approvalFindingDone) ? globalThis.Boolean(object.approvalFindingDone) : false,
+      approvalFindingError: isSet(object.approvalFindingError) ? globalThis.String(object.approvalFindingError) : "",
+      subscribers: globalThis.Array.isArray(object?.subscribers)
+        ? object.subscribers.map((e: any) => globalThis.String(e))
+        : [],
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+      plan: isSet(object.plan) ? globalThis.String(object.plan) : "",
+      rollout: isSet(object.rollout) ? globalThis.String(object.rollout) : "",
+      grantRequest: isSet(object.grantRequest) ? GrantRequest.fromJSON(object.grantRequest) : undefined,
+      releasers: globalThis.Array.isArray(object?.releasers)
+        ? object.releasers.map((e: any) => globalThis.String(e))
+        : [],
+      riskLevel: isSet(object.riskLevel)
+        ? issue_RiskLevelFromJSON(object.riskLevel)
+        : Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED,
+      taskStatusCount: isObject(object.taskStatusCount)
+        ? Object.entries(object.taskStatusCount).reduce<{ [key: string]: number }>((acc, [key, value]) => {
+          acc[key] = Number(value);
+          return acc;
+        }, {})
+        : {},
+      labels: globalThis.Array.isArray(object?.labels)
+        ? object.labels.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
   toJSON(message: Issue): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -2274,6 +2405,15 @@ export const Issue_Approver: MessageFns<Issue_Approver> = {
     return message;
   },
 
+  fromJSON(object: any): Issue_Approver {
+    return {
+      status: isSet(object.status)
+        ? issue_Approver_StatusFromJSON(object.status)
+        : Issue_Approver_Status.STATUS_UNSPECIFIED,
+      principal: isSet(object.principal) ? globalThis.String(object.principal) : "",
+    };
+  },
+
   toJSON(message: Issue_Approver): unknown {
     const obj: any = {};
     if (message.status !== Issue_Approver_Status.STATUS_UNSPECIFIED) {
@@ -2341,6 +2481,13 @@ export const Issue_TaskStatusCountEntry: MessageFns<Issue_TaskStatusCountEntry> 
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): Issue_TaskStatusCountEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
   },
 
   toJSON(message: Issue_TaskStatusCountEntry): unknown {
@@ -2432,6 +2579,15 @@ export const GrantRequest: MessageFns<GrantRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): GrantRequest {
+    return {
+      role: isSet(object.role) ? globalThis.String(object.role) : "",
+      user: isSet(object.user) ? globalThis.String(object.user) : "",
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+      expiration: isSet(object.expiration) ? Duration.fromJSON(object.expiration) : undefined,
+    };
   },
 
   toJSON(message: GrantRequest): unknown {
@@ -2526,6 +2682,14 @@ export const ApprovalTemplate: MessageFns<ApprovalTemplate> = {
     return message;
   },
 
+  fromJSON(object: any): ApprovalTemplate {
+    return {
+      flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+    };
+  },
+
   toJSON(message: ApprovalTemplate): unknown {
     const obj: any = {};
     if (message.flow !== undefined) {
@@ -2588,6 +2752,12 @@ export const ApprovalFlow: MessageFns<ApprovalFlow> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): ApprovalFlow {
+    return {
+      steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => ApprovalStep.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: ApprovalFlow): unknown {
@@ -2653,6 +2823,13 @@ export const ApprovalStep: MessageFns<ApprovalStep> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): ApprovalStep {
+    return {
+      type: isSet(object.type) ? approvalStep_TypeFromJSON(object.type) : ApprovalStep_Type.TYPE_UNSPECIFIED,
+      nodes: globalThis.Array.isArray(object?.nodes) ? object.nodes.map((e: any) => ApprovalNode.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: ApprovalStep): unknown {
@@ -2722,6 +2899,13 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): ApprovalNode {
+    return {
+      type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : ApprovalNode_Type.TYPE_UNSPECIFIED,
+      role: isSet(object.role) ? globalThis.String(object.role) : "",
+    };
   },
 
   toJSON(message: ApprovalNode): unknown {
@@ -2804,6 +2988,14 @@ export const ListIssueCommentsRequest: MessageFns<ListIssueCommentsRequest> = {
     return message;
   },
 
+  fromJSON(object: any): ListIssueCommentsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
   toJSON(message: ListIssueCommentsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -2877,6 +3069,15 @@ export const ListIssueCommentsResponse: MessageFns<ListIssueCommentsResponse> = 
     return message;
   },
 
+  fromJSON(object: any): ListIssueCommentsResponse {
+    return {
+      issueComments: globalThis.Array.isArray(object?.issueComments)
+        ? object.issueComments.map((e: any) => IssueComment.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
   toJSON(message: ListIssueCommentsResponse): unknown {
     const obj: any = {};
     if (message.issueComments?.length) {
@@ -2944,6 +3145,13 @@ export const CreateIssueCommentRequest: MessageFns<CreateIssueCommentRequest> = 
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): CreateIssueCommentRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      issueComment: isSet(object.issueComment) ? IssueComment.fromJSON(object.issueComment) : undefined,
+    };
   },
 
   toJSON(message: CreateIssueCommentRequest): unknown {
@@ -3026,6 +3234,14 @@ export const UpdateIssueCommentRequest: MessageFns<UpdateIssueCommentRequest> = 
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): UpdateIssueCommentRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      issueComment: isSet(object.issueComment) ? IssueComment.fromJSON(object.issueComment) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
   },
 
   toJSON(message: UpdateIssueCommentRequest): unknown {
@@ -3214,6 +3430,24 @@ export const IssueComment: MessageFns<IssueComment> = {
     return message;
   },
 
+  fromJSON(object: any): IssueComment {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+      payload: isSet(object.payload) ? globalThis.String(object.payload) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      approval: isSet(object.approval) ? IssueComment_Approval.fromJSON(object.approval) : undefined,
+      issueUpdate: isSet(object.issueUpdate) ? IssueComment_IssueUpdate.fromJSON(object.issueUpdate) : undefined,
+      stageEnd: isSet(object.stageEnd) ? IssueComment_StageEnd.fromJSON(object.stageEnd) : undefined,
+      taskUpdate: isSet(object.taskUpdate) ? IssueComment_TaskUpdate.fromJSON(object.taskUpdate) : undefined,
+      taskPriorBackup: isSet(object.taskPriorBackup)
+        ? IssueComment_TaskPriorBackup.fromJSON(object.taskPriorBackup)
+        : undefined,
+    };
+  },
+
   toJSON(message: IssueComment): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -3320,6 +3554,14 @@ export const IssueComment_Approval: MessageFns<IssueComment_Approval> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): IssueComment_Approval {
+    return {
+      status: isSet(object.status)
+        ? issueComment_Approval_StatusFromJSON(object.status)
+        : IssueComment_Approval_Status.STATUS_UNSPECIFIED,
+    };
   },
 
   toJSON(message: IssueComment_Approval): unknown {
@@ -3462,6 +3704,21 @@ export const IssueComment_IssueUpdate: MessageFns<IssueComment_IssueUpdate> = {
     return message;
   },
 
+  fromJSON(object: any): IssueComment_IssueUpdate {
+    return {
+      fromTitle: isSet(object.fromTitle) ? globalThis.String(object.fromTitle) : undefined,
+      toTitle: isSet(object.toTitle) ? globalThis.String(object.toTitle) : undefined,
+      fromDescription: isSet(object.fromDescription) ? globalThis.String(object.fromDescription) : undefined,
+      toDescription: isSet(object.toDescription) ? globalThis.String(object.toDescription) : undefined,
+      fromStatus: isSet(object.fromStatus) ? issueStatusFromJSON(object.fromStatus) : undefined,
+      toStatus: isSet(object.toStatus) ? issueStatusFromJSON(object.toStatus) : undefined,
+      fromLabels: globalThis.Array.isArray(object?.fromLabels)
+        ? object.fromLabels.map((e: any) => globalThis.String(e))
+        : [],
+      toLabels: globalThis.Array.isArray(object?.toLabels) ? object.toLabels.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
   toJSON(message: IssueComment_IssueUpdate): unknown {
     const obj: any = {};
     if (message.fromTitle !== undefined) {
@@ -3542,6 +3799,10 @@ export const IssueComment_StageEnd: MessageFns<IssueComment_StageEnd> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): IssueComment_StageEnd {
+    return { stage: isSet(object.stage) ? globalThis.String(object.stage) : "" };
   },
 
   toJSON(message: IssueComment_StageEnd): unknown {
@@ -3629,6 +3890,15 @@ export const IssueComment_TaskUpdate: MessageFns<IssueComment_TaskUpdate> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): IssueComment_TaskUpdate {
+    return {
+      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
+      fromSheet: isSet(object.fromSheet) ? globalThis.String(object.fromSheet) : undefined,
+      toSheet: isSet(object.toSheet) ? globalThis.String(object.toSheet) : undefined,
+      toStatus: isSet(object.toStatus) ? issueComment_TaskUpdate_StatusFromJSON(object.toStatus) : undefined,
+    };
   },
 
   toJSON(message: IssueComment_TaskUpdate): unknown {
@@ -3741,6 +4011,18 @@ export const IssueComment_TaskPriorBackup: MessageFns<IssueComment_TaskPriorBack
     return message;
   },
 
+  fromJSON(object: any): IssueComment_TaskPriorBackup {
+    return {
+      task: isSet(object.task) ? globalThis.String(object.task) : "",
+      tables: globalThis.Array.isArray(object?.tables)
+        ? object.tables.map((e: any) => IssueComment_TaskPriorBackup_Table.fromJSON(e))
+        : [],
+      originalLine: isSet(object.originalLine) ? globalThis.Number(object.originalLine) : undefined,
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+    };
+  },
+
   toJSON(message: IssueComment_TaskPriorBackup): unknown {
     const obj: any = {};
     if (message.task !== "") {
@@ -3820,6 +4102,13 @@ export const IssueComment_TaskPriorBackup_Table: MessageFns<IssueComment_TaskPri
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): IssueComment_TaskPriorBackup_Table {
+    return {
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+    };
   },
 
   toJSON(message: IssueComment_TaskPriorBackup_Table): unknown {
@@ -4773,15 +5062,44 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
+function fromJsonTimestamp(o: any): Timestamp {
+  if (o instanceof globalThis.Date) {
+    return toTimestamp(o);
+  } else if (typeof o === "string") {
+    return toTimestamp(new globalThis.Date(o));
+  } else {
+    return Timestamp.fromJSON(o);
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;

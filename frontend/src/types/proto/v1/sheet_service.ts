@@ -204,6 +204,13 @@ export const CreateSheetRequest: MessageFns<CreateSheetRequest> = {
     return message;
   },
 
+  fromJSON(object: any): CreateSheetRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      sheet: isSet(object.sheet) ? Sheet.fromJSON(object.sheet) : undefined,
+    };
+  },
+
   toJSON(message: CreateSheetRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -273,6 +280,15 @@ export const BatchCreateSheetsRequest: MessageFns<BatchCreateSheetsRequest> = {
     return message;
   },
 
+  fromJSON(object: any): BatchCreateSheetsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      requests: globalThis.Array.isArray(object?.requests)
+        ? object.requests.map((e: any) => CreateSheetRequest.fromJSON(e))
+        : [],
+    };
+  },
+
   toJSON(message: BatchCreateSheetsRequest): unknown {
     const obj: any = {};
     if (message.parent !== "") {
@@ -329,6 +345,10 @@ export const BatchCreateSheetsResponse: MessageFns<BatchCreateSheetsResponse> = 
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): BatchCreateSheetsResponse {
+    return { sheets: globalThis.Array.isArray(object?.sheets) ? object.sheets.map((e: any) => Sheet.fromJSON(e)) : [] };
   },
 
   toJSON(message: BatchCreateSheetsResponse): unknown {
@@ -394,6 +414,13 @@ export const GetSheetRequest: MessageFns<GetSheetRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): GetSheetRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      raw: isSet(object.raw) ? globalThis.Boolean(object.raw) : false,
+    };
   },
 
   toJSON(message: GetSheetRequest): unknown {
@@ -463,6 +490,13 @@ export const UpdateSheetRequest: MessageFns<UpdateSheetRequest> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): UpdateSheetRequest {
+    return {
+      sheet: isSet(object.sheet) ? Sheet.fromJSON(object.sheet) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
   },
 
   toJSON(message: UpdateSheetRequest): unknown {
@@ -609,6 +643,19 @@ export const Sheet: MessageFns<Sheet> = {
     return message;
   },
 
+  fromJSON(object: any): Sheet {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
+      contentSize: isSet(object.contentSize) ? Long.fromValue(object.contentSize) : Long.ZERO,
+      payload: isSet(object.payload) ? SheetPayload.fromJSON(object.payload) : undefined,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
+    };
+  },
+
   toJSON(message: Sheet): unknown {
     const obj: any = {};
     if (message.name !== "") {
@@ -708,6 +755,15 @@ export const SheetPayload: MessageFns<SheetPayload> = {
     return message;
   },
 
+  fromJSON(object: any): SheetPayload {
+    return {
+      type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : SheetPayload_Type.TYPE_UNSPECIFIED,
+      commands: globalThis.Array.isArray(object?.commands)
+        ? object.commands.map((e: any) => SheetCommand.fromJSON(e))
+        : [],
+    };
+  },
+
   toJSON(message: SheetPayload): unknown {
     const obj: any = {};
     if (message.type !== SheetPayload_Type.TYPE_UNSPECIFIED) {
@@ -775,6 +831,13 @@ export const SheetCommand: MessageFns<SheetCommand> = {
       reader.skip(tag & 7);
     }
     return message;
+  },
+
+  fromJSON(object: any): SheetCommand {
+    return {
+      start: isSet(object.start) ? globalThis.Number(object.start) : 0,
+      end: isSet(object.end) ? globalThis.Number(object.end) : 0,
+    };
   },
 
   toJSON(message: SheetCommand): unknown {
@@ -1045,6 +1108,15 @@ export const SheetServiceDefinition = {
   },
 } as const;
 
+function bytesFromBase64(b64: string): Uint8Array {
+  const bin = globalThis.atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; ++i) {
+    arr[i] = bin.charCodeAt(i);
+  }
+  return arr;
+}
+
 function base64FromBytes(arr: Uint8Array): string {
   const bin: string[] = [];
   arr.forEach((byte) => {
@@ -1061,15 +1133,40 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis);
 }
 
+function fromJsonTimestamp(o: any): Timestamp {
+  if (o instanceof globalThis.Date) {
+    return toTimestamp(o);
+  } else if (typeof o === "string") {
+    return toTimestamp(new globalThis.Date(o));
+  } else {
+    return Timestamp.fromJSON(o);
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
   toJSON(message: T): unknown;
   create(base?: DeepPartial<T>): T;
   fromPartial(object: DeepPartial<T>): T;
