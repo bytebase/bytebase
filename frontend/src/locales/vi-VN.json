@@ -1007,8 +1007,7 @@
     "navigator": {
       "overview": "Tổng quan",
       "specifications": "Thông số kỹ thuật",
-      "spec-number": "Đặc điểm kỹ thuật {number}",
-      "no-specifications": "Không có thông số kỹ thuật",
+      "checks": "Kiểm tra",
       "statement-empty": "Câu lệnh trống rỗng"
     },
     "spec": {
@@ -1020,19 +1019,11 @@
         "database-change": "Thay đổi cơ sở dữ liệu",
         "export-data": "Xuất dữ liệu",
         "unknown": "Không rõ"
-      },
-      "status": {
-        "pass": "Vượt qua",
-        "warn": "Cảnh báo",
-        "error": "Lỗi"
       }
     },
     "targets": {
       "title": "Mục tiêu",
       "no-targets-found": "Không tìm thấy mục tiêu",
-      "no-targets": "Không có mục tiêu",
-      "one-target": "1 mục tiêu",
-      "multiple-targets": "{count} mục tiêu",
       "one-database": "1 cơ sở dữ liệu",
       "multiple-databases": "{count} cơ sở dữ liệu",
       "database-group": "Nhóm cơ sở dữ liệu",

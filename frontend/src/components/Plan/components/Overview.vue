@@ -1,11 +1,11 @@
 <template>
-  <div class="w-full p-4 overflow-y-auto mt-4">
-    <div class="max-w-4xl mx-auto space-y-4">
+  <div class="w-full px-4 overflow-y-auto">
+    <div class="max-w-4xl mx-auto space-y-4 mt-4">
       <!-- Plan Header -->
       <div>
-        <h1 class="text-2xl font-semibold mb-2">
+        <h2 class="text-2xl font-semibold mb-2">
           {{ $t("plan.navigator.overview") }}
-        </h1>
+        </h2>
         <p class="text-control-light">
           {{ $t("plan.overview.description") }}
         </p>
@@ -13,7 +13,7 @@
 
       <!-- Statistics Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white rounded border px-3 py-2">
+        <div class="bg-white rounded-md border px-3 py-2">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-control-light">
@@ -27,7 +27,7 @@
           </div>
         </div>
 
-        <div class="bg-white rounded border px-3 py-2">
+        <div class="bg-white rounded-md border px-3 py-2">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-control-light">
@@ -41,7 +41,7 @@
           </div>
         </div>
 
-        <div class="bg-white rounded border px-3 py-2">
+        <div class="bg-white rounded-md border px-3 py-2">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-control-light">
@@ -97,7 +97,7 @@
           <div
             v-for="resource in affectedResources"
             :key="resource.name"
-            class="flex items-start gap-3 p-3 rounded border"
+            class="flex items-start gap-3 p-3 rounded-md border"
           >
             <!-- Icon -->
             <InstanceV1EngineIcon
@@ -147,7 +147,7 @@
                     {{ resource.databaseGroup?.title || resource.name }}
                   </span>
                   <span
-                    class="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-600"
+                    class="text-xs px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-600"
                   >
                     {{ t("plan.targets.database-group") }}
                   </span>

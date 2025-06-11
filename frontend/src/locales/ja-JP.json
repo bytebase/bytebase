@@ -1007,8 +1007,7 @@
     "navigator": {
       "overview": "概要",
       "specifications": "仕様",
-      "spec-number": "スペック {number}",
-      "no-specifications": "仕様なし",
+      "checks": "小切手",
       "statement-empty": "ステートメントが空です"
     },
     "spec": {
@@ -1020,19 +1019,11 @@
         "database-change": "データベースの変更",
         "export-data": "データのエクスポート",
         "unknown": "未知"
-      },
-      "status": {
-        "pass": "合格",
-        "warn": "警告する",
-        "error": "エラー"
       }
     },
     "targets": {
       "title": "ターゲット",
       "no-targets-found": "ターゲットが見つかりません",
-      "no-targets": "ターゲットなし",
-      "one-target": "1つのターゲット",
-      "multiple-targets": "{count} 個のターゲット",
       "one-database": "1 つのデータベース",
       "multiple-databases": "{count} データベース",
       "database-group": "データベースグループ",

@@ -19,7 +19,7 @@ import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import { projectOfPlan } from "@/components/Plan/logic";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import { PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { getTimeForPbTimestamp, unknownUser } from "@/types";
 import type { Plan } from "@/types/proto/v1/plan_service";
@@ -27,7 +27,6 @@ import {
   extractPlanUID,
   extractProjectResourceName,
   humanizeTs,
-  planV1Slug,
 } from "@/utils";
 import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
@@ -120,10 +119,10 @@ const rowProps = (plan: Plan) => {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
       const route = router.resolve({
-        name: PROJECT_V1_ROUTE_REVIEW_CENTER_DETAIL,
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
           projectId: extractProjectResourceName(plan.name),
-          planSlug: planV1Slug(plan),
+          planId: extractPlanUID(plan.name),
         },
       });
       const url = route.fullPath;

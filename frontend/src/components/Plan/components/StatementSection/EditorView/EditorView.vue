@@ -108,7 +108,7 @@
         :readonly="isEditorReadonly"
         :dialect="dialect"
         :advices="isEditorReadonly || isCreating ? markers : []"
-        :auto-height="{ min: 120, max: 240 }"
+        :auto-height="{ min: 160, max: 240 }"
         :auto-complete-context="{
           instance: database.instance,
           database: database.name,
@@ -170,6 +170,13 @@
 </template>
 
 <script setup lang="ts">
+import { useElementSize } from "@vueuse/core";
+import { cloneDeep, head, isEmpty } from "lodash-es";
+import { ExpandIcon } from "lucide-vue-next";
+import { NButton, NTooltip, useDialog } from "naive-ui";
+import { v1 as uuidv1 } from "uuid";
+import { computed, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBAttention, BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
@@ -179,6 +186,7 @@ import {
   databaseEngineForSpec,
   databaseForSpec,
   usePlanContext,
+  planCheckRunListForSpec,
 } from "@/components/Plan/logic";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
@@ -186,7 +194,7 @@ import { planServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useCurrentProjectV1,
-  useSheetV1Store
+  useSheetV1Store,
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
@@ -197,32 +205,21 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head, isEmpty } from "lodash-es";
-import { ExpandIcon } from "lucide-vue-next";
-import { NButton, NTooltip, useDialog } from "naive-ui";
-import { v1 as uuidv1 } from "uuid";
-import { computed, reactive, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { usePlanSQLCheckContext } from "../../SQLCheckSection/context";
-import useSelectedSpec from "../../common/useSelectedSpec";
+import { usePlanSpecContext } from "../../SpecDetailView/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import type { EditState } from "./useTempEditState";
 import { useTempEditState } from "./useTempEditState";
 
 type LocalState = EditState & {
-  showFeatureModal: boolean;
   showEditorModal: boolean;
   isUploadingFile: boolean;
 };
 
 const { t } = useI18n();
 const dialog = useDialog();
-const context = usePlanContext();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, events } = context;
-const selectedSpec = useSelectedSpec();
-const { resultMap } = usePlanSQLCheckContext();
+const { isCreating, plan, events, planCheckRunList } = usePlanContext();
+const { selectedSpec } = usePlanSpecContext();
 const editorContainerElRef = ref<HTMLElement>();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 const { height: editorContainerHeight } = useElementSize(editorContainerElRef);
@@ -230,7 +227,6 @@ const { height: editorContainerHeight } = useElementSize(editorContainerElRef);
 const state = reactive<LocalState>({
   isEditing: false,
   statement: "",
-  showFeatureModal: false,
   showEditorModal: false,
   isUploadingFile: false,
 });
@@ -254,11 +250,13 @@ const dialect = computed((): SQLDialect => {
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
 });
-const advices = computed(() => {
-  const database = databaseForSpec(project.value, selectedSpec.value);
-  return resultMap.value[database.name]?.advices || [];
-});
-const { markers } = useSQLAdviceMarkers(context, advices);
+const planCheckRunsForSelectedSpec = computed(() =>
+  planCheckRunListForSpec(planCheckRunList.value, selectedSpec.value)
+);
+const { markers } = useSQLAdviceMarkers(
+  isCreating,
+  planCheckRunsForSelectedSpec
+);
 
 /**
  * to set the MonacoEditor as readonly
