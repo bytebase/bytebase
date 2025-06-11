@@ -411,7 +411,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 			Roles:  []string{common.FormatRole(common.WorkspaceAdmin)},
 		}
 		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, updateRole); err != nil {
-			return nil, err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
 

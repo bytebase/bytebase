@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full overflow-x-hidden space-y-4">
+  <div class="w-full overflow-x-hidden space-y-4 pb-4">
     <BBAttention
       v-if="remainingUserCount <= 3"
       :type="'warning'"
@@ -75,9 +75,7 @@
           >
             <template #icon>
               <SettingsIcon class="h-5 w-5" />
-              <FeatureBadge
-                :feature="PlanFeature.FEATURE_DIRECTORY_SYNC"
-              />
+              <FeatureBadge :feature="PlanFeature.FEATURE_DIRECTORY_SYNC" />
             </template>
             {{ $t(`settings.members.entra-sync.self`) }}
           </NButton>
@@ -187,6 +185,12 @@
 </template>
 
 <script setup lang="ts">
+import { PlusIcon, SettingsIcon } from "lucide-vue-next";
+import { NButton, NCheckbox, NPopover, NTabPane, NTabs } from "naive-ui";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
+import { useI18n } from "vue-i18n";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
@@ -213,12 +217,6 @@ import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { type User } from "@/types/proto/v1/user_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { PlusIcon, SettingsIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NPopover, NTabPane, NTabs } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import type { ComponentExposed } from "vue-component-type-helpers";
-import { useI18n } from "vue-i18n";
-import { RouterLink, useRoute, useRouter } from "vue-router";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
@@ -393,19 +391,14 @@ const remainingUserCount = computed((): number => {
 });
 
 const userCountAttention = computed((): string => {
-  const upgrade = t(
-    "subscription.usage.user-count.upgrade"
-  );
+  const upgrade = t("subscription.usage.user-count.upgrade");
   let status = "";
 
   if (remainingUserCount.value > 0) {
-    status = t(
-      "subscription.usage.user-count.remaining",
-      {
-        total: subscriptionV1Store.userCountLimit,
-        count: remainingUserCount.value,
-      }
-    );
+    status = t("subscription.usage.user-count.remaining", {
+      total: subscriptionV1Store.userCountLimit,
+      count: remainingUserCount.value,
+    });
   } else {
     status = t("subscription.usage.user-count.runoutof", {
       total: subscriptionV1Store.userCountLimit,

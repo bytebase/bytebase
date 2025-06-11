@@ -515,7 +515,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		if len(databases) > 0 {
 			defaultProjectID := common.DefaultProjectID
 			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProjectID}); err != nil {
-				return nil, err
+				return nil, status.Error(codes.Internal, err.Error())
 			}
 		}
 	} else {
