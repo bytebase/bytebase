@@ -128,7 +128,7 @@
       <NInput
         v-model:value="state.license"
         type="textarea"
-        :placeholder="$t('subscription.sensitive-placeholder')"
+        :placeholder="$t('common.sensitive-placeholder')"
       />
       <div class="ml-auto mt-3">
         <NButton
@@ -155,12 +155,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useClipboard } from "@vueuse/core";
-import { ClipboardCopyIcon } from "lucide-vue-next";
-import { NButton, NDivider, NInput } from "naive-ui";
-import { storeToRefs } from "pinia";
-import { computed, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import TrialModal from "@/components/TrialModal.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
@@ -168,14 +162,20 @@ import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicense
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
-  useSubscriptionV1Store,
-  useSettingV1Store,
   useActuatorV1Store,
+  useSettingV1Store,
+  useSubscriptionV1Store,
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { useClipboard } from "@vueuse/core";
+import { ClipboardCopyIcon } from "lucide-vue-next";
+import { NButton, NDivider, NInput } from "naive-ui";
+import { storeToRefs } from "pinia";
+import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   loading: boolean;
