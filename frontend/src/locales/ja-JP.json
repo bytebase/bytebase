@@ -2073,6 +2073,7 @@
     "button": {
       "upgrade": "アップグレード"
     },
+    "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
     "upload-license": "ライセンスのアップロード",
     "upgrade-trial-button": "アップグレードトライアル",
     "request-n-days-trial": "{days} 日間のトライアルをリクエストします (クレジット カードは必要ありません)",
@@ -2145,8 +2146,7 @@
         "title": "エンタープライズ"
       },
       "try": "無料でお試しください。"
-    },
-    "description": "ByteBaseライセンスをアップロードして、Pro/Enterprise機能のロックを解除できます。"
+    }
   },
   "sheet": {
     "mine": "マイワークシート",

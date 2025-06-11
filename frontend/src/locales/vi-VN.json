@@ -2073,6 +2073,7 @@
     "button": {
       "upgrade": "Nâng cấp"
     },
+    "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
     "upload-license": "Tải lên giấy phép",
     "upgrade-trial-button": "Nâng cấp bản dùng thử",
     "request-n-days-trial": "Yêu cầu dùng thử {days} ngày (không cần thẻ tín dụng)",
@@ -2145,8 +2146,7 @@
         "title": "Doanh nghiệp"
       },
       "try": "Dùng thử miễn phí."
-    },
-    "description": "Bạn có thể tải lên giấy phép bytebase của mình để mở khóa các tính năng Pro/Enterprise."
+    }
   },
   "sheet": {
     "mine": "Của tôi",

@@ -2073,6 +2073,7 @@
     "button": {
       "upgrade": "Actualizar"
     },
+    "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
     "upload-license": "Subir licencia",
     "upgrade-trial-button": "Actualizar prueba",
     "request-n-days-trial": "Solicite una prueba de {days} días (no se requiere tarjeta de crédito)",
@@ -2145,8 +2146,7 @@
         "title": "Empresa"
       },
       "try": "Pruébalo gratis."
-    },
-    "description": "Puede cargar su licencia de ByteBase para desbloquear las funciones Pro/Enterprise."
+    }
   },
   "sheet": {
     "mine": "Mío",

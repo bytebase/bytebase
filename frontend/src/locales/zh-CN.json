@@ -2073,6 +2073,7 @@
     "button": {
       "upgrade": "升级"
     },
+    "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",
     "request-n-days-trial": "申请 {days} 天试用 (无需信用卡)",
@@ -2145,8 +2146,7 @@
         "title": "企业版"
       },
       "try": "免费试用。"
-    },
-    "description": "您可以上传BYTEBASE许可证以解锁Pro/Enterprise功能。"
+    }
   },
   "sheet": {
     "mine": "我的",
