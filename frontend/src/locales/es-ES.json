@@ -895,8 +895,8 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
-      "custom-date-placeholder": "Seleccione la fecha y hora de vencimiento",
-      "custom-date": "Fecha personalizada"
+      "custom-date": "Fecha personalizada",
+      "custom-date-placeholder": "Seleccione la fecha y hora de vencimiento"
     },
     "review-sent-back": "Revisión devuelta",
     "update-statement": {
@@ -1027,7 +1027,8 @@
         "instance": "Instancia",
         "database": "Base de datos",
         "database-group": "Grupo de bases de datos"
-      }
+      },
+      "view-all": "Ver todo ({count})"
     },
     "options": {
       "self": "Opciones",

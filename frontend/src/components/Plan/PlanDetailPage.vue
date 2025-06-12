@@ -105,7 +105,7 @@ const tabRender = (tab: TabKey) => {
         <div>
           {t("plan.navigator.checks")}
           {planCheckRunList.value.length > 0 && (
-            <span>({planCheckRunList.value.length})</span>
+            <span class="text-gray-500">({planCheckRunList.value.length})</span>
           )}
         </div>
       );

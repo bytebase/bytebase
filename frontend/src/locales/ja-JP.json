@@ -895,8 +895,8 @@
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "manually-select": "手動選択",
-      "custom-date-placeholder": "有効期限と時刻を選択します",
-      "custom-date": "カスタム日付"
+      "custom-date": "カスタム日付",
+      "custom-date-placeholder": "有効期限と時刻を選択します"
     },
     "review-sent-back": "レビューが返されました",
     "update-statement": {
@@ -1027,7 +1027,8 @@
         "instance": "実例",
         "database": "データベース",
         "database-group": "データベースグループ"
-      }
+      },
+      "view-all": "すべて表示 ({count})"
     },
     "options": {
       "self": "オプション",
