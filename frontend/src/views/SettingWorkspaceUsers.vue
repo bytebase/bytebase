@@ -63,12 +63,9 @@
           <NButton
             v-if="allowGetSCIMSetting && allowCreateUser"
             class="capitalize"
+            :disabled="!hasDirectorySyncFeature"
             @click="
               () => {
-                if (!hasDirectorySyncFeature) {
-                  state.showFeatureModal = true;
-                  return;
-                }
                 state.showAadSyncDrawer = true;
               }
             "
@@ -86,11 +83,15 @@
           >
             <template #trigger>
               <NButton
-                :disabled="workspaceProfileSetting.domains.length === 0"
+                :disabled="
+                  workspaceProfileSetting.domains.length === 0 ||
+                  !hasUserGroupFeature
+                "
                 @click="handleCreateGroup"
               >
                 <template #icon>
                   <PlusIcon class="h-5 w-5" />
+                  <FeatureBadge :feature="PlanFeature.FEATURE_USER_GROUPS" />
                 </template>
                 {{ $t(`settings.members.groups.add-group`) }}
               </NButton>
@@ -176,12 +177,6 @@
     :show="state.showAadSyncDrawer"
     @close="state.showAadSyncDrawer = false"
   />
-
-  <FeatureModal
-    :feature="PlanFeature.FEATURE_DIRECTORY_SYNC"
-    :open="state.showFeatureModal"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script setup lang="ts">
@@ -192,7 +187,7 @@ import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
-import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
 import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue";
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
@@ -232,7 +227,6 @@ type LocalState = {
   showCreateGroupDrawer: boolean;
   showAadSyncDrawer: boolean;
   editingGroup?: Group;
-  showFeatureModal: boolean;
 };
 
 const props = defineProps<{
@@ -247,7 +241,6 @@ const state = reactive<LocalState>({
   showCreateUserDrawer: false,
   showCreateGroupDrawer: false,
   showAadSyncDrawer: false,
-  showFeatureModal: false,
 });
 
 const { t } = useI18n();
@@ -332,6 +325,8 @@ const workspaceProfileSetting = computed(() =>
 const hasDirectorySyncFeature = featureToRef(
   PlanFeature.FEATURE_DIRECTORY_SYNC
 );
+
+const hasUserGroupFeature = featureToRef(PlanFeature.FEATURE_USER_GROUPS);
 
 const allowGetSCIMSetting = computed(() =>
   hasWorkspacePermissionV2("bb.settings.get")

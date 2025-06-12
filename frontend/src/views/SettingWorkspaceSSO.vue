@@ -19,11 +19,11 @@
       >
         <template #icon>
           <PlusIcon class="h-4 w-4" />
+          <FeatureBadge
+            :feature="PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO"
+            class="text-white"
+          />
         </template>
-        <FeatureBadge
-          :feature="PlanFeature.FEATURE_ENTERPRISE_SSO"
-          class="mr-1 text-white"
-        />
         {{ $t("settings.sso.create") }}
       </NButton>
     </div>
@@ -39,7 +39,7 @@
   </div>
 
   <FeatureModal
-    :feature="PlanFeature.FEATURE_ENTERPRISE_SSO"
+    :feature="PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -88,7 +88,7 @@ const state = reactive<LocalState>({
   selectedIdentityProviderName: "",
 });
 const identityProviderStore = useIdentityProviderStore();
-const hasSSOFeature = featureToRef(PlanFeature.FEATURE_ENTERPRISE_SSO);
+const hasSSOFeature = featureToRef(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO);
 
 const identityProviderList = computed(() => {
   return identityProviderStore.identityProviderList;
