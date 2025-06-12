@@ -7339,6 +7339,11 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 When paginating, all other parameters provided to `ListPlanCheckRuns` must match the call that provided the page token. |
 | latest_only | [bool](#bool) |  | If set to true, only the latest plan check run will be returned. |
+| filter | [string](#string) |  | Filter is used to filter plan check runs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - status: the plan check run status, support &#34;==&#34; and &#34;in&#34; operator, check the Status enum in the PlanCheckRun message for the values. - result_status: the plan check run result status, support &#34;==&#34; and &#34;in&#34; operator, check the Result.Status enum in the PlanCheckRun message for the values.
+
+For example: status in [&#34;DONE&#34;, &#34;FAILED&#34;] status == &#34;RUNNING&#34; result_status in [&#34;SUCCESS&#34;, &#34;ERROR&#34;] result_status == &#34;WARNING&#34; |
 
 
 
