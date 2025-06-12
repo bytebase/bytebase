@@ -348,8 +348,7 @@
       "data-classification": "Data Classification",
       "data-access": "Data Access",
       "audit-log": "Audit Logs",
-      "custom-roles": "Custom Roles",
-      "mail-delivery": "Mail Delivery"
+      "custom-roles": "Custom Roles"
     },
     "profile": {
       "email": "Email",
@@ -708,22 +707,6 @@
       },
       "json-format-example": "JSON format example",
       "view-example": "View example"
-    },
-    "mail-delivery": {
-      "description": "Configuring SMTP information will enable users to receive database reports via email, such as slow query weekly reports.",
-      "field": {
-        "smtp-server-host": "SMTP Server Host",
-        "smtp-server-port": "SMTP Server Port",
-        "from": "From",
-        "smtp-username": "SMTP Username",
-        "smtp-password": "SMTP Password",
-        "send-test-email-to": "Send Test Email To",
-        "send": "Send",
-        "authentication-method": "Authentication Method",
-        "encryption": "Encryption"
-      },
-      "updated-tip": "Successfully updated the mail delivery setting",
-      "tested-tip": "Send successfully, please check the inbox of {address}."
     }
   },
   "remind": {

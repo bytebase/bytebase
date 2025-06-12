@@ -12424,54 +12424,6 @@ components:
             properties:
                 token:
                     type: string
-        SMTPMailDeliverySettingValue:
-            type: object
-            properties:
-                server:
-                    type: string
-                    description: The SMTP server address.
-                port:
-                    type: integer
-                    description: The SMTP server port.
-                    format: int32
-                encryption:
-                    enum:
-                        - ENCRYPTION_UNSPECIFIED
-                        - ENCRYPTION_NONE
-                        - ENCRYPTION_STARTTLS
-                        - ENCRYPTION_SSL_TLS
-                    type: string
-                    description: The SMTP server encryption.
-                    format: enum
-                ca:
-                    type: string
-                    description: |-
-                        The CA, KEY, and CERT for the SMTP server.
-                         Not used.
-                key:
-                    type: string
-                cert:
-                    type: string
-                authentication:
-                    enum:
-                        - AUTHENTICATION_UNSPECIFIED
-                        - AUTHENTICATION_NONE
-                        - AUTHENTICATION_PLAIN
-                        - AUTHENTICATION_LOGIN
-                        - AUTHENTICATION_CRAM_MD5
-                    type: string
-                    format: enum
-                username:
-                    type: string
-                password:
-                    type: string
-                    description: If not specified, server will use the existed password.
-                from:
-                    type: string
-                    description: The sender email address.
-                to:
-                    type: string
-                    description: The recipient email address, used with validate_only to send test email.
         SQLReviewRule:
             type: object
             properties:
@@ -13950,8 +13902,6 @@ components:
                 stringValue:
                     type: string
                     description: Defines this value as being a string value.
-                smtpMailDeliverySettingValue:
-                    $ref: '#/components/schemas/SMTPMailDeliverySettingValue'
                 appImSettingValue:
                     $ref: '#/components/schemas/AppIMSetting'
                 agentPluginSettingValue:
@@ -13960,8 +13910,6 @@ components:
                     $ref: '#/components/schemas/WorkspaceProfileSetting'
                 workspaceApprovalSettingValue:
                     $ref: '#/components/schemas/WorkspaceApprovalSetting'
-                workspaceTrialSettingValue:
-                    $ref: '#/components/schemas/WorkspaceTrialSetting'
                 schemaTemplateSettingValue:
                     $ref: '#/components/schemas/SchemaTemplateSetting'
                 dataClassificationSettingValue:
@@ -14187,30 +14135,6 @@ components:
                 disallowPasswordSignin:
                     type: boolean
                     description: Whether to disallow password signin. (Except workspace admins)
-        WorkspaceTrialSetting:
-            type: object
-            properties:
-                instanceCount:
-                    type: integer
-                    format: int32
-                expireTime:
-                    type: string
-                    format: date-time
-                issuedTime:
-                    type: string
-                    format: date-time
-                subject:
-                    type: string
-                orgName:
-                    type: string
-                plan:
-                    enum:
-                        - PLAN_TYPE_UNSPECIFIED
-                        - FREE
-                        - TEAM
-                        - ENTERPRISE
-                    type: string
-                    format: enum
 tags:
     - name: ActuatorService
     - name: AuditLogService

@@ -1269,10 +1269,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.SMTPMailDeliverySetting"><span class="badge">M</span>SMTPMailDeliverySetting</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.SchemaTemplateSetting"><span class="badge">M</span>SchemaTemplateSetting</a>
                 </li>
               
@@ -1323,14 +1319,6 @@
               
                 <li>
                   <a href="#bytebase.store.DatabaseChangeMode"><span class="badge">E</span>DatabaseChangeMode</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SMTPMailDeliverySetting.Authentication"><span class="badge">E</span>SMTPMailDeliverySetting.Authentication</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SMTPMailDeliverySetting.Encryption"><span class="badge">E</span>SMTPMailDeliverySetting.Encryption</a>
                 </li>
               
                 <li>
@@ -11148,93 +11136,6 @@ The default value is 100MB, we will use the default value if the setting not exi
 
         
       
-        <h3 id="bytebase.store.SMTPMailDeliverySetting">SMTPMailDeliverySetting</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>server</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The SMTP server address. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>port</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The SMTP server port. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>encryption</td>
-                  <td><a href="#bytebase.store.SMTPMailDeliverySetting.Encryption">SMTPMailDeliverySetting.Encryption</a></td>
-                  <td></td>
-                  <td><p>The SMTP server encryption. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ca</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The CA, KEY, and CERT for the SMTP server. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>cert</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>authentication</td>
-                  <td><a href="#bytebase.store.SMTPMailDeliverySetting.Authentication">SMTPMailDeliverySetting.Authentication</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>username</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>from</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The sender email address. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.SchemaTemplateSetting">SchemaTemplateSetting</h3>
         <p></p>
 
@@ -11777,82 +11678,6 @@ Default to this mode.</p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.store.SMTPMailDeliverySetting.Authentication">SMTPMailDeliverySetting.Authentication</h3>
-        <p>We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and</p><p>CRAM-MD5.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>AUTHENTICATION_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AUTHENTICATION_NONE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AUTHENTICATION_PLAIN</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AUTHENTICATION_LOGIN</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AUTHENTICATION_CRAM_MD5</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.SMTPMailDeliverySetting.Encryption">SMTPMailDeliverySetting.Encryption</h3>
-        <p>We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ENCRYPTION_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ENCRYPTION_NONE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ENCRYPTION_STARTTLS</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ENCRYPTION_SSL_TLS</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.store.SettingName">SettingName</h3>
         <p></p>
         <table class="enum-table">
@@ -11930,12 +11755,6 @@ Default to this mode.</p></td>
               <tr>
                 <td>PLUGIN_AGENT</td>
                 <td>11</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WORKSPACE_MAIL_DELIVERY</td>
-                <td>12</td>
                 <td><p></p></td>
               </tr>
             
