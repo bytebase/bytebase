@@ -674,10 +674,13 @@ export declare type ListPlanCheckRunsRequest = Message<"bytebase.v1.ListPlanChec
    *
    * Supported filters:
    * - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
+   * - result_status: the plan check run result status, support "==" and "in" operator, check the Result.Status enum in the PlanCheckRun message for the values.
    *
    * For example:
    * status in ["DONE", "FAILED"]
    * status == "RUNNING"
+   * result_status in ["SUCCESS", "ERROR"]
+   * result_status == "WARNING"
    *
    * @generated from field: string filter = 5;
    */

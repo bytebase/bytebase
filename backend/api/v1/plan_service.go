@@ -797,6 +797,21 @@ func (*PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanC
 						find.Status = &[]store.PlanCheckRunStatus{}
 					}
 					*find.Status = append(*find.Status, storeStatus)
+				case "result_status":
+					resultStatusStr, ok := value.(string)
+					if !ok {
+						return status.Errorf(codes.InvalidArgument, "result_status value must be a string")
+					}
+					// Convert v1pb result status to store result status
+					v1ResultStatus := v1pb.PlanCheckRun_Result_Status_value[resultStatusStr]
+					if v1ResultStatus == 0 && resultStatusStr != "STATUS_UNSPECIFIED" {
+						return status.Errorf(codes.InvalidArgument, "invalid result_status value: %s", resultStatusStr)
+					}
+					storeResultStatus := convertToStoreResultStatus(v1pb.PlanCheckRun_Result_Status(v1ResultStatus))
+					if find.ResultStatus == nil {
+						find.ResultStatus = &[]storepb.PlanCheckRunResult_Result_Status{}
+					}
+					*find.ResultStatus = append(*find.ResultStatus, storeResultStatus)
 				default:
 					return status.Errorf(codes.InvalidArgument, "unsupported filter variable: %s", variable)
 				}
@@ -827,6 +842,30 @@ func (*PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanC
 						storeStatus := convertToStorePlanCheckRunStatus(v1pb.PlanCheckRun_Status(v1Status))
 						*find.Status = append(*find.Status, storeStatus)
 					}
+				case "result_status":
+					rawList, ok := value.([]any)
+					if !ok {
+						return status.Errorf(codes.InvalidArgument, "invalid list value %q for %v", value, variable)
+					}
+					if len(rawList) == 0 {
+						return status.Errorf(codes.InvalidArgument, "empty list value for filter %v", variable)
+					}
+					if find.ResultStatus == nil {
+						find.ResultStatus = &[]storepb.PlanCheckRunResult_Result_Status{}
+					}
+					for _, raw := range rawList {
+						resultStatusStr, ok := raw.(string)
+						if !ok {
+							return status.Errorf(codes.InvalidArgument, "result_status value must be a string")
+						}
+						// Convert v1pb result status to store result status
+						v1ResultStatus := v1pb.PlanCheckRun_Result_Status_value[resultStatusStr]
+						if v1ResultStatus == 0 && resultStatusStr != "STATUS_UNSPECIFIED" {
+							return status.Errorf(codes.InvalidArgument, "invalid result_status value: %s", resultStatusStr)
+						}
+						storeResultStatus := convertToStoreResultStatus(v1pb.PlanCheckRun_Result_Status(v1ResultStatus))
+						*find.ResultStatus = append(*find.ResultStatus, storeResultStatus)
+					}
 				default:
 					return status.Errorf(codes.InvalidArgument, "unsupported filter variable: %s", variable)
 				}
@@ -855,6 +894,20 @@ func convertToStorePlanCheckRunStatus(status v1pb.PlanCheckRun_Status) store.Pla
 		return store.PlanCheckRunStatusRunning
 	default:
 		return store.PlanCheckRunStatusRunning
+	}
+}
+
+// convertToStoreResultStatus converts v1pb.PlanCheckRun_Result_Status to storepb.PlanCheckRunResult_Result_Status.
+func convertToStoreResultStatus(status v1pb.PlanCheckRun_Result_Status) storepb.PlanCheckRunResult_Result_Status {
+	switch status {
+	case v1pb.PlanCheckRun_Result_ERROR:
+		return storepb.PlanCheckRunResult_Result_ERROR
+	case v1pb.PlanCheckRun_Result_WARNING:
+		return storepb.PlanCheckRunResult_Result_WARNING
+	case v1pb.PlanCheckRun_Result_SUCCESS:
+		return storepb.PlanCheckRunResult_Result_SUCCESS
+	default:
+		return storepb.PlanCheckRunResult_Result_STATUS_UNSPECIFIED
 	}
 }
 

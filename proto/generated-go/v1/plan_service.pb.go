@@ -845,10 +845,13 @@ type ListPlanCheckRunsRequest struct {
 	//
 	// Supported filters:
 	// - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
+	// - result_status: the plan check run result status, support "==" and "in" operator, check the Result.Status enum in the PlanCheckRun message for the values.
 	//
 	// For example:
 	// status in ["DONE", "FAILED"]
 	// status == "RUNNING"
+	// result_status in ["SUCCESS", "ERROR"]
+	// result_status == "WARNING"
 	Filter        string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
