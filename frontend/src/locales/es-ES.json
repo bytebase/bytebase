@@ -348,8 +348,7 @@
       "data-classification": "Clasificación de datos",
       "data-access": "Acceso a datos",
       "audit-log": "Registros de auditoría",
-      "custom-roles": "Roles personalizados",
-      "mail-delivery": "Entrega de Correo"
+      "custom-roles": "Roles personalizados"
     },
     "profile": {
       "email": "Correo electrónico",
@@ -708,22 +707,6 @@
       },
       "json-format-example": "Ejemplo de formato JSON",
       "view-example": "Ver ejemplo"
-    },
-    "mail-delivery": {
-      "description": "Habilita la entrega de correo para recibir notificaciones por correo electrónico configurando la información del servidor SMTP.",
-      "field": {
-        "smtp-server-host": "Servidor SMTP",
-        "smtp-server-port": "Puerto del servidor SMTP",
-        "from": "De",
-        "smtp-username": "Usuario SMTP",
-        "smtp-password": "Contraseña SMTP",
-        "send-test-email-to": "Enviar correo de prueba a",
-        "send": "Enviar",
-        "authentication-method": "Método de Autenticación",
-        "encryption": "Encriptación"
-      },
-      "updated-tip": "Se ha actualizado correctamente la configuración de entrega de correo",
-      "tested-tip": "Envío realizado con éxito, por favor revise la bandeja de entrada de {address}."
     }
   },
   "remind": {

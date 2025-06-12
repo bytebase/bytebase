@@ -348,8 +348,7 @@
       "data-classification": "Phân loại dữ liệu",
       "data-access": "Truy cập dữ liệu",
       "audit-log": "Nhật ký kiểm tra",
-      "custom-roles": "Vai trò tùy chỉnh",
-      "mail-delivery": "Gửi thư"
+      "custom-roles": "Vai trò tùy chỉnh"
     },
     "profile": {
       "email": "Email",
@@ -708,22 +707,6 @@
       },
       "json-format-example": "Ví dụ định dạng JSON",
       "view-example": "Xem ví dụ"
-    },
-    "mail-delivery": {
-      "description": "Định cấu hình thông tin SMTP sẽ cho phép người dùng nhận báo cáo cơ sở dữ liệu qua email, chẳng hạn như báo cáo truy vấn chậm hàng tuần.",
-      "field": {
-        "smtp-server-host": "Máy chủ SMTP",
-        "smtp-server-port": "Cổng máy chủ SMTP",
-        "from": "Từ",
-        "smtp-username": "Tên người dùng SMTP",
-        "smtp-password": "Mật khẩu SMTP",
-        "send-test-email-to": "Gửi email thử nghiệm đến",
-        "send": "Gửi",
-        "authentication-method": "Phương thức xác thực",
-        "encryption": "Mã hóa"
-      },
-      "updated-tip": "Đã cập nhật cài đặt gửi thư thành công",
-      "tested-tip": "Gửi thành công, vui lòng kiểm tra hộp thư đến của {address}."
     }
   },
   "remind": {

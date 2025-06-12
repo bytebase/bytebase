@@ -348,8 +348,7 @@
       "data-classification": "数据分类",
       "data-access": "数据访问",
       "audit-log": "审计日志",
-      "custom-roles": "自定义角色",
-      "mail-delivery": "邮件发送"
+      "custom-roles": "自定义角色"
     },
     "profile": {
       "email": "邮箱",
@@ -708,22 +707,6 @@
       },
       "json-format-example": "JSON 格式样例",
       "view-example": "查看样例"
-    },
-    "mail-delivery": {
-      "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮件，如慢查询周报。",
-      "field": {
-        "smtp-server-host": "SMTP 服务器主机",
-        "smtp-server-port": "SMTP 服务器端口",
-        "from": "发件人地址",
-        "smtp-username": "SMTP 用户名",
-        "smtp-password": "SMTP 密码",
-        "send-test-email-to": "收件人测试地址",
-        "send": "发送",
-        "authentication-method": "验证方式",
-        "encryption": "加密方式"
-      },
-      "updated-tip": "邮件传输配置更新成功",
-      "tested-tip": "发送成功，请检查 {address} 的收件箱。"
     }
   },
   "remind": {
