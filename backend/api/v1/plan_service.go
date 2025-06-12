@@ -752,7 +752,7 @@ func (s *PlanService) ListPlanCheckRuns(ctx context.Context, request *v1pb.ListP
 }
 
 // parsePlanCheckRunFilter parses the filter for plan check runs.
-func (s *PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanCheckRunMessage) error {
+func (*PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanCheckRunMessage) error {
 	if filter == "" {
 		return nil
 	}
