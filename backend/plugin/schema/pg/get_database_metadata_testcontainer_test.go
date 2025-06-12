@@ -347,17 +347,17 @@ func normalizeExpression(expr string) string {
 func normalizeSQL(sql string) string {
 	// Convert to lowercase
 	sql = strings.ToLower(sql)
-	
+
 	// Replace multiple spaces/newlines with single space
 	sql = strings.Join(strings.Fields(sql), " ")
-	
+
 	// Remove trailing semicolons
 	sql = strings.TrimSuffix(sql, ";")
-	
+
 	// Remove schema qualifiers for public schema
 	// This handles cases like "public.table_name" -> "table_name"
 	sql = strings.ReplaceAll(sql, "public.", "")
-	
+
 	// Handle PostgreSQL's tendency to wrap WHERE conditions in parentheses
 	// e.g., "WHERE (condition)" -> "WHERE condition"
 	// We need to be careful to only remove the outermost parentheses around the entire WHERE clause
@@ -367,7 +367,7 @@ func normalizeSQL(sql string) string {
 		afterWhere := sql[whereIndex+7:] // Skip "where ("
 		openCount := 1
 		closeIndex := -1
-		
+
 		// Find the matching closing parenthesis
 		for i, ch := range afterWhere {
 			if ch == '(' {
@@ -380,7 +380,7 @@ func normalizeSQL(sql string) string {
 				}
 			}
 		}
-		
+
 		// If we found the matching closing parenthesis and it's at the end or followed by end/order/group
 		if closeIndex >= 0 {
 			beforeWhere := sql[:whereIndex+6] // Include "where "
@@ -388,20 +388,20 @@ func normalizeSQL(sql string) string {
 			if whereIndex+7+closeIndex+1 < len(sql) {
 				afterCloseParen = sql[whereIndex+7+closeIndex+1:]
 			}
-			
+
 			// Check if the closing paren is at the end or followed by valid SQL keywords
-			if afterCloseParen == "" || strings.HasPrefix(strings.TrimSpace(afterCloseParen), "order by") || 
-			   strings.HasPrefix(strings.TrimSpace(afterCloseParen), "group by") || 
-			   strings.HasPrefix(strings.TrimSpace(afterCloseParen), "limit") {
+			if afterCloseParen == "" || strings.HasPrefix(strings.TrimSpace(afterCloseParen), "order by") ||
+				strings.HasPrefix(strings.TrimSpace(afterCloseParen), "group by") ||
+				strings.HasPrefix(strings.TrimSpace(afterCloseParen), "limit") {
 				// Remove the parentheses
 				sql = beforeWhere + afterWhere[:closeIndex] + afterCloseParen
 			}
 		}
 	}
-	
+
 	// Final trim
 	sql = strings.TrimSpace(sql)
-	
+
 	return sql
 }
 
@@ -409,10 +409,10 @@ func normalizeSQL(sql string) string {
 func normalizeSignature(sig string) string {
 	// Convert to lowercase
 	sig = strings.ToLower(sig)
-	
+
 	// Remove extra spaces
 	sig = strings.Join(strings.Fields(sig), " ")
-	
+
 	// Remove spaces around parentheses and commas
 	sig = strings.ReplaceAll(sig, " (", "(")
 	sig = strings.ReplaceAll(sig, "( ", "(")
@@ -420,10 +420,10 @@ func normalizeSignature(sig string) string {
 	sig = strings.ReplaceAll(sig, ") ", ")")
 	sig = strings.ReplaceAll(sig, " ,", ",")
 	sig = strings.ReplaceAll(sig, ", ", ",")
-	
+
 	// Remove quotes around function names
 	sig = strings.ReplaceAll(sig, "\"", "")
-	
+
 	return sig
 }
 
@@ -602,13 +602,13 @@ func compareViews(t *testing.T, syncViews, parseViews []*storepb.ViewMetadata) {
 	for _, parseView := range parseViews {
 		syncView, exists := syncMap[parseView.Name]
 		require.True(t, exists, "view %s should exist in sync metadata", parseView.Name)
-		
+
 		// Compare view definitions - they might be formatted differently
 		// PostgreSQL normalizes view definitions when storing them
 		syncDef := normalizeSQL(syncView.Definition)
 		parseDef := normalizeSQL(parseView.Definition)
 		require.Equal(t, syncDef, parseDef, "view %s: definition should match", parseView.Name)
-		
+
 		// Compare comment if present
 		if syncView.Comment != "" || parseView.Comment != "" {
 			require.Equal(t, syncView.Comment, parseView.Comment, "view %s: comment should match", parseView.Name)
@@ -645,14 +645,14 @@ func compareFunctions(t *testing.T, syncFuncs, parseFuncs []*storepb.FunctionMet
 				break
 			}
 		}
-		
+
 		require.NotNil(t, syncFn, "function with signature %s should exist in sync metadata", parseFn.Signature)
-		
+
 		// Compare function definitions
 		syncDef := normalizeSQL(syncFn.Definition)
 		parseDef := normalizeSQL(parseFn.Definition)
 		require.Equal(t, syncDef, parseDef, "function %s: definition should match", parseFn.Name)
-		
+
 		// Compare comment if present
 		if syncFn.Comment != "" || parseFn.Comment != "" {
 			require.Equal(t, syncFn.Comment, parseFn.Comment, "function %s: comment should match", parseFn.Name)
