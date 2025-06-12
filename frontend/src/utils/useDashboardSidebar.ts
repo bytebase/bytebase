@@ -1,17 +1,3 @@
-import {
-  LinkIcon,
-  HomeIcon,
-  DatabaseIcon,
-  WorkflowIcon,
-  GalleryHorizontalEndIcon,
-  LayersIcon,
-  SquareStackIcon,
-  ShieldCheck,
-  UsersIcon,
-  SettingsIcon,
-} from "lucide-vue-next";
-import { computed, h } from "vue";
-import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/v2/Sidebar/CommonSidebar.vue";
 import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
 import { t } from "@/plugins/i18n";
@@ -21,31 +7,44 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
-  WORKSPACE_ROUTE_LANDING,
-  WORKSPACE_ROUTE_SQL_REVIEW,
-  WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
-  WORKSPACE_ROUTE_CUSTOM_APPROVAL,
-  WORKSPACE_ROUTE_RISKS,
-  WORKSPACE_ROUTE_GLOBAL_MASKING,
-  WORKSPACE_ROUTE_SEMANTIC_TYPES,
-  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
   WORKSPACE_ROUTE_AUDIT_LOG,
-  WORKSPACE_ROUTE_SSO,
-  WORKSPACE_ROUTE_MAIL_DELIVERY,
-  WORKSPACE_ROUTE_USERS,
-  WORKSPACE_ROUTE_MEMBERS,
-  WORKSPACE_ROUTE_ROLES,
-  WORKSPACE_ROUTE_USER_PROFILE,
+  WORKSPACE_ROUTE_CUSTOM_APPROVAL,
+  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_IM,
+  WORKSPACE_ROUTE_LANDING,
+  WORKSPACE_ROUTE_MEMBERS,
+  WORKSPACE_ROUTE_RISKS,
+  WORKSPACE_ROUTE_ROLES,
+  WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
+  WORKSPACE_ROUTE_SEMANTIC_TYPES,
+  WORKSPACE_ROUTE_SQL_REVIEW,
+  WORKSPACE_ROUTE_SSO,
+  WORKSPACE_ROUTE_USER_PROFILE,
+  WORKSPACE_ROUTE_USERS
 } from "@/router/dashboard/workspaceRoutes";
 import {
+  SETTING_ROUTE_WORKSPACE_ARCHIVE,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-  SETTING_ROUTE_WORKSPACE_ARCHIVE,
 } from "@/router/dashboard/workspaceSetting";
 import { useAppFeature, usePermissionStore } from "@/store";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import {
+  DatabaseIcon,
+  GalleryHorizontalEndIcon,
+  HomeIcon,
+  LayersIcon,
+  LinkIcon,
+  SettingsIcon,
+  ShieldCheck,
+  SquareStackIcon,
+  UsersIcon,
+  WorkflowIcon,
+} from "lucide-vue-next";
+import { computed, h } from "vue";
+import { useRoute } from "vue-router";
 
 export interface DashboardSidebarItem extends SidebarItem {
   navigationId?: string;
@@ -248,12 +247,6 @@ export const useDashboardSidebar = () => {
             title: t("settings.sidebar.im-integration"),
             name: WORKSPACE_ROUTE_IM,
             type: "route",
-          },
-          {
-            title: t("settings.sidebar.mail-delivery"),
-            name: WORKSPACE_ROUTE_MAIL_DELIVERY,
-            type: "route",
-            hide: true, // TODO: show it until we have a mail delivery requirement.
           },
         ],
       },

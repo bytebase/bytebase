@@ -180,8 +180,13 @@
     "optional": "Tùy chọn",
     "reason": "Lý do",
     "date": {
-      "days": "{days} ngày"
+      "days": "{days} ngày",
+      "week": "1 tuần",
+      "month": "1 tháng",
+      "months": "{months} tháng",
+      "year": "1 năm"
     },
+    "access-expires": "Truy cập hết hạn",
     "expiration": "Hết hạn",
     "configure": "Cấu hình",
     "groups": "Nhóm",
@@ -343,8 +348,7 @@
       "data-classification": "Phân loại dữ liệu",
       "data-access": "Truy cập dữ liệu",
       "audit-log": "Nhật ký kiểm tra",
-      "custom-roles": "Vai trò tùy chỉnh",
-      "mail-delivery": "Gửi thư"
+      "custom-roles": "Vai trò tùy chỉnh"
     },
     "profile": {
       "email": "Email",
@@ -703,22 +707,6 @@
       },
       "json-format-example": "Ví dụ định dạng JSON",
       "view-example": "Xem ví dụ"
-    },
-    "mail-delivery": {
-      "description": "Định cấu hình thông tin SMTP sẽ cho phép người dùng nhận báo cáo cơ sở dữ liệu qua email, chẳng hạn như báo cáo truy vấn chậm hàng tuần.",
-      "field": {
-        "smtp-server-host": "Máy chủ SMTP",
-        "smtp-server-port": "Cổng máy chủ SMTP",
-        "from": "Từ",
-        "smtp-username": "Tên người dùng SMTP",
-        "smtp-password": "Mật khẩu SMTP",
-        "send-test-email-to": "Gửi email thử nghiệm đến",
-        "send": "Gửi",
-        "authentication-method": "Phương thức xác thực",
-        "encryption": "Mã hóa"
-      },
-      "updated-tip": "Đã cập nhật cài đặt gửi thư thành công",
-      "tested-tip": "Gửi thành công, vui lòng kiểm tra hộp thư đến của {address}."
     }
   },
   "remind": {
@@ -907,7 +895,8 @@
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
       "manually-select": "Chọn thủ công",
-      "custom": "Tùy chỉnh"
+      "custom-date-placeholder": "Chọn ngày và giờ hết hạn",
+      "custom-date": "Ngày tùy chỉnh"
     },
     "review-sent-back": "Đánh giá đã gửi lại",
     "update-statement": {
@@ -1034,7 +1023,6 @@
       "multiple-databases": "{count} cơ sở dữ liệu",
       "database-group": "Nhóm cơ sở dữ liệu",
       "database-not-found": "Không tìm thấy cơ sở dữ liệu",
-      "environment": "Môi trường: {environment}",
       "type": {
         "instance": "Ví dụ",
         "database": "Cơ sở dữ liệu",
@@ -1472,7 +1460,6 @@
     "unassigned-databases": "Cơ sở dữ liệu chưa được gán",
     "selected-n-databases": "Đã chọn {n} cơ sở dữ liệu | Đã chọn {n} cơ sở dữ liệu",
     "n-databases": "{n} cơ sở dữ liệu | {n} cơ sở dữ liệu",
-    "select-databases-from-same-project": "Vui lòng chọn cơ sở dữ liệu từ cùng một dự án",
     "sync-schema": {
       "title": "Đồng bộ lược đồ",
       "description": "Bytebase hỗ trợ đồng bộ hóa một lược đồ với một hoặc nhiều cơ sở dữ liệu đích. (Chỉ MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
@@ -2592,8 +2579,7 @@
     "permission-denied": "Quyền bị từ chối"
   },
   "review-center": {
-    "self": "Trung tâm đánh giá",
-    "review-sql": "Đánh giá SQL"
+    "self": "Trung tâm đánh giá"
   },
   "schema-designer": {
     "use-tips": "Nhấp vào một bảng để bắt đầu."

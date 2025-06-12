@@ -63,14 +63,12 @@ func configureGrpcRouters(
 	v1pb.RegisterAuditLogServiceServer(grpcServer, apiv1.NewAuditLogService(stores, iamManager, licenseService))
 	v1pb.RegisterAuthServiceServer(grpcServer, authService)
 	v1pb.RegisterUserServiceServer(grpcServer, userService)
-	// Register ActuatorService with both gRPC and Connect RPC
+	// Register ActuatorService with Connect RPC only
 	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService)
-	v1pb.RegisterActuatorServiceServer(grpcServer, actuatorService)
 
 	// Create Connect RPC handlers with CORS support following Connect RPC documentation
 	connectHandlers := make(map[string]http.Handler)
-	connectActuatorHandler := apiv1.NewActuatorServiceConnectHandler(actuatorService)
-	connectPath, connectHTTPHandler := v1connect.NewActuatorServiceHandler(connectActuatorHandler)
+	connectPath, connectHTTPHandler := v1connect.NewActuatorServiceHandler(actuatorService)
 
 	// Add CORS support using Connect RPC's recommended approach
 	connectHandlers[connectPath] = withCORS(connectHTTPHandler)
@@ -130,9 +128,7 @@ func configureGrpcRouters(
 	}
 
 	// Sort by service name, align with api.bytebase.com.
-	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// ActuatorService uses Connect RPC only, no gRPC gateway handler needed
 	if err := v1pb.RegisterUserServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}

@@ -180,8 +180,13 @@
     "optional": "可选",
     "reason": "理由",
     "date": {
-      "days": "{days} 天"
+      "days": "{days} 天",
+      "week": "1 周",
+      "month": "1 个月",
+      "months": "{months} 个月",
+      "year": "1 年"
     },
+    "access-expires": "访问到期",
     "expiration": "过期时间",
     "configure": "配置",
     "groups": "分组",
@@ -343,8 +348,7 @@
       "data-classification": "数据分类",
       "data-access": "数据访问",
       "audit-log": "审计日志",
-      "custom-roles": "自定义角色",
-      "mail-delivery": "邮件发送"
+      "custom-roles": "自定义角色"
     },
     "profile": {
       "email": "邮箱",
@@ -703,22 +707,6 @@
       },
       "json-format-example": "JSON 格式样例",
       "view-example": "查看样例"
-    },
-    "mail-delivery": {
-      "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮件，如慢查询周报。",
-      "field": {
-        "smtp-server-host": "SMTP 服务器主机",
-        "smtp-server-port": "SMTP 服务器端口",
-        "from": "发件人地址",
-        "smtp-username": "SMTP 用户名",
-        "smtp-password": "SMTP 密码",
-        "send-test-email-to": "收件人测试地址",
-        "send": "发送",
-        "authentication-method": "验证方式",
-        "encryption": "加密方式"
-      },
-      "updated-tip": "邮件传输配置更新成功",
-      "tested-tip": "发送成功，请检查 {address} 的收件箱。"
     }
   },
   "remind": {
@@ -907,7 +895,8 @@
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "manually-select": "手动选择",
-      "custom": "自定义"
+      "custom-date-placeholder": "选择到期日期和时间",
+      "custom-date": "自定义日期"
     },
     "review-sent-back": "审核被退回",
     "update-statement": {
@@ -1034,7 +1023,6 @@
       "multiple-databases": "{count} 个数据库",
       "database-group": "数据库组",
       "database-not-found": "未找到数据库",
-      "environment": "环境：{environment}",
       "type": {
         "instance": "实例",
         "database": "数据库",
@@ -1472,7 +1460,6 @@
     "unassigned-databases": "未分配的数据库",
     "selected-n-databases": "已选择 {n} 个数据库",
     "n-databases": "{n} 个数据库",
-    "select-databases-from-same-project": "请选择同一个项目下的数据库",
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
@@ -2592,8 +2579,7 @@
     "permission-denied": "您没有权限执行此操作"
   },
   "review-center": {
-    "self": "SQL 审核中心",
-    "review-sql": "审核 SQL"
+    "self": "SQL 审核中心"
   },
   "schema-designer": {
     "use-tips": "选择需要设计的表"
