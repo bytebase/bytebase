@@ -174,7 +174,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		}
 	}
 
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, licenseService, database, request.DataSourceId)
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, request.DataSourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -729,7 +729,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		}
 	}
 
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, licenseService, database, request.DataSourceId)
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, request.DataSourceId)
 	if err != nil {
 		return nil, err
 	}
