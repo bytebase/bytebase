@@ -38,7 +38,6 @@
           <span class="font-medium">
             {{ $t("settings.general.workspace.data-export.enable") }}
           </span>
-          <FeatureBadge :feature="PlanFeature.FEATURE_RESTRICT_COPYING_DATA" />
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.data-export.description") }}
@@ -65,15 +64,11 @@
       />
     </div>
   </div>
-
-  <FeatureModal
-    :open="!!state.featureNameForModal"
-    :feature="state.featureNameForModal"
-    @cancel="state.featureNameForModal = undefined"
-  />
 </template>
 
 <script lang="ts" setup>
+import { isEqual } from "lodash-es";
+import { computed, reactive, ref } from "vue";
 import { Switch } from "@/components/v2";
 import {
   featureToRef,
@@ -87,9 +82,7 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
-import { isEqual } from "lodash-es";
-import { computed, reactive, ref } from "vue";
-import { FeatureBadge, FeatureModal } from "../FeatureGuard";
+import { FeatureBadge } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
@@ -97,7 +90,6 @@ import QueryDataPolicySetting from "./QueryDataPolicySetting.vue";
 import RestrictIssueCreationConfigure from "./RestrictIssueCreationConfigure.vue";
 
 interface LocalState {
-  featureNameForModal?: PlanFeature;
   enableWatermark: boolean;
   enableDataExport: boolean;
 }
