@@ -1,637 +1,726 @@
 <template>
-  <div
-    class="w-full flex flex-col justify-start items-start overflow-x-hidden px-1"
-  >
-    <div
-      v-if="isCreating"
-      class="w-full flex flex-col justify-start items-start"
-    >
-      <div class="w-full flex flex-row items-center space-x-2">
-        <p class="textlabel my-2">{{ $t("settings.sso.form.type") }}</p>
-        <a
-          v-if="userDocLink"
-          :href="userDocLink"
-          class="normal-link text-sm inline-flex flex-row items-center"
-          target="_blank"
-        >
-          {{ $t("settings.sso.form.learn-more-with-user-doc") }}
-          <heroicons-outline:external-link class="w-4 h-4" />
-        </a>
-      </div>
-      <div class="w-full flex flex-row justify-start items-start space-x-2">
-        <NRadioGroup
-          v-for="item in identityProviderTypeList"
-          :key="item.type"
-          v-model:value="state.type"
-        >
-          <NRadio
-            :value="item.type"
-            :disabled="!subscriptionStore.hasFeature(item.feature)"
-          >
-            <div class="flex items-center space-x-2">
-              <FeatureBadge :feature="item.feature" />
-              {{ identityProviderTypeToString(item.type) }}
-            </div>
-          </NRadio>
-        </NRadioGroup>
-      </div>
-
-      <BBAttention
-        v-if="
-          !externalUrl &&
-          (state.type === IdentityProviderType.OAUTH2 ||
-            state.type === IdentityProviderType.OIDC)
-        "
-        class="mt-4 w-full border-none"
-        type="error"
-        :title="$t('banner.external-url')"
-        :description="$t('settings.general.workspace.external-url.description')"
-      >
-        <template #action>
-          <NButton type="primary" @click="configureSetting">
-            {{ $t("common.configure-now") }}
-          </NButton>
-        </template>
-      </BBAttention>
-    </div>
-
-    <!-- OAuth2 templates group -->
-    <div
-      v-if="isCreating && state.type === IdentityProviderType.OAUTH2"
-      class="w-full flex flex-col justify-start items-start space-y-3"
-    >
-      <p class="textlabel mt-4">
-        {{ $t("settings.sso.form.use-template") }}
-      </p>
-      <div class="w-full flex flex-row justify-start items-start space-x-2">
-        <NRadioGroup
-          v-for="template in templateList"
-          :key="template.title"
-          :value="selectedTemplate?.title"
-        >
-          <NRadio
-            :value="template.title"
-            :disabled="!subscriptionStore.hasFeature(template.feature)"
-            @change="handleTemplateSelect(template)"
-          >
-            <div class="flex items-center space-x-2">
-              <FeatureBadge :feature="template.feature" />
-              {{ template.title }}
-            </div>
-          </NRadio>
-        </NRadioGroup>
-      </div>
-    </div>
-
-    <div class="w-full flex flex-col justify-start items-start space-y-3 mb-3">
-      <p class="text-lg font-medium !mt-4">
-        {{ $t("settings.sso.form.basic-information") }}
-      </p>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.name") }}
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="identityProvider.title"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          :placeholder="$t('settings.sso.form.name-description')"
-        />
-
-        <ResourceIdField
-          ref="resourceIdField"
-          class="mt-1.5"
-          editing-class="mt-3"
-          resource-type="idp"
-          :readonly="!isCreating"
-          :value="resourceId"
-          :suffix="true"
-          :resource-title="identityProvider.title"
-          :fetch-resource="
-            (id) =>
-              identityProviderStore.getOrFetchIdentityProviderByName(
-                `${idpNamePrefix}${id}`,
-                true /* silent */
-              )
-          "
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.domain") }}
-        </p>
-        <BBTextField
-          v-model:value="identityProvider.domain"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          :placeholder="$t('settings.sso.form.domain-description')"
-        />
-      </div>
-    </div>
-
-    <!-- OAuth2 form group -->
-    <div
-      v-if="state.type === IdentityProviderType.OAUTH2"
-      class="w-full flex flex-col justify-start items-start space-y-3"
-    >
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="text-lg font-medium mt-2">
-          {{ $t("settings.sso.form.identity-provider-information") }}
-        </p>
-        <p class="textinfolabel">
-          {{
-            $t("settings.sso.form.identity-provider-information-description")
-          }}
-        </p>
-      </div>
-      <IdentityProviderExternalURL v-if="isCreating" :type="state.type" />
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Client ID
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForOAuth2.clientId"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. 6655asd77895265aa110ac0d3"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Client secret
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForOAuth2.clientSecret"
-          :required="isCreating"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          :placeholder="
-            isCreating
-              ? 'e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8'
-              : $t('common.sensitive-placeholder')
-          "
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Auth URL
-          <span class="text-red-600">*</span>
-        </p>
-        <p class="textinfolabel">
-          {{ $t("settings.sso.form.auth-url-description") }}
-        </p>
-        <BBTextField
-          v-model:value="configForOAuth2.authUrl"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. https://github.com/login/oauth/authorize"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Scopes
-          <span class="text-red-600">*</span>
-        </p>
-        <p class="textinfolabel">
-          {{ $t("settings.sso.form.scopes-description") }}
-        </p>
-        <BBTextField
-          v-model:value="scopesStringOfConfig"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. user"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Token URL
-          <span class="text-red-600">*</span>
-        </p>
-        <p class="textinfolabel">
-          {{ $t("settings.sso.form.token-url-description") }}
-        </p>
-        <BBTextField
-          v-model:value="configForOAuth2.tokenUrl"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. https://github.com/login/oauth/access_token"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          User information URL
-          <span class="text-red-600">*</span>
-        </p>
-        <p class="textinfolabel">
-          {{ $t("settings.sso.form.user-info-url-description") }}
-        </p>
-        <BBTextField
-          v-model:value="configForOAuth2.userInfoUrl"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. https://api.github.com/user"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.auth-style.self") }}
-          <span class="text-red-600">*</span>
-        </p>
-        <p class="textinfolabel mt-1">
-          <NRadioGroup v-model:value="configForOAuth2.authStyle">
-            <NRadio
-              :value="OAuth2AuthStyle.IN_PARAMS"
-              :label="$t('settings.sso.form.auth-style.in-params.self')"
-            />
-            <NRadio
-              :value="OAuth2AuthStyle.IN_HEADER"
-              :label="$t('settings.sso.form.auth-style.in-header.self')"
-            />
-          </NRadioGroup>
-        </p>
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.connection-security") }}
-        </p>
-        <p class="textinfolabel mt-1">
-          <NCheckbox
-            v-model:checked="configForOAuth2.skipTlsVerify"
-            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
-            :disabled="!allowEdit"
-          />
-        </p>
-      </div>
-    </div>
-
-    <!-- OIDC form group -->
-    <div
-      v-else-if="state.type === IdentityProviderType.OIDC"
-      class="w-full flex flex-col justify-start items-start space-y-3"
-    >
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="text-lg font-medium mt-2">
-          {{ $t("settings.sso.form.identity-provider-information") }}
-        </p>
-        <p class="textinfolabel">
-          {{
-            $t("settings.sso.form.identity-provider-information-description")
-          }}
-        </p>
-      </div>
-      <IdentityProviderExternalURL v-if="isCreating" :type="state.type" />
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Issuer
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForOIDC.issuer"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. https://acme.okta.com"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Client ID
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForOIDC.clientId"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. 6655asd77895265aa110ac0d3"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Client secret
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForOIDC.clientSecret"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          :placeholder="
-            isCreating
-              ? 'e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8'
-              : $t('common.sensitive-placeholder')
-          "
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Scopes
-          <span class="text-red-600">*</span>
-        </p>
-        <p class="textinfolabel">
-          {{ $t("settings.sso.form.scopes-description") }}
-        </p>
-        <BBTextField
-          v-model:value="scopesStringOfConfig"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. user"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.auth-style.self") }}
-          <span class="text-red-600">*</span>
-        </p>
-        <p class="textinfolabel mt-1">
-          <NRadioGroup v-model:value="configForOIDC.authStyle">
-            <NRadio
-              :value="OAuth2AuthStyle.IN_PARAMS"
-              :label="$t('settings.sso.form.auth-style.in-params.self')"
-            />
-            <NRadio
-              :value="OAuth2AuthStyle.IN_HEADER"
-              :label="$t('settings.sso.form.auth-style.in-header.self')"
-            />
-          </NRadioGroup>
-        </p>
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.connection-security") }}
-        </p>
-        <p class="textinfolabel mt-1">
-          <NCheckbox
-            v-model:checked="configForOIDC.skipTlsVerify"
-            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
-            :disabled="!allowEdit"
-          />
-        </p>
-      </div>
-    </div>
-
-    <!-- LDAP form group -->
-    <div
-      v-else-if="state.type === IdentityProviderType.LDAP"
-      class="w-full flex flex-col justify-start items-start space-y-3"
-    >
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="text-lg font-medium mt-2">
-          {{ $t("settings.sso.form.identity-provider-information") }}
-        </p>
-        <p class="textinfolabel">
-          {{
-            $t("settings.sso.form.identity-provider-information-description")
-          }}
-        </p>
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Host
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForLDAP.host"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. ldap.example.com"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Port
-          <span class="text-red-600">*</span>
-        </p>
-        <NInputNumber
-          v-model:value="configForLDAP.port"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. 389 or 636"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Bind DN
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForLDAP.bindDn"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. uid=system,ou=Users,dc=example,dc=com"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Bind Password
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForLDAP.bindPassword"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          :placeholder="$t('common.sensitive-placeholder')"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          Base DN
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForLDAP.baseDn"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. ou=users,dc=example,dc=com"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          User Filter
-          <span class="text-red-600">*</span>
-        </p>
-        <BBTextField
-          v-model:value="configForLDAP.userFilter"
-          required
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. (uid=%s)"
-        />
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.security-protocol") }}
-          <span class="text-red-600">*</span>
-        </p>
-        <p class="textinfolabel mt-1">
-          <NRadioGroup v-model:value="configForLDAP.securityProtocol">
-            <NRadio value="starttls" label="StartTLS" />
-            <NRadio value="ldaps" label="LDAPS" />
-            <NRadio value="" label="None" />
-          </NRadioGroup>
-        </p>
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="textlabel">
-          {{ $t("settings.sso.form.connection-security") }}
-        </p>
-        <p class="textinfolabel mt-1">
-          <NCheckbox
-            v-model:checked="configForLDAP.skipTlsVerify"
-            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
-            :disabled="!allowEdit"
-          />
-        </p>
-      </div>
-    </div>
-
-    <div class="w-full flex flex-col justify-start items-start space-y-3 mt-3">
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="text-lg font-medium mt-2">
-          {{ $t("settings.sso.form.user-information-mapping") }}
-        </p>
-        <p class="textinfolabel">
-          {{ $t("settings.sso.form.user-information-mapping-description") }}
+  <div class="w-full space-y-0 pt-4">
+    <div class="divide-y divide-block-border">
+      <!-- Provider Type Section -->
+      <div v-if="isCreating" class="pb-6 lg:flex">
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-2xl font-bold">
+            {{ $t("settings.sso.form.type") }}
+          </h1>
           <a
-            href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
-            class="normal-link text-sm inline-flex flex-row items-center"
+            v-if="userDocLink"
+            :href="userDocLink"
+            class="normal-link text-sm inline-flex flex-row items-center mt-2"
             target="_blank"
           >
-            {{ $t("common.learn-more") }}
-            <heroicons-outline:external-link class="w-4 h-4" />
+            {{ $t("settings.sso.form.learn-more-with-user-doc") }}
+            <heroicons-outline:external-link class="w-4 h-4 ml-1" />
           </a>
-        </p>
-      </div>
-      <div class="w-full grid grid-cols-[256px_1fr]">
-        <BBTextField
-          v-model:value="state.fieldMapping.identifier"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. login"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
-          <p class="flex flex-row justify-start items-center">
-            {{ $t("settings.sso.form.identifier") }}
-            <span class="text-red-600">*</span>
-            <NTooltip>
-              <template #trigger>
-                <heroicons-outline:information-circle
-                  class="ml-1 w-4 h-auto text-blue-500"
-                />
-              </template>
-              {{ $t("settings.sso.form.identifier-tips") }}
-            </NTooltip>
-          </p>
         </div>
-      </div>
-      <div class="w-full grid grid-cols-[256px_1fr]">
-        <BBTextField
-          v-model:value="state.fieldMapping.displayName"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. name"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
-          <p>
-            {{ $t("settings.sso.form.display-name") }}
-          </p>
-        </div>
-      </div>
-      <div class="w-full grid grid-cols-[256px_1fr]">
-        <BBTextField
-          v-model:value="state.fieldMapping.phone"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. phone"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
-          <p>
-            {{ $t("settings.sso.form.phone") }}
-          </p>
-        </div>
-      </div>
-      <div
-        v-if="state.type === IdentityProviderType.OIDC"
-        class="w-full grid grid-cols-[256px_1fr]"
-      >
-        <BBTextField
-          v-model:value="state.fieldMapping.groups"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. groups"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
-          <p>
-            {{ $t("settings.sso.form.groups") }}
-          </p>
-        </div>
-      </div>
-      <div class="mt-4">
-        <NButton :disabled="!allowTestConnection" @click="testConnection">
-          {{ $t("identity-provider.test-connection") }}
-        </NButton>
-      </div>
-    </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <div class="space-y-3">
+            <NRadioGroup
+              v-model:value="state.type"
+              size="large"
+              class="space-y-3"
+            >
+              <NRadio
+                v-for="item in identityProviderTypeList"
+                :key="item.type"
+                :value="item.type"
+                :disabled="!subscriptionStore.hasFeature(item.feature)"
+              >
+                <div class="flex items-center space-x-2">
+                  <FeatureBadge :feature="item.feature" />
+                  {{ identityProviderTypeToString(item.type) }}
+                </div>
+              </NRadio>
+            </NRadioGroup>
 
-    <div
-      class="mt-6 pt-4 border-t space-x-4 w-full flex flex-row justify-between items-center"
-    >
-      <div class="space-x-4 flex flex-row justify-start items-center">
-        <template v-if="!isCreating">
-          <BBButtonConfirm
-            :type="'ARCHIVE'"
-            :button-text="$t('settings.sso.delete')"
-            :ok-text="$t('common.delete')"
-            :confirm-title="$t('settings.sso.delete')"
-            :confirm-description="$t('common.cannot-undo-this-action')"
-            :require-confirm="true"
-            @confirm="handleDeleteButtonClick"
-          />
-        </template>
+            <BBAttention
+              v-if="
+                !externalUrl &&
+                (state.type === IdentityProviderType.OAUTH2 ||
+                  state.type === IdentityProviderType.OIDC)
+              "
+              class="mt-4 border-none"
+              type="error"
+              :title="$t('banner.external-url')"
+              :description="
+                $t('settings.general.workspace.external-url.description')
+              "
+            >
+              <template #action>
+                <NButton type="primary" @click="configureSetting">
+                  {{ $t("common.configure-now") }}
+                </NButton>
+              </template>
+            </BBAttention>
+          </div>
+        </div>
       </div>
-      <div class="space-x-3 flex flex-row justify-end items-center">
-        <template v-if="isCreating">
-          <NButton @click="handleCancelButtonClick">
-            {{ $t("common.cancel") }}
-          </NButton>
-          <NButton
-            type="primary"
-            :disabled="!allowCreate"
-            @click="handleCreateButtonClick"
+
+      <!-- OAuth2 Templates Section -->
+      <div
+        v-if="isCreating && state.type === IdentityProviderType.OAUTH2"
+        class="py-6 lg:flex"
+      >
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-2xl font-bold">
+            {{ $t("settings.sso.form.use-template") }}
+          </h1>
+        </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <NRadioGroup
+            :value="selectedTemplate?.title"
+            size="large"
+            class="space-y-3"
           >
-            {{ $t("common.create") }}
-          </NButton>
-        </template>
-        <template v-else>
-          <NButton v-if="allowUpdate" @click="handleDiscardChangesButtonClick">
-            {{ $t("common.discard-changes") }}
-          </NButton>
-          <NButton
-            type="primary"
-            :disabled="!allowUpdate"
-            @click="handleUpdateButtonClick"
+            <NRadio
+              v-for="template in templateList"
+              :key="template.title"
+              :value="template.title"
+              :disabled="!subscriptionStore.hasFeature(template.feature)"
+              @change="handleTemplateSelect(template)"
+            >
+              <div class="flex items-center space-x-2">
+                <FeatureBadge :feature="template.feature" />
+                {{ template.title }}
+              </div>
+            </NRadio>
+          </NRadioGroup>
+        </div>
+      </div>
+
+      <!-- Basic Information Section -->
+      <div class="py-6 lg:flex">
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-2xl font-bold">
+            {{ $t("settings.sso.form.basic-information") }}
+          </h1>
+        </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-4">
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              {{ $t("settings.sso.form.name") }}
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="identityProvider.title"
+              required
+              size="large"
+              :disabled="!allowEdit"
+              class="mt-1 w-full"
+              :placeholder="$t('settings.sso.form.name-description')"
+            />
+            <ResourceIdField
+              ref="resourceIdField"
+              class="mt-1.5"
+              editing-class="mt-3"
+              resource-type="idp"
+              :readonly="!isCreating"
+              :value="resourceId"
+              :suffix="true"
+              :resource-title="identityProvider.title"
+              :fetch-resource="
+                (id) =>
+                  identityProviderStore.getOrFetchIdentityProviderByName(
+                    `${idpNamePrefix}${id}`,
+                    true /* silent */
+                  )
+              "
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              {{ $t("settings.sso.form.domain") }}
+            </p>
+            <BBTextField
+              size="large"
+              v-model:value="identityProvider.domain"
+              :disabled="!allowEdit"
+              class="mt-1 w-full"
+              :placeholder="$t('settings.sso.form.domain-description')"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- OAuth2 Configuration Section -->
+      <div
+        v-if="state.type === IdentityProviderType.OAUTH2"
+        class="py-6 lg:flex"
+      >
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-3xl font-bold text-gray-900">
+            {{ $t("settings.sso.form.identity-provider-information") }}
+          </h1>
+          <p class="textinfolabel mt-2">
+            {{
+              $t("settings.sso.form.identity-provider-information-description")
+            }}
+          </p>
+        </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-4">
+          <IdentityProviderExternalURL v-if="isCreating" :type="state.type" />
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Client ID
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForOAuth2.clientId"
+              required
+              size="large"
+              :disabled="!allowEdit"
+              class="mt-1 w-full"
+              placeholder="e.g. 6655asd77895265aa110ac0d3"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Client secret
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForOAuth2.clientSecret"
+              :required="isCreating"
+              size="large"
+              :disabled="!allowEdit"
+              class="mt-1 w-full"
+              :placeholder="
+                isCreating
+                  ? 'e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8'
+                  : $t('common.sensitive-placeholder')
+              "
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Auth URL
+              <span class="text-red-600">*</span>
+            </p>
+            <p class="textinfolabel">
+              {{ $t("settings.sso.form.auth-url-description") }}
+            </p>
+            <BBTextField
+              v-model:value="configForOAuth2.authUrl"
+              required
+              size="large"
+              :disabled="!allowEdit"
+              class="mt-1 w-full"
+              placeholder="e.g. https://github.com/login/oauth/authorize"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Scopes
+              <span class="text-red-600">*</span>
+            </p>
+            <p class="textinfolabel">
+              {{ $t("settings.sso.form.scopes-description") }}
+            </p>
+            <BBTextField
+              v-model:value="scopesStringOfConfig"
+              required
+              size="large"
+              :disabled="!allowEdit"
+              class="mt-1 w-full"
+              placeholder="e.g. user"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Token URL
+              <span class="text-red-600">*</span>
+            </p>
+            <p class="textinfolabel">
+              {{ $t("settings.sso.form.token-url-description") }}
+            </p>
+            <BBTextField
+              v-model:value="configForOAuth2.tokenUrl"
+              required
+              size="large"
+              :disabled="!allowEdit"
+              class="mt-1 w-full"
+              placeholder="e.g. https://github.com/login/oauth/access_token"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              User information URL
+              <span class="text-red-600">*</span>
+            </p>
+            <p class="textinfolabel">
+              {{ $t("settings.sso.form.user-info-url-description") }}
+            </p>
+            <BBTextField
+              size="large"
+              v-model:value="configForOAuth2.userInfoUrl"
+              required
+              :disabled="!allowEdit"
+              class="mt-1 w-full"
+              placeholder="e.g. https://api.github.com/user"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              {{ $t("settings.sso.form.auth-style.self") }}
+              <span class="text-red-600">*</span>
+            </p>
+            <div class="mt-1">
+              <NRadioGroup
+                size="large"
+                v-model:value="configForOAuth2.authStyle"
+              >
+                <NRadio
+                  :value="OAuth2AuthStyle.IN_PARAMS"
+                  :label="$t('settings.sso.form.auth-style.in-params.self')"
+                />
+                <NRadio
+                  :value="OAuth2AuthStyle.IN_HEADER"
+                  :label="$t('settings.sso.form.auth-style.in-header.self')"
+                />
+              </NRadioGroup>
+            </div>
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              {{ $t("settings.sso.form.connection-security") }}
+            </p>
+            <div class="mt-1">
+              <NCheckbox
+                size="large"
+                v-model:checked="configForOAuth2.skipTlsVerify"
+                :label="
+                  $t('settings.sso.form.connection-security-skip-tls-verify')
+                "
+                :disabled="!allowEdit"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OIDC Configuration Section -->
+      <div
+        v-else-if="state.type === IdentityProviderType.OIDC"
+        class="py-6 lg:flex"
+      >
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-3xl font-bold text-gray-900">
+            {{ $t("settings.sso.form.identity-provider-information") }}
+          </h1>
+          <p class="text-base text-gray-600 mt-3">
+            {{
+              $t("settings.sso.form.identity-provider-information-description")
+            }}
+          </p>
+        </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-6">
+          <IdentityProviderExternalURL v-if="isCreating" :type="state.type" />
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Issuer
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForOIDC.issuer"
+              required
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              placeholder="e.g. https://acme.okta.com"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Client ID
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForOIDC.clientId"
+              required
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              placeholder="e.g. 6655asd77895265aa110ac0d3"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Client secret
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForOIDC.clientSecret"
+              required
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              :placeholder="
+                isCreating
+                  ? 'e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8'
+                  : $t('common.sensitive-placeholder')
+              "
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Scopes
+              <span class="text-red-600">*</span>
+            </p>
+            <p class="text-sm text-gray-600">
+              {{ $t("settings.sso.form.scopes-description") }}
+            </p>
+            <BBTextField
+              v-model:value="scopesStringOfConfig"
+              required
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              placeholder="e.g. user"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              {{ $t("settings.sso.form.auth-style.self") }}
+              <span class="text-red-600">*</span>
+            </p>
+            <NRadioGroup
+              v-model:value="configForOIDC.authStyle"
+              size="large"
+              class="space-y-3"
+            >
+              <NRadio
+                :value="OAuth2AuthStyle.IN_PARAMS"
+                :label="$t('settings.sso.form.auth-style.in-params.self')"
+                class="text-base font-medium text-gray-800"
+              />
+              <NRadio
+                :value="OAuth2AuthStyle.IN_HEADER"
+                :label="$t('settings.sso.form.auth-style.in-header.self')"
+                class="text-base font-medium text-gray-800"
+              />
+            </NRadioGroup>
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800 mb-3">
+              {{ $t("settings.sso.form.connection-security") }}
+            </p>
+            <div class="mt-2">
+              <NCheckbox
+                v-model:checked="configForOIDC.skipTlsVerify"
+                :label="
+                  $t('settings.sso.form.connection-security-skip-tls-verify')
+                "
+                :disabled="!allowEdit"
+                size="large"
+                class="text-base font-medium text-gray-800"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LDAP Configuration Section -->
+      <div
+        v-else-if="state.type === IdentityProviderType.LDAP"
+        class="py-6 lg:flex"
+      >
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-3xl font-bold text-gray-900">
+            {{ $t("settings.sso.form.identity-provider-information") }}
+          </h1>
+          <p class="text-base text-gray-600 mt-3">
+            {{
+              $t("settings.sso.form.identity-provider-information-description")
+            }}
+          </p>
+        </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-6">
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Host
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForLDAP.host"
+              required
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              placeholder="e.g. ldap.example.com"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Port
+              <span class="text-red-600">*</span>
+            </p>
+            <NInputNumber
+              v-model:value="configForLDAP.port"
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              placeholder="e.g. 389 or 636"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Bind DN
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForLDAP.bindDn"
+              required
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              placeholder="e.g. uid=system,ou=Users,dc=example,dc=com"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Bind Password
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForLDAP.bindPassword"
+              required
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              :placeholder="$t('common.sensitive-placeholder')"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              Base DN
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForLDAP.baseDn"
+              required
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              placeholder="e.g. ou=users,dc=example,dc=com"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              User Filter
+              <span class="text-red-600">*</span>
+            </p>
+            <BBTextField
+              v-model:value="configForLDAP.userFilter"
+              required
+              :disabled="!allowEdit"
+              class="mt-2 w-full text-base"
+              size="large"
+              placeholder="e.g. (uid=%s)"
+            />
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800">
+              {{ $t("settings.sso.form.security-protocol") }}
+              <span class="text-red-600">*</span>
+            </p>
+            <NRadioGroup
+              v-model:value="configForLDAP.securityProtocol"
+              size="large"
+              class="space-y-3"
+            >
+              <NRadio
+                value="starttls"
+                label="StartTLS"
+                class="text-base font-medium text-gray-800"
+              />
+              <NRadio
+                value="ldaps"
+                label="LDAPS"
+                class="text-base font-medium text-gray-800"
+              />
+              <NRadio
+                value=""
+                label="None"
+                class="text-base font-medium text-gray-800"
+              />
+            </NRadioGroup>
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-800 mb-3">
+              {{ $t("settings.sso.form.connection-security") }}
+            </p>
+            <NCheckbox
+              v-model:checked="configForLDAP.skipTlsVerify"
+              :label="
+                $t('settings.sso.form.connection-security-skip-tls-verify')
+              "
+              :disabled="!allowEdit"
+              size="large"
+              class="text-base font-medium text-gray-800"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- User Information Mapping Section -->
+      <div class="py-6 lg:flex">
+        <div class="text-left lg:w-1/4">
+          <h1 class="text-2xl font-bold">
+            {{ $t("settings.sso.form.user-information-mapping") }}
+          </h1>
+          <p class="textinfolabel mt-2">
+            {{ $t("settings.sso.form.user-information-mapping-description") }}
+            <a
+              href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
+              class="normal-link text-sm inline-flex flex-row items-center"
+              target="_blank"
+            >
+              {{ $t("common.learn-more") }}
+              <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+            </a>
+          </p>
+        </div>
+        <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-4">
+          <div class="grid grid-cols-[256px_1fr] gap-4 items-center">
+            <BBTextField
+              v-model:value="state.fieldMapping.identifier"
+              :disabled="!allowEdit"
+              size="large"
+              class="w-full"
+              placeholder="e.g. login"
+            />
+            <div class="flex flex-row justify-start items-center">
+              <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
+              <p class="flex flex-row justify-start items-center">
+                {{ $t("settings.sso.form.identifier") }}
+                <span class="text-red-600">*</span>
+                <NTooltip>
+                  <template #trigger>
+                    <heroicons-outline:information-circle
+                      class="ml-1 w-4 h-auto text-blue-500"
+                    />
+                  </template>
+                  {{ $t("settings.sso.form.identifier-tips") }}
+                </NTooltip>
+              </p>
+            </div>
+          </div>
+          <div class="grid grid-cols-[256px_1fr] gap-4 items-center">
+            <BBTextField
+              v-model:value="state.fieldMapping.displayName"
+              :disabled="!allowEdit"
+              size="large"
+              class="w-full"
+              placeholder="e.g. name"
+            />
+            <div class="flex flex-row justify-start items-center">
+              <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
+              <p>
+                {{ $t("settings.sso.form.display-name") }}
+              </p>
+            </div>
+          </div>
+          <div class="grid grid-cols-[256px_1fr] gap-4 items-center">
+            <BBTextField
+              v-model:value="state.fieldMapping.phone"
+              :disabled="!allowEdit"
+              size="large"
+              class="w-full"
+              placeholder="e.g. phone"
+            />
+            <div class="flex flex-row justify-start items-center">
+              <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
+              <p>
+                {{ $t("settings.sso.form.phone") }}
+              </p>
+            </div>
+          </div>
+          <div
+            v-if="state.type === IdentityProviderType.OIDC"
+            class="grid grid-cols-[256px_1fr] gap-4 items-center"
           >
-            {{ $t("common.update") }}
-          </NButton>
-        </template>
+            <BBTextField
+              v-model:value="state.fieldMapping.groups"
+              :disabled="!allowEdit"
+              size="large"
+              class="w-full"
+              placeholder="e.g. groups"
+            />
+            <div class="flex flex-row justify-start items-center">
+              <ArrowRightIcon class="mx-2 h-auto w-4 text-gray-300" />
+              <p>
+                {{ $t("settings.sso.form.groups") }}
+              </p>
+            </div>
+          </div>
+          <div>
+            <NButton :disabled="!allowTestConnection" @click="testConnection">
+              {{ $t("identity-provider.test-connection") }}
+            </NButton>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions Section -->
+      <div class="py-6">
+        <div class="flex flex-row justify-between items-center">
+          <div class="space-x-4 flex flex-row justify-start items-center">
+            <template v-if="!isCreating">
+              <BBButtonConfirm
+                :type="'ARCHIVE'"
+                :button-text="$t('settings.sso.delete')"
+                :ok-text="$t('common.delete')"
+                :confirm-title="$t('settings.sso.delete')"
+                :confirm-description="$t('common.cannot-undo-this-action')"
+                :require-confirm="true"
+                @confirm="handleDeleteButtonClick"
+              />
+            </template>
+          </div>
+          <div class="space-x-3 flex flex-row justify-end items-center">
+            <template v-if="isCreating">
+              <NButton
+                @click="handleCancelButtonClick"
+                size="large"
+                class="text-base"
+              >
+                {{ $t("common.cancel") }}
+              </NButton>
+              <NButton
+                type="primary"
+                :disabled="!allowCreate"
+                @click="handleCreateButtonClick"
+                size="large"
+                class="text-base"
+              >
+                {{ $t("common.create") }}
+              </NButton>
+            </template>
+            <template v-else>
+              <NButton
+                v-if="allowUpdate"
+                @click="handleDiscardChangesButtonClick"
+                size="large"
+                class="text-base"
+              >
+                {{ $t("common.discard-changes") }}
+              </NButton>
+              <NButton
+                type="primary"
+                :disabled="!allowUpdate"
+                @click="handleUpdateButtonClick"
+                size="large"
+                class="text-base"
+              >
+                {{ $t("common.update") }}
+              </NButton>
+            </template>
+          </div>
+        </div>
       </div>
     </div>
   </div>

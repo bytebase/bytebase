@@ -14,7 +14,7 @@
         {{ $t("settings.sso.form.redirect-url") }}
       </p>
       <div class="w-full relative break-all pr-8 text-sm">
-        <div class="bg-gray-100 p-1 border border-gray-300 rounded">
+        <div class="bg-gray-100 px-2 py-1 border border-gray-300 rounded">
           {{ redirectUrl }}
         </div>
         <button
