@@ -348,8 +348,7 @@
       "data-classification": "データ分類",
       "data-access": "データアクセス",
       "audit-log": "監査ログ",
-      "custom-roles": "カスタムロール",
-      "mail-delivery": "メール送信"
+      "custom-roles": "カスタムロール"
     },
     "profile": {
       "email": "メールアドレス",
@@ -708,22 +707,6 @@
       },
       "json-format-example": "JSON形式の例",
       "view-example": "サンプルを見る"
-    },
-    "mail-delivery": {
-      "description": "電子メール情報を設定すると、ユーザーはスロー クエリの週次レポートなど、データベース関連のレポートを電子メールで受信できるようになります。",
-      "field": {
-        "smtp-server-host": "SMTPサーバーホスト",
-        "smtp-server-port": "SMTPサーバーポート",
-        "from": "送信者のアドレス",
-        "smtp-username": "SMTPユーザー名",
-        "smtp-password": "SMTPパスワード",
-        "send-test-email-to": "受信者テストアドレス",
-        "send": "送信",
-        "authentication-method": "識別方法",
-        "encryption": "暗号化"
-      },
-      "updated-tip": "メールトランスポート設定が正常に更新されました",
-      "tested-tip": "正常に送信されました。{address} の受信箱を確認してください。"
     }
   },
   "remind": {

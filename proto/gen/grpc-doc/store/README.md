@@ -271,7 +271,6 @@
     - [MaximumSQLResultSizeSetting](#bytebase-store-MaximumSQLResultSizeSetting)
     - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
-    - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
@@ -286,8 +285,6 @@
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-store-Algorithm-InnerOuterMask-MaskType)
     - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode)
-    - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
-    - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
     - [SettingName](#bytebase-store-SettingName)
   
 - [store/sheet.proto](#store_sheet-proto)
@@ -4299,30 +4296,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 
 
-<a name="bytebase-store-SMTPMailDeliverySetting"></a>
-
-### SMTPMailDeliverySetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| server | [string](#string) |  | The SMTP server address. |
-| port | [int32](#int32) |  | The SMTP server port. |
-| encryption | [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption) |  | The SMTP server encryption. |
-| ca | [string](#string) |  | The CA, KEY, and CERT for the SMTP server. |
-| key | [string](#string) |  |  |
-| cert | [string](#string) |  |  |
-| authentication | [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication) |  |  |
-| username | [string](#string) |  |  |
-| password | [string](#string) |  |  |
-| from | [string](#string) |  | The sender email address. |
-
-
-
-
-
-
 <a name="bytebase-store-SchemaTemplateSetting"></a>
 
 ### SchemaTemplateSetting
@@ -4542,36 +4515,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 
 
-<a name="bytebase-store-SMTPMailDeliverySetting-Authentication"></a>
-
-### SMTPMailDeliverySetting.Authentication
-We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and
-CRAM-MD5.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| AUTHENTICATION_UNSPECIFIED | 0 |  |
-| AUTHENTICATION_NONE | 1 |  |
-| AUTHENTICATION_PLAIN | 2 |  |
-| AUTHENTICATION_LOGIN | 3 |  |
-| AUTHENTICATION_CRAM_MD5 | 4 |  |
-
-
-
-<a name="bytebase-store-SMTPMailDeliverySetting-Encryption"></a>
-
-### SMTPMailDeliverySetting.Encryption
-We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENCRYPTION_UNSPECIFIED | 0 |  |
-| ENCRYPTION_NONE | 1 |  |
-| ENCRYPTION_STARTTLS | 2 |  |
-| ENCRYPTION_SSL_TLS | 3 |  |
-
-
-
 <a name="bytebase-store-SettingName"></a>
 
 ### SettingName
@@ -4591,7 +4534,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | WATERMARK | 9 |  |
 | AI | 10 |  |
 | PLUGIN_AGENT | 11 |  |
-| WORKSPACE_MAIL_DELIVERY | 12 |  |
 | SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
