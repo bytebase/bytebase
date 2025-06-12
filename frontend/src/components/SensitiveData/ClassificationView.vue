@@ -12,7 +12,7 @@
         <NSwitch
           :value="!state.classification.classificationFromConfig"
           :disabled="
-            !allowEdit || !hasSensitiveDataFeature || !hasClassificationConfig
+            !allowEdit || !hasClassificationFeature || !hasClassificationConfig
           "
           @update:value="onClassificationConfigChange"
         />
@@ -47,7 +47,7 @@
       <div class="flex items-center justify-end gap-2">
         <NButton
           type="primary"
-          :disabled="!allowEdit || !hasSensitiveDataFeature"
+          :disabled="!allowEdit || !hasClassificationFeature"
           @click="onUpload"
         >
           <template #icon>
@@ -60,7 +60,7 @@
           type="file"
           accept=".json"
           class="sr-only hidden"
-          :disabled="!allowEdit || !hasSensitiveDataFeature"
+          :disabled="!allowEdit || !hasClassificationFeature"
           @input="onFileChange"
         />
       </div>
@@ -74,7 +74,7 @@
         class="space-y-1 text-center flex flex-col justify-center items-center absolute top-0 bottom-0 left-0 right-0"
         :support-file-extensions="['.json']"
         :max-file-size-in-mi-b="maxFileSizeInMiB"
-        :disabled="!allowEdit || !hasSensitiveDataFeature"
+        :disabled="!allowEdit || !hasClassificationFeature"
         @on-select="onFileSelect"
       >
       </SingleFileSelector>
@@ -153,7 +153,7 @@ const emptyConfig = computed(
 const allowSave = computed(() => {
   return (
     allowEdit.value &&
-    hasSensitiveDataFeature.value &&
+    hasClassificationFeature.value &&
     !isEqual(formerConfig.value, state.classification)
   );
 });
@@ -213,7 +213,9 @@ const allowEdit = computed(() => {
   return hasWorkspacePermissionV2("bb.settings.set");
 });
 
-const hasSensitiveDataFeature = featureToRef(PlanFeature.FEATURE_DATA_MASKING);
+const hasClassificationFeature = featureToRef(
+  PlanFeature.FEATURE_DATA_CLASSIFICATION
+);
 
 const onUpload = () => {
   uploader.value?.click();
