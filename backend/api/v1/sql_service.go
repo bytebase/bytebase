@@ -1936,6 +1936,7 @@ func checkAndGetDataSourceQueriable(
 		return dataSource, nil
 	}
 
+	//nolint:nilerr
 	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION); err != nil {
 		return dataSource, nil
 	}
