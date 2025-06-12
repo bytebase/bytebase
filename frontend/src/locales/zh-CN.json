@@ -1034,7 +1034,6 @@
       "multiple-databases": "{count} 个数据库",
       "database-group": "数据库组",
       "database-not-found": "未找到数据库",
-      "environment": "环境：{environment}",
       "type": {
         "instance": "实例",
         "database": "数据库",
@@ -2592,8 +2591,7 @@
     "permission-denied": "您没有权限执行此操作"
   },
   "review-center": {
-    "self": "SQL 审核中心",
-    "review-sql": "审核 SQL"
+    "self": "SQL 审核中心"
   },
   "schema-designer": {
     "use-tips": "选择需要设计的表"

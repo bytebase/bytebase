@@ -1034,7 +1034,6 @@
       "multiple-databases": "{count} cơ sở dữ liệu",
       "database-group": "Nhóm cơ sở dữ liệu",
       "database-not-found": "Không tìm thấy cơ sở dữ liệu",
-      "environment": "Môi trường: {environment}",
       "type": {
         "instance": "Ví dụ",
         "database": "Cơ sở dữ liệu",
@@ -2592,8 +2591,7 @@
     "permission-denied": "Quyền bị từ chối"
   },
   "review-center": {
-    "self": "Trung tâm đánh giá",
-    "review-sql": "Đánh giá SQL"
+    "self": "Trung tâm đánh giá"
   },
   "schema-designer": {
     "use-tips": "Nhấp vào một bảng để bắt đầu."

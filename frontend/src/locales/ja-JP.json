@@ -1034,7 +1034,6 @@
       "multiple-databases": "{count} データベース",
       "database-group": "データベースグループ",
       "database-not-found": "データベースが見つかりません",
-      "environment": "環境: {environment}",
       "type": {
         "instance": "実例",
         "database": "データベース",
@@ -2592,8 +2591,7 @@
     "permission-denied": "この操作を実行する権限がありません"
   },
   "review-center": {
-    "self": "レビューセンター",
-    "review-sql": "SQLを確認する"
+    "self": "レビューセンター"
   },
   "schema-designer": {
     "use-tips": "デザインするテーブルを選択してください"

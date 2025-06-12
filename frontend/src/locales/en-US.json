@@ -1034,7 +1034,6 @@
       "multiple-databases": "{count} databases",
       "database-group": "Database Group",
       "database-not-found": "Database not found",
-      "environment": "Environment: {environment}",
       "type": {
         "instance": "Instance",
         "database": "Database",
@@ -2592,8 +2591,7 @@
     "permission-denied": "Permission denied"
   },
   "review-center": {
-    "self": "Review Center",
-    "review-sql": "Review SQL"
+    "self": "Review Center"
   },
   "schema-designer": {
     "use-tips": "Click a table to start."

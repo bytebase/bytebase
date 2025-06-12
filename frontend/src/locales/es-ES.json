@@ -1034,7 +1034,6 @@
       "multiple-databases": "{count} bases de datos",
       "database-group": "Grupo de bases de datos",
       "database-not-found": "Base de datos no encontrada",
-      "environment": "Entorno: {environment}",
       "type": {
         "instance": "Instancia",
         "database": "Base de datos",
@@ -2592,8 +2591,7 @@
     "permission-denied": "Permiso denegado"
   },
   "review-center": {
-    "self": "Centro de revisión",
-    "review-sql": "Revisar SQL"
+    "self": "Centro de revisión"
   },
   "schema-designer": {
     "use-tips": "Selecciona las tablas a diseñar"
