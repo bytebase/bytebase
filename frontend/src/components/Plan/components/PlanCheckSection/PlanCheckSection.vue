@@ -50,19 +50,13 @@
     </div>
 
     <div class="flex-1 overflow-y-auto">
-      <!-- Loading State -->
-      <div v-if="isLoading" class="flex items-center justify-center py-8">
-        <BBSpin />
-      </div>
-
       <!-- Check Results -->
-      <div v-else-if="checkRunsForSpec.length > 0" class="flex flex-wrap gap-4">
+      <div v-if="checkRunsForSpec.length > 0" class="flex flex-wrap gap-4">
         <!-- Group by Check Type -->
         <div
           v-for="(typeGroup, checkType) in groupedByType"
           :key="checkType"
           class="inline-flex items-center gap-1"
-          @click="selectedCheckType = checkType"
         >
           <component
             :is="getCheckTypeIcon(checkType)"
@@ -226,7 +220,6 @@ import {
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBSpin } from "@/bbkit";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { planServiceClient } from "@/grpcweb";
@@ -251,21 +244,15 @@ const { project } = useCurrentProjectV1();
 const { plan, planCheckRunList } = usePlanContext();
 const { selectedSpec } = usePlanSpecContext();
 
-const isLoading = ref(false);
 const isRunningChecks = ref(false);
 const drawerVisible = ref(false);
 const selectedStatus = ref<"ERROR" | "WARNING" | "SUCCESS">("ERROR");
-const selectedCheckType = ref<string>("");
 
 const show = computed(() => {
-  if (!selectedSpec.value) {
-    return false;
-  }
   return planSpecHasPlanChecks(selectedSpec.value);
 });
 
 const checkRunsForSpec = computed(() => {
-  if (!selectedSpec.value) return [];
   return planCheckRunListForSpec(planCheckRunList.value, selectedSpec.value);
 });
 
