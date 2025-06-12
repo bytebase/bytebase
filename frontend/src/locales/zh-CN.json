@@ -180,8 +180,13 @@
     "optional": "可选",
     "reason": "理由",
     "date": {
-      "days": "{days} 天"
+      "days": "{days} 天",
+      "week": "1 周",
+      "month": "1 个月",
+      "months": "{months} 个月",
+      "year": "1 年"
     },
+    "access-expires": "访问到期",
     "expiration": "过期时间",
     "configure": "配置",
     "groups": "分组",
@@ -907,7 +912,8 @@
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "manually-select": "手动选择",
-      "custom": "自定义"
+      "custom-date-placeholder": "选择到期日期和时间",
+      "custom-date": "自定义日期"
     },
     "review-sent-back": "审核被退回",
     "update-statement": {

@@ -1,62 +1,49 @@
 <template>
-  <NRadioGroup
-    v-bind="$attrs"
-    :value="state.selected"
-    class="w-full !grid grid-cols-3 gap-2"
-    name="radiogroup"
-    @update:value="onSelect"
-  >
-    <div
-      v-for="option in options"
-      :key="option.value"
-      :class="[
-        'col-span-1 h-8 flex flex-row justify-start items-center',
-        option.value === -2 ? 'col-span-2' : '',
-        option.value === -1 ? 'col-span-3' : '',
-      ]"
-    >
-      <NRadio :value="option.value" :label="option.label" />
-      <template v-if="option.value === -2">
-        <NInputNumber
-          size="small"
-          style="width: 5rem"
-          :min="1"
-          :max="maximumRoleExpiration"
-          :placeholder="$t('common.date.days')"
-          :disabled="state.selected !== -2"
-          :value="customExpirationDays"
-          @update:value="handleCustomExpirationDaysChange"
-        />
-        <span class="ml-2">{{ $t("common.date.days") }}</span>
-      </template>
-      <template v-else-if="option.value === -1">
+  <div class="w-full space-y-3">
+    <NSelect
+      v-bind="$attrs"
+      :value="state.selected"
+      :options="selectOptions"
+      @update:value="onSelect"
+    />
+    
+    <template v-if="state.selected === -1">
+      <div class="space-y-2">
         <NDatePicker
-          size="small"
-          :value="
-            state.selected === -1 ? state.expirationTimestampInMS : undefined
-          "
-          :disabled="state.selected !== -1"
+          size="medium"
+          class="w-full"
+          :value="state.expirationTimestampInMS"
           :actions="null"
           :update-value-on-close="true"
           type="datetime"
           :is-date-disabled="isDateDisabled"
           clearable
-          @update:value="(val) => (state.expirationTimestampInMS = val)"
+          :placeholder="$t('issue.grant-request.custom-date-placeholder')"
+          @update:value="handleCustomDateChange"
         />
-        <span v-if="maximumRoleExpiration" class="ml-3 textinfolabel">
+        <div v-if="maximumRoleExpiration" class="text-xs text-gray-500">
           {{ $t("settings.general.workspace.maximum-role-expiration.self") }}:
           {{ $t("common.date.days", { days: maximumRoleExpiration }) }}
+        </div>
+      </div>
+    </template>
+    
+    <div v-if="state.expirationTimestampInMS && state.selected !== -1" class="p-3 bg-gray-50 rounded-md">
+      <div class="text-sm text-gray-600">
+        {{ $t("common.access-expires") }}:
+        <span class="font-medium text-gray-900">
+          {{ formatExpirationDisplay(state.expirationTimestampInMS) }}
         </span>
-      </template>
+      </div>
     </div>
-  </NRadioGroup>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
 import dayjs from "dayjs";
-import { NRadio, NRadioGroup, NDatePicker, NInputNumber } from "naive-ui";
-import { computed, reactive, watch, watchEffect } from "vue";
+import { NSelect, NDatePicker } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store } from "@/store";
 import { PresetRoleType } from "@/types";
@@ -83,21 +70,29 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 
-const state = reactive<LocalState>({
-  selected: props.timestampInMs === undefined ? 0 : -1,
-});
-const customExpirationDays = useLocalStorage(
-  "bb.roles.custom-expiration-days",
-  1
+// Remember the last selected expiration option
+const lastSelectedExpiration = useLocalStorage<number>(
+  "bb.roles.last-expiration-selection",
+  7 // Default to 1 week
 );
 
-const handleCustomExpirationDaysChange = (val: number | null) => {
-  if (!val) {
-    return;
+// Initialize state with intelligent defaults
+const getInitialSelection = () => {
+  if (props.timestampInMs !== undefined) {
+    // If timestamp is provided, use custom date
+    return -1;
   }
-  state.expirationTimestampInMS =
-    new Date().getTime() + val * 24 * 60 * 60 * 1000;
-  customExpirationDays.value = val;
+  // Otherwise, use the last selected value if it's still valid
+  return lastSelectedExpiration.value;
+};
+
+const state = reactive<LocalState>({
+  selected: getInitialSelection(),
+  expirationTimestampInMS: props.timestampInMs,
+});
+
+const handleCustomDateChange = (val: number | null) => {
+  state.expirationTimestampInMS = val || undefined;
 };
 
 const maximumRoleExpiration = computed(() => {
@@ -112,14 +107,9 @@ const maximumRoleExpiration = computed(() => {
   return Math.floor(seconds / (60 * 60 * 24));
 });
 
-watchEffect(() => {
-  if (!maximumRoleExpiration.value) {
-    return;
-  }
-  if (maximumRoleExpiration.value < customExpirationDays.value) {
-    customExpirationDays.value = maximumRoleExpiration.value;
-  }
-});
+const formatExpirationDisplay = (timestampMs: number) => {
+  return dayjs(timestampMs).format("YYYY-MM-DD HH:mm:ss");
+};
 
 const isDateDisabled = (date: number) => {
   if (date < dayjs().startOf("day").valueOf()) {
@@ -132,7 +122,7 @@ const isDateDisabled = (date: number) => {
 };
 
 const options = computed((): ExpirationOption[] => {
-  let options = [
+  const baseOptions = [
     {
       value: 1,
       label: t("common.date.days", { days: 1 }),
@@ -142,46 +132,75 @@ const options = computed((): ExpirationOption[] => {
       label: t("common.date.days", { days: 3 }),
     },
     {
+      value: 7,
+      label: t("common.date.week", { weeks: 1 }),
+    },
+    {
       value: 30,
-      label: t("common.date.days", { days: 30 }),
+      label: t("common.date.month", { months: 1 }),
     },
     {
       value: 90,
-      label: t("common.date.days", { days: 90 }),
+      label: t("common.date.months", { months: 3 }),
+    },
+    {
+      value: 180,
+      label: t("common.date.months", { months: 6 }),
+    },
+    {
+      value: 365,
+      label: t("common.date.year", { years: 1 }),
     },
   ];
-  if (maximumRoleExpiration.value) {
-    options = options.filter(
-      (option) => option.value < maximumRoleExpiration.value!
-    );
-    options.push({
-      value: maximumRoleExpiration.value,
-      label: t("common.date.days", { days: maximumRoleExpiration.value }),
-    });
-  } else {
-    options.push({
+  
+  const availableOptions: ExpirationOption[] = [];
+  
+  // Add "Never expires" at the top if no maximum role expiration is set
+  if (!maximumRoleExpiration.value) {
+    availableOptions.push({
       value: 0,
       label: t("project.members.never-expires"),
     });
   }
-  options.push(
-    {
-      value: -2,
-      label: t("issue.grant-request.custom"),
-    },
-    {
-      value: -1,
-      label: t("issue.grant-request.custom"),
-    }
-  );
-  return options;
+  
+  // Add custom date option prominently after "Never expires"
+  availableOptions.push({
+    value: -1,
+    label: t("issue.grant-request.custom-date"),
+  });
+  
+  // Add time-based options
+  if (maximumRoleExpiration.value) {
+    availableOptions.push(...baseOptions.filter(
+      (option) => option.value <= maximumRoleExpiration.value!
+    ));
+  } else {
+    availableOptions.push(...baseOptions);
+  }
+  
+  return availableOptions;
+});
+
+const selectOptions = computed(() => {
+  return options.value.map((option) => ({
+    label: option.label,
+    value: option.value,
+  }));
 });
 
 const onSelect = (value: number) => {
   if (value > 0) {
     state.expirationTimestampInMS =
       new Date().getTime() + value * 24 * 60 * 60 * 1000;
+    // Save preset selections to localStorage
+    lastSelectedExpiration.value = value;
+  } else if (value === 0) {
+    // Never expires - clear the timestamp
+    state.expirationTimestampInMS = undefined;
+    lastSelectedExpiration.value = value;
   }
+  // For value === -1 (custom date), the timestamp is set by the date picker
+  // Don't save custom date selection as it's not reusable
   state.selected = value;
 };
 
