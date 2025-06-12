@@ -204,12 +204,11 @@ var googleGitHubDomains = map[string]bool{
 }
 
 func (s *IdentityProviderService) checkFeatureAvailable(idp *v1pb.IdentityProvider) error {
+	featurePlan := v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO
 	if idp.Type == v1pb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO); err != nil {
-			return status.Error(codes.PermissionDenied, err.Error())
-		}
+		featurePlan = v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO
 	}
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(featurePlan); err != nil {
 		return status.Error(codes.PermissionDenied, err.Error())
 	}
 	return nil

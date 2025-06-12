@@ -414,7 +414,12 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return user, nil
 	}
 
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO); err != nil {
+	// For expired license, we will only block new create creation and still allow SSO login from existing users.
+	featurePlan := v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO
+	if idp.Type == storepb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
+		featurePlan = v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO
+	}
+	if err := s.licenseService.IsFeatureEnabled(featurePlan); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	// Create new user from identity provider.
