@@ -26,12 +26,14 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	}
 
 	extractor := &metadataExtractor{
-		currentDatabase: "",
-		currentSchema:   "public",
-		schemas:         make(map[string]*storepb.SchemaMetadata),
-		tables:          make(map[tableKey]*storepb.TableMetadata),
-		sequences:       make(map[string]*storepb.SequenceMetadata),
-		extensions:      make(map[string]*storepb.ExtensionMetadata),
+		currentDatabase:      "",
+		currentSchema:        "public",
+		schemas:              make(map[string]*storepb.SchemaMetadata),
+		tables:               make(map[tableKey]*storepb.TableMetadata),
+		partitionTables:      make(map[tableKey]bool),
+		partitionExpressions: make(map[tableKey]string),
+		sequences:            make(map[string]*storepb.SequenceMetadata),
+		extensions:           make(map[string]*storepb.ExtensionMetadata),
 	}
 
 	// Always ensure public schema exists
@@ -85,13 +87,15 @@ type tableKey struct {
 type metadataExtractor struct {
 	*parser.BasePostgreSQLParserListener
 
-	currentDatabase string
-	currentSchema   string
-	schemas         map[string]*storepb.SchemaMetadata
-	tables          map[tableKey]*storepb.TableMetadata
-	sequences       map[string]*storepb.SequenceMetadata
-	extensions      map[string]*storepb.ExtensionMetadata
-	err             error
+	currentDatabase      string
+	currentSchema        string
+	schemas              map[string]*storepb.SchemaMetadata
+	tables               map[tableKey]*storepb.TableMetadata
+	partitionTables      map[tableKey]bool
+	partitionExpressions map[tableKey]string
+	sequences            map[string]*storepb.SequenceMetadata
+	extensions           map[string]*storepb.ExtensionMetadata
+	err                  error
 }
 
 // Helper function to get or create schema
@@ -139,8 +143,11 @@ func (e *metadataExtractor) getOrCreateTable(schemaName, tableName string) *stor
 		Partitions:       nil,
 	}
 
-	schema := e.getOrCreateSchema(schemaName)
-	schema.Tables = append(schema.Tables, table)
+	// Only add to schema's table list if it's not a partition table
+	if !e.partitionTables[key] {
+		schema := e.getOrCreateSchema(schemaName)
+		schema.Tables = append(schema.Tables, table)
+	}
 	e.tables[key] = table
 
 	return table
@@ -175,6 +182,43 @@ func (e *metadataExtractor) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	qualifiedName := ctx.Qualified_name(0)
 	schemaName, tableName := e.extractSchemaAndTableName(qualifiedName)
 
+	// Check if this is a partition table (CREATE TABLE ... PARTITION OF ...)
+	// We'll check if there's a second qualified_name which would be the parent table
+	if ctx.Qualified_name(1) != nil && ctx.PARTITION() != nil && ctx.OF() != nil {
+		// Mark this table as a partition
+		key := tableKey{schema: schemaName, table: tableName}
+		e.partitionTables[key] = true
+
+		// Get the parent table and add this partition to it
+		parentSchema, parentTable := e.extractSchemaAndTableName(ctx.Qualified_name(1))
+		parentTableMetadata := e.getOrCreateTable(parentSchema, parentTable)
+
+		// Create partition metadata
+		partition := &storepb.TablePartitionMetadata{
+			Name: tableName,
+		}
+
+		// Extract FOR VALUES clause if present
+		if ctx.Partitionboundspec() != nil {
+			partition.Value = e.extractPartitionBoundSpec(ctx.Partitionboundspec())
+		}
+
+		// Get the parent table's partition expression
+		parentKey := tableKey{schema: parentSchema, table: parentTable}
+		if expr, ok := e.partitionExpressions[parentKey]; ok {
+			partition.Expression = expr
+		}
+
+		if parentTableMetadata.Partitions == nil {
+			parentTableMetadata.Partitions = []*storepb.TablePartitionMetadata{}
+		}
+		parentTableMetadata.Partitions = append(parentTableMetadata.Partitions, partition)
+
+		// Don't continue processing this table as a regular table
+		return
+	}
+
+	// Create the table (it's not a partition table)
 	tableMetadata := e.getOrCreateTable(schemaName, tableName)
 
 	// Extract table elements (columns, constraints)
@@ -182,9 +226,11 @@ func (e *metadataExtractor) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 		e.extractTableElements(tableElementList, tableMetadata, schemaName)
 	}
 
-	// Extract partition info
+	// Extract partition info and store the expression
 	if partitionSpec := ctx.Optpartitionspec(); partitionSpec != nil {
-		e.extractPartitionSpec(partitionSpec, tableMetadata)
+		// Store the partition expression for this table
+		key := tableKey{schema: schemaName, table: tableName}
+		e.partitionExpressions[key] = e.extractPartitionExpression(partitionSpec)
 	}
 }
 
@@ -250,7 +296,17 @@ func (e *metadataExtractor) extractColumnDef(ctx parser.IColumnDefContext, table
 
 	// Extract data type
 	if ctx.Typename() != nil {
-		column.Type = extractTypeName(ctx.Typename())
+		// Get the raw type name to check for SERIAL
+		rawTypeName := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Typename())
+		rawTypeName = strings.ToLower(rawTypeName)
+
+		// SERIAL columns are implicitly NOT NULL
+		if rawTypeName == "serial" || rawTypeName == "bigserial" || rawTypeName == "smallserial" ||
+			rawTypeName == "serial4" || rawTypeName == "serial8" || rawTypeName == "serial2" {
+			column.Nullable = false
+		}
+
+		column.Type = e.extractTypeNameWithSchema(ctx.Typename(), schemaName)
 	}
 
 	// Extract column constraints
@@ -276,7 +332,129 @@ func extractTypeName(ctx parser.ITypenameContext) string {
 		return ""
 	}
 	// Get the full text representation of the type
-	return ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	typeName := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	// Convert to lowercase to match sync.go output
+	typeName = strings.ToLower(typeName)
+
+	// Convert common type variations to match sync.go output
+	// varchar(n) -> character varying(n)
+	if strings.HasPrefix(typeName, "varchar(") {
+		return "character varying" + typeName[7:]
+	}
+	if typeName == "varchar" {
+		return "character varying"
+	}
+
+	// SERIAL types are stored as integer/bigint in the catalog
+	if typeName == "serial" || typeName == "serial4" {
+		return "integer"
+	}
+	if typeName == "bigserial" || typeName == "serial8" {
+		return "bigint"
+	}
+	if typeName == "smallserial" || typeName == "serial2" {
+		return "smallint"
+	}
+
+	// Handle array types: text[] -> _text
+	if strings.HasSuffix(typeName, "[]") {
+		// PostgreSQL internal representation uses underscore prefix
+		baseType := typeName[:len(typeName)-2]
+		return "_" + baseType
+	}
+
+	// Handle timestamp without explicit timezone
+	if typeName == "timestamp" {
+		return "timestamp without time zone"
+	}
+
+	// Handle decimal -> numeric (sync.go reports decimal as numeric without precision)
+	if strings.HasPrefix(typeName, "decimal(") {
+		// sync.go returns just "numeric" without precision for decimal types
+		return "numeric"
+	}
+	if typeName == "decimal" {
+		return "numeric"
+	}
+
+	return typeName
+}
+
+// extractTypeNameWithSchema extracts the type name and adds schema prefix for custom types
+func (*metadataExtractor) extractTypeNameWithSchema(ctx parser.ITypenameContext, schemaName string) string {
+	if ctx == nil {
+		return ""
+	}
+
+	typeName := extractTypeName(ctx)
+
+	// Check if this is a built-in PostgreSQL type
+	if isBuiltInType(typeName) {
+		return typeName
+	}
+
+	// Check if the type already has a schema prefix
+	if strings.Contains(typeName, ".") {
+		return typeName
+	}
+
+	// For custom types (like enums), add the schema prefix
+	return fmt.Sprintf("%s.%s", schemaName, typeName)
+}
+
+// isBuiltInType checks if a type is a built-in PostgreSQL type
+func isBuiltInType(typeName string) bool {
+	// Remove any precision/scale information for checking
+	baseType := typeName
+	if idx := strings.Index(typeName, "("); idx != -1 {
+		baseType = typeName[:idx]
+	}
+
+	// Common built-in PostgreSQL types
+	builtInTypes := map[string]bool{
+		"integer": true, "int": true, "int4": true,
+		"bigint": true, "int8": true,
+		"smallint": true, "int2": true,
+		"numeric": true, "decimal": true,
+		"real": true, "float4": true,
+		"double precision": true, "float8": true,
+		"serial": true, "serial4": true,
+		"bigserial": true, "serial8": true,
+		"character": true, "char": true,
+		"character varying": true, "varchar": true,
+		"text":    true,
+		"boolean": true, "bool": true,
+		"date": true,
+		"time": true, "time without time zone": true, "time with time zone": true, "timetz": true,
+		"timestamp": true, "timestamp without time zone": true, "timestamp with time zone": true, "timestamptz": true,
+		"interval": true,
+		"uuid":     true,
+		"json":     true, "jsonb": true,
+		"xml":   true,
+		"bytea": true,
+		"bit":   true, "bit varying": true,
+		"money": true,
+		"inet":  true, "cidr": true, "macaddr": true, "macaddr8": true,
+		"point": true, "line": true, "lseg": true, "box": true,
+		"path": true, "polygon": true, "circle": true,
+		"tsquery": true, "tsvector": true,
+		"pg_lsn": true,
+		"oid":    true, "regclass": true, "regproc": true,
+		"name": true,
+	}
+
+	// Also check for array types (ending with [] or starting with _)
+	if strings.HasSuffix(baseType, "[]") {
+		arrayBase := baseType[:len(baseType)-2]
+		return builtInTypes[arrayBase]
+	}
+	if strings.HasPrefix(baseType, "_") {
+		// PostgreSQL internal array notation _typename
+		arrayBase := baseType[1:]
+		return builtInTypes[arrayBase]
+	}
+
+	return builtInTypes[baseType]
 }
 
 // extractColumnConstraint extracts column-level constraints
@@ -305,6 +483,7 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 			IsConstraint: true,
 			Expressions:  []string{column.Name},
 			Descending:   []bool{false},
+			Type:         "btree",
 		}
 		// Use provided constraint name or generate one
 		if constraintName != "" {
@@ -320,6 +499,7 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 			IsConstraint: true,
 			Expressions:  []string{column.Name},
 			Descending:   []bool{false},
+			Type:         "btree",
 		}
 		// Use provided constraint name or generate one
 		if constraintName != "" {
@@ -404,6 +584,7 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			IsConstraint: true,
 			Expressions:  []string{},
 			Descending:   []bool{},
+			Type:         "btree",
 		}
 		if index.Name == "" {
 			index.Name = fmt.Sprintf("%s_pkey", table.Name)
@@ -426,6 +607,7 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			IsConstraint: true,
 			Expressions:  []string{},
 			Descending:   []bool{},
+			Type:         "btree",
 		}
 		// Extract columns
 		if optColumnList := constraintElem.Opt_column_list(); optColumnList != nil && optColumnList.Columnlist() != nil {
@@ -592,28 +774,20 @@ func extractColumnList(ctx parser.IColumnlistContext) []string {
 	return columns
 }
 
-// extractPartitionSpec extracts partition specification
-func (*metadataExtractor) extractPartitionSpec(ctx parser.IOptpartitionspecContext, table *storepb.TableMetadata) {
+// extractPartitionExpression extracts the partition expression (e.g., "RANGE (sale_date)")
+func (*metadataExtractor) extractPartitionExpression(ctx parser.IOptpartitionspecContext) string {
 	if ctx == nil {
-		return
+		return ""
 	}
 
 	partitionSpec := ctx.Partitionspec()
 	if partitionSpec == nil {
-		return
+		return ""
 	}
 
 	// Extract the full partition expression including the method (e.g., "RANGE (sale_date)")
 	expression := ctx.GetParser().GetTokenStream().GetTextFromTokens(partitionSpec.Colid().GetStart(), partitionSpec.CLOSE_PAREN().GetSymbol())
-
-	// Create a partition metadata entry for the partitioning specification
-	partition := &storepb.TablePartitionMetadata{
-		Expression: expression,
-	}
-	if table.Partitions == nil {
-		table.Partitions = []*storepb.TablePartitionMetadata{}
-	}
-	table.Partitions = append(table.Partitions, partition)
+	return expression
 }
 
 // EnterAltertablestmt is called when entering an ALTER TABLE statement
@@ -960,6 +1134,15 @@ func (e *metadataExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 			// Check if it's a unique index
 			if optUnique := ctx.Opt_unique(); optUnique != nil {
 				index.Unique = true
+			}
+
+			// Extract index method (BTREE, HASH, GIN, GIST, etc.)
+			// Default to btree if not specified
+			index.Type = "btree"
+			if accessMethod := ctx.Access_method_clause(); accessMethod != nil {
+				if accessMethod.USING() != nil && accessMethod.Name() != nil {
+					index.Type = strings.ToLower(pgparser.NormalizePostgreSQLName(accessMethod.Name()))
+				}
 			}
 
 			// Extract index parameters (columns/expressions)
