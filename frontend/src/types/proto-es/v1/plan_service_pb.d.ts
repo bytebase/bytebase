@@ -667,6 +667,24 @@ export declare type ListPlanCheckRunsRequest = Message<"bytebase.v1.ListPlanChec
    * @generated from field: bool latest_only = 4;
    */
   latestOnly: boolean;
+
+  /**
+   * Filter is used to filter plan check runs returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filters:
+   * - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
+   * - result_status: the plan check run result status, support "==" and "in" operator, check the Result.Status enum in the PlanCheckRun message for the values.
+   *
+   * For example:
+   * status in ["DONE", "FAILED"]
+   * status == "RUNNING"
+   * result_status in ["SUCCESS", "ERROR"]
+   * result_status == "WARNING"
+   *
+   * @generated from field: string filter = 5;
+   */
+  filter: string;
 };
 
 /**

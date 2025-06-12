@@ -839,7 +839,20 @@ type ListPlanCheckRunsRequest struct {
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// If set to true, only the latest plan check run will be returned.
-	LatestOnly    bool `protobuf:"varint,4,opt,name=latest_only,json=latestOnly,proto3" json:"latest_only,omitempty"`
+	LatestOnly bool `protobuf:"varint,4,opt,name=latest_only,json=latestOnly,proto3" json:"latest_only,omitempty"`
+	// Filter is used to filter plan check runs returned in the list.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Supported filters:
+	// - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
+	// - result_status: the plan check run result status, support "==" and "in" operator, check the Result.Status enum in the PlanCheckRun message for the values.
+	//
+	// For example:
+	// status in ["DONE", "FAILED"]
+	// status == "RUNNING"
+	// result_status in ["SUCCESS", "ERROR"]
+	// result_status == "WARNING"
+	Filter        string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -900,6 +913,13 @@ func (x *ListPlanCheckRunsRequest) GetLatestOnly() bool {
 		return x.LatestOnly
 	}
 	return false
+}
+
+func (x *ListPlanCheckRunsRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
 }
 
 type ListPlanCheckRunsResponse struct {
@@ -2087,7 +2107,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x14DatabaseGroupMapping\x12%\n" +
 	"\x0edatabase_group\x18\x01 \x01(\tR\rdatabaseGroup\x12\x1c\n" +
 	"\tdatabases\x18\x02 \x03(\tR\tdatabases:7\xeaA4\n" +
-	"\x11bytebase.com/Plan\x12\x1fprojects/{project}/plans/{plan}J\x04\b\x02\x10\x03\"\xab\x01\n" +
+	"\x11bytebase.com/Plan\x12\x1fprojects/{project}/plans/{plan}J\x04\b\x02\x10\x03\"\xc3\x01\n" +
 	"\x18ListPlanCheckRunsRequest\x122\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x06parent\x12\x1b\n" +
@@ -2095,7 +2115,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x1f\n" +
 	"\vlatest_only\x18\x04 \x01(\bR\n" +
-	"latestOnly\"\x86\x01\n" +
+	"latestOnly\x12\x16\n" +
+	"\x06filter\x18\x05 \x01(\tR\x06filter\"\x86\x01\n" +
 	"\x19ListPlanCheckRunsResponse\x12A\n" +
 	"\x0fplan_check_runs\x18\x01 \x03(\v2\x19.bytebase.v1.PlanCheckRunR\rplanCheckRuns\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"p\n" +
