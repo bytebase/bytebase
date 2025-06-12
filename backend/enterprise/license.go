@@ -99,7 +99,7 @@ func (s *LicenseService) IsFeatureEnabled(f v1pb.PlanFeature) error {
 		if planFeatureMatrix[v1pb.PlanType_TEAM][f] {
 			minimalPlan = v1pb.PlanType_TEAM
 		}
-		return errors.Errorf("feature %s is a %s feature, please upgrade to access it.", f.String(), minimalPlan.String())
+		return errors.Errorf("feature %s is a %s feature, please upgrade to access it", f.String(), minimalPlan.String())
 	}
 	return nil
 }
