@@ -69,7 +69,7 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, _ *
 
 // CreateIdentityProvider creates an identity provider.
 func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, request *v1pb.CreateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	if err := s.checkFeatureAvailable(request.IdentityProvider.Type); err != nil {
+	if err := s.checkFeatureAvailable(request.IdentityProvider); err != nil {
 		return nil, err
 	}
 
@@ -128,7 +128,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	if err := s.checkFeatureAvailable(request.IdentityProvider.Type); err != nil {
+	if err := s.checkFeatureAvailable(request.IdentityProvider); err != nil {
 		return nil, err
 	}
 
@@ -198,20 +198,19 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 	return &emptypb.Empty{}, nil
 }
 
-func (s *IdentityProviderService) checkFeatureAvailable(ssoType v1pb.IdentityProviderType) error {
+var googleGitHubDomains = map[string]bool{
+	"google.com": true,
+	"github.com": true,
+}
+
+func (s *IdentityProviderService) checkFeatureAvailable(idp *v1pb.IdentityProvider) error {
+	if idp.Type == v1pb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO); err != nil {
+			return status.Error(codes.PermissionDenied, err.Error())
+		}
+	}
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO); err != nil {
 		return status.Error(codes.PermissionDenied, err.Error())
-	}
-	plan := s.licenseService.GetEffectivePlan()
-	switch plan {
-	case v1pb.PlanType_FREE:
-		return status.Error(codes.PermissionDenied, "feature is not available for free plan")
-	case v1pb.PlanType_ENTERPRISE:
-		return nil
-	case v1pb.PlanType_TEAM:
-		if ssoType != v1pb.IdentityProviderType_OAUTH2 {
-			return status.Error(codes.PermissionDenied, "only oauth type is available")
-		}
 	}
 	return nil
 }
