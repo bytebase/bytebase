@@ -27,6 +27,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SubscriptionServiceClient interface {
+	// GetSubscription returns the current subscription.
+	// If there is no license, we will return a free plan subscription without expiration time.
+	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(ctx context.Context, in *GetSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
 	UpdateSubscription(ctx context.Context, in *UpdateSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
 }
@@ -63,6 +66,9 @@ func (c *subscriptionServiceClient) UpdateSubscription(ctx context.Context, in *
 // All implementations must embed UnimplementedSubscriptionServiceServer
 // for forward compatibility.
 type SubscriptionServiceServer interface {
+	// GetSubscription returns the current subscription.
+	// If there is no license, we will return a free plan subscription without expiration time.
+	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error)
 	UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*Subscription, error)
 	mustEmbedUnimplementedSubscriptionServiceServer()

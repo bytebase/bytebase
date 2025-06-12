@@ -16,7 +16,7 @@
                 >{{
                   t("subscription.plan-features", {
                     plan: t(
-                      `subscription.plan.${planTypeToString(neededPlan)}.title`
+                      `subscription.plan.${neededPlan.toLowerCase()}.title`
                     ),
                   })
                 }}</span
@@ -54,9 +54,9 @@
           }}
           ({{
             $t(
-              `subscription.plan.${planTypeToString(
-                subscriptionStore.getMinimumRequiredPlan(feature as PlanFeature)
-              )}.title`
+              `subscription.plan.${
+                subscriptionStore.getMinimumRequiredPlan(feature as PlanFeature).toLowerCase()
+              }.title`
             )
           }})
         </li>
@@ -74,7 +74,6 @@
 import { BBModal } from "@/bbkit";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
-import { planTypeToString } from "@/types";
 import {
   PlanFeature, PlanType,
   planTypeToNumber
@@ -125,7 +124,7 @@ const neededPlan = computed(() => {
 
 const currentPlan = computed(() => {
   return t(
-    `subscription.plan.${planTypeToString(subscriptionStore.currentPlan)}.title`
+    `subscription.plan.${subscriptionStore.currentPlan.toLowerCase()}.title`
   );
 });
 

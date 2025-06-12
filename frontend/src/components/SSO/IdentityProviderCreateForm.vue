@@ -52,9 +52,9 @@
             {{
               $t("subscription.require-subscription", {
                 requiredPlan: $t(
-                  `subscription.plan.${planTypeToString(
-                    item.minimumRequiredPlan
-                  )}.title`
+                  `subscription.plan.${
+                    item.minimumRequiredPlan.toLowerCase()
+                  }.title`
                 ),
               })
             }}
@@ -130,9 +130,9 @@
             {{
               $t("subscription.require-subscription", {
                 requiredPlan: $t(
-                  `subscription.plan.${planTypeToString(
-                    template.minimumRequiredPlan
-                  )}.title`
+                  `subscription.plan.${
+                    template.minimumRequiredPlan.toLowerCase()
+                  }.title`
                 ),
               })
             }}
@@ -726,7 +726,6 @@ import {
   idpNamePrefix,
 } from "@/store/modules/v1/common";
 import type { OAuthWindowEventPayload } from "@/types";
-import { planTypeToString } from "@/types";
 import {
   FieldMapping,
   IdentityProvider,

@@ -203,9 +203,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     },
     async patchSubscription(license: string) {
       const subscription = await subscriptionServiceClient.updateSubscription({
-        patch: {
-          license,
-        },
+        license,
       });
       this.setSubscription(subscription);
       return subscription;

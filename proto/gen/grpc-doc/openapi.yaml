@@ -7051,6 +7051,10 @@ paths:
         get:
             tags:
                 - SubscriptionService
+            description: |-
+                GetSubscription returns the current subscription.
+                 If there is no license, we will return a free plan subscription without expiration time.
+                 If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
             operationId: SubscriptionService_GetSubscription
             responses:
                 "200":
@@ -7073,7 +7077,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/PatchSubscription'
+                            type: string
                 required: true
             responses:
                 "200":
@@ -11159,11 +11163,6 @@ components:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
                     description: password_rotation requires users to reset their password after the duration.
-        PatchSubscription:
-            type: object
-            properties:
-                license:
-                    type: string
         Plan:
             type: object
             properties:
