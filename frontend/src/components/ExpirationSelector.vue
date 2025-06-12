@@ -202,6 +202,11 @@ const onSelect = (value: number) => {
   // For value === -1 (custom date), the timestamp is set by the date picker
   // Don't save custom date selection as it's not reusable
   state.selected = value;
+  
+  // Emit the change immediately for pre-defined options
+  if (value !== -1) {
+    emit("update:timestampInMs", state.expirationTimestampInMS);
+  }
 };
 
 watch(
