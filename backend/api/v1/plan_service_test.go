@@ -192,7 +192,7 @@ func TestParsePlanCheckRunFilter(t *testing.T) {
 	a := require.New(t)
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.name, func(*testing.T) {
 			find := &store.FindPlanCheckRunMessage{}
 			err := service.parsePlanCheckRunFilter(test.filter, find)
 
