@@ -2,9 +2,7 @@ import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { planServiceClient } from "@/grpcweb";
-import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import type { Plan } from "@/types/proto/v1/plan_service";
-import { emptyPlan, unknownPlan } from "@/types/v1/issue/plan";
 import {
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
@@ -94,21 +92,8 @@ export const usePlanStore = defineStore("plan", () => {
     return plan;
   };
 
-  const fetchPlanByUID = async (uid: string, project = "-"): Promise<Plan> => {
-    if (uid === "undefined") {
-      console.warn("undefined plan uid");
-      return emptyPlan();
-    }
-
-    if (uid === String(EMPTY_ID)) return emptyPlan();
-    if (uid === String(UNKNOWN_ID)) return unknownPlan();
-
-    return fetchPlanByName(`projects/${project}/plans/${uid}`);
-  };
-
   return {
     searchPlans,
     fetchPlanByName,
-    fetchPlanByUID,
   };
 });

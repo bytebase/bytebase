@@ -1,5 +1,7 @@
 <template>
   <NDataTable
+    key="plan-table"
+    size="small"
     :columns="columnList"
     :data="planList"
     :striped="true"
@@ -17,8 +19,6 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
-import { projectOfPlan } from "@/components/Plan/logic";
-import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { getTimeForPbTimestamp, unknownUser } from "@/types";
@@ -30,16 +30,12 @@ import {
 } from "@/utils";
 import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     planList: Plan[];
     loading?: boolean;
-    showProject: boolean;
   }>(),
-  {
-    loading: true,
-    showProject: true,
-  }
+  {}
 );
 
 const { t } = useI18n();
@@ -77,16 +73,6 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
           </div>
         );
       },
-    },
-    {
-      key: "project",
-      title: t("common.project"),
-      width: 144,
-      resizable: true,
-      hide: !props.showProject,
-      render: (plan) => (
-        <ProjectNameCell project={projectOfPlan(plan)} mode={"ALL_SHORT"} />
-      ),
     },
     {
       key: "updateTime",
