@@ -131,7 +131,7 @@
             <div
               v-for="(result, idx) in getFilteredResults(checkRun)"
               :key="idx"
-              class="flex items-start gap-3 p-3 border rounded-lg bg-gray-50"
+              class="flex items-start gap-3 px-3 py-2 border rounded-lg bg-gray-50"
             >
               <component
                 :is="getStatusIcon(result.status)"
@@ -140,22 +140,20 @@
               />
 
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium text-main mb-1">
+                <div class="text-sm font-medium text-main">
                   {{ result.title }}
                 </div>
-
                 <div
                   v-if="result.content"
-                  class="text-xs text-control-light mb-2"
+                  class="text-xs text-control-light mt-1"
                 >
                   {{ result.content }}
                 </div>
-
                 <div
                   v-if="
                     result.sqlReviewReport && result.sqlReviewReport.line > 0
                   "
-                  class="text-xs text-control-lighter"
+                  class="text-xs text-control-lighter mt-1"
                 >
                   Line {{ result.sqlReviewReport.line }}, Column
                   {{ result.sqlReviewReport.column }}

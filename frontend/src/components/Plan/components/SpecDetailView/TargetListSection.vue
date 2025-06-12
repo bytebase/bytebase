@@ -32,68 +32,35 @@
           'max-height': `${MAX_LIST_HEIGHT}px`,
         }"
       >
-        <NTooltip
-          v-for="(item, index) in tableData"
-          :key="index"
-          placement="top"
+        <div
+          v-for="item in tableData"
+          :key="item.name"
+          class="inline-flex items-center gap-x-1.5 px-3 py-1.5 border rounded-lg transition-all cursor-default max-w-[20rem]"
         >
-          <template #trigger>
-            <div
-              class="inline-flex items-center gap-x-1.5 px-3 py-1.5 border rounded-lg transition-all cursor-default max-w-[20rem]"
-            >
-              <EngineIcon
-                v-if="item.type === 'database' && item.engine"
-                :engine="item.engine"
-                custom-class="w-4 h-4 text-control-light flex-shrink-0"
-              />
-              <component
-                v-else
-                :is="item.icon"
-                class="w-4 h-4 text-control-light flex-shrink-0"
-              />
-              <div class="flex items-center gap-x-1 min-w-0">
-                <NEllipsis :line-clamp="1" class="text-sm">
-                  <span class="font-medium">{{ item.name }}</span>
-                  <span
-                    v-if="item.type === 'database' && item.instance"
-                    class="text-control-light"
-                  >
-                    <span class="mx-1">·</span>{{ item.instance }}
-                  </span>
-                </NEllipsis>
-              </div>
-              <div
-                class="text-xs px-2 py-0.5 rounded-md bg-control-bg text-control-light flex-shrink-0"
-              >
-                {{ getTypeLabel(item.type) }}
-              </div>
-            </div>
-          </template>
-
-          <!-- Tooltip Content -->
-          <div class="max-w-sm space-y-1">
-            <div class="font-semibold">{{ item.name }}</div>
-            <div class="text-sm space-y-0.5">
-              <div
-                v-if="item.type !== 'instance' && item.instance"
-                class="flex items-center gap-1"
-              >
-                <ServerIcon class="w-3 h-3" />
-                <span>{{ item.instance }}</span>
-              </div>
-              <div v-if="item.environment">
-                {{
-                  $t("plan.targets.environment", {
-                    environment: item.environment,
-                  })
-                }}
-              </div>
-              <div v-if="item.description" class="pt-1 text-control-light">
-                {{ item.description }}
-              </div>
-            </div>
+          <EngineIcon
+            v-if="item.type === 'database' && item.engine"
+            :engine="item.engine"
+            custom-class="w-4 h-4 text-control-light flex-shrink-0"
+          />
+          <component
+            v-else
+            :is="item.icon"
+            class="w-4 h-4 text-control-light flex-shrink-0"
+          />
+          <span class="text-sm text-gray-500" v-if="item.environment">
+            ({{ item.environment }})
+          </span>
+          <div class="flex items-center gap-x-1 min-w-0 text-sm">
+            <NEllipsis :line-clamp="1">
+              <span class="font-medium">{{ item.name }}</span>
+            </NEllipsis>
           </div>
-        </NTooltip>
+          <div
+            class="text-xs px-2 py-0.5 rounded-md bg-control-bg text-control-light flex-shrink-0"
+          >
+            {{ getTypeLabel(item.type) }}
+          </div>
+        </div>
 
         <!-- Load More Button -->
         <div
@@ -132,7 +99,7 @@ import {
   FolderIcon,
   EditIcon,
 } from "lucide-vue-next";
-import { NEllipsis, NTooltip, NButton } from "naive-ui";
+import { NEllipsis, NButton } from "naive-ui";
 import { computed, ref, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";

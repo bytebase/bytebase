@@ -6,7 +6,7 @@
     placement="right"
     class="!w-[100vw] sm:!w-[80vw]"
   >
-    <DrawerContent :title="$t('plan.add-spec')" closable>
+    <DrawerContent :title="title ?? $t('plan.add-spec')" closable>
       <div class="flex flex-col gap-y-4">
         <!-- Step 1: Select Change Type -->
         <div class="flex flex-row items-center gap-x-4">
@@ -58,7 +58,7 @@
             :loading="isCreating"
             @click="handleConfirm"
           >
-            {{ $t("common.add") }}
+            {{ $t("common.confirm") }}
           </NButton>
         </div>
       </template>
@@ -82,6 +82,10 @@ import {
 } from "@/types/proto/v1/plan_service";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
+
+defineProps<{
+  title?: string;
+}>();
 
 const emit = defineEmits<{
   (event: "created", spec: Plan_Spec): void;

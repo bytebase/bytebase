@@ -14,7 +14,12 @@ export default [
   }),
   ...vueI18n.configs["flat/recommended"],
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/proto/**"],
+    ignores: [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/proto/**",
+      "**/proto-es/**",
+    ],
   },
   {
     rules: {

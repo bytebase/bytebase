@@ -1034,7 +1034,6 @@
       "multiple-databases": "{count} データベース",
       "database-group": "データベースグループ",
       "database-not-found": "データベースが見つかりません",
-      "environment": "環境: {environment}",
       "type": {
         "instance": "実例",
         "database": "データベース",
@@ -1472,7 +1471,6 @@
     "unassigned-databases": "未割り当てのデータベース",
     "selected-n-databases": "{n} 個のデータベースが選択されました",
     "n-databases": "{n} データベース",
-    "select-databases-from-same-project": "同じプロジェクト内のデータベースを選択してください",
     "sync-schema": {
       "title": "データベーステーブルの同期",
       "description": "Bytebase は、スキーマを 1 つまたは複数のターゲット データベースに同期することをサポートします。(MySQL, PostgreSQL, Oracle, MSSQL, TiDB のみ)",
@@ -2592,8 +2590,7 @@
     "permission-denied": "この操作を実行する権限がありません"
   },
   "review-center": {
-    "self": "レビューセンター",
-    "review-sql": "SQLを確認する"
+    "self": "レビューセンター"
   },
   "schema-designer": {
     "use-tips": "デザインするテーブルを選択してください"

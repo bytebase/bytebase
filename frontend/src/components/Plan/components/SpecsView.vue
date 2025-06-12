@@ -1,5 +1,5 @@
 <template>
-  <SpecDetailView />
+  <SpecDetailView :key="selectedSpec.id" />
 </template>
 
 <script setup lang="ts">

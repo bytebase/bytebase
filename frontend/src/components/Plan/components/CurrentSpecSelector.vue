@@ -21,7 +21,6 @@
     </NButton>
   </div>
 
-  <!-- Add Spec Drawer -->
   <AddSpecDrawer
     v-model:show="showAddSpecDrawer"
     @created="handleSpecCreated"
