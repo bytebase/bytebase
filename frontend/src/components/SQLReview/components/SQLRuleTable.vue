@@ -54,9 +54,9 @@
                   {{
                     $t("sql-review.not-available-for-free", {
                       plan: $t(
-                        `subscription.plan.${planTypeToString(
-                          currentPlan
-                        )}.title`
+                        `subscription.plan.${
+                          currentPlan.toLowerCase()
+                        }.title`
                       ),
                     })
                   }}
@@ -134,7 +134,6 @@ import type { RuleTemplateV2 } from "@/types";
 import {
   getRuleLocalization,
   ruleIsAvailableInSubscription,
-  planTypeToString,
 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";

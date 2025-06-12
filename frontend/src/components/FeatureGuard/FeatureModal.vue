@@ -35,7 +35,7 @@
               <span class="font-bold text-accent">
                 {{
                   $t(
-                    `subscription.plan.${planTypeToString(requiredPlan)}.title`
+                    `subscription.plan.${requiredPlan.toLowerCase()}.title`
                   )
                 }}
               </span>
@@ -100,7 +100,7 @@
 import { BBModal } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { useSubscriptionV1Store } from "@/store";
-import { ENTERPRISE_INQUIRE_LINK, planTypeToString } from "@/types";
+import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import type {
   Instance,
   InstanceResource,

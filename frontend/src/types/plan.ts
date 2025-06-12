@@ -1,51 +1,29 @@
 import {
+  PlanFeature,
   PlanType,
   type PlanConfig,
-  type PlanLimitConfig,
-  PlanFeature,
+  type PlanLimitConfig
 } from "@/types/proto/v1/subscription_service";
 import planData from "./plan.yaml";
 
-// Use proto Feature enum as the primary feature type
-export type Feature = PlanFeature;
-
-// Instance-limited features that require activated instances
-export const instanceLimitFeature = new Set<PlanFeature>([
-  PlanFeature.FEATURE_DATABASE_SECRET_VARIABLES,
-  PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION,
-  PlanFeature.FEATURE_DATA_MASKING,
-]);
-
-export const planTypeToString = (planType: PlanType): string => {
-  switch (planType) {
-    case PlanType.FREE:
-      return "free";
-    case PlanType.TEAM:
-      return "team";
-    case PlanType.ENTERPRISE:
-      return "enterprise";
-    default:
-      return "";
-  }
-};
-
-// Re-export proto types for convenience
-export type { PlanConfig, PlanLimitConfig };
-
-export const PLAN_CONFIG: PlanConfig = planData;
 export const PLANS: PlanLimitConfig[] = planData.plans;
 
 // Create a plan feature matrix from the YAML data
-export const PLAN_FEATURE_MATRIX = new Map<PlanType, Set<PlanFeature>>();
+const planFeatureMatrix = new Map<PlanType, Set<PlanFeature>>();
+// Instance-limited features that require activated instances
+export const instanceLimitFeature = new Set<PlanFeature>();
 
-// Initialize the feature matrix from plan data
+// Initialize the feature matrix and instance features from plan data
 PLANS.forEach((plan) => {
-  PLAN_FEATURE_MATRIX.set(plan.type, new Set(plan.features));
+  planFeatureMatrix.set(plan.type, new Set(plan.features));
+});
+(planData as PlanConfig).instanceFeatures.forEach((feature) => {
+  instanceLimitFeature.add(feature);
 });
 
 // Helper function to check if a plan has a feature
 export const planHasFeature = (plan: PlanType, feature: PlanFeature): boolean => {
-  const planFeatures = PLAN_FEATURE_MATRIX.get(plan);
+  const planFeatures = planFeatureMatrix.get(plan);
   return planFeatures?.has(feature) ?? false;
 };
 

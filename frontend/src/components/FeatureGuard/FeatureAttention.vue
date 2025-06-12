@@ -24,7 +24,7 @@
 import { BBAttention } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
-import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature, planTypeToString } from "@/types";
+import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
 import type {
   Instance,
   InstanceResource,
@@ -147,7 +147,7 @@ const descriptionText = computed(() => {
     }
     const trialText = t("subscription.required-plan-with-trial", {
       requiredPlan: t(
-        `subscription.plan.${planTypeToString(requiredPlan)}.title`
+        `subscription.plan.${requiredPlan.toLowerCase()}.title`
       ),
       startTrial: startTrial,
     });

@@ -40,9 +40,9 @@
         {{
           $t("subscription.require-subscription", {
             requiredPlan: $t(
-              `subscription.plan.${planTypeToString(
-                subscriptionStore.getMinimumRequiredPlan(feature)
-              )}.title`
+              `subscription.plan.${
+                subscriptionStore.getMinimumRequiredPlan(feature).toLowerCase()
+              }.title`
             ),
           })
         }}
@@ -60,7 +60,6 @@
 import { NTooltip } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useSubscriptionV1Store } from "@/store";
-import { planTypeToString } from "@/types";
 import type {
   Instance,
   InstanceResource,
