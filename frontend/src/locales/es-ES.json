@@ -1471,7 +1471,6 @@
     "unassigned-databases": "Bases de datos no asignadas",
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
     "n-databases": "{n} base de datos | {n} bases de datos",
-    "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",

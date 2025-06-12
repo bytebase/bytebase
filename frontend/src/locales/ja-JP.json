@@ -1471,7 +1471,6 @@
     "unassigned-databases": "未割り当てのデータベース",
     "selected-n-databases": "{n} 個のデータベースが選択されました",
     "n-databases": "{n} データベース",
-    "select-databases-from-same-project": "同じプロジェクト内のデータベースを選択してください",
     "sync-schema": {
       "title": "データベーステーブルの同期",
       "description": "Bytebase は、スキーマを 1 つまたは複数のターゲット データベースに同期することをサポートします。(MySQL, PostgreSQL, Oracle, MSSQL, TiDB のみ)",

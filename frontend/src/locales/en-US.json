@@ -1471,7 +1471,6 @@
     "unassigned-databases": "Unassigned databases",
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "n-databases": "{n} database | {n} databases",
-    "select-databases-from-same-project": "Please select databases from the same project",
     "sync-schema": {
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
