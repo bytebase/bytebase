@@ -1034,7 +1034,6 @@
       "multiple-databases": "{count} 个数据库",
       "database-group": "数据库组",
       "database-not-found": "未找到数据库",
-      "environment": "环境：{environment}",
       "type": {
         "instance": "实例",
         "database": "数据库",
@@ -1472,7 +1471,6 @@
     "unassigned-databases": "未分配的数据库",
     "selected-n-databases": "已选择 {n} 个数据库",
     "n-databases": "{n} 个数据库",
-    "select-databases-from-same-project": "请选择同一个项目下的数据库",
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
@@ -2592,8 +2590,7 @@
     "permission-denied": "您没有权限执行此操作"
   },
   "review-center": {
-    "self": "SQL 审核中心",
-    "review-sql": "审核 SQL"
+    "self": "SQL 审核中心"
   },
   "schema-designer": {
     "use-tips": "选择需要设计的表"

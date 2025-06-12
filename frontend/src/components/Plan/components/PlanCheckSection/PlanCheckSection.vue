@@ -148,7 +148,7 @@
                 <div class="flex items-center gap-2 mb-3">
                   <component
                     :is="getCheckTypeIcon(checkType)"
-                    class="w-4 h-4"
+                    class="w-5 h-5"
                   />
                   <span class="font-medium">{{
                     getCheckTypeLabel(checkType)
@@ -173,7 +173,7 @@
                         selectedStatus
                       )"
                       :key="idx"
-                      class="pl-4 py-1"
+                      class="px-3 py-1 border rounded-lg bg-gray-50"
                     >
                       <div
                         class="text-sm"
