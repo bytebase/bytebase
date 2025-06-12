@@ -371,6 +371,18 @@ export interface ListPlanCheckRunsRequest {
   pageToken: string;
   /** If set to true, only the latest plan check run will be returned. */
   latestOnly: boolean;
+  /**
+   * Filter is used to filter plan check runs returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filters:
+   * - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
+   *
+   * For example:
+   * status in ["DONE", "FAILED"]
+   * status == "RUNNING"
+   */
+  filter: string;
 }
 
 export interface ListPlanCheckRunsResponse {
@@ -2383,7 +2395,7 @@ export const Plan_Deployment_DatabaseGroupMapping: MessageFns<Plan_Deployment_Da
 };
 
 function createBaseListPlanCheckRunsRequest(): ListPlanCheckRunsRequest {
-  return { parent: "", pageSize: 0, pageToken: "", latestOnly: false };
+  return { parent: "", pageSize: 0, pageToken: "", latestOnly: false, filter: "" };
 }
 
 export const ListPlanCheckRunsRequest: MessageFns<ListPlanCheckRunsRequest> = {
@@ -2399,6 +2411,9 @@ export const ListPlanCheckRunsRequest: MessageFns<ListPlanCheckRunsRequest> = {
     }
     if (message.latestOnly !== false) {
       writer.uint32(32).bool(message.latestOnly);
+    }
+    if (message.filter !== "") {
+      writer.uint32(42).string(message.filter);
     }
     return writer;
   },
@@ -2442,6 +2457,14 @@ export const ListPlanCheckRunsRequest: MessageFns<ListPlanCheckRunsRequest> = {
           message.latestOnly = reader.bool();
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2457,6 +2480,7 @@ export const ListPlanCheckRunsRequest: MessageFns<ListPlanCheckRunsRequest> = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       latestOnly: isSet(object.latestOnly) ? globalThis.Boolean(object.latestOnly) : false,
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
 
@@ -2474,6 +2498,9 @@ export const ListPlanCheckRunsRequest: MessageFns<ListPlanCheckRunsRequest> = {
     if (message.latestOnly !== false) {
       obj.latestOnly = message.latestOnly;
     }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
@@ -2486,6 +2513,7 @@ export const ListPlanCheckRunsRequest: MessageFns<ListPlanCheckRunsRequest> = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.latestOnly = object.latestOnly ?? false;
+    message.filter = object.filter ?? "";
     return message;
   },
 };
