@@ -771,9 +771,13 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 
 	exportArchiveUIDs := []int{}
 	contents := []*exportData{}
+	targetTaskRunStatus := []storepb.TaskRun_Status{storepb.TaskRun_DONE}
 
 	for _, task := range tasks {
-		taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{TaskUID: &task.ID})
+		taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+			TaskUID: &task.ID,
+			Status:  &targetTaskRunStatus,
+		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get task run: %v", err)
 		}
