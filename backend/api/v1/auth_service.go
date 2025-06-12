@@ -395,6 +395,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 	if user != nil {
 		if user.MemberDeleted {
+			if err := s.userCountGuard(ctx); err != nil {
+				return nil, err
+			}
 			// Undelete the user when login via SSO.
 			user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
 			if err != nil {
@@ -423,6 +426,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate password hash")
 	}
+	if err := s.userCountGuard(ctx); err != nil {
+		return nil, err
+	}
 	newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Name:         userInfo.DisplayName,
 		Email:        email,
@@ -441,6 +447,19 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 	}
 	return newUser, nil
+}
+
+func (s *AuthService) userCountGuard(ctx context.Context) error {
+	userLimit := s.licenseService.GetUserLimit(ctx)
+
+	count, err := s.store.CountActiveUsers(ctx)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+	if count >= userLimit {
+		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)
+	}
+	return nil
 }
 
 func challengeMFACode(user *store.UserMessage, mfaCode string) error {
