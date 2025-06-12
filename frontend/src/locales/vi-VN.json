@@ -180,8 +180,13 @@
     "optional": "Tùy chọn",
     "reason": "Lý do",
     "date": {
-      "days": "{days} ngày"
+      "days": "{days} ngày",
+      "week": "1 tuần",
+      "month": "1 tháng",
+      "months": "{months} tháng",
+      "year": "1 năm"
     },
+    "access-expires": "Truy cập hết hạn",
     "expiration": "Hết hạn",
     "configure": "Cấu hình",
     "groups": "Nhóm",
@@ -907,7 +912,8 @@
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
       "manually-select": "Chọn thủ công",
-      "custom": "Tùy chỉnh"
+      "custom-date-placeholder": "Chọn ngày và giờ hết hạn",
+      "custom-date": "Ngày tùy chỉnh"
     },
     "review-sent-back": "Đánh giá đã gửi lại",
     "update-statement": {
