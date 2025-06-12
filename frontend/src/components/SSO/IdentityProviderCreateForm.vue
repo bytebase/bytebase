@@ -24,41 +24,15 @@
           :key="item.type"
           v-model:value="state.type"
         >
-          <NTooltip
-            :disabled="
-              subscriptionStore.currentPlanGTE(item.minimumRequiredPlan)
-            "
+          <NRadio
+            :value="item.type"
+            :disabled="!subscriptionStore.hasFeature(item.feature)"
           >
-            <template #trigger>
-              <NRadio
-                :value="item.type"
-                :disabled="
-                  !subscriptionStore.currentPlanGTE(item.minimumRequiredPlan)
-                "
-              >
-                <div class="flex items-center space-x-2">
-                  <heroicons-solid:sparkles
-                    v-if="
-                      !subscriptionStore.currentPlanGTE(
-                        item.minimumRequiredPlan
-                      )
-                    "
-                    class="w-5 h-5"
-                  />
-                  {{ identityProviderTypeToString(item.type) }}
-                </div>
-              </NRadio>
-            </template>
-            {{
-              $t("subscription.require-subscription", {
-                requiredPlan: $t(
-                  `subscription.plan.${
-                    item.minimumRequiredPlan.toLowerCase()
-                  }.title`
-                ),
-              })
-            }}
-          </NTooltip>
+            <div class="flex items-center space-x-2">
+              <FeatureBadge :feature="item.feature" />
+              {{ identityProviderTypeToString(item.type) }}
+            </div>
+          </NRadio>
         </NRadioGroup>
       </div>
 
@@ -95,48 +69,16 @@
           :key="template.title"
           :value="selectedTemplate?.title"
         >
-          <NTooltip
-            :disabled="
-              subscriptionStore.currentPlanGTE(template.minimumRequiredPlan)
-            "
+          <NRadio
+            :value="template.title"
+            :disabled="!subscriptionStore.hasFeature(template.feature)"
+            @change="handleTemplateSelect(template)"
           >
-            <template #trigger>
-              <div
-                class="w-auto px-3 py-2 border rounded-md flex items-center justify-center"
-              >
-                <NRadio
-                  :value="template.title"
-                  :disabled="
-                    !subscriptionStore.currentPlanGTE(
-                      template.minimumRequiredPlan
-                    )
-                  "
-                  @change="handleTemplateSelect(template)"
-                >
-                  <div class="flex items-center space-x-2">
-                    <heroicons-solid:sparkles
-                      v-if="
-                        !subscriptionStore.currentPlanGTE(
-                          template.minimumRequiredPlan
-                        )
-                      "
-                      class="w-5 h-5"
-                    />
-                    {{ template.title }}
-                  </div>
-                </NRadio>
-              </div>
-            </template>
-            {{
-              $t("subscription.require-subscription", {
-                requiredPlan: $t(
-                  `subscription.plan.${
-                    template.minimumRequiredPlan.toLowerCase()
-                  }.title`
-                ),
-              })
-            }}
-          </NTooltip>
+            <div class="flex items-center space-x-2">
+              <FeatureBadge :feature="template.feature" />
+              {{ template.title }}
+            </div>
+          </NRadio>
         </NRadioGroup>
       </div>
     </div>
@@ -710,6 +652,7 @@ import type { ClientError } from "nice-grpc-common";
 import { computed, reactive, ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm, BBTextField } from "@/bbkit";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { identityProviderClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
@@ -736,7 +679,7 @@ import {
   OIDCIdentityProviderConfig,
   LDAPIdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { OAuth2IdentityProviderTemplate } from "@/utils";
 import {
   hasWorkspacePermissionV2,
@@ -746,7 +689,7 @@ import {
 import IdentityProviderExternalURL from "./IdentityProviderExternalURL.vue";
 
 interface IdentityProviderTemplate extends OAuth2IdentityProviderTemplate {
-  minimumRequiredPlan: PlanType;
+  feature: PlanFeature;
 }
 
 interface LocalState {
@@ -800,15 +743,15 @@ const identityProviderTypeList = computed(() => {
   return [
     {
       type: IdentityProviderType.OAUTH2,
-      minimumRequiredPlan: PlanType.TEAM,
+      feature: PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO,
     },
     {
       type: IdentityProviderType.OIDC,
-      minimumRequiredPlan: PlanType.ENTERPRISE,
+      feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
     },
     {
       type: IdentityProviderType.LDAP,
-      minimumRequiredPlan: PlanType.ENTERPRISE,
+      feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
     },
   ];
 });
@@ -854,7 +797,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "google.com",
         type: IdentityProviderType.OAUTH2,
-        minimumRequiredPlan: PlanType.TEAM,
+        feature: PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO,
         config: {
           clientId: "",
           clientSecret: "",
@@ -880,7 +823,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "github.com",
         type: IdentityProviderType.OAUTH2,
-        minimumRequiredPlan: PlanType.TEAM,
+        feature: PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO,
         config: {
           clientId: "",
           clientSecret: "",
@@ -903,7 +846,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "gitlab.com",
         type: IdentityProviderType.OAUTH2,
-        minimumRequiredPlan: PlanType.ENTERPRISE,
+        feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
         config: {
           clientId: "",
           clientSecret: "",
@@ -926,7 +869,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "",
         type: IdentityProviderType.OAUTH2,
-        minimumRequiredPlan: PlanType.ENTERPRISE,
+        feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
         config: {
           clientId: "",
           clientSecret: "",
@@ -951,7 +894,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "",
         type: IdentityProviderType.OAUTH2,
-        minimumRequiredPlan: PlanType.ENTERPRISE,
+        feature: PlanFeature.FEATURE_ENTERPRISE_SSO,
         config: {
           clientId: "",
           clientSecret: "",

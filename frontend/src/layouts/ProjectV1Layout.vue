@@ -17,6 +17,7 @@
       <NButton
         v-for="(quickAction, index) in quickActionList"
         :key="index"
+        :disabled="quickAction.disabled"
         @click="quickAction.action"
       >
         <template #icon>
@@ -58,9 +59,16 @@
   <IAMRemindModal :project-name="project.name" />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
+import { UsersIcon } from "lucide-vue-next";
+import { NButton, NEllipsis, NSpin } from "naive-ui";
+import type { ClientError } from "nice-grpc-web";
+import { computed, reactive, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
@@ -77,7 +85,8 @@ import {
   useAppFeature,
   usePermissionStore,
   useProjectByName,
-  useProjectV1Store
+  useProjectV1Store,
+  featureToRef,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -86,13 +95,8 @@ import {
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { hasProjectPermissionV2 } from "@/utils";
-import { UsersIcon } from "lucide-vue-next";
-import { NButton, NEllipsis, NSpin } from "naive-ui";
-import type { ClientError } from "nice-grpc-web";
-import { computed, h, reactive, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
 import { useBodyLayoutContext } from "./common";
 
 interface LocalState {
@@ -188,6 +192,10 @@ const isProjectOwner = computed(() => {
   return roles.includes(PresetRoleType.PROJECT_OWNER);
 });
 
+const hasRequestRoleFeature = featureToRef(
+  PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW
+);
+
 const quickActionListForDatabase = computed(() => {
   if (project.value.state !== State.ACTIVE) {
     return [];
@@ -201,7 +209,13 @@ const quickActionListForDatabase = computed(() => {
   ) {
     actions.push({
       title: t("issue.title.request-role"),
-      icon: () => h(UsersIcon),
+      disabled: !hasRequestRoleFeature.value,
+      icon: () =>
+        hasRequestRoleFeature.value ? (
+          <UsersIcon />
+        ) : (
+          <FeatureBadge feature={PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW} />
+        ),
       action: () => (state.showRequestRolePanel = true),
     });
   }
