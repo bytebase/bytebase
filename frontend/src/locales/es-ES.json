@@ -180,8 +180,13 @@
     "optional": "Opcional",
     "reason": "Razón",
     "date": {
-      "days": "{days} días"
+      "days": "{days} días",
+      "week": "1 semana",
+      "month": "1 mes",
+      "months": "{months} meses",
+      "year": "1 año"
     },
+    "access-expires": "El acceso expira",
     "expiration": "Expiración",
     "configure": "Configurar",
     "groups": "Grupos",
@@ -907,7 +912,8 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
-      "custom": "personalice"
+      "custom-date-placeholder": "Seleccione la fecha y hora de vencimiento",
+      "custom-date": "Fecha personalizada"
     },
     "review-sent-back": "Revisión devuelta",
     "update-statement": {

@@ -180,8 +180,13 @@
     "optional": "Optional",
     "reason": "Reason",
     "date": {
-      "days": "{days} days"
+      "days": "{days} days",
+      "week": "1 week",
+      "month": "1 month",
+      "months": "{months} months",
+      "year": "1 year"
     },
+    "access-expires": "Access Expires",
     "expiration": "Expiration",
     "configure": "Configure",
     "groups": "Groups",
@@ -907,7 +912,8 @@
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
-      "custom": "Custom"
+      "custom-date": "Custom date",
+      "custom-date-placeholder": "Select expiration date and time"
     },
     "review-sent-back": "Review sent back",
     "update-statement": {
