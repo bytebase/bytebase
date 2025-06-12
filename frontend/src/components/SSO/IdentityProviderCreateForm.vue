@@ -4,7 +4,7 @@
       <!-- Provider Type Section -->
       <div v-if="isCreating" class="pb-6 lg:flex">
         <div class="text-left lg:w-1/4">
-          <h1 class="text-2xl font-bold">
+          <h1 class="text-3xl font-bold">
             {{ $t("settings.sso.form.type") }}
           </h1>
           <a
@@ -66,7 +66,7 @@
         class="py-6 lg:flex"
       >
         <div class="text-left lg:w-1/4">
-          <h1 class="text-2xl font-bold">
+          <h1 class="text-3xl font-bold">
             {{ $t("settings.sso.form.use-template") }}
           </h1>
         </div>
@@ -95,7 +95,7 @@
       <!-- Basic Information Section -->
       <div class="py-6 lg:flex">
         <div class="text-left lg:w-1/4">
-          <h1 class="text-2xl font-bold">
+          <h1 class="text-3xl font-bold">
             {{ $t("settings.sso.form.basic-information") }}
           </h1>
         </div>
@@ -569,7 +569,7 @@
       <!-- User Information Mapping Section -->
       <div class="py-6 lg:flex">
         <div class="text-left lg:w-1/4">
-          <h1 class="text-2xl font-bold">
+          <h1 class="text-3xl font-bold">
             {{ $t("settings.sso.form.user-information-mapping") }}
           </h1>
           <p class="textinfolabel mt-2">
