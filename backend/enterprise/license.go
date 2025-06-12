@@ -3,7 +3,6 @@ package enterprise
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -41,17 +40,9 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 	}, nil
 }
 
-// StoreLicense will store license into file.
-func (s *LicenseService) StoreLicense(ctx context.Context, license string) error {
-	if err := s.provider.StoreLicense(ctx, license); err != nil {
-		return err
-	}
-
-	s.RefreshCache(ctx)
-	return nil
-}
-
 // LoadSubscription will load subscription.
+// If there is no license, we will return a free plan subscription without expiration time.
+// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 	s.mu.RLock()
 	cached := s.cachedSubscription
@@ -84,7 +75,10 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscriptio
 	}
 	// Switch to free plan if the subscription is expired.
 	if subscription.ExpiresTime != nil && subscription.ExpiresTime.AsTime().Before(time.Now()) {
-		subscription.Plan = v1pb.PlanType_FREE
+		subscription = &v1pb.Subscription{
+			Plan:        v1pb.PlanType_FREE,
+			ExpiresTime: subscription.ExpiresTime,
+		}
 	}
 	s.cachedSubscription = subscription
 	return subscription
@@ -101,7 +95,11 @@ func (s *LicenseService) IsFeatureEnabled(f v1pb.PlanFeature) error {
 	plan := s.GetEffectivePlan()
 	features, ok := planFeatureMatrix[plan]
 	if !ok || !features[f] {
-		return errors.New(accessErrorMessage(f))
+		minimalPlan := v1pb.PlanType_ENTERPRISE
+		if planFeatureMatrix[v1pb.PlanType_TEAM][f] {
+			minimalPlan = v1pb.PlanType_TEAM
+		}
+		return errors.Errorf("feature %s is a %s feature, please upgrade to access it", f.String(), minimalPlan.String())
 	}
 	return nil
 }
@@ -161,28 +159,16 @@ func (s *LicenseService) GetInstanceLimit(ctx context.Context) int {
 	return limit
 }
 
-// RefreshCache will invalidate and refresh the subscription cache.
-func (s *LicenseService) RefreshCache(ctx context.Context) {
+// StoreLicense will store license into file.
+func (s *LicenseService) StoreLicense(ctx context.Context, license string) error {
+	if err := s.provider.StoreLicense(ctx, license); err != nil {
+		return err
+	}
+
+	// refresh the cached subscription after storing the license.
 	s.mu.Lock()
 	s.cachedSubscription = nil
 	s.mu.Unlock()
 	s.LoadSubscription(ctx)
-}
-
-// accessErrorMessage returns a error message with feature name and minimum supported plan.
-func accessErrorMessage(f v1pb.PlanFeature) string {
-	plan := minimumSupportedPlan(f)
-	return fmt.Sprintf("%s is a %s feature, please upgrade to access it.", f.String(), plan.String())
-}
-
-// minimumSupportedPlan will find the minimum plan which supports the target feature.
-func minimumSupportedPlan(f v1pb.PlanFeature) v1pb.PlanType {
-	// Check from lowest to highest plan
-	if planFeatureMatrix[v1pb.PlanType_FREE][f] {
-		return v1pb.PlanType_FREE
-	}
-	if planFeatureMatrix[v1pb.PlanType_TEAM][f] {
-		return v1pb.PlanType_TEAM
-	}
-	return v1pb.PlanType_ENTERPRISE
+	return nil
 }

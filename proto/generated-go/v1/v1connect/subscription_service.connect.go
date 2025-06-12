@@ -43,6 +43,9 @@ const (
 
 // SubscriptionServiceClient is a client for the bytebase.v1.SubscriptionService service.
 type SubscriptionServiceClient interface {
+	// GetSubscription returns the current subscription.
+	// If there is no license, we will return a free plan subscription without expiration time.
+	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 }
@@ -91,6 +94,9 @@ func (c *subscriptionServiceClient) UpdateSubscription(ctx context.Context, req 
 
 // SubscriptionServiceHandler is an implementation of the bytebase.v1.SubscriptionService service.
 type SubscriptionServiceHandler interface {
+	// GetSubscription returns the current subscription.
+	// If there is no license, we will return a free plan subscription without expiration time.
+	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 }

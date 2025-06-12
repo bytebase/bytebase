@@ -28,9 +28,9 @@ export declare const GetSubscriptionRequestSchema: GenMessage<GetSubscriptionReq
  */
 export declare type UpdateSubscriptionRequest = Message<"bytebase.v1.UpdateSubscriptionRequest"> & {
   /**
-   * @generated from field: bytebase.v1.PatchSubscription patch = 1;
+   * @generated from field: string license = 1;
    */
-  patch?: PatchSubscription;
+  license: string;
 };
 
 /**
@@ -38,22 +38,6 @@ export declare type UpdateSubscriptionRequest = Message<"bytebase.v1.UpdateSubsc
  * Use `create(UpdateSubscriptionRequestSchema)` to create a new message.
  */
 export declare const UpdateSubscriptionRequestSchema: GenMessage<UpdateSubscriptionRequest>;
-
-/**
- * @generated from message bytebase.v1.PatchSubscription
- */
-export declare type PatchSubscription = Message<"bytebase.v1.PatchSubscription"> & {
-  /**
-   * @generated from field: string license = 1;
-   */
-  license: string;
-};
-
-/**
- * Describes the message bytebase.v1.PatchSubscription.
- * Use `create(PatchSubscriptionSchema)` to create a new message.
- */
-export declare const PatchSubscriptionSchema: GenMessage<PatchSubscription>;
 
 /**
  * @generated from message bytebase.v1.Subscription
@@ -577,6 +561,10 @@ export declare const PlanFeatureSchema: GenEnum<PlanFeature>;
  */
 export declare const SubscriptionService: GenService<{
   /**
+   * GetSubscription returns the current subscription.
+   * If there is no license, we will return a free plan subscription without expiration time.
+   * If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+   *
    * @generated from rpc bytebase.v1.SubscriptionService.GetSubscription
    */
   getSubscription: {

@@ -76,7 +76,7 @@ func TestGetResourceFromRequest(t *testing.T) {
 		},
 		{
 			request: &v1pb.UpdateSubscriptionRequest{
-				Patch: &v1pb.PatchSubscription{License: "123"},
+				License: "123",
 			},
 			method: "/bytebase.v1.SubscriptionService/UpdateSubscription",
 			want: []*common.Resource{

@@ -968,10 +968,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.PatchSubscription"><span class="badge">M</span>PatchSubscription</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PlanConfig"><span class="badge">M</span>PlanConfig</a>
                 </li>
               
@@ -11811,30 +11807,6 @@ The access is based on approval flow.</p></td>
 
         
       
-        <h3 id="bytebase.v1.PatchSubscription">PatchSubscription</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>license</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.PlanConfig">PlanConfig</h3>
         <p>PlanConfig represents the configuration for all plans loaded from plan.yaml</p>
 
@@ -11981,8 +11953,8 @@ The access is based on approval flow.</p></td>
             <tbody>
               
                 <tr>
-                  <td>patch</td>
-                  <td><a href="#bytebase.v1.PatchSubscription">PatchSubscription</a></td>
+                  <td>license</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12502,7 +12474,9 @@ The access is based on approval flow.</p></td>
                 <td>GetSubscription</td>
                 <td><a href="#bytebase.v1.GetSubscriptionRequest">GetSubscriptionRequest</a></td>
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
-                <td><p></p></td>
+                <td><p>GetSubscription returns the current subscription.
+If there is no license, we will return a free plan subscription without expiration time.
+If there is expired license, we will return a free plan subscription with the expiration time of the expired license.</p></td>
               </tr>
             
               <tr>
@@ -12546,7 +12520,7 @@ The access is based on approval flow.</p></td>
                 <td>UpdateSubscription</td>
                 <td>PATCH</td>
                 <td>/v1/subscription</td>
-                <td>patch</td>
+                <td>license</td>
               </tr>
               
             
