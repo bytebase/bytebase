@@ -205,18 +205,6 @@
   
     - [IssueService](#bytebase-v1-IssueService)
   
-- [v1/subscription_service.proto](#v1_subscription_service-proto)
-    - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
-    - [PlanConfig](#bytebase-v1-PlanConfig)
-    - [PlanLimitConfig](#bytebase-v1-PlanLimitConfig)
-    - [Subscription](#bytebase-v1-Subscription)
-    - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
-  
-    - [PlanFeature](#bytebase-v1-PlanFeature)
-    - [PlanType](#bytebase-v1-PlanType)
-  
-    - [SubscriptionService](#bytebase-v1-SubscriptionService)
-  
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [AISetting](#bytebase-v1-AISetting)
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
@@ -248,7 +236,6 @@
     - [MaximumSQLResultSizeSetting](#bytebase-v1-MaximumSQLResultSizeSetting)
     - [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-v1-SCIMSetting)
-    - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
@@ -261,14 +248,11 @@
     - [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
-    - [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting)
   
     - [AISetting.Provider](#bytebase-v1-AISetting-Provider)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
     - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
-    - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
-    - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
     - [Setting.SettingName](#bytebase-v1-Setting-SettingName)
   
     - [SettingService](#bytebase-v1-SettingService)
@@ -681,6 +665,18 @@
     - [SheetPayload.Type](#bytebase-v1-SheetPayload-Type)
   
     - [SheetService](#bytebase-v1-SheetService)
+  
+- [v1/subscription_service.proto](#v1_subscription_service-proto)
+    - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
+    - [PlanConfig](#bytebase-v1-PlanConfig)
+    - [PlanLimitConfig](#bytebase-v1-PlanLimitConfig)
+    - [Subscription](#bytebase-v1-Subscription)
+    - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
+  
+    - [PlanFeature](#bytebase-v1-PlanFeature)
+    - [PlanType](#bytebase-v1-PlanType)
+  
+    - [SubscriptionService](#bytebase-v1-SubscriptionService)
   
 - [v1/worksheet_service.proto](#v1_worksheet_service-proto)
     - [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest)
@@ -3912,210 +3908,6 @@ ANY means approving any node will proceed.
 
 
 
-<a name="v1_subscription_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/subscription_service.proto
-
-
-
-<a name="bytebase-v1-GetSubscriptionRequest"></a>
-
-### GetSubscriptionRequest
-
-
-
-
-
-
-
-<a name="bytebase-v1-PlanConfig"></a>
-
-### PlanConfig
-PlanConfig represents the configuration for all plans loaded from plan.yaml
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plans | [PlanLimitConfig](#bytebase-v1-PlanLimitConfig) | repeated |  |
-| instance_features | [PlanFeature](#bytebase-v1-PlanFeature) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PlanLimitConfig"></a>
-
-### PlanLimitConfig
-PlanLimitConfig represents a single plan&#39;s configuration
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [PlanType](#bytebase-v1-PlanType) |  |  |
-| maximum_instance_count | [int32](#int32) |  |  |
-| maximum_seat_count | [int32](#int32) |  |  |
-| features | [PlanFeature](#bytebase-v1-PlanFeature) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Subscription"></a>
-
-### Subscription
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| seat_count | [int32](#int32) |  |  |
-| instance_count | [int32](#int32) |  |  |
-| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
-| trialing | [bool](#bool) |  |  |
-| org_name | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateSubscriptionRequest"></a>
-
-### UpdateSubscriptionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| license | [string](#string) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-PlanFeature"></a>
-
-### PlanFeature
-PlanFeature represents the available features in Bytebase
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| FEATURE_UNSPECIFIED | 0 |  |
-| FEATURE_DATABASE_CHANGE | 1 | Database Change Management |
-| FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL | 2 |  |
-| FEATURE_DECLARATIVE_SCHEMA_MIGRATION | 3 |  |
-| FEATURE_COMPARE_AND_SYNC_SCHEMA | 4 |  |
-| FEATURE_ONLINE_SCHEMA_CHANGE | 5 |  |
-| FEATURE_PRE_DEPLOYMENT_SQL_REVIEW | 6 |  |
-| FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES | 7 |  |
-| FEATURE_ONE_CLICK_DATA_ROLLBACK | 8 |  |
-| FEATURE_MULTI_DATABASE_BATCH_CHANGES | 9 |  |
-| FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT | 10 |  |
-| FEATURE_SCHEDULED_ROLLOUT_TIME | 11 |  |
-| FEATURE_DATABASE_CHANGELOG | 12 |  |
-| FEATURE_SCHEMA_DRIFT_DETECTION | 13 |  |
-| FEATURE_CHANGELIST | 14 |  |
-| FEATURE_SCHEMA_TEMPLATE | 15 |  |
-| FEATURE_ROLLOUT_POLICY | 16 |  |
-| FEATURE_WEB_BASED_SQL_EDITOR | 17 | SQL Editor &amp; Development |
-| FEATURE_SQL_EDITOR_ADMIN_MODE | 18 |  |
-| FEATURE_NATURAL_LANGUAGE_TO_SQL | 19 |  |
-| FEATURE_AI_QUERY_EXPLANATION | 20 |  |
-| FEATURE_AI_QUERY_SUGGESTIONS | 21 |  |
-| FEATURE_AUTO_COMPLETE | 22 |  |
-| FEATURE_SCHEMA_DIAGRAM | 23 |  |
-| FEATURE_SCHEMA_EDITOR | 24 |  |
-| FEATURE_DATA_EXPORT | 25 |  |
-| FEATURE_QUERY_HISTORY | 26 |  |
-| FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS | 27 |  |
-| FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION | 28 |  |
-| FEATURE_BATCH_QUERY | 29 |  |
-| FEATURE_INSTANCE_READ_ONLY_CONNECTION | 30 |  |
-| FEATURE_QUERY_POLICY | 31 |  |
-| FEATURE_RESTRICT_COPYING_DATA | 32 |  |
-| FEATURE_IAM | 33 | Security &amp; Compliance |
-| FEATURE_INSTANCE_SSL_CONNECTION | 34 |  |
-| FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL | 35 |  |
-| FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION | 36 |  |
-| FEATURE_GOOGLE_AND_GITHUB_SSO | 37 |  |
-| FEATURE_USER_GROUPS | 38 |  |
-| FEATURE_DISALLOW_SELF_SERVICE_SIGNUP | 39 |  |
-| FEATURE_DATABASE_SECRET_VARIABLES | 40 |  |
-| FEATURE_QUERY_DATASOURCE_RESTRICTION | 41 |  |
-| FEATURE_CUSTOM_INSTANCE_SYNC_TIME | 42 |  |
-| FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT | 43 |  |
-| FEATURE_RISK_ASSESSMENT | 44 |  |
-| FEATURE_APPROVAL_WORKFLOW | 45 |  |
-| FEATURE_AUDIT_LOG | 46 |  |
-| FEATURE_ENTERPRISE_SSO | 47 |  |
-| FEATURE_TWO_FA | 48 |  |
-| FEATURE_PASSWORD_RESTRICTIONS | 49 |  |
-| FEATURE_DISALLOW_PASSWORD_SIGNIN | 50 |  |
-| FEATURE_CUSTOM_ROLES | 51 |  |
-| FEATURE_REQUEST_ROLE_WORKFLOW | 52 |  |
-| FEATURE_DATA_MASKING | 53 |  |
-| FEATURE_DATA_CLASSIFICATION | 54 |  |
-| FEATURE_SCIM | 55 |  |
-| FEATURE_DIRECTORY_SYNC | 56 |  |
-| FEATURE_SIGN_IN_FREQUENCY_CONTROL | 57 |  |
-| FEATURE_EXTERNAL_SECRET_MANAGER | 58 |  |
-| FEATURE_USER_EMAIL_DOMAIN_RESTRICTION | 59 |  |
-| FEATURE_ENVIRONMENT_MANAGEMENT | 60 | Administration &amp; Support |
-| FEATURE_IM_NOTIFICATIONS | 61 |  |
-| FEATURE_TERRAFORM_PROVIDER | 62 |  |
-| FEATURE_DATABASE_GROUPS | 63 |  |
-| FEATURE_ENVIRONMENT_TIERS | 64 |  |
-| FEATURE_DASHBOARD_ANNOUNCEMENT | 65 |  |
-| FEATURE_API_INTEGRATION_GUIDANCE | 66 |  |
-| FEATURE_CUSTOM_LOGO | 67 |  |
-| FEATURE_WATERMARK | 68 |  |
-| FEATURE_ROADMAP_PRIORITIZATION | 69 |  |
-| FEATURE_CUSTOM_MSA | 70 |  |
-| FEATURE_COMMUNITY_SUPPORT | 71 |  |
-| FEATURE_EMAIL_SUPPORT | 72 |  |
-| FEATURE_DEDICATED_SUPPORT_WITH_SLA | 73 |  |
-
-
-
-<a name="bytebase-v1-PlanType"></a>
-
-### PlanType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PLAN_TYPE_UNSPECIFIED | 0 |  |
-| FREE | 1 |  |
-| TEAM | 2 |  |
-| ENTERPRISE | 3 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-SubscriptionService"></a>
-
-### SubscriptionService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. |
-| UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
-
- 
-
-
-
 <a name="v1_setting_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -4629,31 +4421,6 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
-<a name="bytebase-v1-SMTPMailDeliverySettingValue"></a>
-
-### SMTPMailDeliverySettingValue
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| server | [string](#string) |  | The SMTP server address. |
-| port | [int32](#int32) |  | The SMTP server port. |
-| encryption | [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption) |  | The SMTP server encryption. |
-| ca | [string](#string) | optional | The CA, KEY, and CERT for the SMTP server. Not used. |
-| key | [string](#string) | optional |  |
-| cert | [string](#string) | optional |  |
-| authentication | [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication) |  |  |
-| username | [string](#string) |  |  |
-| password | [string](#string) | optional | If not specified, server will use the existed password. |
-| from | [string](#string) |  | The sender email address. |
-| to | [string](#string) |  | The recipient email address, used with validate_only to send test email. |
-
-
-
-
-
-
 <a name="bytebase-v1-SchemaTemplateSetting"></a>
 
 ### SchemaTemplateSetting
@@ -4804,12 +4571,10 @@ The data in setting value.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | string_value | [string](#string) |  | Defines this value as being a string value. |
-| smtp_mail_delivery_setting_value | [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue) |  |  |
 | app_im_setting_value | [AppIMSetting](#bytebase-v1-AppIMSetting) |  |  |
 | agent_plugin_setting_value | [AgentPluginSetting](#bytebase-v1-AgentPluginSetting) |  |  |
 | workspace_profile_setting_value | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  |  |
 | workspace_approval_setting_value | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
-| workspace_trial_setting_value | [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting) |  |  |
 | schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 | data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
 | semantic_type_setting_value | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
@@ -4883,26 +4648,6 @@ For examples: (source == &#34;DML&#34; &amp;&amp; level == 200) || (source == &#
 
 
 
-
-<a name="bytebase-v1-WorkspaceTrialSetting"></a>
-
-### WorkspaceTrialSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance_count | [int32](#int32) |  |  |
-| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| issued_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| subject | [string](#string) |  |  |
-| org_name | [string](#string) |  |  |
-| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
-
-
-
-
-
  
 
 
@@ -4961,35 +4706,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 
 
-<a name="bytebase-v1-SMTPMailDeliverySettingValue-Authentication"></a>
-
-### SMTPMailDeliverySettingValue.Authentication
-We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| AUTHENTICATION_UNSPECIFIED | 0 |  |
-| AUTHENTICATION_NONE | 1 |  |
-| AUTHENTICATION_PLAIN | 2 |  |
-| AUTHENTICATION_LOGIN | 3 |  |
-| AUTHENTICATION_CRAM_MD5 | 4 |  |
-
-
-
-<a name="bytebase-v1-SMTPMailDeliverySettingValue-Encryption"></a>
-
-### SMTPMailDeliverySettingValue.Encryption
-We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENCRYPTION_UNSPECIFIED | 0 |  |
-| ENCRYPTION_NONE | 1 |  |
-| ENCRYPTION_STARTTLS | 2 |  |
-| ENCRYPTION_SSL_TLS | 3 |  |
-
-
-
 <a name="bytebase-v1-Setting-SettingName"></a>
 
 ### Setting.SettingName
@@ -5009,7 +4725,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | WATERMARK | 9 |  |
 | AI | 10 |  |
 | PLUGIN_AGENT | 11 |  |
-| WORKSPACE_MAIL_DELIVERY | 12 |  |
 | SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
@@ -10997,6 +10712,210 @@ Type of the SheetPayload.
 | BatchCreateSheets | [BatchCreateSheetsRequest](#bytebase-v1-BatchCreateSheetsRequest) | [BatchCreateSheetsResponse](#bytebase-v1-BatchCreateSheetsResponse) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
+
+ 
+
+
+
+<a name="v1_subscription_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/subscription_service.proto
+
+
+
+<a name="bytebase-v1-GetSubscriptionRequest"></a>
+
+### GetSubscriptionRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-PlanConfig"></a>
+
+### PlanConfig
+PlanConfig represents the configuration for all plans loaded from plan.yaml
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plans | [PlanLimitConfig](#bytebase-v1-PlanLimitConfig) | repeated |  |
+| instance_features | [PlanFeature](#bytebase-v1-PlanFeature) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PlanLimitConfig"></a>
+
+### PlanLimitConfig
+PlanLimitConfig represents a single plan&#39;s configuration
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [PlanType](#bytebase-v1-PlanType) |  |  |
+| maximum_instance_count | [int32](#int32) |  |  |
+| maximum_seat_count | [int32](#int32) |  |  |
+| features | [PlanFeature](#bytebase-v1-PlanFeature) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Subscription"></a>
+
+### Subscription
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| seat_count | [int32](#int32) |  |  |
+| instance_count | [int32](#int32) |  |  |
+| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
+| trialing | [bool](#bool) |  |  |
+| org_name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSubscriptionRequest"></a>
+
+### UpdateSubscriptionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| license | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-PlanFeature"></a>
+
+### PlanFeature
+PlanFeature represents the available features in Bytebase
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FEATURE_UNSPECIFIED | 0 |  |
+| FEATURE_DATABASE_CHANGE | 1 | Database Change Management |
+| FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL | 2 |  |
+| FEATURE_DECLARATIVE_SCHEMA_MIGRATION | 3 |  |
+| FEATURE_COMPARE_AND_SYNC_SCHEMA | 4 |  |
+| FEATURE_ONLINE_SCHEMA_CHANGE | 5 |  |
+| FEATURE_PRE_DEPLOYMENT_SQL_REVIEW | 6 |  |
+| FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES | 7 |  |
+| FEATURE_ONE_CLICK_DATA_ROLLBACK | 8 |  |
+| FEATURE_MULTI_DATABASE_BATCH_CHANGES | 9 |  |
+| FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT | 10 |  |
+| FEATURE_SCHEDULED_ROLLOUT_TIME | 11 |  |
+| FEATURE_DATABASE_CHANGELOG | 12 |  |
+| FEATURE_SCHEMA_DRIFT_DETECTION | 13 |  |
+| FEATURE_CHANGELIST | 14 |  |
+| FEATURE_SCHEMA_TEMPLATE | 15 |  |
+| FEATURE_ROLLOUT_POLICY | 16 |  |
+| FEATURE_WEB_BASED_SQL_EDITOR | 17 | SQL Editor &amp; Development |
+| FEATURE_SQL_EDITOR_ADMIN_MODE | 18 |  |
+| FEATURE_NATURAL_LANGUAGE_TO_SQL | 19 |  |
+| FEATURE_AI_QUERY_EXPLANATION | 20 |  |
+| FEATURE_AI_QUERY_SUGGESTIONS | 21 |  |
+| FEATURE_AUTO_COMPLETE | 22 |  |
+| FEATURE_SCHEMA_DIAGRAM | 23 |  |
+| FEATURE_SCHEMA_EDITOR | 24 |  |
+| FEATURE_DATA_EXPORT | 25 |  |
+| FEATURE_QUERY_HISTORY | 26 |  |
+| FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS | 27 |  |
+| FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION | 28 |  |
+| FEATURE_BATCH_QUERY | 29 |  |
+| FEATURE_INSTANCE_READ_ONLY_CONNECTION | 30 |  |
+| FEATURE_QUERY_POLICY | 31 |  |
+| FEATURE_RESTRICT_COPYING_DATA | 32 |  |
+| FEATURE_IAM | 33 | Security &amp; Compliance |
+| FEATURE_INSTANCE_SSL_CONNECTION | 34 |  |
+| FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL | 35 |  |
+| FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION | 36 |  |
+| FEATURE_GOOGLE_AND_GITHUB_SSO | 37 |  |
+| FEATURE_USER_GROUPS | 38 |  |
+| FEATURE_DISALLOW_SELF_SERVICE_SIGNUP | 39 |  |
+| FEATURE_DATABASE_SECRET_VARIABLES | 40 |  |
+| FEATURE_QUERY_DATASOURCE_RESTRICTION | 41 |  |
+| FEATURE_CUSTOM_INSTANCE_SYNC_TIME | 42 |  |
+| FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT | 43 |  |
+| FEATURE_RISK_ASSESSMENT | 44 |  |
+| FEATURE_APPROVAL_WORKFLOW | 45 |  |
+| FEATURE_AUDIT_LOG | 46 |  |
+| FEATURE_ENTERPRISE_SSO | 47 |  |
+| FEATURE_TWO_FA | 48 |  |
+| FEATURE_PASSWORD_RESTRICTIONS | 49 |  |
+| FEATURE_DISALLOW_PASSWORD_SIGNIN | 50 |  |
+| FEATURE_CUSTOM_ROLES | 51 |  |
+| FEATURE_REQUEST_ROLE_WORKFLOW | 52 |  |
+| FEATURE_DATA_MASKING | 53 |  |
+| FEATURE_DATA_CLASSIFICATION | 54 |  |
+| FEATURE_SCIM | 55 |  |
+| FEATURE_DIRECTORY_SYNC | 56 |  |
+| FEATURE_SIGN_IN_FREQUENCY_CONTROL | 57 |  |
+| FEATURE_EXTERNAL_SECRET_MANAGER | 58 |  |
+| FEATURE_USER_EMAIL_DOMAIN_RESTRICTION | 59 |  |
+| FEATURE_ENVIRONMENT_MANAGEMENT | 60 | Administration &amp; Support |
+| FEATURE_IM_NOTIFICATIONS | 61 |  |
+| FEATURE_TERRAFORM_PROVIDER | 62 |  |
+| FEATURE_DATABASE_GROUPS | 63 |  |
+| FEATURE_ENVIRONMENT_TIERS | 64 |  |
+| FEATURE_DASHBOARD_ANNOUNCEMENT | 65 |  |
+| FEATURE_API_INTEGRATION_GUIDANCE | 66 |  |
+| FEATURE_CUSTOM_LOGO | 67 |  |
+| FEATURE_WATERMARK | 68 |  |
+| FEATURE_ROADMAP_PRIORITIZATION | 69 |  |
+| FEATURE_CUSTOM_MSA | 70 |  |
+| FEATURE_COMMUNITY_SUPPORT | 71 |  |
+| FEATURE_EMAIL_SUPPORT | 72 |  |
+| FEATURE_DEDICATED_SUPPORT_WITH_SLA | 73 |  |
+
+
+
+<a name="bytebase-v1-PlanType"></a>
+
+### PlanType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_TYPE_UNSPECIFIED | 0 |  |
+| FREE | 1 |  |
+| TEAM | 2 |  |
+| ENTERPRISE | 3 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SubscriptionService"></a>
+
+### SubscriptionService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. |
+| UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
 
  
 

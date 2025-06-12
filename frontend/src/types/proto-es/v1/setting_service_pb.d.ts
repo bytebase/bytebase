@@ -4,13 +4,12 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { Duration, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Duration, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { ApprovalTemplate } from "./issue_service_pb";
 import type { Expr } from "../google/type/expr_pb";
 import type { Engine } from "./common_pb";
 import type { ColumnMetadata, TableMetadata } from "./database_service_pb";
 import type { ColumnCatalog, TableCatalog } from "./database_catalog_service_pb";
-import type { PlanType } from "./subscription_service_pb";
 
 /**
  * Describes the file v1/setting_service.proto.
@@ -248,11 +247,6 @@ export enum Setting_SettingName {
   PLUGIN_AGENT = 11,
 
   /**
-   * @generated from enum value: WORKSPACE_MAIL_DELIVERY = 12;
-   */
-  WORKSPACE_MAIL_DELIVERY = 12,
-
-  /**
    * @generated from enum value: SCHEMA_TEMPLATE = 13;
    */
   SCHEMA_TEMPLATE = 13,
@@ -314,12 +308,6 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
     case: "stringValue";
   } | {
     /**
-     * @generated from field: bytebase.v1.SMTPMailDeliverySettingValue smtp_mail_delivery_setting_value = 2;
-     */
-    value: SMTPMailDeliverySettingValue;
-    case: "smtpMailDeliverySettingValue";
-  } | {
-    /**
      * @generated from field: bytebase.v1.AppIMSetting app_im_setting_value = 3;
      */
     value: AppIMSetting;
@@ -342,12 +330,6 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
      */
     value: WorkspaceApprovalSetting;
     case: "workspaceApprovalSettingValue";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.WorkspaceTrialSetting workspace_trial_setting_value = 7;
-     */
-    value: WorkspaceTrialSetting;
-    case: "workspaceTrialSettingValue";
   } | {
     /**
      * @generated from field: bytebase.v1.SchemaTemplateSetting schema_template_setting_value = 9;
@@ -404,156 +386,6 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
  * Use `create(ValueSchema)` to create a new message.
  */
 export declare const ValueSchema: GenMessage<Value>;
-
-/**
- * @generated from message bytebase.v1.SMTPMailDeliverySettingValue
- */
-export declare type SMTPMailDeliverySettingValue = Message<"bytebase.v1.SMTPMailDeliverySettingValue"> & {
-  /**
-   * The SMTP server address.
-   *
-   * @generated from field: string server = 1;
-   */
-  server: string;
-
-  /**
-   * The SMTP server port.
-   *
-   * @generated from field: int32 port = 2;
-   */
-  port: number;
-
-  /**
-   * The SMTP server encryption.
-   *
-   * @generated from field: bytebase.v1.SMTPMailDeliverySettingValue.Encryption encryption = 3;
-   */
-  encryption: SMTPMailDeliverySettingValue_Encryption;
-
-  /**
-   * The CA, KEY, and CERT for the SMTP server.
-   * Not used.
-   *
-   * @generated from field: optional string ca = 4;
-   */
-  ca?: string;
-
-  /**
-   * @generated from field: optional string key = 5;
-   */
-  key?: string;
-
-  /**
-   * @generated from field: optional string cert = 6;
-   */
-  cert?: string;
-
-  /**
-   * @generated from field: bytebase.v1.SMTPMailDeliverySettingValue.Authentication authentication = 7;
-   */
-  authentication: SMTPMailDeliverySettingValue_Authentication;
-
-  /**
-   * @generated from field: string username = 8;
-   */
-  username: string;
-
-  /**
-   * If not specified, server will use the existed password.
-   *
-   * @generated from field: optional string password = 9;
-   */
-  password?: string;
-
-  /**
-   * The sender email address.
-   *
-   * @generated from field: string from = 10;
-   */
-  from: string;
-
-  /**
-   * The recipient email address, used with validate_only to send test email.
-   *
-   * @generated from field: string to = 11;
-   */
-  to: string;
-};
-
-/**
- * Describes the message bytebase.v1.SMTPMailDeliverySettingValue.
- * Use `create(SMTPMailDeliverySettingValueSchema)` to create a new message.
- */
-export declare const SMTPMailDeliverySettingValueSchema: GenMessage<SMTPMailDeliverySettingValue>;
-
-/**
- * We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
- *
- * @generated from enum bytebase.v1.SMTPMailDeliverySettingValue.Encryption
- */
-export enum SMTPMailDeliverySettingValue_Encryption {
-  /**
-   * @generated from enum value: ENCRYPTION_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: ENCRYPTION_NONE = 1;
-   */
-  NONE = 1,
-
-  /**
-   * @generated from enum value: ENCRYPTION_STARTTLS = 2;
-   */
-  STARTTLS = 2,
-
-  /**
-   * @generated from enum value: ENCRYPTION_SSL_TLS = 3;
-   */
-  SSL_TLS = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.SMTPMailDeliverySettingValue.Encryption.
- */
-export declare const SMTPMailDeliverySettingValue_EncryptionSchema: GenEnum<SMTPMailDeliverySettingValue_Encryption>;
-
-/**
- * We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.
- *
- * @generated from enum bytebase.v1.SMTPMailDeliverySettingValue.Authentication
- */
-export enum SMTPMailDeliverySettingValue_Authentication {
-  /**
-   * @generated from enum value: AUTHENTICATION_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: AUTHENTICATION_NONE = 1;
-   */
-  NONE = 1,
-
-  /**
-   * @generated from enum value: AUTHENTICATION_PLAIN = 2;
-   */
-  PLAIN = 2,
-
-  /**
-   * @generated from enum value: AUTHENTICATION_LOGIN = 3;
-   */
-  LOGIN = 3,
-
-  /**
-   * @generated from enum value: AUTHENTICATION_CRAM_MD5 = 4;
-   */
-  CRAM_MD5 = 4,
-}
-
-/**
- * Describes the enum bytebase.v1.SMTPMailDeliverySettingValue.Authentication.
- */
-export declare const SMTPMailDeliverySettingValue_AuthenticationSchema: GenEnum<SMTPMailDeliverySettingValue_Authentication>;
 
 /**
  * @generated from message bytebase.v1.AppIMSetting
@@ -1073,47 +905,6 @@ export declare type SchemaTemplateSetting_TableTemplate = Message<"bytebase.v1.S
  * Use `create(SchemaTemplateSetting_TableTemplateSchema)` to create a new message.
  */
 export declare const SchemaTemplateSetting_TableTemplateSchema: GenMessage<SchemaTemplateSetting_TableTemplate>;
-
-/**
- * @generated from message bytebase.v1.WorkspaceTrialSetting
- */
-export declare type WorkspaceTrialSetting = Message<"bytebase.v1.WorkspaceTrialSetting"> & {
-  /**
-   * @generated from field: int32 instance_count = 1;
-   */
-  instanceCount: number;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp expire_time = 2;
-   */
-  expireTime?: Timestamp;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp issued_time = 3;
-   */
-  issuedTime?: Timestamp;
-
-  /**
-   * @generated from field: string subject = 4;
-   */
-  subject: string;
-
-  /**
-   * @generated from field: string org_name = 5;
-   */
-  orgName: string;
-
-  /**
-   * @generated from field: bytebase.v1.PlanType plan = 6;
-   */
-  plan: PlanType;
-};
-
-/**
- * Describes the message bytebase.v1.WorkspaceTrialSetting.
- * Use `create(WorkspaceTrialSettingSchema)` to create a new message.
- */
-export declare const WorkspaceTrialSettingSchema: GenMessage<WorkspaceTrialSetting>;
 
 /**
  * @generated from message bytebase.v1.DataClassificationSetting
