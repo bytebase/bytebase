@@ -115,7 +115,7 @@
                 <template v-if="resource.type === 'instance'">
                   <span
                     v-if="resource.instance?.environmentEntity"
-                    class="text-sm text-gray-600"
+                    class="text-sm text-gray-500"
                   >
                     ({{ resource.instance.environmentEntity.title }})
                   </span>

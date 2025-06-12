@@ -1034,7 +1034,6 @@
       "multiple-databases": "{count} bases de datos",
       "database-group": "Grupo de bases de datos",
       "database-not-found": "Base de datos no encontrada",
-      "environment": "Entorno: {environment}",
       "type": {
         "instance": "Instancia",
         "database": "Base de datos",
@@ -1472,7 +1471,6 @@
     "unassigned-databases": "Bases de datos no asignadas",
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
     "n-databases": "{n} base de datos | {n} bases de datos",
-    "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
@@ -2592,8 +2590,7 @@
     "permission-denied": "Permiso denegado"
   },
   "review-center": {
-    "self": "Centro de revisión",
-    "review-sql": "Revisar SQL"
+    "self": "Centro de revisión"
   },
   "schema-designer": {
     "use-tips": "Selecciona las tablas a diseñar"

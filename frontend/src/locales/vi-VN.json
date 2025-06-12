@@ -1034,7 +1034,6 @@
       "multiple-databases": "{count} cơ sở dữ liệu",
       "database-group": "Nhóm cơ sở dữ liệu",
       "database-not-found": "Không tìm thấy cơ sở dữ liệu",
-      "environment": "Môi trường: {environment}",
       "type": {
         "instance": "Ví dụ",
         "database": "Cơ sở dữ liệu",
@@ -1472,7 +1471,6 @@
     "unassigned-databases": "Cơ sở dữ liệu chưa được gán",
     "selected-n-databases": "Đã chọn {n} cơ sở dữ liệu | Đã chọn {n} cơ sở dữ liệu",
     "n-databases": "{n} cơ sở dữ liệu | {n} cơ sở dữ liệu",
-    "select-databases-from-same-project": "Vui lòng chọn cơ sở dữ liệu từ cùng một dự án",
     "sync-schema": {
       "title": "Đồng bộ lược đồ",
       "description": "Bytebase hỗ trợ đồng bộ hóa một lược đồ với một hoặc nhiều cơ sở dữ liệu đích. (Chỉ MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
@@ -2592,8 +2590,7 @@
     "permission-denied": "Quyền bị từ chối"
   },
   "review-center": {
-    "self": "Trung tâm đánh giá",
-    "review-sql": "Đánh giá SQL"
+    "self": "Trung tâm đánh giá"
   },
   "schema-designer": {
     "use-tips": "Nhấp vào một bảng để bắt đầu."
