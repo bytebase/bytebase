@@ -198,7 +198,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		defer conn.Close()
 	}
 
-	maximumSQLResultSize := s.store.GetMaximumSQLResultLimit(ctx)
+	maximumSQLResultSize := common.DefaultMaximumSQLResultSize
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
+		maximumSQLResultSize = s.store.GetMaximumSQLResultLimit(ctx)
+	}
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
 		Limit:                int(request.Limit),
