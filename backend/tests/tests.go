@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
@@ -23,6 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 
 	// Import pg driver.
 	// init() in pgx/v5/stdlib will register it's pgx driver.
@@ -76,7 +78,7 @@ type controller struct {
 	sheetServiceClient           v1pb.SheetServiceClient
 	sqlServiceClient             v1pb.SQLServiceClient
 	subscriptionServiceClient    v1pb.SubscriptionServiceClient
-	actuatorServiceClient        v1pb.ActuatorServiceClient
+	actuatorServiceClient        v1connect.ActuatorServiceClient
 	workspaceServiceClient       v1pb.WorkspaceServiceClient
 	releaseServiceClient         v1pb.ReleaseServiceClient
 	revisionServiceClient        v1pb.RevisionServiceClient
@@ -257,7 +259,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
 	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
-	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)
+	ctl.actuatorServiceClient = v1connect.NewActuatorServiceClient(http.DefaultClient, "http://localhost:"+fmt.Sprintf("%d", port))
 	ctl.workspaceServiceClient = v1pb.NewWorkspaceServiceClient(ctl.grpcConn)
 	ctl.releaseServiceClient = v1pb.NewReleaseServiceClient(ctl.grpcConn)
 	ctl.revisionServiceClient = v1pb.NewRevisionServiceClient(ctl.grpcConn)
@@ -285,7 +287,7 @@ func (ctl *controller) waitForHealthz(ctx context.Context) error {
 	for {
 		select {
 		case <-ticker.C:
-			_, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, &v1pb.GetActuatorInfoRequest{})
+			_, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, &connect.Request[v1pb.GetActuatorInfoRequest]{})
 			if err != nil && status.Code(err) == codes.Unavailable {
 				continue
 			}
