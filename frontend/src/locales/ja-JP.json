@@ -181,7 +181,7 @@
     "reason": "理由",
     "date": {
       "days": "{days} 日",
-      "week": "1週間",
+      "week": "1 週間",
       "month": "1 か月",
       "months": "{months} 月",
       "year": "1 年"
