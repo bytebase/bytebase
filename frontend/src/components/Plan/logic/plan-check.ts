@@ -13,7 +13,7 @@ export const planCheckRunListForSpec = (
   spec: Plan_Spec
 ) => {
   const targets = targetsForSpec(spec);
-  const sheet = spec ? sheetNameForSpec(spec) : "";
+  const sheet = sheetNameForSpec(spec);
   return planCheckRunList.filter((check) => {
     if (!targets.includes(check.target)) {
       return false;

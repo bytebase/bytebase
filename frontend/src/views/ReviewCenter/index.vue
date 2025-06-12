@@ -1,5 +1,5 @@
 <template>
-  <div :class="['w-full']">
+  <div v-if="ready" class="w-full">
     <div
       class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
     >
@@ -25,15 +25,11 @@
     <div class="relative w-full mt-4 min-h-[20rem]">
       <PagedTable
         ref="planPagedTable"
-        :session-key="'review-center'"
+        :session-key="`bb.${project.name}.plan-table`"
         :fetch-list="fetchPlanList"
       >
         <template #table="{ list, loading }">
-          <PlanDataTable
-            :loading="loading"
-            :plan-list="list"
-            :show-project="false"
-          />
+          <PlanDataTable :loading="loading" :plan-list="list" />
         </template>
       </PagedTable>
     </div>
@@ -59,12 +55,8 @@ import { targetsForSpec } from "@/components/Plan";
 import AddSpecDrawer from "@/components/Plan/components/AddSpecDrawer.vue";
 import PlanDataTable from "@/components/Plan/components/PlanDataTable";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  useCurrentProjectV1,
-  useCurrentUserV1,
-  useRefreshPlanList,
-} from "@/store";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
+import { useCurrentProjectV1, useCurrentUserV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { buildPlanFindBySearchParams } from "@/store/modules/v1/plan";
 import { isValidDatabaseGroupName } from "@/types";
@@ -91,17 +83,11 @@ interface LocalState {
     | "bb.issue.database.data.update";
 }
 
-const { project } = useCurrentProjectV1();
+const { project, ready } = useCurrentProjectV1();
 const showAddSpecDrawer = ref(false);
 
 const readonlyScopes = computed((): SearchScope[] => {
-  return [
-    {
-      id: "project",
-      value: extractProjectResourceName(project.value.name),
-      readonly: true,
-    },
-  ];
+  return [];
 });
 
 const defaultSearchParams = () => {
@@ -141,14 +127,11 @@ const planSearchParams = computed(() => {
       id: "creator",
       value: currentUser.value.email,
     },
-  ];
-  // If specific project is provided, add project scope.
-  if (project.value) {
-    defaultScopes.push({
+    {
       id: "project",
       value: extractProjectResourceName(project.value.name),
-    });
-  }
+    },
+  ];
   return {
     scopes: [...state.params.scopes, ...defaultScopes],
   } as SearchParams;
@@ -183,7 +166,6 @@ watch(
   () => JSON.stringify(mergedPlanFind.value),
   () => planPagedTable.value?.refresh()
 );
-useRefreshPlanList(() => planPagedTable.value?.refresh());
 
 const allowToCreatePlan = computed(() => {
   // Check if user has permission to create plan in specific project.
@@ -222,11 +204,13 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
     );
   }
 
+  // Navigate to the spec detail page with the created spec.
   router.push({
-    name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.value.name),
       planId: "create",
+      specId: "placeholder", // This will be replaced with the actual spec ID later.
     },
     query,
   });

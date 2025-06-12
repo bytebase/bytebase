@@ -29,6 +29,7 @@
     </div>
     <NDataTable
       key="sso-table"
+      size="small"
       :data="identityProviderList"
       :row-key="(sso: IdentityProvider) => sso.name"
       :columns="columnList"
@@ -102,8 +103,8 @@ const allowGetSSO = computed(() => {
   return hasWorkspacePermissionV2("bb.identityProviders.get");
 });
 
-onMounted(() => {
-  identityProviderStore.fetchIdentityProviderList();
+onMounted(async () => {
+  await identityProviderStore.fetchIdentityProviderList();
   state.isLoading = false;
 });
 

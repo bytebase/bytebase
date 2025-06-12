@@ -5,32 +5,42 @@
         <h3 class="text-base font-medium">{{ $t("plan.targets.title") }}</h3>
         <span class="text-control-light">({{ targets.length }})</span>
       </div>
-      <NButton
-        v-if="allowEdit"
-        size="small"
-        @click="showTargetsSelector = true"
-      >
-        <template #icon>
-          <EditIcon class="w-4 h-4" />
-        </template>
-        {{ $t("common.edit") }}
-      </NButton>
+      <div class="flex items-center gap-1">
+        <NButton
+          v-if="targets.length > DEFAULT_VISIBLE_TARGETS"
+          size="small"
+          quaternary
+          @click="showAllTargetsDrawer = true"
+        >
+          {{
+            $t("plan.targets.view-all", {
+              count: targets.length,
+            })
+          }}
+        </NButton>
+        <NButton
+          v-if="allowEdit"
+          size="small"
+          @click="showTargetsSelector = true"
+        >
+          <template #icon>
+            <EditIcon class="w-4 h-4" />
+          </template>
+          {{ $t("common.edit") }}
+        </NButton>
+      </div>
     </div>
 
     <div class="relative flex-1">
       <div
-        v-if="!paginationState.initialized && paginationState.isRequesting"
+        v-if="isLoadingTargets"
         class="flex items-center justify-center py-8"
       >
         <BBSpin />
       </div>
       <div
         v-else-if="targets.length > 0"
-        ref="targetContainer"
         class="flex flex-wrap gap-2 overflow-y-auto"
-        :style="{
-          'max-height': `${MAX_LIST_HEIGHT}px`,
-        }"
       >
         <div
           v-for="item in tableData"
@@ -61,21 +71,6 @@
             {{ getTypeLabel(item.type) }}
           </div>
         </div>
-
-        <!-- Load More Button -->
-        <div
-          v-if="targets.length > paginationState.index"
-          class="w-full flex items-center justify-end"
-        >
-          <NButton
-            size="small"
-            quaternary
-            :loading="paginationState.isRequesting"
-            @click="loadNextPage"
-          >
-            {{ $t("common.load-more") }}
-          </NButton>
-        </div>
       </div>
       <div v-else class="text-center text-control-light py-8">
         {{ $t("plan.targets.no-targets-found") }}
@@ -88,11 +83,12 @@
       :current-targets="targets"
       @confirm="handleUpdateTargets"
     />
+
+    <AllTargetsDrawer v-model:show="showAllTargetsDrawer" :targets="targets" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn } from "@vueuse/core";
 import {
   ServerIcon,
   DatabaseIcon,
@@ -100,7 +96,7 @@ import {
   EditIcon,
 } from "lucide-vue-next";
 import { NEllipsis, NButton } from "naive-ui";
-import { computed, ref, reactive, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import EngineIcon from "@/components/Icon/EngineIcon.vue";
@@ -113,7 +109,6 @@ import {
   pushNotification,
   batchGetOrFetchDatabases,
 } from "@/store";
-import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import {
   extractInstanceResourceName,
@@ -124,6 +119,7 @@ import {
 } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
+import AllTargetsDrawer from "./AllTargetsDrawer.vue";
 import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
 import { usePlanSpecContext } from "./context";
 
@@ -138,19 +134,7 @@ interface TargetRow {
   engine?: Engine;
 }
 
-interface PaginationState {
-  // Index is the current number of targets to show.
-  index: number;
-  initialized: boolean;
-  isRequesting: boolean;
-}
-
-interface LocalState {
-  pageStatePerSpec: Map<string, PaginationState>;
-}
-
-const MAX_LIST_HEIGHT = 256;
-const TARGETS_PER_PAGE = 16;
+const DEFAULT_VISIBLE_TARGETS = 20;
 
 const { t } = useI18n();
 const { plan, isCreating, events } = usePlanContext();
@@ -160,12 +144,9 @@ const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 const projectStore = useProjectV1Store();
 
-const state = reactive<LocalState>({
-  pageStatePerSpec: new Map<string, PaginationState>(),
-});
-
+const isLoadingTargets = ref(false);
 const showTargetsSelector = ref(false);
-const targetContainer = ref<HTMLDivElement>();
+const showAllTargetsDrawer = ref(false);
 
 const targets = computed(() => {
   if (!selectedSpec.value) return [];
@@ -175,34 +156,6 @@ const targets = computed(() => {
 const isCreateDatabaseSpec = computed(() => {
   return !!selectedSpec.value?.createDatabaseConfig;
 });
-
-// Create a unique key for the spec based on its properties
-const specKey = computed(() => {
-  if (!selectedSpec.value) return "";
-  return JSON.stringify({
-    createDb: !!selectedSpec.value.createDatabaseConfig,
-    changeDb: !!selectedSpec.value.changeDatabaseConfig,
-    exportData: !!selectedSpec.value.exportDataConfig,
-    id: selectedSpec.value.id,
-  });
-});
-
-const paginationState = computed(
-  () =>
-    state.pageStatePerSpec.get(specKey.value) ?? {
-      index: 0,
-      initialized: false,
-      isRequesting: false,
-    }
-);
-
-const updatePaginationState = (patch: Partial<PaginationState>) => {
-  if (!selectedSpec.value) return;
-  state.pageStatePerSpec.set(specKey.value, {
-    ...paginationState.value,
-    ...patch,
-  });
-};
 
 const project = computed(() => {
   if (!plan.value?.name) return undefined;
@@ -217,86 +170,14 @@ const allowEdit = computed(() => {
   return (isCreating.value || plan.value.rollout === "") && selectedSpec.value;
 });
 
-const loadMore = useDebounceFn(async () => {
-  const fromIndex = paginationState.value.index;
-  const toIndex = fromIndex + TARGETS_PER_PAGE;
-  const targetList = targets.value.slice(fromIndex, toIndex);
-
-  if (targetList.length === 0) {
-    updatePaginationState({
-      index: toIndex,
-      initialized: true,
-    });
-    return;
-  }
-
-  // Separate different types of targets for optimized fetching
-  const databaseTargets: string[] = [];
-  const instanceTargets: string[] = [];
-  const dbGroupTargets: string[] = [];
-
-  for (const target of targetList) {
-    if (isCreateDatabaseSpec.value) {
-      instanceTargets.push(target);
-    } else if (target.includes("/databaseGroups/")) {
-      dbGroupTargets.push(target);
-    } else {
-      databaseTargets.push(target);
-    }
-  }
-
-  try {
-    // Use BatchGetDatabases for database targets
-    if (databaseTargets.length > 0) {
-      await batchGetOrFetchDatabases(databaseTargets);
-    }
-
-    // Fetch instances for create database specs
-    const instancePromises = instanceTargets.map((target) => {
-      const instanceResourceName = extractInstanceResourceName(target);
-      return instanceStore.getOrFetchInstanceByName(instanceResourceName);
-    });
-
-    // Fetch database groups
-    const dbGroupPromises = dbGroupTargets.map((target) =>
-      dbGroupStore.getOrFetchDBGroupByName(target)
-    );
-
-    // Wait for all remaining promises
-    await Promise.allSettled([...instancePromises, ...dbGroupPromises]);
-  } catch {
-    // Ignore errors - some targets might not be found
-  } finally {
-    updatePaginationState({
-      index: toIndex,
-      initialized: true,
-    });
-  }
-}, DEBOUNCE_SEARCH_DELAY);
-
-const loadNextPage = async () => {
-  if (paginationState.value.isRequesting) {
-    return;
-  }
-  updatePaginationState({
-    isRequesting: true,
-  });
-  try {
-    await loadMore();
-  } catch {
-    // Ignore errors
-  } finally {
-    updatePaginationState({
-      isRequesting: false,
-    });
-  }
-};
-
 const tableData = computed((): TargetRow[] => {
   if (!selectedSpec.value) return [];
 
-  // Only show targets up to the current pagination index
-  const visibleTargets = targets.value.slice(0, paginationState.value.index);
+  // Show only the first DEFAULT_VISIBLE_TARGETS targets
+  const visibleTargets = targets.value.slice(
+    0,
+    Math.min(DEFAULT_VISIBLE_TARGETS, targets.value.length)
+  );
 
   return visibleTargets.map((target): TargetRow => {
     // For create database spec, target is instance
@@ -396,13 +277,57 @@ const handleUpdateTargets = async (targets: string[]) => {
   }
 };
 
-// Initialize pagination when spec changes
-watch(
-  specKey,
-  async () => {
-    if (!paginationState.value.initialized && targets.value.length > 0) {
-      await loadNextPage();
+// Load target data when targets change
+const loadTargetData = async () => {
+  if (targets.value.length === 0) {
+    return;
+  }
+
+  isLoadingTargets.value = true;
+
+  try {
+    // Fetch data for visible targets only
+    const visibleTargets = targets.value.slice(0, DEFAULT_VISIBLE_TARGETS);
+    const databaseTargets: string[] = [];
+    const instanceTargets: string[] = [];
+    const dbGroupTargets: string[] = [];
+
+    for (const target of visibleTargets) {
+      if (isCreateDatabaseSpec.value) {
+        instanceTargets.push(target);
+      } else if (target.includes("/databaseGroups/")) {
+        dbGroupTargets.push(target);
+      } else {
+        databaseTargets.push(target);
+      }
     }
+
+    if (databaseTargets.length > 0) {
+      await batchGetOrFetchDatabases(databaseTargets);
+    }
+
+    const instancePromises = instanceTargets.map((target) => {
+      const instanceResourceName = extractInstanceResourceName(target);
+      return instanceStore.getOrFetchInstanceByName(instanceResourceName);
+    });
+
+    const dbGroupPromises = dbGroupTargets.map((target) =>
+      dbGroupStore.getOrFetchDBGroupByName(target)
+    );
+
+    await Promise.allSettled([...instancePromises, ...dbGroupPromises]);
+  } catch {
+    // Ignore errors
+  } finally {
+    isLoadingTargets.value = false;
+  }
+};
+
+// Watch for target changes and load data
+watch(
+  targets,
+  () => {
+    loadTargetData();
   },
   { immediate: true }
 );

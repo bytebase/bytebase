@@ -1,4 +1,3 @@
-import { computedAsync } from "@vueuse/core";
 import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
@@ -200,24 +199,10 @@ export const useProjectByName = (name: MaybeRef<string>) => {
 
 export const useCurrentProjectV1 = () => {
   const route = useRoute();
-
-  const project = computedAsync(async () => {
-    if (route.params.projectId) {
-      return await useProjectV1Store().getOrFetchProjectByName(
-        `${projectNamePrefix}${route.params.projectId}`
-      );
-    }
-    return unknownProject();
-  }, unknownProject());
-
-  const isValid = computed(() => {
-    return isValidProjectName(project.value.name);
-  });
-
-  return {
-    project,
-    isValid,
-  };
+  const projectName = computed(
+    () => `${projectNamePrefix}${route.params.projectId}`
+  );
+  return useProjectByName(projectName);
 };
 
 const batchComposeProjectIamPolicy = async (projectList: Project[]) => {

@@ -1027,7 +1027,8 @@
         "instance": "Instance",
         "database": "Database",
         "database-group": "Database Group"
-      }
+      },
+      "view-all": "View all ({count})"
     },
     "options": {
       "self": "Options",

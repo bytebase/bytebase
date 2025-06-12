@@ -895,8 +895,8 @@
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
       "manually-select": "Chọn thủ công",
-      "custom-date-placeholder": "Chọn ngày và giờ hết hạn",
-      "custom-date": "Ngày tùy chỉnh"
+      "custom-date": "Ngày tùy chỉnh",
+      "custom-date-placeholder": "Chọn ngày và giờ hết hạn"
     },
     "review-sent-back": "Đánh giá đã gửi lại",
     "update-statement": {
@@ -1027,7 +1027,8 @@
         "instance": "Ví dụ",
         "database": "Cơ sở dữ liệu",
         "database-group": "Nhóm cơ sở dữ liệu"
-      }
+      },
+      "view-all": "Xem tất cả ({count})"
     },
     "options": {
       "self": "Tùy chọn",

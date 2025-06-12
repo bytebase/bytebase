@@ -1,5 +1,4 @@
 import { orderBy } from "lodash-es";
-import { ref, watch, type WatchCallback } from "vue";
 import {
   issueServiceClient,
   planServiceClient,
@@ -148,12 +147,4 @@ export const experimentalCreateIssueByPlan = async (
   await hooks?.rolloutCreated?.(createdIssue, createdPlan, createdRollout);
 
   return { createdPlan, createdIssue, createdRollout };
-};
-
-const REFRESH_PLAN_LIST = ref(Math.random());
-export const refreshPlanList = () => {
-  REFRESH_PLAN_LIST.value = Math.random();
-};
-export const useRefreshPlanList = (callback: WatchCallback) => {
-  watch(REFRESH_PLAN_LIST, callback);
 };
