@@ -1936,6 +1936,9 @@ func checkAndGetDataSourceQueriable(
 		return dataSource, nil
 	}
 
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION); err != nil {
+		return dataSource, nil
+	}
 	var envAdminDataSourceRestriction, projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
 	environment, err := storeInstance.GetEnvironmentByID(ctx, database.EffectiveEnvironmentID)
 	if err != nil {
