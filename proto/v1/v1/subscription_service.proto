@@ -11,6 +11,9 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service SubscriptionService {
+  // GetSubscription returns the current subscription.
+  // If there is no license, we will return a free plan subscription without expiration time.
+  // If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
   rpc GetSubscription(GetSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {get: "/v1/subscription"};
     option (google.api.method_signature) = "";
@@ -20,7 +23,7 @@ service SubscriptionService {
   rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {
       patch: "/v1/subscription"
-      body: "patch"
+      body: "license"
     };
     option (google.api.method_signature) = "patch";
     option (bytebase.v1.permission) = "bb.settings.set";
@@ -31,7 +34,7 @@ service SubscriptionService {
 message GetSubscriptionRequest {}
 
 message UpdateSubscriptionRequest {
-  PatchSubscription patch = 1;
+  string license = 1;
 }
 
 enum PlanType {
@@ -42,10 +45,6 @@ enum PlanType {
   TEAM = 2;
 
   ENTERPRISE = 3;
-}
-
-message PatchSubscription {
-  string license = 1;
 }
 
 message Subscription {

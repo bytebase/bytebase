@@ -207,7 +207,6 @@
   
 - [v1/subscription_service.proto](#v1_subscription_service-proto)
     - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
-    - [PatchSubscription](#bytebase-v1-PatchSubscription)
     - [PlanConfig](#bytebase-v1-PlanConfig)
     - [PlanLimitConfig](#bytebase-v1-PlanLimitConfig)
     - [Subscription](#bytebase-v1-Subscription)
@@ -3930,21 +3929,6 @@ ANY means approving any node will proceed.
 
 
 
-<a name="bytebase-v1-PatchSubscription"></a>
-
-### PatchSubscription
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| license | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-PlanConfig"></a>
 
 ### PlanConfig
@@ -4007,7 +3991,7 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| patch | [PatchSubscription](#bytebase-v1-PatchSubscription) |  |  |
+| license | [string](#string) |  |  |
 
 
 
@@ -4125,7 +4109,7 @@ PlanFeature represents the available features in Bytebase
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
+| GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. |
 | UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
 
  

@@ -380,7 +380,7 @@ func (*GetSubscriptionRequest) Descriptor() ([]byte, []int) {
 
 type UpdateSubscriptionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Patch         *PatchSubscription     `protobuf:"bytes,1,opt,name=patch,proto3" json:"patch,omitempty"`
+	License       string                 `protobuf:"bytes,1,opt,name=license,proto3" json:"license,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -415,51 +415,7 @@ func (*UpdateSubscriptionRequest) Descriptor() ([]byte, []int) {
 	return file_v1_subscription_service_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *UpdateSubscriptionRequest) GetPatch() *PatchSubscription {
-	if x != nil {
-		return x.Patch
-	}
-	return nil
-}
-
-type PatchSubscription struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	License       string                 `protobuf:"bytes,1,opt,name=license,proto3" json:"license,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PatchSubscription) Reset() {
-	*x = PatchSubscription{}
-	mi := &file_v1_subscription_service_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PatchSubscription) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PatchSubscription) ProtoMessage() {}
-
-func (x *PatchSubscription) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PatchSubscription.ProtoReflect.Descriptor instead.
-func (*PatchSubscription) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *PatchSubscription) GetLicense() string {
+func (x *UpdateSubscriptionRequest) GetLicense() string {
 	if x != nil {
 		return x.License
 	}
@@ -480,7 +436,7 @@ type Subscription struct {
 
 func (x *Subscription) Reset() {
 	*x = Subscription{}
-	mi := &file_v1_subscription_service_proto_msgTypes[3]
+	mi := &file_v1_subscription_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -492,7 +448,7 @@ func (x *Subscription) String() string {
 func (*Subscription) ProtoMessage() {}
 
 func (x *Subscription) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[3]
+	mi := &file_v1_subscription_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -505,7 +461,7 @@ func (x *Subscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Subscription.ProtoReflect.Descriptor instead.
 func (*Subscription) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Subscription) GetSeatCount() int32 {
@@ -561,7 +517,7 @@ type PlanConfig struct {
 
 func (x *PlanConfig) Reset() {
 	*x = PlanConfig{}
-	mi := &file_v1_subscription_service_proto_msgTypes[4]
+	mi := &file_v1_subscription_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -573,7 +529,7 @@ func (x *PlanConfig) String() string {
 func (*PlanConfig) ProtoMessage() {}
 
 func (x *PlanConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[4]
+	mi := &file_v1_subscription_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -586,7 +542,7 @@ func (x *PlanConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig.ProtoReflect.Descriptor instead.
 func (*PlanConfig) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *PlanConfig) GetPlans() []*PlanLimitConfig {
@@ -616,7 +572,7 @@ type PlanLimitConfig struct {
 
 func (x *PlanLimitConfig) Reset() {
 	*x = PlanLimitConfig{}
-	mi := &file_v1_subscription_service_proto_msgTypes[5]
+	mi := &file_v1_subscription_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -628,7 +584,7 @@ func (x *PlanLimitConfig) String() string {
 func (*PlanLimitConfig) ProtoMessage() {}
 
 func (x *PlanLimitConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[5]
+	mi := &file_v1_subscription_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -641,7 +597,7 @@ func (x *PlanLimitConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanLimitConfig.ProtoReflect.Descriptor instead.
 func (*PlanLimitConfig) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *PlanLimitConfig) GetType() PlanType {
@@ -677,10 +633,8 @@ var File_v1_subscription_service_proto protoreflect.FileDescriptor
 const file_v1_subscription_service_proto_rawDesc = "" +
 	"\n" +
 	"\x1dv1/subscription_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
-	"\x16GetSubscriptionRequest\"Q\n" +
-	"\x19UpdateSubscriptionRequest\x124\n" +
-	"\x05patch\x18\x01 \x01(\v2\x1e.bytebase.v1.PatchSubscriptionR\x05patch\"-\n" +
-	"\x11PatchSubscription\x12\x18\n" +
+	"\x16GetSubscriptionRequest\"5\n" +
+	"\x19UpdateSubscriptionRequest\x12\x18\n" +
 	"\alicense\x18\x01 \x01(\tR\alicense\"\x99\x02\n" +
 	"\fSubscription\x12#\n" +
 	"\n" +
@@ -780,10 +734,10 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x12FEATURE_CUSTOM_MSA\x10F\x12\x1d\n" +
 	"\x19FEATURE_COMMUNITY_SUPPORT\x10G\x12\x19\n" +
 	"\x15FEATURE_EMAIL_SUPPORT\x10H\x12&\n" +
-	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10I2\xa3\x02\n" +
+	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10I2\xa5\x02\n" +
 	"\x13SubscriptionService\x12r\n" +
-	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1f\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\x97\x01\n" +
-	"\x12UpdateSubscription\x12&.bytebase.v1.UpdateSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\">\xdaA\x05patch\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x82\xd3\xe4\x93\x02\x19:\x05patch2\x10/v1/subscriptionB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
+	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1f\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\x99\x01\n" +
+	"\x12UpdateSubscription\x12&.bytebase.v1.UpdateSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"@\xdaA\x05patch\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1b:\alicense2\x10/v1/subscriptionB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_subscription_service_proto_rawDescOnce sync.Once
@@ -798,35 +752,33 @@ func file_v1_subscription_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_subscription_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_v1_subscription_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_v1_subscription_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_v1_subscription_service_proto_goTypes = []any{
 	(PlanType)(0),                     // 0: bytebase.v1.PlanType
 	(PlanFeature)(0),                  // 1: bytebase.v1.PlanFeature
 	(*GetSubscriptionRequest)(nil),    // 2: bytebase.v1.GetSubscriptionRequest
 	(*UpdateSubscriptionRequest)(nil), // 3: bytebase.v1.UpdateSubscriptionRequest
-	(*PatchSubscription)(nil),         // 4: bytebase.v1.PatchSubscription
-	(*Subscription)(nil),              // 5: bytebase.v1.Subscription
-	(*PlanConfig)(nil),                // 6: bytebase.v1.PlanConfig
-	(*PlanLimitConfig)(nil),           // 7: bytebase.v1.PlanLimitConfig
-	(*timestamppb.Timestamp)(nil),     // 8: google.protobuf.Timestamp
+	(*Subscription)(nil),              // 4: bytebase.v1.Subscription
+	(*PlanConfig)(nil),                // 5: bytebase.v1.PlanConfig
+	(*PlanLimitConfig)(nil),           // 6: bytebase.v1.PlanLimitConfig
+	(*timestamppb.Timestamp)(nil),     // 7: google.protobuf.Timestamp
 }
 var file_v1_subscription_service_proto_depIdxs = []int32{
-	4, // 0: bytebase.v1.UpdateSubscriptionRequest.patch:type_name -> bytebase.v1.PatchSubscription
-	8, // 1: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
-	0, // 2: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
-	7, // 3: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
-	1, // 4: bytebase.v1.PlanConfig.instance_features:type_name -> bytebase.v1.PlanFeature
-	0, // 5: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
-	1, // 6: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanFeature
-	2, // 7: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
-	3, // 8: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
-	5, // 9: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
-	5, // 10: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
-	9, // [9:11] is the sub-list for method output_type
-	7, // [7:9] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	7, // 0: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
+	0, // 1: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
+	6, // 2: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
+	1, // 3: bytebase.v1.PlanConfig.instance_features:type_name -> bytebase.v1.PlanFeature
+	0, // 4: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
+	1, // 5: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanFeature
+	2, // 6: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
+	3, // 7: bytebase.v1.SubscriptionService.UpdateSubscription:input_type -> bytebase.v1.UpdateSubscriptionRequest
+	4, // 8: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
+	4, // 9: bytebase.v1.SubscriptionService.UpdateSubscription:output_type -> bytebase.v1.Subscription
+	8, // [8:10] is the sub-list for method output_type
+	6, // [6:8] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_v1_subscription_service_proto_init() }
@@ -841,7 +793,7 @@ func file_v1_subscription_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_subscription_service_proto_rawDesc), len(file_v1_subscription_service_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   6,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
