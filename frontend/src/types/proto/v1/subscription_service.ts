@@ -702,10 +702,6 @@ export interface GetSubscriptionRequest {
 }
 
 export interface UpdateSubscriptionRequest {
-  patch: PatchSubscription | undefined;
-}
-
-export interface PatchSubscription {
   license: string;
 }
 
@@ -776,13 +772,13 @@ export const GetSubscriptionRequest: MessageFns<GetSubscriptionRequest> = {
 };
 
 function createBaseUpdateSubscriptionRequest(): UpdateSubscriptionRequest {
-  return { patch: undefined };
+  return { license: "" };
 }
 
 export const UpdateSubscriptionRequest: MessageFns<UpdateSubscriptionRequest> = {
   encode(message: UpdateSubscriptionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.patch !== undefined) {
-      PatchSubscription.encode(message.patch, writer.uint32(10).fork()).join();
+    if (message.license !== "") {
+      writer.uint32(10).string(message.license);
     }
     return writer;
   },
@@ -791,66 +787,6 @@ export const UpdateSubscriptionRequest: MessageFns<UpdateSubscriptionRequest> = 
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpdateSubscriptionRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.patch = PatchSubscription.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdateSubscriptionRequest {
-    return { patch: isSet(object.patch) ? PatchSubscription.fromJSON(object.patch) : undefined };
-  },
-
-  toJSON(message: UpdateSubscriptionRequest): unknown {
-    const obj: any = {};
-    if (message.patch !== undefined) {
-      obj.patch = PatchSubscription.toJSON(message.patch);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<UpdateSubscriptionRequest>): UpdateSubscriptionRequest {
-    return UpdateSubscriptionRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<UpdateSubscriptionRequest>): UpdateSubscriptionRequest {
-    const message = createBaseUpdateSubscriptionRequest();
-    message.patch = (object.patch !== undefined && object.patch !== null)
-      ? PatchSubscription.fromPartial(object.patch)
-      : undefined;
-    return message;
-  },
-};
-
-function createBasePatchSubscription(): PatchSubscription {
-  return { license: "" };
-}
-
-export const PatchSubscription: MessageFns<PatchSubscription> = {
-  encode(message: PatchSubscription, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.license !== "") {
-      writer.uint32(10).string(message.license);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): PatchSubscription {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePatchSubscription();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -871,11 +807,11 @@ export const PatchSubscription: MessageFns<PatchSubscription> = {
     return message;
   },
 
-  fromJSON(object: any): PatchSubscription {
+  fromJSON(object: any): UpdateSubscriptionRequest {
     return { license: isSet(object.license) ? globalThis.String(object.license) : "" };
   },
 
-  toJSON(message: PatchSubscription): unknown {
+  toJSON(message: UpdateSubscriptionRequest): unknown {
     const obj: any = {};
     if (message.license !== "") {
       obj.license = message.license;
@@ -883,11 +819,11 @@ export const PatchSubscription: MessageFns<PatchSubscription> = {
     return obj;
   },
 
-  create(base?: DeepPartial<PatchSubscription>): PatchSubscription {
-    return PatchSubscription.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateSubscriptionRequest>): UpdateSubscriptionRequest {
+    return UpdateSubscriptionRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<PatchSubscription>): PatchSubscription {
-    const message = createBasePatchSubscription();
+  fromPartial(object: DeepPartial<UpdateSubscriptionRequest>): UpdateSubscriptionRequest {
+    const message = createBaseUpdateSubscriptionRequest();
     message.license = object.license ?? "";
     return message;
   },
@@ -1259,6 +1195,11 @@ export const SubscriptionServiceDefinition = {
   name: "SubscriptionService",
   fullName: "bytebase.v1.SubscriptionService",
   methods: {
+    /**
+     * GetSubscription returns the current subscription.
+     * If there is no license, we will return a free plan subscription without expiration time.
+     * If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+     */
     getSubscription: {
       name: "GetSubscription",
       requestType: GetSubscriptionRequest,
@@ -1288,14 +1229,16 @@ export const SubscriptionServiceDefinition = {
           800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
-              25,
+              27,
               58,
-              5,
-              112,
-              97,
-              116,
+              7,
+              108,
+              105,
               99,
-              104,
+              101,
+              110,
+              115,
+              101,
               50,
               16,
               47,

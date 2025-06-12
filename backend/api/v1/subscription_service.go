@@ -44,7 +44,7 @@ func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *v1pb.GetSu
 
 // UpdateSubscription updates the subscription license.
 func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v1pb.UpdateSubscriptionRequest) (*v1pb.Subscription, error) {
-	if err := s.licenseService.StoreLicense(ctx, request.Patch.License); err != nil {
+	if err := s.licenseService.StoreLicense(ctx, request.License); err != nil {
 		if common.ErrorCode(err) == common.Invalid {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
