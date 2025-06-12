@@ -72,13 +72,16 @@
       <label>
         {{ $t("environment.statement-execution.title") }}
       </label>
+      <FeatureBadge
+        :feature="PlanFeature.FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION"
+      />
     </div>
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
           v-model:value="state.dataSourceQueryPolicy.disallowDdl"
           :text="true"
-          :disabled="!allowUpdatePolicy"
+          :disabled="!allowUpdatePolicy || !hasRestrictDDLDMLFeature"
         />
         <span class="textlabel">
           {{ $t("environment.statement-execution.disallow-ddl") }}
@@ -88,7 +91,7 @@
         <Switch
           v-model:value="state.dataSourceQueryPolicy.disallowDml"
           :text="true"
-          :disabled="!allowUpdatePolicy"
+          :disabled="!allowUpdatePolicy || !hasRestrictDDLDMLFeature"
         />
         <span class="textlabel">
           {{ $t("environment.statement-execution.disallow-dml") }}
@@ -176,7 +179,11 @@ const hasRestrictQueryDataSourceFeature = computed(() =>
 );
 
 const hasRestrictCopyingDataFeature = computed(() =>
-  hasFeature(PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION)
+  hasFeature(PlanFeature.FEATURE_RESTRICT_COPYING_DATA)
+);
+
+const hasRestrictDDLDMLFeature = computed(() =>
+  hasFeature(PlanFeature.FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION)
 );
 
 const allowUpdatePolicy = computed(() => {
