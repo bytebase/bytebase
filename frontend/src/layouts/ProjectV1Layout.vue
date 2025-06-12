@@ -63,7 +63,7 @@
 import { UsersIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NSpin } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
-import { computed, h, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
