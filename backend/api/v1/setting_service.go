@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"embed"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -75,11 +74,6 @@ var whitelistSettings = []storepb.SettingName{
 	storepb.SettingName_PASSWORD_RESTRICTION,
 	storepb.SettingName_ENVIRONMENT,
 }
-
-//go:embed mail_templates/testmail/template.html
-//go:embed mail_templates/testmail/statics/logo-full.png
-//go:embed mail_templates/testmail/statics/banner.png
-var testEmailFs embed.FS
 
 // ListSettings lists all settings.
 func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsRequest) (*v1pb.ListSettingsResponse, error) {
