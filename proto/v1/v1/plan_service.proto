@@ -366,6 +366,20 @@ message ListPlanCheckRunsRequest {
 
   // If set to true, only the latest plan check run will be returned.
   bool latest_only = 4;
+
+  // Filter is used to filter plan check runs returned in the list.
+  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+  //
+  // Supported filters:
+  // - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
+  // - result_status: the plan check run result status, support "==" and "in" operator, check the Result.Status enum in the PlanCheckRun message for the values.
+  //
+  // For example:
+  // status in ["DONE", "FAILED"]
+  // status == "RUNNING"
+  // result_status in ["SUCCESS", "ERROR"]
+  // result_status == "WARNING"
+  string filter = 5;
 }
 
 message ListPlanCheckRunsResponse {

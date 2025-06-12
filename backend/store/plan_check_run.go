@@ -61,10 +61,11 @@ type PlanCheckRunMessage struct {
 
 // FindPlanCheckRunMessage is the message for finding plan check runs.
 type FindPlanCheckRunMessage struct {
-	PlanUID *int64
-	UIDs    *[]int
-	Status  *[]PlanCheckRunStatus
-	Type    *[]PlanCheckRunType
+	PlanUID      *int64
+	UIDs         *[]int
+	Status       *[]PlanCheckRunStatus
+	Type         *[]PlanCheckRunType
+	ResultStatus *[]storepb.PlanCheckRunResult_Result_Status
 }
 
 // CreatePlanCheckRuns creates new plan check runs.
@@ -142,6 +143,14 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 	if v := find.Type; v != nil {
 		where = append(where, fmt.Sprintf("plan_check_run.type = ANY($%d)", len(args)+1))
 		args = append(args, *v)
+	}
+	if v := find.ResultStatus; v != nil {
+		statusStrings := make([]string, len(*v))
+		for i, status := range *v {
+			statusStrings[i] = status.String()
+		}
+		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_array_elements(plan_check_run.result->'results') AS elem WHERE elem->>'status' = ANY($%d))", len(args)+1))
+		args = append(args, statusStrings)
 	}
 	query := fmt.Sprintf(`
 SELECT

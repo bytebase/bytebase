@@ -33,5 +33,3 @@ func TestConvertToApprovalNode(t *testing.T) {
 		a.Equal(test.want, got)
 	}
 }
-
-// TODO(p0ny): update tests for isUserReviewer
