@@ -184,7 +184,9 @@ const createStreamingQueryController = () => {
 
       return () => {
         console.debug("teardown");
-        requestSubscription.unsubscribe();
+        if (requestSubscription) {
+          requestSubscription.unsubscribe();
+        }
       };
     });
 
