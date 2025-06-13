@@ -128,7 +128,9 @@ func configureGrpcRouters(
 	}
 
 	// Sort by service name, align with api.bytebase.com.
-	// ActuatorService uses Connect RPC only, no gRPC gateway handler needed
+	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
 	if err := v1pb.RegisterUserServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
