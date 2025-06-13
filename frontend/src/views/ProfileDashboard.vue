@@ -88,7 +88,11 @@
                   {{ displayRoleTitle(role) }}
                 </NTag>
               </div>
-              <router-link :to="'/setting/subscription'" class="normal-link">
+              <router-link
+                v-if="!hasFeature(PlanFeature.FEATURE_IAM)"
+                :to="'/setting/subscription'"
+                class="normal-link"
+              >
                 {{ $t("settings.profile.subscription") }}
               </router-link>
             </dd>
@@ -238,6 +242,7 @@ import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes
 import { SETTING_ROUTE_PROFILE_TWO_FACTOR } from "@/router/dashboard/workspaceSetting";
 import {
   featureToRef,
+  hasFeature,
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,

@@ -28,7 +28,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **Generate**: Run `cd proto && buf generate`
 
 ## Build/Test Commands
-- Backend: `go build -ldflags "-w -s" -p=16 -o ./.air/bytebase ./backend/bin/server/main.go`
+- Backend: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 - Start backend: `PG_URL=postgresql://bbdev@localhost/bbdev go run ./backend/bin/server/main.go --port 8080 --data . --debug`
 - Run a single Go test: `go test -v -count=1 github.com/bytebase/bytebase/backend/path/to/tests -run ^TestFunctionName$`
 - Run two Go tests: `go test -v -count=1 github.com/bytebase/bytebase/backend/path/to/tests -run ^(TestFunctionName|TestFunctionNameTwo)$`
