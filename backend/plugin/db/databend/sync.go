@@ -80,10 +80,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			ifNull(collation_name, ''),
 			column_comment
 		FROM information_schema.columns
-		WHERE table_schema = %s
+		WHERE table_schema = ?
 		ORDER BY table_name, ordinal_position`
-	columnQuery := fmt.Sprintf(columnQuerytmpl, d.databaseName)
-	columnRows, err := d.db.QueryContext(ctx, columnQuery)
+	columnRows, err := d.db.QueryContext(ctx, columnQuerytmpl, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
