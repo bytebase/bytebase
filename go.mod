@@ -42,6 +42,7 @@ require (
 	github.com/cockroachdb/cockroachdb-parser v0.23.2
 	github.com/coreos/go-oidc v2.3.0+incompatible
 	github.com/databricks/databricks-sdk-go v0.71.0
+	github.com/datafuselabs/databend-go v0.7.5
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/github/gh-ost v1.1.7
 	github.com/go-ego/gse v0.80.3
@@ -136,6 +137,7 @@ require (
 	github.com/apache/arrow-go/v18 v18.3.0 // indirect
 	github.com/apache/arrow/go/v15 v15.0.2 // indirect
 	github.com/apache/thrift v0.22.0 // indirect
+	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.77 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.15 // indirect
