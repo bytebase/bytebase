@@ -91,6 +91,7 @@ type controller struct {
 	server                       *server.Server
 	profile                      *component.Profile
 	client                       *http.Client
+	authInterceptor              *authInterceptor
 	issueServiceClient           v1connect.IssueServiceClient
 	rolloutServiceClient         v1connect.RolloutServiceClient
 	planServiceClient            v1connect.PlanServiceClient
@@ -112,7 +113,6 @@ type controller struct {
 	releaseServiceClient         v1connect.ReleaseServiceClient
 	revisionServiceClient        v1connect.RevisionServiceClient
 
-	cookie  string
 	project *v1pb.Project
 
 	rootURL       string
@@ -273,8 +273,8 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		},
 	}
 
-	authInt := &authInterceptor{}
-	interceptors := connect.WithInterceptors(authInt)
+	ctl.authInterceptor = &authInterceptor{}
+	interceptors := connect.WithInterceptors(ctl.authInterceptor)
 
 	baseURL := "http://localhost:" + fmt.Sprintf("%d", port)
 	ctl.issueServiceClient = v1connect.NewIssueServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
@@ -305,7 +305,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	if err != nil {
 		return nil, err
 	}
-	authInt.token = authToken
+	ctl.authInterceptor.token = authToken
 
 	return ctx, nil
 }
@@ -375,6 +375,5 @@ func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
 		return "", err
 	}
 	ctl.principalName = userResp.Msg.Name
-	ctl.cookie = fmt.Sprintf("access-token=%s", loginResp.Msg.Token)
 	return loginResp.Msg.Token, nil
 }

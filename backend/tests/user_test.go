@@ -7,7 +7,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/bytebase/bytebase/backend/common"
 
@@ -111,11 +110,7 @@ func TestDeleteUser(t *testing.T) {
 		Password: "1024bytebase",
 	}))
 	a.NoError(err)
-	ctl.cookie = fmt.Sprintf("access-token=%s", resp.Msg.Token)
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(
-		"Authorization",
-		fmt.Sprintf("Bearer %s", resp.Msg.Token),
-	))
+	ctl.authInterceptor.token = resp.Msg.Token
 
 	// Test: check allUser in the binding
 	for _, binding := range newPolicy.Bindings {
