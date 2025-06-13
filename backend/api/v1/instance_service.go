@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
@@ -31,11 +32,12 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // InstanceService implements the instance service.
 type InstanceService struct {
-	v1pb.UnimplementedInstanceServiceServer
+	v1connect.UnimplementedInstanceServiceHandler
 	store          *store.Store
 	licenseService *enterprise.LicenseService
 	metricReporter *metricreport.Reporter
@@ -59,12 +61,16 @@ func NewInstanceService(store *store.Store, licenseService *enterprise.LicenseSe
 }
 
 // GetInstance gets an instance.
-func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInstanceRequest) (*v1pb.Instance, error) {
-	instance, err := getInstanceMessage(ctx, s.store, request.Name)
+func (s *InstanceService) GetInstance(ctx context.Context, req *connect.Request[v1pb.GetInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
+	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
-	return convertInstanceMessage(instance)
+	result, err := convertInstanceMessage(instance)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
@@ -196,10 +202,10 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 }
 
 // ListInstances lists all instances.
-func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListInstancesRequest) (*v1pb.ListInstancesResponse, error) {
+func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Request[v1pb.ListInstancesRequest]) (*connect.Response[v1pb.ListInstancesResponse], error) {
 	offset, err := parseLimitAndOffset(&pageSize{
-		token:   request.PageToken,
-		limit:   int(request.PageSize),
+		token:   req.Msg.PageToken,
+		limit:   int(req.Msg.PageSize),
 		maximum: 1000,
 	})
 	if err != nil {
@@ -208,11 +214,11 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindInstanceMessage{
-		ShowDeleted: request.ShowDeleted,
+		ShowDeleted: req.Msg.ShowDeleted,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 	}
-	filter, err := parseListInstanceFilter(request.Filter)
+	filter, err := parseListInstanceFilter(req.Msg.Filter)
 	if err != nil {
 		return nil, err
 	}
@@ -240,24 +246,24 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 		}
 		response.Instances = append(response.Instances, ins)
 	}
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // ListInstanceDatabase list all databases in the instance.
-func (s *InstanceService) ListInstanceDatabase(ctx context.Context, request *v1pb.ListInstanceDatabaseRequest) (*v1pb.ListInstanceDatabaseResponse, error) {
+func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect.Request[v1pb.ListInstanceDatabaseRequest]) (*connect.Response[v1pb.ListInstanceDatabaseResponse], error) {
 	var instanceMessage *store.InstanceMessage
 
-	if request.Instance != nil {
-		instanceID, err := common.GetInstanceID(request.Name)
+	if req.Msg.Instance != nil {
+		instanceID, err := common.GetInstanceID(req.Msg.Name)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if instanceMessage, err = convertInstanceToInstanceMessage(instanceID, request.Instance); err != nil {
+		if instanceMessage, err = convertInstanceToInstanceMessage(instanceID, req.Msg.Instance); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	} else {
-		instance, err := getInstanceMessage(ctx, s.store, request.Name)
+		instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -273,29 +279,29 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, request *v1p
 	for _, database := range instanceMeta.Databases {
 		response.Databases = append(response.Databases, database.Name)
 	}
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // CreateInstance creates an instance.
-func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.CreateInstanceRequest) (*v1pb.Instance, error) {
-	if request.Instance == nil {
+func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Request[v1pb.CreateInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
+	if req.Msg.Instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}
-	if !isValidResourceID(request.InstanceId) {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", request.InstanceId)
+	if !isValidResourceID(req.Msg.InstanceId) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", req.Msg.InstanceId)
 	}
 
 	if err := s.instanceCountGuard(ctx); err != nil {
 		return nil, err
 	}
 
-	instanceMessage, err := convertInstanceToInstanceMessage(request.InstanceId, request.Instance)
+	instanceMessage, err := convertInstanceToInstanceMessage(req.Msg.InstanceId, req.Msg.Instance)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// Test connection.
-	if request.ValidateOnly {
+	if req.Msg.ValidateOnly {
 		for _, ds := range instanceMessage.Metadata.GetDataSources() {
 			err := func() error {
 				driver, err := s.dbFactory.GetDataSourceDriver(
@@ -318,7 +324,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 			}
 		}
 
-		return convertInstanceMessage(instanceMessage)
+		result, err := convertInstanceMessage(instanceMessage)
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(result), nil
 	}
 
 	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx)
@@ -364,7 +374,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		},
 	})
 
-	return convertInstanceMessage(instance)
+	result, err := convertInstanceMessage(instance)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 func (s *InstanceService) checkInstanceDataSources(instance *store.InstanceMessage, dataSources []*storepb.DataSource) error {
@@ -404,20 +418,20 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 }
 
 // UpdateInstance updates an instance.
-func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.UpdateInstanceRequest) (*v1pb.Instance, error) {
-	if request.Instance == nil {
+func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Request[v1pb.UpdateInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
+	if req.Msg.Instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}
-	if request.UpdateMask == nil {
+	if req.Msg.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instance, err := getInstanceMessage(ctx, s.store, request.Instance.Name)
+	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Instance.Name)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Instance.Name)
 	}
 
 	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
@@ -429,12 +443,12 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		Metadata:   metadata,
 	}
 	updateActivation := false
-	for _, path := range request.UpdateMask.Paths {
+	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "title":
-			patch.Metadata.Title = request.Instance.Title
+			patch.Metadata.Title = req.Msg.Instance.Title
 		case "environment":
-			environmentID, err := common.GetEnvironmentID(request.Instance.Environment)
+			environmentID, err := common.GetEnvironmentID(req.Msg.Instance.Environment)
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -447,9 +461,9 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			}
 			patch.EnvironmentID = &environmentID
 		case "external_link":
-			patch.Metadata.ExternalLink = request.Instance.ExternalLink
+			patch.Metadata.ExternalLink = req.Msg.Instance.ExternalLink
 		case "data_sources":
-			dataSources, err := convertV1DataSources(request.Instance.DataSources)
+			dataSources, err := convertV1DataSources(req.Msg.Instance.DataSources)
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -458,22 +472,22 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			}
 			patch.Metadata.DataSources = dataSources
 		case "activation":
-			if !instance.Metadata.GetActivation() && request.Instance.Activation {
+			if !instance.Metadata.GetActivation() && req.Msg.Instance.Activation {
 				updateActivation = true
 			}
-			patch.Metadata.Activation = request.Instance.Activation
+			patch.Metadata.Activation = req.Msg.Instance.Activation
 		case "sync_interval":
 			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
-			patch.Metadata.SyncInterval = request.Instance.SyncInterval
+			patch.Metadata.SyncInterval = req.Msg.Instance.SyncInterval
 		case "maximum_connections":
 			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
-			patch.Metadata.MaximumConnections = request.Instance.MaximumConnections
+			patch.Metadata.MaximumConnections = req.Msg.Instance.MaximumConnections
 		case "sync_databases":
-			patch.Metadata.SyncDatabases = request.Instance.SyncDatabases
+			patch.Metadata.SyncDatabases = req.Msg.Instance.SyncDatabases
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
@@ -494,24 +508,28 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return convertInstanceMessage(ins)
+	result, err := convertInstanceMessage(ins)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // DeleteInstance deletes an instance.
-func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.DeleteInstanceRequest) (*emptypb.Empty, error) {
-	instance, err := getInstanceMessage(ctx, s.store, request.Name)
+func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Request[v1pb.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error) {
+	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
 		return nil, err
 	}
-	if request.Force {
+	if req.Msg.Force {
 		if len(databases) > 0 {
 			defaultProjectID := common.DefaultProjectID
 			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProjectID}); err != nil {
@@ -543,17 +561,17 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &emptypb.Empty{}, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 // UndeleteInstance undeletes an instance.
-func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.UndeleteInstanceRequest) (*v1pb.Instance, error) {
-	instance, err := getInstanceMessage(ctx, s.store, request.Name)
+func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Request[v1pb.UndeleteInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
+	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
 	if !instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q is active", request.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q is active", req.Msg.Name)
 	}
 
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
@@ -564,24 +582,28 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return convertInstanceMessage(ins)
+	result, err := convertInstanceMessage(ins)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // SyncInstance syncs the instance.
-func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncInstanceRequest) (*v1pb.SyncInstanceResponse, error) {
-	instance, err := getInstanceMessage(ctx, s.store, request.Name)
+func (s *InstanceService) SyncInstance(ctx context.Context, req *connect.Request[v1pb.SyncInstanceRequest]) (*connect.Response[v1pb.SyncInstanceResponse], error) {
+	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
 	}
 
 	updatedInstance, allDatabases, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 	if err != nil {
 		return nil, err
 	}
-	if request.EnableFullSync {
+	if req.Msg.EnableFullSync {
 		// Sync all databases in the instance asynchronously.
 		s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
 	} else {
@@ -592,12 +614,12 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 	for _, database := range allDatabases {
 		response.Databases = append(response.Databases, database.Name)
 	}
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // BatchSyncInstances syncs multiple instances.
-func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.BatchSyncInstancesRequest) (*v1pb.BatchSyncInstancesResponse, error) {
-	for _, r := range request.Requests {
+func (s *InstanceService) BatchSyncInstances(ctx context.Context, req *connect.Request[v1pb.BatchSyncInstancesRequest]) (*connect.Response[v1pb.BatchSyncInstancesResponse], error) {
+	for _, r := range req.Msg.Requests {
 		instance, err := getInstanceMessage(ctx, s.store, r.Name)
 		if err != nil {
 			return nil, err
@@ -618,46 +640,46 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.
 		}
 	}
 
-	return &v1pb.BatchSyncInstancesResponse{}, nil
+	return connect.NewResponse(&v1pb.BatchSyncInstancesResponse{}), nil
 }
 
 // BatchUpdateInstances update multiple instances.
-func (s *InstanceService) BatchUpdateInstances(ctx context.Context, request *v1pb.BatchUpdateInstancesRequest) (*v1pb.BatchUpdateInstancesResponse, error) {
+func (s *InstanceService) BatchUpdateInstances(ctx context.Context, req *connect.Request[v1pb.BatchUpdateInstancesRequest]) (*connect.Response[v1pb.BatchUpdateInstancesResponse], error) {
 	response := &v1pb.BatchUpdateInstancesResponse{}
-	for _, req := range request.GetRequests() {
-		updated, err := s.UpdateInstance(ctx, req)
+	for _, updateReq := range req.Msg.GetRequests() {
+		updated, err := s.UpdateInstance(ctx, connect.NewRequest(updateReq))
 		if err != nil {
 			return nil, err
 		}
-		response.Instances = append(response.Instances, updated)
+		response.Instances = append(response.Instances, updated.Msg)
 	}
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // AddDataSource adds a data source to an instance.
-func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDataSourceRequest) (*v1pb.Instance, error) {
-	if request.DataSource == nil {
+func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Request[v1pb.AddDataSourceRequest]) (*connect.Response[v1pb.Instance], error) {
+	if req.Msg.DataSource == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
 	}
 	// We only support add RO type datasouce to instance now, see more details in instance_service.proto.
-	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
+	if req.Msg.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
 		return nil, status.Errorf(codes.InvalidArgument, "only support adding read-only data source")
 	}
 
-	dataSource, err := convertV1DataSource(request.DataSource)
+	dataSource, err := convertV1DataSource(req.Msg.DataSource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
 
-	instance, err := getInstanceMessage(ctx, s.store, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
 	}
 	for _, ds := range instance.Metadata.GetDataSources() {
-		if ds.GetId() == request.DataSource.Id {
+		if ds.GetId() == req.Msg.DataSource.Id {
 			return nil, status.Errorf(codes.NotFound, "data source already exists with the same name")
 		}
 	}
@@ -666,7 +688,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	}
 
 	// Test connection.
-	if request.ValidateOnly {
+	if req.Msg.ValidateOnly {
 		err := func() error {
 			driver, err := s.dbFactory.GetDataSourceDriver(
 				ctx, instance, dataSource,
@@ -686,7 +708,11 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		if err != nil {
 			return nil, err
 		}
-		return convertInstanceMessage(instance)
+		result, err := convertInstanceMessage(instance)
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(result), nil
 	}
 
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
@@ -706,24 +732,28 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return convertInstanceMessage(instance)
+	result, err := convertInstanceMessage(instance)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // UpdateDataSource updates a data source of an instance.
-func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
-	if request.DataSource == nil {
+func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Request[v1pb.UpdateDataSourceRequest]) (*connect.Response[v1pb.Instance], error) {
+	if req.Msg.DataSource == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "datasource is required")
 	}
-	if request.UpdateMask == nil {
+	if req.Msg.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instance, err := getInstanceMessage(ctx, s.store, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
 	}
 	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
@@ -731,13 +761,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 	var dataSource *storepb.DataSource
 	for _, ds := range metadata.GetDataSources() {
-		if ds.GetId() == request.DataSource.Id {
+		if ds.GetId() == req.Msg.DataSource.Id {
 			dataSource = ds
 			break
 		}
 	}
 	if dataSource == nil {
-		return nil, status.Errorf(codes.NotFound, `cannot found data source "%s"`, request.DataSource.Id)
+		return nil, status.Errorf(codes.NotFound, `cannot found data source "%s"`, req.Msg.DataSource.Id)
 	}
 
 	if dataSource.GetType() == storepb.DataSourceType_READ_ONLY {
@@ -746,79 +776,79 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		}
 	}
 
-	for _, path := range request.UpdateMask.Paths {
+	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "username":
-			dataSource.Username = request.DataSource.Username
+			dataSource.Username = req.Msg.DataSource.Username
 		case "password":
-			dataSource.Password = request.DataSource.Password
+			dataSource.Password = req.Msg.DataSource.Password
 		case "ssl_ca":
-			dataSource.SslCa = request.DataSource.SslCa
+			dataSource.SslCa = req.Msg.DataSource.SslCa
 		case "ssl_cert":
-			dataSource.SslCert = request.DataSource.SslCert
+			dataSource.SslCert = req.Msg.DataSource.SslCert
 		case "ssl_key":
-			dataSource.SslKey = request.DataSource.SslKey
+			dataSource.SslKey = req.Msg.DataSource.SslKey
 		case "host":
-			dataSource.Host = request.DataSource.Host
+			dataSource.Host = req.Msg.DataSource.Host
 		case "port":
-			dataSource.Port = request.DataSource.Port
+			dataSource.Port = req.Msg.DataSource.Port
 		case "database":
-			dataSource.Database = request.DataSource.Database
+			dataSource.Database = req.Msg.DataSource.Database
 		case "srv":
-			dataSource.Srv = request.DataSource.Srv
+			dataSource.Srv = req.Msg.DataSource.Srv
 		case "authentication_database":
-			dataSource.AuthenticationDatabase = request.DataSource.AuthenticationDatabase
+			dataSource.AuthenticationDatabase = req.Msg.DataSource.AuthenticationDatabase
 		case "sid":
-			dataSource.Sid = request.DataSource.Sid
+			dataSource.Sid = req.Msg.DataSource.Sid
 		case "service_name":
-			dataSource.ServiceName = request.DataSource.ServiceName
+			dataSource.ServiceName = req.Msg.DataSource.ServiceName
 		case "ssh_host":
-			dataSource.SshHost = request.DataSource.SshHost
+			dataSource.SshHost = req.Msg.DataSource.SshHost
 		case "ssh_port":
-			dataSource.SshPort = request.DataSource.SshPort
+			dataSource.SshPort = req.Msg.DataSource.SshPort
 		case "ssh_user":
-			dataSource.SshUser = request.DataSource.SshUser
+			dataSource.SshUser = req.Msg.DataSource.SshUser
 		case "ssh_password":
-			dataSource.SshPassword = request.DataSource.SshPassword
+			dataSource.SshPassword = req.Msg.DataSource.SshPassword
 		case "ssh_private_key":
-			dataSource.SshPrivateKey = request.DataSource.SshPrivateKey
+			dataSource.SshPrivateKey = req.Msg.DataSource.SshPrivateKey
 		case "authentication_private_key":
-			dataSource.AuthenticationPrivateKey = request.DataSource.AuthenticationPrivateKey
+			dataSource.AuthenticationPrivateKey = req.Msg.DataSource.AuthenticationPrivateKey
 		case "external_secret":
-			externalSecret, err := convertV1DataSourceExternalSecret(request.DataSource.ExternalSecret)
+			externalSecret, err := convertV1DataSourceExternalSecret(req.Msg.DataSource.ExternalSecret)
 			if err != nil {
 				return nil, err
 			}
 			dataSource.ExternalSecret = externalSecret
 		case "sasl_config":
-			dataSource.SaslConfig = convertV1DataSourceSaslConfig(request.DataSource.SaslConfig)
+			dataSource.SaslConfig = convertV1DataSourceSaslConfig(req.Msg.DataSource.SaslConfig)
 		case "authentication_type":
-			dataSource.AuthenticationType = convertV1AuthenticationType(request.DataSource.AuthenticationType)
+			dataSource.AuthenticationType = convertV1AuthenticationType(req.Msg.DataSource.AuthenticationType)
 		case "additional_addresses":
-			dataSource.AdditionalAddresses = convertAdditionalAddresses(request.DataSource.AdditionalAddresses)
+			dataSource.AdditionalAddresses = convertAdditionalAddresses(req.Msg.DataSource.AdditionalAddresses)
 		case "replica_set":
-			dataSource.ReplicaSet = request.DataSource.ReplicaSet
+			dataSource.ReplicaSet = req.Msg.DataSource.ReplicaSet
 		case "direct_connection":
-			dataSource.DirectConnection = request.DataSource.DirectConnection
+			dataSource.DirectConnection = req.Msg.DataSource.DirectConnection
 		case "region":
-			dataSource.Region = request.DataSource.Region
+			dataSource.Region = req.Msg.DataSource.Region
 		case "warehouse_id":
-			dataSource.WarehouseId = request.DataSource.WarehouseId
+			dataSource.WarehouseId = req.Msg.DataSource.WarehouseId
 		case "use_ssl":
-			dataSource.UseSsl = request.DataSource.UseSsl
+			dataSource.UseSsl = req.Msg.DataSource.UseSsl
 		case "redis_type":
-			dataSource.RedisType = convertV1RedisType(request.DataSource.RedisType)
+			dataSource.RedisType = convertV1RedisType(req.Msg.DataSource.RedisType)
 		case "master_name":
-			dataSource.MasterName = request.DataSource.MasterName
+			dataSource.MasterName = req.Msg.DataSource.MasterName
 		case "master_username":
-			dataSource.MasterUsername = request.DataSource.MasterUsername
+			dataSource.MasterUsername = req.Msg.DataSource.MasterUsername
 		case "master_password":
-			dataSource.MasterPassword = request.DataSource.MasterPassword
+			dataSource.MasterPassword = req.Msg.DataSource.MasterPassword
 		case "extra_connection_parameters":
-			dataSource.ExtraConnectionParameters = request.DataSource.ExtraConnectionParameters
+			dataSource.ExtraConnectionParameters = req.Msg.DataSource.ExtraConnectionParameters
 		case "iam_extension", "client_secret_credential":
 			// TODO(zp): Remove the hack while frontend use new oneof artifact.
-			if v := request.DataSource.IamExtension; v != nil {
+			if v := req.Msg.DataSource.IamExtension; v != nil {
 				switch v := v.(type) {
 				case *v1pb.DataSource_ClientSecretCredential_:
 					dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
@@ -839,7 +869,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	// Test connection.
-	if request.ValidateOnly {
+	if req.Msg.ValidateOnly {
 		err := func() error {
 			driver, err := s.dbFactory.GetDataSourceDriver(
 				ctx, instance, dataSource,
@@ -857,28 +887,36 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		if err != nil {
 			return nil, err
 		}
-		return convertInstanceMessage(instance)
+		result, err := convertInstanceMessage(instance)
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(result), nil
 	}
 
 	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return convertInstanceMessage(instance)
+	result, err := convertInstanceMessage(instance)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // RemoveDataSource removes a data source to an instance.
-func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
-	if request.DataSource == nil {
+func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Request[v1pb.RemoveDataSourceRequest]) (*connect.Response[v1pb.Instance], error) {
+	if req.Msg.DataSource == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
 	}
 
-	instance, err := getInstanceMessage(ctx, s.store, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
 	}
 
 	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
@@ -888,7 +926,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	var updatedDataSources []*storepb.DataSource
 	var dataSource *storepb.DataSource
 	for _, ds := range instance.Metadata.GetDataSources() {
-		if ds.GetId() == request.DataSource.Id {
+		if ds.GetId() == req.Msg.DataSource.Id {
 			dataSource = ds
 		} else {
 			updatedDataSources = append(updatedDataSources, ds)
@@ -916,7 +954,11 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return convertInstanceMessage(instance)
+	result, err := convertInstanceMessage(instance)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {

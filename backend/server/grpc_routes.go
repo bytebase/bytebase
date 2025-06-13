@@ -113,22 +113,36 @@ func configureGrpcRouters(
 	rolePath, roleHandler := v1connect.NewRoleServiceHandler(roleService)
 	connectHandlers[rolePath] = withCORS(roleHandler)
 
+	// Phase 3 services migrated to Connect RPC
+	projectService := apiv1.NewProjectService(stores, profile, iamManager, licenseService)
+	projectPath, projectHandler := v1connect.NewProjectServiceHandler(projectService)
+	connectHandlers[projectPath] = withCORS(projectHandler)
+
+	instanceService := apiv1.NewInstanceService(stores, licenseService, metricReporter, stateCfg, dbFactory, schemaSyncer, iamManager)
+	instancePath, instanceHandler := v1connect.NewInstanceServiceHandler(instanceService)
+	connectHandlers[instancePath] = withCORS(instanceHandler)
+
+	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager)
+	databasePath, databaseHandler := v1connect.NewDatabaseServiceHandler(databaseService)
+	connectHandlers[databasePath] = withCORS(databaseHandler)
+
+	databaseGroupService := apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService)
+	databaseGroupPath, databaseGroupHandler := v1connect.NewDatabaseGroupServiceHandler(databaseGroupService)
+	connectHandlers[databaseGroupPath] = withCORS(databaseGroupHandler)
+
+	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
+	groupPath, groupHandler := v1connect.NewGroupServiceHandler(groupService)
+	connectHandlers[groupPath] = withCORS(groupHandler)
+
 	// Register services.
 	v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(
 		stores,
 		profile,
 		metricReporter,
 		licenseService))
-	v1pb.RegisterInstanceServiceServer(grpcServer, apiv1.NewInstanceService(
-		stores,
-		licenseService,
-		metricReporter,
-		stateCfg,
-		dbFactory,
-		schemaSyncer,
-		iamManager))
-	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, profile, iamManager, licenseService))
-	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager))
+	// InstanceService is now handled by Connect RPC
+	// ProjectService is now handled by Connect RPC
+	// DatabaseService is now handled by Connect RPC
 	v1pb.RegisterDatabaseCatalogServiceServer(grpcServer, apiv1.NewDatabaseCatalogService(stores, licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
@@ -146,9 +160,9 @@ func configureGrpcRouters(
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
 	// RoleService is now handled by Connect RPC
 	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile))
-	v1pb.RegisterDatabaseGroupServiceServer(grpcServer, apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService))
+	// DatabaseGroupService is now handled by Connect RPC
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
-	v1pb.RegisterGroupServiceServer(grpcServer, apiv1.NewGroupService(stores, iamManager, licenseService))
+	// GroupService is now handled by Connect RPC
 	v1pb.RegisterReviewConfigServiceServer(grpcServer, apiv1.NewReviewConfigService(stores, licenseService))
 
 	// REST gateway proxy.
@@ -173,28 +187,20 @@ func configureGrpcRouters(
 	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterDatabaseGroupServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterDatabaseServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// DatabaseGroupService is now handled by Connect RPC
+	// DatabaseService is now handled by Connect RPC
 	// RevisionService is now handled by Connect RPC
 	if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterGroupServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// GroupService is now handled by Connect RPC
 	if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterInstanceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// InstanceService is now handled by Connect RPC
 	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
@@ -204,9 +210,7 @@ func configureGrpcRouters(
 	if err := v1pb.RegisterPlanServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// ProjectService is now handled by Connect RPC
 	if err := v1pb.RegisterReviewConfigServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
