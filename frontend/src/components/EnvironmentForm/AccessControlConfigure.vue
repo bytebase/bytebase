@@ -29,7 +29,7 @@
             $t("environment.access-control.restrict-admin-connection.self")
           }}</span>
           <FeatureBadge
-            :feature="PlanFeature.PlanFeature_FEATURE_QUERY_POLICY"
+            :feature="PlanFeature.FEATURE_QUERY_POLICY"
           />
         </div>
         <div v-if="adminDataSourceQueryRestrictionEnabled" class="ml-12">
@@ -175,7 +175,7 @@ const adminDataSourceQueryRestrictionEnabled = computed(() => {
 });
 
 const hasRestrictQueryDataSourceFeature = computed(() =>
-  hasFeature(PlanFeature.PlanFeature_FEATURE_QUERY_POLICY)
+  hasFeature(PlanFeature.FEATURE_QUERY_POLICY)
 );
 
 const hasRestrictCopyingDataFeature = computed(() =>
