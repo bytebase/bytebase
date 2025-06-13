@@ -1934,6 +1934,7 @@
     },
     "upload-file": "Upload file",
     "copy-selected-results": "Copy selected data by {action} or {button}",
+    "cancel-selection": "Cancel selection",
     "format-default": "Default",
     "column-display-format": "Column Display Format",
     "next-row": "Next Row",

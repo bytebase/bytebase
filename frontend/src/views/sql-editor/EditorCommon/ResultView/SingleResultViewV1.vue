@@ -137,7 +137,6 @@
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :is-column-missing-sensitive="isColumnMissingSensitive"
-        :column-type-names="props.result.columnTypeNames"
       />
     </div>
 
@@ -390,7 +389,7 @@ const columns = computed(() => {
         header: columnName,
         meta: {
           // Store column type in meta for easy access by other components
-          columnType: columnType,
+          columnType,
         },
         sortingFn: (rowA, rowB) => {
           return compareQueryRowValues(
@@ -405,11 +404,10 @@ const columns = computed(() => {
 });
 
 const data = computed(() => {
-  const data = props.result.rows;
+  let temp = props.result.rows;
   const search = keyword.value.trim().toLowerCase();
-  let temp = data;
   if (search) {
-    temp = data.filter((item) => {
+    temp = temp.filter((item) => {
       return item.values.some((col) => {
         const value = extractSQLRowValuePlain(col);
         if (isNullOrUndefined(value)) {

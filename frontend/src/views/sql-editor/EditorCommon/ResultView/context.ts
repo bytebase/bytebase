@@ -6,14 +6,15 @@ export type SQLResultViewContext = {
   dark: Ref<boolean>;
   disallowCopyingData: Ref<boolean>;
   keyword: Ref<string>;
-  columnTypeNames?: Ref<string[] | undefined>; // Column type names from QueryResult
-  detail: Ref<{
-    show: boolean;
-    set: number; // The index of selected result set.
-    row: number; // The row index of selected record.
-    col: number; // The column index of selected cell.
-    table: Table<QueryRow> | undefined;
-  }>;
+  detail: Ref<
+    | {
+        set: number; // The index of selected result set.
+        row: number; // The row index of selected record.
+        col: number; // The column index of selected cell.
+        table: Table<QueryRow>;
+      }
+    | undefined
+  >;
 };
 
 export const KEY = Symbol(
