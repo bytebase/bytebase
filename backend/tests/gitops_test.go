@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
@@ -22,14 +23,15 @@ func TestGitOpsCheck(t *testing.T) {
 
 	// Create a project for GitOps testing.
 	projectID := generateRandomString("gitops-check", 10)
-	project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
 			Title: projectID,
 		},
 		ProjectId: projectID,
-	})
+	}))
 	a.NoError(err)
+	project := projectResp.Msg
 
 	// Provision test and prod instances.
 	instanceRootDir := t.TempDir()
@@ -41,7 +43,7 @@ func TestGitOpsCheck(t *testing.T) {
 	a.NoError(err)
 
 	// Add the provisioned instances.
-	testInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-test",
@@ -50,10 +52,11 @@ func TestGitOpsCheck(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	testInstance := testInstanceResp.Msg
 
-	prodInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	prodInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-prod",
@@ -62,8 +65,9 @@ func TestGitOpsCheck(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	prodInstance := prodInstanceResp.Msg
 
 	// Create databases.
 	databaseName := "gitops_check_db"
@@ -99,21 +103,21 @@ func TestGitOpsCheck(t *testing.T) {
 	}
 
 	// Test 1: Check release against test database.
-	checkResp, err := ctl.releaseServiceClient.CheckRelease(ctx, &v1pb.CheckReleaseRequest{
+	checkResp, err := ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
 		Parent:  project.Name,
 		Release: release,
 		Targets: []string{
 			fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
 		},
-	})
+	}))
 	a.NoError(err)
 	a.NotNil(checkResp)
 	// The response contains results for each file-target combination
-	a.Len(checkResp.Results, 2) // 2 files x 1 target = 2 results
+	a.Len(checkResp.Msg.Results, 2) // 2 files x 1 target = 2 results
 
 	// Verify check results.
 	targetCount := make(map[string]int)
-	for _, result := range checkResp.Results {
+	for _, result := range checkResp.Msg.Results {
 		targetCount[result.Target]++
 		// The check should complete successfully.
 		a.NotNil(result)
@@ -122,22 +126,22 @@ func TestGitOpsCheck(t *testing.T) {
 	a.Equal(2, targetCount[fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName)])
 
 	// Test 2: Check release against multiple targets (test and prod).
-	checkRespMulti, err := ctl.releaseServiceClient.CheckRelease(ctx, &v1pb.CheckReleaseRequest{
+	checkRespMulti, err := ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
 		Parent:  project.Name,
 		Release: release,
 		Targets: []string{
 			fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
 			fmt.Sprintf("%s/databases/%s", prodInstance.Name, databaseName),
 		},
-	})
+	}))
 	a.NoError(err)
 	a.NotNil(checkRespMulti)
 	// 2 files x 2 targets = 4 results
-	a.Len(checkRespMulti.Results, 4)
+	a.Len(checkRespMulti.Msg.Results, 4)
 
 	// Verify both targets were checked.
 	checkedTargets := make(map[string]int)
-	for _, result := range checkRespMulti.Results {
+	for _, result := range checkRespMulti.Msg.Results {
 		checkedTargets[result.Target]++
 	}
 	// Each target should have 2 results (one for each file)
@@ -156,14 +160,15 @@ func TestGitOpsRollout(t *testing.T) {
 
 	// Create a project for GitOps testing.
 	projectID := generateRandomString("gitops-rollout", 10)
-	project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
 			Title: projectID,
 		},
 		ProjectId: projectID,
-	})
+	}))
 	a.NoError(err)
+	project := projectResp.Msg
 
 	// Provision test instance.
 	instanceRootDir := t.TempDir()
@@ -172,7 +177,7 @@ func TestGitOpsRollout(t *testing.T) {
 	a.NoError(err)
 
 	// Add the provisioned instance.
-	testInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-rollout-test",
@@ -181,8 +186,9 @@ func TestGitOpsRollout(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	testInstance := testInstanceResp.Msg
 
 	// Create database.
 	databaseName := "gitops_rollout_db"
@@ -190,7 +196,7 @@ func TestGitOpsRollout(t *testing.T) {
 	a.NoError(err)
 
 	// Step 1: Create a release containing migration files.
-	createReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, &v1pb.CreateReleaseRequest{
+	createReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent: project.Name,
 		Release: &v1pb.Release{
 			Title: "GitOps Rollout Release v1.0",
@@ -210,12 +216,12 @@ func TestGitOpsRollout(t *testing.T) {
 				},
 			},
 		},
-	})
+	}))
 	a.NoError(err)
 	a.NotNil(createReleaseResp)
 
 	// Step 2: Create a plan with the release field set.
-	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Title:       "GitOps Deployment Plan",
@@ -225,7 +231,7 @@ func TestGitOpsRollout(t *testing.T) {
 					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-							Release: createReleaseResp.Name,
+							Release: createReleaseResp.Msg.Name,
 							Targets: []string{
 								fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
 							},
@@ -235,28 +241,30 @@ func TestGitOpsRollout(t *testing.T) {
 				},
 			},
 		},
-	})
+	}))
 	a.NoError(err)
-	a.NotNil(plan)
+	a.NotNil(planResp)
+	plan := planResp.Msg
 
 	// Verify the plan has the release reference.
 	a.Len(plan.Specs, 1)
 	changeDatabaseConfig := plan.Specs[0].GetChangeDatabaseConfig()
 	a.NotNil(changeDatabaseConfig)
-	a.Equal(createReleaseResp.Name, changeDatabaseConfig.Release)
+	a.Equal(createReleaseResp.Msg.Name, changeDatabaseConfig.Release)
 
 	// Step 3: Create a rollout from the plan.
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
 		Parent: project.Name,
 		Rollout: &v1pb.Rollout{
 			Plan: plan.Name,
 		},
-	})
+	}))
 	a.NoError(err)
-	a.NotNil(rollout)
+	a.NotNil(rolloutResp)
+	rollout := rolloutResp.Msg
 
 	// Create an issue for the rollout.
-	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Title:       "GitOps Rollout Issue",
@@ -265,34 +273,37 @@ func TestGitOpsRollout(t *testing.T) {
 			Plan:        plan.Name,
 			Rollout:     rollout.Name,
 		},
-	})
+	}))
 	a.NoError(err)
+	issue := issueResp.Msg
 
 	// Wait for the rollout to complete.
 	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	// Verify the schema changes were applied.
-	testDBSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+	testDBSchemaResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
 		Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	testDBSchema := testDBSchemaResp.Msg
 	a.Contains(testDBSchema.Schema, "products")
 	a.Contains(testDBSchema.Schema, "id INTEGER PRIMARY KEY AUTOINCREMENT")
 	a.Contains(testDBSchema.Schema, "name TEXT NOT NULL")
 
 	// Verify database revision after migration using RevisionService.
-	revisions, err := ctl.revisionServiceClient.ListRevisions(ctx, &v1pb.ListRevisionsRequest{
+	revisionsResp, err := ctl.revisionServiceClient.ListRevisions(ctx, connect.NewRequest(&v1pb.ListRevisionsRequest{
 		Parent: fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	revisions := revisionsResp.Msg
 	a.NotEmpty(revisions.Revisions, "Database should have revisions after migration")
 	a.Len(revisions.Revisions, 1, "Should have exactly 1 revision for the single migration file")
 
 	// Verify the revision details.
 	revision := revisions.Revisions[0]
 	a.NotEmpty(revision.Name, "Revision should have a name")
-	a.Equal(createReleaseResp.Name, revision.Release, "Revision should reference the correct release")
+	a.Equal(createReleaseResp.Msg.Name, revision.Release, "Revision should reference the correct release")
 	a.NotEmpty(revision.Version, "Revision should have a version")
 	a.NotNil(revision.CreateTime, "Revision should have a create time")
 }
@@ -312,14 +323,15 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 
 	// Create a project for GitOps testing.
 	projectID := generateRandomString("gitops-multi", 10)
-	project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
 			Title: projectID,
 		},
 		ProjectId: projectID,
-	})
+	}))
 	a.NoError(err)
+	project := projectResp.Msg
 
 	// Provision test and prod instances.
 	instanceRootDir := t.TempDir()
@@ -331,7 +343,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	a.NoError(err)
 
 	// Add the provisioned instances.
-	testInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-test",
@@ -340,10 +352,11 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	testInstance := testInstanceResp.Msg
 
-	prodInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	prodInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-prod",
@@ -352,8 +365,9 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	prodInstance := prodInstanceResp.Msg
 
 	// Create databases.
 	databaseName := "gitops_multi_db"
@@ -363,7 +377,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	a.NoError(err)
 
 	// Step 1: Create a release containing 3 simple migration files.
-	createReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, &v1pb.CreateReleaseRequest{
+	createReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent: project.Name,
 		Release: &v1pb.Release{
 			Title: "GitOps Multi-Target Release v1.0",
@@ -400,12 +414,12 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 				},
 			},
 		},
-	})
+	}))
 	a.NoError(err)
 	a.NotNil(createReleaseResp)
 
 	// Step 2: Create a plan targeting both test and prod databases.
-	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Title:       "GitOps Multi-Target Deployment",
@@ -415,7 +429,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-							Release: createReleaseResp.Name,
+							Release: createReleaseResp.Msg.Name,
 							Targets: []string{
 								fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
 								fmt.Sprintf("%s/databases/%s", prodInstance.Name, databaseName),
@@ -426,29 +440,31 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 				},
 			},
 		},
-	})
+	}))
 	a.NoError(err)
-	a.NotNil(plan)
+	a.NotNil(planResp)
+	plan := planResp.Msg
 
 	// Verify the plan configuration.
 	a.Len(plan.Specs, 1)
 	changeDatabaseConfig := plan.Specs[0].GetChangeDatabaseConfig()
 	a.NotNil(changeDatabaseConfig)
-	a.Equal(createReleaseResp.Name, changeDatabaseConfig.Release)
+	a.Equal(createReleaseResp.Msg.Name, changeDatabaseConfig.Release)
 	a.Len(changeDatabaseConfig.Targets, 2) // Both test and prod databases
 
 	// Step 3: Create a rollout from the plan.
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
 		Parent: project.Name,
 		Rollout: &v1pb.Rollout{
 			Plan: plan.Name,
 		},
-	})
+	}))
 	a.NoError(err)
-	a.NotNil(rollout)
+	a.NotNil(rolloutResp)
+	rollout := rolloutResp.Msg
 
 	// Create an issue for the rollout.
-	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Title:       "GitOps Multi-Target Rollout",
@@ -457,18 +473,20 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 			Plan:        plan.Name,
 			Rollout:     rollout.Name,
 		},
-	})
+	}))
 	a.NoError(err)
+	issue := issueResp.Msg
 
 	// Wait for the rollout to complete.
 	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	// Verify schema changes were applied to test database.
-	testDBSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+	testDBSchemaResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
 		Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	testDBSchema := testDBSchemaResp.Msg
 
 	// Verify all 3 migration files were applied to test database.
 	a.Contains(testDBSchema.Schema, "table_one")
@@ -479,10 +497,11 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	a.Contains(testDBSchema.Schema, "data TEXT")
 
 	// Verify schema changes were applied to prod database.
-	prodDBSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+	prodDBSchemaResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
 		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	prodDBSchema := prodDBSchemaResp.Msg
 
 	// Verify all 3 migration files were applied to prod database.
 	a.Contains(prodDBSchema.Schema, "table_one")
@@ -496,17 +515,19 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	a.Equal(testDBSchema.Schema, prodDBSchema.Schema, "Test and prod databases should have identical schemas after deployment")
 
 	// Verify database revisions after migrations using RevisionService.
-	testRevisions, err := ctl.revisionServiceClient.ListRevisions(ctx, &v1pb.ListRevisionsRequest{
+	testRevisionsResp, err := ctl.revisionServiceClient.ListRevisions(ctx, connect.NewRequest(&v1pb.ListRevisionsRequest{
 		Parent: fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	testRevisions := testRevisionsResp.Msg
 	a.NotEmpty(testRevisions.Revisions, "Test database should have revisions after migration")
 	a.Len(testRevisions.Revisions, 3, "Test database should have exactly 3 revisions for the 3 migration files")
 
-	prodRevisions, err := ctl.revisionServiceClient.ListRevisions(ctx, &v1pb.ListRevisionsRequest{
+	prodRevisionsResp, err := ctl.revisionServiceClient.ListRevisions(ctx, connect.NewRequest(&v1pb.ListRevisionsRequest{
 		Parent: fmt.Sprintf("%s/databases/%s", prodInstance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	prodRevisions := prodRevisionsResp.Msg
 	a.NotEmpty(prodRevisions.Revisions, "Prod database should have revisions after migration")
 	a.Len(prodRevisions.Revisions, 3, "Prod database should have exactly 3 revisions for the 3 migration files")
 
@@ -514,7 +535,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	testVersions := make([]string, 0, len(testRevisions.Revisions))
 	for _, revision := range testRevisions.Revisions {
 		a.NotEmpty(revision.Name, "Test revision should have a name")
-		a.Equal(createReleaseResp.Name, revision.Release, "Test revision should reference the correct release")
+		a.Equal(createReleaseResp.Msg.Name, revision.Release, "Test revision should reference the correct release")
 		a.NotEmpty(revision.Version, "Test revision should have a version")
 		a.NotNil(revision.CreateTime, "Test revision should have a create time")
 		testVersions = append(testVersions, revision.Version)
@@ -524,7 +545,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	prodVersions := make([]string, 0, len(prodRevisions.Revisions))
 	for _, revision := range prodRevisions.Revisions {
 		a.NotEmpty(revision.Name, "Prod revision should have a name")
-		a.Equal(createReleaseResp.Name, revision.Release, "Prod revision should reference the correct release")
+		a.Equal(createReleaseResp.Msg.Name, revision.Release, "Prod revision should reference the correct release")
 		a.NotEmpty(revision.Version, "Prod revision should have a version")
 		a.NotNil(revision.CreateTime, "Prod revision should have a create time")
 		prodVersions = append(prodVersions, revision.Version)
@@ -551,14 +572,15 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 
 	// Create a project for GitOps testing.
 	projectID := generateRandomString("gitops-changed", 10)
-	project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
 			Title: projectID,
 		},
 		ProjectId: projectID,
-	})
+	}))
 	a.NoError(err)
+	project := projectResp.Msg
 
 	// Provision test instance.
 	instanceRootDir := t.TempDir()
@@ -566,7 +588,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	a.NoError(err)
 
 	// Add the provisioned instance.
-	testInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-changed-test",
@@ -575,8 +597,9 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	testInstance := testInstanceResp.Msg
 
 	// Create database.
 	databaseName := "gitops_changed_db"
@@ -601,14 +624,14 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		},
 	}
 
-	originalReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, &v1pb.CreateReleaseRequest{
+	originalReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent:  project.Name,
 		Release: originalRelease,
-	})
+	}))
 	a.NoError(err)
 
 	// Step 2: Apply the release to a database.
-	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Title:       "Apply Original Release",
@@ -618,7 +641,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-							Release: originalReleaseResp.Name,
+							Release: originalReleaseResp.Msg.Name,
 							Targets: []string{
 								fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
 							},
@@ -628,18 +651,20 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 				},
 			},
 		},
-	})
+	}))
 	a.NoError(err)
+	plan := planResp.Msg
 
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
 		Parent: project.Name,
 		Rollout: &v1pb.Rollout{
 			Plan: plan.Name,
 		},
-	})
+	}))
 	a.NoError(err)
+	rollout := rolloutResp.Msg
 
-	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Title:       "Apply Original Release",
@@ -648,8 +673,9 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 			Plan:        plan.Name,
 			Rollout:     rollout.Name,
 		},
-	})
+	}))
 	a.NoError(err)
+	issue := issueResp.Msg
 
 	// Wait for the rollout to complete.
 	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
@@ -676,20 +702,20 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	}
 
 	// Step 4: Call CheckRelease with the modified release against the same target.
-	checkResp, err := ctl.releaseServiceClient.CheckRelease(ctx, &v1pb.CheckReleaseRequest{
+	checkResp, err := ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
 		Parent:  project.Name,
 		Release: modifiedRelease,
 		Targets: []string{
 			fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
 		},
-	})
+	}))
 	a.NoError(err)
 	a.NotNil(checkResp)
 
 	// Step 5: Expect that CheckRelease returns a warning about the changed file.
-	a.Len(checkResp.Results, 1, "Should have 1 result for the single file-target combination")
+	a.Len(checkResp.Msg.Results, 1, "Should have 1 result for the single file-target combination")
 
-	result := checkResp.Results[0]
+	result := checkResp.Msg.Results[0]
 	a.Equal(fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName), result.Target)
 	a.Equal("migrations/1.0.0__create_users_table.sql", result.File)
 

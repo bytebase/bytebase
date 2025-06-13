@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"connectrpc.com/connect"
 	"github.com/google/uuid"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -20,7 +21,7 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 		environmentName = environment.Name
 	}
 
-	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Specs: []*v1pb.Plan_Spec{
@@ -39,36 +40,36 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 				},
 			},
 		},
-	})
+	}))
 	if err != nil {
 		return err
 	}
-	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Title:       fmt.Sprintf("create database %q", databaseName),
 			Description: fmt.Sprintf("This creates a database %q.", databaseName),
-			Plan:        plan.Name,
+			Plan:        planResp.Msg.Name,
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 		},
-	})
+	}))
 	if err != nil {
 		return err
 	}
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: planResp.Msg.Name}}))
 	if err != nil {
 		return err
 	}
 
-	if err := ctl.waitRollout(ctx, issue.Name, rollout.Name); err != nil {
+	if err := ctl.waitRollout(ctx, issueResp.Msg.Name, rolloutResp.Msg.Name); err != nil {
 		return err
 	}
 
-	_, err = ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, &v1pb.BatchUpdateIssuesStatusRequest{
+	_, err = ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, connect.NewRequest(&v1pb.BatchUpdateIssuesStatusRequest{
 		Parent: project.Name,
-		Issues: []string{issue.Name},
+		Issues: []string{issueResp.Msg.Name},
 		Status: v1pb.IssueStatus_DONE,
-	})
+	}))
 	if err != nil {
 		return err
 	}

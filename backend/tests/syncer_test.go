@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -199,7 +200,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
 	a.NoError(err)
 
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: "instance-syncer-postgres",
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
@@ -208,34 +209,38 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	instance := instanceResp.Msg
 
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase")
 	a.NoError(err)
 
-	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	database := databaseResp.Msg
 
-	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "create schema",
 			Content: []byte(createSchema),
 		},
-	})
+	}))
 	a.NoError(err)
+	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
-	latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+	latestSchemaMetadataResp, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
 		Name: fmt.Sprintf("%s/metadata", database.Name),
-	})
+	}))
 	a.NoError(err)
+	latestSchemaMetadata := latestSchemaMetadataResp.Msg
 
 	diff := cmp.Diff(wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
 	a.Empty(diff)
@@ -479,7 +484,7 @@ func TestSyncerForMySQL(t *testing.T) {
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: "instance-syncer-mysql",
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
@@ -488,34 +493,38 @@ func TestSyncerForMySQL(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	instance := instanceResp.Msg
 
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 	a.NoError(err)
 
-	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	database := databaseResp.Msg
 
-	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "create schema",
 			Content: []byte(createSchema),
 		},
-	})
+	}))
 	a.NoError(err)
+	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
-	latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+	latestSchemaMetadataResp, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
 		Name: fmt.Sprintf("%s/metadata", database.Name),
-	})
+	}))
 	a.NoError(err)
+	latestSchemaMetadata := latestSchemaMetadataResp.Msg
 
 	var expectedSchemaMetadata v1pb.DatabaseMetadata
 	err = common.ProtojsonUnmarshaler.Unmarshal([]byte(expectedSchema), &expectedSchemaMetadata)

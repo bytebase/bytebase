@@ -3,9 +3,11 @@ package tests
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	_ "embed"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path"
@@ -16,10 +18,8 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"google.golang.org/grpc"
+	"golang.org/x/net/http2"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
@@ -34,6 +34,36 @@ import (
 	component "github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/server"
 )
+
+// authInterceptor implements connect.Interceptor to add authentication headers
+type authInterceptor struct {
+	token string
+}
+
+func (a *authInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		if req.Spec().IsClient && a.token != "" {
+			req.Header().Set("Authorization", fmt.Sprintf("Bearer %s", a.token))
+		}
+		return next(ctx, req)
+	})
+}
+
+func (a *authInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return connect.StreamingClientFunc(func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		conn := next(ctx, spec)
+		if a.token != "" {
+			conn.RequestHeader().Set("Authorization", fmt.Sprintf("Bearer %s", a.token))
+		}
+		return conn
+	})
+}
+
+func (*authInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return connect.StreamingHandlerFunc(func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		return next(ctx, conn)
+	})
+}
 
 var (
 	migrationStatement1 = `
@@ -61,29 +91,28 @@ type controller struct {
 	server                       *server.Server
 	profile                      *component.Profile
 	client                       *http.Client
-	grpcConn                     *grpc.ClientConn
-	issueServiceClient           v1pb.IssueServiceClient
-	rolloutServiceClient         v1pb.RolloutServiceClient
-	planServiceClient            v1pb.PlanServiceClient
-	orgPolicyServiceClient       v1pb.OrgPolicyServiceClient
-	reviewConfigServiceClient    v1pb.ReviewConfigServiceClient
-	projectServiceClient         v1pb.ProjectServiceClient
-	databaseGroupServiceClient   v1pb.DatabaseGroupServiceClient
-	authServiceClient            v1pb.AuthServiceClient
-	userServiceClient            v1pb.UserServiceClient
-	settingServiceClient         v1pb.SettingServiceClient
-	instanceServiceClient        v1pb.InstanceServiceClient
-	databaseServiceClient        v1pb.DatabaseServiceClient
-	databaseCatalogServiceClient v1pb.DatabaseCatalogServiceClient
-	sheetServiceClient           v1pb.SheetServiceClient
-	sqlServiceClient             v1pb.SQLServiceClient
-	subscriptionServiceClient    v1pb.SubscriptionServiceClient
+	authInterceptor              *authInterceptor
+	issueServiceClient           v1connect.IssueServiceClient
+	rolloutServiceClient         v1connect.RolloutServiceClient
+	planServiceClient            v1connect.PlanServiceClient
+	orgPolicyServiceClient       v1connect.OrgPolicyServiceClient
+	reviewConfigServiceClient    v1connect.ReviewConfigServiceClient
+	projectServiceClient         v1connect.ProjectServiceClient
+	databaseGroupServiceClient   v1connect.DatabaseGroupServiceClient
+	authServiceClient            v1connect.AuthServiceClient
+	userServiceClient            v1connect.UserServiceClient
+	settingServiceClient         v1connect.SettingServiceClient
+	instanceServiceClient        v1connect.InstanceServiceClient
+	databaseServiceClient        v1connect.DatabaseServiceClient
+	databaseCatalogServiceClient v1connect.DatabaseCatalogServiceClient
+	sheetServiceClient           v1connect.SheetServiceClient
+	sqlServiceClient             v1connect.SQLServiceClient
+	subscriptionServiceClient    v1connect.SubscriptionServiceClient
 	actuatorServiceClient        v1connect.ActuatorServiceClient
-	workspaceServiceClient       v1pb.WorkspaceServiceClient
-	releaseServiceClient         v1pb.ReleaseServiceClient
-	revisionServiceClient        v1pb.RevisionServiceClient
+	workspaceServiceClient       v1connect.WorkspaceServiceClient
+	releaseServiceClient         v1connect.ReleaseServiceClient
+	revisionServiceClient        v1connect.RevisionServiceClient
 
-	cookie  string
 	project *v1pb.Project
 
 	rootURL       string
@@ -153,7 +182,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context) (context.C
 		return nil, err
 	}
 	for _, environment := range []string{"test", "prod"} {
-		if _, err := ctl.orgPolicyServiceClient.CreatePolicy(metaCtx, &v1pb.CreatePolicyRequest{
+		if _, err := ctl.orgPolicyServiceClient.CreatePolicy(metaCtx, connect.NewRequest(&v1pb.CreatePolicyRequest{
 			Parent: fmt.Sprintf("environments/%s", environment),
 			Policy: &v1pb.Policy{
 				Type: v1pb.PolicyType_ROLLOUT_POLICY,
@@ -163,28 +192,28 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context) (context.C
 					},
 				},
 			},
-		}); err != nil {
+		})); err != nil {
 			return nil, err
 		}
 	}
 
 	projectID := "test-project"
-	project, err := ctl.projectServiceClient.CreateProject(metaCtx, &v1pb.CreateProjectRequest{
+	resp, err := ctl.projectServiceClient.CreateProject(metaCtx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Title: projectID,
 		},
 		ProjectId: projectID,
-	})
+	}))
 	if err != nil {
 		return nil, err
 	}
-	ctl.project = project
+	ctl.project = resp.Msg
 
 	return metaCtx, nil
 }
 
 func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
-	_, err := ctl.settingServiceClient.UpdateSetting(ctx, &v1pb.UpdateSettingRequest{
+	_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
@@ -203,7 +232,7 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 				"value.workspace_profile_setting_value.external_url",
 			},
 		},
-	})
+	}))
 	return err
 }
 
@@ -235,34 +264,39 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	}()
 
 	// initialize controller clients.
-	ctl.client = &http.Client{}
-
-	// initialize grpc connection.
-	grpcConn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to dial grpc")
+	ctl.client = &http.Client{
+		Transport: &http2.Transport{
+			AllowHTTP: true,
+			DialTLSContext: func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+				return net.Dial(network, addr)
+			},
+		},
 	}
-	ctl.grpcConn = grpcConn
-	ctl.issueServiceClient = v1pb.NewIssueServiceClient(ctl.grpcConn)
-	ctl.rolloutServiceClient = v1pb.NewRolloutServiceClient(ctl.grpcConn)
-	ctl.planServiceClient = v1pb.NewPlanServiceClient(ctl.grpcConn)
-	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
-	ctl.reviewConfigServiceClient = v1pb.NewReviewConfigServiceClient(ctl.grpcConn)
-	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
-	ctl.databaseGroupServiceClient = v1pb.NewDatabaseGroupServiceClient(ctl.grpcConn)
-	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
-	ctl.userServiceClient = v1pb.NewUserServiceClient(ctl.grpcConn)
-	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
-	ctl.instanceServiceClient = v1pb.NewInstanceServiceClient(ctl.grpcConn)
-	ctl.databaseServiceClient = v1pb.NewDatabaseServiceClient(ctl.grpcConn)
-	ctl.databaseCatalogServiceClient = v1pb.NewDatabaseCatalogServiceClient(ctl.grpcConn)
-	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
-	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
-	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
-	ctl.actuatorServiceClient = v1connect.NewActuatorServiceClient(http.DefaultClient, "http://localhost:"+fmt.Sprintf("%d", port))
-	ctl.workspaceServiceClient = v1pb.NewWorkspaceServiceClient(ctl.grpcConn)
-	ctl.releaseServiceClient = v1pb.NewReleaseServiceClient(ctl.grpcConn)
-	ctl.revisionServiceClient = v1pb.NewRevisionServiceClient(ctl.grpcConn)
+
+	ctl.authInterceptor = &authInterceptor{}
+	interceptors := connect.WithInterceptors(ctl.authInterceptor)
+
+	baseURL := "http://localhost:" + fmt.Sprintf("%d", port)
+	ctl.issueServiceClient = v1connect.NewIssueServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.rolloutServiceClient = v1connect.NewRolloutServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.planServiceClient = v1connect.NewPlanServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.orgPolicyServiceClient = v1connect.NewOrgPolicyServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.reviewConfigServiceClient = v1connect.NewReviewConfigServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.projectServiceClient = v1connect.NewProjectServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.databaseGroupServiceClient = v1connect.NewDatabaseGroupServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.authServiceClient = v1connect.NewAuthServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.userServiceClient = v1connect.NewUserServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.settingServiceClient = v1connect.NewSettingServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.instanceServiceClient = v1connect.NewInstanceServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.databaseServiceClient = v1connect.NewDatabaseServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.databaseCatalogServiceClient = v1connect.NewDatabaseCatalogServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.sheetServiceClient = v1connect.NewSheetServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.sqlServiceClient = v1connect.NewSQLServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.subscriptionServiceClient = v1connect.NewSubscriptionServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.actuatorServiceClient = v1connect.NewActuatorServiceClient(ctl.client, baseURL, interceptors)
+	ctl.workspaceServiceClient = v1connect.NewWorkspaceServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.releaseServiceClient = v1connect.NewReleaseServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
+	ctl.revisionServiceClient = v1connect.NewRevisionServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
 
 	if err := ctl.waitForHealthz(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to wait for healthz")
@@ -271,11 +305,9 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	if err != nil {
 		return nil, err
 	}
+	ctl.authInterceptor.token = authToken
 
-	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
-		"Authorization",
-		fmt.Sprintf("Bearer %s", authToken),
-	)), nil
+	return ctx, nil
 }
 
 func (ctl *controller) waitForHealthz(ctx context.Context) error {
@@ -309,11 +341,6 @@ func (ctl *controller) Close(ctx context.Context) error {
 			e = multierr.Append(e, err)
 		}
 	}
-	if ctl.grpcConn != nil {
-		if err := ctl.grpcConn.Close(); err != nil {
-			e = multierr.Append(e, err)
-		}
-	}
 	return e
 }
 
@@ -329,25 +356,24 @@ func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error)
 
 // signupAndLogin will signup and login as user demo@example.com.
 func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
-	principal, err := ctl.userServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
+	userResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Email:    "demo@example.com",
 			Password: "1024bytebase",
 			Title:    "demo",
 			UserType: v1pb.UserType_USER,
 		},
-	})
+	}))
 	if err != nil && !strings.Contains(err.Error(), "exist") {
 		return "", err
 	}
-	resp, err := ctl.authServiceClient.Login(ctx, &v1pb.LoginRequest{
+	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
 		Email:    "demo@example.com",
 		Password: "1024bytebase",
-	})
+	}))
 	if err != nil {
 		return "", err
 	}
-	ctl.principalName = principal.Name
-	ctl.cookie = fmt.Sprintf("access-token=%s", resp.Token)
-	return resp.Token, nil
+	ctl.principalName = userResp.Msg.Name
+	return loginResp.Msg.Token, nil
 }

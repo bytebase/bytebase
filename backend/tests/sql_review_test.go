@@ -11,6 +11,7 @@ import (
 
 	// Import pg driver.
 	// init() in pgx will register it's pgx driver.
+	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -103,29 +104,29 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	reviewConfig, err := prodTemplateReviewConfigForPostgreSQL()
 	a.NoError(err)
 
-	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, &v1pb.CreateReviewConfigRequest{
+	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, connect.NewRequest(&v1pb.CreateReviewConfigRequest{
 		ReviewConfig: reviewConfig,
-	})
+	}))
 	a.NoError(err)
-	a.NotNil(createdConfig.Name)
+	a.NotNil(createdConfig.Msg.Name)
 
-	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
 		Parent: "environments/prod",
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_TAG,
 			Policy: &v1pb.Policy_TagPolicy{
 				TagPolicy: &v1pb.TagPolicy{
 					Tags: map[string]string{
-						string(common.ReservedTagReviewConfig): createdConfig.Name,
+						string(common.ReservedTagReviewConfig): createdConfig.Msg.Name,
 					},
 				},
 			},
 		},
-	})
+	}))
 	a.NoError(err)
-	a.NotNil(policy.Name)
+	a.NotNil(policy.Msg.Name)
 
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
@@ -134,19 +135,19 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase")
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance.Msg, nil /* environment */, databaseName, "bytebase")
 	a.NoError(err)
 
-	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
-		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	})
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Msg.Name, databaseName),
+	}))
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -160,25 +161,25 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	}
 
 	// disable the SQL review policy
-	policy.Enforce = false
-	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, &v1pb.UpdatePolicyRequest{
-		Policy: policy,
+	policy.Msg.Enforce = false
+	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, connect.NewRequest(&v1pb.UpdatePolicyRequest{
+		Policy: policy.Msg,
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"enforce"},
 		},
-	})
+	}))
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, statements[0], false)
 	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
 
 	// delete the SQL review policy
-	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-		Name: policy.Name,
-	})
+	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, connect.NewRequest(&v1pb.DeletePolicyRequest{
+		Name: policy.Msg.Name,
+	}))
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, statements[0], false)
+	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, statements[0], false)
 	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
 }
 
@@ -273,29 +274,29 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	reviewConfig, err := prodTemplateReviewConfigForMySQL()
 	a.NoError(err)
 
-	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, &v1pb.CreateReviewConfigRequest{
+	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, connect.NewRequest(&v1pb.CreateReviewConfigRequest{
 		ReviewConfig: reviewConfig,
-	})
+	}))
 	a.NoError(err)
-	a.NotNil(createdConfig.Name)
+	a.NotNil(createdConfig.Msg.Name)
 
-	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
 		Parent: "environments/prod",
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_TAG,
 			Policy: &v1pb.Policy_TagPolicy{
 				TagPolicy: &v1pb.TagPolicy{
 					Tags: map[string]string{
-						string(common.ReservedTagReviewConfig): createdConfig.Name,
+						string(common.ReservedTagReviewConfig): createdConfig.Msg.Name,
 					},
 				},
 			},
 		},
-	})
+	}))
 	a.NoError(err)
-	a.NotNil(policy.Name)
+	a.NotNil(policy.Msg.Name)
 
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
@@ -304,19 +305,19 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance.Msg, nil /* environment */, databaseName, "")
 	a.NoError(err)
 
-	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
-		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	})
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Msg.Name, databaseName),
+	}))
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -345,49 +346,49 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		`INSERT INTO test(id, name) VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');`,
 	}
 	for _, stmt := range initialStmts {
-		createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, stmt, true /* wait */)
+		createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, stmt, true /* wait */)
 	}
 	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
-	originQueryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
-		Name:         database.Name,
+	originQueryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:         database.Msg.Name,
 		Statement:    countSQL,
 		DataSourceId: "admin",
-	})
+	}))
 	a.NoError(err)
-	a.Equal(1, len(originQueryResp.Results))
-	diff := cmp.Diff(wantQueryResult, originQueryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
+	a.Equal(1, len(originQueryResp.Msg.Results))
+	diff := cmp.Diff(wantQueryResult, originQueryResp.Msg.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Empty(diff)
 
-	createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, dmlSQL, false /* wait */)
+	createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, dmlSQL, false /* wait */)
 
-	finalQueryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
-		Name:         database.Name,
+	finalQueryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:         database.Msg.Name,
 		Statement:    countSQL,
 		DataSourceId: "admin",
-	})
+	}))
 	a.NoError(err)
-	a.Equal(1, len(finalQueryResp.Results))
-	diff = cmp.Diff(wantQueryResult, finalQueryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
+	a.Equal(1, len(finalQueryResp.Msg.Results))
+	diff = cmp.Diff(wantQueryResult, finalQueryResp.Msg.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Empty(diff)
 
 	// disable the SQL review policy
-	policy.Enforce = false
-	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, &v1pb.UpdatePolicyRequest{
-		Policy: policy,
+	policy.Msg.Enforce = false
+	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, connect.NewRequest(&v1pb.UpdatePolicyRequest{
+		Policy: policy.Msg,
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"enforce"},
 		},
-	})
+	}))
 	a.NoError(err)
 
 	// delete the SQL review policy
-	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-		Name: policy.Name,
-	})
+	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, connect.NewRequest(&v1pb.DeletePolicyRequest{
+		Name: policy.Msg.Name,
+	}))
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, statements[0], false)
 	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
 }
 
@@ -460,16 +461,16 @@ func writeTestData(filepath string, tests []test) error {
 }
 
 func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Assertions, ctl *controller, project *v1pb.Project, database *v1pb.Database, statement string, wait bool) []*v1pb.PlanCheckRun_Result {
-	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "statement",
 			Content: []byte(statement),
 		},
-	})
+	}))
 	a.NoError(err)
 
-	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	plan, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Specs: []*v1pb.Plan_Spec{
@@ -478,36 +479,36 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Targets: []string{database.Name},
-							Sheet:   sheet.Name,
+							Sheet:   sheet.Msg.Name,
 							Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
 						},
 					},
 				},
 			},
 		},
-	})
+	}))
 	a.NoError(err)
 
-	result, err := ctl.GetSQLReviewResult(ctx, plan)
+	result, err := ctl.GetSQLReviewResult(ctx, plan.Msg)
 	a.NoError(err)
 
 	if wait {
 		a.NotNil(result)
 		a.Len(result.Results, 1)
 		a.Equal(v1pb.PlanCheckRun_Result_SUCCESS, result.Results[0].Status)
-		issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		issue, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 			Parent: project.Name,
 			Issue: &v1pb.Issue{
 				Type:        v1pb.Issue_DATABASE_CHANGE,
 				Title:       fmt.Sprintf("change database %s", database.Name),
 				Description: fmt.Sprintf("change database %s", database.Name),
-				Plan:        plan.Name,
+				Plan:        plan.Msg.Name,
 			},
-		})
+		}))
 		a.NoError(err)
-		rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
+		rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Msg.Name}}))
 		a.NoError(err)
-		err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
+		err = ctl.waitRollout(ctx, issue.Msg.Name, rollout.Msg.Name)
 		a.NoError(err)
 		// Wait some time till written data becomes consistent.
 		time.Sleep(5 * time.Second)

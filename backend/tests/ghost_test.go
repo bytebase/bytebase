@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"testing"
 
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/stretchr/testify/require"
+
+	"connectrpc.com/connect"
+
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -64,7 +66,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instanceResponse, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
@@ -73,8 +75,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	instance := instanceResponse.Msg
 
 	// Create backup database for MySQL.
 	backupDBName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
@@ -84,40 +87,45 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 	a.NoError(err)
 
-	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+	databaseResponse, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	database := databaseResponse.Msg
 
-	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+	sheet1Response, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "migration statement sheet 1",
 			Content: []byte(mysqlMigrationStatement),
 		},
-	})
+	}))
 	a.NoError(err)
+	sheet1 := sheet1Response.Msg
 
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet1, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
-	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
+	dbMetadataResponse, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)}))
 	a.NoError(err)
+	dbMetadata := dbMetadataResponse.Msg
 	a.Equal(wantDBSchema1, dbMetadata.Schema)
 
-	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+	sheet2Response, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "migration statement sheet 2",
 			Content: []byte(mysqlGhostMigrationStatement),
 		},
-	})
+	}))
 	a.NoError(err)
+	sheet2 := sheet2Response.Msg
 
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet2, v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST)
 	a.NoError(err)
-	dbMetadata, err = ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
+	dbMetadataResponse, err = ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)}))
 	a.NoError(err)
+	dbMetadata = dbMetadataResponse.Msg
 
 	a.Equal(wantDBSchema2, dbMetadata.Schema)
 }
