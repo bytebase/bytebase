@@ -126,6 +126,55 @@ func (OAuth2AuthStyle) EnumDescriptor() ([]byte, []int) {
 	return file_store_idp_proto_rawDescGZIP(), []int{1}
 }
 
+type LDAPIdentityProviderConfig_SecurityProtocol int32
+
+const (
+	LDAPIdentityProviderConfig_SECURITY_PROTOCOL_UNSPECIFIED LDAPIdentityProviderConfig_SecurityProtocol = 0
+	LDAPIdentityProviderConfig_START_TLS                     LDAPIdentityProviderConfig_SecurityProtocol = 1 // StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS.
+	LDAPIdentityProviderConfig_LDAPS                         LDAPIdentityProviderConfig_SecurityProtocol = 2 // LDAPS is the security protocol that uses TLS from the beginning.
+)
+
+// Enum value maps for LDAPIdentityProviderConfig_SecurityProtocol.
+var (
+	LDAPIdentityProviderConfig_SecurityProtocol_name = map[int32]string{
+		0: "SECURITY_PROTOCOL_UNSPECIFIED",
+		1: "START_TLS",
+		2: "LDAPS",
+	}
+	LDAPIdentityProviderConfig_SecurityProtocol_value = map[string]int32{
+		"SECURITY_PROTOCOL_UNSPECIFIED": 0,
+		"START_TLS":                     1,
+		"LDAPS":                         2,
+	}
+)
+
+func (x LDAPIdentityProviderConfig_SecurityProtocol) Enum() *LDAPIdentityProviderConfig_SecurityProtocol {
+	p := new(LDAPIdentityProviderConfig_SecurityProtocol)
+	*p = x
+	return p
+}
+
+func (x LDAPIdentityProviderConfig_SecurityProtocol) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LDAPIdentityProviderConfig_SecurityProtocol) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_idp_proto_enumTypes[2].Descriptor()
+}
+
+func (LDAPIdentityProviderConfig_SecurityProtocol) Type() protoreflect.EnumType {
+	return &file_store_idp_proto_enumTypes[2]
+}
+
+func (x LDAPIdentityProviderConfig_SecurityProtocol) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LDAPIdentityProviderConfig_SecurityProtocol.Descriptor instead.
+func (LDAPIdentityProviderConfig_SecurityProtocol) EnumDescriptor() ([]byte, []int) {
+	return file_store_idp_proto_rawDescGZIP(), []int{3, 0}
+}
+
 type IdentityProviderConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Config:
@@ -448,9 +497,8 @@ type LDAPIdentityProviderConfig struct {
 	// UserFilter is the filter to search for users, e.g. "(uid=%s)".
 	UserFilter string `protobuf:"bytes,7,opt,name=user_filter,json=userFilter,proto3" json:"user_filter,omitempty"`
 	// SecurityProtocol is the security protocol to be used for establishing
-	// connections with the LDAP server. It should be either StartTLS or LDAPS, and
-	// cannot be empty.
-	SecurityProtocol string `protobuf:"bytes,8,opt,name=security_protocol,json=securityProtocol,proto3" json:"security_protocol,omitempty"`
+	// connections with the LDAP server.
+	SecurityProtocol LDAPIdentityProviderConfig_SecurityProtocol `protobuf:"varint,8,opt,name=security_protocol,json=securityProtocol,proto3,enum=bytebase.store.LDAPIdentityProviderConfig_SecurityProtocol" json:"security_protocol,omitempty"`
 	// FieldMapping is the mapping of the user attributes returned by the LDAP
 	// server.
 	FieldMapping  *FieldMapping `protobuf:"bytes,9,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
@@ -537,11 +585,11 @@ func (x *LDAPIdentityProviderConfig) GetUserFilter() string {
 	return ""
 }
 
-func (x *LDAPIdentityProviderConfig) GetSecurityProtocol() string {
+func (x *LDAPIdentityProviderConfig) GetSecurityProtocol() LDAPIdentityProviderConfig_SecurityProtocol {
 	if x != nil {
 		return x.SecurityProtocol
 	}
-	return ""
+	return LDAPIdentityProviderConfig_SECURITY_PROTOCOL_UNSPECIFIED
 }
 
 func (x *LDAPIdentityProviderConfig) GetFieldMapping() *FieldMapping {
@@ -739,7 +787,7 @@ const file_store_idp_proto_rawDesc = "" +
 	"\x0fskip_tls_verify\x18\x05 \x01(\bR\rskipTlsVerify\x12>\n" +
 	"\n" +
 	"auth_style\x18\x06 \x01(\x0e2\x1f.bytebase.store.OAuth2AuthStyleR\tauthStyle\x12\x16\n" +
-	"\x06scopes\x18\a \x03(\tR\x06scopes\"\xd4\x02\n" +
+	"\x06scopes\x18\a \x03(\tR\x06scopes\"\xe2\x03\n" +
 	"\x1aLDAPIdentityProviderConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12&\n" +
@@ -748,9 +796,13 @@ const file_store_idp_proto_rawDesc = "" +
 	"\rbind_password\x18\x05 \x01(\tR\fbindPassword\x12\x17\n" +
 	"\abase_dn\x18\x06 \x01(\tR\x06baseDn\x12\x1f\n" +
 	"\vuser_filter\x18\a \x01(\tR\n" +
-	"userFilter\x12+\n" +
-	"\x11security_protocol\x18\b \x01(\tR\x10securityProtocol\x12A\n" +
-	"\rfield_mapping\x18\t \x01(\v2\x1c.bytebase.store.FieldMappingR\ffieldMapping\"\x85\x01\n" +
+	"userFilter\x12h\n" +
+	"\x11security_protocol\x18\b \x01(\x0e2;.bytebase.store.LDAPIdentityProviderConfig.SecurityProtocolR\x10securityProtocol\x12A\n" +
+	"\rfield_mapping\x18\t \x01(\v2\x1c.bytebase.store.FieldMappingR\ffieldMapping\"O\n" +
+	"\x10SecurityProtocol\x12!\n" +
+	"\x1dSECURITY_PROTOCOL_UNSPECIFIED\x10\x00\x12\r\n" +
+	"\tSTART_TLS\x10\x01\x12\t\n" +
+	"\x05LDAPS\x10\x02\"\x85\x01\n" +
 	"\fFieldMapping\x12\x1e\n" +
 	"\n" +
 	"identifier\x18\x01 \x01(\tR\n" +
@@ -790,32 +842,34 @@ func file_store_idp_proto_rawDescGZIP() []byte {
 	return file_store_idp_proto_rawDescData
 }
 
-var file_store_idp_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_idp_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_store_idp_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_idp_proto_goTypes = []any{
-	(IdentityProviderType)(0),            // 0: bytebase.store.IdentityProviderType
-	(OAuth2AuthStyle)(0),                 // 1: bytebase.store.OAuth2AuthStyle
-	(*IdentityProviderConfig)(nil),       // 2: bytebase.store.IdentityProviderConfig
-	(*OAuth2IdentityProviderConfig)(nil), // 3: bytebase.store.OAuth2IdentityProviderConfig
-	(*OIDCIdentityProviderConfig)(nil),   // 4: bytebase.store.OIDCIdentityProviderConfig
-	(*LDAPIdentityProviderConfig)(nil),   // 5: bytebase.store.LDAPIdentityProviderConfig
-	(*FieldMapping)(nil),                 // 6: bytebase.store.FieldMapping
-	(*IdentityProviderUserInfo)(nil),     // 7: bytebase.store.IdentityProviderUserInfo
+	(IdentityProviderType)(0),                        // 0: bytebase.store.IdentityProviderType
+	(OAuth2AuthStyle)(0),                             // 1: bytebase.store.OAuth2AuthStyle
+	(LDAPIdentityProviderConfig_SecurityProtocol)(0), // 2: bytebase.store.LDAPIdentityProviderConfig.SecurityProtocol
+	(*IdentityProviderConfig)(nil),                   // 3: bytebase.store.IdentityProviderConfig
+	(*OAuth2IdentityProviderConfig)(nil),             // 4: bytebase.store.OAuth2IdentityProviderConfig
+	(*OIDCIdentityProviderConfig)(nil),               // 5: bytebase.store.OIDCIdentityProviderConfig
+	(*LDAPIdentityProviderConfig)(nil),               // 6: bytebase.store.LDAPIdentityProviderConfig
+	(*FieldMapping)(nil),                             // 7: bytebase.store.FieldMapping
+	(*IdentityProviderUserInfo)(nil),                 // 8: bytebase.store.IdentityProviderUserInfo
 }
 var file_store_idp_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.IdentityProviderConfig.oauth2_config:type_name -> bytebase.store.OAuth2IdentityProviderConfig
-	4, // 1: bytebase.store.IdentityProviderConfig.oidc_config:type_name -> bytebase.store.OIDCIdentityProviderConfig
-	5, // 2: bytebase.store.IdentityProviderConfig.ldap_config:type_name -> bytebase.store.LDAPIdentityProviderConfig
-	6, // 3: bytebase.store.OAuth2IdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
+	4, // 0: bytebase.store.IdentityProviderConfig.oauth2_config:type_name -> bytebase.store.OAuth2IdentityProviderConfig
+	5, // 1: bytebase.store.IdentityProviderConfig.oidc_config:type_name -> bytebase.store.OIDCIdentityProviderConfig
+	6, // 2: bytebase.store.IdentityProviderConfig.ldap_config:type_name -> bytebase.store.LDAPIdentityProviderConfig
+	7, // 3: bytebase.store.OAuth2IdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
 	1, // 4: bytebase.store.OAuth2IdentityProviderConfig.auth_style:type_name -> bytebase.store.OAuth2AuthStyle
-	6, // 5: bytebase.store.OIDCIdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
+	7, // 5: bytebase.store.OIDCIdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
 	1, // 6: bytebase.store.OIDCIdentityProviderConfig.auth_style:type_name -> bytebase.store.OAuth2AuthStyle
-	6, // 7: bytebase.store.LDAPIdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	2, // 7: bytebase.store.LDAPIdentityProviderConfig.security_protocol:type_name -> bytebase.store.LDAPIdentityProviderConfig.SecurityProtocol
+	7, // 8: bytebase.store.LDAPIdentityProviderConfig.field_mapping:type_name -> bytebase.store.FieldMapping
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_store_idp_proto_init() }
@@ -833,7 +887,7 @@ func file_store_idp_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_idp_proto_rawDesc), len(file_store_idp_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
