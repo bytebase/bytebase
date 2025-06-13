@@ -2892,16 +2892,14 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\aContent\x12N\n" +
 	"\x05parts\x18\x01 \x03(\v28.bytebase.v1.AICompletionResponse.Candidate.Content.PartR\x05parts\x1a\x1a\n" +
 	"\x04Part\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text2\xed\n" +
-	"\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text2\xda\t\n" +
 	"\n" +
 	"SQLService\x12\xb2\x01\n" +
 	"\x05Query\x12\x19.bytebase.v1.QueryRequest\x1a\x1a.bytebase.v1.QueryResponse\"r\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02P:\x01*Z!:\x01*\"\x1c/v1/{name=instances/*}:query\"(/v1/{name=instances/*/databases/*}:query\x12\x89\x01\n" +
 	"\fAdminExecute\x12 .bytebase.v1.AdminExecuteRequest\x1a!.bytebase.v1.AdminExecuteResponse\"0\x8a\xea0\fbb.sql.admin\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1:adminExecute(\x010\x01\x12\x95\x01\n" +
 	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"(\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/queryHistories:search\x12\x9e\x02\n" +
 	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"\xda\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\xb7\x01:\x01*Z\":\x01*\"\x1d/v1/{name=instances/*}:exportZ,:\x01*\"'/v1/{name=projects/*/rollouts/*}:exportZ5:\x01*\"0/v1/{name=projects/*/rollouts/*/stages/*}:export\")/v1/{name=instances/*/databases/*}:export\x12r\n" +
-	"\x05Check\x12\x19.bytebase.v1.CheckRequest\x1a\x1a.bytebase.v1.CheckResponse\"2\x8a\xea0\x12bb.databases.check\x90\xea0\x01\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/v1/sql/check\x12\x90\x01\n" +
-	"\x12ParseMyBatisMapper\x12&.bytebase.v1.ParseMyBatisMapperRequest\x1a'.bytebase.v1.ParseMyBatisMapperResponse\")\x80\xea0\x01\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/v1/sql/parseMyBatisMapper\x12`\n" +
+	"\x05Check\x12\x19.bytebase.v1.CheckRequest\x1a\x1a.bytebase.v1.CheckResponse\"2\x8a\xea0\x12bb.databases.check\x90\xea0\x01\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/v1/sql/check\x12`\n" +
 	"\x06Pretty\x12\x1a.bytebase.v1.PrettyRequest\x1a\x1b.bytebase.v1.PrettyResponse\"\x1d\x80\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/sql/pretty\x12\x81\x01\n" +
 	"\fDiffMetadata\x12 .bytebase.v1.DiffMetadataRequest\x1a!.bytebase.v1.DiffMetadataResponse\",\x80\xea0\x01\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/schemaDesign:diffMetadata\x12x\n" +
 	"\fAICompletion\x12 .bytebase.v1.AICompletionRequest\x1a!.bytebase.v1.AICompletionResponse\"#\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/sql/aiCompletionB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
@@ -3010,21 +3008,19 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	24, // 38: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
 	14, // 39: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
 	18, // 40: bytebase.v1.SQLService.Check:input_type -> bytebase.v1.CheckRequest
-	20, // 41: bytebase.v1.SQLService.ParseMyBatisMapper:input_type -> bytebase.v1.ParseMyBatisMapperRequest
-	16, // 42: bytebase.v1.SQLService.Pretty:input_type -> bytebase.v1.PrettyRequest
-	22, // 43: bytebase.v1.SQLService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
-	27, // 44: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
-	8,  // 45: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
-	6,  // 46: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
-	25, // 47: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
-	15, // 48: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
-	19, // 49: bytebase.v1.SQLService.Check:output_type -> bytebase.v1.CheckResponse
-	21, // 50: bytebase.v1.SQLService.ParseMyBatisMapper:output_type -> bytebase.v1.ParseMyBatisMapperResponse
-	17, // 51: bytebase.v1.SQLService.Pretty:output_type -> bytebase.v1.PrettyResponse
-	23, // 52: bytebase.v1.SQLService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
-	28, // 53: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
-	45, // [45:54] is the sub-list for method output_type
-	36, // [36:45] is the sub-list for method input_type
+	16, // 41: bytebase.v1.SQLService.Pretty:input_type -> bytebase.v1.PrettyRequest
+	22, // 42: bytebase.v1.SQLService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
+	27, // 43: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
+	8,  // 44: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
+	6,  // 45: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
+	25, // 46: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
+	15, // 47: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
+	19, // 48: bytebase.v1.SQLService.Check:output_type -> bytebase.v1.CheckResponse
+	17, // 49: bytebase.v1.SQLService.Pretty:output_type -> bytebase.v1.PrettyResponse
+	23, // 50: bytebase.v1.SQLService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
+	28, // 51: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
+	44, // [44:52] is the sub-list for method output_type
+	36, // [36:44] is the sub-list for method input_type
 	36, // [36:36] is the sub-list for extension type_name
 	36, // [36:36] is the sub-list for extension extendee
 	0,  // [0:36] is the sub-list for field type_name

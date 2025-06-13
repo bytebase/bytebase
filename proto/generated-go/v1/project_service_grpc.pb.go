@@ -40,6 +40,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectServiceClient interface {
+	// GetProject retrieves a project by name.
+	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error)
 	SearchProjects(ctx context.Context, in *SearchProjectsRequest, opts ...grpc.CallOption) (*SearchProjectsResponse, error)
@@ -209,6 +211,8 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, in *TestWebhookR
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
 type ProjectServiceServer interface {
+	// GetProject retrieves a project by name.
+	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	GetProject(context.Context, *GetProjectRequest) (*Project, error)
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
 	SearchProjects(context.Context, *SearchProjectsRequest) (*SearchProjectsResponse, error)

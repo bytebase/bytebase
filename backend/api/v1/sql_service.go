@@ -36,7 +36,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -1741,40 +1740,6 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
 	default:
 		return v1pb.Advice_STATUS_UNSPECIFIED
 	}
-}
-
-// ParseMyBatisMapper parses a MyBatis mapper XML file and returns the multi-SQL statements.
-func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBatisMapperRequest) (*v1pb.ParseMyBatisMapperResponse, error) {
-	content := string(request.Content)
-
-	parser := mapperparser.NewParser(content)
-	node, err := parser.Parse()
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse mybatis mapper: %v", err)
-	}
-
-	var stringsBuilder strings.Builder
-	if err := node.RestoreSQL(parser.NewRestoreContext().WithRestoreDataNodePlaceholder("@1"), &stringsBuilder); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to restore mybatis mapper: %v", err)
-	}
-
-	statement := stringsBuilder.String()
-	singleSQLs, err := parserbase.SplitMultiSQL(storepb.Engine_MYSQL, statement)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to split mybatis mapper: %v", err)
-	}
-
-	var results []string
-	for _, sql := range singleSQLs {
-		if sql.Empty {
-			continue
-		}
-		results = append(results, sql.Text)
-	}
-
-	return &v1pb.ParseMyBatisMapperResponse{
-		Statements: results,
-	}, nil
 }
 
 func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {

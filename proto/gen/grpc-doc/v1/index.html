@@ -22110,7 +22110,8 @@ TYPE_ISSUE_CREATE represents creating an issue.</p></td>
                 <td>GetProject</td>
                 <td><a href="#bytebase.v1.GetProjectRequest">GetProjectRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>GetProject retrieves a project by name.
+Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method.</p></td>
               </tr>
             
               <tr>
@@ -24053,13 +24054,6 @@ Pass this value in the page_token field in the subsequent call to
               </tr>
             
               <tr>
-                <td>ParseMyBatisMapper</td>
-                <td><a href="#bytebase.v1.ParseMyBatisMapperRequest">ParseMyBatisMapperRequest</a></td>
-                <td><a href="#bytebase.v1.ParseMyBatisMapperResponse">ParseMyBatisMapperResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>Pretty</td>
                 <td><a href="#bytebase.v1.PrettyRequest">PrettyRequest</a></td>
                 <td><a href="#bytebase.v1.PrettyResponse">PrettyResponse</a></td>
@@ -24172,16 +24166,6 @@ Pass this value in the page_token field in the subsequent call to
                 <td>Check</td>
                 <td>POST</td>
                 <td>/v1/sql/check</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ParseMyBatisMapper</td>
-                <td>POST</td>
-                <td>/v1/sql/parseMyBatisMapper</td>
                 <td>*</td>
               </tr>
               
@@ -29990,6 +29974,18 @@ Only support update the following fields for now:
               </tr>
             
               <tr>
+                <td>FEATURE_CUSTOM_INSTANCE_SYNC_TIME</td>
+                <td>42</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT</td>
+                <td>43</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>FEATURE_GOOGLE_AND_GITHUB_SSO</td>
                 <td>37</td>
                 <td><p></p></td>
@@ -30016,18 +30012,6 @@ Only support update the following fields for now:
               <tr>
                 <td>FEATURE_QUERY_DATASOURCE_RESTRICTION</td>
                 <td>41</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FEATURE_CUSTOM_INSTANCE_SYNC_TIME</td>
-                <td>42</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT</td>
-                <td>43</td>
                 <td><p></p></td>
               </tr>
             

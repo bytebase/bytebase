@@ -364,6 +364,16 @@ export enum PlanFeature {
   FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION = 36,
 
   /**
+   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 42;
+   */
+  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 42,
+
+  /**
+   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 43;
+   */
+  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 43,
+
+  /**
    * @generated from enum value: FEATURE_GOOGLE_AND_GITHUB_SSO = 37;
    */
   FEATURE_GOOGLE_AND_GITHUB_SSO = 37,
@@ -387,16 +397,6 @@ export enum PlanFeature {
    * @generated from enum value: FEATURE_QUERY_DATASOURCE_RESTRICTION = 41;
    */
   FEATURE_QUERY_DATASOURCE_RESTRICTION = 41,
-
-  /**
-   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 42;
-   */
-  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 42,
-
-  /**
-   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 43;
-   */
-  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 43,
 
   /**
    * @generated from enum value: FEATURE_RISK_ASSESSMENT = 44;
