@@ -27,10 +27,3 @@ bytebase-build
 .idea
 
 .DS_Store
-
-dist/
-docs/openapi/swagger.json
-docs/sqlservice/swagger.json
-frontend/public/monaco-workers/
-frontend/src/types/plan.yaml
-frontend/src/types/iam/*.yaml
