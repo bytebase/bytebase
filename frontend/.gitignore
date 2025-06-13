@@ -3,6 +3,8 @@
 node_modules
 /dist
 components.d.ts
+src/types/plan.yaml
+src/types/iam/*.yaml
 
 # local env files
 .env.i18n

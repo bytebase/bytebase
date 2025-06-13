@@ -10,14 +10,14 @@ This is the demo data for https://demo.bytebase.com.
 
    ```bash
    # Make sure to use the local pg binary
-   go build -p=16 -ldflags "-w -s" -o ./.air/bytebase ./backend/bin/server/main.go && PATH="$PWD/.air/resources/postgres-darwin-arm64-16/bin:$PATH" ./.air/bytebase --port 8080 --data . --debug --demo
+   go build -p=16 -ldflags "-w -s" -o ./bytebase-build/bytebase ./backend/bin/server/main.go && PATH="$PWD/bytebase-build/resources/postgres-darwin-arm64-16/bin:$PATH" ./bytebase-build/bytebase --port 8080 --data . --debug --demo
    ```
 
 1. Dump with the following command.
 
    ```bash
    # Make sure to use the local pg binary
-   PATH="$PWD/.air/resources/postgres-darwin-arm64-16/bin:$PATH" pg_dump -h /tmp -p 8082 -U bb --disable-triggers --no-owner --column-inserts --on-conflict-do-nothing > ~/dump.sql
+   PATH="$PWD/bytebase-build/resources/postgres-darwin-arm64-16/bin:$PATH" pg_dump -h /tmp -p 8082 -U bb --disable-triggers --no-owner --column-inserts --on-conflict-do-nothing > ~/dump.sql
    ```
 
    On the top of the dump.sql, the version should be consistent
