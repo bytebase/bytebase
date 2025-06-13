@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - **Important**: Run golangci-lint repeatedly until there are no issues. The linter has a max-issues limit and may not show all issues in a single run.
 3. **Auto-fix**: Use `golangci-lint run --fix --allow-parallel-runners` to fix issues automatically
 4. **Test**: Run relevant tests before committing
+5. **Build**: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 
 ### After Frontend Code Changes
 1. **Lint**: Run `pnpm --dir frontend lint --fix`
