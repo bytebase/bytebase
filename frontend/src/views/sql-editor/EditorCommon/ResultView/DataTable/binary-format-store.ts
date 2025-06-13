@@ -1,218 +1,231 @@
-import { ref } from 'vue';
+import type { InjectionKey, Ref } from "vue";
+import { provide, inject, ref } from "vue";
 
-// Store for binary data formatting
-// This store maps row/column coordinates to their selected format
-type FormatMap = Map<string, string>;
-type ColumnTypeMap = Map<string, string>;
-type ColumnFormatMap = Map<string, string>;
-
-// Create a global format map using Vue's ref for reactivity
-const formattedBinaryValues = ref<FormatMap>(new Map());
-
-// Store column types to help with auto-detection
-const columnTypes = ref<ColumnTypeMap>(new Map());
-
-// Store column format overrides
-const columnFormatOverrides = ref<ColumnFormatMap>(new Map());
-
-// Parameter interfaces
-interface CellKeyParams {
-  rowIndex: number;
-  colIndex: number;
-  setIndex?: number;
-  databaseName?: string;
-}
-
+export type BinaryFormat = "DEFAULT" | "BINARY" | "HEX" | "TEXT" | "BOOLEAN";
 interface ColumnKeyParams {
   colIndex: number;
   setIndex?: number;
-  databaseName?: string;
+  contextId: string;
+}
+
+interface CellKeyParams extends ColumnKeyParams {
+  rowIndex: number;
 }
 
 // Get a unique key for a cell's row/column position
 const getCellKey = (params: CellKeyParams): string => {
-  const { rowIndex, colIndex, setIndex = 0, databaseName = '' } = params;
-  return `${databaseName}:${setIndex}:${rowIndex}:${colIndex}`;
+  const { rowIndex, colIndex, setIndex = 0, contextId } = params;
+  return `${contextId}:${setIndex}:${rowIndex}:${colIndex}`;
 };
 
 // Get a key for a column
 const getColumnKey = (params: ColumnKeyParams): string => {
-  const { colIndex, setIndex = 0, databaseName = '' } = params;
-  return `${databaseName}:${setIndex}:col:${colIndex}`;
+  const { colIndex, setIndex = 0, contextId } = params;
+  return `${contextId}:${setIndex}:col:${colIndex}`;
 };
+
+interface GetBinaryFormatParams {
+  rowIndex?: number;
+  colIndex: number;
+  setIndex: number;
+}
 
 // Parameter interfaces for the public API functions
-export interface BinaryFormatParams {
-  rowIndex: number;
-  colIndex: number;
-  format: string;
-  setIndex?: number;
-  databaseName?: string;
+interface BinaryFormatParams extends GetBinaryFormatParams {
+  format: BinaryFormat;
 }
 
-export interface GetBinaryFormatParams {
-  rowIndex: number;
-  colIndex: number;
-  setIndex?: number;
-  databaseName?: string;
-}
-
-// Store a format for a specific cell
-export const setBinaryFormat = (params: BinaryFormatParams): void => {
-  const { rowIndex, colIndex, format, setIndex, databaseName } = params;
-  const key = getCellKey({ rowIndex, colIndex, setIndex, databaseName });
-  formattedBinaryValues.value.set(key, format);
+type BinaryFormatContext = {
+  getBinaryFormat: (params: GetBinaryFormatParams) => BinaryFormat | undefined;
+  setBinaryFormat: (params: BinaryFormatParams) => void;
 };
 
-// Get the format for a specific cell
-export const getBinaryFormat = (params: GetBinaryFormatParams): string | undefined => {
-  const { rowIndex, colIndex, setIndex, databaseName } = params;
-  const key = getCellKey({ rowIndex, colIndex, setIndex, databaseName });
-  return formattedBinaryValues.value.get(key);
+const KEY = Symbol(
+  "bb.sql-editor.result-view.binary-format"
+) as InjectionKey<BinaryFormatContext>;
+
+export const provideBinaryFormatContext = (contextId: Ref<string>) => {
+  const formattedBinaryValues = ref<Map<string, BinaryFormat>>(new Map());
+
+  const getBinaryFormat = (
+    params: GetBinaryFormatParams
+  ): BinaryFormat | undefined => {
+    const { rowIndex, colIndex, setIndex } = params;
+    if (rowIndex !== undefined) {
+      // find format for a specific cell.
+      const key = getCellKey({
+        rowIndex,
+        colIndex,
+        setIndex,
+        contextId: contextId.value,
+      });
+      if (formattedBinaryValues.value.has(key)) {
+        return formattedBinaryValues.value.get(key);
+      }
+    }
+    // fallback to column format.
+    const key = getColumnKey({
+      colIndex,
+      setIndex,
+      contextId: contextId.value,
+    });
+    return formattedBinaryValues.value.get(key);
+  };
+
+  const setBinaryFormat = (params: BinaryFormatParams): void => {
+    const { rowIndex, colIndex, format, setIndex } = params;
+    const key =
+      rowIndex !== undefined
+        ? getCellKey({
+            rowIndex,
+            colIndex,
+            setIndex,
+            contextId: contextId.value,
+          })
+        : getColumnKey({
+            colIndex,
+            setIndex,
+            contextId: contextId.value,
+          });
+    formattedBinaryValues.value.set(key, format);
+  };
+
+  const context: BinaryFormatContext = {
+    getBinaryFormat,
+    setBinaryFormat,
+  };
+
+  provide(KEY, context);
+  return context;
 };
 
-// Column type parameters
-export interface ColumnTypeParams {
-  colIndex: number;
-  columnType: string;
-  setIndex?: number;
-  databaseName?: string;
-}
-
-export interface GetColumnTypeParams {
-  colIndex: number;
-  setIndex?: number;
-  databaseName?: string;
-}
-
-// Column format parameters
-export interface ColumnFormatParams {
-  colIndex: number;
-  format: string | null;
-  setIndex?: number;
-  databaseName?: string;
-}
-
-export interface GetColumnFormatParams {
-  colIndex: number;
-  setIndex?: number;
-  databaseName?: string;
-}
-
-// Store column type information
-export const setColumnType = (params: ColumnTypeParams): void => {
-  const { colIndex, columnType, setIndex, databaseName } = params;
-  const key = getColumnKey({ colIndex, setIndex, databaseName });
-  columnTypes.value.set(key, columnType.toLowerCase());
+export const useBinaryFormatContext = () => {
+  return inject(KEY)!;
 };
-
-// Get column type information
-export const getColumnType = (params: GetColumnTypeParams): string | undefined => {
-  const { colIndex, setIndex, databaseName } = params;
-  const key = getColumnKey({ colIndex, setIndex, databaseName });
-  return columnTypes.value.get(key);
-};
-
-// Store a column format override
-export const setColumnFormatOverride = (params: ColumnFormatParams): void => {
-  const { colIndex, format, setIndex, databaseName } = params;
-  const key = getColumnKey({ colIndex, setIndex, databaseName });
-  if (format === null) {
-    columnFormatOverrides.value.delete(key);
-  } else {
-    columnFormatOverrides.value.set(key, format);
-  }
-};
-
-// Get a column format override
-export const getColumnFormatOverride = (params: GetColumnFormatParams): string | undefined => {
-  const { colIndex, setIndex, databaseName } = params;
-  const key = getColumnKey({ colIndex, setIndex, databaseName });
-  return columnFormatOverrides.value.get(key);
-};
-
-export interface DetectBinaryFormatParams {
-  bytesValue: Uint8Array | undefined;
-  columnType?: string;
-}
 
 // Detect the best format for binary data based on content
-export const detectBinaryFormat = (params: DetectBinaryFormatParams): string => {
-  const { bytesValue, columnType = '' } = params;
-  if (!bytesValue || bytesValue.length === 0) {
-    return 'HEX';
+export const detectBinaryFormat = (params: {
+  bytesValue: Uint8Array | undefined;
+  columnType: string;
+}): BinaryFormat => {
+  const { bytesValue, columnType = "" } = params;
+  if (!bytesValue || bytesValue.length === 0 || columnType === "") {
+    return "DEFAULT";
   }
-  
+
   const byteArray = Array.from(bytesValue);
-  
+
   // For single bit values (could be boolean)
   if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
     return "BOOLEAN";
   }
-  
+
   // Check if it's readable text
-  const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
+  const isReadableText = byteArray.every((byte) => byte >= 32 && byte <= 126);
   if (isReadableText) {
     return "TEXT";
   }
-  
+
   // Default format based on column type
-  const lowerColumnType = columnType.toLowerCase();
-  
-  // Detect BIT column types - for binary format display (0s and 1s)
-  const isBitColumn = (
-    lowerColumnType === 'bit' ||
-    lowerColumnType.startsWith('bit(') ||
-    (lowerColumnType.includes('bit') && !lowerColumnType.includes('binary')) ||
-    lowerColumnType === 'varbit' ||
-    lowerColumnType === 'bit varying'
-  );
-  
-  // BIT columns default to binary format
-  if (isBitColumn) {
-    return "BINARY";
-  }
-  
-  // All other binary types default to HEX
-  return "HEX";
+  return getBinaryFormatByColumnType(columnType) ?? "DEFAULT";
 };
 
-export interface FormatBinaryValueParams {
+export const formatBinaryValue = ({
+  bytesValue,
+  format,
+}: {
   bytesValue: Uint8Array | undefined;
-  format: string;
-}
-
-export const formatBinaryValue = (params: FormatBinaryValueParams): string => {
-  const { bytesValue, format } = params;
+  format: BinaryFormat;
+}): string => {
   if (!bytesValue || bytesValue.length === 0) {
-    return '';
+    return "";
   }
-  
+
   const byteArray = Array.from(bytesValue);
-  
+  const binaryValue = byteArray
+    .map((byte) => byte.toString(2).padStart(8, "0"))
+    .join("");
+
   switch (format) {
     case "BINARY":
-      return byteArray
-        .map(byte => byte.toString(2).padStart(8, "0"))
-        .join("");
+      return binaryValue;
     case "TEXT":
       try {
         return new TextDecoder().decode(new Uint8Array(byteArray));
       } catch {
-        // Fallback to HEX if text decoding fails
-        return "0x" + byteArray
-          .map(byte => byte.toString(16).toUpperCase().padStart(2, "0"))
-          .join("");
+        // Fallback to BINARY if text decoding fails
+        return binaryValue;
       }
+    case "HEX":
+      return (
+        "0x" +
+        byteArray
+          .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+          .join("")
+      );
     case "BOOLEAN":
-      if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
+      if (
+        byteArray.length === 1 &&
+        (byteArray[0] === 0 || byteArray[0] === 1)
+      ) {
         return byteArray[0] === 1 ? "true" : "false";
       }
-      // Fall through to HEX for non-boolean data
-    case "HEX":
+    // Fall through to DEFAULT
     default:
-      return "0x" + byteArray
-        .map(byte => byte.toString(16).toUpperCase().padStart(2, "0"))
-        .join("");
+      return binaryValue;
   }
+};
+
+// Determine the suitable format for a column based on column type and content
+export const getBinaryFormatByColumnType = (
+  rawType: string
+): BinaryFormat | undefined => {
+  // Get column type name from direct columnTypeNames prop
+  const columnType = rawType.toLowerCase();
+  if (!columnType) {
+    return;
+  }
+
+  // Detect BIT column types (bit, varbit, bit varying) - for binary format display
+  const isBitColumn =
+    // Generic bit types
+    columnType === "bit" ||
+    columnType.startsWith("bit(") ||
+    (columnType.includes("bit") && !columnType.includes("binary")) ||
+    // PostgreSQL bit types
+    columnType === "varbit" ||
+    columnType === "bit varying";
+
+  // BIT columns default to binary format
+  if (isBitColumn) {
+    return "BINARY";
+  }
+
+  // Detect BINARY column types (binary, varbinary, bytea, blob, etc) - for hex format display
+  const isBinaryColumn =
+    // Generic binary types
+    columnType === "binary" ||
+    columnType.includes("binary") ||
+    // MySQL/MariaDB binary types
+    columnType.startsWith("binary(") ||
+    columnType.startsWith("varbinary") ||
+    columnType.includes("blob") ||
+    columnType === "longblob" ||
+    columnType === "mediumblob" ||
+    columnType === "tinyblob" ||
+    // PostgreSQL binary type
+    columnType === "bytea" ||
+    // SQL Server binary types
+    columnType === "image" ||
+    columnType === "varbinary(max)" ||
+    // Oracle binary types
+    columnType === "raw" ||
+    columnType === "long raw";
+
+  // BINARY/VARBINARY/BLOB columns default to HEX format
+  if (isBinaryColumn) {
+    return "HEX";
+  }
+
+  return undefined;
 };

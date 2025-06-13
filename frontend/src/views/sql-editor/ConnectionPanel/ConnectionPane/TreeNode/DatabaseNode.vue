@@ -1,10 +1,12 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <LinkIcon v-if="connected" class="w-4 textinfolabel" />
+    <LinkIcon
+      v-if="tabStore.currentTab?.connection.database === database.name"
+      class="w-4 textinfolabel"
+    />
     <NCheckbox
       v-else-if="!disallowBatchQuery && canQuery"
       :checked="checked"
-      :disabled="tabStore.currentTab?.connection.database === database.name"
       @click.stop.prevent=""
       @update:checked="$emit('update:checked', $event)"
     />
@@ -76,10 +78,7 @@ const database = computed(
 const canQuery = computed(() => isDatabaseV1Queryable(database.value));
 
 const showRequestQueryButton = computed(() => {
-  return (
-    !disallowRequestQuery.value &&
-    !canQuery.value
-  );
+  return !disallowRequestQuery.value && !canQuery.value;
 });
 
 const hasInstanceContext = computed(() => {
