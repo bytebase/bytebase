@@ -7968,7 +7968,7 @@ TYPE_ISSUE_CREATE represents creating an issue. |
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) |  |
+| GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) | GetProject retrieves a project by name. Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method. |
 | ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) |  |
 | SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) |  |
 | CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) |  |
@@ -8657,7 +8657,6 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 | SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
 | Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
-| ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 | AICompletion | [AICompletionRequest](#bytebase-v1-AICompletionRequest) | [AICompletionResponse](#bytebase-v1-AICompletionResponse) |  |
@@ -10849,13 +10848,13 @@ PlanFeature represents the available features in Bytebase
 | FEATURE_INSTANCE_SSL_CONNECTION | 34 |  |
 | FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL | 35 |  |
 | FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION | 36 |  |
+| FEATURE_CUSTOM_INSTANCE_SYNC_TIME | 42 |  |
+| FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT | 43 |  |
 | FEATURE_GOOGLE_AND_GITHUB_SSO | 37 |  |
 | FEATURE_USER_GROUPS | 38 |  |
 | FEATURE_DISALLOW_SELF_SERVICE_SIGNUP | 39 |  |
 | FEATURE_DATABASE_SECRET_VARIABLES | 40 |  |
 | FEATURE_QUERY_DATASOURCE_RESTRICTION | 41 |  |
-| FEATURE_CUSTOM_INSTANCE_SYNC_TIME | 42 |  |
-| FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT | 43 |  |
 | FEATURE_RISK_ASSESSMENT | 44 |  |
 | FEATURE_APPROVAL_WORKFLOW | 45 |  |
 | FEATURE_AUDIT_LOG | 46 |  |
