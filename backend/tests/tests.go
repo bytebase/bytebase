@@ -20,7 +20,6 @@ import (
 	"go.uber.org/multierr"
 	"golang.org/x/net/http2"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
@@ -35,6 +34,36 @@ import (
 	component "github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/server"
 )
+
+// authInterceptor implements connect.Interceptor to add authentication headers
+type authInterceptor struct {
+	token string
+}
+
+func (a *authInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		if req.Spec().IsClient && a.token != "" {
+			req.Header().Set("Authorization", fmt.Sprintf("Bearer %s", a.token))
+		}
+		return next(ctx, req)
+	})
+}
+
+func (a *authInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return connect.StreamingClientFunc(func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		conn := next(ctx, spec)
+		if a.token != "" {
+			conn.RequestHeader().Set("Authorization", fmt.Sprintf("Bearer %s", a.token))
+		}
+		return conn
+	})
+}
+
+func (a *authInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return connect.StreamingHandlerFunc(func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		return next(ctx, conn)
+	})
+}
 
 var (
 	migrationStatement1 = `
@@ -244,20 +273,8 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		},
 	}
 
-	var authTokenCaptured string
-	var authTokenUnary connect.UnaryInterceptorFunc = func(next connect.UnaryFunc) connect.UnaryFunc {
-		f := func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			if req.Spec().IsClient && authTokenCaptured != "" {
-				req.Header().Set("Authorization", fmt.Sprintf("Bearer %s", authTokenCaptured))
-			}
-			return next(ctx, req)
-		}
-		return connect.UnaryFunc(f)
-	}
-
-	interceptors := connect.WithInterceptors(
-		authTokenUnary,
-	)
+	authInt := &authInterceptor{}
+	interceptors := connect.WithInterceptors(authInt)
 
 	baseURL := "http://localhost:" + fmt.Sprintf("%d", port)
 	ctl.issueServiceClient = v1connect.NewIssueServiceClient(ctl.client, baseURL, connect.WithGRPC(), interceptors)
@@ -288,12 +305,9 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	if err != nil {
 		return nil, err
 	}
-	authTokenCaptured = authToken
+	authInt.token = authToken
 
-	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
-		"Authorization",
-		fmt.Sprintf("Bearer %s", authToken),
-	)), nil
+	return ctx, nil
 }
 
 func (ctl *controller) waitForHealthz(ctx context.Context) error {
