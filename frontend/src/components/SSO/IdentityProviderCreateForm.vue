@@ -479,9 +479,9 @@
         </p>
         <p class="textinfolabel mt-1">
           <NRadioGroup v-model:value="configForLDAP.securityProtocol">
-            <NRadio value="starttls" label="StartTLS" />
-            <NRadio value="ldaps" label="LDAPS" />
-            <NRadio value="" label="None" />
+            <NRadio :value="LDAPIdentityProviderConfig_SecurityProtocol.START_TLS" label="StartTLS" />
+            <NRadio :value="LDAPIdentityProviderConfig_SecurityProtocol.LDAPS" label="LDAPS" />
+            <NRadio :value="LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED" label="None" />
           </NRadioGroup>
         </p>
       </div>
@@ -678,6 +678,7 @@ import {
   OAuth2IdentityProviderConfig,
   OIDCIdentityProviderConfig,
   LDAPIdentityProviderConfig,
+  LDAPIdentityProviderConfig_SecurityProtocol,
 } from "@/types/proto/v1/idp_service";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { OAuth2IdentityProviderTemplate } from "@/utils";
@@ -727,7 +728,7 @@ const configForOIDC = ref<OIDCIdentityProviderConfig>(
 const configForLDAP = ref<LDAPIdentityProviderConfig>(
   LDAPIdentityProviderConfig.fromPartial({
     port: 389,
-    securityProtocol: "starttls",
+    securityProtocol: LDAPIdentityProviderConfig_SecurityProtocol.START_TLS,
   })
 );
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();

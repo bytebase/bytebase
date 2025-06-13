@@ -300,14 +300,75 @@ export interface LDAPIdentityProviderConfig {
   userFilter: string;
   /**
    * SecurityProtocol is the security protocol to be used for establishing
-   * connections with the LDAP server. It must be StartTLS, LDAPS or None.
+   * connections with the LDAP server.
    */
-  securityProtocol: string;
+  securityProtocol: LDAPIdentityProviderConfig_SecurityProtocol;
   /**
    * FieldMapping is the mapping of the user attributes returned by the LDAP
    * server.
    */
   fieldMapping: FieldMapping | undefined;
+}
+
+export enum LDAPIdentityProviderConfig_SecurityProtocol {
+  SECURITY_PROTOCOL_UNSPECIFIED = "SECURITY_PROTOCOL_UNSPECIFIED",
+  /** START_TLS - StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS. */
+  START_TLS = "START_TLS",
+  /** LDAPS - LDAPS is the security protocol that uses TLS from the beginning. */
+  LDAPS = "LDAPS",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function lDAPIdentityProviderConfig_SecurityProtocolFromJSON(
+  object: any,
+): LDAPIdentityProviderConfig_SecurityProtocol {
+  switch (object) {
+    case 0:
+    case "SECURITY_PROTOCOL_UNSPECIFIED":
+      return LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED;
+    case 1:
+    case "START_TLS":
+      return LDAPIdentityProviderConfig_SecurityProtocol.START_TLS;
+    case 2:
+    case "LDAPS":
+      return LDAPIdentityProviderConfig_SecurityProtocol.LDAPS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return LDAPIdentityProviderConfig_SecurityProtocol.UNRECOGNIZED;
+  }
+}
+
+export function lDAPIdentityProviderConfig_SecurityProtocolToJSON(
+  object: LDAPIdentityProviderConfig_SecurityProtocol,
+): string {
+  switch (object) {
+    case LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED:
+      return "SECURITY_PROTOCOL_UNSPECIFIED";
+    case LDAPIdentityProviderConfig_SecurityProtocol.START_TLS:
+      return "START_TLS";
+    case LDAPIdentityProviderConfig_SecurityProtocol.LDAPS:
+      return "LDAPS";
+    case LDAPIdentityProviderConfig_SecurityProtocol.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function lDAPIdentityProviderConfig_SecurityProtocolToNumber(
+  object: LDAPIdentityProviderConfig_SecurityProtocol,
+): number {
+  switch (object) {
+    case LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED:
+      return 0;
+    case LDAPIdentityProviderConfig_SecurityProtocol.START_TLS:
+      return 1;
+    case LDAPIdentityProviderConfig_SecurityProtocol.LDAPS:
+      return 2;
+    case LDAPIdentityProviderConfig_SecurityProtocol.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 /**
@@ -1582,7 +1643,7 @@ function createBaseLDAPIdentityProviderConfig(): LDAPIdentityProviderConfig {
     bindPassword: "",
     baseDn: "",
     userFilter: "",
-    securityProtocol: "",
+    securityProtocol: LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED,
     fieldMapping: undefined,
   };
 }
@@ -1610,8 +1671,8 @@ export const LDAPIdentityProviderConfig: MessageFns<LDAPIdentityProviderConfig> 
     if (message.userFilter !== "") {
       writer.uint32(58).string(message.userFilter);
     }
-    if (message.securityProtocol !== "") {
-      writer.uint32(66).string(message.securityProtocol);
+    if (message.securityProtocol !== LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED) {
+      writer.uint32(64).int32(lDAPIdentityProviderConfig_SecurityProtocolToNumber(message.securityProtocol));
     }
     if (message.fieldMapping !== undefined) {
       FieldMapping.encode(message.fieldMapping, writer.uint32(74).fork()).join();
@@ -1683,11 +1744,11 @@ export const LDAPIdentityProviderConfig: MessageFns<LDAPIdentityProviderConfig> 
           continue;
         }
         case 8: {
-          if (tag !== 66) {
+          if (tag !== 64) {
             break;
           }
 
-          message.securityProtocol = reader.string();
+          message.securityProtocol = lDAPIdentityProviderConfig_SecurityProtocolFromJSON(reader.int32());
           continue;
         }
         case 9: {
@@ -1716,7 +1777,9 @@ export const LDAPIdentityProviderConfig: MessageFns<LDAPIdentityProviderConfig> 
       bindPassword: isSet(object.bindPassword) ? globalThis.String(object.bindPassword) : "",
       baseDn: isSet(object.baseDn) ? globalThis.String(object.baseDn) : "",
       userFilter: isSet(object.userFilter) ? globalThis.String(object.userFilter) : "",
-      securityProtocol: isSet(object.securityProtocol) ? globalThis.String(object.securityProtocol) : "",
+      securityProtocol: isSet(object.securityProtocol)
+        ? lDAPIdentityProviderConfig_SecurityProtocolFromJSON(object.securityProtocol)
+        : LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED,
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
     };
   },
@@ -1744,8 +1807,8 @@ export const LDAPIdentityProviderConfig: MessageFns<LDAPIdentityProviderConfig> 
     if (message.userFilter !== "") {
       obj.userFilter = message.userFilter;
     }
-    if (message.securityProtocol !== "") {
-      obj.securityProtocol = message.securityProtocol;
+    if (message.securityProtocol !== LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED) {
+      obj.securityProtocol = lDAPIdentityProviderConfig_SecurityProtocolToJSON(message.securityProtocol);
     }
     if (message.fieldMapping !== undefined) {
       obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
@@ -1765,7 +1828,8 @@ export const LDAPIdentityProviderConfig: MessageFns<LDAPIdentityProviderConfig> 
     message.bindPassword = object.bindPassword ?? "";
     message.baseDn = object.baseDn ?? "";
     message.userFilter = object.userFilter ?? "";
-    message.securityProtocol = object.securityProtocol ?? "";
+    message.securityProtocol = object.securityProtocol ??
+      LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED;
     message.fieldMapping = (object.fieldMapping !== undefined && object.fieldMapping !== null)
       ? FieldMapping.fromPartial(object.fieldMapping)
       : undefined;
