@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/soheilhy/cmux"
+	"golang.org/x/net/http2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -338,7 +339,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	}
 
 	s.muxServer = cmux.New(listener)
-	grpcListener := s.muxServer.MatchWithWriters(cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
+	grpcListener := s.muxServer.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
 	httpListener := s.muxServer.Match(cmux.HTTP1Fast(), cmux.Any())
 	s.echoServer.Listener = httpListener
 
@@ -348,7 +349,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		}
 	}()
 	go func() {
-		if err := s.echoServer.Start(address); err != nil {
+		if err := s.echoServer.StartH2CServer(address, &http2.Server{}); err != nil {
 			slog.Error("http server listen error", log.BBError(err))
 		}
 	}()

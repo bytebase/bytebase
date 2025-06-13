@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
@@ -138,7 +139,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), t.Name())
 				a.NoError(err)
 				instanceResourceID := generateRandomString("instance", 10)
-				instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+				instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 					InstanceId: instanceResourceID,
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceTitle,
@@ -147,8 +148,9 @@ func TestCreateDatabaseGroup(t *testing.T) {
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 						Activation:  true,
 					},
-				})
+				}))
 				a.NoError(err)
+				instance := instanceResp.Msg
 				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 				for preCreateDatabase := range prepareInstance.matchedDatabasesName {
 					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "")
@@ -159,7 +161,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 					a.NoError(err)
 				}
 			}
-			databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
+			databaseGroupResp, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
 				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
@@ -168,13 +170,15 @@ func TestCreateDatabaseGroup(t *testing.T) {
 						Expression: fmt.Sprintf(`(resource.environment_name == "environments/prod" && (%s))`, tc.databaseGroupExpr),
 					},
 				},
-			})
+			}))
 			a.NoError(err)
-			databaseGroup, err = ctl.databaseGroupServiceClient.GetDatabaseGroup(ctx, &v1pb.GetDatabaseGroupRequest{
+			databaseGroup := databaseGroupResp.Msg
+			databaseGroupResp, err = ctl.databaseGroupServiceClient.GetDatabaseGroup(ctx, connect.NewRequest(&v1pb.GetDatabaseGroupRequest{
 				Name: databaseGroup.Name,
 				View: v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL,
-			})
+			}))
 			a.NoError(err)
+			databaseGroup = databaseGroupResp.Msg
 
 			gotInstanceTitleToMatchedDatabases := make(map[string][]string)
 			gotInstanceTitleToUnmatchedDatabases := make(map[string][]string)

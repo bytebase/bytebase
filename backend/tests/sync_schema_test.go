@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -59,7 +60,7 @@ DROP SCHEMA "schema_a";
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
 	a.NoError(err)
 
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "pgTestSyncSchema",
@@ -68,50 +69,55 @@ DROP SCHEMA "schema_a";
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	instance := instanceResp.Msg
 
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase")
 	a.NoError(err)
 
-	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	database := databaseResp.Msg
 
-	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "create schema",
 			Content: []byte(createSchema),
 		},
-	})
+	}))
 	a.NoError(err)
+	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
-	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
+	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
 		Parent: database.Name,
 		View:   v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
-	})
+	}))
 	a.NoError(err)
-	changelogs := resp.Changelogs
+	changelogs := resp.Msg.Changelogs
 	a.Equal(1, len(changelogs))
 
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase")
 	a.NoError(err)
 
-	newDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+	newDatabaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, newDatabaseName),
-	})
+	}))
 	a.NoError(err)
+	newDatabase := newDatabaseResp.Msg
 
-	newDatabaseSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+	newDatabaseSchemaResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
 		Name: fmt.Sprintf("%s/schema", newDatabase.Name),
-	})
+	}))
 	a.NoError(err)
+	newDatabaseSchema := newDatabaseSchemaResp.Msg
 
 	diff, err := ctl.getSchemaDiff(ctx, &v1pb.DiffSchemaRequest{
 		Name: database.Name,
