@@ -76,6 +76,7 @@ Always follow these guidelines to avoid common linting errors:
 ## Misc
 
 - The database JSONB columns store JSON marshalled by protojson.Marshal in go code. protojson.Marshal produces camelCased key rather than the snake_case key defined in the proto files. e.g. task_run becomes taskRun.
+- When modifying multiple files, run file modification tasks in parallel whenever possible, instead of processing them sequentially.
 
 ## Individual Preferences
 
