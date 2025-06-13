@@ -4,25 +4,24 @@ import (
 	"context"
 	"time"
 
+	"connectrpc.com/connect"
+
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func (ctl *controller) adminQuery(ctx context.Context, database *v1pb.Database, query string) ([]*v1pb.QueryResult, error) {
-	c, err := ctl.sqlServiceClient.AdminExecute(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if err := c.Send(&v1pb.AdminExecuteRequest{
+	stream := ctl.sqlServiceClient.AdminExecute(ctx)
+	if err := stream.Send(&v1pb.AdminExecuteRequest{
 		Name:      database.Name,
 		Statement: query,
 	}); err != nil {
 		return nil, err
 	}
-	resp, err := c.Recv()
+	resp, err := stream.Receive()
 	if err != nil {
 		return nil, err
 	}
-	if err := c.CloseSend(); err != nil {
+	if err := stream.CloseRequest(); err != nil {
 		return nil, err
 	}
 	return resp.Results, nil
@@ -34,13 +33,13 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 	defer ticker.Stop()
 
 	for range ticker.C {
-		resp, err := ctl.planServiceClient.ListPlanCheckRuns(ctx, &v1pb.ListPlanCheckRunsRequest{
+		resp, err := ctl.planServiceClient.ListPlanCheckRuns(ctx, connect.NewRequest(&v1pb.ListPlanCheckRunsRequest{
 			Parent: plan.Name,
-		})
+		}))
 		if err != nil {
 			return nil, err
 		}
-		for _, check := range resp.PlanCheckRuns {
+		for _, check := range resp.Msg.PlanCheckRuns {
 			if check.Type == v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE {
 				if check.Status == v1pb.PlanCheckRun_DONE || check.Status == v1pb.PlanCheckRun_FAILED {
 					return check, nil
@@ -53,9 +52,9 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 
 // getSchemaDiff gets the schema diff.
 func (ctl *controller) getSchemaDiff(ctx context.Context, schemaDiff *v1pb.DiffSchemaRequest) (string, error) {
-	resp, err := ctl.databaseServiceClient.DiffSchema(ctx, schemaDiff)
+	resp, err := ctl.databaseServiceClient.DiffSchema(ctx, connect.NewRequest(schemaDiff))
 	if err != nil {
 		return "", err
 	}
-	return resp.Diff, nil
+	return resp.Msg.Diff, nil
 }

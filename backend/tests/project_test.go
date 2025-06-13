@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
@@ -24,7 +25,7 @@ func TestArchiveProject(t *testing.T) {
 	a.NoError(err)
 
 	// Add an instance.
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "test",
@@ -33,22 +34,23 @@ func TestArchiveProject(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	instance := instanceResp.Msg
 
 	t.Run("ArchiveProjectWithDatbase", func(_ *testing.T) {
 		databaseName := "db1"
 		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 		a.NoError(err)
 
-		_, err = ctl.projectServiceClient.DeleteProject(ctx, &v1pb.DeleteProjectRequest{
+		_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{
 			Name: ctl.project.Name,
-		})
+		}))
 		a.Error(err)
 	})
 
 	t.Run("ArchiveProjectWithOpenIssue", func(_ *testing.T) {
-		plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 			Parent: ctl.project.Name,
 			Plan: &v1pb.Plan{
 				Specs: []*v1pb.Plan_Spec{
@@ -63,9 +65,10 @@ func TestArchiveProject(t *testing.T) {
 					},
 				},
 			},
-		})
+		}))
 		a.NoError(err)
-		_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		plan := planResp.Msg
+		_, err = ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 			Parent: ctl.project.Name,
 			Issue: &v1pb.Issue{
 				Title:       "dummy issue",
@@ -73,12 +76,12 @@ func TestArchiveProject(t *testing.T) {
 				Type:        v1pb.Issue_DATABASE_CHANGE,
 				Plan:        plan.Name,
 			},
-		})
+		}))
 		a.NoError(err)
 
-		_, err = ctl.projectServiceClient.DeleteProject(ctx, &v1pb.DeleteProjectRequest{
+		_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{
 			Name: ctl.project.Name,
-		})
+		}))
 		a.ErrorContains(err, "resolve all open issues before deleting the project")
 	})
 }

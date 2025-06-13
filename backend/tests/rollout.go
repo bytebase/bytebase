@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -27,16 +28,17 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 }
 
 func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1pb.Project, spec *v1pb.Plan_Spec) (*v1pb.Plan, *v1pb.Rollout, *v1pb.Issue, error) {
-	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Specs: []*v1pb.Plan_Spec{spec},
 		},
-	})
+	}))
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to create plan")
 	}
-	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	plan := planResp.Msg
+	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -44,14 +46,16 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 			Description: "change database",
 			Plan:        plan.Name,
 		},
-	})
+	}))
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to create issue")
 	}
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
+	issue := issueResp.Msg
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}}))
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to create rollout")
 	}
+	rollout := rolloutResp.Msg
 	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	if err != nil {
 		return nil, nil, nil, err
@@ -65,10 +69,11 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 	defer ticker.Stop()
 
 	for range ticker.C {
-		issue, err := ctl.issueServiceClient.GetIssue(ctx, &v1pb.GetIssueRequest{Name: issueName})
+		issueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueName}))
 		if err != nil {
 			return err
 		}
+		issue := issueResp.Msg
 		if issue.ApprovalFindingError != "" {
 			return errors.Errorf("approval finding error: %v", issue.ApprovalFindingError)
 		}
@@ -77,12 +82,13 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 		}
 	}
 
-	rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{
+	rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
 		Name: rolloutName,
-	})
+	}))
 	if err != nil {
 		return err
 	}
+	rollout := rolloutResp.Msg
 	for _, stage := range rollout.Stages {
 		var runTasks []string
 		for _, task := range stage.Tasks {
@@ -91,10 +97,10 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 			}
 		}
 		if len(runTasks) > 0 {
-			_, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, &v1pb.BatchRunTasksRequest{
+			_, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
 				Parent: fmt.Sprintf("%s/stages/-", rolloutName),
 				Tasks:  runTasks,
-			})
+			}))
 			if err != nil {
 				return err
 			}
@@ -102,12 +108,13 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 	}
 
 	for range ticker.C {
-		rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{
+		rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
 			Name: rolloutName,
-		})
+		}))
 		if err != nil {
 			return err
 		}
+		rollout := rolloutResp.Msg
 		completed := true
 		var runTasks []string
 		for _, stage := range rollout.Stages {
@@ -121,12 +128,12 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 				case v1pb.Task_SKIPPED:
 					continue
 				case v1pb.Task_FAILED:
-					resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, &v1pb.ListTaskRunsRequest{Parent: task.Name, PageSize: 1})
+					resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{Parent: task.Name, PageSize: 1}))
 					if err != nil {
 						return err
 					}
-					if len(resp.TaskRuns) > 0 {
-						return errors.New(resp.TaskRuns[0].Detail)
+					if len(resp.Msg.TaskRuns) > 0 {
+						return errors.New(resp.Msg.TaskRuns[0].Detail)
 					}
 				default:
 					completed = false
@@ -136,10 +143,10 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 
 		// Rollout tasks.
 		if len(runTasks) > 0 {
-			_, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, &v1pb.BatchRunTasksRequest{
+			_, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
 				Parent: fmt.Sprintf("%s/stages/-", rolloutName),
 				Tasks:  runTasks,
-			})
+			}))
 			if err != nil {
 				return err
 			}

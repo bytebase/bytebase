@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -104,7 +105,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	_, err = ctl.settingServiceClient.UpdateSetting(ctx, &v1pb.UpdateSettingRequest{
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		Setting: &v1pb.Setting{
 			Name: "settings/" + v1pb.Setting_SEMANTIC_TYPES.String(),
 			Value: &v1pb.Value{
@@ -124,7 +125,7 @@ func TestSensitiveData(t *testing.T) {
 			},
 		},
 		AllowMissing: true,
-	})
+	}))
 	a.NoError(err)
 
 	mysqlContainer, err := getMySQLContainer(ctx)
@@ -145,7 +146,7 @@ func TestSensitiveData(t *testing.T) {
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
@@ -154,23 +155,25 @@ func TestSensitiveData(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	instance := instanceResp.Msg
 
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 	a.NoError(err)
 
-	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	})
+	}))
 	a.NoError(err)
+	database := databaseResp.Msg
 
 	// Validate query syntax error.
-	_, err = ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
+	_, err = ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:         database.Name,
 		Statement:    "SELECT hello TO world;",
 		DataSourceId: "admin",
-	})
+	}))
 	a.Error(err)
 	// TODO(d): deprecate the details with diagonose check. And the error is not reached anyway.
 	/*
@@ -183,21 +186,22 @@ func TestSensitiveData(t *testing.T) {
 		a.Equal("Syntax error at line 1:13 \nrelated text: SELECT hello TO", report.Detail)
 	*/
 
-	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "createTable",
 			Content: []byte(createTable),
 		},
-	})
+	}))
 	a.NoError(err)
+	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
 	// Create sensitive data in the database config.
-	_, err = ctl.databaseCatalogServiceClient.UpdateDatabaseCatalog(ctx, &v1pb.UpdateDatabaseCatalogRequest{
+	_, err = ctl.databaseCatalogServiceClient.UpdateDatabaseCatalog(ctx, connect.NewRequest(&v1pb.UpdateDatabaseCatalogRequest{
 		Catalog: &v1pb.DatabaseCatalog{
 			Name: fmt.Sprintf("%s/catalog", database.Name),
 			Schemas: []*v1pb.SchemaCatalog{
@@ -225,31 +229,32 @@ func TestSensitiveData(t *testing.T) {
 				},
 			},
 		},
-	})
+	}))
 	a.NoError(err)
 
-	insertDataSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+	insertDataSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "insertData",
 			Content: []byte(insertData),
 		},
-	})
+	}))
 	a.NoError(err)
+	insertDataSheet := insertDataSheetResp.Msg
 
 	// Insert data into table tech_book.
 	err = ctl.changeDatabase(ctx, ctl.project, database, insertDataSheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
 	a.NoError(err)
 
 	// Query masked data.
-	queryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
+	queryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:         database.Name,
 		Statement:    queryTable,
 		DataSourceId: "admin",
-	})
+	}))
 	a.NoError(err)
-	a.Equal(1, len(queryResp.Results))
-	diff := cmp.Diff(maskedData, queryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
+	a.Equal(1, len(queryResp.Msg.Results))
+	diff := cmp.Diff(maskedData, queryResp.Msg.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Empty(diff)
 
 	// Query origin data.
