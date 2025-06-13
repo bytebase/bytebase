@@ -4,7 +4,7 @@
       <span class="mr-2">
         {{ $t("settings.general.workspace.query-data-policy.timeout.self") }}
       </span>
-      <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION" />
+      <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
     </p>
     <p class="text-sm text-gray-400 mt-1">
       {{

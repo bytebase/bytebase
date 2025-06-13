@@ -29,7 +29,7 @@
             $t("environment.access-control.restrict-admin-connection.self")
           }}</span>
           <FeatureBadge
-            :feature="PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION"
+            :feature="PlanFeature.FEATURE_QUERY_POLICY"
           />
         </div>
         <div v-if="adminDataSourceQueryRestrictionEnabled" class="ml-12">
@@ -73,7 +73,7 @@
         {{ $t("environment.statement-execution.title") }}
       </label>
       <FeatureBadge
-        :feature="PlanFeature.FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION"
+        :feature="PlanFeature.FEATURE_QUERY_POLICY"
       />
     </div>
     <div>
@@ -175,7 +175,7 @@ const adminDataSourceQueryRestrictionEnabled = computed(() => {
 });
 
 const hasRestrictQueryDataSourceFeature = computed(() =>
-  hasFeature(PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION)
+  hasFeature(PlanFeature.FEATURE_QUERY_POLICY)
 );
 
 const hasRestrictCopyingDataFeature = computed(() =>
@@ -183,7 +183,7 @@ const hasRestrictCopyingDataFeature = computed(() =>
 );
 
 const hasRestrictDDLDMLFeature = computed(() =>
-  hasFeature(PlanFeature.FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION)
+  hasFeature(PlanFeature.FEATURE_QUERY_POLICY)
 );
 
 const allowUpdatePolicy = computed(() => {

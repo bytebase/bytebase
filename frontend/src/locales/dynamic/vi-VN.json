@@ -181,10 +181,6 @@
         "title": "Lưu và chia sẻ tập lệnh SQL",
         "desc": "Lưu và chia sẻ tập lệnh SQL với các thành viên trong nhóm."
       },
-      "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION": {
-        "title": "Hạn chế DDL/DML SQL editor",
-        "desc": "Hạn chế các hoạt động DDL và DML trong trình soạn thảo SQL."
-      },
       "FEATURE_BATCH_QUERY": {
         "title": "Truy vấn hàng loạt",
         "desc": "Thực thi truy vấn trên nhiều cơ sở dữ liệu cùng lúc."
@@ -240,10 +236,6 @@
       "FEATURE_DATABASE_SECRET_VARIABLES": {
         "title": "Biến bí mật cơ sở dữ liệu",
         "desc": "Lưu trữ và sử dụng các bí mật được mã hóa trong tập lệnh SQL."
-      },
-      "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
-        "title": "Hạn chế nguồn dữ liệu truy vấn",
-        "desc": "Hạn chế người dùng có thể truy vấn nguồn dữ liệu nào."
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Đánh giá rủi ro",
