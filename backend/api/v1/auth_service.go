@@ -354,7 +354,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 				BindPassword:     idpConfig.BindPassword,
 				BaseDN:           idpConfig.BaseDn,
 				UserFilter:       idpConfig.UserFilter,
-				SecurityProtocol: ldap.SecurityProtocol(idpConfig.SecurityProtocol),
+				SecurityProtocol: idpConfig.SecurityProtocol,
 				FieldMapping:     idpConfig.FieldMapping,
 			},
 		)

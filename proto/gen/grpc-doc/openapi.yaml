@@ -10610,10 +10610,15 @@ components:
                     type: string
                     description: UserFilter is the filter to search for users, e.g. "(uid=%s)".
                 securityProtocol:
+                    enum:
+                        - SECURITY_PROTOCOL_UNSPECIFIED
+                        - START_TLS
+                        - LDAPS
                     type: string
                     description: |-
                         SecurityProtocol is the security protocol to be used for establishing
-                         connections with the LDAP server. It must be StartTLS, LDAPS or None.
+                         connections with the LDAP server.
+                    format: enum
                 fieldMapping:
                     allOf:
                         - $ref: '#/components/schemas/FieldMapping'

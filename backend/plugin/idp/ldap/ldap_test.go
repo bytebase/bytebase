@@ -37,7 +37,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				BindPassword:     "pa$$word",
 				BaseDN:           "ou=Users,o=6456a5e9c25dabb51ccad385,dc=example,dc=com",
 				UserFilter:       "(&(objectClass=posixAccount)(uid=%s))",
-				SecurityProtocol: SecurityProtocolStartTLS,
+				SecurityProtocol: storepb.LDAPIdentityProviderConfig_START_TLS,
 				FieldMapping: &storepb.FieldMapping{
 					Identifier: "uid",
 				},
@@ -52,7 +52,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				BindPassword:     "pa$$word",
 				BaseDN:           "ou=Users,o=6456a5e9c25dabb51ccad385,dc=example,dc=com",
 				UserFilter:       "(&(objectClass=posixAccount)(uid=%s))",
-				SecurityProtocol: SecurityProtocolStartTLS,
+				SecurityProtocol: storepb.LDAPIdentityProviderConfig_START_TLS,
 				FieldMapping: &storepb.FieldMapping{
 					Identifier: "uid",
 				},
@@ -67,7 +67,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				BindPassword:     "",
 				BaseDN:           "ou=Users,o=6456a5e9c25dabb51ccad385,dc=example,dc=com",
 				UserFilter:       "(&(objectClass=posixAccount)(uid=%s))",
-				SecurityProtocol: SecurityProtocolStartTLS,
+				SecurityProtocol: storepb.LDAPIdentityProviderConfig_START_TLS,
 				FieldMapping: &storepb.FieldMapping{
 					Identifier: "uid",
 				},
@@ -82,7 +82,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				BindPassword:     "pa$$word",
 				BaseDN:           "",
 				UserFilter:       "(&(objectClass=posixAccount)(uid=%s))",
-				SecurityProtocol: SecurityProtocolStartTLS,
+				SecurityProtocol: storepb.LDAPIdentityProviderConfig_START_TLS,
 				FieldMapping: &storepb.FieldMapping{
 					Identifier: "uid",
 				},
@@ -97,7 +97,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				BindPassword:     "pa$$word",
 				BaseDN:           "ou=Users,o=6456a5e9c25dabb51ccad385,dc=example,dc=com",
 				UserFilter:       "",
-				SecurityProtocol: SecurityProtocolStartTLS,
+				SecurityProtocol: storepb.LDAPIdentityProviderConfig_START_TLS,
 				FieldMapping: &storepb.FieldMapping{
 					Identifier: "uid",
 				},
@@ -112,7 +112,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				BindPassword:     "pa$$word",
 				BaseDN:           "ou=Users,o=6456a5e9c25dabb51ccad385,dc=example,dc=com",
 				UserFilter:       "(&(objectClass=posixAccount)(uid=%s))",
-				SecurityProtocol: SecurityProtocolStartTLS,
+				SecurityProtocol: storepb.LDAPIdentityProviderConfig_START_TLS,
 				FieldMapping: &storepb.FieldMapping{
 					DisplayName: "displayName",
 				},
@@ -237,7 +237,7 @@ func TestIdentityProvider(t *testing.T) {
 			BindPassword:     "pa$$word",
 			BaseDN:           "ou=Users,o=6456a5e9c25dabb51ccad385,dc=example,dc=com",
 			UserFilter:       "(&(objectClass=posixAccount)(uid=%s))",
-			SecurityProtocol: SecurityProtocolLDAPS,
+			SecurityProtocol: storepb.LDAPIdentityProviderConfig_LDAPS,
 			FieldMapping: &storepb.FieldMapping{
 				Identifier:  "uid",
 				DisplayName: "displayName",

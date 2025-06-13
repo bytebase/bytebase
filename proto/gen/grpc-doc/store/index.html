@@ -661,6 +661,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.LDAPIdentityProviderConfig.SecurityProtocol"><span class="badge">E</span>LDAPIdentityProviderConfig.SecurityProtocol</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.OAuth2AuthStyle"><span class="badge">E</span>OAuth2AuthStyle</a>
                 </li>
               
@@ -6058,11 +6062,10 @@ search requests. </p></td>
               
                 <tr>
                   <td>security_protocol</td>
-                  <td><a href="#string">string</a></td>
+                  <td><a href="#bytebase.store.LDAPIdentityProviderConfig.SecurityProtocol">LDAPIdentityProviderConfig.SecurityProtocol</a></td>
                   <td></td>
                   <td><p>SecurityProtocol is the security protocol to be used for establishing
-connections with the LDAP server. It should be either StartTLS or LDAPS, and
-cannot be empty. </p></td>
+connections with the LDAP server. </p></td>
                 </tr>
               
                 <tr>
@@ -6258,6 +6261,35 @@ server. </p></td>
                 <td>LDAP</td>
                 <td>3</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.LDAPIdentityProviderConfig.SecurityProtocol">LDAPIdentityProviderConfig.SecurityProtocol</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SECURITY_PROTOCOL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>START_TLS</td>
+                <td>1</td>
+                <td><p>StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS.</p></td>
+              </tr>
+            
+              <tr>
+                <td>LDAPS</td>
+                <td>2</td>
+                <td><p>LDAPS is the security protocol that uses TLS from the beginning.</p></td>
               </tr>
             
           </tbody>
