@@ -59,7 +59,7 @@ func (a *authInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) 
 	})
 }
 
-func (a *authInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+func (*authInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return connect.StreamingHandlerFunc(func(ctx context.Context, conn connect.StreamingHandlerConn) error {
 		return next(ctx, conn)
 	})
@@ -267,7 +267,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.client = &http.Client{
 		Transport: &http2.Transport{
 			AllowHTTP: true,
-			DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+			DialTLSContext: func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
 				return net.Dial(network, addr)
 			},
 		},
