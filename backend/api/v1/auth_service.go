@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -33,6 +34,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 var (
@@ -41,7 +43,7 @@ var (
 
 // AuthService implements the auth service.
 type AuthService struct {
-	v1pb.UnimplementedAuthServiceServer
+	v1connect.UnimplementedAuthServiceHandler
 	store          *store.Store
 	secret         string
 	licenseService *enterprise.LicenseService
@@ -65,7 +67,8 @@ func NewAuthService(store *store.Store, secret string, licenseService *enterpris
 }
 
 // Login is the auth login method including SSO.
-func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
+func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.LoginRequest]) (*connect.Response[v1pb.LoginResponse], error) {
+	request := req.Msg
 	var loginUser *store.UserMessage
 	mfaSecondLogin := request.MfaTempToken != nil && *request.MfaTempToken != ""
 	loginViaIDP := request.GetIdpName() != ""
@@ -147,9 +150,9 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
 		}
-		return &v1pb.LoginResponse{
+		return connect.NewResponse(&v1pb.LoginResponse{
 			MfaTempToken: &mfaTempToken,
-		}, nil
+		}), nil
 	}
 
 	switch loginUser.Type {
@@ -205,7 +208,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			"email": loginUser.Email,
 		},
 	})
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage) bool {
@@ -250,7 +253,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 }
 
 // Logout is the auth logout method.
-func (s *AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb.Empty, error) {
+func (s *AuthService) Logout(ctx context.Context, _ *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
@@ -266,7 +269,7 @@ func (s *AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*empty
 	})); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 	}
-	return &emptypb.Empty{}, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {

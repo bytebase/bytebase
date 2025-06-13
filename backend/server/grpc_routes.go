@@ -88,11 +88,32 @@ func configureGrpcRouters(
 	worksheetPath, worksheetHandler := v1connect.NewWorksheetServiceHandler(worksheetService)
 	connectHandlers[worksheetPath] = withCORS(worksheetHandler)
 
-	// Register services.
-	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
+	// UserService has been migrated to Connect RPC
 	userService := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
-	v1pb.RegisterAuthServiceServer(grpcServer, authService)
-	v1pb.RegisterUserServiceServer(grpcServer, userService)
+	userPath, userHandler := v1connect.NewUserServiceHandler(userService)
+	connectHandlers[userPath] = withCORS(userHandler)
+
+	// AuthService has been migrated to Connect RPC
+	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
+	authPath, authHandler := v1connect.NewAuthServiceHandler(authService)
+	connectHandlers[authPath] = withCORS(authHandler)
+
+	// WorkspaceService has been migrated to Connect RPC
+	workspaceService := apiv1.NewWorkspaceService(stores, iamManager)
+	workspacePath, workspaceHandler := v1connect.NewWorkspaceServiceHandler(workspaceService)
+	connectHandlers[workspacePath] = withCORS(workspaceHandler)
+
+	// SettingService has been migrated to Connect RPC
+	settingService := apiv1.NewSettingService(stores, profile, licenseService, stateCfg)
+	settingPath, settingHandler := v1connect.NewSettingServiceHandler(settingService)
+	connectHandlers[settingPath] = withCORS(settingHandler)
+
+	// RoleService has been migrated to Connect RPC
+	roleService := apiv1.NewRoleService(stores, iamManager, licenseService)
+	rolePath, roleHandler := v1connect.NewRoleServiceHandler(roleService)
+	connectHandlers[rolePath] = withCORS(roleHandler)
+
+	// Register services.
 	v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(
 		stores,
 		profile,
@@ -111,9 +132,8 @@ func configureGrpcRouters(
 	v1pb.RegisterDatabaseCatalogServiceServer(grpcServer, apiv1.NewDatabaseCatalogService(stores, licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
-	v1pb.RegisterWorkspaceServiceServer(grpcServer, apiv1.NewWorkspaceService(stores, iamManager))
 	v1pb.RegisterIdentityProviderServiceServer(grpcServer, apiv1.NewIdentityProviderService(stores, licenseService))
-	v1pb.RegisterSettingServiceServer(grpcServer, apiv1.NewSettingService(stores, profile, licenseService, stateCfg))
+	// SettingService is now handled by Connect RPC
 	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)
 	v1pb.RegisterSQLServiceServer(grpcServer, sqlService)
 	releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory)
@@ -124,7 +144,7 @@ func configureGrpcRouters(
 	v1pb.RegisterIssueServiceServer(grpcServer, issueService)
 	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
-	v1pb.RegisterRoleServiceServer(grpcServer, apiv1.NewRoleService(stores, iamManager, licenseService))
+	// RoleService is now handled by Connect RPC
 	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile))
 	v1pb.RegisterDatabaseGroupServiceServer(grpcServer, apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService))
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
@@ -145,16 +165,10 @@ func configureGrpcRouters(
 	}
 
 	// Sort by service name, align with api.bytebase.com.
-	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterUserServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// ActuatorService is now handled by Connect RPC
+	// UserService is now handled by Connect RPC
 	// AuditLogService is now handled by Connect RPC
-	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// AuthService is now handled by Connect RPC
 	// CelService is now handled by Connect RPC
 	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
@@ -197,18 +211,14 @@ func configureGrpcRouters(
 		return nil, err
 	}
 	// RiskService is now handled by Connect RPC
-	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// RoleService is now handled by Connect RPC
 	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	if err := v1pb.RegisterSQLServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// SettingService is now handled by Connect RPC
 	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
@@ -216,9 +226,7 @@ func configureGrpcRouters(
 		return nil, err
 	}
 	// WorksheetService is now handled by Connect RPC
-	if err := v1pb.RegisterWorkspaceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// WorkspaceService is now handled by Connect RPC
 	if err := v1pb.RegisterReleaseServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
