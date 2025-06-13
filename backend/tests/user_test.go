@@ -22,7 +22,7 @@ func TestDeleteUser(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	expectErrorMsg := "rpc error: code = InvalidArgument desc = workspace must have at least one admin"
+	expectErrorMsg := "workspace must have at least one admin"
 
 	memberResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{
@@ -45,7 +45,7 @@ func TestDeleteUser(t *testing.T) {
 		Name: ctl.principalName,
 	}))
 	a.Error(err)
-	a.EqualError(err, expectErrorMsg)
+	a.ErrorContains(err, expectErrorMsg)
 
 	serviceAccountResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{
@@ -79,7 +79,7 @@ func TestDeleteUser(t *testing.T) {
 		Name: ctl.principalName,
 	}))
 	a.Error(err)
-	a.EqualError(err, expectErrorMsg)
+	a.ErrorContains(err, expectErrorMsg)
 
 	_, err = ctl.userServiceClient.UndeleteUser(ctx, connect.NewRequest(&v1pb.UndeleteUserRequest{
 		Name: member.Name,
@@ -134,7 +134,7 @@ func TestDeleteUser(t *testing.T) {
 		Name: member.Name,
 	}))
 	a.Error(err)
-	a.EqualError(err, expectErrorMsg)
+	a.ErrorContains(err, expectErrorMsg)
 
 	_, err = ctl.userServiceClient.UndeleteUser(ctx, connect.NewRequest(&v1pb.UndeleteUserRequest{
 		Name: ctl.principalName,
