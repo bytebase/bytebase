@@ -1392,14 +1392,6 @@ export declare const SQLService: GenService<{
     output: typeof CheckResponseSchema;
   },
   /**
-   * @generated from rpc bytebase.v1.SQLService.ParseMyBatisMapper
-   */
-  parseMyBatisMapper: {
-    methodKind: "unary";
-    input: typeof ParseMyBatisMapperRequestSchema;
-    output: typeof ParseMyBatisMapperResponseSchema;
-  },
-  /**
    * @generated from rpc bytebase.v1.SQLService.Pretty
    */
   pretty: {

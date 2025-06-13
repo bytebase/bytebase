@@ -854,6 +854,9 @@ export declare const Activity_TypeSchema: GenEnum<Activity_Type>;
  */
 export declare const ProjectService: GenService<{
   /**
+   * GetProject retrieves a project by name.
+   * Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+   *
    * @generated from rpc bytebase.v1.ProjectService.GetProject
    */
   getProject: {

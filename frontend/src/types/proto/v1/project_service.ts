@@ -2512,6 +2512,10 @@ export const ProjectServiceDefinition = {
   name: "ProjectService",
   fullName: "bytebase.v1.ProjectService",
   methods: {
+    /**
+     * GetProject retrieves a project by name.
+     * Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+     */
     getProject: {
       name: "GetProject",
       requestType: GetProjectRequest,

@@ -15,6 +15,8 @@ import "v1/iam_policy.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service ProjectService {
+  // GetProject retrieves a project by name.
+  // Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
   rpc GetProject(GetProjectRequest) returns (Project) {
     option (google.api.http) = {get: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";

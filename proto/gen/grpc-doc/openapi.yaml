@@ -3359,6 +3359,9 @@ paths:
         get:
             tags:
                 - ProjectService
+            description: |-
+                GetProject retrieves a project by name.
+                 Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
             operationId: ProjectService_GetProject
             parameters:
                 - name: project
@@ -7010,30 +7013,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/CheckResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/sql/parseMyBatisMapper:
-        post:
-            tags:
-                - SQLService
-            operationId: SQLService_ParseMyBatisMapper
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ParseMyBatisMapperRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ParseMyBatisMapperResponse'
                 default:
                     description: Default error response
                     content:
@@ -11141,19 +11120,6 @@ components:
                     type: object
                     additionalProperties:
                         $ref: '#/components/schemas/ObjectSchema'
-        ParseMyBatisMapperRequest:
-            type: object
-            properties:
-                content:
-                    type: string
-                    format: bytes
-        ParseMyBatisMapperResponse:
-            type: object
-            properties:
-                statements:
-                    type: array
-                    items:
-                        type: string
         PasswordRestrictionSetting:
             type: object
             properties:
