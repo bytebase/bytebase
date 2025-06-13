@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
@@ -26,7 +27,7 @@ func TestDataSource(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "test",
@@ -35,12 +36,13 @@ func TestDataSource(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Id: "admin-ds", Host: instanceDir}},
 		},
-	})
+	}))
+	instance := instanceResp.Msg
 	a.NoError(err)
 
 	err = ctl.removeLicense(ctx)
 	a.NoError(err)
-	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
+	_, err = ctl.instanceServiceClient.AddDataSource(ctx, connect.NewRequest(&v1pb.AddDataSourceRequest{
 		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:       "readonly",
@@ -51,12 +53,12 @@ func TestDataSource(t *testing.T) {
 			SslCert:  "",
 			SslKey:   "",
 		},
-	})
+	}))
 	a.ErrorContains(err, "TEAM feature, please upgrade to access it")
 
 	err = ctl.setLicense(ctx)
 	a.NoError(err)
-	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
+	_, err = ctl.instanceServiceClient.AddDataSource(ctx, connect.NewRequest(&v1pb.AddDataSourceRequest{
 		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:       "readonly",
@@ -67,16 +69,17 @@ func TestDataSource(t *testing.T) {
 			SslCert:  "",
 			SslKey:   "",
 		},
-	})
+	}))
 	a.NoError(err)
 
-	instance, err = ctl.instanceServiceClient.GetInstance(ctx, &v1pb.GetInstanceRequest{Name: instance.Name})
+	instanceResp, err = ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: instance.Name}))
 	a.NoError(err)
+	instance = instanceResp.Msg
 	a.Equal(2, len(instance.DataSources))
 	err = ctl.removeLicense(ctx)
 	a.NoError(err)
 
-	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
+	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, connect.NewRequest(&v1pb.UpdateDataSourceRequest{
 		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:   "readonly",
@@ -86,12 +89,12 @@ func TestDataSource(t *testing.T) {
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"host", "port"},
 		},
-	})
+	}))
 	a.ErrorContains(err, "TEAM feature, please upgrade to access it")
 
 	err = ctl.setLicense(ctx)
 	a.NoError(err)
-	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
+	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, connect.NewRequest(&v1pb.UpdateDataSourceRequest{
 		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:   "readonly",
@@ -101,10 +104,10 @@ func TestDataSource(t *testing.T) {
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"host", "port"},
 		},
-	})
+	}))
 	a.NoError(err)
 
-	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
+	_, err = ctl.instanceServiceClient.AddDataSource(ctx, connect.NewRequest(&v1pb.AddDataSourceRequest{
 		Name: instance.Name,
 		DataSource: &v1pb.DataSource{
 			Id:       "second-read-only-datasource",
@@ -115,13 +118,13 @@ func TestDataSource(t *testing.T) {
 			SslCert:  "",
 			SslKey:   "",
 		},
-	})
+	}))
 	a.NoError(err)
 
-	_, err = ctl.instanceServiceClient.RemoveDataSource(ctx, &v1pb.RemoveDataSourceRequest{
+	_, err = ctl.instanceServiceClient.RemoveDataSource(ctx, connect.NewRequest(&v1pb.RemoveDataSourceRequest{
 		Name:       instance.Name,
 		DataSource: &v1pb.DataSource{Id: "readonly"},
-	})
+	}))
 	a.NoError(err)
 }
 
@@ -159,7 +162,7 @@ func TestExternalSecretManager(t *testing.T) {
 	a.NoError(err)
 
 	secretURL := fmt.Sprintf("{{http://localhost:%d/secrets/hello-secret-id:access}}", smPort)
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
@@ -168,8 +171,9 @@ func TestExternalSecretManager(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "bytebase", Password: secretURL, Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	instance := instanceResp.Msg
 
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase")
 	a.NoError(err)

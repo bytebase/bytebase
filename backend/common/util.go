@@ -21,7 +21,7 @@ const (
 	MaxSheetCheckSize = 2 * 1024 * 1024
 	// The maximum number of bytes for sql results in response body.
 	// 100 MB.
-	DefaultMaximumSQLResultSize = 100 * 1024 * 1024
+	DefaultMaximumSQLResultSize = int64(100 * 1024 * 1024)
 	// MaximumCommands is the maximum number of commands that can be executed in a single transaction.
 	MaximumCommands = 200
 	// MaximumAdvicePerStatus is the maximum number of advice that can be returned per status.

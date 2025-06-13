@@ -6,6 +6,7 @@ import (
 	"slices"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -77,7 +78,7 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
 	a.NoError(err)
 
-	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "testFilterChangeHistoryInstance1",
@@ -86,45 +87,45 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
 
 	// Create an issue that creates a database.
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase")
+	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil /* environment */, databaseName, "bytebase")
 	a.NoError(err)
 
-	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
-		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
-	})
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, databaseName),
+	}))
 	a.NoError(err)
 
 	for i, stmt := range statements {
-		sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 			Parent: ctl.project.Name,
 			Sheet: &v1pb.Sheet{
 				Title:   fmt.Sprintf("migration statement sheet %d", i+1),
 				Content: []byte(stmt),
 			},
-		})
+		}))
 		a.NoError(err)
 
 		// Create an issue that updates database schema.
-		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+		err = ctl.changeDatabase(ctx, ctl.project, databaseResp.Msg, sheetResp.Msg, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
 	}
 
 	// Get migration history by filter.
 	for _, tt := range tests {
-		resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
-			Parent: database.Name,
+		resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
+			Parent: databaseResp.Msg.Name,
 			View:   v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
 			Filter: tt.filter,
-		})
+		}))
 		a.NoError(err)
-		a.Equal(len(tt.wantStatements), len(resp.Changelogs), tt.filter)
+		a.Equal(len(tt.wantStatements), len(resp.Msg.Changelogs), tt.filter)
 		for i, wantStatement := range tt.wantStatements {
 			// Sort by changelog UID.
-			slices.SortFunc(resp.Changelogs, func(x, y *v1pb.Changelog) int {
+			slices.SortFunc(resp.Msg.Changelogs, func(x, y *v1pb.Changelog) int {
 				_, _, id1, err := common.GetInstanceDatabaseChangelogUID(x.Name)
 				a.NoError(err)
 				_, _, id2, err := common.GetInstanceDatabaseChangelogUID(y.Name)
@@ -136,7 +137,7 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 				}
 				return 0
 			})
-			a.Equal(wantStatement, string(resp.Changelogs[i].Statement), tt.filter)
+			a.Equal(wantStatement, string(resp.Msg.Changelogs[i].Statement), tt.filter)
 		}
 	}
 }

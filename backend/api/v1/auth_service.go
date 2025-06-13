@@ -395,6 +395,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 	if user != nil {
 		if user.MemberDeleted {
+			if err := s.userCountGuard(ctx); err != nil {
+				return nil, err
+			}
 			// Undelete the user when login via SSO.
 			user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
 			if err != nil {
@@ -411,7 +414,12 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return user, nil
 	}
 
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO); err != nil {
+	// For expired license, we will only block new create creation and still allow SSO login from existing users.
+	featurePlan := v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO
+	if idp.Type == storepb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
+		featurePlan = v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO
+	}
+	if err := s.licenseService.IsFeatureEnabled(featurePlan); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	// Create new user from identity provider.
@@ -422,6 +430,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate password hash")
+	}
+	if err := s.userCountGuard(ctx); err != nil {
+		return nil, err
 	}
 	newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Name:         userInfo.DisplayName,
@@ -441,6 +452,19 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 	}
 	return newUser, nil
+}
+
+func (s *AuthService) userCountGuard(ctx context.Context) error {
+	userLimit := s.licenseService.GetUserLimit(ctx)
+
+	count, err := s.store.CountActiveUsers(ctx)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+	if count >= userLimit {
+		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)
+	}
+	return nil
 }
 
 func challengeMFACode(user *store.UserMessage, mfaCode string) error {

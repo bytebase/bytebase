@@ -217,6 +217,14 @@
         "title": "IAM 身份验证",
         "desc": "使用云提供商 IAM 进行数据库身份验证。"
       },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "自定义实例同步时间",
+        "desc": "自定义数据库同步间隔和设置。"
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "自定义实例连接限制",
+        "desc": "配置最大数据库连接限制。"
+      },
       "FEATURE_GOOGLE_AND_GITHUB_SSO": {
         "title": "Google 和 GitHub SSO",
         "desc": "使用 Google 或 GitHub 账户登录。"
@@ -236,14 +244,6 @@
       "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
         "title": "查询数据源限制",
         "desc": "限制用户可以查询哪些数据源。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "自定义实例同步时间",
-        "desc": "自定义数据库同步间隔和设置。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "自定义实例连接限制",
-        "desc": "配置最大数据库连接限制。"
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "风险评估",

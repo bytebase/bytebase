@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/alexmullins/zip"
 
 	"github.com/google/go-cmp/cmp"
@@ -129,7 +130,7 @@ func TestSQLExport(t *testing.T) {
 	}()
 	a.NoError(err)
 
-	mysqlInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
@@ -138,10 +139,11 @@ func TestSQLExport(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	mysqlInstance := mysqlInstanceResp.Msg
 
-	pgInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+	pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
@@ -150,8 +152,9 @@ func TestSQLExport(t *testing.T) {
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
-	})
+	}))
 	a.NoError(err)
+	pgInstance := pgInstanceResp.Msg
 
 	for _, tt := range tests {
 		var instance *v1pb.Instance
@@ -168,19 +171,21 @@ func TestSQLExport(t *testing.T) {
 		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, tt.databaseName, databaseOwner)
 		a.NoError(err)
 
-		database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 			Name: fmt.Sprintf("%s/databases/%s", instance.Name, tt.databaseName),
-		})
+		}))
 		a.NoError(err)
+		database := databaseResp.Msg
 
-		sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 			Parent: ctl.project.Name,
 			Sheet: &v1pb.Sheet{
 				Title:   "prepareStatements",
 				Content: []byte(tt.prepareStatements),
 			},
-		})
+		}))
 		a.NoError(err)
+		sheet := sheetResp.Msg
 
 		a.NotNil(database.InstanceResource)
 		a.Equal(1, len(database.InstanceResource.DataSources))
@@ -202,8 +207,9 @@ func TestSQLExport(t *testing.T) {
 			Password:     tt.password,
 			DataSourceId: dataSource.Id,
 		}
-		export, err := ctl.sqlServiceClient.Export(ctx, request)
+		exportResp, err := ctl.sqlServiceClient.Export(ctx, connect.NewRequest(request))
 		a.NoError(err)
+		export := exportResp.Msg
 
 		statement = tt.reset
 		results, err = ctl.adminQuery(ctx, database, statement)

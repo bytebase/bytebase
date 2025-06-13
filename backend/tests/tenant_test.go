@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -32,14 +33,15 @@ func TestDatabaseGroup(t *testing.T) {
 
 	// Create a project.
 	projectID := generateRandomString("project", 10)
-	project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
 			Title: projectID,
 		},
 		ProjectId: projectID,
-	})
+	}))
 	a.NoError(err)
+	project := projectResp.Msg
 
 	// Provision instances.
 	instanceRootDir := t.TempDir()
@@ -61,7 +63,7 @@ func TestDatabaseGroup(t *testing.T) {
 	var testInstances []*v1pb.Instance
 	var prodInstances []*v1pb.Instance
 	for i, testInstanceDir := range testInstanceDirs {
-		instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 			InstanceId: generateRandomString("instance", 10),
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
@@ -70,12 +72,12 @@ func TestDatabaseGroup(t *testing.T) {
 				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 			},
-		})
+		}))
 		a.NoError(err)
-		testInstances = append(testInstances, instance)
+		testInstances = append(testInstances, instanceResp.Msg)
 	}
 	for i, prodInstanceDir := range prodInstanceDirs {
-		instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 			InstanceId: generateRandomString("instance", 10),
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
@@ -84,9 +86,9 @@ func TestDatabaseGroup(t *testing.T) {
 				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
 			},
-		})
+		}))
 		a.NoError(err)
-		prodInstances = append(prodInstances, instance)
+		prodInstances = append(prodInstances, instanceResp.Msg)
 	}
 
 	// Create issues that create databases.
@@ -100,11 +102,11 @@ func TestDatabaseGroup(t *testing.T) {
 		a.NoError(err)
 	}
 
-	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
+	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, connect.NewRequest(&v1pb.ListDatabasesRequest{
 		Parent: project.Name,
-	})
+	}))
 	a.NoError(err)
-	databases := resp.Databases
+	databases := resp.Msg.Databases
 
 	var testDatabases []*v1pb.Database
 	var prodDatabases []*v1pb.Database
@@ -127,24 +129,26 @@ func TestDatabaseGroup(t *testing.T) {
 	a.Equal(testTenantNumber, len(testDatabases))
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
-	databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
+	databaseGroupResp, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
 		Parent:          project.Name,
 		DatabaseGroupId: "all",
 		DatabaseGroup: &v1pb.DatabaseGroup{
 			Title:        "all",
 			DatabaseExpr: &expr.Expr{Expression: "true"},
 		},
-	})
+	}))
 	a.NoError(err)
+	databaseGroup := databaseGroupResp.Msg
 
-	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "migration statement sheet",
 			Content: []byte(migrationStatement1),
 		},
-	})
+	}))
 	a.NoError(err)
+	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
 	spec := &v1pb.Plan_Spec{
@@ -168,14 +172,14 @@ func TestDatabaseGroup(t *testing.T) {
 
 	// Query schema.
 	for _, testInstance := range testInstances {
-		dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName)})
+		dbMetadataResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName)}))
 		a.NoError(err)
-		a.Equal(wantBookSchema, dbMetadata.Schema)
+		a.Equal(wantBookSchema, dbMetadataResp.Msg.Schema)
 	}
 	for _, prodInstance := range prodInstances {
-		dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Name, databaseName)})
+		dbMetadataResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Name, databaseName)}))
 		a.NoError(err)
-		a.Equal(wantBookSchema, dbMetadata.Schema)
+		a.Equal(wantBookSchema, dbMetadataResp.Msg.Schema)
 	}
 
 	// Create another database in the prod environment.
@@ -183,11 +187,11 @@ func TestDatabaseGroup(t *testing.T) {
 	err = ctl.createDatabaseV2(ctx, project, prodInstances[0], nil, databaseName2, "")
 	a.NoError(err)
 
-	resp, err = ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
+	resp, err = ctl.databaseServiceClient.ListDatabases(ctx, connect.NewRequest(&v1pb.ListDatabasesRequest{
 		Parent: project.Name,
-	})
+	}))
 	a.NoError(err)
-	databases = resp.Databases
+	databases = resp.Msg.Databases
 	prodDatabases = nil
 	for _, prodInstance := range prodInstances {
 		for _, database := range databases {
@@ -199,15 +203,16 @@ func TestDatabaseGroup(t *testing.T) {
 	a.Len(prodDatabases, 2)
 
 	// Update the plan deployment.
-	plan, err = ctl.planServiceClient.UpdatePlan(ctx, &v1pb.UpdatePlanRequest{
+	planResp, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
 		Plan: &v1pb.Plan{
 			Name: plan.Name,
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"deployment"},
 		},
-	})
+	}))
 	a.NoError(err)
+	plan = planResp.Msg
 
 	a.Len(plan.Deployment.DatabaseGroupMappings, 1)
 	a.Equal(databaseGroup.Name, plan.Deployment.DatabaseGroupMappings[0].DatabaseGroup)
@@ -215,14 +220,15 @@ func TestDatabaseGroup(t *testing.T) {
 	a.ElementsMatch([]string{testDatabases[0].Name, prodDatabases[0].Name, prodDatabases[1].Name}, plan.Deployment.DatabaseGroupMappings[0].Databases)
 
 	// Create the new task.
-	rollout2, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
+	rollout2Resp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
 		Parent: project.Name,
 		Rollout: &v1pb.Rollout{
 			Plan: plan.Name,
 		},
 		Target: nil, // set to nil to create all stages and tasks.
-	})
+	}))
 	a.NoError(err)
+	rollout2 := rollout2Resp.Msg
 	a.Equal(rollout.Name, rollout2.Name)
 
 	a.Len(rollout.Stages, 2)
