@@ -1934,6 +1934,7 @@
     },
     "upload-file": "ファイルをアップロードする",
     "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
+    "cancel-selection": "選択をキャンセル",
     "format-default": "デフォルト",
     "column-display-format": "列表示形式",
     "next-row": "次の行",

@@ -1,5 +1,6 @@
 <template>
   <DrawerContent
+    v-if="detail"
     :title="$t('common.detail')"
     class="w-[100vw-4rem] min-w-[24rem] max-w-[100vw-4rem] md:w-[33vw]"
   >
@@ -74,44 +75,23 @@
               {{ $t("sql-editor.format") }}
             </template>
           </NPopover>
-          
+
           <!-- Binary data format selector -->
-          <NPopover v-if="isBinaryData">
-            <template #trigger>
-              <NButton
-                size="small"
-                style="--n-padding: 0 5px"
-                :type="binaryFormat !== serverFormat ? 'primary' : 'default'"
-                :secondary="binaryFormat !== serverFormat"
-              >
-                <template #icon>
-                  <Code2Icon class="w-4 h-4" />
-                </template>
-              </NButton>
-            </template>
-            <template #default>
-              <div class="p-1">
-                <NRadioGroup :value="binaryFormat" class="flex flex-col gap-2" @update:value="updateBinaryFormat">
-                  <NRadio value="DEFAULT">
-                    {{ $t("sql-editor.format-default") }}
-                  </NRadio>
-                  <NRadio value="BINARY">
-                    {{ $t("sql-editor.binary-format") }}
-                  </NRadio>
-                  <NRadio value="HEX">
-                    {{ $t("sql-editor.hex-format") }}
-                  </NRadio>
-                  <NRadio value="BOOLEAN" v-if="isSingleBitValue">
-                    {{ $t("sql-editor.boolean-format") }}
-                  </NRadio>
-                  <NRadio value="TEXT">
-                    {{ $t("sql-editor.text-format") }}
-                  </NRadio>
-                </NRadioGroup>
-              </div>
-            </template>
-          </NPopover>
-          
+          <BinaryFormatButton
+            v-if="isBinaryData"
+            :format="binaryFormat"
+            @update:format="
+              (format: BinaryFormat) =>
+                setBinaryFormat({
+                  colIndex: detail!.col,
+                  rowIndex: detail!.row,
+                  setIndex: detail!.set,
+                  format,
+                })
+            "
+            @click.stop
+          />
+
           <NButton v-if="!disallowCopyingData" size="small" @click="handleCopy">
             <template #icon>
               <ClipboardIcon class="w-4 h-4" />
@@ -170,20 +150,26 @@ import {
   ClipboardIcon,
   BracesIcon,
   WrapTextIcon,
-  Code as Code2Icon,
 } from "lucide-vue-next";
-import { NButton, NPopover, NScrollbar, NTooltip, NRadioGroup, NRadio } from "naive-ui";
-import { computed, nextTick, ref } from "vue";
+import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
 import type { RowValue } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValuePlain } from "@/utils";
+import {
+  useBinaryFormatContext,
+  formatBinaryValue,
+  type BinaryFormat,
+} from "../DataTable/binary-format-store";
+import BinaryFormatButton from "../DataTable/common/BinaryFormatButton.vue";
 import { useSQLResultViewContext } from "../context";
 import PrettyJSON from "./PrettyJSON.vue";
 
 const { t } = useI18n();
 const { dark, detail, disallowCopyingData } = useSQLResultViewContext();
+const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
 
 const format = useLocalStorage<boolean>(
   "bb.sql-editor.detail-panel.format",
@@ -196,115 +182,26 @@ const wrap = useLocalStorage<boolean>(
 
 // Get the current value being displayed first
 const rawValue = computed(() => {
-  const { row, col, table } = detail.value;
-  if (!table) return undefined;
+  if (!detail.value) {
+    return;
+  }
 
+  const { row, col, table } = detail.value;
   return table
     .getPrePaginationRowModel()
     .rows[row]?.getVisibleCells()
     [col]?.getValue<RowValue>();
 });
 
-// Determine binary format based on column type and content
-const getServerFormat = (): string => {
-  if (!rawValue.value?.bytesValue) return "HEX";
-  
-  // Get column information
-  const { col, table } = detail.value;
-  if (!table) return "HEX";
-  
-  // Get the column type from context's columnTypeNames
-  let columnType = '';
-  
-  // Get context and safely access columnTypeNames
-  const context = useSQLResultViewContext();
-  const columnTypeNames = context.columnTypeNames?.value;
-  
-  // Use column type names from context
-  if (columnTypeNames && col < columnTypeNames.length) {
-    columnType = columnTypeNames[col].toLowerCase();
-  }
-  
-  // Default format based on column type
-  let defaultFormat = "HEX";
-  
-  // Detect BIT column types (bit, varbit, bit varying) - for binary format display
-  const isBitColumn = (
-    // Generic bit types
-    columnType === 'bit' ||
-    columnType.startsWith('bit(') ||
-    (columnType.includes('bit') && !columnType.includes('binary')) ||
-    
-    // PostgreSQL bit types
-    columnType === 'varbit' ||
-    columnType === 'bit varying'
-  );
-    
-  // Detect BINARY column types (binary, varbinary, bytea, blob, etc) - for hex format display
-  const isBinaryColumn = (
-    // Generic binary types
-    columnType === 'binary' ||
-    columnType.includes('binary') || 
-    
-    // MySQL/MariaDB binary types
-    columnType.startsWith('binary(') ||
-    columnType.startsWith('varbinary') ||
-    columnType.includes('blob') ||
-    columnType === 'longblob' ||
-    columnType === 'mediumblob' ||
-    columnType === 'tinyblob' ||
-    
-    // PostgreSQL binary type
-    columnType === 'bytea' ||
-    
-    // SQL Server binary types
-    columnType === 'image' ||
-    columnType === 'varbinary(max)' ||
-    
-    // Oracle binary types
-    columnType === 'raw' ||
-    columnType === 'long raw'
-  );
-  
-  // BIT columns default to binary format
-  if (isBitColumn) {
-    defaultFormat = "BINARY";
-  }
-  
-  // BINARY/VARBINARY/BLOB columns default to HEX format
-  if (isBinaryColumn) {
-    defaultFormat = "HEX";
-  }
-  
-  const byteArray = Array.from(rawValue.value.bytesValue);
-  
-  // For single byte values (could be boolean)
-  if (byteArray.length === 1 && (byteArray[0] === 0 || byteArray[0] === 1)) {
-    return "BOOLEAN";
-  }
-  
-  // Check if it's readable text
-  const isReadableText = byteArray.every(byte => byte >= 32 && byte <= 126);
-  if (isReadableText) {
-    return "TEXT";
-  }
-  
-  // Return default format based on column type
-  return defaultFormat;
-};
-
-// Current display format (reactive to server changes)
-const serverFormat = computed(() => getServerFormat());
-
-// Create a ref for temporary format override
-const formatOverride = ref<string | null>(null);
-
-// The actual format to display
 const binaryFormat = computed(() => {
-  if (formatOverride.value === null) {
-    return "DEFAULT"; // No override, show as DEFAULT in radio group
+  if (!detail.value) {
+    return;
   }
-  return formatOverride.value;
+  return getBinaryFormat({
+    rowIndex: detail.value.row,
+    colIndex: detail.value.col,
+    setIndex: detail.value.set,
+  });
 });
 
 // Check if the current value is binary data (using bytesValue)
@@ -313,76 +210,37 @@ const isBinaryData = computed(() => {
   return !!rawValue.value.bytesValue;
 });
 
-// Check if it's a single bit value (for boolean display)
-const isSingleBitValue = computed(() => {
-  if (!rawValue.value?.bytesValue) return false;
-  return rawValue.value.bytesValue.length === 1;
-});
-
 // Format the binary value based on selected format
-const formattedBinaryValue = computed(() => {
-  if (!rawValue.value?.bytesValue) return rawValue.value;
-  
-  // Deep clone the value to avoid mutating the original
-  const newValue = { ...rawValue.value };
-  
-  // Get the actual format to use (override or server default)
-  const actualFormat = formatOverride.value === null ? serverFormat.value : formatOverride.value;
-  
-  // Skip formatting if using default format
+const formattedValue = computed(() => {
+  if (!rawValue.value?.bytesValue) {
+    return rawValue.value;
+  }
+
+  // Determine the format to use - column override, cell override, or auto-detected format
+  const actualFormat = binaryFormat.value ?? "DEFAULT";
+
+  // Skip formatting for DEFAULT (auto) format
   if (actualFormat === "DEFAULT") {
-    return newValue;
+    return rawValue.value;
   }
-  
-  // Ensure bytesValue exists before converting to array
-  const byteArray = newValue.bytesValue ? Array.from(newValue.bytesValue) : [];
-  
-  // Format based on selected format
-  switch (actualFormat) {
-    case "BINARY":
-      // Format as binary string without spaces
-      newValue.stringValue = byteArray
-        .map(byte => byte.toString(2).padStart(8, "0"))
-        .join("");
-      break;
-    case "HEX":
-      // Format as hex string
-      newValue.stringValue = "0x" + byteArray
-        .map(byte => byte.toString(16).toUpperCase().padStart(2, "0"))
-        .join("");
-      break;
-    case "TEXT":
-      // Format as text
-      try {
-        newValue.stringValue = new TextDecoder().decode(new Uint8Array(byteArray));
-      } catch {
-        // Fallback to binary if text decoding fails
-        newValue.stringValue = byteArray
-          .map(byte => byte.toString(2).padStart(8, "0"))
-          .join("");
-      }
-      break;
-    case "BOOLEAN":
-      // Only for single-byte values
-      if (byteArray.length === 1) {
-        newValue.stringValue = byteArray[0] === 1 ? "true" : "false";
-      }
-      break;
-  }
-  
-  return newValue;
+
+  const stringValue = formatBinaryValue({
+    bytesValue: rawValue.value.bytesValue,
+    format: actualFormat,
+  });
+  return {
+    ...rawValue.value,
+    stringValue,
+  };
 });
 
 const content = computed(() => {
-  if (!rawValue.value) return undefined;
-  
-  // If it's binary data, use the formatted version
-  if (isBinaryData.value) {
-    return String(extractSQLRowValuePlain(formattedBinaryValue.value));
+  if (!rawValue.value) {
+    return;
   }
-  
+
   // Otherwise use the raw value
-  return String(extractSQLRowValuePlain(rawValue.value));
+  return String(extractSQLRowValuePlain(formattedValue.value));
 });
 
 const guessedIsJSON = computed(() => {
@@ -395,9 +253,7 @@ const guessedIsJSON = computed(() => {
 });
 
 const totalCount = computed(() => {
-  const { table } = detail.value;
-  if (!table) return 0;
-  return table.getPrePaginationRowModel().rows.length;
+  return detail.value?.table.getPrePaginationRowModel().rows.length ?? 0;
 });
 
 const contentClass = computed(() => {
@@ -417,7 +273,7 @@ const contentClass = computed(() => {
 const { copy, copied } = useClipboard({
   source: computed(() => {
     const raw = content.value ?? "";
-    
+
     // For JSON content
     if (guessedIsJSON.value && format.value) {
       try {
@@ -431,12 +287,12 @@ const { copy, copied } = useClipboard({
         return raw;
       }
     }
-    
+
     // For binary data, copy according to the selected format
     if (isBinaryData.value) {
       return raw;
     }
-    
+
     return raw;
   }),
   legacy: true,
@@ -454,6 +310,9 @@ const handleCopy = () => {
 };
 
 const move = (offset: number) => {
+  if (!detail.value) {
+    return;
+  }
   const target = detail.value.row + offset;
   if (target < 0 || target >= totalCount.value) return;
   detail.value.row = target;
@@ -469,18 +328,4 @@ onKeyStroke("ArrowDown", (e) => {
   e.stopPropagation();
   move(1);
 });
-
-// Method to handle binary format updates and ensure re-rendering
-const updateBinaryFormat = (value: string) => {
-  // If DEFAULT is selected, remove the override
-  if (value === "DEFAULT") {
-    formatOverride.value = null;
-  } else {
-    // Otherwise set the override
-    formatOverride.value = value;
-  }
-  
-  // Force render
-  nextTick();
-};
 </script>
