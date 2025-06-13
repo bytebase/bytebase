@@ -136,7 +136,16 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		FROM information_schema.tables
 		WHERE database = %s
 		ORDER BY name`
-	tableQuery := fmt.Sprintf(tableQuerytmpl, d.databaseName)
+	tableQuery := `
+		SELECT
+			name,
+			table_type,
+			ifNull(table_rows, 0),
+			ifNull(data_length, 0),
+			table_comment
+		FROM information_schema.tables
+		WHERE database = ?
+		ORDER BY name`
 	tableRows, err := d.db.QueryContext(ctx, tableQuery, d.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
