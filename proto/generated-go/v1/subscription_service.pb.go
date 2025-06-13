@@ -98,65 +98,63 @@ const (
 	PlanFeature_FEATURE_SCHEMA_TEMPLATE                      PlanFeature = 15
 	PlanFeature_FEATURE_ROLLOUT_POLICY                       PlanFeature = 16
 	// SQL Editor & Development
-	PlanFeature_FEATURE_WEB_BASED_SQL_EDITOR           PlanFeature = 17
-	PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE          PlanFeature = 18
-	PlanFeature_FEATURE_NATURAL_LANGUAGE_TO_SQL        PlanFeature = 19
-	PlanFeature_FEATURE_AI_QUERY_EXPLANATION           PlanFeature = 20
-	PlanFeature_FEATURE_AI_QUERY_SUGGESTIONS           PlanFeature = 21
-	PlanFeature_FEATURE_AUTO_COMPLETE                  PlanFeature = 22
-	PlanFeature_FEATURE_SCHEMA_DIAGRAM                 PlanFeature = 23
-	PlanFeature_FEATURE_SCHEMA_EDITOR                  PlanFeature = 24
-	PlanFeature_FEATURE_DATA_EXPORT                    PlanFeature = 25
-	PlanFeature_FEATURE_QUERY_HISTORY                  PlanFeature = 26
-	PlanFeature_FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS   PlanFeature = 27
-	PlanFeature_FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION PlanFeature = 28
-	PlanFeature_FEATURE_BATCH_QUERY                    PlanFeature = 29
-	PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION  PlanFeature = 30
-	PlanFeature_FEATURE_QUERY_POLICY                   PlanFeature = 31
-	PlanFeature_FEATURE_RESTRICT_COPYING_DATA          PlanFeature = 32
+	PlanFeature_FEATURE_WEB_BASED_SQL_EDITOR          PlanFeature = 17
+	PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE         PlanFeature = 18
+	PlanFeature_FEATURE_NATURAL_LANGUAGE_TO_SQL       PlanFeature = 19
+	PlanFeature_FEATURE_AI_QUERY_EXPLANATION          PlanFeature = 20
+	PlanFeature_FEATURE_AI_QUERY_SUGGESTIONS          PlanFeature = 21
+	PlanFeature_FEATURE_AUTO_COMPLETE                 PlanFeature = 22
+	PlanFeature_FEATURE_SCHEMA_DIAGRAM                PlanFeature = 23
+	PlanFeature_FEATURE_SCHEMA_EDITOR                 PlanFeature = 24
+	PlanFeature_FEATURE_DATA_EXPORT                   PlanFeature = 25
+	PlanFeature_FEATURE_QUERY_HISTORY                 PlanFeature = 26
+	PlanFeature_FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS  PlanFeature = 27
+	PlanFeature_FEATURE_BATCH_QUERY                   PlanFeature = 28
+	PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION PlanFeature = 29
+	PlanFeature_FEATURE_QUERY_POLICY                  PlanFeature = 30
+	PlanFeature_FEATURE_RESTRICT_COPYING_DATA         PlanFeature = 31
 	// Security & Compliance
-	PlanFeature_FEATURE_IAM                                    PlanFeature = 33
-	PlanFeature_FEATURE_INSTANCE_SSL_CONNECTION                PlanFeature = 34
-	PlanFeature_FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL    PlanFeature = 35
-	PlanFeature_FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION PlanFeature = 36
-	PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME              PlanFeature = 42
-	PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT       PlanFeature = 43
-	PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO                  PlanFeature = 37
-	PlanFeature_FEATURE_USER_GROUPS                            PlanFeature = 38
-	PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP           PlanFeature = 39
-	PlanFeature_FEATURE_DATABASE_SECRET_VARIABLES              PlanFeature = 40
-	PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION           PlanFeature = 41
-	PlanFeature_FEATURE_RISK_ASSESSMENT                        PlanFeature = 44
-	PlanFeature_FEATURE_APPROVAL_WORKFLOW                      PlanFeature = 45
-	PlanFeature_FEATURE_AUDIT_LOG                              PlanFeature = 46
-	PlanFeature_FEATURE_ENTERPRISE_SSO                         PlanFeature = 47
-	PlanFeature_FEATURE_TWO_FA                                 PlanFeature = 48
-	PlanFeature_FEATURE_PASSWORD_RESTRICTIONS                  PlanFeature = 49
-	PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN               PlanFeature = 50
-	PlanFeature_FEATURE_CUSTOM_ROLES                           PlanFeature = 51
-	PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW                  PlanFeature = 52
-	PlanFeature_FEATURE_DATA_MASKING                           PlanFeature = 53
-	PlanFeature_FEATURE_DATA_CLASSIFICATION                    PlanFeature = 54
-	PlanFeature_FEATURE_SCIM                                   PlanFeature = 55
-	PlanFeature_FEATURE_DIRECTORY_SYNC                         PlanFeature = 56
-	PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL              PlanFeature = 57
-	PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER                PlanFeature = 58
-	PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION          PlanFeature = 59
+	PlanFeature_FEATURE_IAM                                    PlanFeature = 32
+	PlanFeature_FEATURE_INSTANCE_SSL_CONNECTION                PlanFeature = 33
+	PlanFeature_FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL    PlanFeature = 34
+	PlanFeature_FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION PlanFeature = 35
+	PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO                  PlanFeature = 36
+	PlanFeature_FEATURE_USER_GROUPS                            PlanFeature = 37
+	PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP           PlanFeature = 38
+	PlanFeature_FEATURE_DATABASE_SECRET_VARIABLES              PlanFeature = 39
+	PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME              PlanFeature = 40
+	PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT       PlanFeature = 41
+	PlanFeature_FEATURE_RISK_ASSESSMENT                        PlanFeature = 42
+	PlanFeature_FEATURE_APPROVAL_WORKFLOW                      PlanFeature = 43
+	PlanFeature_FEATURE_AUDIT_LOG                              PlanFeature = 44
+	PlanFeature_FEATURE_ENTERPRISE_SSO                         PlanFeature = 45
+	PlanFeature_FEATURE_TWO_FA                                 PlanFeature = 46
+	PlanFeature_FEATURE_PASSWORD_RESTRICTIONS                  PlanFeature = 47
+	PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN               PlanFeature = 48
+	PlanFeature_FEATURE_CUSTOM_ROLES                           PlanFeature = 49
+	PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW                  PlanFeature = 50
+	PlanFeature_FEATURE_DATA_MASKING                           PlanFeature = 51
+	PlanFeature_FEATURE_DATA_CLASSIFICATION                    PlanFeature = 52
+	PlanFeature_FEATURE_SCIM                                   PlanFeature = 53
+	PlanFeature_FEATURE_DIRECTORY_SYNC                         PlanFeature = 54
+	PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL              PlanFeature = 55
+	PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER                PlanFeature = 56
+	PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION          PlanFeature = 57
 	// Administration & Support
-	PlanFeature_FEATURE_ENVIRONMENT_MANAGEMENT     PlanFeature = 60
-	PlanFeature_FEATURE_IM_NOTIFICATIONS           PlanFeature = 61
-	PlanFeature_FEATURE_TERRAFORM_PROVIDER         PlanFeature = 62
-	PlanFeature_FEATURE_DATABASE_GROUPS            PlanFeature = 63
-	PlanFeature_FEATURE_ENVIRONMENT_TIERS          PlanFeature = 64
-	PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT     PlanFeature = 65
-	PlanFeature_FEATURE_API_INTEGRATION_GUIDANCE   PlanFeature = 66
-	PlanFeature_FEATURE_CUSTOM_LOGO                PlanFeature = 67
-	PlanFeature_FEATURE_WATERMARK                  PlanFeature = 68
-	PlanFeature_FEATURE_ROADMAP_PRIORITIZATION     PlanFeature = 69
-	PlanFeature_FEATURE_CUSTOM_MSA                 PlanFeature = 70
-	PlanFeature_FEATURE_COMMUNITY_SUPPORT          PlanFeature = 71
-	PlanFeature_FEATURE_EMAIL_SUPPORT              PlanFeature = 72
-	PlanFeature_FEATURE_DEDICATED_SUPPORT_WITH_SLA PlanFeature = 73
+	PlanFeature_FEATURE_ENVIRONMENT_MANAGEMENT     PlanFeature = 58
+	PlanFeature_FEATURE_IM_NOTIFICATIONS           PlanFeature = 59
+	PlanFeature_FEATURE_TERRAFORM_PROVIDER         PlanFeature = 60
+	PlanFeature_FEATURE_DATABASE_GROUPS            PlanFeature = 61
+	PlanFeature_FEATURE_ENVIRONMENT_TIERS          PlanFeature = 62
+	PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT     PlanFeature = 63
+	PlanFeature_FEATURE_API_INTEGRATION_GUIDANCE   PlanFeature = 64
+	PlanFeature_FEATURE_CUSTOM_LOGO                PlanFeature = 65
+	PlanFeature_FEATURE_WATERMARK                  PlanFeature = 66
+	PlanFeature_FEATURE_ROADMAP_PRIORITIZATION     PlanFeature = 67
+	PlanFeature_FEATURE_CUSTOM_MSA                 PlanFeature = 68
+	PlanFeature_FEATURE_COMMUNITY_SUPPORT          PlanFeature = 69
+	PlanFeature_FEATURE_EMAIL_SUPPORT              PlanFeature = 70
+	PlanFeature_FEATURE_DEDICATED_SUPPORT_WITH_SLA PlanFeature = 71
 )
 
 // Enum value maps for PlanFeature.
@@ -190,52 +188,50 @@ var (
 		25: "FEATURE_DATA_EXPORT",
 		26: "FEATURE_QUERY_HISTORY",
 		27: "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS",
-		28: "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION",
-		29: "FEATURE_BATCH_QUERY",
-		30: "FEATURE_INSTANCE_READ_ONLY_CONNECTION",
-		31: "FEATURE_QUERY_POLICY",
-		32: "FEATURE_RESTRICT_COPYING_DATA",
-		33: "FEATURE_IAM",
-		34: "FEATURE_INSTANCE_SSL_CONNECTION",
-		35: "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
-		36: "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION",
-		42: "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
-		43: "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
-		37: "FEATURE_GOOGLE_AND_GITHUB_SSO",
-		38: "FEATURE_USER_GROUPS",
-		39: "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP",
-		40: "FEATURE_DATABASE_SECRET_VARIABLES",
-		41: "FEATURE_QUERY_DATASOURCE_RESTRICTION",
-		44: "FEATURE_RISK_ASSESSMENT",
-		45: "FEATURE_APPROVAL_WORKFLOW",
-		46: "FEATURE_AUDIT_LOG",
-		47: "FEATURE_ENTERPRISE_SSO",
-		48: "FEATURE_TWO_FA",
-		49: "FEATURE_PASSWORD_RESTRICTIONS",
-		50: "FEATURE_DISALLOW_PASSWORD_SIGNIN",
-		51: "FEATURE_CUSTOM_ROLES",
-		52: "FEATURE_REQUEST_ROLE_WORKFLOW",
-		53: "FEATURE_DATA_MASKING",
-		54: "FEATURE_DATA_CLASSIFICATION",
-		55: "FEATURE_SCIM",
-		56: "FEATURE_DIRECTORY_SYNC",
-		57: "FEATURE_SIGN_IN_FREQUENCY_CONTROL",
-		58: "FEATURE_EXTERNAL_SECRET_MANAGER",
-		59: "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
-		60: "FEATURE_ENVIRONMENT_MANAGEMENT",
-		61: "FEATURE_IM_NOTIFICATIONS",
-		62: "FEATURE_TERRAFORM_PROVIDER",
-		63: "FEATURE_DATABASE_GROUPS",
-		64: "FEATURE_ENVIRONMENT_TIERS",
-		65: "FEATURE_DASHBOARD_ANNOUNCEMENT",
-		66: "FEATURE_API_INTEGRATION_GUIDANCE",
-		67: "FEATURE_CUSTOM_LOGO",
-		68: "FEATURE_WATERMARK",
-		69: "FEATURE_ROADMAP_PRIORITIZATION",
-		70: "FEATURE_CUSTOM_MSA",
-		71: "FEATURE_COMMUNITY_SUPPORT",
-		72: "FEATURE_EMAIL_SUPPORT",
-		73: "FEATURE_DEDICATED_SUPPORT_WITH_SLA",
+		28: "FEATURE_BATCH_QUERY",
+		29: "FEATURE_INSTANCE_READ_ONLY_CONNECTION",
+		30: "FEATURE_QUERY_POLICY",
+		31: "FEATURE_RESTRICT_COPYING_DATA",
+		32: "FEATURE_IAM",
+		33: "FEATURE_INSTANCE_SSL_CONNECTION",
+		34: "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
+		35: "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION",
+		36: "FEATURE_GOOGLE_AND_GITHUB_SSO",
+		37: "FEATURE_USER_GROUPS",
+		38: "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP",
+		39: "FEATURE_DATABASE_SECRET_VARIABLES",
+		40: "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
+		41: "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
+		42: "FEATURE_RISK_ASSESSMENT",
+		43: "FEATURE_APPROVAL_WORKFLOW",
+		44: "FEATURE_AUDIT_LOG",
+		45: "FEATURE_ENTERPRISE_SSO",
+		46: "FEATURE_TWO_FA",
+		47: "FEATURE_PASSWORD_RESTRICTIONS",
+		48: "FEATURE_DISALLOW_PASSWORD_SIGNIN",
+		49: "FEATURE_CUSTOM_ROLES",
+		50: "FEATURE_REQUEST_ROLE_WORKFLOW",
+		51: "FEATURE_DATA_MASKING",
+		52: "FEATURE_DATA_CLASSIFICATION",
+		53: "FEATURE_SCIM",
+		54: "FEATURE_DIRECTORY_SYNC",
+		55: "FEATURE_SIGN_IN_FREQUENCY_CONTROL",
+		56: "FEATURE_EXTERNAL_SECRET_MANAGER",
+		57: "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
+		58: "FEATURE_ENVIRONMENT_MANAGEMENT",
+		59: "FEATURE_IM_NOTIFICATIONS",
+		60: "FEATURE_TERRAFORM_PROVIDER",
+		61: "FEATURE_DATABASE_GROUPS",
+		62: "FEATURE_ENVIRONMENT_TIERS",
+		63: "FEATURE_DASHBOARD_ANNOUNCEMENT",
+		64: "FEATURE_API_INTEGRATION_GUIDANCE",
+		65: "FEATURE_CUSTOM_LOGO",
+		66: "FEATURE_WATERMARK",
+		67: "FEATURE_ROADMAP_PRIORITIZATION",
+		68: "FEATURE_CUSTOM_MSA",
+		69: "FEATURE_COMMUNITY_SUPPORT",
+		70: "FEATURE_EMAIL_SUPPORT",
+		71: "FEATURE_DEDICATED_SUPPORT_WITH_SLA",
 	}
 	PlanFeature_value = map[string]int32{
 		"FEATURE_UNSPECIFIED":                            0,
@@ -266,52 +262,50 @@ var (
 		"FEATURE_DATA_EXPORT":                            25,
 		"FEATURE_QUERY_HISTORY":                          26,
 		"FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS":           27,
-		"FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION":         28,
-		"FEATURE_BATCH_QUERY":                            29,
-		"FEATURE_INSTANCE_READ_ONLY_CONNECTION":          30,
-		"FEATURE_QUERY_POLICY":                           31,
-		"FEATURE_RESTRICT_COPYING_DATA":                  32,
-		"FEATURE_IAM":                                    33,
-		"FEATURE_INSTANCE_SSL_CONNECTION":                34,
-		"FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL":    35,
-		"FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": 36,
-		"FEATURE_CUSTOM_INSTANCE_SYNC_TIME":              42,
-		"FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT":       43,
-		"FEATURE_GOOGLE_AND_GITHUB_SSO":                  37,
-		"FEATURE_USER_GROUPS":                            38,
-		"FEATURE_DISALLOW_SELF_SERVICE_SIGNUP":           39,
-		"FEATURE_DATABASE_SECRET_VARIABLES":              40,
-		"FEATURE_QUERY_DATASOURCE_RESTRICTION":           41,
-		"FEATURE_RISK_ASSESSMENT":                        44,
-		"FEATURE_APPROVAL_WORKFLOW":                      45,
-		"FEATURE_AUDIT_LOG":                              46,
-		"FEATURE_ENTERPRISE_SSO":                         47,
-		"FEATURE_TWO_FA":                                 48,
-		"FEATURE_PASSWORD_RESTRICTIONS":                  49,
-		"FEATURE_DISALLOW_PASSWORD_SIGNIN":               50,
-		"FEATURE_CUSTOM_ROLES":                           51,
-		"FEATURE_REQUEST_ROLE_WORKFLOW":                  52,
-		"FEATURE_DATA_MASKING":                           53,
-		"FEATURE_DATA_CLASSIFICATION":                    54,
-		"FEATURE_SCIM":                                   55,
-		"FEATURE_DIRECTORY_SYNC":                         56,
-		"FEATURE_SIGN_IN_FREQUENCY_CONTROL":              57,
-		"FEATURE_EXTERNAL_SECRET_MANAGER":                58,
-		"FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":          59,
-		"FEATURE_ENVIRONMENT_MANAGEMENT":                 60,
-		"FEATURE_IM_NOTIFICATIONS":                       61,
-		"FEATURE_TERRAFORM_PROVIDER":                     62,
-		"FEATURE_DATABASE_GROUPS":                        63,
-		"FEATURE_ENVIRONMENT_TIERS":                      64,
-		"FEATURE_DASHBOARD_ANNOUNCEMENT":                 65,
-		"FEATURE_API_INTEGRATION_GUIDANCE":               66,
-		"FEATURE_CUSTOM_LOGO":                            67,
-		"FEATURE_WATERMARK":                              68,
-		"FEATURE_ROADMAP_PRIORITIZATION":                 69,
-		"FEATURE_CUSTOM_MSA":                             70,
-		"FEATURE_COMMUNITY_SUPPORT":                      71,
-		"FEATURE_EMAIL_SUPPORT":                          72,
-		"FEATURE_DEDICATED_SUPPORT_WITH_SLA":             73,
+		"FEATURE_BATCH_QUERY":                            28,
+		"FEATURE_INSTANCE_READ_ONLY_CONNECTION":          29,
+		"FEATURE_QUERY_POLICY":                           30,
+		"FEATURE_RESTRICT_COPYING_DATA":                  31,
+		"FEATURE_IAM":                                    32,
+		"FEATURE_INSTANCE_SSL_CONNECTION":                33,
+		"FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL":    34,
+		"FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": 35,
+		"FEATURE_GOOGLE_AND_GITHUB_SSO":                  36,
+		"FEATURE_USER_GROUPS":                            37,
+		"FEATURE_DISALLOW_SELF_SERVICE_SIGNUP":           38,
+		"FEATURE_DATABASE_SECRET_VARIABLES":              39,
+		"FEATURE_CUSTOM_INSTANCE_SYNC_TIME":              40,
+		"FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT":       41,
+		"FEATURE_RISK_ASSESSMENT":                        42,
+		"FEATURE_APPROVAL_WORKFLOW":                      43,
+		"FEATURE_AUDIT_LOG":                              44,
+		"FEATURE_ENTERPRISE_SSO":                         45,
+		"FEATURE_TWO_FA":                                 46,
+		"FEATURE_PASSWORD_RESTRICTIONS":                  47,
+		"FEATURE_DISALLOW_PASSWORD_SIGNIN":               48,
+		"FEATURE_CUSTOM_ROLES":                           49,
+		"FEATURE_REQUEST_ROLE_WORKFLOW":                  50,
+		"FEATURE_DATA_MASKING":                           51,
+		"FEATURE_DATA_CLASSIFICATION":                    52,
+		"FEATURE_SCIM":                                   53,
+		"FEATURE_DIRECTORY_SYNC":                         54,
+		"FEATURE_SIGN_IN_FREQUENCY_CONTROL":              55,
+		"FEATURE_EXTERNAL_SECRET_MANAGER":                56,
+		"FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":          57,
+		"FEATURE_ENVIRONMENT_MANAGEMENT":                 58,
+		"FEATURE_IM_NOTIFICATIONS":                       59,
+		"FEATURE_TERRAFORM_PROVIDER":                     60,
+		"FEATURE_DATABASE_GROUPS":                        61,
+		"FEATURE_ENVIRONMENT_TIERS":                      62,
+		"FEATURE_DASHBOARD_ANNOUNCEMENT":                 63,
+		"FEATURE_API_INTEGRATION_GUIDANCE":               64,
+		"FEATURE_CUSTOM_LOGO":                            65,
+		"FEATURE_WATERMARK":                              66,
+		"FEATURE_ROADMAP_PRIORITIZATION":                 67,
+		"FEATURE_CUSTOM_MSA":                             68,
+		"FEATURE_COMMUNITY_SUPPORT":                      69,
+		"FEATURE_EMAIL_SUPPORT":                          70,
+		"FEATURE_DEDICATED_SUPPORT_WITH_SLA":             71,
 	}
 )
 
@@ -658,7 +652,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04FREE\x10\x01\x12\b\n" +
 	"\x04TEAM\x10\x02\x12\x0e\n" +
 	"\n" +
-	"ENTERPRISE\x10\x03*\xc4\x13\n" +
+	"ENTERPRISE\x10\x03*\xee\x12\n" +
 	"\vPlanFeature\x12\x17\n" +
 	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17FEATURE_DATABASE_CHANGE\x10\x01\x12,\n" +
@@ -688,53 +682,51 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x15FEATURE_SCHEMA_EDITOR\x10\x18\x12\x17\n" +
 	"\x13FEATURE_DATA_EXPORT\x10\x19\x12\x19\n" +
 	"\x15FEATURE_QUERY_HISTORY\x10\x1a\x12(\n" +
-	"$FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS\x10\x1b\x12*\n" +
-	"&FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION\x10\x1c\x12\x17\n" +
-	"\x13FEATURE_BATCH_QUERY\x10\x1d\x12)\n" +
-	"%FEATURE_INSTANCE_READ_ONLY_CONNECTION\x10\x1e\x12\x18\n" +
-	"\x14FEATURE_QUERY_POLICY\x10\x1f\x12!\n" +
-	"\x1dFEATURE_RESTRICT_COPYING_DATA\x10 \x12\x0f\n" +
-	"\vFEATURE_IAM\x10!\x12#\n" +
-	"\x1fFEATURE_INSTANCE_SSL_CONNECTION\x10\"\x12/\n" +
-	"+FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL\x10#\x122\n" +
-	".FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION\x10$\x12%\n" +
-	"!FEATURE_CUSTOM_INSTANCE_SYNC_TIME\x10*\x12,\n" +
-	"(FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT\x10+\x12!\n" +
-	"\x1dFEATURE_GOOGLE_AND_GITHUB_SSO\x10%\x12\x17\n" +
-	"\x13FEATURE_USER_GROUPS\x10&\x12(\n" +
-	"$FEATURE_DISALLOW_SELF_SERVICE_SIGNUP\x10'\x12%\n" +
-	"!FEATURE_DATABASE_SECRET_VARIABLES\x10(\x12(\n" +
-	"$FEATURE_QUERY_DATASOURCE_RESTRICTION\x10)\x12\x1b\n" +
-	"\x17FEATURE_RISK_ASSESSMENT\x10,\x12\x1d\n" +
-	"\x19FEATURE_APPROVAL_WORKFLOW\x10-\x12\x15\n" +
-	"\x11FEATURE_AUDIT_LOG\x10.\x12\x1a\n" +
-	"\x16FEATURE_ENTERPRISE_SSO\x10/\x12\x12\n" +
-	"\x0eFEATURE_TWO_FA\x100\x12!\n" +
-	"\x1dFEATURE_PASSWORD_RESTRICTIONS\x101\x12$\n" +
-	" FEATURE_DISALLOW_PASSWORD_SIGNIN\x102\x12\x18\n" +
-	"\x14FEATURE_CUSTOM_ROLES\x103\x12!\n" +
-	"\x1dFEATURE_REQUEST_ROLE_WORKFLOW\x104\x12\x18\n" +
-	"\x14FEATURE_DATA_MASKING\x105\x12\x1f\n" +
-	"\x1bFEATURE_DATA_CLASSIFICATION\x106\x12\x10\n" +
-	"\fFEATURE_SCIM\x107\x12\x1a\n" +
-	"\x16FEATURE_DIRECTORY_SYNC\x108\x12%\n" +
-	"!FEATURE_SIGN_IN_FREQUENCY_CONTROL\x109\x12#\n" +
-	"\x1fFEATURE_EXTERNAL_SECRET_MANAGER\x10:\x12)\n" +
-	"%FEATURE_USER_EMAIL_DOMAIN_RESTRICTION\x10;\x12\"\n" +
-	"\x1eFEATURE_ENVIRONMENT_MANAGEMENT\x10<\x12\x1c\n" +
-	"\x18FEATURE_IM_NOTIFICATIONS\x10=\x12\x1e\n" +
-	"\x1aFEATURE_TERRAFORM_PROVIDER\x10>\x12\x1b\n" +
-	"\x17FEATURE_DATABASE_GROUPS\x10?\x12\x1d\n" +
-	"\x19FEATURE_ENVIRONMENT_TIERS\x10@\x12\"\n" +
-	"\x1eFEATURE_DASHBOARD_ANNOUNCEMENT\x10A\x12$\n" +
-	" FEATURE_API_INTEGRATION_GUIDANCE\x10B\x12\x17\n" +
-	"\x13FEATURE_CUSTOM_LOGO\x10C\x12\x15\n" +
-	"\x11FEATURE_WATERMARK\x10D\x12\"\n" +
-	"\x1eFEATURE_ROADMAP_PRIORITIZATION\x10E\x12\x16\n" +
-	"\x12FEATURE_CUSTOM_MSA\x10F\x12\x1d\n" +
-	"\x19FEATURE_COMMUNITY_SUPPORT\x10G\x12\x19\n" +
-	"\x15FEATURE_EMAIL_SUPPORT\x10H\x12&\n" +
-	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10I2\xa5\x02\n" +
+	"$FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS\x10\x1b\x12\x17\n" +
+	"\x13FEATURE_BATCH_QUERY\x10\x1c\x12)\n" +
+	"%FEATURE_INSTANCE_READ_ONLY_CONNECTION\x10\x1d\x12\x18\n" +
+	"\x14FEATURE_QUERY_POLICY\x10\x1e\x12!\n" +
+	"\x1dFEATURE_RESTRICT_COPYING_DATA\x10\x1f\x12\x0f\n" +
+	"\vFEATURE_IAM\x10 \x12#\n" +
+	"\x1fFEATURE_INSTANCE_SSL_CONNECTION\x10!\x12/\n" +
+	"+FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL\x10\"\x122\n" +
+	".FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION\x10#\x12!\n" +
+	"\x1dFEATURE_GOOGLE_AND_GITHUB_SSO\x10$\x12\x17\n" +
+	"\x13FEATURE_USER_GROUPS\x10%\x12(\n" +
+	"$FEATURE_DISALLOW_SELF_SERVICE_SIGNUP\x10&\x12%\n" +
+	"!FEATURE_DATABASE_SECRET_VARIABLES\x10'\x12%\n" +
+	"!FEATURE_CUSTOM_INSTANCE_SYNC_TIME\x10(\x12,\n" +
+	"(FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT\x10)\x12\x1b\n" +
+	"\x17FEATURE_RISK_ASSESSMENT\x10*\x12\x1d\n" +
+	"\x19FEATURE_APPROVAL_WORKFLOW\x10+\x12\x15\n" +
+	"\x11FEATURE_AUDIT_LOG\x10,\x12\x1a\n" +
+	"\x16FEATURE_ENTERPRISE_SSO\x10-\x12\x12\n" +
+	"\x0eFEATURE_TWO_FA\x10.\x12!\n" +
+	"\x1dFEATURE_PASSWORD_RESTRICTIONS\x10/\x12$\n" +
+	" FEATURE_DISALLOW_PASSWORD_SIGNIN\x100\x12\x18\n" +
+	"\x14FEATURE_CUSTOM_ROLES\x101\x12!\n" +
+	"\x1dFEATURE_REQUEST_ROLE_WORKFLOW\x102\x12\x18\n" +
+	"\x14FEATURE_DATA_MASKING\x103\x12\x1f\n" +
+	"\x1bFEATURE_DATA_CLASSIFICATION\x104\x12\x10\n" +
+	"\fFEATURE_SCIM\x105\x12\x1a\n" +
+	"\x16FEATURE_DIRECTORY_SYNC\x106\x12%\n" +
+	"!FEATURE_SIGN_IN_FREQUENCY_CONTROL\x107\x12#\n" +
+	"\x1fFEATURE_EXTERNAL_SECRET_MANAGER\x108\x12)\n" +
+	"%FEATURE_USER_EMAIL_DOMAIN_RESTRICTION\x109\x12\"\n" +
+	"\x1eFEATURE_ENVIRONMENT_MANAGEMENT\x10:\x12\x1c\n" +
+	"\x18FEATURE_IM_NOTIFICATIONS\x10;\x12\x1e\n" +
+	"\x1aFEATURE_TERRAFORM_PROVIDER\x10<\x12\x1b\n" +
+	"\x17FEATURE_DATABASE_GROUPS\x10=\x12\x1d\n" +
+	"\x19FEATURE_ENVIRONMENT_TIERS\x10>\x12\"\n" +
+	"\x1eFEATURE_DASHBOARD_ANNOUNCEMENT\x10?\x12$\n" +
+	" FEATURE_API_INTEGRATION_GUIDANCE\x10@\x12\x17\n" +
+	"\x13FEATURE_CUSTOM_LOGO\x10A\x12\x15\n" +
+	"\x11FEATURE_WATERMARK\x10B\x12\"\n" +
+	"\x1eFEATURE_ROADMAP_PRIORITIZATION\x10C\x12\x16\n" +
+	"\x12FEATURE_CUSTOM_MSA\x10D\x12\x1d\n" +
+	"\x19FEATURE_COMMUNITY_SUPPORT\x10E\x12\x19\n" +
+	"\x15FEATURE_EMAIL_SUPPORT\x10F\x12&\n" +
+	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G2\xa5\x02\n" +
 	"\x13SubscriptionService\x12r\n" +
 	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1f\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\x99\x01\n" +
 	"\x12UpdateSubscription\x12&.bytebase.v1.UpdateSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"@\xdaA\x05patch\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1b:\alicense2\x10/v1/subscriptionB4Z2github.com/bytebase/bytebase/proto/generated-go/v1b\x06proto3"
