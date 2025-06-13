@@ -104,7 +104,6 @@ export enum PlanFeature {
   FEATURE_DATA_EXPORT = "FEATURE_DATA_EXPORT",
   FEATURE_QUERY_HISTORY = "FEATURE_QUERY_HISTORY",
   FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS",
-  FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION = "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION",
   FEATURE_BATCH_QUERY = "FEATURE_BATCH_QUERY",
   FEATURE_INSTANCE_READ_ONLY_CONNECTION = "FEATURE_INSTANCE_READ_ONLY_CONNECTION",
   FEATURE_QUERY_POLICY = "FEATURE_QUERY_POLICY",
@@ -114,13 +113,12 @@ export enum PlanFeature {
   FEATURE_INSTANCE_SSL_CONNECTION = "FEATURE_INSTANCE_SSL_CONNECTION",
   FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL = "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
   FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION = "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION",
-  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
-  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
   FEATURE_GOOGLE_AND_GITHUB_SSO = "FEATURE_GOOGLE_AND_GITHUB_SSO",
   FEATURE_USER_GROUPS = "FEATURE_USER_GROUPS",
   FEATURE_DISALLOW_SELF_SERVICE_SIGNUP = "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP",
   FEATURE_DATABASE_SECRET_VARIABLES = "FEATURE_DATABASE_SECRET_VARIABLES",
-  FEATURE_QUERY_DATASOURCE_RESTRICTION = "FEATURE_QUERY_DATASOURCE_RESTRICTION",
+  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
+  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
   FEATURE_RISK_ASSESSMENT = "FEATURE_RISK_ASSESSMENT",
   FEATURE_APPROVAL_WORKFLOW = "FEATURE_APPROVAL_WORKFLOW",
   FEATURE_AUDIT_LOG = "FEATURE_AUDIT_LOG",
@@ -242,141 +240,135 @@ export function planFeatureFromJSON(object: any): PlanFeature {
     case "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS":
       return PlanFeature.FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS;
     case 28:
-    case "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION":
-      return PlanFeature.FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION;
-    case 29:
     case "FEATURE_BATCH_QUERY":
       return PlanFeature.FEATURE_BATCH_QUERY;
-    case 30:
+    case 29:
     case "FEATURE_INSTANCE_READ_ONLY_CONNECTION":
       return PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION;
-    case 31:
+    case 30:
     case "FEATURE_QUERY_POLICY":
       return PlanFeature.FEATURE_QUERY_POLICY;
-    case 32:
+    case 31:
     case "FEATURE_RESTRICT_COPYING_DATA":
       return PlanFeature.FEATURE_RESTRICT_COPYING_DATA;
-    case 33:
+    case 32:
     case "FEATURE_IAM":
       return PlanFeature.FEATURE_IAM;
-    case 34:
+    case 33:
     case "FEATURE_INSTANCE_SSL_CONNECTION":
       return PlanFeature.FEATURE_INSTANCE_SSL_CONNECTION;
-    case 35:
+    case 34:
     case "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL":
       return PlanFeature.FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL;
-    case 36:
+    case 35:
     case "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION":
       return PlanFeature.FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION;
-    case 42:
-    case "FEATURE_CUSTOM_INSTANCE_SYNC_TIME":
-      return PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME;
-    case 43:
-    case "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT":
-      return PlanFeature.FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT;
-    case 37:
+    case 36:
     case "FEATURE_GOOGLE_AND_GITHUB_SSO":
       return PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO;
-    case 38:
+    case 37:
     case "FEATURE_USER_GROUPS":
       return PlanFeature.FEATURE_USER_GROUPS;
-    case 39:
+    case 38:
     case "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP":
       return PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP;
-    case 40:
+    case 39:
     case "FEATURE_DATABASE_SECRET_VARIABLES":
       return PlanFeature.FEATURE_DATABASE_SECRET_VARIABLES;
+    case 40:
+    case "FEATURE_CUSTOM_INSTANCE_SYNC_TIME":
+      return PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME;
     case 41:
-    case "FEATURE_QUERY_DATASOURCE_RESTRICTION":
-      return PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION;
-    case 44:
+    case "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT":
+      return PlanFeature.FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT;
+    case 42:
     case "FEATURE_RISK_ASSESSMENT":
       return PlanFeature.FEATURE_RISK_ASSESSMENT;
-    case 45:
+    case 43:
     case "FEATURE_APPROVAL_WORKFLOW":
       return PlanFeature.FEATURE_APPROVAL_WORKFLOW;
-    case 46:
+    case 44:
     case "FEATURE_AUDIT_LOG":
       return PlanFeature.FEATURE_AUDIT_LOG;
-    case 47:
+    case 45:
     case "FEATURE_ENTERPRISE_SSO":
       return PlanFeature.FEATURE_ENTERPRISE_SSO;
-    case 48:
+    case 46:
     case "FEATURE_TWO_FA":
       return PlanFeature.FEATURE_TWO_FA;
-    case 49:
+    case 47:
     case "FEATURE_PASSWORD_RESTRICTIONS":
       return PlanFeature.FEATURE_PASSWORD_RESTRICTIONS;
-    case 50:
+    case 48:
     case "FEATURE_DISALLOW_PASSWORD_SIGNIN":
       return PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN;
-    case 51:
+    case 49:
     case "FEATURE_CUSTOM_ROLES":
       return PlanFeature.FEATURE_CUSTOM_ROLES;
-    case 52:
+    case 50:
     case "FEATURE_REQUEST_ROLE_WORKFLOW":
       return PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW;
-    case 53:
+    case 51:
     case "FEATURE_DATA_MASKING":
       return PlanFeature.FEATURE_DATA_MASKING;
-    case 54:
+    case 52:
     case "FEATURE_DATA_CLASSIFICATION":
       return PlanFeature.FEATURE_DATA_CLASSIFICATION;
-    case 55:
+    case 53:
     case "FEATURE_SCIM":
       return PlanFeature.FEATURE_SCIM;
-    case 56:
+    case 54:
     case "FEATURE_DIRECTORY_SYNC":
       return PlanFeature.FEATURE_DIRECTORY_SYNC;
-    case 57:
+    case 55:
     case "FEATURE_SIGN_IN_FREQUENCY_CONTROL":
       return PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL;
-    case 58:
+    case 56:
     case "FEATURE_EXTERNAL_SECRET_MANAGER":
       return PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER;
-    case 59:
+    case 57:
     case "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":
       return PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION;
-    case 60:
+    case 58:
     case "FEATURE_ENVIRONMENT_MANAGEMENT":
       return PlanFeature.FEATURE_ENVIRONMENT_MANAGEMENT;
-    case 61:
+    case 59:
     case "FEATURE_IM_NOTIFICATIONS":
       return PlanFeature.FEATURE_IM_NOTIFICATIONS;
-    case 62:
+    case 60:
     case "FEATURE_TERRAFORM_PROVIDER":
       return PlanFeature.FEATURE_TERRAFORM_PROVIDER;
-    case 63:
+    case 61:
     case "FEATURE_DATABASE_GROUPS":
       return PlanFeature.FEATURE_DATABASE_GROUPS;
-    case 64:
+    case 62:
     case "FEATURE_ENVIRONMENT_TIERS":
       return PlanFeature.FEATURE_ENVIRONMENT_TIERS;
-    case 65:
+    case 63:
     case "FEATURE_DASHBOARD_ANNOUNCEMENT":
       return PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT;
-    case 66:
+    case 64:
     case "FEATURE_API_INTEGRATION_GUIDANCE":
       return PlanFeature.FEATURE_API_INTEGRATION_GUIDANCE;
-    case 67:
+    case 65:
     case "FEATURE_CUSTOM_LOGO":
       return PlanFeature.FEATURE_CUSTOM_LOGO;
-    case 68:
+    case 66:
     case "FEATURE_WATERMARK":
       return PlanFeature.FEATURE_WATERMARK;
-    case 69:
+    case 67:
     case "FEATURE_ROADMAP_PRIORITIZATION":
       return PlanFeature.FEATURE_ROADMAP_PRIORITIZATION;
-    case 70:
+    case 68:
     case "FEATURE_CUSTOM_MSA":
       return PlanFeature.FEATURE_CUSTOM_MSA;
-    case 71:
+    case 69:
     case "FEATURE_COMMUNITY_SUPPORT":
       return PlanFeature.FEATURE_COMMUNITY_SUPPORT;
-    case 72:
+    case 70:
     case "FEATURE_EMAIL_SUPPORT":
       return PlanFeature.FEATURE_EMAIL_SUPPORT;
-    case 73:
+    case 71:
     case "FEATURE_DEDICATED_SUPPORT_WITH_SLA":
       return PlanFeature.FEATURE_DEDICATED_SUPPORT_WITH_SLA;
     case -1:
@@ -444,8 +436,6 @@ export function planFeatureToJSON(object: PlanFeature): string {
       return "FEATURE_QUERY_HISTORY";
     case PlanFeature.FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS:
       return "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS";
-    case PlanFeature.FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION:
-      return "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION";
     case PlanFeature.FEATURE_BATCH_QUERY:
       return "FEATURE_BATCH_QUERY";
     case PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION:
@@ -462,10 +452,6 @@ export function planFeatureToJSON(object: PlanFeature): string {
       return "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL";
     case PlanFeature.FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION:
       return "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION";
-    case PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME:
-      return "FEATURE_CUSTOM_INSTANCE_SYNC_TIME";
-    case PlanFeature.FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT:
-      return "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT";
     case PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO:
       return "FEATURE_GOOGLE_AND_GITHUB_SSO";
     case PlanFeature.FEATURE_USER_GROUPS:
@@ -474,8 +460,10 @@ export function planFeatureToJSON(object: PlanFeature): string {
       return "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP";
     case PlanFeature.FEATURE_DATABASE_SECRET_VARIABLES:
       return "FEATURE_DATABASE_SECRET_VARIABLES";
-    case PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION:
-      return "FEATURE_QUERY_DATASOURCE_RESTRICTION";
+    case PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME:
+      return "FEATURE_CUSTOM_INSTANCE_SYNC_TIME";
+    case PlanFeature.FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT:
+      return "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT";
     case PlanFeature.FEATURE_RISK_ASSESSMENT:
       return "FEATURE_RISK_ASSESSMENT";
     case PlanFeature.FEATURE_APPROVAL_WORKFLOW:
@@ -600,98 +588,94 @@ export function planFeatureToNumber(object: PlanFeature): number {
       return 26;
     case PlanFeature.FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS:
       return 27;
-    case PlanFeature.FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION:
-      return 28;
     case PlanFeature.FEATURE_BATCH_QUERY:
-      return 29;
+      return 28;
     case PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION:
-      return 30;
+      return 29;
     case PlanFeature.FEATURE_QUERY_POLICY:
-      return 31;
+      return 30;
     case PlanFeature.FEATURE_RESTRICT_COPYING_DATA:
-      return 32;
+      return 31;
     case PlanFeature.FEATURE_IAM:
-      return 33;
+      return 32;
     case PlanFeature.FEATURE_INSTANCE_SSL_CONNECTION:
-      return 34;
+      return 33;
     case PlanFeature.FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL:
-      return 35;
+      return 34;
     case PlanFeature.FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION:
-      return 36;
-    case PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME:
-      return 42;
-    case PlanFeature.FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT:
-      return 43;
+      return 35;
     case PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO:
-      return 37;
+      return 36;
     case PlanFeature.FEATURE_USER_GROUPS:
-      return 38;
+      return 37;
     case PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP:
-      return 39;
+      return 38;
     case PlanFeature.FEATURE_DATABASE_SECRET_VARIABLES:
+      return 39;
+    case PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME:
       return 40;
-    case PlanFeature.FEATURE_QUERY_DATASOURCE_RESTRICTION:
+    case PlanFeature.FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT:
       return 41;
     case PlanFeature.FEATURE_RISK_ASSESSMENT:
-      return 44;
+      return 42;
     case PlanFeature.FEATURE_APPROVAL_WORKFLOW:
-      return 45;
+      return 43;
     case PlanFeature.FEATURE_AUDIT_LOG:
-      return 46;
+      return 44;
     case PlanFeature.FEATURE_ENTERPRISE_SSO:
-      return 47;
+      return 45;
     case PlanFeature.FEATURE_TWO_FA:
-      return 48;
+      return 46;
     case PlanFeature.FEATURE_PASSWORD_RESTRICTIONS:
-      return 49;
+      return 47;
     case PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN:
-      return 50;
+      return 48;
     case PlanFeature.FEATURE_CUSTOM_ROLES:
-      return 51;
+      return 49;
     case PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW:
-      return 52;
+      return 50;
     case PlanFeature.FEATURE_DATA_MASKING:
-      return 53;
+      return 51;
     case PlanFeature.FEATURE_DATA_CLASSIFICATION:
-      return 54;
+      return 52;
     case PlanFeature.FEATURE_SCIM:
-      return 55;
+      return 53;
     case PlanFeature.FEATURE_DIRECTORY_SYNC:
-      return 56;
+      return 54;
     case PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL:
-      return 57;
+      return 55;
     case PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER:
-      return 58;
+      return 56;
     case PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION:
-      return 59;
+      return 57;
     case PlanFeature.FEATURE_ENVIRONMENT_MANAGEMENT:
-      return 60;
+      return 58;
     case PlanFeature.FEATURE_IM_NOTIFICATIONS:
-      return 61;
+      return 59;
     case PlanFeature.FEATURE_TERRAFORM_PROVIDER:
-      return 62;
+      return 60;
     case PlanFeature.FEATURE_DATABASE_GROUPS:
-      return 63;
+      return 61;
     case PlanFeature.FEATURE_ENVIRONMENT_TIERS:
-      return 64;
+      return 62;
     case PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT:
-      return 65;
+      return 63;
     case PlanFeature.FEATURE_API_INTEGRATION_GUIDANCE:
-      return 66;
+      return 64;
     case PlanFeature.FEATURE_CUSTOM_LOGO:
-      return 67;
+      return 65;
     case PlanFeature.FEATURE_WATERMARK:
-      return 68;
+      return 66;
     case PlanFeature.FEATURE_ROADMAP_PRIORITIZATION:
-      return 69;
+      return 67;
     case PlanFeature.FEATURE_CUSTOM_MSA:
-      return 70;
+      return 68;
     case PlanFeature.FEATURE_COMMUNITY_SUPPORT:
-      return 71;
+      return 69;
     case PlanFeature.FEATURE_EMAIL_SUPPORT:
-      return 72;
+      return 70;
     case PlanFeature.FEATURE_DEDICATED_SUPPORT_WITH_SLA:
-      return 73;
+      return 71;
     case PlanFeature.UNRECOGNIZED:
     default:
       return -1;

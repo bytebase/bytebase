@@ -181,10 +181,6 @@
         "title": "保存および共有されたSQLスクリプト",
         "desc": "チームメンバーとSQLスクリプトを保存して共有します。"
       },
-      "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION": {
-        "title": "SQLエディターDDL/DML制限",
-        "desc": "SQLエディターでDDLおよびDML操作を制限します。"
-      },
       "FEATURE_BATCH_QUERY": {
         "title": "バッチクエリ",
         "desc": "複数のデータベースで同時にクエリを実行します。"
@@ -240,10 +236,6 @@
       "FEATURE_DATABASE_SECRET_VARIABLES": {
         "title": "データベースシークレット変数",
         "desc": "暗号化されたシークレットをSQLスクリプトで保存して使用します。"
-      },
-      "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
-        "title": "クエリデータソース制限",
-        "desc": "ユーザーがクエリできるデータソースを制限します。"
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "リスク評価",

@@ -669,7 +669,7 @@ func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService
 	var timeout time.Duration
 	// For access control feature, we will use the timeout from request and query data policy.
 	// Otherwise, no timeout will be applied.
-	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION) == nil {
+	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY) == nil {
 		queryDataPolicy, err := stores.GetQueryDataPolicy(ctx)
 		if err != nil {
 			return nil, time.Duration(0), errors.Wrap(err, "failed to get query data policy")
@@ -1902,7 +1902,7 @@ func checkAndGetDataSourceQueriable(
 	}
 
 	//nolint:nilerr
-	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION); err != nil {
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 		return dataSource, nil
 	}
 	var envAdminDataSourceRestriction, projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction

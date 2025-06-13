@@ -181,10 +181,6 @@
         "title": "Saved and shared SQL scripts",
         "desc": "Save and share SQL scripts with team members."
       },
-      "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION": {
-        "title": "SQL editor DDL/DML restriction",
-        "desc": "Restrict DDL and DML operations in the SQL editor."
-      },
       "FEATURE_BATCH_QUERY": {
         "title": "Batch query",
         "desc": "Execute queries across multiple databases simultaneously."
@@ -240,10 +236,6 @@
       "FEATURE_DATABASE_SECRET_VARIABLES": {
         "title": "Database secret variables",
         "desc": "Store and use encrypted secrets in SQL scripts."
-      },
-      "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
-        "title": "Query datasource restriction",
-        "desc": "Restrict which data sources users can query."
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Risk assessment",
