@@ -1,0 +1,53 @@
+{
+  "current": "현재 플랜",
+  "unlimited": "무제한",
+  "max-instance-count": "최대 인스턴스 수",
+  "user-count": "사용자 수",
+  "expires-at": "만료일",
+  "start-free-trial": "무료 체험 시작하기",
+  "free-trial": "14일 무료 체험을 시작할 수 있습니다 - 신용카드 필요 없음",
+  "purchase-license": "라이센스 구매하기",
+  "update-license": "라이센스 업데이트",
+  "sensitive-placeholder": "여기에 라이센스를 붙여넣으세요 - 쓰기 전용",
+  "plan-compare": "다양한 플랜 간의 기능 비교",
+  "disabled-feature": "이것은 구독 플랜의 프리미엄 기능입니다",
+  "upgrade": "구독 업그레이드",
+  "per-month": "/ 월",
+  "price-unit-for-instance": "/ 인스턴스 / 월",
+  "price-unit-for-user": "/ 사용자 / 월",
+  "billed-annually": "연간 청구",
+  "billed-monthly": "월간 청구",
+  "per-instance": "인스턴스당",
+  "free-price-intro": "최대 {users}명의 사용자 및 {instances}개의 인스턴스",
+  "team-price-intro": "{instances}개의 무료 인스턴스, 최대 {users}명의 사용자 구매 가능",
+  "enterprise-price-intro": "맞춤형, 연간 청구",
+  "deploy": "배포",
+  "contact-us": "문의하기",
+  "start-trial": "지금 무료로 시작하기",
+  "subscribe": "지금 구독하기",
+  "current-plan": "현재 플랜",
+  "buy": "{plan} 플랜 구매하기",
+  "cancel": "구독 취소",
+  "announcement": "언제든지 업그레이드, 다운그레이드 또는 {cancel}할 수 있습니다. 숨겨진 요금 없음.",
+  "trialing": "체험 중",
+  "expired": "만료됨",
+  "plan": {
+    "title": "커뮤니티",
+    "try": "무료 체험 시작하기",
+    "free": {
+      "title": "커뮤니티",
+      "label": "",
+      "desc": "데이터베이스 개발 수명 주기를 관리하기 위한 팀 필수 요소."
+    },
+    "team": {
+      "title": "프로",
+      "label": "",
+      "desc": "팀 간 협업을 표준화하고 촉진하기 위한 더 많은 정책."
+    },
+    "enterprise": {
+      "title": "엔터프라이즈",
+      "label": "",
+      "desc": "추가 보안, 규정 준수 및 권한 기능. SLA가 포함된 전담 지원."
+    }
+  }
+}
