@@ -181,10 +181,6 @@
         "title": "保存和共享 SQL 脚本",
         "desc": "与团队成员保存和共享 SQL 脚本。"
       },
-      "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION": {
-        "title": "SQL 编辑器 DDL/DML 限制",
-        "desc": "在 SQL 编辑器中限制 DDL 和 DML 操作。"
-      },
       "FEATURE_BATCH_QUERY": {
         "title": "批量查询",
         "desc": "同时跨多个数据库执行查询。"
@@ -240,10 +236,6 @@
       "FEATURE_DATABASE_SECRET_VARIABLES": {
         "title": "数据库密钥变量",
         "desc": "在 SQL 脚本中存储和使用加密的密钥。"
-      },
-      "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
-        "title": "查询数据源限制",
-        "desc": "限制用户可以查询哪些数据源。"
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "风险评估",
