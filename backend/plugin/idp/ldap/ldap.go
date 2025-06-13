@@ -17,19 +17,6 @@ type IdentityProvider struct {
 	config IdentityProviderConfig
 }
 
-// SecurityProtocol represents the security protocol to be used when connecting
-// to the LDAP server.
-type SecurityProtocol string
-
-const (
-	// SecurityProtocolStartTLS represents the StartTLS security protocol.
-	SecurityProtocolStartTLS SecurityProtocol = "starttls"
-	// SecurityProtocolLDAPS represents the LDAPS security protocol.
-	SecurityProtocolLDAPS SecurityProtocol = "ldaps"
-	// SecurityProtocolNone means no security protocol.
-	SecurityProtocolNone SecurityProtocol = ""
-)
-
 // IdentityProviderConfig is the configuration to be consumed by the LDAP
 // Identity Provider.
 type IdentityProviderConfig struct {
@@ -52,8 +39,8 @@ type IdentityProviderConfig struct {
 	// UserFilter is the filter to search for users, e.g. "(uid=%s)".
 	UserFilter string `json:"userFilter"`
 	// SecurityProtocol is the security protocol to be used for establishing
-	// connections with the LDAP server. It must be StartTLS, LDAPS or None.
-	SecurityProtocol SecurityProtocol `json:"securityProtocol"`
+	// connections with the LDAP server.
+	SecurityProtocol storepb.LDAPIdentityProviderConfig_SecurityProtocol `json:"securityProtocol"`
 	// FieldMapping is the mapping of the user attributes returned by the LDAP
 	// server.
 	FieldMapping *storepb.FieldMapping `json:"fieldMapping"`
@@ -76,7 +63,7 @@ func NewIdentityProvider(config IdentityProviderConfig) (*IdentityProvider, erro
 	}
 
 	if config.Port <= 0 {
-		if config.SecurityProtocol == SecurityProtocolLDAPS {
+		if config.SecurityProtocol == storepb.LDAPIdentityProviderConfig_LDAPS {
 			config.Port = 636
 		} else {
 			config.Port = 389
@@ -94,14 +81,14 @@ func (p *IdentityProvider) dial() (*ldap.Conn, error) {
 		InsecureSkipVerify: p.config.SkipTLSVerify,
 	}
 	switch p.config.SecurityProtocol {
-	case SecurityProtocolLDAPS:
+	case storepb.LDAPIdentityProviderConfig_LDAPS:
 		url := fmt.Sprintf("ldaps://%s:%d", p.config.Host, p.config.Port)
 		conn, err := ldap.DialURL(url, ldap.DialWithTLSConfig(tlsConfig))
 		if err != nil {
 			return nil, errors.Errorf("dial TLS: %v", err)
 		}
 		return conn, nil
-	case SecurityProtocolStartTLS:
+	case storepb.LDAPIdentityProviderConfig_START_TLS:
 		url := fmt.Sprintf("ldap://%s:%d", p.config.Host, p.config.Port)
 		conn, err := ldap.DialURL(url)
 		if err != nil {
@@ -112,15 +99,13 @@ func (p *IdentityProvider) dial() (*ldap.Conn, error) {
 			return nil, errors.Errorf("start TLS: %v", err)
 		}
 		return conn, nil
-	case SecurityProtocolNone:
+	default:
 		url := fmt.Sprintf("ldap://%s:%d", p.config.Host, p.config.Port)
 		conn, err := ldap.DialURL(url)
 		if err != nil {
 			return nil, errors.Errorf("dial: %v", err)
 		}
 		return conn, nil
-	default:
-		return nil, errors.Errorf("unknown security protocol %q", p.config.SecurityProtocol)
 	}
 }
 

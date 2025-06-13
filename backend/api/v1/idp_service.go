@@ -312,7 +312,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 				BindPassword:     identityProviderConfig.BindPassword,
 				BaseDN:           identityProviderConfig.BaseDn,
 				UserFilter:       identityProviderConfig.UserFilter,
-				SecurityProtocol: ldap.SecurityProtocol(identityProviderConfig.SecurityProtocol),
+				SecurityProtocol: identityProviderConfig.SecurityProtocol,
 				FieldMapping:     identityProviderConfig.FieldMapping,
 			},
 		)
@@ -438,7 +438,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					BindPassword:     "", // SECURITY: We do not expose the bind password
 					BaseDn:           v.BaseDn,
 					UserFilter:       v.UserFilter,
-					SecurityProtocol: v.SecurityProtocol,
+					SecurityProtocol: v1pb.LDAPIdentityProviderConfig_SecurityProtocol(v.SecurityProtocol),
 					FieldMapping:     &fieldMapping,
 				},
 			},
@@ -507,7 +507,7 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 					BindPassword:     v.BindPassword,
 					BaseDn:           v.BaseDn,
 					UserFilter:       v.UserFilter,
-					SecurityProtocol: v.SecurityProtocol,
+					SecurityProtocol: storepb.LDAPIdentityProviderConfig_SecurityProtocol(v.SecurityProtocol),
 					FieldMapping:     &fieldMapping,
 				},
 			},
