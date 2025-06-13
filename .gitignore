@@ -17,9 +17,6 @@ mysql-*.tar*
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-# Air (hot reload) generated
-.air
-
 # Frontend asset
 dist
 
@@ -37,5 +34,3 @@ docs/sqlservice/swagger.json
 frontend/public/monaco-workers/
 frontend/src/types/plan.yaml
 frontend/src/types/iam/*.yaml
-scripts/.air.toml.local
-
