@@ -174,7 +174,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		}
 	}
 
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, database, request.DataSourceId)
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, request.DataSourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		defer conn.Close()
 	}
 
-	maximumSQLResultSize := s.store.GetMaximumSQLResultLimit(ctx)
+	maximumSQLResultSize := common.DefaultMaximumSQLResultSize
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
+		maximumSQLResultSize = s.store.GetMaximumSQLResultLimit(ctx)
+	}
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
 		Limit:                int(request.Limit),
@@ -729,7 +732,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		}
 	}
 
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, database, request.DataSourceId)
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, request.DataSourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -1898,6 +1901,7 @@ func GetQueriableDataSource(instance *store.InstanceMessage) *storepb.DataSource
 func checkAndGetDataSourceQueriable(
 	ctx context.Context,
 	storeInstance *store.Store,
+	licenseService *enterprise.LicenseService,
 	database *store.DatabaseMessage,
 	dataSourceID string,
 ) (*storepb.DataSource, error) {
@@ -1926,9 +1930,16 @@ func checkAndGetDataSourceQueriable(
 
 	// Always allow non-admin data source.
 	if dataSource.GetType() != storepb.DataSourceType_ADMIN {
+		if err := licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
+			return nil, status.Error(codes.PermissionDenied, err.Error())
+		}
 		return dataSource, nil
 	}
 
+	//nolint:nilerr
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION); err != nil {
+		return dataSource, nil
+	}
 	var envAdminDataSourceRestriction, projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
 	environment, err := storeInstance.GetEnvironmentByID(ctx, database.EffectiveEnvironmentID)
 	if err != nil {

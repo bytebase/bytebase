@@ -217,6 +217,14 @@
         "title": "IAM authentication",
         "desc": "Use cloud provider IAM for database authentication."
       },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "Custom instance sync time",
+        "desc": "Customize database synchronization intervals and settings."
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "Custom instance connection limit",
+        "desc": "Configure maximum database connection limits."
+      },
       "FEATURE_GOOGLE_AND_GITHUB_SSO": {
         "title": "Google and GitHub SSO",
         "desc": "Sign in with Google or GitHub accounts."
@@ -236,14 +244,6 @@
       "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
         "title": "Query datasource restriction",
         "desc": "Restrict which data sources users can query."
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "Custom instance sync time",
-        "desc": "Customize database synchronization intervals and settings."
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "Custom instance connection limit",
-        "desc": "Configure maximum database connection limits."
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Risk assessment",
