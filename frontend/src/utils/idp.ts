@@ -22,3 +22,9 @@ export interface OAuth2IdentityProviderTemplate {
   type: IdentityProviderType.OAUTH2;
   config: OAuth2IdentityProviderConfig;
 }
+
+export const extractIdentityProviderResourceName = (name: string) => {
+  const pattern = /(?:^|\/)idps\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};

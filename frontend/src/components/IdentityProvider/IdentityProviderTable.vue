@@ -1,13 +1,12 @@
 <template>
   <NDataTable
     key="idp-table"
-    size="small"
     v-bind="$attrs"
     :columns="columnList"
     :data="identityProviderList"
     :striped="true"
     :bordered="bordered"
-    :row-key="(data: IdentityProvider) => data.name"
+    :row-key="(idp: IdentityProvider) => idp.name"
     :row-props="rowProps"
     :paginate-single-page="false"
   />
@@ -21,6 +20,7 @@ import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_SSO_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { getSSOId } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import { identityProviderTypeToString } from "@/utils";
 
 withDefaults(
   defineProps<{
@@ -33,31 +33,24 @@ withDefaults(
 );
 
 const router = useRouter();
-
 const { t } = useI18n();
 
 const columnList = computed((): DataTableColumn<IdentityProvider>[] => {
   return [
     {
-      key: "name",
+      key: "title",
       title: t("common.name"),
-      resizable: true,
-      ellipsis: true,
       render: (idp) => idp.title,
     },
     {
-      key: "resource-id",
-      title: t("settings.sso.form.resource-id"),
-      resizable: true,
-      ellipsis: true,
-      render: (idp) => idp.name,
+      key: "type",
+      title: t("common.type"),
+      render: (idp) => identityProviderTypeToString(idp.type),
     },
     {
       key: "domain",
       title: t("settings.sso.form.domain"),
-      resizable: true,
-      ellipsis: true,
-      render: (idp) => idp.domain,
+      render: (idp) => idp.domain || "-",
     },
   ];
 });

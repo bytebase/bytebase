@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-4">
+  <div class="w-full space-y-6">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="textinfolabel mr-4">
         {{ $t("settings.sso.description") }}
@@ -13,18 +13,23 @@
         </a>
       </div>
     </div>
-  </div>
 
-  <IdentityProviderCreateForm
-    v-if="!isLoading"
-    class="py-4"
-    :identity-provider-name="currentIdentityProvider?.name"
-    :on-created="onCreated"
-    :on-updated="onUpdated"
-    :on-deleted="onDeleted"
-    :on-canceled="onCanceled"
-  />
-  <BBSpin v-else class="w-full h-64" />
+    <!-- Create new identity provider -->
+    <IdentityProviderCreateWizard
+      v-if="!isLoading && !currentIdentityProvider"
+      @created="props.onCreated"
+    />
+
+    <!-- Edit existing identity provider -->
+    <IdentityProviderEditForm
+      v-else-if="!isLoading && currentIdentityProvider"
+      :identity-provider="currentIdentityProvider"
+      @updated="props.onUpdated"
+      @deleted="props.onDeleted"
+    />
+
+    <BBSpin v-else class="w-full h-64" />
+  </div>
 
   <FeatureModal
     :feature="PlanFeature.FEATURE_ENTERPRISE_SSO"
@@ -37,9 +42,12 @@
 import { computed, reactive, ref, watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
 import { FeatureModal } from "@/components/FeatureGuard";
-import IdentityProviderCreateForm from "@/components/SSO/IdentityProviderCreateForm.vue";
+import {
+  IdentityProviderCreateWizard,
+  IdentityProviderEditForm,
+} from "@/components/IdentityProvider";
 import { useIdentityProviderStore } from "@/store/modules/idp";
-import { ssoNamePrefix } from "@/store/modules/v1/common";
+import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
 
@@ -47,7 +55,7 @@ const props = defineProps<{
   ssoId?: string;
   onCreated?: (sso: IdentityProvider) => void;
   onUpdated?: (sso: IdentityProvider) => void;
-  onDeleted?: (sso: IdentityProvider) => void;
+  onDeleted?: () => void;
   onCanceled?: () => void;
 }>();
 
@@ -61,22 +69,22 @@ const state = reactive<LocalState>({
 const identityProviderStore = useIdentityProviderStore();
 const isLoading = ref<boolean>(true);
 
-const ssoName = computed(() => {
+const idpName = computed(() => {
   if (!props.ssoId) {
     return "";
   }
-  return `${ssoNamePrefix}${props.ssoId}`;
+  return `${idpNamePrefix}${props.ssoId}`;
 });
 
 watchEffect(async () => {
-  if (ssoName.value) {
+  if (idpName.value) {
     isLoading.value = true;
-    await identityProviderStore.getOrFetchIdentityProviderByName(ssoName.value);
+    await identityProviderStore.getOrFetchIdentityProviderByName(idpName.value);
   }
   isLoading.value = false;
 });
 
 const currentIdentityProvider = computed(() => {
-  return identityProviderStore.getIdentityProviderByName(ssoName.value);
+  return identityProviderStore.getIdentityProviderByName(idpName.value);
 });
 </script>
