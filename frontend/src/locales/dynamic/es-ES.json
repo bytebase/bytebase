@@ -217,6 +217,14 @@
         "title": "Autenticación IAM",
         "desc": "Use IAM del proveedor de nube para la autenticación de base de datos."
       },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "Tiempo de sincronización de instancia personalizado",
+        "desc": "Personalice los intervalos y configuraciones de sincronización de base de datos."
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "Límite de conexión de instancia personalizado",
+        "desc": "Configure límites máximos de conexión de base de datos."
+      },
       "FEATURE_GOOGLE_AND_GITHUB_SSO": {
         "title": "SSO de Google y GitHub",
         "desc": "Inicie sesión con cuentas de Google o GitHub."
@@ -236,14 +244,6 @@
       "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
         "title": "Restricción de fuente de datos de consultas",
         "desc": "Restrinja qué fuentes de datos pueden consultar los usuarios."
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "Tiempo de sincronización de instancia personalizado",
-        "desc": "Personalice los intervalos y configuraciones de sincronización de base de datos."
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "Límite de conexión de instancia personalizado",
-        "desc": "Configure límites máximos de conexión de base de datos."
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Evaluación de riesgos",

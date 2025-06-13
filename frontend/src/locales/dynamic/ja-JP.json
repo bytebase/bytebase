@@ -217,6 +217,14 @@
         "title": "IAM認証",
         "desc": "データベース認証にクラウドプロバイダーのIAMを使用します。"
       },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "カスタムインスタンス同期時間",
+        "desc": "データベース同期間隔と設定をカスタマイズします。"
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "カスタムインスタンス接続制限",
+        "desc": "最大データベース接続制限を設定します。"
+      },
       "FEATURE_GOOGLE_AND_GITHUB_SSO": {
         "title": "GoogleとGitHub SSO",
         "desc": "GoogleまたはGitHubアカウントでサインインします。"
@@ -236,14 +244,6 @@
       "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
         "title": "クエリデータソース制限",
         "desc": "ユーザーがクエリできるデータソースを制限します。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "カスタムインスタンス同期時間",
-        "desc": "データベース同期間隔と設定をカスタマイズします。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "カスタムインスタンス接続制限",
-        "desc": "最大データベース接続制限を設定します。"
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "リスク評価",
