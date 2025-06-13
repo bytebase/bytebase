@@ -50,6 +50,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Go**: Use standard Go error handling with detailed error messages
 - **API and Proto**: Follow AIPs in https://google.aip.dev/general
 - **Frontend**: Follow TypeScript style with strict type checking
+  - **i18n**: All user-facing display text in the UI must be defined and maintained in `./frontend/src/locales/en-US.json` using the i18n internationalization system. Do not hardcode any display strings directly in the source code.
 - **Naming**: Use American English, avoid plurals like "xxxList"
 - **Git**: Follow conventional commit format
 - **Imports**: Use organized imports (sorted by the import path)
