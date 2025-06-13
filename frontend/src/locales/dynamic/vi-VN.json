@@ -217,6 +217,14 @@
         "title": "Xác thực IAM",
         "desc": "Sử dụng IAM của nhà cung cấp đám mây để xác thực cơ sở dữ liệu."
       },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "Thời gian đồng bộ instance tùy chỉnh",
+        "desc": "Tùy chỉnh khoảng thời gian và cài đặt đồng bộ hóa cơ sở dữ liệu."
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "Giới hạn kết nối instance tùy chỉnh",
+        "desc": "Cấu hình giới hạn kết nối cơ sở dữ liệu tối đa."
+      },
       "FEATURE_GOOGLE_AND_GITHUB_SSO": {
         "title": "Google và GitHub SSO",
         "desc": "Đăng nhập bằng tài khoản Google hoặc GitHub."
@@ -236,14 +244,6 @@
       "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
         "title": "Hạn chế nguồn dữ liệu truy vấn",
         "desc": "Hạn chế người dùng có thể truy vấn nguồn dữ liệu nào."
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "Thời gian đồng bộ instance tùy chỉnh",
-        "desc": "Tùy chỉnh khoảng thời gian và cài đặt đồng bộ hóa cơ sở dữ liệu."
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "Giới hạn kết nối instance tùy chỉnh",
-        "desc": "Cấu hình giới hạn kết nối cơ sở dữ liệu tối đa."
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Đánh giá rủi ro",
