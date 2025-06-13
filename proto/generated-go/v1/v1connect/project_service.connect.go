@@ -80,6 +80,8 @@ const (
 
 // ProjectServiceClient is a client for the bytebase.v1.ProjectService service.
 type ProjectServiceClient interface {
+	// GetProject retrieves a project by name.
+	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
 	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)
@@ -285,6 +287,8 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, req *connect.Req
 
 // ProjectServiceHandler is an implementation of the bytebase.v1.ProjectService service.
 type ProjectServiceHandler interface {
+	// GetProject retrieves a project by name.
+	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
 	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)

@@ -80,14 +80,6 @@ service SQLService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  rpc ParseMyBatisMapper(ParseMyBatisMapperRequest) returns (ParseMyBatisMapperResponse) {
-    option (google.api.http) = {
-      post: "/v1/sql/parseMyBatisMapper"
-      body: "*"
-    };
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
     option (google.api.http) = {
       post: "/v1/sql/pretty"

@@ -44,9 +44,6 @@ const (
 	SQLServiceExportProcedure = "/bytebase.v1.SQLService/Export"
 	// SQLServiceCheckProcedure is the fully-qualified name of the SQLService's Check RPC.
 	SQLServiceCheckProcedure = "/bytebase.v1.SQLService/Check"
-	// SQLServiceParseMyBatisMapperProcedure is the fully-qualified name of the SQLService's
-	// ParseMyBatisMapper RPC.
-	SQLServiceParseMyBatisMapperProcedure = "/bytebase.v1.SQLService/ParseMyBatisMapper"
 	// SQLServicePrettyProcedure is the fully-qualified name of the SQLService's Pretty RPC.
 	SQLServicePrettyProcedure = "/bytebase.v1.SQLService/Pretty"
 	// SQLServiceDiffMetadataProcedure is the fully-qualified name of the SQLService's DiffMetadata RPC.
@@ -63,7 +60,6 @@ type SQLServiceClient interface {
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
 	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
-	ParseMyBatisMapper(context.Context, *connect.Request[v1.ParseMyBatisMapperRequest]) (*connect.Response[v1.ParseMyBatisMapperResponse], error)
 	Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error)
 	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
 	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
@@ -110,12 +106,6 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceMethods.ByName("Check")),
 			connect.WithClientOptions(opts...),
 		),
-		parseMyBatisMapper: connect.NewClient[v1.ParseMyBatisMapperRequest, v1.ParseMyBatisMapperResponse](
-			httpClient,
-			baseURL+SQLServiceParseMyBatisMapperProcedure,
-			connect.WithSchema(sQLServiceMethods.ByName("ParseMyBatisMapper")),
-			connect.WithClientOptions(opts...),
-		),
 		pretty: connect.NewClient[v1.PrettyRequest, v1.PrettyResponse](
 			httpClient,
 			baseURL+SQLServicePrettyProcedure,
@@ -144,7 +134,6 @@ type sQLServiceClient struct {
 	searchQueryHistories *connect.Client[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse]
 	export               *connect.Client[v1.ExportRequest, v1.ExportResponse]
 	check                *connect.Client[v1.CheckRequest, v1.CheckResponse]
-	parseMyBatisMapper   *connect.Client[v1.ParseMyBatisMapperRequest, v1.ParseMyBatisMapperResponse]
 	pretty               *connect.Client[v1.PrettyRequest, v1.PrettyResponse]
 	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
 	aICompletion         *connect.Client[v1.AICompletionRequest, v1.AICompletionResponse]
@@ -175,11 +164,6 @@ func (c *sQLServiceClient) Check(ctx context.Context, req *connect.Request[v1.Ch
 	return c.check.CallUnary(ctx, req)
 }
 
-// ParseMyBatisMapper calls bytebase.v1.SQLService.ParseMyBatisMapper.
-func (c *sQLServiceClient) ParseMyBatisMapper(ctx context.Context, req *connect.Request[v1.ParseMyBatisMapperRequest]) (*connect.Response[v1.ParseMyBatisMapperResponse], error) {
-	return c.parseMyBatisMapper.CallUnary(ctx, req)
-}
-
 // Pretty calls bytebase.v1.SQLService.Pretty.
 func (c *sQLServiceClient) Pretty(ctx context.Context, req *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error) {
 	return c.pretty.CallUnary(ctx, req)
@@ -203,7 +187,6 @@ type SQLServiceHandler interface {
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
 	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
-	ParseMyBatisMapper(context.Context, *connect.Request[v1.ParseMyBatisMapperRequest]) (*connect.Response[v1.ParseMyBatisMapperResponse], error)
 	Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error)
 	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
 	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
@@ -246,12 +229,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("Check")),
 		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceParseMyBatisMapperHandler := connect.NewUnaryHandler(
-		SQLServiceParseMyBatisMapperProcedure,
-		svc.ParseMyBatisMapper,
-		connect.WithSchema(sQLServiceMethods.ByName("ParseMyBatisMapper")),
-		connect.WithHandlerOptions(opts...),
-	)
 	sQLServicePrettyHandler := connect.NewUnaryHandler(
 		SQLServicePrettyProcedure,
 		svc.Pretty,
@@ -282,8 +259,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 			sQLServiceExportHandler.ServeHTTP(w, r)
 		case SQLServiceCheckProcedure:
 			sQLServiceCheckHandler.ServeHTTP(w, r)
-		case SQLServiceParseMyBatisMapperProcedure:
-			sQLServiceParseMyBatisMapperHandler.ServeHTTP(w, r)
 		case SQLServicePrettyProcedure:
 			sQLServicePrettyHandler.ServeHTTP(w, r)
 		case SQLServiceDiffMetadataProcedure:
@@ -317,10 +292,6 @@ func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v
 
 func (UnimplementedSQLServiceHandler) Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Check is not implemented"))
-}
-
-func (UnimplementedSQLServiceHandler) ParseMyBatisMapper(context.Context, *connect.Request[v1.ParseMyBatisMapperRequest]) (*connect.Response[v1.ParseMyBatisMapperResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.ParseMyBatisMapper is not implemented"))
 }
 
 func (UnimplementedSQLServiceHandler) Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error) {
