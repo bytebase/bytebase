@@ -16,7 +16,6 @@
         :on-created="(sso) => (state.detail.sso = sso)"
         :on-updated="() => (state.detail.show = false)"
         :on-deleted="() => (state.detail.show = false)"
-        :on-canceled="() => (state.detail.show = false)"
       />
     </DrawerContent>
   </Drawer>
