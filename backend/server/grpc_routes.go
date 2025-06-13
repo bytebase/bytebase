@@ -57,12 +57,6 @@ func configureGrpcRouters(
 	iamManager *iam.Manager,
 	secret string,
 ) (map[string]http.Handler, error) {
-	// Register services.
-	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
-	userService := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
-	v1pb.RegisterAuthServiceServer(grpcServer, authService)
-	v1pb.RegisterUserServiceServer(grpcServer, userService)
-
 	// Services that have been migrated to Connect RPC
 	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService)
 	auditLogService := apiv1.NewAuditLogService(stores, iamManager, licenseService)
@@ -73,10 +67,10 @@ func configureGrpcRouters(
 
 	// Create Connect RPC handlers with CORS support following Connect RPC documentation
 	connectHandlers := make(map[string]http.Handler)
-	connectPath, connectHTTPHandler := v1connect.NewActuatorServiceHandler(actuatorService)
+	actuatorPath, actuatorHandler := v1connect.NewActuatorServiceHandler(actuatorService)
 
 	// Add CORS support using Connect RPC's recommended approach
-	connectHandlers[connectPath] = withCORS(connectHTTPHandler)
+	connectHandlers[actuatorPath] = withCORS(actuatorHandler)
 
 	// Register Phase 1 services with Connect RPC
 	auditLogPath, auditLogHandler := v1connect.NewAuditLogServiceHandler(auditLogService)
@@ -93,6 +87,12 @@ func configureGrpcRouters(
 
 	worksheetPath, worksheetHandler := v1connect.NewWorksheetServiceHandler(worksheetService)
 	connectHandlers[worksheetPath] = withCORS(worksheetHandler)
+
+	// Register services.
+	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
+	userService := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
+	v1pb.RegisterAuthServiceServer(grpcServer, authService)
+	v1pb.RegisterUserServiceServer(grpcServer, userService)
 	v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(
 		stores,
 		profile,
