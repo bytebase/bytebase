@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-5 m-2">
+  <NScrollbar ref="scrollbarRef" class="space-y-5 m-2">
     <div
       v-for="(row, rowIndex) of rows"
       :key="`rows-${rowIndex + offset}`"
@@ -41,12 +41,13 @@
               :set-index="setIndex"
               :row-index="offset + rowIndex"
               :col-index="header.index"
+              :column-type="getColumnType(header)"
             />
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </NScrollbar>
   <div v-if="rows.length === 0" class="text-center w-full my-12 textinfolabel">
     {{ $t("sql-editor.no-data-available") }}
   </div>
@@ -54,13 +55,15 @@
 
 <script setup lang="ts">
 import type { Table } from "@tanstack/vue-table";
-import { computed } from "vue";
+import { NScrollbar } from "naive-ui";
+import { computed, watch, ref } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import TableCell from "./DataTable/TableCell.vue";
 import SensitiveDataIcon from "./DataTable/common/SensitiveDataIcon.vue";
+import { getColumnType } from "./DataTable/common/utils";
 import { useSQLResultViewContext } from "./context";
 
 const props = defineProps<{
@@ -73,6 +76,12 @@ const props = defineProps<{
 
 const { keyword } = useSQLResultViewContext();
 const { database } = useConnectionOfCurrentSQLEditorTab();
+const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 
 const rows = computed(() => props.table.getRowModel().rows);
+
+watch(
+  () => props.offset,
+  () => scrollbarRef.value?.scrollTo({ top: 0 })
+);
 </script>

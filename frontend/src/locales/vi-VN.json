@@ -1934,6 +1934,7 @@
     },
     "upload-file": "Tải lên tệp",
     "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}",
+    "cancel-selection": "Hủy lựa chọn",
     "format-default": "Mặc định",
     "column-display-format": "Định dạng hiển thị cột",
     "next-row": "Dòng tiếp theo",

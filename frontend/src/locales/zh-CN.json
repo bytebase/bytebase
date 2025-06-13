@@ -1934,6 +1934,7 @@
     },
     "upload-file": "上传文件",
     "copy-selected-results": "通过 {action} 或 {button} 来快速复制选定的数据",
+    "cancel-selection": "取消选择",
     "format-default": "默认",
     "column-display-format": "列显示格式",
     "next-row": "下一行",
