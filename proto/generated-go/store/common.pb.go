@@ -53,6 +53,7 @@ const (
 	Engine_COSMOSDB           Engine = 26
 	Engine_TRINO              Engine = 27
 	Engine_CASSANDRA          Engine = 28
+	Engine_DATABEND           Engine = 29
 )
 
 // Enum value maps for Engine.
