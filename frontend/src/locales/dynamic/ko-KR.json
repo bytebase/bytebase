@@ -1,0 +1,266 @@
+{
+  "custom-approval": {
+    "approval-flow": {
+      "node": {
+        "group": {
+          "WORKSPACE_OWNER": "워크스페이스 관리자",
+          "WORKSPACE_DBA": "DBA",
+          "PROJECT_OWNER": "프로젝트 소유자",
+          "PROJECT_MEMBER": "프로젝트 개발자"
+        }
+      },
+      "presets": {
+        "owner-dba": "시스템이 승인 프로세스를 정의하며, 먼저 프로젝트 소유자가 승인한 다음 DBA가 승인합니다.",
+        "owner": "시스템이 승인 프로세스를 정의하며 프로젝트 소유자의 승인만 필요합니다.",
+        "dba": "시스템이 승인 프로세스를 정의하며 DBA의 승인만 필요합니다.",
+        "admin": "시스템이 승인 프로세스를 정의하며 관리자의 승인만 필요합니다.",
+        "owner-dba-admin": "시스템이 승인 프로세스를 정의하며, 먼저 프로젝트 소유자가 승인한 다음 DBA가 승인하고 마지막으로 관리자가 승인합니다."
+      }
+    },
+    "risk-rule": {
+      "template": {
+        "presets": {
+          "request-role-high": "프로젝트 소유자 역할 요청에 대한 위험은 높음으로 간주됩니다.",
+          "environment-prod-high": "프로덕션 환경에 대한 위험은 높음으로 간주됩니다.",
+          "environment-dev-low": "개발 환경에 대한 위험 값은 낮음으로 간주됩니다.",
+          "dml-in-environment-prod-10k-rows-high": "프로덕션 환경에서 업데이트 또는 삭제할 행 수가 10000개를 초과하는 경우, 위험은 높음으로 간주됩니다.",
+          "create-database-in-environment-prod-moderate": "프로덕션 환경에서 데이터베이스를 생성하는 것은 중간 수준의 위험으로 간주됩니다."
+        }
+      }
+    }
+  },
+  "activity": {
+    "sentence": {
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "{name} 변경됨. {link}"
+    }
+  },
+  "settings": {
+    "sensitive-data": {
+      "semantic-types": {
+        "template": {
+          "bb-default": {
+            "title": "기본",
+            "description": "전체 마스킹을 사용하는 기본 유형",
+            "algorithm": {
+              "title": "전체 마스킹",
+              "description": "모든 값이 \"******\"로 마스킹됩니다"
+            }
+          },
+          "bb-default-partial": {
+            "title": "기본 부분",
+            "description": "부분 마스킹을 사용하는 기본 부분 유형",
+            "algorithm": {
+              "title": "범위 마스킹",
+              "description": "중간에는 원시 데이터를 유지하고 시작과 끝은 \"**\"로 덮습니다.\n예: \"address\"는 \"**dre**\"로 마스킹됩니다."
+            }
+          }
+        }
+      }
+    },
+    "general": {
+      "workspace": {
+        "announcement-alert-level": {
+          "field": {
+            "info": "일반",
+            "warning": "경고",
+            "critical": "중요"
+          }
+        }
+      }
+    }
+  },
+  "subscription": {
+    "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "외부 보안 비밀 설정",
+        "desc": "Vault 또는 사용자 지정 URL을 데이터베이스 비밀번호의 외부 보안 비밀로 사용합니다."
+      },
+      "bb-feature-task-schedule-time": {
+        "title": "작업 일정 시간 설정",
+        "desc": "작업 일정 시간 설정을 통해 작업을 실행할 특정 시간을 설정할 수 있습니다."
+      },
+      "bb-feature-instance-count": {
+        "title": "인스턴스 수 제한",
+        "desc": "최대 인스턴스 수 제한에 도달했습니다. 더 많은 인스턴스 할당량을 얻으려면 업그레이드하세요.",
+        "remaining": "총 인스턴스 할당량은 {total}개이며, {count}개의 인스턴스만 남아 있습니다.",
+        "runoutof": "{total}개의 인스턴스 할당량을 모두 소진했습니다.",
+        "upgrade": "더 많은 인스턴스 할당량을 얻으려면 @:{'subscription.upgrade'}."
+      },
+      "bb-feature-user-count": {
+        "title": "사용자 수 제한",
+        "desc": "최대 사용자 수 제한에 도달했습니다. 무제한 사용자 할당량을 얻으려면 업그레이드하세요.",
+        "remaining": "총 사용자 할당량은 {total}명이며, {count}명의 사용자만 남아 있습니다.",
+        "runoutof": "{total}명의 사용자 할당량을 모두 소진했습니다.",
+        "upgrade": "무제한 사용자 할당량을 얻으려면 @:{'subscription.upgrade'}."
+      },
+      "bb-feature-multi-tenancy": {
+        "title": "일괄 모드",
+        "desc": "서로 다른 테넌트 또는 파티션에서 데이터베이스 그룹을 일괄 변경합니다."
+      },
+      "bb-feature-rollout-policy": {
+        "title": "배포 정책",
+        "desc": "배포 정책은 스키마 변경 작업이 수동 배포가 필요한지 여부를 제어합니다."
+      },
+      "bb-feature-environment-tier-policy": {
+        "title": "환경 티어",
+        "desc": "환경을 프로덕션으로 표시합니다."
+      },
+      "bb-feature-sensitive-data": {
+        "title": "민감한 데이터",
+        "desc": "테이블 열을 민감한 데이터로 표시하면 해당 쿼리 결과가 \"******\"로 표시됩니다."
+      },
+      "bb-feature-access-control": {
+        "title": "데이터 접근 제어",
+        "desc": "사용자가 데이터 쿼리 결과를 복사하지 못하도록 하는 등 데이터에 대한 사용자 접근을 제한합니다."
+      },
+      "bb-feature-lgtm": {
+        "title": "LGTM 확인",
+        "desc": "이슈에 \"LGTM\" 댓글이 있는지 확인합니다."
+      },
+      "bb-feature-im-approval": {
+        "title": "IM 승인",
+        "desc": "IM 통합을 통한 승인 이슈."
+      },
+      "bb-feature-sql-review": {
+        "title": "100개 이상의 SQL 검토 확인 잠금 해제",
+        "desc": "SQL 린트 규칙을 지정하여 SQL 모범 사례를 채택하고 엔지니어링 조직 전체에서 스키마 일관성을 적용합니다."
+      },
+      "bb-feature-custom-approval": {
+        "title": "사용자 정의 승인",
+        "desc": "다양한 작업에 대한 위험 수준 및 승인 흐름을 구성합니다."
+      },
+      "bb-feature-vcs-sql-review": {
+        "title": "GitOps 워크플로우의 SQL 검토",
+        "desc": "VCS 저장소 파이프라인에 SQL 검토 CI를 추가합니다. SQL 파일이 변경되면 풀 리퀘스트에서 SQL 검토가 트리거됩니다."
+      },
+      "bb-feature-rbac": {
+        "title": "역할 관리",
+        "desc": "역할 관리를 통해 멤버에게 특정 역할(예: DBA)을 할당할 수 있습니다."
+      },
+      "bb-feature-custom-role": {
+        "title": "사용자 정의 역할",
+        "desc": "사용자 정의 역할 정의. 프로젝트 멤버에게 적용하고 사용자 정의 승인에 사용할 수 있습니다."
+      },
+      "bb-feature-watermark": {
+        "title": "워터마크",
+        "desc": "페이지에 사용자 이름, ID 및 이메일을 포함한 가시적인 워터마크를 표시합니다."
+      },
+      "bb-feature-audit-log": {
+        "title": "감사 로그",
+        "desc": "워크스페이스에서 사용자가 수행한 작업을 기록하고 쿼리합니다."
+      },
+      "bb-feature-schema-drift": {
+        "title": "스키마 드리프트",
+        "desc": "대역 외 스키마 변경을 감지하고 스키마 드리프트를 보고합니다."
+      },
+      "bb-feature-branding": {
+        "title": "브랜딩",
+        "desc": "로고 사용자 정의."
+      },
+      "bb-feature-online-migration": {
+        "title": "온라인 마이그레이션",
+        "desc": "gh-ost 기반. 대규모 테이블의 경우, 테이블 잠금 시간을 시간에서 초 단위로 줄일 수 있습니다."
+      },
+      "bb-feature-sync-schema-all-versions": {
+        "title": "모든 버전의 스키마 동기화",
+        "desc": "기본 데이터베이스에서 임의의 마이그레이션 버전을 선택하고 대상 데이터베이스에 동기화합니다."
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "읽기 복제본 연결",
+        "desc": "읽기 전용 데이터 소스에 대한 읽기 복제본에 연결합니다."
+      },
+      "bb-feature-instance-ssh-connection": {
+        "title": "인스턴스 SSH 연결",
+        "desc": "SSH를 통해 인스턴스에 연결합니다."
+      },
+      "bb.feature.custom-instance-synchronization": {
+        "title": "사용자 정의 인스턴스 동기화",
+        "desc": "스캔 간격, 최대 연결 및 특정 데이터베이스 동기화를 사용자 정의합니다"
+      },
+      "bb-feature-index-advisor": {
+        "title": "인덱스 어드바이저",
+        "desc": "인덱스 어드바이저는 느린 쿼리에서 누락된 인덱스를 찾는 데 도움을 줍니다."
+      },
+      "bb-feature-sso": {
+        "title": "단일 로그인 (SSO)",
+        "desc": "사용자가 단일 자격 증명 세트를 통해 여러 애플리케이션 및 웹사이트에 안전하게 인증할 수 있게 합니다."
+      },
+      "bb-feature-2fa": {
+        "title": "이중 인증 (2FA)",
+        "desc": "이중 인증은 회원 계정에 추가 보안 계층을 제공합니다. 로그인할 때 인증 앱에서 생성된 보안 코드를 입력해야 합니다."
+      },
+      "bb-feature-plugin-openai": {
+        "title": "AI 강화",
+        "desc": "OpenAI가 제공하는 AI 강화 SQL 편집기 및 인덱스 어드바이저 기능."
+      },
+      "bb-feature-batch-query": {
+        "title": "일괄 쿼리",
+        "desc": "SQL 편집기에서 동일한 프로젝트 내 추가 데이터베이스를 일괄 쿼리합니다."
+      },
+      "bb-feature-shared-sql-script": {
+        "title": "공유 SQL 스크립트",
+        "desc": "SQL 스크립트를 프로젝트 팀원과 공유하거나 모든 사용자에게 공개합니다."
+      },
+      "bb-feature-announcement": {
+        "title": "공지사항",
+        "desc": "공지사항 배너를 구성합니다."
+      },
+      "bb-feature-encrypted-secrets": {
+        "title": "암호화된 비밀",
+        "desc": "데이터베이스의 비밀을 저장하고 이슈 SQL 스크립트에서 사용합니다."
+      },
+      "bb-feature-database-grouping": {
+        "title": "데이터베이스 그룹",
+        "desc": "데이터베이스 그룹을 사용하면 데이터베이스 그룹의 데이터베이스에 일괄 작업을 적용할 수 있습니다."
+      },
+      "bb-feature-disallow-signup": {
+        "title": "셀프 서비스 가입 비활성화",
+        "desc": "비활성화하면 사용자는 셀프 서비스 가입을 할 수 없으며 워크스페이스 관리자의 초대를 통해서만 가입할 수 있습니다."
+      },
+      "bb-feature-disallow-password-signin": {
+        "title": "이메일 및 비밀번호로 로그인 금지",
+        "desc": "사용자는 이메일 및 비밀번호로 로그인할 수 없으며 SSO만 허용됩니다."
+      },
+      "bb-feature-schema-template": {
+        "title": "스키마 템플릿",
+        "desc": "필드 템플릿을 미리 정의한 다음 스키마 변경 중에 템플릿을 적용합니다."
+      },
+      "bb-feature-secure-token": {
+        "title": "로그인 빈도",
+        "desc": "로그인 빈도는 사용자가 다시 로그인해야 하는 기간입니다."
+      },
+      "bb-feature-issue-advanced-search": {
+        "title": "고급 이슈 검색",
+        "desc": "고급 이슈 검색으로 무제한 이슈 기록에 접근하세요."
+      },
+      "bb-feature-issue-project-setting": {
+        "title": "이슈 프로젝트 설정",
+        "desc": "고급 이슈 프로젝트 설정을 사용자 정의합니다. 이슈 생성 제한 및 기본 백업 설정이 포함됩니다."
+      },
+      "bb-feature-password-restriction": {
+        "title": "비밀번호 제한",
+        "desc": "사용자의 비밀번호에 대한 제한을 구성할 수 있습니다"
+      },
+      "bb-feature-directory-sync": {
+        "title": "디렉터리 동기화",
+        "desc": "Entra ID(이전 Azure AD)에서 Bytebase 인스턴스로 사용자 및 그룹을 동기화합니다"
+      },
+      "bb-feature-domain-restriction": {
+        "title": "도메인 제한",
+        "desc": "지정된 도메인의 이메일 주소를 가진 사용자로 로그인을 제한합니다."
+      }
+    }
+  },
+  "resource": {
+    "environment": "환경",
+    "instance": "인스턴스",
+    "project": "프로젝트",
+    "idp": "ID 제공자",
+    "database-group": "데이터베이스 그룹",
+    "changelist": "변경 목록",
+    "review-config": "검토 구성",
+    "role": "역할"
+  }
+}

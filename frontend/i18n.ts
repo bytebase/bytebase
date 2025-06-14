@@ -15,6 +15,7 @@ const TARGET_LANGS = process.env.npm_config_target?.split(".") ?? [
   "ja-JP",
   "zh-CN",
   "vi-VN",
+  "ko-KR",
 ];
 
 console.log(`source file: ${SOURCE_LANG}, targets: ${TARGET_LANGS.join(", ")}`);

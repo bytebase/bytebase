@@ -8,7 +8,7 @@ export interface LanguageStorage {
   };
 }
 
-const validLocaleList = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
+const validLocaleList = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN", "ko-KR"];
 
 const getValidLocale = () => {
   const storage = useLocalStorage<LanguageStorage>("bytebase_options", {
@@ -46,6 +46,9 @@ const getValidLocale = () => {
   }
   if (locale === "vi") {
     locale = "vi-VN";
+  }
+  if (locale === "ko") {
+    locale = "ko-KR";
   }
   if (validLocaleList.includes(locale)) {
     return locale;
