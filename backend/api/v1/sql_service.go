@@ -1348,7 +1348,7 @@ func (s *SQLService) accessCheck(
 				permission = iam.PermissionSQLExplain
 			}
 			if span.Type == parserbase.DDL || span.Type == parserbase.DML {
-				if err := checkDataSourceQueryPolicy(ctx, s.store, database, span.Type); err != nil {
+				if err := checkDataSourceQueryPolicy(ctx, s.store, s.licenseService, database, span.Type); err != nil {
 					return err
 				}
 			}
@@ -1963,7 +1963,13 @@ func checkAndGetDataSourceQueriable(
 	return dataSource, nil
 }
 
-func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, statementTp parserbase.QueryType) error {
+func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store, licenseService *enterprise.LicenseService, database *store.DatabaseMessage, statementTp parserbase.QueryType) error {
+	//nolint:nilerr
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
+		// If the feature is not enabled, then we don't need to check the policy.
+		// For license backward compatibility.
+		return nil
+	}
 	environment, err := storeInstance.GetEnvironmentByID(ctx, database.EffectiveEnvironmentID)
 	if err != nil {
 		return err
