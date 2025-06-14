@@ -1964,6 +1964,7 @@ func checkAndGetDataSourceQueriable(
 }
 
 func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store, licenseService *enterprise.LicenseService, database *store.DatabaseMessage, statementTp parserbase.QueryType) error {
+	//nolint:nilerr
 	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 		// If the feature is not enabled, then we don't need to check the policy.
 		// For license backward compatibility.
