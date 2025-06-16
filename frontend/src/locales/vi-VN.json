@@ -2292,6 +2292,9 @@
   },
   "identity-provider": {
     "test-connection": "Kiểm tra kết nối",
+    "test-connection-success": "Kiểm tra kết nối thành công",
+    "claims-description": "Các yêu cầu sau đây đã được nhà cung cấp danh tính trả về. Thông tin này có thể giúp bạn cấu hình ánh xạ trường.",
+    "no-claims": "Nhà cung cấp danh tính không trả lại bất kỳ khiếu nại nào.",
     "identity-provider-created": "Nhà cung cấp danh tính đã được tạo thành công",
     "identity-provider-deleted": "Nhà cung cấp danh tính đã xóa thành công",
     "identity-provider-update-failed": "Không cập nhật được nhà cung cấp danh tính",

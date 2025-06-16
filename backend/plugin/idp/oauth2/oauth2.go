@@ -86,30 +86,29 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 }
 
 // UserInfo returns the parsed user information using the given OAuth2 token.
-func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUserInfo, error) {
+func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUserInfo, map[string]any, error) {
 	req, err := http.NewRequest(http.MethodGet, p.config.UserInfoUrl, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to new http request")
+		return nil, nil, errors.Wrap(err, "failed to new http request")
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	resp, err := p.client.Do(req)
 	if err != nil {
 		slog.Error("Failed to get user information", slog.String("token", token), log.BBError(err))
-		return nil, errors.Wrap(err, "failed to get user information")
+		return nil, nil, errors.Wrap(err, "failed to get user information")
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		slog.Error("Failed to read response body", slog.String("token", token), log.BBError(err))
-		return nil, errors.Wrap(err, "failed to read response body")
+		return nil, nil, errors.Wrap(err, "failed to read response body")
 	}
 
 	var claims map[string]any
-	err = json.Unmarshal(body, &claims)
-	if err != nil {
+	if err := json.Unmarshal(body, &claims); err != nil {
 		slog.Error("Failed to unmarshal response body", slog.String("token", token), slog.String("body", string(body)), log.BBError(err))
-		return nil, errors.Wrap(err, "failed to unmarshal response body")
+		return nil, nil, errors.Wrap(err, "failed to unmarshal response body")
 	}
 	slog.Debug("User info", slog.Any("claims", claims))
 
@@ -119,10 +118,10 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 	}
 	if userInfo.Identifier == "" {
 		slog.Error("Missing identifier in response body", slog.String("token", token), slog.Any("claims", claims))
-		return nil, errors.Errorf("the field %q is not found in claims or has empty value", p.config.FieldMapping.Identifier)
+		return nil, claims, errors.Errorf("the field %q is not found in claims or has empty value", p.config.FieldMapping.Identifier)
 	}
 
-	// Best effort to map optional fields
+	// Best effort to map optional fields.
 	if p.config.FieldMapping.DisplayName != "" {
 		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.DisplayName).(string); ok {
 			userInfo.DisplayName = v
@@ -139,5 +138,5 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 			}
 		}
 	}
-	return userInfo, nil
+	return userInfo, claims, nil
 }

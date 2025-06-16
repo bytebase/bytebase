@@ -13655,7 +13655,12 @@ components:
                     $ref: '#/components/schemas/OAuth2IdentityProviderTestRequestContext'
         TestIdentityProviderResponse:
             type: object
-            properties: {}
+            properties:
+                claims:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: The map of claims returned by the identity provider.
         TestWebhookRequest:
             required:
                 - project

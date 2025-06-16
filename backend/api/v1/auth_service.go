@@ -321,7 +321,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)
 		}
-		userInfo, err = oauth2IdentityProvider.UserInfo(token)
+		userInfo, _, err = oauth2IdentityProvider.UserInfo(token)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
@@ -342,7 +342,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, status.Errorf(codes.Internal, "failed to exchange token: %v", err)
 		}
 
-		userInfo, err = oidcIDP.UserInfo(ctx, token, "")
+		userInfo, _, err = oidcIDP.UserInfo(ctx, token, "")
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
