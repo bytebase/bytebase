@@ -57,27 +57,91 @@ func configureGrpcRouters(
 	iamManager *iam.Manager,
 	secret string,
 ) (map[string]http.Handler, error) {
-	// Services that have been migrated to Connect RPC
 	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService)
 	auditLogService := apiv1.NewAuditLogService(stores, iamManager, licenseService)
+	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
 	celService := apiv1.NewCelService()
+	changelistService := apiv1.NewChangelistService(stores, profile, iamManager)
+	databaseCatalogService := apiv1.NewDatabaseCatalogService(stores, licenseService)
+	databaseGroupService := apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService)
+	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager)
+	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
+	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService)
+	instanceRoleService := apiv1.NewInstanceRoleService(stores, dbFactory)
+	instanceService := apiv1.NewInstanceService(stores, licenseService, metricReporter, stateCfg, dbFactory, schemaSyncer, iamManager)
+	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, metricReporter)
+	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService)
+	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, stateCfg, profile, iamManager)
+	projectService := apiv1.NewProjectService(stores, profile, iamManager, licenseService)
+	releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory)
+	reviewConfigService := apiv1.NewReviewConfigService(stores, licenseService)
 	revisionService := apiv1.NewRevisionService(stores)
 	riskService := apiv1.NewRiskService(stores, licenseService)
+	roleService := apiv1.NewRoleService(stores, iamManager, licenseService)
+	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
+	settingService := apiv1.NewSettingService(stores, profile, licenseService, stateCfg)
+	sheetService := apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile)
+	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)
+	subscriptionService := apiv1.NewSubscriptionService(stores, profile, metricReporter, licenseService)
+	userService := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
 	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
+	workspaceService := apiv1.NewWorkspaceService(stores, iamManager)
 
-	// Create Connect RPC handlers with CORS support following Connect RPC documentation
 	connectHandlers := make(map[string]http.Handler)
-	actuatorPath, actuatorHandler := v1connect.NewActuatorServiceHandler(actuatorService)
 
-	// Add CORS support using Connect RPC's recommended approach
+	actuatorPath, actuatorHandler := v1connect.NewActuatorServiceHandler(actuatorService)
 	connectHandlers[actuatorPath] = withCORS(actuatorHandler)
 
-	// Register Phase 1 services with Connect RPC
 	auditLogPath, auditLogHandler := v1connect.NewAuditLogServiceHandler(auditLogService)
 	connectHandlers[auditLogPath] = withCORS(auditLogHandler)
 
+	authPath, authHandler := v1connect.NewAuthServiceHandler(authService)
+	connectHandlers[authPath] = withCORS(authHandler)
+
 	celPath, celHandler := v1connect.NewCelServiceHandler(celService)
 	connectHandlers[celPath] = withCORS(celHandler)
+
+	changelistPath, changelistHandler := v1connect.NewChangelistServiceHandler(changelistService)
+	connectHandlers[changelistPath] = withCORS(changelistHandler)
+
+	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService)
+	connectHandlers[databaseCatalogPath] = withCORS(databaseCatalogHandler)
+
+	databaseGroupPath, databaseGroupHandler := v1connect.NewDatabaseGroupServiceHandler(databaseGroupService)
+	connectHandlers[databaseGroupPath] = withCORS(databaseGroupHandler)
+
+	databasePath, databaseHandler := v1connect.NewDatabaseServiceHandler(databaseService)
+	connectHandlers[databasePath] = withCORS(databaseHandler)
+
+	groupPath, groupHandler := v1connect.NewGroupServiceHandler(groupService)
+	connectHandlers[groupPath] = withCORS(groupHandler)
+
+	identityProviderPath, identityProviderHandler := v1connect.NewIdentityProviderServiceHandler(identityProviderService)
+	connectHandlers[identityProviderPath] = withCORS(identityProviderHandler)
+
+	instanceRolePath, instanceRoleHandler := v1connect.NewInstanceRoleServiceHandler(instanceRoleService)
+	connectHandlers[instanceRolePath] = withCORS(instanceRoleHandler)
+
+	instancePath, instanceHandler := v1connect.NewInstanceServiceHandler(instanceService)
+	connectHandlers[instancePath] = withCORS(instanceHandler)
+
+	issuePath, issueHandler := v1connect.NewIssueServiceHandler(issueService)
+	connectHandlers[issuePath] = withCORS(issueHandler)
+
+	orgPolicyPath, orgPolicyHandler := v1connect.NewOrgPolicyServiceHandler(orgPolicyService)
+	connectHandlers[orgPolicyPath] = withCORS(orgPolicyHandler)
+
+	planPath, planHandler := v1connect.NewPlanServiceHandler(planService)
+	connectHandlers[planPath] = withCORS(planHandler)
+
+	projectPath, projectHandler := v1connect.NewProjectServiceHandler(projectService)
+	connectHandlers[projectPath] = withCORS(projectHandler)
+
+	releasePath, releaseHandler := v1connect.NewReleaseServiceHandler(releaseService)
+	connectHandlers[releasePath] = withCORS(releaseHandler)
+
+	reviewConfigPath, reviewConfigHandler := v1connect.NewReviewConfigServiceHandler(reviewConfigService)
+	connectHandlers[reviewConfigPath] = withCORS(reviewConfigHandler)
 
 	revisionPath, revisionHandler := v1connect.NewRevisionServiceHandler(revisionService)
 	connectHandlers[revisionPath] = withCORS(revisionHandler)
@@ -85,108 +149,32 @@ func configureGrpcRouters(
 	riskPath, riskHandler := v1connect.NewRiskServiceHandler(riskService)
 	connectHandlers[riskPath] = withCORS(riskHandler)
 
-	worksheetPath, worksheetHandler := v1connect.NewWorksheetServiceHandler(worksheetService)
-	connectHandlers[worksheetPath] = withCORS(worksheetHandler)
-
-	// UserService has been migrated to Connect RPC
-	userService := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
-	userPath, userHandler := v1connect.NewUserServiceHandler(userService)
-	connectHandlers[userPath] = withCORS(userHandler)
-
-	// AuthService has been migrated to Connect RPC
-	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
-	authPath, authHandler := v1connect.NewAuthServiceHandler(authService)
-	connectHandlers[authPath] = withCORS(authHandler)
-
-	// WorkspaceService has been migrated to Connect RPC
-	workspaceService := apiv1.NewWorkspaceService(stores, iamManager)
-	workspacePath, workspaceHandler := v1connect.NewWorkspaceServiceHandler(workspaceService)
-	connectHandlers[workspacePath] = withCORS(workspaceHandler)
-
-	// SettingService has been migrated to Connect RPC
-	settingService := apiv1.NewSettingService(stores, profile, licenseService, stateCfg)
-	settingPath, settingHandler := v1connect.NewSettingServiceHandler(settingService)
-	connectHandlers[settingPath] = withCORS(settingHandler)
-
-	// RoleService has been migrated to Connect RPC
-	roleService := apiv1.NewRoleService(stores, iamManager, licenseService)
 	rolePath, roleHandler := v1connect.NewRoleServiceHandler(roleService)
 	connectHandlers[rolePath] = withCORS(roleHandler)
 
-	// Phase 3 services migrated to Connect RPC
-	projectService := apiv1.NewProjectService(stores, profile, iamManager, licenseService)
-	projectPath, projectHandler := v1connect.NewProjectServiceHandler(projectService)
-	connectHandlers[projectPath] = withCORS(projectHandler)
-
-	instanceService := apiv1.NewInstanceService(stores, licenseService, metricReporter, stateCfg, dbFactory, schemaSyncer, iamManager)
-	instancePath, instanceHandler := v1connect.NewInstanceServiceHandler(instanceService)
-	connectHandlers[instancePath] = withCORS(instanceHandler)
-
-	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager)
-	databasePath, databaseHandler := v1connect.NewDatabaseServiceHandler(databaseService)
-	connectHandlers[databasePath] = withCORS(databaseHandler)
-
-	databaseGroupService := apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService)
-	databaseGroupPath, databaseGroupHandler := v1connect.NewDatabaseGroupServiceHandler(databaseGroupService)
-	connectHandlers[databaseGroupPath] = withCORS(databaseGroupHandler)
-
-	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
-	groupPath, groupHandler := v1connect.NewGroupServiceHandler(groupService)
-	connectHandlers[groupPath] = withCORS(groupHandler)
-
-	// Phase 4 services migrated to Connect RPC
-	sheetService := apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile)
-	sheetPath, sheetHandler := v1connect.NewSheetServiceHandler(sheetService)
-	connectHandlers[sheetPath] = withCORS(sheetHandler)
-
-	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)
-	sqlPath, sqlHandler := v1connect.NewSQLServiceHandler(sqlService)
-	connectHandlers[sqlPath] = withCORS(sqlHandler)
-
-	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, metricReporter)
-	issuePath, issueHandler := v1connect.NewIssueServiceHandler(issueService)
-	connectHandlers[issuePath] = withCORS(issueHandler)
-
-	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
 	rolloutPath, rolloutHandler := v1connect.NewRolloutServiceHandler(rolloutService)
 	connectHandlers[rolloutPath] = withCORS(rolloutHandler)
 
-	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, stateCfg, profile, iamManager)
-	planPath, planHandler := v1connect.NewPlanServiceHandler(planService)
-	connectHandlers[planPath] = withCORS(planHandler)
+	settingPath, settingHandler := v1connect.NewSettingServiceHandler(settingService)
+	connectHandlers[settingPath] = withCORS(settingHandler)
 
-	// Phase 5 services migrated to Connect RPC
-	subscriptionService := apiv1.NewSubscriptionService(stores, profile, metricReporter, licenseService)
+	sheetPath, sheetHandler := v1connect.NewSheetServiceHandler(sheetService)
+	connectHandlers[sheetPath] = withCORS(sheetHandler)
+
+	sqlPath, sqlHandler := v1connect.NewSQLServiceHandler(sqlService)
+	connectHandlers[sqlPath] = withCORS(sqlHandler)
+
 	subscriptionPath, subscriptionHandler := v1connect.NewSubscriptionServiceHandler(subscriptionService)
 	connectHandlers[subscriptionPath] = withCORS(subscriptionHandler)
 
-	databaseCatalogService := apiv1.NewDatabaseCatalogService(stores, licenseService)
-	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService)
-	connectHandlers[databaseCatalogPath] = withCORS(databaseCatalogHandler)
+	userPath, userHandler := v1connect.NewUserServiceHandler(userService)
+	connectHandlers[userPath] = withCORS(userHandler)
 
-	instanceRoleService := apiv1.NewInstanceRoleService(stores, dbFactory)
-	instanceRolePath, instanceRoleHandler := v1connect.NewInstanceRoleServiceHandler(instanceRoleService)
-	connectHandlers[instanceRolePath] = withCORS(instanceRoleHandler)
+	worksheetPath, worksheetHandler := v1connect.NewWorksheetServiceHandler(worksheetService)
+	connectHandlers[worksheetPath] = withCORS(worksheetHandler)
 
-	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService)
-	orgPolicyPath, orgPolicyHandler := v1connect.NewOrgPolicyServiceHandler(orgPolicyService)
-	connectHandlers[orgPolicyPath] = withCORS(orgPolicyHandler)
-
-	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService)
-	identityProviderPath, identityProviderHandler := v1connect.NewIdentityProviderServiceHandler(identityProviderService)
-	connectHandlers[identityProviderPath] = withCORS(identityProviderHandler)
-
-	releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory)
-	releasePath, releaseHandler := v1connect.NewReleaseServiceHandler(releaseService)
-	connectHandlers[releasePath] = withCORS(releaseHandler)
-
-	changelistService := apiv1.NewChangelistService(stores, profile, iamManager)
-	changelistPath, changelistHandler := v1connect.NewChangelistServiceHandler(changelistService)
-	connectHandlers[changelistPath] = withCORS(changelistHandler)
-
-	reviewConfigService := apiv1.NewReviewConfigService(stores, licenseService)
-	reviewConfigPath, reviewConfigHandler := v1connect.NewReviewConfigServiceHandler(reviewConfigService)
-	connectHandlers[reviewConfigPath] = withCORS(reviewConfigHandler)
+	workspacePath, workspaceHandler := v1connect.NewWorkspaceServiceHandler(workspaceService)
+	connectHandlers[workspacePath] = withCORS(workspaceHandler)
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.Port)
@@ -201,7 +189,6 @@ func configureGrpcRouters(
 		return nil, err
 	}
 
-	// Register all services in alphabetical order
 	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
