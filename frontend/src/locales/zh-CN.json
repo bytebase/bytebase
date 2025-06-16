@@ -436,7 +436,7 @@
       "delete": "删除该 SSO",
       "form": {
         "type": "类型",
-        "type-description": "选择要配置的身份提供者类型",
+        "type-description": "选择要配置的身份提供商类型",
         "oauth2-description": "适用于 OAuth 2.0 提供商，例如 Google、GitHub、GitLab 以及自部署等。",
         "oidc-description": "适用于 OpenID Connect 提供商，例如 Microsoft Entra ID (Azure AD)、Okta、Auth0",
         "ldap-description": "适用于 LDAP 提供商，例如 Microsoft Active Directory、OpenLDAP",
@@ -461,7 +461,7 @@
         "display-name": "Bytebase 用户的昵称",
         "phone": "Bytebase 用户的手机号",
         "groups": "Bytebase 用户的群组",
-        "general-setting-description": "提供有关您的身份提供者的基本信息。",
+        "general-setting-description": "提供有关您的身份提供商的基本信息。",
         "configuration": "配置",
         "configuration-description": "配置身份提供商的连接设置",
         "auth-url": "授权网址",
@@ -501,7 +501,7 @@
         "ldaps-description": "从一开始就使用 TLS（端口 636）",
         "none": "没有任何",
         "none-description": "无加密（不建议用于生产）",
-        "domain-optional-hint": "可选：限制此域用户的访问",
+        "domain-optional-hint": "（可选）如果 SSO 所提供的用户唯一标识符不是电子邮件格式，则会用域名进行拼接。",
         "provider-type-readonly-hint": "提供商类型创建后无法更改",
         "identifier-placeholder": "例如登录名、电子邮件",
         "display-name-placeholder": "例如名称、显示名称",
@@ -1025,7 +1025,7 @@
     }
   },
   "plan": {
-    "new-plan": "新计划",
+    "new-plan": "创建变更计划",
     "add-spec": "添加变更项",
     "change-type": "变更类型",
     "schema-migration": "Schema 变更",
@@ -2292,11 +2292,11 @@
   },
   "identity-provider": {
     "test-connection": "测试连接",
-    "identity-provider-created": "身份提供者创建成功",
-    "identity-provider-deleted": "身份提供者已成功删除",
-    "identity-provider-update-failed": "无法更新身份提供者",
-    "identity-provider-create-failed": "无法创建身份提供者",
-    "identity-provider-delete-failed": "无法删除身份提供者",
+    "identity-provider-created": "身份提供商创建成功",
+    "identity-provider-deleted": "身份提供商已成功删除",
+    "identity-provider-update-failed": "无法更新身份提供商",
+    "identity-provider-create-failed": "无法创建身份提供商",
+    "identity-provider-delete-failed": "无法删除身份提供商",
     "identity-provider-permission-denied": "没有权限"
   },
   "sensitive-data": {

@@ -38,6 +38,12 @@
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
+
+  <IdentityProviderCreateWizard
+    :show="state.showCreateDrawer"
+    @update:show="state.showCreateDrawer = $event"
+    @created="handleProviderCreated"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -46,28 +52,31 @@ import { NButton } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
-import { IdentityProviderTable } from "@/components/IdentityProvider";
-import { WORKSPACE_ROUTE_SSO_CREATE } from "@/router/dashboard/workspaceRoutes";
+import {
+  IdentityProviderTable,
+  IdentityProviderCreateWizard,
+} from "@/components/IdentityProvider";
+import { WORKSPACE_ROUTE_SSO_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { featureToRef } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import {
+  extractIdentityProviderResourceName,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 
 interface LocalState {
   isLoading: boolean;
   showFeatureModal: boolean;
+  showCreateDrawer: boolean;
 }
-
-const props = defineProps<{
-  onClickCreate?: () => void;
-  onClickView?: (sso: IdentityProvider) => void;
-}>();
 
 const router = useRouter();
 const state = reactive<LocalState>({
   isLoading: true,
   showFeatureModal: false,
+  showCreateDrawer: false,
 });
 const identityProviderStore = useIdentityProviderStore();
 const hasSSOFeature = featureToRef(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO);
@@ -90,14 +99,16 @@ const handleCreateSSO = () => {
     state.showFeatureModal = true;
     return;
   }
+  state.showCreateDrawer = true;
+};
 
-  if (props.onClickCreate) {
-    props.onClickCreate();
-    return;
-  }
-
-  router.push({
-    name: WORKSPACE_ROUTE_SSO_CREATE,
+const handleProviderCreated = (provider: IdentityProvider) => {
+  state.showCreateDrawer = false;
+  router.replace({
+    name: WORKSPACE_ROUTE_SSO_DETAIL,
+    params: {
+      ssoId: extractIdentityProviderResourceName(provider.name),
+    },
   });
 };
 </script>

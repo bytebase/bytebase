@@ -501,7 +501,7 @@
         "ldaps-description": "Utilice TLS desde el principio (puerto 636)",
         "none": "Ninguno",
         "none-description": "Sin cifrado (no recomendado para producción)",
-        "domain-optional-hint": "Opcional: Restringir el acceso a los usuarios de este dominio",
+        "domain-optional-hint": "Opcional: Úselo para concatenar con el identificador si no está en formato de correo electrónico",
         "provider-type-readonly-hint": "El tipo de proveedor no se puede cambiar después de la creación",
         "identifier-placeholder": "p. ej. inicio de sesión, correo electrónico",
         "display-name-placeholder": "p. ej. nombre, nombre para mostrar",

@@ -26,7 +26,6 @@ export const WORKSPACE_ROUTE_MEMBERS = "workspace.members";
 export const WORKSPACE_ROUTE_ROLES = "workspace.roles";
 
 export const WORKSPACE_ROUTE_SSO = "workspace.sso";
-export const WORKSPACE_ROUTE_SSO_CREATE = `${WORKSPACE_ROUTE_SSO}.create`;
 export const WORKSPACE_ROUTE_SSO_DETAIL = `${WORKSPACE_ROUTE_SSO}.detail`;
 
 export const WORKSPACE_ROUTE_IM = "workspace.im";
