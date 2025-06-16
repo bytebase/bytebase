@@ -491,14 +491,14 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 }
 
 // BatchDeleteProjects deletes multiple projects in batch.
-func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *v1pb.BatchDeleteProjectsRequest) (*emptypb.Empty, error) {
-	if len(request.Names) == 0 {
+func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *connect.Request[v1pb.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error) {
+	if len(request.Msg.Names) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "names cannot be empty")
 	}
 
 	// Phase 1: Load all projects and check permissions
 	var projects []*store.ProjectMessage
-	for _, name := range request.Names {
+	for _, name := range request.Msg.Names {
 		project, err := s.getProjectMessage(ctx, name)
 		if err != nil {
 			return nil, err
@@ -513,7 +513,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *v1pb.
 	}
 
 	// Phase 2: Check dependencies for all projects if force is false
-	if !request.Force {
+	if !request.Msg.Force {
 		var blockedProjects []string
 		for _, project := range projects {
 			// Check for open issues
@@ -585,7 +585,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *v1pb.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &emptypb.Empty{}, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 // GetIamPolicy returns the IAM policy for a project.
