@@ -2,11 +2,9 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	connectcors "connectrpc.com/cors"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -23,7 +21,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
@@ -42,9 +39,9 @@ func withCORS(h http.Handler) http.Handler {
 }
 
 func configureGrpcRouters(
-	ctx context.Context,
-	mux *grpcruntime.ServeMux,
-	grpcServer *grpc.Server,
+	_ context.Context,
+	_ *grpcruntime.ServeMux,
+	_ *grpc.Server,
 	stores *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
@@ -155,45 +152,67 @@ func configureGrpcRouters(
 	planPath, planHandler := v1connect.NewPlanServiceHandler(planService)
 	connectHandlers[planPath] = withCORS(planHandler)
 
+	// Phase 5 services migrated to Connect RPC
+	subscriptionService := apiv1.NewSubscriptionService(stores, profile, metricReporter, licenseService)
+	subscriptionPath, subscriptionHandler := v1connect.NewSubscriptionServiceHandler(subscriptionService)
+	connectHandlers[subscriptionPath] = withCORS(subscriptionHandler)
+
+	databaseCatalogService := apiv1.NewDatabaseCatalogService(stores, licenseService)
+	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService)
+	connectHandlers[databaseCatalogPath] = withCORS(databaseCatalogHandler)
+
+	instanceRoleService := apiv1.NewInstanceRoleService(stores, dbFactory)
+	instanceRolePath, instanceRoleHandler := v1connect.NewInstanceRoleServiceHandler(instanceRoleService)
+	connectHandlers[instanceRolePath] = withCORS(instanceRoleHandler)
+
+	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService)
+	orgPolicyPath, orgPolicyHandler := v1connect.NewOrgPolicyServiceHandler(orgPolicyService)
+	connectHandlers[orgPolicyPath] = withCORS(orgPolicyHandler)
+
+	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService)
+	identityProviderPath, identityProviderHandler := v1connect.NewIdentityProviderServiceHandler(identityProviderService)
+	connectHandlers[identityProviderPath] = withCORS(identityProviderHandler)
+
+	releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory)
+	releasePath, releaseHandler := v1connect.NewReleaseServiceHandler(releaseService)
+	connectHandlers[releasePath] = withCORS(releaseHandler)
+
+	changelistService := apiv1.NewChangelistService(stores, profile, iamManager)
+	changelistPath, changelistHandler := v1connect.NewChangelistServiceHandler(changelistService)
+	connectHandlers[changelistPath] = withCORS(changelistHandler)
+
+	reviewConfigService := apiv1.NewReviewConfigService(stores, licenseService)
+	reviewConfigPath, reviewConfigHandler := v1connect.NewReviewConfigServiceHandler(reviewConfigService)
+	connectHandlers[reviewConfigPath] = withCORS(reviewConfigHandler)
+
 	// Register services.
-	v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(
-		stores,
-		profile,
-		metricReporter,
-		licenseService))
+	// v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(
+	// 	stores,
+	// 	profile,
+	// 	metricReporter,
+	// 	licenseService))
 	// InstanceService is now handled by Connect RPC
 	// ProjectService is now handled by Connect RPC
 	// DatabaseService is now handled by Connect RPC
-	v1pb.RegisterDatabaseCatalogServiceServer(grpcServer, apiv1.NewDatabaseCatalogService(stores, licenseService))
-	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
-	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
-	v1pb.RegisterIdentityProviderServiceServer(grpcServer, apiv1.NewIdentityProviderService(stores, licenseService))
+	// v1pb.RegisterDatabaseCatalogServiceServer(grpcServer, apiv1.NewDatabaseCatalogService(stores, licenseService))
+	// v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
+	// v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
+	// v1pb.RegisterIdentityProviderServiceServer(grpcServer, apiv1.NewIdentityProviderService(stores, licenseService))
 	// SettingService is now handled by Connect RPC
 	// SQLService is now handled by Connect RPC
-	releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory)
-	v1pb.RegisterReleaseServiceServer(grpcServer, releaseService)
+	// releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory)
+	// v1pb.RegisterReleaseServiceServer(grpcServer, releaseService)
 	// PlanService is now handled by Connect RPC
 	// IssueService is now handled by Connect RPC
 	// RolloutService is now handled by Connect RPC
 	// RoleService is now handled by Connect RPC
 	// SheetService is now handled by Connect RPC
 	// DatabaseGroupService is now handled by Connect RPC
-	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
+	// v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
 	// GroupService is now handled by Connect RPC
-	v1pb.RegisterReviewConfigServiceServer(grpcServer, apiv1.NewReviewConfigService(stores, licenseService))
+	// v1pb.RegisterReviewConfigServiceServer(grpcServer, apiv1.NewReviewConfigService(stores, licenseService))
 
-	// REST gateway proxy.
-	grpcEndpoint := fmt.Sprintf(":%d", profile.Port)
-	grpcConn, err := grpc.NewClient(
-		grpcEndpoint,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithDefaultCallOptions(
-			grpc.MaxCallRecvMsgSize(100*1024*1024), // Set MaxCallRecvMsgSize to 100M so that users can receive up to 100M via REST calls.
-		),
-	)
-	if err != nil {
-		return nil, err
-	}
+	// All services have been migrated to Connect RPC
 
 	// Sort by service name, align with api.bytebase.com.
 	// ActuatorService is now handled by Connect RPC
@@ -201,45 +220,53 @@ func configureGrpcRouters(
 	// AuditLogService is now handled by Connect RPC
 	// AuthService is now handled by Connect RPC
 	// CelService is now handled by Connect RPC
-	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// ChangelistService is now handled by Connect RPC
+	// if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
+	// 	return nil, err
+	// }
 	// DatabaseGroupService is now handled by Connect RPC
 	// DatabaseService is now handled by Connect RPC
 	// RevisionService is now handled by Connect RPC
-	if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// DatabaseCatalogService is now handled by Connect RPC
+	// if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {
+	// 	return nil, err
+	// }
 	// GroupService is now handled by Connect RPC
-	if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// IdentityProviderService is now handled by Connect RPC
+	// if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
+	// 	return nil, err
+	// }
+	// InstanceRoleService is now handled by Connect RPC
+	// if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
+	// 	return nil, err
+	// }
 	// InstanceService is now handled by Connect RPC
 	// IssueService is now handled by Connect RPC
-	if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// OrgPolicyService is now handled by Connect RPC
+	// if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
+	// 	return nil, err
+	// }
 	// PlanService is now handled by Connect RPC
 	// ProjectService is now handled by Connect RPC
-	if err := v1pb.RegisterReviewConfigServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// ReviewConfigService is now handled by Connect RPC
+	// if err := v1pb.RegisterReviewConfigServiceHandler(ctx, mux, grpcConn); err != nil {
+	// 	return nil, err
+	// }
 	// RiskService is now handled by Connect RPC
 	// RoleService is now handled by Connect RPC
 	// RolloutService is now handled by Connect RPC
 	// SQLService is now handled by Connect RPC
 	// SettingService is now handled by Connect RPC
 	// SheetService is now handled by Connect RPC
-	if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// SubscriptionService is now handled by Connect RPC
+	// if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
+	// 	return nil, err
+	// }
 	// WorksheetService is now handled by Connect RPC
 	// WorkspaceService is now handled by Connect RPC
-	if err := v1pb.RegisterReleaseServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// ReleaseService is now handled by Connect RPC
+	// if err := v1pb.RegisterReleaseServiceHandler(ctx, mux, grpcConn); err != nil {
+	// 	return nil, err
+	// }
 	return connectHandlers, nil
 }
