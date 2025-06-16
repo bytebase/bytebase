@@ -127,9 +127,12 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 	if !isWorkspaceAdmin && loginUser.Type == storepb.PrincipalType_END_USER && !mfaSecondLogin {
 		// Disallow password signin for end users.
-		if setting.DisallowPasswordSignin && !loginViaIDP {
-			return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err == nil {
+			if setting.DisallowPasswordSignin && !loginViaIDP {
+				return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
+			}
 		}
+
 		// Check domain restriction for end users.
 		if err := validateEmailWithDomains(ctx, s.licenseService, s.store, loginUser.Email, false, false); err != nil {
 			return nil, err
