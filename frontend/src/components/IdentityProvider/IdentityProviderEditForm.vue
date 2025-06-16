@@ -22,20 +22,8 @@
               class="w-full text-base"
               :placeholder="$t('settings.sso.form.name-description')"
             />
-          </div>
-
-          <div>
-            <p class="text-base font-semibold text-gray-800 mb-2">
-              {{ $t("settings.sso.form.resource-id") }}
-            </p>
-            <BBTextField
-              :value="resourceId"
-              readonly
-              size="large"
-              class="w-full text-base bg-gray-50"
-            />
-            <p class="text-sm text-gray-600 mt-1">
-              {{ $t("settings.sso.form.resource-id-readonly-hint") }}
+            <p class="mt-2 text-gray-500">
+              {{ $t("settings.sso.form.resource-id") }}: {{ resourceId }}
             </p>
           </div>
 
