@@ -313,7 +313,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
 	}
 
-	if setting.DisallowSignup {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil && setting.DisallowSignup {
 		callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
@@ -326,6 +326,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionUsersCreate)
 		}
 	}
+
 	if request.User == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "user must be set")
 	}
