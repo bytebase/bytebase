@@ -245,7 +245,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 }
 
 // Logout is the auth logout method.
-func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
+func (s *AuthService) Logout(_ context.Context, req *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
 	accessTokenStr, err := auth.GetTokenFromHeaders(req.Header())
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())

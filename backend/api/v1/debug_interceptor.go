@@ -77,7 +77,7 @@ func (in *DebugInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 	}
 }
 
-func (in *DebugInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+func (*DebugInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
 	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
 		return next(ctx, spec)
 	}
