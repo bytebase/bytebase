@@ -17,6 +17,7 @@
     :consistent-menu-width="consistentMenuWidth"
     class="bb-user-select"
     @search="handleSearch"
+    @click="() => handleSearch('')"
     @update:value="handleValueUpdated"
   >
     <template v-if="$slots.empty" #empty>
