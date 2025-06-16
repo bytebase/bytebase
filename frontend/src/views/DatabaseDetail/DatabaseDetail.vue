@@ -429,7 +429,7 @@ const handleCopyDatabaseName = (name: string) => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: "Database full name copied.",
+      title: t("common.copied"),
     });
   });
 };
