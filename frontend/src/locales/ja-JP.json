@@ -501,7 +501,7 @@
         "ldaps-description": "最初から TLS を使用する (ポート 636)",
         "none": "なし",
         "none-description": "暗号化なし（本番環境では推奨されません）",
-        "domain-optional-hint": "オプション: このドメインのユーザーへのアクセスを制限する",
+        "domain-optional-hint": "オプション: 電子メール形式でない場合は識別子と連結するために使用します",
         "provider-type-readonly-hint": "プロバイダタイプは作成後に変更できません",
         "identifier-placeholder": "例：ログイン、メール",
         "display-name-placeholder": "例: name、displayName",

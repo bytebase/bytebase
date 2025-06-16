@@ -14,15 +14,9 @@
       </div>
     </div>
 
-    <!-- Create new identity provider -->
-    <IdentityProviderCreateWizard
-      v-if="!isLoading && !currentIdentityProvider"
-      @created="props.onCreated"
-    />
-
     <!-- Edit existing identity provider -->
     <IdentityProviderEditForm
-      v-else-if="!isLoading && currentIdentityProvider"
+      v-if="!isLoading && currentIdentityProvider"
       :identity-provider="currentIdentityProvider"
       @updated="props.onUpdated"
       @deleted="props.onDeleted"
@@ -42,10 +36,7 @@
 import { computed, reactive, ref, watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
 import { FeatureModal } from "@/components/FeatureGuard";
-import {
-  IdentityProviderCreateWizard,
-  IdentityProviderEditForm,
-} from "@/components/IdentityProvider";
+import { IdentityProviderEditForm } from "@/components/IdentityProvider";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";

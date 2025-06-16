@@ -501,7 +501,7 @@
         "ldaps-description": "Sử dụng TLS ngay từ đầu (cổng 636)",
         "none": "Không có",
         "none-description": "Không mã hóa (không khuyến khích sử dụng cho mục đích sản xuất)",
-        "domain-optional-hint": "Tùy chọn: Hạn chế quyền truy cập của người dùng từ miền này",
+        "domain-optional-hint": "Tùy chọn: Sử dụng để nối với mã định danh nếu nó không ở định dạng email",
         "provider-type-readonly-hint": "Loại nhà cung cấp không thể thay đổi sau khi tạo",
         "identifier-placeholder": "ví dụ: đăng nhập, email",
         "display-name-placeholder": "ví dụ tên, displayName",

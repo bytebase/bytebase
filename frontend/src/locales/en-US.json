@@ -501,7 +501,7 @@
         "ldaps-description": "Use TLS from the beginning (port 636)",
         "none": "None",
         "none-description": "No encryption (not recommended for production)",
-        "domain-optional-hint": "Optional: Restrict access to users from this domain",
+        "domain-optional-hint": "Optional: Use to concat with identifier if it is not in email format",
         "provider-type-readonly-hint": "Provider type cannot be changed after creation",
         "identifier-placeholder": "e.g. login, email",
         "display-name-placeholder": "e.g. name, displayName",
