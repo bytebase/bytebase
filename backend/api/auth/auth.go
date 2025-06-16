@@ -169,8 +169,13 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 			}
 			return nil, err
 		}
+		user, err := in.getUser(ctx, principalID)
+		if err != nil {
+			return nil, errs.Wrapf(err, "failed to get user for principal ID %d", principalID)
+		}
 
 		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+		ctx = context.WithValue(ctx, common.UserContextKey, user)
 		return next(ctx, req)
 	}
 }
@@ -203,8 +208,14 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 			}
 			return err
 		}
+		user, err := in.getUser(ctx, principalID)
+		if err != nil {
+			return errs.Wrapf(err, "failed to get user for principal ID %d", principalID)
+		}
 
 		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+		ctx = context.WithValue(ctx, common.UserContextKey, user)
+
 		return next(ctx, conn)
 	}
 }
@@ -522,4 +533,19 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 		AuthMethod:             authMethod,
 		Audit:                  audit,
 	}, nil
+}
+
+func (in *APIAuthInterceptor) getUser(ctx context.Context, principalID int) (*store.UserMessage, error) {
+	user, err := in.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.PermissionDenied, "member not found for user %v in processing authorize request.", principalID)
+	}
+	if user.MemberDeleted {
+		return nil, status.Errorf(codes.PermissionDenied, "the user %v has been deactivated by the admin.", principalID)
+	}
+
+	return user, nil
 }

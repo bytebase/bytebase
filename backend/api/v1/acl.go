@@ -46,7 +46,7 @@ func NewACLInterceptor(store *store.Store, secret string, iamManager *iam.Manage
 
 func (in *ACLInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		ctx, err := in.doACLCheck(ctx, req.Any(), req.Spec().Procedure)
+		_, err := in.doACLCheck(ctx, req.Any(), req.Spec().Procedure)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +62,6 @@ func (*ACLInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) con
 
 func (in *ACLInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		// For streaming, we need to create a wrapper that checks ACL on each message
 		wrappedConn := &aclStreamingConn{
 			StreamingHandlerConn: conn,
 			interceptor:          in,
@@ -81,12 +80,10 @@ type aclStreamingConn struct {
 }
 
 func (c *aclStreamingConn) Receive(msg any) error {
-	ctx, err := c.interceptor.doACLCheck(c.ctx, msg, c.fullMethod)
+	_, err := c.interceptor.doACLCheck(c.ctx, msg, c.fullMethod)
 	if err != nil {
 		return err
 	}
-	// Update the context for subsequent operations
-	c.ctx = ctx
 	return c.StreamingHandlerConn.Receive(msg)
 }
 
@@ -101,14 +98,6 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		}
 	}()
 
-	user, err := in.getUser(ctx)
-	if err != nil {
-		return ctx, connect.NewError(connect.CodePermissionDenied, err)
-	}
-	if user != nil {
-		ctx = context.WithValue(ctx, common.UserContextKey, user)
-	}
-
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
@@ -121,6 +110,12 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
 		return ctx, nil
 	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
 	if user == nil {
 		return ctx, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("unauthenticated for method %q", fullMethod))
 	}
