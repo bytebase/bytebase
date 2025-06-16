@@ -3,8 +3,10 @@ package v1
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"reflect"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -179,6 +181,150 @@ func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream
 	if err := handler(srv, auditStream); err != nil {
 		return createAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, nil, err)
 	}
+	return nil
+}
+
+// WrapUnary implements the ConnectRPC interceptor interface for unary RPCs.
+func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		var serviceData *anypb.Any
+		ctx = common.WithSetServiceData(ctx, func(a *anypb.Any) {
+			serviceData = a
+		})
+
+		response, rerr := next(ctx, req)
+
+		if needAudit(ctx) {
+			var respMsg any
+			if response != nil {
+				respMsg = response.Any()
+			}
+			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, serviceData, rerr, req.Header()); err != nil {
+				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
+			}
+		}
+
+		return response, rerr
+	}
+}
+
+// WrapStreamingClient implements the ConnectRPC interceptor interface for streaming clients.
+func (*AuditInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		return next(ctx, spec)
+	}
+}
+
+// WrapStreamingHandler implements the ConnectRPC interceptor interface for streaming handlers.
+func (in *AuditInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		if !needAudit(ctx) {
+			return next(ctx, conn)
+		}
+
+		wrappedConn := &auditConnectStreamingConn{
+			StreamingHandlerConn: conn,
+			interceptor:          in,
+			ctx:                  ctx,
+			method:               conn.Spec().Procedure,
+		}
+		return next(ctx, wrappedConn)
+	}
+}
+
+type auditConnectStreamingConn struct {
+	connect.StreamingHandlerConn
+	interceptor *AuditInterceptor
+	ctx         context.Context
+	method      string
+	curRequest  any
+}
+
+func (c *auditConnectStreamingConn) Receive(msg any) error {
+	err := c.StreamingHandlerConn.Receive(msg)
+	if err != nil {
+		return err
+	}
+	// Store current request for audit log
+	c.curRequest = msg
+	return nil
+}
+
+func (c *auditConnectStreamingConn) Send(resp any) error {
+	err := c.StreamingHandlerConn.Send(resp)
+	if err != nil {
+		return err
+	}
+	// Create audit log for each message pair
+	if c.curRequest != nil {
+		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, nil, nil, c.RequestHeader()); auditErr != nil {
+			return auditErr
+		}
+	}
+	return nil
+}
+
+func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error, headers http.Header) error {
+	requestString, err := getRequestString(request)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get request string")
+	}
+	responseString, err := getResponseString(response)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get response string")
+	}
+
+	var user string
+	if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
+		user = common.FormatUserUID(u.ID)
+	} else {
+		if loginResponse, ok := response.(*v1pb.LoginResponse); ok {
+			user = loginResponse.GetUser().GetName()
+		}
+	}
+
+	st, _ := status.FromError(rerr)
+
+	authContextAny := ctx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
+	if !ok {
+		return status.Errorf(codes.Internal, "auth context not found")
+	}
+
+	requestMetadata := getRequestMetadataFromHeaders(headers)
+
+	var parents []string
+	if authContext.HasWorkspaceResource() {
+		workspaceID, err := storage.GetWorkspaceID(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get workspace id")
+		}
+		parents = append(parents, common.FormatWorkspace(workspaceID))
+	} else {
+		for _, projectID := range authContext.GetProjectResources() {
+			parents = append(parents, common.FormatProject(projectID))
+		}
+	}
+
+	createAuditLogCtx := context.WithoutCancel(ctx)
+	for _, parent := range parents {
+		p := &storepb.AuditLog{
+			Parent:          parent,
+			Method:          method,
+			Resource:        getRequestResource(request),
+			Severity:        storepb.AuditLog_INFO,
+			User:            user,
+			Request:         requestString,
+			Response:        responseString,
+			Status:          st.Proto(),
+			ServiceData:     serviceData,
+			RequestMetadata: requestMetadata,
+		}
+		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -536,4 +682,20 @@ func getRequestMetadataFromCtx(ctx context.Context) (*storepb.RequestMetadata, e
 		CallerIp:                callerIP,
 		CallerSuppliedUserAgent: userAgent,
 	}, nil
+}
+
+// getRequestMetadataFromHeaders extracts request metadata from HTTP headers for ConnectRPC.
+func getRequestMetadataFromHeaders(headers http.Header) *storepb.RequestMetadata {
+	userAgent := headers.Get("User-Agent")
+	// For ConnectRPC, we don't have direct access to peer info like gRPC
+	// The caller IP will need to be extracted from X-Forwarded-For or similar headers
+	callerIP := headers.Get("X-Forwarded-For")
+	if callerIP == "" {
+		callerIP = headers.Get("X-Real-IP")
+	}
+
+	return &storepb.RequestMetadata{
+		CallerIp:                callerIP,
+		CallerSuppliedUserAgent: userAgent,
+	}
 }
