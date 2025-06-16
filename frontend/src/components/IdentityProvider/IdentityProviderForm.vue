@@ -235,7 +235,7 @@
           <span class="text-red-600">*</span>
         </label>
         <BBTextField
-          :model-value="scopesString"
+          :value="scopesString"
           @update:value="$emit('update:scopes-string', $event)"
           required
           size="large"
