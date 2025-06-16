@@ -11,6 +11,24 @@
         <div class="flex-1 mt-4 lg:px-4 lg:mt-0 space-y-6">
           <div>
             <p class="text-base font-semibold text-gray-800 mb-2">
+              {{ $t("common.type") }}
+            </p>
+            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
+              <component
+                :is="getProviderIcon(localIdentityProvider.type)"
+                class="w-5 h-5 text-gray-600"
+              />
+              <span class="text-base font-medium text-gray-800">
+                {{ identityProviderTypeToString(localIdentityProvider.type) }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600 mt-1">
+              {{ $t("settings.sso.form.provider-type-readonly-hint") }}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-base font-semibold text-gray-800 mb-2">
               {{ $t("settings.sso.form.name") }}
               <span class="text-red-600">*</span>
             </p>
@@ -22,21 +40,12 @@
               class="w-full text-base"
               :placeholder="$t('settings.sso.form.name-description')"
             />
-          </div>
-
-          <div>
-            <p class="text-base font-semibold text-gray-800 mb-2">
-              {{ $t("settings.sso.form.resource-id") }}
-            </p>
-            <BBTextField
+            <ResourceIdField
+              resource-type="idp"
+              :readonly="true"
               :value="resourceId"
-              readonly
-              size="large"
-              class="w-full text-base bg-gray-50"
+              class="mt-1"
             />
-            <p class="text-sm text-gray-600 mt-1">
-              {{ $t("settings.sso.form.resource-id-readonly-hint") }}
-            </p>
           </div>
 
           <div>
@@ -52,24 +61,6 @@
             />
             <p class="text-sm text-gray-600 mt-1">
               {{ $t("settings.sso.form.domain-optional-hint") }}
-            </p>
-          </div>
-
-          <div>
-            <p class="text-base font-semibold text-gray-800 mb-2">
-              {{ $t("common.type") }}
-            </p>
-            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
-              <component
-                :is="getProviderIcon(localIdentityProvider.type)"
-                class="w-5 h-5 text-gray-600"
-              />
-              <span class="text-base font-medium text-gray-800">
-                {{ identityProviderTypeToString(localIdentityProvider.type) }}
-              </span>
-            </div>
-            <p class="text-sm text-gray-600 mt-1">
-              {{ $t("settings.sso.form.provider-type-readonly-hint") }}
             </p>
           </div>
         </div>
@@ -263,6 +254,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField, BBButtonConfirm } from "@/bbkit";
+import { ResourceIdField } from "@/components/v2";
 import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";

@@ -188,22 +188,23 @@
               class="w-full text-base"
               :placeholder="$t('settings.sso.form.name-description')"
             />
+            <ResourceIdField
+              ref="resourceIdField"
+              class="mt-1"
+              editing-class="mt-6"
+              resource-type="idp"
+              v-model:value="resourceIdValue"
+              :suffix="true"
+              :resource-title="identityProvider.title"
+              :fetch-resource="
+                (id) =>
+                  identityProviderStore.getOrFetchIdentityProviderByName(
+                    `${idpNamePrefix}${id}`,
+                    true /* silent */
+                  )
+              "
+            />
           </div>
-
-          <ResourceIdField
-            ref="resourceIdField"
-            resource-type="idp"
-            v-model:value="resourceIdValue"
-            :suffix="true"
-            :resource-title="identityProvider.title"
-            :fetch-resource="
-              (id) =>
-                identityProviderStore.getOrFetchIdentityProviderByName(
-                  `${idpNamePrefix}${id}`,
-                  true /* silent */
-                )
-            "
-          />
 
           <div>
             <label class="block text-base font-semibold text-gray-800 mb-2">
