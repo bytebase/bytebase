@@ -112,6 +112,10 @@ func (s *OrgPolicyService) CreatePolicy(ctx context.Context, request *v1pb.Creat
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
 	}
 
+	if err := s.checkPolicyFeatureGuard(request.Policy.Type); err != nil {
+		return nil, err
+	}
+
 	// TODO(d): validate policy.
 	return s.createPolicyMessage(ctx, request.Parent, request.Policy)
 }
@@ -120,6 +124,10 @@ func (s *OrgPolicyService) CreatePolicy(ctx context.Context, request *v1pb.Creat
 func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.UpdatePolicyRequest) (*v1pb.Policy, error) {
 	if request.Policy == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
+	}
+
+	if err := s.checkPolicyFeatureGuard(request.Policy.Type); err != nil {
+		return nil, err
 	}
 
 	policy, parent, err := s.findPolicyMessage(ctx, request.Policy.Name)
@@ -319,6 +327,15 @@ func validatePolicyType(policyType storepb.Policy_Type, policyResourceType store
 		}
 	}
 	return status.Errorf(codes.InvalidArgument, "policy %v is not allowed in resource %v", policyType, policyResourceType)
+}
+
+func (s *OrgPolicyService) checkPolicyFeatureGuard(policyType v1pb.PolicyType) error {
+	if policyType == v1pb.PolicyType_DATA_QUERY {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
+			return status.Error(codes.PermissionDenied, err.Error())
+		}
+	}
+	return nil
 }
 
 func validatePolicyPayload(policyType storepb.Policy_Type, policy *v1pb.Policy) error {
