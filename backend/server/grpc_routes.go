@@ -88,7 +88,10 @@ func configureGrpcRouters(
 	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
 	workspaceService := apiv1.NewWorkspaceService(stores, iamManager)
 
-	interceptors := connect.WithInterceptors(apiv1.NewDebugInterceptor(metricReporter))
+	interceptors := connect.WithInterceptors(
+		apiv1.NewDebugInterceptor(metricReporter),
+		apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
+	)
 
 	connectHandlers := make(map[string]http.Handler)
 

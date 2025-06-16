@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"connectrpc.com/connect"
 	annotationsproto "google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -41,6 +42,98 @@ func NewACLInterceptor(store *store.Store, secret string, iamManager *iam.Manage
 		iamManager: iamManager,
 		profile:    profile,
 	}
+}
+
+func (in *ACLInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		ctx, err := in.doACLCheck(ctx, req.Any(), req.Spec().Procedure)
+		if err != nil {
+			return nil, err
+		}
+		return next(ctx, req)
+	}
+}
+
+func (*ACLInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		return next(ctx, spec)
+	}
+}
+
+func (in *ACLInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		// For streaming, we need to create a wrapper that checks ACL on each message
+		wrappedConn := &aclStreamingConn{
+			StreamingHandlerConn: conn,
+			interceptor:          in,
+			fullMethod:           conn.Spec().Procedure,
+			ctx:                  ctx,
+		}
+		return next(ctx, wrappedConn)
+	}
+}
+
+type aclStreamingConn struct {
+	connect.StreamingHandlerConn
+	interceptor *ACLInterceptor
+	fullMethod  string
+	ctx         context.Context
+}
+
+func (c *aclStreamingConn) Receive(msg any) error {
+	ctx, err := c.interceptor.doACLCheck(c.ctx, msg, c.fullMethod)
+	if err != nil {
+		return err
+	}
+	// Update the context for subsequent operations
+	c.ctx = ctx
+	return c.StreamingHandlerConn.Receive(msg)
+}
+
+func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMethod string) (context.Context, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			perr, ok := r.(error)
+			if !ok {
+				perr = errors.Errorf("%v", r)
+			}
+			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
+		}
+	}()
+
+	user, err := in.getUser(ctx)
+	if err != nil {
+		return ctx, connect.NewError(connect.CodePermissionDenied, err)
+	}
+	if user != nil {
+		ctx = context.WithValue(ctx, common.UserContextKey, user)
+	}
+
+	authContextAny := ctx.Value(common.AuthContextKey)
+	authContext, ok := authContextAny.(*common.AuthContext)
+	if !ok {
+		return ctx, connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
+	}
+	if err := populateRawResources(ctx, in.store, authContext, request, fullMethod); err != nil {
+		return ctx, connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
+	}
+
+	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
+		return ctx, nil
+	}
+	if user == nil {
+		return ctx, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("unauthenticated for method %q", fullMethod))
+	}
+
+	ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, fullMethod, user, authContext)
+	if err != nil {
+		return ctx, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err))
+	}
+	if !ok {
+		return ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra))
+	}
+
+	return ctx, nil
 }
 
 // ACLInterceptor is the unary interceptor for gRPC API.
