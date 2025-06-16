@@ -121,7 +121,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 
 		if needAudit(ctx) {
 			var respMsg any
-			if response != nil {
+			if !common.IsNil(response) {
 				respMsg = response.Any()
 			}
 			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, serviceData, rerr, req.Header()); err != nil {
