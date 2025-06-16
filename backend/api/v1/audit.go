@@ -8,8 +8,6 @@ import (
 
 	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -40,73 +38,6 @@ func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
 	return &AuditInterceptor{
 		store: store,
 	}
-}
-
-func createAuditLog(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error) error {
-	requestString, err := getRequestString(request)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get request string")
-	}
-	responseString, err := getResponseString(response)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get response string")
-	}
-
-	var user string
-	if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
-		user = common.FormatUserUID(u.ID)
-	} else {
-		if loginResponse, ok := response.(*v1pb.LoginResponse); ok {
-			user = loginResponse.GetUser().GetName()
-		}
-	}
-
-	st, _ := status.FromError(rerr)
-
-	authContextAny := ctx.Value(common.AuthContextKey)
-	authContext, ok := authContextAny.(*common.AuthContext)
-	if !ok {
-		return status.Errorf(codes.Internal, "auth context not found")
-	}
-
-	requestMetadata, err := getRequestMetadataFromCtx(ctx)
-	if err != nil {
-		return err
-	}
-
-	var parents []string
-	if authContext.HasWorkspaceResource() {
-		workspaceID, err := storage.GetWorkspaceID(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get workspace id")
-		}
-		parents = append(parents, common.FormatWorkspace(workspaceID))
-	} else {
-		for _, projectID := range authContext.GetProjectResources() {
-			parents = append(parents, common.FormatProject(projectID))
-		}
-	}
-
-	createAuditLogCtx := context.WithoutCancel(ctx)
-	for _, parent := range parents {
-		p := &storepb.AuditLog{
-			Parent:          parent,
-			Method:          method,
-			Resource:        getRequestResource(request),
-			Severity:        storepb.AuditLog_INFO,
-			User:            user,
-			Request:         requestString,
-			Response:        responseString,
-			Status:          st.Proto(),
-			ServiceData:     serviceData,
-			RequestMetadata: requestMetadata,
-		}
-		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // WrapUnary implements the ConnectRPC interceptor interface for unary RPCs.
@@ -588,25 +519,6 @@ func needAudit(ctx context.Context) bool {
 		return false
 	}
 	return authCtx.Audit
-}
-
-func getRequestMetadataFromCtx(ctx context.Context) (*storepb.RequestMetadata, error) {
-	var userAgent, callerIP string
-	if p, ok := peer.FromContext(ctx); ok && p.Addr != nil {
-		callerIP = p.Addr.String()
-	}
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, errors.New("failed to get grpc metadata")
-	}
-	// It only takes effect when using a browser.
-	if userAgents := md["user-agent"]; len(userAgents) != 0 {
-		userAgent = userAgents[0]
-	}
-	return &storepb.RequestMetadata{
-		CallerIp:                callerIP,
-		CallerSuppliedUserAgent: userAgent,
-	}, nil
 }
 
 // getRequestMetadataFromHeaders extracts request metadata from HTTP headers for ConnectRPC.
