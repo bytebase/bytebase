@@ -807,10 +807,10 @@ END;
 			// Step 1: Initialize the database schema and get schema result A
 			portInt, err := strconv.Atoi(port.Port())
 			require.NoError(t, err)
-			
+
 			// Add a small delay to ensure MySQL is fully ready
 			time.Sleep(2 * time.Second)
-			
+
 			t.Logf("Connecting to MySQL at %s:%d", host, portInt)
 			testDB, err := openTestDatabase(host, portInt, "root", "test123", "testdb")
 			require.NoError(t, err, "Failed to connect to MySQL database")
@@ -893,12 +893,12 @@ func openTestDatabase(host string, port int, username, password, database string
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to open connection to MySQL")
 	}
-	
+
 	// Set connection pool settings
 	db.SetMaxOpenConns(5)
 	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(5 * time.Minute)
-	
+
 	// Try to ping with retries
 	var pingErr error
 	for i := 0; i < 5; i++ {
@@ -910,7 +910,7 @@ func openTestDatabase(host string, port int, username, password, database string
 	if pingErr != nil {
 		return nil, errors.Wrapf(pingErr, "failed to ping MySQL database after retries")
 	}
-	
+
 	return db, nil
 }
 
