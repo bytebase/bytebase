@@ -257,9 +257,17 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
 		}
-		if _, err := oauth2IdentityProvider.UserInfo(token); err != nil {
+		_, claims, err := oauth2IdentityProvider.UserInfo(token)
+		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
 		}
+
+		// Convert claims to map[string]string for protobuf
+		stringClaims := make(map[string]string)
+		for key, value := range claims {
+			stringClaims[key] = fmt.Sprintf("%v", value)
+		}
+		return &v1pb.TestIdentityProviderResponse{Claims: stringClaims}, nil
 	case v1pb.IdentityProviderType_OIDC:
 		// Find client secret for those existed identity providers.
 		if identityProvider.Config.GetOidcConfig().ClientSecret == "" {
@@ -287,9 +295,17 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to exchange access token, error: %s", err.Error())
 		}
-		if _, err := oidcIdentityProvider.UserInfo(ctx, token, ""); err != nil {
+		_, claims, err := oidcIdentityProvider.UserInfo(ctx, token, "")
+		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to get user info, error: %s", err.Error())
 		}
+
+		// Convert claims to map[string]string for protobuf
+		stringClaims := make(map[string]string)
+		for key, value := range claims {
+			stringClaims[key] = fmt.Sprintf("%v", value)
+		}
+		return &v1pb.TestIdentityProviderResponse{Claims: stringClaims}, nil
 	case v1pb.IdentityProviderType_LDAP:
 		// Retrieve bind password from stored identity provider if not provided.
 		if identityProvider.Config.GetLdapConfig().BindPassword == "" {
@@ -325,10 +341,12 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.InvalidArgument, "failed to test connection, error: %s", err.Error())
 		}
 		_ = conn.Close()
+
+		// LDAP doesn't return claims like OAuth2/OIDC, so return empty claims
+		return &v1pb.TestIdentityProviderResponse{Claims: make(map[string]string)}, nil
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", identityProvider.Type.String())
 	}
-	return &v1pb.TestIdentityProviderResponse{}, nil
 }
 
 func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context, name string) (*store.IdentityProviderMessage, error) {

@@ -2292,6 +2292,9 @@
   },
   "identity-provider": {
     "test-connection": "Probar conexión",
+    "test-connection-success": "Conexión de prueba exitosa",
+    "claims-description": "El proveedor de identidad devolvió las siguientes notificaciones. Esta información puede ayudarle a configurar las asignaciones de campos.",
+    "no-claims": "El proveedor de identidad no devolvió ninguna reclamación.",
     "identity-provider-created": "Proveedor de identidad creado exitosamente",
     "identity-provider-deleted": "Proveedor de identidad eliminado exitosamente",
     "identity-provider-update-failed": "No se pudo actualizar el proveedor de identidad",

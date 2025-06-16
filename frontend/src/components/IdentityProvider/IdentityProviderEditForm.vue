@@ -188,14 +188,12 @@
           </div>
 
           <div>
-            <NButton
+            <TestConnection
               :disabled="!allowTestConnection"
-              @click="testConnection"
-              size="large"
-              class="text-base"
-            >
-              {{ $t("identity-provider.test-connection") }}
-            </NButton>
+              :size="'large'"
+              :is-creating="false"
+              :idp="buildUpdatedIdentityProvider()"
+            />
           </div>
         </div>
       </div>
@@ -273,6 +271,7 @@ import {
   identityProviderTypeToString,
 } from "@/utils";
 import IdentityProviderForm from "./IdentityProviderForm.vue";
+import TestConnection from "./TestConnection.vue";
 
 interface Props {
   identityProvider: IdentityProvider;
@@ -471,10 +470,6 @@ const initializeFromProps = () => {
       props.identityProvider.config.ldapConfig.fieldMapping || {}
     );
   }
-};
-
-const testConnection = async () => {
-  // TODO: Implement test connection
 };
 
 const handleUpdate = async () => {
