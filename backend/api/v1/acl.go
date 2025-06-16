@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"connectrpc.com/connect"
 	annotationsproto "google.golang.org/genproto/googleapis/api/annotations"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -43,145 +43,91 @@ func NewACLInterceptor(store *store.Store, secret string, iamManager *iam.Manage
 	}
 }
 
-// ACLInterceptor is the unary interceptor for gRPC API.
-func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ any, err error) {
+func (in *ACLInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		_, err := in.doACLCheck(ctx, req.Any(), req.Spec().Procedure)
+		if err != nil {
+			return nil, err
+		}
+		return next(ctx, req)
+	}
+}
+
+func (*ACLInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		return next(ctx, spec)
+	}
+}
+
+func (in *ACLInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		wrappedConn := &aclStreamingConn{
+			StreamingHandlerConn: conn,
+			interceptor:          in,
+			fullMethod:           conn.Spec().Procedure,
+			ctx:                  ctx,
+		}
+		return next(ctx, wrappedConn)
+	}
+}
+
+type aclStreamingConn struct {
+	connect.StreamingHandlerConn
+	interceptor *ACLInterceptor
+	fullMethod  string
+	ctx         context.Context
+}
+
+func (c *aclStreamingConn) Receive(msg any) error {
+	_, err := c.interceptor.doACLCheck(c.ctx, msg, c.fullMethod)
+	if err != nil {
+		return err
+	}
+	return c.StreamingHandlerConn.Receive(msg)
+}
+
+func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMethod string) (context.Context, error) {
 	defer func() {
 		if r := recover(); r != nil {
 			perr, ok := r.(error)
 			if !ok {
 				perr = errors.Errorf("%v", r)
 			}
-			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", serverInfo.FullMethod, perr)
-
 			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
 		}
 	}()
-	user, err := in.getUser(ctx)
-	if err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
-	if user != nil {
-		ctx = context.WithValue(ctx, common.UserContextKey, user)
-	}
 
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "auth context not found")
+		return ctx, connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
-	if err := populateRawResources(ctx, in.store, authContext, request, serverInfo.FullMethod); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
+	if err := populateRawResources(ctx, in.store, authContext, request, fullMethod); err != nil {
+		return ctx, connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
 
-	if auth.IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
-		return handler(ctx, request)
+	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
+		return ctx, nil
 	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
 	if user == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
+		return ctx, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("unauthenticated for method %q", fullMethod))
 	}
 
-	ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, serverInfo.FullMethod, user, authContext)
+	ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, fullMethod, user, authContext)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", serverInfo.FullMethod, extra, err)
+		return ctx, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err))
 	}
 	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", serverInfo.FullMethod, authContext.Permission, extra)
+		return ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra))
 	}
 
-	return handler(ctx, request)
-}
-
-// ACLStreamInterceptor is the unary interceptor for gRPC API.
-func (in *ACLInterceptor) ACLStreamInterceptor(srv any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			perr, ok := r.(error)
-			if !ok {
-				perr = errors.Errorf("%v", r)
-			}
-			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", serverInfo.FullMethod, perr)
-
-			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
-		}
-	}()
-
-	ctx := ss.Context()
-
-	user, err := in.getUser(ctx)
-	if err != nil {
-		return status.Error(codes.PermissionDenied, err.Error())
-	}
-	if user != nil {
-		ctx = context.WithValue(ctx, common.UserContextKey, user)
-		ss = &overrideStream{ServerStream: ss, childCtx: ctx, iamManager: in.iamManager, store: in.store, user: user, fullMethod: serverInfo.FullMethod}
-	}
-
-	return handler(srv, ss)
-}
-
-type overrideStream struct {
-	grpc.ServerStream
-
-	childCtx   context.Context
-	iamManager *iam.Manager
-	store      *store.Store
-	user       *store.UserMessage
-	fullMethod string
-}
-
-func (o overrideStream) Context() context.Context {
-	return o.childCtx
-}
-
-func (o *overrideStream) RecvMsg(request any) error {
-	authContextAny := o.childCtx.Value(common.AuthContextKey)
-	authContext, ok := authContextAny.(*common.AuthContext)
-	if !ok {
-		return status.Errorf(codes.Internal, "auth context not found")
-	}
-	if err := populateRawResources(o.childCtx, o.store, authContext, request, o.fullMethod); err != nil {
-		return status.Errorf(codes.Internal, "failed to populate raw resources %s", err)
-	}
-
-	if auth.IsAuthenticationAllowed(o.fullMethod, authContext) {
-		return o.ServerStream.RecvMsg(request)
-	}
-	if o.user == nil {
-		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", o.fullMethod)
-	}
-
-	ok, extra, err := doIAMPermissionCheck(o.childCtx, o.iamManager, o.fullMethod, o.user, authContext)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", o.fullMethod, extra, err)
-	}
-	if !ok {
-		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", o.fullMethod, authContext.Permission, extra)
-	}
-
-	return o.ServerStream.RecvMsg(request)
-}
-
-func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, error) {
-	principalPtr := ctx.Value(common.PrincipalIDContextKey)
-	if principalPtr == nil {
-		return nil, nil
-	}
-	principalID, ok := principalPtr.(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	user, err := in.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)
-	}
-	if user == nil {
-		return nil, status.Errorf(codes.PermissionDenied, "member not found for user %v in processing authorize request.", principalID)
-	}
-	if user.MemberDeleted {
-		return nil, status.Errorf(codes.PermissionDenied, "the user %v has been deactivated by the admin.", principalID)
-	}
-
-	return user, nil
+	return ctx, nil
 }
 
 func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {

@@ -11,28 +11,20 @@ import (
 	"sync"
 	"time"
 
-	grpcprom "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/http2"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
-	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -80,7 +72,6 @@ type Server struct {
 
 	profile    *config.Profile
 	echoServer *echo.Echo
-	grpcServer *grpc.Server
 	muxServer  cmux.CMux
 	lspServer  *lsp.Server
 	store      *store.Store
@@ -247,64 +238,17 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Metric reporter
 	s.initMetricReporter()
 
-	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, secret, s.licenseService, s.stateCfg, s.profile)
-	auditProvider := apiv1.NewAuditInterceptor(s.store)
-	aclProvider := apiv1.NewACLInterceptor(s.store, secret, s.iamManager, s.profile)
-	debugProvider := apiv1.NewDebugInterceptor(s.metricReporter)
-	onPanic := func(p any) error {
-		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
-		// keep a multiline stack
-		slog.Error("v1 server panic error", log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
-		return status.Errorf(codes.Internal, "error: %v\n%s", p, stack)
-	}
-	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
-	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
-	grpc.EnableTracing = true
-	srvMetrics := grpcprom.NewServerMetrics(grpcprom.WithServerHandlingTimeHistogram())
-	s.grpcServer = grpc.NewServer(
-		// Override the maximum receiving message size to 100M for uploading large sheets.
-		grpc.MaxRecvMsgSize(100*1024*1024),
-		grpc.InitialWindowSize(100000000),
-		grpc.InitialConnWindowSize(100000000),
-		grpc.ChainUnaryInterceptor(
-			srvMetrics.UnaryServerInterceptor(),
-			debugProvider.DebugInterceptor,
-			authProvider.AuthenticationInterceptor,
-			aclProvider.ACLInterceptor,
-			auditProvider.AuditInterceptor,
-			recoveryUnaryInterceptor,
-		),
-		grpc.ChainStreamInterceptor(
-			srvMetrics.StreamServerInterceptor(),
-			debugProvider.DebugStreamInterceptor,
-			authProvider.AuthenticationStreamInterceptor,
-			aclProvider.ACLStreamInterceptor,
-			auditProvider.AuditStreamInterceptor,
-			recoveryStreamInterceptor,
-		),
-	)
-	reflection.Register(s.grpcServer)
-
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile)
 
-	connectHandlers, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret)
+	connectHandlers, err := configureGrpcRouters(ctx, mux, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
 	// Configure echo server routes.
-	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, directorySyncServer, mux, profile, connectHandlers)
-
-	// Configure grpc prometheus metrics.
-	if err := prometheus.DefaultRegisterer.Register(srvMetrics); err != nil {
-		if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
-			return nil, errors.Wrapf(err, "failed to register prometheus metrics")
-		}
-	}
-	srvMetrics.InitializeMetrics(s.grpcServer)
+	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, mux, profile, connectHandlers)
 
 	serverStarted = true
 	return s, nil
@@ -339,15 +283,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	}
 
 	s.muxServer = cmux.New(listener)
-	grpcListener := s.muxServer.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
 	httpListener := s.muxServer.Match(cmux.HTTP1Fast(), cmux.Any())
 	s.echoServer.Listener = httpListener
 
-	go func() {
-		if err := s.grpcServer.Serve(grpcListener); err != nil {
-			slog.Error("grpc server listen error", log.BBError(err))
-		}
-	}()
 	go func() {
 		if err := s.echoServer.StartH2CServer(address, &http2.Server{}); err != nil {
 			slog.Error("http server listen error", log.BBError(err))
@@ -381,21 +319,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown echo
-	if s.grpcServer != nil {
-		stopped := make(chan struct{})
-		go func() {
-			s.grpcServer.GracefulStop()
-			close(stopped)
-		}()
-
-		t := time.NewTimer(gracefulShutdownPeriod)
-		select {
-		case <-t.C:
-			s.grpcServer.Stop()
-		case <-stopped:
-			t.Stop()
-		}
-	}
 	if s.echoServer != nil {
 		if err := s.echoServer.Shutdown(ctx); err != nil {
 			s.echoServer.Logger.Fatal(err)

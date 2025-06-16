@@ -13,6 +13,7 @@ import (
 
 	"log/slog"
 
+	"connectrpc.com/connect"
 	"github.com/alexmullins/zip"
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
@@ -45,11 +46,12 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // SQLService is the service for SQL.
 type SQLService struct {
-	v1pb.UnimplementedSQLServiceServer
+	v1connect.UnimplementedSQLServiceHandler
 	store          *store.Store
 	sheetManager   *sheet.Manager
 	schemaSyncer   *schemasync.Syncer
@@ -81,8 +83,7 @@ func NewSQLService(
 }
 
 // AdminExecute executes the SQL statement.
-func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) error {
-	ctx := server.Context()
+func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStream[v1pb.AdminExecuteRequest, v1pb.AdminExecuteResponse]) error {
 	var driver db.Driver
 	var conn *sql.Conn
 	defer func() {
@@ -96,7 +97,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		}
 	}()
 	for {
-		request, err := server.Recv()
+		request, err := stream.Receive()
 		if err != nil {
 			if err == io.EOF {
 				return nil
@@ -146,13 +147,14 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			response.Results = result
 		}
 
-		if err := server.Send(response); err != nil {
+		if err := stream.Send(response); err != nil {
 			return status.Errorf(codes.Internal, "failed to send response: %v", err)
 		}
 	}
 }
 
-func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
+func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryRequest]) (*connect.Response[v1pb.QueryResponse], error) {
+	request := req.Msg
 	// Prepare related message.
 	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
@@ -270,7 +272,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		Results: results,
 	}
 
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, int, bool /* isExplain */, bool /* isExport */) error
@@ -696,10 +698,15 @@ func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService
 }
 
 // Export exports the SQL query result.
-func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
+func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.ExportRequest]) (*connect.Response[v1pb.ExportResponse], error) {
+	request := req.Msg
 	// Prehandle export from issue.
 	if strings.HasPrefix(request.Name, common.ProjectNamePrefix) {
-		return s.doExportFromIssue(ctx, request.Name)
+		response, err := s.doExportFromIssue(ctx, request.Name)
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(response), nil
 	}
 
 	// Check if data export is allowed.
@@ -745,9 +752,9 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, status.Error(codes.Internal, exportErr.Error())
 	}
 
-	return &v1pb.ExportResponse{
+	return connect.NewResponse(&v1pb.ExportResponse{
 		Content: bytes,
-	}, nil
+	}), nil
 }
 
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
@@ -1114,7 +1121,8 @@ func getListQueryHistoryFilter(filter string) (*store.ListResourceFilter, error)
 }
 
 // SearchQueryHistories lists query histories.
-func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.SearchQueryHistoriesRequest) (*v1pb.SearchQueryHistoriesResponse, error) {
+func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Request[v1pb.SearchQueryHistoriesRequest]) (*connect.Response[v1pb.SearchQueryHistoriesResponse], error) {
+	request := req.Msg
 	offset, err := parseLimitAndOffset(&pageSize{
 		token:   request.PageToken,
 		limit:   int(request.PageSize),
@@ -1168,7 +1176,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 		resp.QueryHistories = append(resp.QueryHistories, queryHistory)
 	}
 
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store.QueryHistoryMessage) (*v1pb.QueryHistory, error) {
@@ -1540,7 +1548,8 @@ func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 	return user, nil
 }
 
-func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1pb.CheckResponse, error) {
+func (s *SQLService) Check(ctx context.Context, req *connect.Request[v1pb.CheckRequest]) (*connect.Response[v1pb.CheckResponse], error) {
+	request := req.Msg
 	if len(request.Statement) > common.MaxSheetCheckSize {
 		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024)
 	}
@@ -1577,7 +1586,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 		return nil, err
 	}
 	checkResponse.Advices = adviceList
-	return checkResponse, nil
+	return connect.NewResponse(checkResponse), nil
 }
 
 func getClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
@@ -1742,7 +1751,8 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
 	}
 }
 
-func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
+func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.DiffMetadataRequest]) (*connect.Response[v1pb.DiffMetadataResponse], error) {
+	request := req.Msg
 	switch request.Engine {
 	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
 	default:
@@ -1766,12 +1776,12 @@ func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataReq
 
 	targetConfig := convertDatabaseCatalog(request.GetTargetCatalog())
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid target metadata"))
 	}
 	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig), request.ClassificationFromConfig)
 
 	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid target metadata"))
 	}
 
 	sourceSchema, err := schema.GetDatabaseDefinition(storepb.Engine(request.Engine), schema.GetDefinitionContext{
@@ -1797,9 +1807,9 @@ func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataReq
 		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
 	}
 
-	return &v1pb.DiffMetadataResponse{
+	return connect.NewResponse(&v1pb.DiffMetadataResponse{
 		Diff: diff,
-	}, nil
+	}), nil
 }
 
 func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig, classificationFromConfig bool) {
@@ -1825,7 +1835,8 @@ func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, 
 }
 
 // Pretty returns pretty format SDL.
-func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb.PrettyResponse, error) {
+func (*SQLService) Pretty(_ context.Context, req *connect.Request[v1pb.PrettyRequest]) (*connect.Response[v1pb.PrettyResponse], error) {
+	request := req.Msg
 	engine := convertEngine(request.Engine)
 	if _, err := transform.CheckFormat(engine, request.ExpectedSchema); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "User SDL is not SDL format: %s", err.Error())
@@ -1843,10 +1854,10 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 		return nil, status.Errorf(codes.Internal, "failed to normalize dumped SDL: %s", err.Error())
 	}
 
-	return &v1pb.PrettyResponse{
+	return connect.NewResponse(&v1pb.PrettyResponse{
 		CurrentSchema:  prettyCurrentSchema,
 		ExpectedSchema: prettyExpectedSchema,
-	}, nil
+	}), nil
 }
 
 // GetQueriableDataSource try to returns the RO data source, and will returns the admin data source if not exist the RO data source.

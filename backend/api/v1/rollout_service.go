@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -29,11 +30,12 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // RolloutService represents a service for managing rollout.
 type RolloutService struct {
-	v1pb.UnimplementedRolloutServiceServer
+	v1connect.UnimplementedRolloutServiceHandler
 	store          *store.Store
 	sheetManager   *sheet.Manager
 	licenseService *enterprise.LicenseService
@@ -59,7 +61,8 @@ func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseS
 }
 
 // PreviewRollout previews the rollout for a plan.
-func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.PreviewRolloutRequest) (*v1pb.Rollout, error) {
+func (s *RolloutService) PreviewRollout(ctx context.Context, req *connect.Request[v1pb.PreviewRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
+	request := req.Msg
 	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -93,11 +96,12 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
 	}
-	return rolloutV1, nil
+	return connect.NewResponse(rolloutV1), nil
 }
 
 // GetRollout gets a rollout.
-func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRolloutRequest) (*v1pb.Rollout, error) {
+func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1pb.GetRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
+	request := req.Msg
 	projectID, rolloutID, err := common.GetProjectIDRolloutID(request.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -123,11 +127,12 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
 	}
-	return rolloutV1, nil
+	return connect.NewResponse(rolloutV1), nil
 }
 
 // ListRollouts lists rollouts.
-func (s *RolloutService) ListRollouts(ctx context.Context, request *v1pb.ListRolloutsRequest) (*v1pb.ListRolloutsResponse, error) {
+func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[v1pb.ListRolloutsRequest]) (*connect.Response[v1pb.ListRolloutsResponse], error) {
+	request := req.Msg
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -187,14 +192,15 @@ func (s *RolloutService) ListRollouts(ctx context.Context, request *v1pb.ListRol
 		rollouts = append(rollouts, rollout)
 	}
 
-	return &v1pb.ListRolloutsResponse{
+	return connect.NewResponse(&v1pb.ListRolloutsResponse{
 		Rollouts:      rollouts,
 		NextPageToken: nextPageToken,
-	}, nil
+	}), nil
 }
 
 // CreateRollout creates a rollout from plan.
-func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
+func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request[v1pb.CreateRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
+	request := req.Msg
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
@@ -248,7 +254,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 			return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
 		}
 		rolloutV1.Plan = request.Rollout.GetPlan()
-		return rolloutV1, nil
+		return connect.NewResponse(rolloutV1), nil
 	}
 	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, principalID)
 	if err != nil {
@@ -268,11 +274,12 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	// Tickle task run scheduler.
 	s.stateCfg.TaskRunTickleChan <- 0
 
-	return rolloutV1, nil
+	return connect.NewResponse(rolloutV1), nil
 }
 
 // ListTaskRuns lists rollout task runs.
-func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
+func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[v1pb.ListTaskRunsRequest]) (*connect.Response[v1pb.ListTaskRunsResponse], error) {
+	request := req.Msg
 	projectID, rolloutID, maybeStageID, maybeTaskID, err := common.GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(request.Parent)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -301,14 +308,15 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTas
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to task runs, error: %v", err)
 	}
-	return &v1pb.ListTaskRunsResponse{
+	return connect.NewResponse(&v1pb.ListTaskRunsResponse{
 		TaskRuns:      taskRunsV1,
 		NextPageToken: "",
-	}, nil
+	}), nil
 }
 
 // GetTaskRun gets a task run.
-func (s *RolloutService) GetTaskRun(ctx context.Context, request *v1pb.GetTaskRunRequest) (*v1pb.TaskRun, error) {
+func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1pb.GetTaskRunRequest]) (*connect.Response[v1pb.TaskRun], error) {
+	request := req.Msg
 	_, _, _, _, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -321,10 +329,11 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, request *v1pb.GetTaskRu
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to task run, error: %v", err)
 	}
-	return taskRunV1, nil
+	return connect.NewResponse(taskRunV1), nil
 }
 
-func (s *RolloutService) GetTaskRunLog(ctx context.Context, request *v1pb.GetTaskRunLogRequest) (*v1pb.TaskRunLog, error) {
+func (s *RolloutService) GetTaskRunLog(ctx context.Context, req *connect.Request[v1pb.GetTaskRunLogRequest]) (*connect.Response[v1pb.TaskRunLog], error) {
+	request := req.Msg
 	_, _, _, _, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
@@ -333,10 +342,11 @@ func (s *RolloutService) GetTaskRunLog(ctx context.Context, request *v1pb.GetTas
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to list task run logs, error: %v", err)
 	}
-	return convertToTaskRunLog(request.Parent, logs), nil
+	return connect.NewResponse(convertToTaskRunLog(request.Parent, logs)), nil
 }
 
-func (s *RolloutService) GetTaskRunSession(ctx context.Context, request *v1pb.GetTaskRunSessionRequest) (*v1pb.TaskRunSession, error) {
+func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Request[v1pb.GetTaskRunSessionRequest]) (*connect.Response[v1pb.TaskRunSession], error) {
+	request := req.Msg
 	_, _, _, taskUID, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
@@ -373,7 +383,7 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, request *v1pb.Ge
 
 	session.Name = request.Parent + "/session"
 
-	return session, nil
+	return connect.NewResponse(session), nil
 }
 
 func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID string) (*v1pb.TaskRunSession, error) {
@@ -471,7 +481,8 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 }
 
 // BatchRunTasks runs tasks in batch.
-func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
+func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request[v1pb.BatchRunTasksRequest]) (*connect.Response[v1pb.BatchRunTasksResponse], error) {
+	request := req.Msg
 	if len(request.Tasks) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "The tasks in request cannot be empty")
 	}
@@ -611,11 +622,12 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	// Tickle task run scheduler.
 	s.stateCfg.TaskRunTickleChan <- 0
 
-	return &v1pb.BatchRunTasksResponse{}, nil
+	return connect.NewResponse(&v1pb.BatchRunTasksResponse{}), nil
 }
 
 // BatchSkipTasks skips tasks in batch.
-func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.BatchSkipTasksRequest) (*v1pb.BatchSkipTasksResponse, error) {
+func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Request[v1pb.BatchSkipTasksRequest]) (*connect.Response[v1pb.BatchSkipTasksResponse], error) {
+	request := req.Msg
 	projectID, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(request.Parent)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -710,11 +722,12 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		},
 	})
 
-	return &v1pb.BatchSkipTasksResponse{}, nil
+	return connect.NewResponse(&v1pb.BatchSkipTasksResponse{}), nil
 }
 
 // BatchCancelTaskRuns cancels a list of task runs.
-func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
+func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.Request[v1pb.BatchCancelTaskRunsRequest]) (*connect.Response[v1pb.BatchCancelTaskRunsResponse], error) {
+	request := req.Msg
 	if len(request.TaskRuns) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "task runs cannot be empty")
 	}
@@ -826,10 +839,11 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		},
 	})
 
-	return &v1pb.BatchCancelTaskRunsResponse{}, nil
+	return connect.NewResponse(&v1pb.BatchCancelTaskRunsResponse{}), nil
 }
 
-func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1pb.PreviewTaskRunRollbackRequest) (*v1pb.PreviewTaskRunRollbackResponse, error) {
+func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connect.Request[v1pb.PreviewTaskRunRollbackRequest]) (*connect.Response[v1pb.PreviewTaskRunRollbackResponse], error) {
+	request := req.Msg
 	_, _, _, taskUID, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
@@ -895,9 +909,9 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 		results = append(results, restore)
 	}
 
-	return &v1pb.PreviewTaskRunRollbackResponse{
+	return connect.NewResponse(&v1pb.PreviewTaskRunRollbackResponse{
 		Statement: strings.Join(results, "\n"),
-	}, nil
+	}), nil
 }
 
 func isChangeDatabasePlan(specs []*storepb.PlanConfig_Spec) bool {

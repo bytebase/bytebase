@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -21,10 +22,11 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 type AuditLogService struct {
-	v1pb.UnimplementedAuditLogServiceServer
+	v1connect.UnimplementedAuditLogServiceHandler
 	store          *store.Store
 	iamManager     *iam.Manager
 	licenseService *enterprise.LicenseService
@@ -38,23 +40,23 @@ func NewAuditLogService(store *store.Store, iamManager *iam.Manager, licenseServ
 	}
 }
 
-func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.SearchAuditLogsRequest) (*v1pb.SearchAuditLogsResponse, error) {
+func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.Request[v1pb.SearchAuditLogsRequest]) (*connect.Response[v1pb.SearchAuditLogsResponse], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
-	filter, serr := s.getSearchAuditLogsFilter(ctx, request.Filter)
+	filter, serr := s.getSearchAuditLogsFilter(ctx, request.Msg.Filter)
 	if serr != nil {
 		return nil, serr.Err()
 	}
 
-	orderByKeys, err := getSearchAuditLogsOrderByKeys(request.OrderBy)
+	orderByKeys, err := getSearchAuditLogsOrderByKeys(request.Msg.OrderBy)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get order by keys, error: %v", err)
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
-		token:   request.PageToken,
-		limit:   int(request.PageSize),
+		token:   request.Msg.PageToken,
+		limit:   int(request.Msg.PageSize),
 		maximum: 5000,
 	})
 	if err != nil {
@@ -63,8 +65,8 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	limitPlusOne := offset.limit + 1
 
 	var project *string
-	if request.Parent != "" {
-		project = &request.Parent
+	if request.Msg.Parent != "" {
+		project = &request.Msg.Parent
 	}
 	auditLogFind := &store.AuditLogFind{
 		Project:     project,
@@ -90,25 +92,25 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	if err != nil {
 		return nil, err
 	}
-	return &v1pb.SearchAuditLogsResponse{
+	return connect.NewResponse(&v1pb.SearchAuditLogsResponse{
 		AuditLogs:     v1AuditLogs,
 		NextPageToken: nextPageToken,
-	}, nil
+	}), nil
 }
 
-func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.ExportAuditLogsRequest) (*v1pb.ExportAuditLogsResponse, error) {
+func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *connect.Request[v1pb.ExportAuditLogsRequest]) (*connect.Response[v1pb.ExportAuditLogsResponse], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
-	if request.Filter == "" {
+	if request.Msg.Filter == "" {
 		return nil, status.Error(codes.InvalidArgument, "filter is required to export audit logs")
 	}
-	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, &v1pb.SearchAuditLogsRequest{
-		Filter:    request.Filter,
-		OrderBy:   request.OrderBy,
-		PageSize:  request.PageSize,
-		PageToken: request.PageToken,
-	})
+	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Filter:    request.Msg.Filter,
+		OrderBy:   request.Msg.OrderBy,
+		PageSize:  request.Msg.PageSize,
+		PageToken: request.Msg.PageToken,
+	}))
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +118,7 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 	result := &v1pb.QueryResult{
 		ColumnNames: []string{"time", "user", "method", "severity", "resource", "request", "response", "status"},
 	}
-	for _, auditLog := range searchAuditLogsResult.AuditLogs {
+	for _, auditLog := range searchAuditLogsResult.Msg.AuditLogs {
 		queryRow := &v1pb.QueryRow{Values: []*v1pb.RowValue{
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.CreateTime.AsTime().Format(time.RFC3339)}},
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.User}},
@@ -135,7 +137,7 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 	}
 
 	var content []byte
-	switch request.Format {
+	switch request.Msg.Format {
 	case v1pb.ExportFormat_CSV:
 		if content, err = exportCSV(result); err != nil {
 			return nil, err
@@ -149,10 +151,10 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 			return nil, err
 		}
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Msg.Format.String())
 	}
 
-	return &v1pb.ExportAuditLogsResponse{Content: content, NextPageToken: searchAuditLogsResult.NextPageToken}, nil
+	return connect.NewResponse(&v1pb.ExportAuditLogsResponse{Content: content, NextPageToken: searchAuditLogsResult.Msg.NextPageToken}), nil
 }
 
 func convertToAuditLogs(ctx context.Context, stores *store.Store, auditLogs []*store.AuditLog) ([]*v1pb.AuditLog, error) {
