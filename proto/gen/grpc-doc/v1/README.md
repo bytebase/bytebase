@@ -459,6 +459,7 @@
 - [v1/project_service.proto](#v1_project_service-proto)
     - [Activity](#bytebase-v1-Activity)
     - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
+    - [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest)
     - [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest)
     - [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse)
     - [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult)
@@ -7599,6 +7600,22 @@ TODO(zp): move to activity later.
 
 
 
+<a name="bytebase-v1-BatchDeleteProjectsRequest"></a>
+
+### BatchDeleteProjectsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| names | [string](#string) | repeated | The names of the projects to delete. Format: projects/{project} |
+| force | [bool](#bool) |  | If set to true, any databases from this project will be moved to default project. Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project. Open issues will remain open but associated with the deleted project. If set to false, the operation will fail if the project has databases or open issues. |
+
+
+
+
+
+
 <a name="bytebase-v1-BatchGetIamPolicyRequest"></a>
 
 ### BatchGetIamPolicyRequest
@@ -7673,7 +7690,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the project to delete. Format: projects/{project} |
-| force | [bool](#bool) |  | If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. |
+| force | [bool](#bool) |  | If set to true, any databases from this project will be moved to default project. Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project. Open issues will remain open but associated with the deleted project. If set to false, the operation will fail if the project has databases or open issues. |
 
 
 
@@ -8011,6 +8028,7 @@ TYPE_ISSUE_CREATE represents creating an issue. |
 | UpdateProject | [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest) | [Project](#bytebase-v1-Project) |  |
 | DeleteProject | [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteProject | [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest) | [Project](#bytebase-v1-Project) |  |
+| BatchDeleteProjects | [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
 | BatchGetIamPolicy | [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest) | [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse) | Deprecated. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |

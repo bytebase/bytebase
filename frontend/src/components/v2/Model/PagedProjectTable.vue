@@ -5,7 +5,14 @@
     :fetch-list="fetchProjects"
   >
     <template #table="{ list, loading }">
-      <ProjectV1Table v-bind="$attrs" :loading="loading" :project-list="list" />
+      <ProjectV1Table
+        v-bind="$attrs"
+        :loading="loading"
+        :project-list="list"
+        :selected-project-names="selectedProjectNames"
+        :show-selection="showSelection"
+        @update:selected-project-names="updateSelectedProjectNames"
+      />
     </template>
   </PagedTable>
 </template>
@@ -18,15 +25,38 @@ import { useProjectV1Store, type ProjectFilter } from "@/store";
 import { type ComposedProject } from "@/types";
 import ProjectV1Table from "./ProjectV1Table.vue";
 
-const props = defineProps<{
-  filter: ProjectFilter;
-  sessionKey: string;
+const props = withDefaults(
+  defineProps<{
+    filter: ProjectFilter;
+    sessionKey: string;
+    selectedProjectNames?: string[];
+    showSelection?: boolean;
+  }>(),
+  {
+    selectedProjectNames: () => [],
+    showSelection: true,
+  }
+);
+
+const emit = defineEmits<{
+  (event: "update:selected-project-names", projectNames: string[]): void;
 }>();
 
 const projectStore = useProjectV1Store();
 
 const projectPagedTable =
   ref<ComponentExposed<typeof PagedTable<ComposedProject>>>();
+
+const updateSelectedProjectNames = (projectNames: string[]) => {
+  emit("update:selected-project-names", projectNames);
+};
+
+const refresh = () => {
+  projectPagedTable.value?.refresh();
+};
+
+defineExpose({ refresh });
+
 
 const fetchProjects = async ({
   pageToken,
