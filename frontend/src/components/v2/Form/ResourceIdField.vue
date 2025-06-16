@@ -1,11 +1,16 @@
 <template>
   <div v-if="visible">
     <template v-if="readonly || !state.manualEdit">
-      <div class="textinfolabel text-sm space-x-1">
+      <div class="textinfolabel text-sm gap-x-1 flex items-center">
         {{ $t("resource-id.self", { resource: resourceName }) }}:
-        <span v-if="state.resourceId" class="text-gray-600 font-medium mr-1">
+        <div v-if="state.resourceId" class="text-gray-600 font-medium mr-1 flex items-center gap-x-1">
           {{ state.resourceId }}
-        </span>
+          <NButton v-if="isSupported && readonly" text size="tiny" @click="handleCopy">
+            <template #icon>
+              <CopyIcon class="w-3 h-3" />
+            </template>
+          </NButton>
+        </div>
         <span v-else class="text-control-placeholder italic">
           {{ "<EMPTY>" }}
         </span>
@@ -58,13 +63,16 @@
 </template>
 
 <script lang="ts" setup>
-import { NInput, type InputProps } from "naive-ui";
+import { NInput, NButton, type InputProps } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { randomString } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import { CopyIcon } from "lucide-vue-next";
+import { useClipboard } from "@vueuse/core";
+import { pushNotification } from "@/store"
 
 // characters is the validated characters for resource id.
 const characters = "abcdefghijklmnopqrstuvwxyz1234567890-";
@@ -288,6 +296,24 @@ watch(
     immediate: true,
   }
 );
+
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
+
+const handleCopy = () => {
+  if (!isSupported.value) {
+    return;
+  }
+  copyTextToClipboard(props.value).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.copied"),
+    });
+  });
+};
+
 
 defineExpose({
   resourceId: computed(() => state.resourceId),
