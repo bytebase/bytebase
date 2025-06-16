@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -147,6 +148,67 @@ func (s overrideStream) Context() context.Context {
 	return s.childCtx
 }
 
+// WrapUnary implements the ConnectRPC interceptor interface for unary RPCs.
+func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		accessTokenStr, err := getTokenFromHeaders(req.Header())
+		if err != nil {
+			return nil, connect.NewError(connect.CodeUnauthenticated, err)
+		}
+
+		authContext, err := getAuthContext(req.Spec().Procedure)
+		if err != nil {
+			return nil, err
+		}
+		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
+
+		principalID, err := in.getPrincipalIDConnect(ctx, accessTokenStr)
+		if err != nil {
+			if IsAuthenticationAllowed(req.Spec().Procedure, authContext) {
+				return next(ctx, req)
+			}
+			return nil, err
+		}
+
+		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+		return next(ctx, req)
+	}
+}
+
+// WrapStreamingClient implements the ConnectRPC interceptor interface for streaming clients.
+func (*APIAuthInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		return next(ctx, spec)
+	}
+}
+
+// WrapStreamingHandler implements the ConnectRPC interceptor interface for streaming handlers.
+func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		accessTokenStr, err := getTokenFromHeaders(conn.RequestHeader())
+		if err != nil {
+			return connect.NewError(connect.CodeUnauthenticated, err)
+		}
+
+		authContext, err := getAuthContext(conn.Spec().Procedure)
+		if err != nil {
+			return err
+		}
+		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
+
+		principalID, err := in.getPrincipalIDConnect(ctx, accessTokenStr)
+		if err != nil {
+			if IsAuthenticationAllowed(conn.Spec().Procedure, authContext) {
+				return next(ctx, conn)
+			}
+			return err
+		}
+
+		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+		return next(ctx, conn)
+	}
+}
+
 func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr string) (int, error) {
 	if accessTokenStr == "" {
 		return 0, status.Errorf(codes.Unauthenticated, "access token not found")
@@ -197,6 +259,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 	return principalID, nil
 }
 
+
 func (in *APIAuthInterceptor) getPrincipalID(ctx context.Context, accessTokenStr string) (int, error) {
 	principalID, err := in.authenticate(ctx, accessTokenStr)
 	if err != nil {
@@ -207,6 +270,70 @@ func (in *APIAuthInterceptor) getPrincipalID(ctx context.Context, accessTokenStr
 	in.profile.LastActiveTS.Store(time.Now().Unix())
 	return principalID, nil
 }
+
+// authenticateConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
+func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTokenStr string) (int, error) {
+	if accessTokenStr == "" {
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("access token not found"))
+	}
+	if _, ok := in.stateCfg.ExpireCache.Get(accessTokenStr); ok {
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("access token expired"))
+	}
+	claims := &claimsMessage{}
+	if _, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (any, error) {
+		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
+			return nil, errs.Errorf("unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
+		}
+		if kid, ok := t.Header["kid"].(string); ok {
+			if kid == "v1" {
+				return []byte(in.secret), nil
+			}
+		}
+		return nil, errs.Errorf("unexpected access token kid=%v", t.Header["kid"])
+	}); err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("access token expired"))
+		}
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
+	}
+	if !audienceContains(claims.Audience, fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)) {
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf(
+			"invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
+			claims.Audience,
+			fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode),
+		))
+	}
+
+	principalID, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("malformed ID %q in the access token", claims.Subject))
+	}
+	user, err := in.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("failed to find user ID %q in the access token", principalID))
+	}
+	if user == nil {
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("user ID %q not exists in the access token", principalID))
+	}
+	if user.MemberDeleted {
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("user ID %q has been deactivated by administrators", user.ID))
+	}
+
+	return principalID, nil
+}
+
+// getPrincipalIDConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
+func (in *APIAuthInterceptor) getPrincipalIDConnect(ctx context.Context, accessTokenStr string) (int, error) {
+	principalID, err := in.authenticateConnect(ctx, accessTokenStr)
+	if err != nil {
+		return 0, err
+	}
+
+	// Only update for authorized request.
+	in.profile.LastActiveTS.Store(time.Now().Unix())
+	return principalID, nil
+}
+
 
 // GetUserIDFromMFATempToken returns the user ID from the MFA temp token.
 func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret string) (int, error) {
@@ -252,6 +379,33 @@ func GetTokenFromMetadata(md metadata.MD) (string, error) {
 		request := http.Request{Header: header}
 		if v, _ := request.Cookie(AccessTokenCookieName); v != nil {
 			accessToken = v.Value
+		}
+	}
+	return accessToken, nil
+}
+
+// getTokenFromHeaders extracts the access token from HTTP headers for ConnectRPC.
+func getTokenFromHeaders(headers http.Header) (string, error) {
+	// Check Authorization header first
+	authHeader := headers.Get("Authorization")
+	if authHeader != "" {
+		authHeaderParts := strings.Fields(authHeader)
+		if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
+			return "", errs.Errorf("authorization header format must be Bearer {token}")
+		}
+		return authHeaderParts[1], nil
+	}
+
+	// Check HTTP cookies
+	var accessToken string
+	cookieHeaders := headers.Values("Cookie")
+	for _, cookieHeader := range cookieHeaders {
+		header := http.Header{}
+		header.Add("Cookie", cookieHeader)
+		request := http.Request{Header: header}
+		if cookie, _ := request.Cookie(AccessTokenCookieName); cookie != nil {
+			accessToken = cookie.Value
+			break
 		}
 	}
 	return accessToken, nil

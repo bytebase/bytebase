@@ -13,6 +13,7 @@ import (
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -90,6 +91,7 @@ func configureGrpcRouters(
 
 	interceptors := connect.WithInterceptors(
 		apiv1.NewDebugInterceptor(metricReporter),
+		auth.New(stores, secret, licenseService, stateCfg, profile),
 		apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 	)
 
