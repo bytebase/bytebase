@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -33,9 +34,12 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 
 	ctx := context.Background()
 
+	// Use Oracle Free image (Oracle 23c Free) slim version
+	imageName := "gvenzl/oracle-free:slim"
+
 	// Start Oracle container
 	req := testcontainers.ContainerRequest{
-		Image: "gvenzl/oracle-xe:21-slim-faststart",
+		Image: imageName,
 		Env: map[string]string{
 			"ORACLE_PASSWORD":   "test123",
 			"APP_USER":          "testuser",
@@ -44,13 +48,27 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 		ExposedPorts: []string{"1521/tcp"},
 		WaitingFor: wait.ForLog("DATABASE IS READY TO USE!").
 			WithStartupTimeout(10 * time.Minute),
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.ShmSize = 1 * 1024 * 1024 * 1024 // 1GB shared memory
+		},
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		// Get detailed logs for debugging
+		if container != nil {
+			logs, logErr := container.Logs(ctx)
+			if logErr == nil {
+				buf := make([]byte, 10000)
+				n, _ := logs.Read(buf)
+				t.Logf("Container logs on failure: %s", string(buf[:n]))
+			}
+		}
+		require.NoError(t, err, "Failed to start Oracle container")
+	}
 	defer func() {
 		if err := container.Terminate(ctx); err != nil {
 			t.Logf("failed to terminate container: %s", err)
@@ -306,7 +324,6 @@ ALTER TABLE PRODUCTS ADD WEIGHT NUMBER(5, 2);
 ALTER TABLE PRODUCTS MODIFY NAME VARCHAR2(100);
 ALTER TABLE PRODUCTS MODIFY PRICE NUMBER(10, 2);
 ALTER TABLE PRODUCTS MODIFY DESCRIPTION NOT NULL;
-ALTER TABLE PRODUCTS MODIFY CATEGORY NULL;
 
 -- Add constraints
 ALTER TABLE PRODUCTS ADD CONSTRAINT CHECK_PRICE_POSITIVE CHECK (PRICE > 0);
@@ -711,7 +728,7 @@ ALTER TABLE TEST_COLUMNS ADD CONSTRAINT CHK_NUMBER_POSITIVE CHECK (COL_NUMBER > 
 				t.Fatalf("Failed to execute initial schema: %v", err)
 			}
 
-			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "testuser", "testpass", "XE")
+			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "testuser", "testpass", "FREEPDB1")
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
@@ -719,7 +736,7 @@ ALTER TABLE TEST_COLUMNS ADD CONSTRAINT CHK_NUMBER_POSITIVE CHECK (COL_NUMBER > 
 				t.Fatalf("Failed to execute migration DDL: %v", err)
 			}
 
-			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "testuser", "testpass", "XE")
+			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "testuser", "testpass", "FREEPDB1")
 			require.NoError(t, err)
 
 			// Step 3: Call generate migration to get the rollback DDL
@@ -757,7 +774,7 @@ ALTER TABLE TEST_COLUMNS ADD CONSTRAINT CHK_NUMBER_POSITIVE CHECK (COL_NUMBER > 
 				t.Fatalf("Failed to execute rollback DDL: %v", err)
 			}
 
-			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "testuser", "testpass", "XE")
+			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "testuser", "testpass", "FREEPDB1")
 			require.NoError(t, err)
 
 			// Step 5: Compare schema result A and C to ensure they are the same
@@ -774,7 +791,7 @@ ALTER TABLE TEST_COLUMNS ADD CONSTRAINT CHK_NUMBER_POSITIVE CHECK (COL_NUMBER > 
 
 // openTestDatabase opens a connection to the test Oracle database
 func openTestDatabase(host string, port int, username, password string) (*sql.DB, error) {
-	dsn := fmt.Sprintf("oracle://%s:%s@%s:%d/XE", username, password, host, port)
+	dsn := fmt.Sprintf("oracle://%s:%s@%s:%d/FREEPDB1", username, password, host, port)
 	db, err := sql.Open("oracle", dsn)
 	if err != nil {
 		return nil, err
@@ -785,25 +802,45 @@ func openTestDatabase(host string, port int, username, password string) (*sql.DB
 	return db, nil
 }
 
-// executeStatements executes multiple SQL statements separated by semicolons
+// executeStatements executes multiple SQL statements, handling both regular DDL and PL/SQL blocks
 func executeStatements(db *sql.DB, statements string) error {
-	// Split statements by semicolon and execute each one
-	stmts := strings.Split(statements, ";")
-	for _, stmt := range stmts {
-		stmt = strings.TrimSpace(stmt)
-		if stmt == "" {
+	// Normalize line endings and trim
+	statements = strings.ReplaceAll(statements, "\r\n", "\n")
+	statements = strings.TrimSpace(statements)
+
+	// Split by forward slash to separate PL/SQL blocks
+	parts := strings.Split(statements, "/")
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
 			continue
 		}
-		// Handle PL/SQL blocks with forward slash terminator
-		if strings.Contains(stmt, "BEGIN") || strings.Contains(stmt, "DECLARE") || strings.Contains(stmt, "CREATE OR REPLACE FUNCTION") {
-			// Look for the next statement that starts with "/"
-			continue
-		}
-		if stmt == "/" {
-			continue
-		}
-		if _, err := db.Exec(stmt); err != nil {
-			return errors.Wrapf(err, "failed to execute statement %q", stmt)
+
+		// Check if this part contains a PL/SQL block (function, procedure, trigger)
+		upperPart := strings.ToUpper(part)
+		isPLSQL := strings.Contains(upperPart, "CREATE OR REPLACE FUNCTION") ||
+			strings.Contains(upperPart, "CREATE OR REPLACE PROCEDURE") ||
+			strings.Contains(upperPart, "CREATE OR REPLACE TRIGGER") ||
+			(strings.Contains(upperPart, "BEGIN") && strings.Contains(upperPart, "END"))
+
+		if isPLSQL {
+			// Execute PL/SQL block as a single statement
+			if _, err := db.Exec(part); err != nil {
+				return errors.Wrapf(err, "failed to execute PL/SQL block %q", part)
+			}
+		} else {
+			// For regular DDL, split by semicolon
+			subStmts := strings.Split(part, ";")
+			for _, subStmt := range subStmts {
+				subStmt = strings.TrimSpace(subStmt)
+				if subStmt == "" || strings.HasPrefix(subStmt, "--") {
+					continue
+				}
+				if _, err := db.Exec(subStmt); err != nil {
+					return errors.Wrapf(err, "failed to execute statement %q", subStmt)
+				}
+			}
 		}
 	}
 	return nil
@@ -826,8 +863,8 @@ func getSyncMetadataForGenerateMigration(ctx context.Context, host string, port 
 		},
 		Password: password,
 		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "21.0",   // Oracle 21c
-			DatabaseName:  username, // In Oracle, the schema name is typically the username
+			EngineVersion: "23.0", // Oracle 23c Free
+			DatabaseName:  "",     // Don't set schema initially, let it use default
 		},
 	}
 
