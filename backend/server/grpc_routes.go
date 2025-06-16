@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"connectrpc.com/connect"
 	connectcors "connectrpc.com/cors"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
@@ -87,93 +88,95 @@ func configureGrpcRouters(
 	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
 	workspaceService := apiv1.NewWorkspaceService(stores, iamManager)
 
+	interceptors := connect.WithInterceptors(apiv1.NewDebugInterceptor(metricReporter))
+
 	connectHandlers := make(map[string]http.Handler)
 
-	actuatorPath, actuatorHandler := v1connect.NewActuatorServiceHandler(actuatorService)
+	actuatorPath, actuatorHandler := v1connect.NewActuatorServiceHandler(actuatorService, interceptors)
 	connectHandlers[actuatorPath] = withCORS(actuatorHandler)
 
-	auditLogPath, auditLogHandler := v1connect.NewAuditLogServiceHandler(auditLogService)
+	auditLogPath, auditLogHandler := v1connect.NewAuditLogServiceHandler(auditLogService, interceptors)
 	connectHandlers[auditLogPath] = withCORS(auditLogHandler)
 
-	authPath, authHandler := v1connect.NewAuthServiceHandler(authService)
+	authPath, authHandler := v1connect.NewAuthServiceHandler(authService, interceptors)
 	connectHandlers[authPath] = withCORS(authHandler)
 
-	celPath, celHandler := v1connect.NewCelServiceHandler(celService)
+	celPath, celHandler := v1connect.NewCelServiceHandler(celService, interceptors)
 	connectHandlers[celPath] = withCORS(celHandler)
 
-	changelistPath, changelistHandler := v1connect.NewChangelistServiceHandler(changelistService)
+	changelistPath, changelistHandler := v1connect.NewChangelistServiceHandler(changelistService, interceptors)
 	connectHandlers[changelistPath] = withCORS(changelistHandler)
 
-	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService)
+	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService, interceptors)
 	connectHandlers[databaseCatalogPath] = withCORS(databaseCatalogHandler)
 
-	databaseGroupPath, databaseGroupHandler := v1connect.NewDatabaseGroupServiceHandler(databaseGroupService)
+	databaseGroupPath, databaseGroupHandler := v1connect.NewDatabaseGroupServiceHandler(databaseGroupService, interceptors)
 	connectHandlers[databaseGroupPath] = withCORS(databaseGroupHandler)
 
-	databasePath, databaseHandler := v1connect.NewDatabaseServiceHandler(databaseService)
+	databasePath, databaseHandler := v1connect.NewDatabaseServiceHandler(databaseService, interceptors)
 	connectHandlers[databasePath] = withCORS(databaseHandler)
 
-	groupPath, groupHandler := v1connect.NewGroupServiceHandler(groupService)
+	groupPath, groupHandler := v1connect.NewGroupServiceHandler(groupService, interceptors)
 	connectHandlers[groupPath] = withCORS(groupHandler)
 
-	identityProviderPath, identityProviderHandler := v1connect.NewIdentityProviderServiceHandler(identityProviderService)
+	identityProviderPath, identityProviderHandler := v1connect.NewIdentityProviderServiceHandler(identityProviderService, interceptors)
 	connectHandlers[identityProviderPath] = withCORS(identityProviderHandler)
 
-	instanceRolePath, instanceRoleHandler := v1connect.NewInstanceRoleServiceHandler(instanceRoleService)
+	instanceRolePath, instanceRoleHandler := v1connect.NewInstanceRoleServiceHandler(instanceRoleService, interceptors)
 	connectHandlers[instanceRolePath] = withCORS(instanceRoleHandler)
 
-	instancePath, instanceHandler := v1connect.NewInstanceServiceHandler(instanceService)
+	instancePath, instanceHandler := v1connect.NewInstanceServiceHandler(instanceService, interceptors)
 	connectHandlers[instancePath] = withCORS(instanceHandler)
 
-	issuePath, issueHandler := v1connect.NewIssueServiceHandler(issueService)
+	issuePath, issueHandler := v1connect.NewIssueServiceHandler(issueService, interceptors)
 	connectHandlers[issuePath] = withCORS(issueHandler)
 
-	orgPolicyPath, orgPolicyHandler := v1connect.NewOrgPolicyServiceHandler(orgPolicyService)
+	orgPolicyPath, orgPolicyHandler := v1connect.NewOrgPolicyServiceHandler(orgPolicyService, interceptors)
 	connectHandlers[orgPolicyPath] = withCORS(orgPolicyHandler)
 
-	planPath, planHandler := v1connect.NewPlanServiceHandler(planService)
+	planPath, planHandler := v1connect.NewPlanServiceHandler(planService, interceptors)
 	connectHandlers[planPath] = withCORS(planHandler)
 
-	projectPath, projectHandler := v1connect.NewProjectServiceHandler(projectService)
+	projectPath, projectHandler := v1connect.NewProjectServiceHandler(projectService, interceptors)
 	connectHandlers[projectPath] = withCORS(projectHandler)
 
-	releasePath, releaseHandler := v1connect.NewReleaseServiceHandler(releaseService)
+	releasePath, releaseHandler := v1connect.NewReleaseServiceHandler(releaseService, interceptors)
 	connectHandlers[releasePath] = withCORS(releaseHandler)
 
-	reviewConfigPath, reviewConfigHandler := v1connect.NewReviewConfigServiceHandler(reviewConfigService)
+	reviewConfigPath, reviewConfigHandler := v1connect.NewReviewConfigServiceHandler(reviewConfigService, interceptors)
 	connectHandlers[reviewConfigPath] = withCORS(reviewConfigHandler)
 
-	revisionPath, revisionHandler := v1connect.NewRevisionServiceHandler(revisionService)
+	revisionPath, revisionHandler := v1connect.NewRevisionServiceHandler(revisionService, interceptors)
 	connectHandlers[revisionPath] = withCORS(revisionHandler)
 
-	riskPath, riskHandler := v1connect.NewRiskServiceHandler(riskService)
+	riskPath, riskHandler := v1connect.NewRiskServiceHandler(riskService, interceptors)
 	connectHandlers[riskPath] = withCORS(riskHandler)
 
-	rolePath, roleHandler := v1connect.NewRoleServiceHandler(roleService)
+	rolePath, roleHandler := v1connect.NewRoleServiceHandler(roleService, interceptors)
 	connectHandlers[rolePath] = withCORS(roleHandler)
 
-	rolloutPath, rolloutHandler := v1connect.NewRolloutServiceHandler(rolloutService)
+	rolloutPath, rolloutHandler := v1connect.NewRolloutServiceHandler(rolloutService, interceptors)
 	connectHandlers[rolloutPath] = withCORS(rolloutHandler)
 
-	settingPath, settingHandler := v1connect.NewSettingServiceHandler(settingService)
+	settingPath, settingHandler := v1connect.NewSettingServiceHandler(settingService, interceptors)
 	connectHandlers[settingPath] = withCORS(settingHandler)
 
-	sheetPath, sheetHandler := v1connect.NewSheetServiceHandler(sheetService)
+	sheetPath, sheetHandler := v1connect.NewSheetServiceHandler(sheetService, interceptors)
 	connectHandlers[sheetPath] = withCORS(sheetHandler)
 
-	sqlPath, sqlHandler := v1connect.NewSQLServiceHandler(sqlService)
+	sqlPath, sqlHandler := v1connect.NewSQLServiceHandler(sqlService, interceptors)
 	connectHandlers[sqlPath] = withCORS(sqlHandler)
 
-	subscriptionPath, subscriptionHandler := v1connect.NewSubscriptionServiceHandler(subscriptionService)
+	subscriptionPath, subscriptionHandler := v1connect.NewSubscriptionServiceHandler(subscriptionService, interceptors)
 	connectHandlers[subscriptionPath] = withCORS(subscriptionHandler)
 
-	userPath, userHandler := v1connect.NewUserServiceHandler(userService)
+	userPath, userHandler := v1connect.NewUserServiceHandler(userService, interceptors)
 	connectHandlers[userPath] = withCORS(userHandler)
 
-	worksheetPath, worksheetHandler := v1connect.NewWorksheetServiceHandler(worksheetService)
+	worksheetPath, worksheetHandler := v1connect.NewWorksheetServiceHandler(worksheetService, interceptors)
 	connectHandlers[worksheetPath] = withCORS(worksheetHandler)
 
-	workspacePath, workspaceHandler := v1connect.NewWorkspaceServiceHandler(workspaceService)
+	workspacePath, workspaceHandler := v1connect.NewWorkspaceServiceHandler(workspaceService, interceptors)
 	connectHandlers[workspacePath] = withCORS(workspaceHandler)
 
 	// REST gateway proxy.
