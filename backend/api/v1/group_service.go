@@ -67,6 +67,9 @@ func (s *GroupService) ListGroups(ctx context.Context, _ *v1pb.ListGroupsRequest
 
 // CreateGroup creates a group.
 func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGroupRequest) (*v1pb.Group, error) {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
 	groupMessage, err := s.convertToGroupMessage(ctx, request)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -90,6 +93,9 @@ func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGrou
 
 // UpdateGroup updates a group.
 func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGroupRequest) (*v1pb.Group, error) {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
 	groupEmail, err := common.GetGroupEmail(request.Group.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
