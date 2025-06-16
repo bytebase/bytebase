@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -77,75 +76,6 @@ func New(
 		stateCfg:       stateCfg,
 		profile:        profile,
 	}
-}
-
-// AuthenticationInterceptor is the unary interceptor for gRPC API.
-func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
-	}
-	accessTokenStr, err := GetTokenFromMetadata(md)
-	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
-
-	authContext, err := getAuthContext(serverInfo.FullMethod)
-	if err != nil {
-		return nil, err
-	}
-	ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
-
-	principalID, err := in.getPrincipalID(ctx, accessTokenStr)
-	if err != nil {
-		if IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
-			return handler(ctx, request)
-		}
-		return nil, err
-	}
-
-	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
-	return handler(ctx, request)
-}
-
-// AuthenticationStreamInterceptor is the unary interceptor for gRPC API.
-func (in *APIAuthInterceptor) AuthenticationStreamInterceptor(request any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	ctx := ss.Context()
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
-	}
-	accessTokenStr, err := GetTokenFromMetadata(md)
-	if err != nil {
-		return status.Error(codes.Unauthenticated, err.Error())
-	}
-
-	authContext, err := getAuthContext(serverInfo.FullMethod)
-	if err != nil {
-		return err
-	}
-	ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
-
-	principalID, err := in.getPrincipalID(ctx, accessTokenStr)
-	if err != nil {
-		if IsAuthenticationAllowed(serverInfo.FullMethod, authContext) {
-			return handler(request, ss)
-		}
-		return err
-	}
-
-	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
-	sss := overrideStream{ServerStream: ss, childCtx: ctx}
-	return handler(request, sss)
-}
-
-type overrideStream struct {
-	childCtx context.Context
-	grpc.ServerStream
-}
-
-func (s overrideStream) Context() context.Context {
-	return s.childCtx
 }
 
 // WrapUnary implements the ConnectRPC interceptor interface for unary RPCs.
@@ -218,67 +148,6 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 
 		return next(ctx, conn)
 	}
-}
-
-func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr string) (int, error) {
-	if accessTokenStr == "" {
-		return 0, status.Errorf(codes.Unauthenticated, "access token not found")
-	}
-	if _, ok := in.stateCfg.ExpireCache.Get(accessTokenStr); ok {
-		return 0, status.Errorf(codes.Unauthenticated, "access token expired")
-	}
-	claims := &claimsMessage{}
-	if _, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (any, error) {
-		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
-			return nil, status.Errorf(codes.Unauthenticated, "unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
-		}
-		if kid, ok := t.Header["kid"].(string); ok {
-			if kid == "v1" {
-				return []byte(in.secret), nil
-			}
-		}
-		return nil, status.Errorf(codes.Unauthenticated, "unexpected access token kid=%v", t.Header["kid"])
-	}); err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			return 0, status.Errorf(codes.Unauthenticated, "access token expired")
-		}
-		return 0, status.Errorf(codes.Unauthenticated, "failed to parse claim")
-	}
-	if !audienceContains(claims.Audience, fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)) {
-		return 0, status.Errorf(codes.Unauthenticated,
-			"invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
-			claims.Audience,
-			fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode),
-		)
-	}
-
-	principalID, err := strconv.Atoi(claims.Subject)
-	if err != nil {
-		return 0, status.Errorf(codes.Unauthenticated, "malformed ID %q in the access token", claims.Subject)
-	}
-	user, err := in.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return 0, status.Errorf(codes.Unauthenticated, "failed to find user ID %q in the access token", principalID)
-	}
-	if user == nil {
-		return 0, status.Errorf(codes.Unauthenticated, "user ID %q not exists in the access token", principalID)
-	}
-	if user.MemberDeleted {
-		return 0, status.Errorf(codes.Unauthenticated, "user ID %q has been deactivated by administrators", user.ID)
-	}
-
-	return principalID, nil
-}
-
-func (in *APIAuthInterceptor) getPrincipalID(ctx context.Context, accessTokenStr string) (int, error) {
-	principalID, err := in.authenticate(ctx, accessTokenStr)
-	if err != nil {
-		return 0, err
-	}
-
-	// Only update for authorized request.
-	in.profile.LastActiveTS.Store(time.Now().Unix())
-	return principalID, nil
 }
 
 // authenticateConnect is a ConnectRPC-specific version that returns ConnectRPC errors.

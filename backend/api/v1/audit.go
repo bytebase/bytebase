@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -107,80 +106,6 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 		}
 	}
 
-	return nil
-}
-
-func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	var serviceData *anypb.Any
-	ctx = common.WithSetServiceData(ctx, func(a *anypb.Any) {
-		serviceData = a
-	})
-
-	response, rerr := handler(ctx, request)
-
-	if needAudit(ctx) {
-		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr); err != nil {
-			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", serverInfo.FullMethod))
-		}
-	}
-
-	return response, rerr
-}
-
-type auditStream struct {
-	grpc.ServerStream
-	needAudit  bool
-	curRequest any
-	ctx        context.Context
-	method     string
-	storage    *store.Store
-}
-
-func (s *auditStream) RecvMsg(request any) error {
-	err := s.ServerStream.RecvMsg(request)
-	if err != nil {
-		return err
-	}
-	// audit log.
-	if s.needAudit {
-		s.curRequest = request
-	}
-	return nil
-}
-
-func (s *auditStream) SendMsg(resp any) error {
-	err := s.ServerStream.SendMsg(resp)
-	if err != nil {
-		return err
-	}
-	// audit log.
-	if s.needAudit && s.curRequest != nil {
-		if auditErr := createAuditLog(s.ctx, s.curRequest, resp, s.method, s.storage, nil, nil); auditErr != nil {
-			return auditErr
-		}
-	}
-
-	return nil
-}
-
-func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	overrideStream, ok := ss.(*overrideStream)
-	if !ok {
-		// Service reflection.
-		return handler(srv, ss)
-	}
-
-	auditStream := &auditStream{
-		ServerStream: overrideStream,
-		needAudit:    needAudit(overrideStream.childCtx),
-		ctx:          overrideStream.childCtx,
-		method:       info.FullMethod,
-		storage:      in.store,
-	}
-
-	if err := handler(srv, auditStream); err != nil {
-		return createAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, nil, err)
-	}
 	return nil
 }
 
