@@ -191,25 +191,24 @@
                   v-model:value="identityProvider.title"
                   required
                   size="large"
-                  class="w-full text-base"
+                  class="w-full text-base mb-2"
                   :placeholder="$t('settings.sso.form.name-description')"
                 />
+                <ResourceIdField
+                  ref="resourceIdField"
+                  resource-type="idp"
+                  v-model:value="resourceIdValue"
+                  :suffix="true"
+                  :resource-title="identityProvider.title"
+                  :fetch-resource="
+                    (id) =>
+                      identityProviderStore.getOrFetchIdentityProviderByName(
+                        `${idpNamePrefix}${id}`,
+                        true /* silent */
+                      )
+                  "
+                />
               </div>
-
-              <ResourceIdField
-                ref="resourceIdField"
-                resource-type="idp"
-                v-model:value="resourceIdValue"
-                :suffix="true"
-                :resource-title="identityProvider.title"
-                :fetch-resource="
-                  (id) =>
-                    identityProviderStore.getOrFetchIdentityProviderByName(
-                      `${idpNamePrefix}${id}`,
-                      true /* silent */
-                    )
-                "
-              />
 
               <div>
                 <label class="block text-base font-semibold text-gray-800 mb-2">
