@@ -134,6 +134,27 @@ func configureGrpcRouters(
 	groupPath, groupHandler := v1connect.NewGroupServiceHandler(groupService)
 	connectHandlers[groupPath] = withCORS(groupHandler)
 
+	// Phase 4 services migrated to Connect RPC
+	sheetService := apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile)
+	sheetPath, sheetHandler := v1connect.NewSheetServiceHandler(sheetService)
+	connectHandlers[sheetPath] = withCORS(sheetHandler)
+
+	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)
+	sqlPath, sqlHandler := v1connect.NewSQLServiceHandler(sqlService)
+	connectHandlers[sqlPath] = withCORS(sqlHandler)
+
+	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, metricReporter)
+	issuePath, issueHandler := v1connect.NewIssueServiceHandler(issueService)
+	connectHandlers[issuePath] = withCORS(issueHandler)
+
+	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
+	rolloutPath, rolloutHandler := v1connect.NewRolloutServiceHandler(rolloutService)
+	connectHandlers[rolloutPath] = withCORS(rolloutHandler)
+
+	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, stateCfg, profile, iamManager)
+	planPath, planHandler := v1connect.NewPlanServiceHandler(planService)
+	connectHandlers[planPath] = withCORS(planHandler)
+
 	// Register services.
 	v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(
 		stores,
@@ -148,18 +169,14 @@ func configureGrpcRouters(
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(grpcServer, apiv1.NewIdentityProviderService(stores, licenseService))
 	// SettingService is now handled by Connect RPC
-	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)
-	v1pb.RegisterSQLServiceServer(grpcServer, sqlService)
+	// SQLService is now handled by Connect RPC
 	releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory)
 	v1pb.RegisterReleaseServiceServer(grpcServer, releaseService)
-	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, stateCfg, profile, iamManager)
-	v1pb.RegisterPlanServiceServer(grpcServer, planService)
-	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, metricReporter)
-	v1pb.RegisterIssueServiceServer(grpcServer, issueService)
-	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
-	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
+	// PlanService is now handled by Connect RPC
+	// IssueService is now handled by Connect RPC
+	// RolloutService is now handled by Connect RPC
 	// RoleService is now handled by Connect RPC
-	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile))
+	// SheetService is now handled by Connect RPC
 	// DatabaseGroupService is now handled by Connect RPC
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
 	// GroupService is now handled by Connect RPC
@@ -201,31 +218,21 @@ func configureGrpcRouters(
 		return nil, err
 	}
 	// InstanceService is now handled by Connect RPC
-	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// IssueService is now handled by Connect RPC
 	if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterPlanServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// PlanService is now handled by Connect RPC
 	// ProjectService is now handled by Connect RPC
 	if err := v1pb.RegisterReviewConfigServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	// RiskService is now handled by Connect RPC
 	// RoleService is now handled by Connect RPC
-	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterSQLServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// RolloutService is now handled by Connect RPC
+	// SQLService is now handled by Connect RPC
 	// SettingService is now handled by Connect RPC
-	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
+	// SheetService is now handled by Connect RPC
 	if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}

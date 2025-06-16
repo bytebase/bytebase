@@ -14,7 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-	v1connect "github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // GroupService implements the group service.
@@ -54,7 +54,7 @@ func (s *GroupService) GetGroup(ctx context.Context, req *connect.Request[v1pb.G
 }
 
 // ListGroups lists all groups.
-func (s *GroupService) ListGroups(ctx context.Context, req *connect.Request[v1pb.ListGroupsRequest]) (*connect.Response[v1pb.ListGroupsResponse], error) {
+func (s *GroupService) ListGroups(ctx context.Context, _ *connect.Request[v1pb.ListGroupsRequest]) (*connect.Response[v1pb.ListGroupsResponse], error) {
 	groups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

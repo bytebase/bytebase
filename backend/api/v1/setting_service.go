@@ -78,7 +78,7 @@ var whitelistSettings = []storepb.SettingName{
 }
 
 // ListSettings lists all settings.
-func (s *SettingService) ListSettings(ctx context.Context, req *connect.Request[v1pb.ListSettingsRequest]) (*connect.Response[v1pb.ListSettingsResponse], error) {
+func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1pb.ListSettingsRequest]) (*connect.Response[v1pb.ListSettingsResponse], error) {
 	settings, err := s.store.ListSettingV2(ctx, &store.FindSettingMessage{})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list settings: %v", err)
