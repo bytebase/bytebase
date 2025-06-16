@@ -1432,7 +1432,7 @@ func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maxi
 
 // validateExpirationInExpression validates the IAM policy expression.
 // Currently only validate the following expression:
-// * req.Msg.time < timestamp("2021-01-01T00:00:00Z")
+// * request.time < timestamp("2021-01-01T00:00:00Z")
 //
 // Other expressions will be ignored.
 func validateExpirationInExpression(expr string, maximumRoleExpiration *durationpb.Duration) error {
@@ -1471,7 +1471,7 @@ func validateExpirationInExpression(expr string, maximumRoleExpiration *duration
 					}
 				}
 				return nil
-			// Only handle "req.Msg.time < timestamp("2021-01-01T00:00:00Z").
+			// Only handle "request.time < timestamp("2021-01-01T00:00:00Z").
 			case "_<_":
 				if maximumRoleExpiration == nil {
 					return nil
@@ -1482,7 +1482,7 @@ func validateExpirationInExpression(expr string, maximumRoleExpiration *duration
 					switch arg.Kind() {
 					case celast.SelectKind:
 						variable := fmt.Sprintf("%s.%s", arg.AsSelect().Operand().AsIdent(), arg.AsSelect().FieldName())
-						if variable != "req.Msg.time" {
+						if variable != "request.time" {
 							return errors.Errorf("unexpected variable %v", variable)
 						}
 					case celast.CallKind:
