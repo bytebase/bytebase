@@ -52,7 +52,6 @@ func withCORS(h http.Handler) http.Handler {
 func configureGrpcRouters(
 	ctx context.Context,
 	mux *grpcruntime.ServeMux,
-	_ *grpc.Server,
 	stores *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
