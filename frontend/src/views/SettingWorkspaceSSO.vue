@@ -30,6 +30,7 @@
     <IdentityProviderTable
       :identity-provider-list="identityProviderList"
       :bordered="true"
+      :loading="state.isLoading"
     />
   </div>
 
