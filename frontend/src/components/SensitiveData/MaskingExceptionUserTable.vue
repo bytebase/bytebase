@@ -230,12 +230,13 @@ const getMemberBinding = (access: AccessUser): string => {
 
 const updateAccessUserList = async () => {
   if (!ready.value) {
-    return [];
+    return;
   }
 
   if (!policy.value || !policy.value.maskingExceptionPolicy) {
+    state.rawAccessList = [];
     state.loading = false;
-    return [];
+    return;
   }
 
   // Exec data merge, we will merge data with same expiration time and level.
