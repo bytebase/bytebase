@@ -339,7 +339,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	}
 
 	s.muxServer = cmux.New(listener)
-	grpcListener := s.muxServer.MatchWithWriters(cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
+	grpcListener := s.muxServer.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
 	httpListener := s.muxServer.Match(cmux.HTTP1Fast(), cmux.Any())
 	s.echoServer.Listener = httpListener
 
