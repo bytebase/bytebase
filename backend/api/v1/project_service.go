@@ -490,6 +490,104 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(convertToProject(project)), nil
 }
 
+// BatchDeleteProjects deletes multiple projects in batch.
+func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *connect.Request[v1pb.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error) {
+	if len(request.Msg.Names) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "names cannot be empty")
+	}
+
+	// Phase 1: Load all projects and check permissions
+	var projects []*store.ProjectMessage
+	for _, name := range request.Msg.Names {
+		project, err := s.getProjectMessage(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+		if project.Deleted {
+			return nil, status.Errorf(codes.NotFound, "project %q has already been deleted", name)
+		}
+		if project.ResourceID == common.DefaultProjectID {
+			return nil, status.Errorf(codes.InvalidArgument, "default project cannot be deleted")
+		}
+		projects = append(projects, project)
+	}
+
+	// Phase 2: Check dependencies for all projects if force is false
+	if !request.Msg.Force {
+		var blockedProjects []string
+		for _, project := range projects {
+			// Check for open issues
+			openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{
+				ProjectIDs: &[]string{project.ResourceID},
+				StatusList: []storepb.Issue_Status{storepb.Issue_OPEN},
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if len(openIssues) > 0 {
+				blockedProjects = append(blockedProjects, project.ResourceID)
+				continue
+			}
+
+			// Check for databases
+			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+				ProjectID:   &project.ResourceID,
+				ShowDeleted: true,
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if len(databases) > 0 {
+				blockedProjects = append(blockedProjects, project.ResourceID)
+			}
+		}
+
+		if len(blockedProjects) > 0 {
+			return nil, status.Errorf(codes.FailedPrecondition,
+				"the following projects have open issues or databases and cannot be deleted: %v. Use force=true to move databases to default project",
+				blockedProjects)
+		}
+	} else {
+		// Phase 3: Execute deletions
+		// If force is true, we need to move databases to default project
+		var dbs []*store.DatabaseMessage
+		for _, project := range projects {
+			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+				ProjectID:   &project.ResourceID,
+				ShowDeleted: true,
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			dbs = append(dbs, databases...)
+		}
+		if len(dbs) > 0 {
+			defaultProject := common.DefaultProjectID
+			// Note: BatchUpdateDatabases already uses transactions internally
+			if _, err := s.store.BatchUpdateDatabases(ctx, dbs, &store.BatchUpdateDatabases{
+				ProjectID: &defaultProject,
+			}); err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+	}
+
+	// Phase 4: Mark all projects as deleted.
+	var updatePatches []*store.UpdateProjectMessage
+	for _, project := range projects {
+		updatePatches = append(updatePatches, &store.UpdateProjectMessage{
+			ResourceID: project.ResourceID,
+			Delete:     &deletePatch,
+		})
+	}
+
+	if _, err := s.store.BatchUpdateProjectsV2(ctx, updatePatches); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
 // GetIamPolicy returns the IAM policy for a project.
 func (s *ProjectService) GetIamPolicy(ctx context.Context, req *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	projectID, err := common.GetProjectID(req.Msg.Resource)

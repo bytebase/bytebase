@@ -13,6 +13,7 @@ import RichDatabaseName from "./RichDatabaseName.vue";
 export * from "./Instance";
 export * from "./User";
 export * from "./DatabaseV1Table";
+export * from "./Project";
 export {
   DatabaseV1Name,
   RichDatabaseName,

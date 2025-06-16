@@ -1775,6 +1775,21 @@
       "self": "Miễn trừ Che giấu",
       "grant-exemption": "Cấp Miễn trừ",
       "revoke-exemption-title": "Xóa cả miễn trừ che giấu xuất và truy vấn cho {member}?"
+    },
+    "batch": {
+      "selected": "{count} dự án đã chọn | {count} dự án đã chọn",
+      "archive": {
+        "title": "Lưu trữ {count} Dự án? | Lưu trữ {count} Dự án?",
+        "description": "Thao tác này sẽ lưu trữ các dự án đã chọn. Bạn có thể khôi phục chúng sau nếu cần.",
+        "success": "Đã lưu trữ thành công {count} dự án | Đã lưu trữ thành công {count} dự án",
+        "error": "Không lưu trữ được dự án"
+      },
+      "force-archive-description": "Buộc lưu trữ ngay cả khi dự án có cơ sở dữ liệu (cơ sở dữ liệu sẽ được chuyển đến dự án mặc định)",
+      "projects-to-archive": "Dự án để lưu trữ",
+      "resource-warning": {
+        "title": "Dự án có nguồn lực",
+        "description": "Các dự án sau đây chứa cơ sở dữ liệu hoặc các vấn đề chưa giải quyết:"
+      }
     }
   },
   "data-source": {
