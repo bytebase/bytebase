@@ -1029,9 +1029,9 @@
     "add-spec": "Add Specification",
     "change-type": "Change Type",
     "schema-migration": "Schema Migration",
-    "schema-migration-description": "Modify database schema (DDL)",
+    "schema-migration-description": "Database structural changes (DDL) including tables, columns, indexes, constraints and schema alterations",
     "data-change": "Data Change",
-    "data-change-description": "Modify data (DML)",
+    "data-change-description":  "Database content modifications (DML) including inserts, updates, deletes and data transformations",
     "select-targets": "Select Targets",
     "overview": {
       "description": "View and manage all specifications in this plan",

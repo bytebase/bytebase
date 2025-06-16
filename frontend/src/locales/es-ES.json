@@ -1029,9 +1029,9 @@
     "add-spec": "Agregar especificación",
     "change-type": "Cambiar tipo",
     "schema-migration": "Migración de esquemas",
-    "schema-migration-description": "Modificar el esquema de la base de datos (DDL)",
+    "schema-migration-description": "Cambios estructurales de la base de datos (DDL), incluidas tablas, columnas, índices, restricciones y modificaciones del esquema",
     "data-change": "Cambio de datos",
-    "data-change-description": "Modificar datos (DML)",
+    "data-change-description": "Modificaciones del contenido de la base de datos (DML), incluidas inserciones, actualizaciones, eliminaciones y transformaciones de datos",
     "select-targets": "Seleccionar objetivos",
     "overview": {
       "description": "Ver y administrar todas las especificaciones de este plan",

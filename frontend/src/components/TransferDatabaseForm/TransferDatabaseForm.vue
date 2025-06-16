@@ -28,7 +28,7 @@
         </template>
         <div v-else class="w-full relative">
           <PagedDatabaseTable
-            mode="PROJECT"
+            mode="PROJECT_SHORT"
             :parent="sourceProjectName"
             :filter="filter"
             :show-selection="true"

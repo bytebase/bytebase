@@ -1029,9 +1029,9 @@
     "add-spec": "仕様を追加",
     "change-type": "変更タイプ",
     "schema-migration": "スキーマの移行",
-    "schema-migration-description": "データベーススキーマの変更（DDL）",
+    "schema-migration-description": "テーブル、列、インデックス、制約、スキーマの変更を含むデータベース構造の変更 (DDL)",
     "data-change": "データの変更",
-    "data-change-description": "データの変更 (DML)",
+    "data-change-description": "挿入、更新、削除、データ変換を含むデータベースコンテンツの変更（DML）",
     "select-targets": "ターゲットを選択",
     "overview": {
       "description": "このプランのすべての仕様を表示および管理します",
