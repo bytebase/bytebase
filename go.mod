@@ -82,7 +82,6 @@ require (
 	github.com/shopspring/decimal v1.4.0
 	github.com/sijms/go-ora/v2 v2.8.24
 	github.com/snowflakedb/gosnowflake v1.14.1
-	github.com/soheilhy/cmux v0.1.5
 	github.com/sourcegraph/conc v0.3.0
 	github.com/sourcegraph/jsonrpc2 v0.2.1
 	github.com/spf13/cobra v1.9.1
