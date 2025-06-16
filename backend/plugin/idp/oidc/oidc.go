@@ -90,18 +90,18 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 // The nonce is used for request validation, which should be the same value as
 // it was sent to the issuer as part of the Authentication Request, see
 // https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest.
-func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, nonce string) (*storepb.IdentityProviderUserInfo, error) {
+func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, nonce string) (*storepb.IdentityProviderUserInfo, map[string]any, error) {
 	// Extract the ID Token from the access token, see http://openid.net/specs/openid-connect-core-1_0.html#TokenResponse.
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok {
-		return nil, errors.New(`missing "id_token" from the issuer's authorization response`)
+		return nil, nil, errors.New(`missing "id_token" from the issuer's authorization response`)
 	}
 
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	verifier := p.provider.Verifier(&oidc.Config{ClientID: p.config.ClientId})
 	idToken, err := verifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		return nil, errors.Wrap(err, "verify raw ID Token")
+		return nil, nil, errors.Wrap(err, "verify raw ID Token")
 	}
 
 	// NOTE: Skip checking nonce if the expected nonce is empty. It is OK because
@@ -109,18 +109,18 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	// and some IdP implementations are just behaving strangely that would return a
 	// random nonce when we send an empty nonce to them.
 	if nonce != "" && nonce != idToken.Nonce {
-		return nil, errors.Errorf("mismatched nonce, want %q but got %q", nonce, idToken.Nonce)
+		return nil, nil, errors.Errorf("mismatched nonce, want %q but got %q", nonce, idToken.Nonce)
 	}
 
 	rawUserInfo, err := p.provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
 	if err != nil {
-		return nil, errors.Wrap(err, "fetch user info")
+		return nil, nil, errors.Wrap(err, "fetch user info")
 	}
 
 	var claims map[string]any
 	err = rawUserInfo.Claims(&claims)
 	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal claims")
+		return nil, nil, errors.Wrap(err, "unmarshal claims")
 	}
 	slog.Debug("User info", slog.Any("claims", claims))
 
@@ -129,7 +129,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		userInfo.Identifier = v
 	}
 	if userInfo.Identifier == "" {
-		return nil, errors.Errorf("the field %q is not found in claims or has empty value", p.config.FieldMapping.Identifier)
+		return nil, claims, errors.Errorf("the field %q is not found in claims or has empty value", p.config.FieldMapping.Identifier)
 	}
 
 	// Best effort to map optional fields
@@ -161,7 +161,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 			}
 		}
 	}
-	return userInfo, nil
+	return userInfo, claims, nil
 }
 
 // The common OIDC configuration response.

@@ -380,14 +380,12 @@
               </div>
 
               <div>
-                <NButton
+                <TestConnection
                   :disabled="!allowTestConnection"
-                  @click="testConnection"
-                  size="large"
-                  class="text-base"
-                >
-                  {{ $t("identity-provider.test-connection") }}
-                </NButton>
+                  :size="'large'"
+                  :is-creating="true"
+                  :idp="idpToCreate"
+                />
               </div>
             </div>
           </div>
@@ -482,6 +480,7 @@ import type { OAuth2IdentityProviderTemplate } from "@/utils";
 import { identityProviderTypeToString } from "@/utils";
 import IdentityProviderExternalURL from "./IdentityProviderExternalURL.vue";
 import IdentityProviderForm from "./IdentityProviderForm.vue";
+import TestConnection from "./TestConnection.vue";
 
 interface IdentityProviderTemplate extends OAuth2IdentityProviderTemplate {
   feature: PlanFeature;
@@ -532,6 +531,37 @@ const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const resourceIdValue = ref<string>("");
 
 // Computed
+const idpToCreate = computed(
+  (): IdentityProvider => ({
+    name: resourceIdField.value?.resourceId || resourceIdValue.value,
+    title: identityProvider.value.title,
+    domain: identityProvider.value.domain,
+    type: selectedType.value,
+    config: {
+      ...(selectedType.value === IdentityProviderType.OAUTH2 && {
+        oauth2Config: {
+          ...configForOAuth2.value,
+          scopes: scopesStringOfConfig.value.split(" ").filter(Boolean),
+          fieldMapping,
+        },
+      }),
+      ...(selectedType.value === IdentityProviderType.OIDC && {
+        oidcConfig: {
+          ...configForOIDC.value,
+          scopes: scopesStringOfConfig.value.split(" ").filter(Boolean),
+          fieldMapping,
+        },
+      }),
+      ...(selectedType.value === IdentityProviderType.LDAP && {
+        ldapConfig: {
+          ...configForLDAP.value,
+          fieldMapping,
+        },
+      }),
+    },
+  })
+);
+
 const externalUrl = computed(
   () => useActuatorV1Store().serverInfo?.externalUrl ?? ""
 );
@@ -878,11 +908,6 @@ const handleNextStep = () => {
   }
 };
 
-const testConnection = async () => {
-  // Implementation would be similar to the original component
-  // TODO: Implement test connection functionality
-};
-
 const handleCreate = async () => {
   if (!canCreate.value) return;
 
@@ -894,34 +919,9 @@ const handleCreate = async () => {
       throw new Error("Resource ID is required");
     }
 
-    const createdProvider = await identityProviderStore.createIdentityProvider({
-      name: finalResourceId,
-      title: identityProvider.value.title,
-      domain: identityProvider.value.domain,
-      type: selectedType.value,
-      config: {
-        ...(selectedType.value === IdentityProviderType.OAUTH2 && {
-          oauth2Config: {
-            ...configForOAuth2.value,
-            scopes: scopesStringOfConfig.value.split(" ").filter(Boolean),
-            fieldMapping,
-          },
-        }),
-        ...(selectedType.value === IdentityProviderType.OIDC && {
-          oidcConfig: {
-            ...configForOIDC.value,
-            scopes: scopesStringOfConfig.value.split(" ").filter(Boolean),
-            fieldMapping,
-          },
-        }),
-        ...(selectedType.value === IdentityProviderType.LDAP && {
-          ldapConfig: {
-            ...configForLDAP.value,
-            fieldMapping,
-          },
-        }),
-      },
-    });
+    const createdProvider = await identityProviderStore.createIdentityProvider(
+      idpToCreate.value
+    );
 
     pushNotification({
       module: "bytebase",

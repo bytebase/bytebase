@@ -2292,6 +2292,9 @@
   },
   "identity-provider": {
     "test-connection": "テスト接続",
+    "test-connection-success": "テスト接続に成功しました",
+    "claims-description": "IDプロバイダーから以下のクレームが返されました。この情報は、フィールドマッピングの設定に役立ちます。",
+    "no-claims": "アイデンティティ プロバイダーから返されるクレームはありません。",
     "identity-provider-created": "ID プロバイダが正常に作成されました",
     "identity-provider-deleted": "ID プロバイダが正常に削除されました",
     "identity-provider-update-failed": "IDプロバイダの更新に失敗しました",

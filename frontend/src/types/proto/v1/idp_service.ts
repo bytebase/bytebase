@@ -219,6 +219,13 @@ export interface OAuth2IdentityProviderTestRequestContext {
 }
 
 export interface TestIdentityProviderResponse {
+  /** The map of claims returned by the identity provider. */
+  claims: { [key: string]: string };
+}
+
+export interface TestIdentityProviderResponse_ClaimsEntry {
+  key: string;
+  value: string;
 }
 
 export interface IdentityProvider {
@@ -973,11 +980,14 @@ export const OAuth2IdentityProviderTestRequestContext: MessageFns<OAuth2Identity
 };
 
 function createBaseTestIdentityProviderResponse(): TestIdentityProviderResponse {
-  return {};
+  return { claims: {} };
 }
 
 export const TestIdentityProviderResponse: MessageFns<TestIdentityProviderResponse> = {
-  encode(_: TestIdentityProviderResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(message: TestIdentityProviderResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    Object.entries(message.claims).forEach(([key, value]) => {
+      TestIdentityProviderResponse_ClaimsEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).join();
+    });
     return writer;
   },
 
@@ -988,6 +998,17 @@ export const TestIdentityProviderResponse: MessageFns<TestIdentityProviderRespon
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          const entry1 = TestIdentityProviderResponse_ClaimsEntry.decode(reader, reader.uint32());
+          if (entry1.value !== undefined) {
+            message.claims[entry1.key] = entry1.value;
+          }
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -997,20 +1018,118 @@ export const TestIdentityProviderResponse: MessageFns<TestIdentityProviderRespon
     return message;
   },
 
-  fromJSON(_: any): TestIdentityProviderResponse {
-    return {};
+  fromJSON(object: any): TestIdentityProviderResponse {
+    return {
+      claims: isObject(object.claims)
+        ? Object.entries(object.claims).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+    };
   },
 
-  toJSON(_: TestIdentityProviderResponse): unknown {
+  toJSON(message: TestIdentityProviderResponse): unknown {
     const obj: any = {};
+    if (message.claims) {
+      const entries = Object.entries(message.claims);
+      if (entries.length > 0) {
+        obj.claims = {};
+        entries.forEach(([k, v]) => {
+          obj.claims[k] = v;
+        });
+      }
+    }
     return obj;
   },
 
   create(base?: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
     return TestIdentityProviderResponse.fromPartial(base ?? {});
   },
-  fromPartial(_: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
+  fromPartial(object: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
     const message = createBaseTestIdentityProviderResponse();
+    message.claims = Object.entries(object.claims ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = globalThis.String(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBaseTestIdentityProviderResponse_ClaimsEntry(): TestIdentityProviderResponse_ClaimsEntry {
+  return { key: "", value: "" };
+}
+
+export const TestIdentityProviderResponse_ClaimsEntry: MessageFns<TestIdentityProviderResponse_ClaimsEntry> = {
+  encode(message: TestIdentityProviderResponse_ClaimsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TestIdentityProviderResponse_ClaimsEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTestIdentityProviderResponse_ClaimsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TestIdentityProviderResponse_ClaimsEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: TestIdentityProviderResponse_ClaimsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TestIdentityProviderResponse_ClaimsEntry>): TestIdentityProviderResponse_ClaimsEntry {
+    return TestIdentityProviderResponse_ClaimsEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TestIdentityProviderResponse_ClaimsEntry>): TestIdentityProviderResponse_ClaimsEntry {
+    const message = createBaseTestIdentityProviderResponse_ClaimsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -2357,6 +2476,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

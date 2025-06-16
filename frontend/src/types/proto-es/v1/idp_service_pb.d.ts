@@ -221,6 +221,12 @@ export declare const OAuth2IdentityProviderTestRequestContextSchema: GenMessage<
  * @generated from message bytebase.v1.TestIdentityProviderResponse
  */
 export declare type TestIdentityProviderResponse = Message<"bytebase.v1.TestIdentityProviderResponse"> & {
+  /**
+   * The map of claims returned by the identity provider.
+   *
+   * @generated from field: map<string, string> claims = 1;
+   */
+  claims: { [key: string]: string };
 };
 
 /**
