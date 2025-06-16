@@ -446,7 +446,6 @@
         "template-description": "Choose a pre-configured template or set up a custom OAuth 2.0 provider",
         "name": "Name",
         "name-description": "The display name to be shown to the users",
-        "resource-id": "Resource ID",
         "domain": "Domain",
         "domain-description": "The identity provider's domain name",
         "identity-provider-needed-information": "Create your SSO application with the following information.",

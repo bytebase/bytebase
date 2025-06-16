@@ -446,7 +446,6 @@
         "template-description": "Chọn một mẫu được cấu hình sẵn hoặc thiết lập một nhà cung cấp OAuth 2.0 tùy chỉnh",
         "name": "Tên",
         "name-description": "Tên hiển thị sẽ được hiển thị cho người dùng",
-        "resource-id": "ID tài nguyên",
         "domain": "Tên miền",
         "domain-description": "Tên miền của nhà cung cấp danh tính",
         "identity-provider-needed-information": "Tạo ứng dụng SSO của bạn với các thông tin sau.",

@@ -446,7 +446,6 @@
         "template-description": "选择预配置的模板或自定义 OAuth 2.0 提供商。",
         "name": "名称",
         "name-description": "显示给登录用户的名称",
-        "resource-id": "资源 ID",
         "domain": "域名",
         "domain-description": "OAuth 提供商的域名",
         "identity-provider-needed-information": "用以下信息创建您的 SSO 应用程序。",

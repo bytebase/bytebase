@@ -446,7 +446,6 @@
         "template-description": "Elija una plantilla preconfigurada o configure un proveedor OAuth 2.0 personalizado",
         "name": "Nombre",
         "name-description": "El nombre de visualización que se mostrará a los usuarios",
-        "resource-id": "ID de recurso",
         "domain": "Dominio",
         "domain-description": "El nombre de dominio del proveedor de identidad",
         "identity-provider-needed-information": "Cree su aplicación SSO con la siguiente información.",
