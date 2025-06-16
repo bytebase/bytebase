@@ -1025,7 +1025,7 @@
     }
   },
   "plan": {
-    "new-plan": "新计划",
+    "new-plan": "创建变更计划",
     "add-spec": "添加变更项",
     "change-type": "变更类型",
     "schema-migration": "Schema 变更",
