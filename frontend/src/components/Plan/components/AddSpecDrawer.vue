@@ -4,12 +4,12 @@
     :width="640"
     :mask-closable="true"
     placement="right"
-    class="!w-[100vw] sm:!w-[80vw]"
+    class="!w-[1024px] !max-w-[100vw]"
   >
     <DrawerContent :title="title ?? $t('plan.add-spec')" closable>
       <div class="flex flex-col gap-y-4">
         <!-- Steps indicator -->
-        <NSteps :current="currentStep" size="small">
+        <NSteps :current="currentStep">
           <NStep
             :title="
               currentStep === 1
@@ -29,26 +29,66 @@
             <NRadioGroup
               v-model:value="changeType"
               size="large"
-              class="space-x-3"
+              class="space-y-4 w-full"
             >
-              <NRadio value="MIGRATE">
-                <div class="flex items-center gap-2">
-                  <FileDiffIcon class="w-5 h-5" />
-                  <span>{{ $t("plan.schema-migration") }}</span>
-                </div>
-                <div class="text-sm text-control-light ml-7">
-                  {{ $t("plan.schema-migration-description") }}
-                </div>
-              </NRadio>
-              <NRadio value="DATA">
-                <div class="flex items-center gap-2">
-                  <EditIcon class="w-5 h-5" />
-                  <span>{{ $t("plan.data-change") }}</span>
-                </div>
-                <div class="text-sm text-control-light ml-7">
-                  {{ $t("plan.data-change-description") }}
-                </div>
-              </NRadio>
+              <div
+                class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                :class="{
+                  'border-blue-500 bg-blue-50':
+                    changeType === Plan_ChangeDatabaseConfig_Type.MIGRATE,
+                }"
+              >
+                <NRadio
+                  :value="Plan_ChangeDatabaseConfig_Type.MIGRATE"
+                  class="w-full"
+                >
+                  <div class="flex items-start space-x-3 w-full">
+                    <FileDiffIcon
+                      class="w-6 h-6 mt-1 flex-shrink-0"
+                      :stroke-width="1.5"
+                    />
+                    <div class="flex-1">
+                      <div class="flex items-center space-x-2">
+                        <span class="text-lg font-medium text-gray-900">
+                          <span>{{ $t("plan.schema-migration") }}</span>
+                        </span>
+                      </div>
+                      <p class="text-sm text-gray-600 mt-1">
+                        {{ $t("plan.schema-migration-description") }}
+                      </p>
+                    </div>
+                  </div>
+                </NRadio>
+              </div>
+              <div
+                class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                :class="{
+                  'border-blue-500 bg-blue-50':
+                    changeType === Plan_ChangeDatabaseConfig_Type.DATA,
+                }"
+              >
+                <NRadio
+                  :value="Plan_ChangeDatabaseConfig_Type.DATA"
+                  class="w-full"
+                >
+                  <div class="flex items-start space-x-3 w-full">
+                    <EditIcon
+                      class="w-6 h-6 mt-1 flex-shrink-0"
+                      :stroke-width="1.5"
+                    />
+                    <div class="flex-1">
+                      <div class="flex items-center space-x-2">
+                        <span class="text-lg font-medium text-gray-900">
+                          <span>{{ $t("plan.data-change") }}</span>
+                        </span>
+                      </div>
+                      <p class="text-sm text-gray-600 mt-1">
+                        {{ $t("plan.data-change-description") }}
+                      </p>
+                    </div>
+                  </div>
+                </NRadio>
+              </div>
             </NRadioGroup>
           </template>
 

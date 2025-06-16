@@ -113,6 +113,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
   const SCHEMA_VERSION: DatabaseDataTableColumn = {
     key: "schema-version",
     title: t("common.schema-version"),
+    minWidth: 140,
     resizable: true,
     hide: props.schemaless,
     render: (data) => (data as ComposedDatabase).schemaVersion || "-",
