@@ -1775,6 +1775,21 @@
       "self": "Masking Exemptions",
       "grant-exemption": "Grant Exemption",
       "revoke-exemption-title": "Remove both export and query masking exemptions for {member}?"
+    },
+    "batch": {
+      "selected": "{count} project selected | {count} projects selected",
+      "archive": {
+        "title": "Archive {count} Project? | Archive {count} Projects?",
+        "description": "This will archive the selected projects. You can restore them later if needed.",
+        "success": "Successfully archived {count} project | Successfully archived {count} projects",
+        "error": "Failed to archive projects"
+      },
+      "force-archive-description": "Force archive even if projects have databases (databases will be moved to default project)",
+      "projects-to-archive": "Projects to archive",
+      "resource-warning": {
+        "title": "Projects with Resources",
+        "description": "The following projects contain databases or open issues:"
+      }
     }
   },
   "data-source": {

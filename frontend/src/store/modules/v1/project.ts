@@ -159,6 +159,26 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     project.state = State.DELETED;
     await upsertProjectMap([project]);
   };
+  const batchDeleteProjects = async (projectNames: string[], force = false) => {
+    await projectServiceClient.batchDeleteProjects({
+      names: projectNames,
+      force,
+    });
+    // Update local cache - mark all projects as deleted
+    const projects = projectNames.map(name => {
+      const project = getProjectByName(name);
+      if (project && project.name !== UNKNOWN_PROJECT_NAME) {
+        // Extract Project properties (excluding iamPolicy)
+        const { iamPolicy: _iamPolicy, ...projectData } = project;
+        return { ...projectData, state: State.DELETED };
+      }
+      return null;
+    }).filter((p): p is Project => p !== null);
+    
+    if (projects.length > 0) {
+      await upsertProjectMap(projects);
+    }
+  };
   const restoreProject = async (project: Project) => {
     await projectServiceClient.undeleteProject({
       name: project.name,
@@ -176,6 +196,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     createProject,
     updateProject,
     archiveProject,
+    batchDeleteProjects,
     restoreProject,
     updateProjectCache,
     fetchProjectList,

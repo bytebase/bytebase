@@ -1775,6 +1775,21 @@
       "self": "Exenciones de Enmascaramiento",
       "grant-exemption": "Conceder Exención",
       "revoke-exemption-title": "Eliminar tanto las exenciones de exportación como de consulta de enmascaramiento para {member}?"
+    },
+    "batch": {
+      "selected": "{count} proyecto seleccionado | {count} proyectos seleccionados",
+      "archive": {
+        "title": "¿Archivar {count} Proyecto? | ¿Archivar {count} Proyectos?",
+        "description": "Esto archivará los proyectos seleccionados. Podrás restaurarlos más tarde si lo necesitas.",
+        "success": "Proyecto {count} archivado correctamente | Proyectos {count} archivados correctamente",
+        "error": "No se pudieron archivar los proyectos"
+      },
+      "force-archive-description": "Forzar el archivo incluso si los proyectos tienen bases de datos (las bases de datos se moverán al proyecto predeterminado)",
+      "projects-to-archive": "Proyectos para archivar",
+      "resource-warning": {
+        "title": "Proyectos con recursos",
+        "description": "Los siguientes proyectos contienen bases de datos o problemas abiertos:"
+      }
     }
   },
   "data-source": {

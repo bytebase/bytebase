@@ -265,7 +265,10 @@ export declare type DeleteProjectRequest = Message<"bytebase.v1.DeleteProjectReq
   name: string;
 
   /**
-   * If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+   * If set to true, any databases from this project will be moved to default project.
+   * Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+   * Open issues will remain open but associated with the deleted project.
+   * If set to false, the operation will fail if the project has databases or open issues.
    *
    * @generated from field: bool force = 2;
    */
@@ -296,6 +299,35 @@ export declare type UndeleteProjectRequest = Message<"bytebase.v1.UndeleteProjec
  * Use `create(UndeleteProjectRequestSchema)` to create a new message.
  */
 export declare const UndeleteProjectRequestSchema: GenMessage<UndeleteProjectRequest>;
+
+/**
+ * @generated from message bytebase.v1.BatchDeleteProjectsRequest
+ */
+export declare type BatchDeleteProjectsRequest = Message<"bytebase.v1.BatchDeleteProjectsRequest"> & {
+  /**
+   * The names of the projects to delete.
+   * Format: projects/{project}
+   *
+   * @generated from field: repeated string names = 1;
+   */
+  names: string[];
+
+  /**
+   * If set to true, any databases from this project will be moved to default project.
+   * Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+   * Open issues will remain open but associated with the deleted project.
+   * If set to false, the operation will fail if the project has databases or open issues.
+   *
+   * @generated from field: bool force = 2;
+   */
+  force: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.BatchDeleteProjectsRequest.
+ * Use `create(BatchDeleteProjectsRequestSchema)` to create a new message.
+ */
+export declare const BatchDeleteProjectsRequestSchema: GenMessage<BatchDeleteProjectsRequest>;
 
 /**
  * @generated from message bytebase.v1.BatchGetIamPolicyRequest
@@ -911,6 +943,14 @@ export declare const ProjectService: GenService<{
     methodKind: "unary";
     input: typeof UndeleteProjectRequestSchema;
     output: typeof ProjectSchema;
+  },
+  /**
+   * @generated from rpc bytebase.v1.ProjectService.BatchDeleteProjects
+   */
+  batchDeleteProjects: {
+    methodKind: "unary";
+    input: typeof BatchDeleteProjectsRequestSchema;
+    output: typeof EmptySchema;
   },
   /**
    * @generated from rpc bytebase.v1.ProjectService.GetIamPolicy

@@ -9,8 +9,10 @@
     :bordered="bordered"
     :loading="loading"
     :row-key="(data: ComposedProject) => data.name"
+    :checked-row-keys="shouldShowSelection ? selectedProjectNames : undefined"
     :row-props="rowProps"
     :paginate-single-page="false"
+    @update:checked-row-keys="updateSelectedProjects"
   />
 </template>
 
@@ -20,14 +22,12 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useCurrentProject } from "@/components/Project/useCurrentProject";
-import { useProjectSidebar } from "@/components/Project/useProjectSidebar";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import { extractProjectResourceName } from "@/utils";
+import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 
 type ProjectDataTableColumn = DataTableColumn<ComposedProject> & {
@@ -43,36 +43,57 @@ const props = withDefaults(
     keyword?: string;
     // If true, the default behavior of the row click event will be prevented.
     preventDefault?: boolean;
+    // Selected project names for batch operations
+    selectedProjectNames?: string[];
+    // Whether to show selection checkboxes
+    showSelection?: boolean;
   }>(),
   {
     bordered: true,
     currentProject: undefined,
     keyword: undefined,
+    selectedProjectNames: () => [],
+    showSelection: true,
   }
 );
 
 const emit = defineEmits<{
   (event: "row-click", project: ComposedProject): void;
+  (event: "update:selected-project-names", projectNames: string[]): void;
 }>();
 
 const { t } = useI18n();
 const router = useRouter();
 
-const { project } = useCurrentProject(
-  computed(() => ({
-    projectId: router.currentRoute.value.params.projectId as string,
-  }))
-);
-const { activeSidebar } = useProjectSidebar(project);
+
+const hasDeletePermission = computed(() => hasWorkspacePermissionV2('bb.projects.delete'));
+
+const shouldShowSelection = computed(() => props.showSelection && hasDeletePermission.value);
+
+const updateSelectedProjects = (checkedRowKeys: (string | number)[]) => {
+  emit("update:selected-project-names", checkedRowKeys as string[]);
+};
 
 const columnList = computed((): ProjectDataTableColumn[] => {
   return (
     [
       {
         key: "selection",
+        type: shouldShowSelection.value ? "selection" : undefined,
         width: 32,
-        hide: !props.currentProject,
-        render: (project) => {
+        hide: !shouldShowSelection.value && !props.currentProject,
+        disabled: shouldShowSelection.value ? (project: ComposedProject) => {
+          // Disable selection for default project
+          return extractProjectResourceName(project.name) === "default";
+        } : undefined,
+        cellProps: shouldShowSelection.value ? () => {
+          return {
+            onClick: (e: MouseEvent) => {
+              e.stopPropagation();
+            },
+          };
+        } : undefined,
+        render: shouldShowSelection.value ? undefined : (project) => {
           return (
             props.currentProject?.name === project.name && (
               <CheckIcon class="w-4 text-accent" />
@@ -115,23 +136,11 @@ const rowProps = (project: ComposedProject) => {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
       if (!props.preventDefault) {
-        let routeName = PROJECT_V1_ROUTE_DETAIL;
         const currentRouteName = router.currentRoute.value.name?.toString();
+        let routeName = PROJECT_V1_ROUTE_DETAIL;
+        
         if (currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD)) {
-          routeName = activeSidebar.value?.path ?? routeName;
-
-          const { flattenNavigationItems } = useProjectSidebar(
-            project,
-            router.currentRoute.value
-          );
-          // Otherwise, redirect to the project detail page.
-          if (
-            !flattenNavigationItems.value.find(
-              (item) => !item.hide && item.path === routeName
-            )
-          ) {
-            routeName = PROJECT_V1_ROUTE_DETAIL;
-          }
+          routeName = PROJECT_V1_ROUTE_DETAIL;
         }
 
         const route = router.resolve({
