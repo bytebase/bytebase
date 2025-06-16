@@ -168,7 +168,9 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     const projects = projectNames.map(name => {
       const project = getProjectByName(name);
       if (project && project.name !== UNKNOWN_PROJECT_NAME) {
-        return { ...project, state: State.DELETED };
+        // Extract Project properties (excluding iamPolicy)
+        const { iamPolicy: _iamPolicy, ...projectData } = project;
+        return { ...projectData, state: State.DELETED };
       }
       return null;
     }).filter((p): p is Project => p !== null);
