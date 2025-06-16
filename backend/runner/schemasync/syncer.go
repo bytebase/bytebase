@@ -22,10 +22,12 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -38,12 +40,13 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, profile *config.Profile, stateCfg *state.State) *Syncer {
+func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, profile *config.Profile, stateCfg *state.State, licenseService *enterprise.LicenseService) *Syncer {
 	return &Syncer{
-		store:     stores,
-		dbFactory: dbFactory,
-		profile:   profile,
-		stateCfg:  stateCfg,
+		store:          stores,
+		dbFactory:      dbFactory,
+		profile:        profile,
+		stateCfg:       stateCfg,
+		licenseService: licenseService,
 	}
 }
 
@@ -55,6 +58,7 @@ type Syncer struct {
 	dbFactory       *dbfactory.DBFactory
 	profile         *config.Profile
 	stateCfg        *state.State
+	licenseService  *enterprise.LicenseService
 	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
 }
 
@@ -403,7 +407,9 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		setUserCommentFromComment(databaseMetadata)
 	} else {
 		// Get classification from the comment.
-		setClassificationAndUserCommentFromComment(databaseMetadata, dbModelConfig, classificationConfig)
+		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION, instance); err == nil {
+			setClassificationAndUserCommentFromComment(databaseMetadata, dbModelConfig, classificationConfig)
+		}
 	}
 
 	d := false
