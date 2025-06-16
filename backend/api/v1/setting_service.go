@@ -253,7 +253,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			case "value.workspace_profile_setting_value.disallow_password_signin":
 				if payload.DisallowPasswordSignin {
 					// We should still allow users to turn it off.
-					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err != nil {
 						return nil, status.Error(codes.PermissionDenied, err.Error())
 					}
 

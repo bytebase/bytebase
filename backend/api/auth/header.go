@@ -10,12 +10,15 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // GatewayResponseModifier is the response modifier for grpc gateway.
 type GatewayResponseModifier struct {
-	Store *store.Store
+	Store          *store.Store
+	LicenseService *enterprise.LicenseService
 }
 
 // Modify is the mux option for modifying response header.
@@ -57,7 +60,7 @@ func (m *GatewayResponseModifier) processMetadata(ctx context.Context, md runtim
 	if isHTTPS {
 		sameSite = http.SameSiteNoneMode
 	}
-	tokenDuration := GetTokenDuration(ctx, m.Store)
+	tokenDuration := GetTokenDuration(ctx, m.Store, m.LicenseService)
 	http.SetCookie(response, &http.Cookie{
 		Name:  cookieName,
 		Value: value,
@@ -76,8 +79,13 @@ func (m *GatewayResponseModifier) processMetadata(ctx context.Context, md runtim
 	})
 }
 
-func GetTokenDuration(ctx context.Context, store *store.Store) time.Duration {
+func GetTokenDuration(ctx context.Context, store *store.Store, licenseService *enterprise.LicenseService) time.Duration {
 	tokenDuration := DefaultTokenDuration
+
+	// If the sign-in frequency control feature is not enabled, return default duration
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+		return tokenDuration
+	}
 
 	workspaceProfile, err := store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
