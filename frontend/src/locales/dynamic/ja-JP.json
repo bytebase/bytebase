@@ -173,6 +173,10 @@
         "title": "データエクスポート",
         "desc": "さまざまな形式でクエリ結果をエクスポートします。"
       },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "title": "データオフラインエクスポート",
+        "desc": "オフラインでの使用と分析のためにデータをエクスポートします。"
+      },
       "FEATURE_QUERY_HISTORY": {
         "title": "クエリ履歴",
         "desc": "検索機能を備えた完全なクエリ実行履歴にアクセスします。"
@@ -300,6 +304,10 @@
       "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
         "title": "メールドメイン制限",
         "desc": "指定されたメールドメインのユーザーのみにサインインを制限します。"
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "title": "プロジェクト管理",
+        "desc": "高度な機能でプロジェクトを管理および整理します。"
       },
       "FEATURE_ENVIRONMENT_MANAGEMENT": {
         "title": "環境管理",
