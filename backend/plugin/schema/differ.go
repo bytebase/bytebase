@@ -39,6 +39,9 @@ type MetadataDiff struct {
 
 	// Sequence changes
 	SequenceChanges []*SequenceDiff
+
+	// Enum type changes
+	EnumTypeChanges []*EnumTypeDiff
 }
 
 // nolint
@@ -152,6 +155,15 @@ type SequenceDiff struct {
 	SequenceName string
 	OldSequence  *storepb.SequenceMetadata
 	NewSequence  *storepb.SequenceMetadata
+}
+
+// EnumTypeDiff represents changes to an enum type.
+type EnumTypeDiff struct {
+	Action       MetadataDiffAction
+	SchemaName   string
+	EnumTypeName string
+	OldEnumType  *storepb.EnumTypeMetadata
+	NewEnumType  *storepb.EnumTypeMetadata
 }
 
 // GetDatabaseSchemaDiff compares two model.DatabaseSchema instances and returns the differences.
@@ -293,6 +305,18 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 			})
 		}
 	}
+
+	// Add all enum types
+	for _, enumProto := range schemaProto.EnumTypes {
+		if !enumProto.GetSkipDump() {
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &EnumTypeDiff{
+				Action:       MetadataDiffActionCreate,
+				SchemaName:   schemaName,
+				EnumTypeName: enumProto.Name,
+				NewEnumType:  enumProto,
+			})
+		}
+	}
 }
 
 // compareSchemaObjects compares objects between two schemas.
@@ -354,6 +378,9 @@ func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newS
 
 	// Compare sequences
 	compareSequences(diff, schemaName, oldSchema, newSchema)
+
+	// Compare enum types
+	compareEnumTypes(diff, schemaName, oldSchema, newSchema)
 }
 
 // compareTableDetails compares the details of two tables.
@@ -1006,5 +1033,52 @@ func compareSequences(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 				NewSequence:  newSeq,
 			})
 		}
+	}
+}
+
+// compareEnumTypes compares enum types between two schemas.
+func compareEnumTypes(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+	oldSchemaProto := oldSchema.GetProto()
+	newSchemaProto := newSchema.GetProto()
+
+	// Build maps of enum types
+	oldEnumMap := make(map[string]*storepb.EnumTypeMetadata)
+	for _, enum := range oldSchemaProto.EnumTypes {
+		if !enum.GetSkipDump() {
+			oldEnumMap[enum.Name] = enum
+		}
+	}
+
+	newEnumMap := make(map[string]*storepb.EnumTypeMetadata)
+	for _, enum := range newSchemaProto.EnumTypes {
+		if !enum.GetSkipDump() {
+			newEnumMap[enum.Name] = enum
+		}
+	}
+
+	// Check for dropped enum types
+	for enumName, oldEnum := range oldEnumMap {
+		if _, exists := newEnumMap[enumName]; !exists {
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &EnumTypeDiff{
+				Action:       MetadataDiffActionDrop,
+				SchemaName:   schemaName,
+				EnumTypeName: enumName,
+				OldEnumType:  oldEnum,
+			})
+		}
+	}
+
+	// Check for new enum types
+	for enumName, newEnum := range newEnumMap {
+		if _, exists := oldEnumMap[enumName]; !exists {
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &EnumTypeDiff{
+				Action:       MetadataDiffActionCreate,
+				SchemaName:   schemaName,
+				EnumTypeName: enumName,
+				NewEnumType:  newEnum,
+			})
+		}
+		// Note: We don't support ALTER enum types yet
+		// PostgreSQL doesn't allow modifying enum values easily
 	}
 }
