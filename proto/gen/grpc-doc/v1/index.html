@@ -1931,6 +1931,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.BatchDeleteProjectsRequest"><span class="badge">M</span>BatchDeleteProjectsRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.BatchGetIamPolicyRequest"><span class="badge">M</span>BatchGetIamPolicyRequest</a>
                 </li>
               
@@ -21237,6 +21241,41 @@ Format: projects/{project} </p></td>
 
         
       
+        <h3 id="bytebase.v1.BatchDeleteProjectsRequest">BatchDeleteProjectsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The names of the projects to delete.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>force</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, any databases from this project will be moved to default project.
+Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+Open issues will remain open but associated with the deleted project.
+If set to false, the operation will fail if the project has databases or open issues. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.BatchGetIamPolicyRequest">BatchGetIamPolicyRequest</h3>
         <p></p>
 
@@ -21380,7 +21419,10 @@ Format: projects/{project} </p></td>
                   <td>force</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. </p></td>
+                  <td><p>If set to true, any databases from this project will be moved to default project.
+Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+Open issues will remain open but associated with the deleted project.
+If set to false, the operation will fail if the project has databases or open issues. </p></td>
                 </tr>
               
             </tbody>
@@ -22242,6 +22284,13 @@ Users with &#34;bb.projects.get&#34; permission on the workspace or the project 
               </tr>
             
               <tr>
+                <td>BatchDeleteProjects</td>
+                <td><a href="#bytebase.v1.BatchDeleteProjectsRequest">BatchDeleteProjectsRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>GetIamPolicy</td>
                 <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
@@ -22374,6 +22423,16 @@ Users with &#34;bb.projects.get&#34; permission on the workspace or the project 
                 <td>UndeleteProject</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*}:undelete</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchDeleteProjects</td>
+                <td>POST</td>
+                <td>/v1/projects:batchDelete</td>
                 <td>*</td>
               </tr>
               

@@ -20,20 +20,21 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProjectService_GetProject_FullMethodName        = "/bytebase.v1.ProjectService/GetProject"
-	ProjectService_ListProjects_FullMethodName      = "/bytebase.v1.ProjectService/ListProjects"
-	ProjectService_SearchProjects_FullMethodName    = "/bytebase.v1.ProjectService/SearchProjects"
-	ProjectService_CreateProject_FullMethodName     = "/bytebase.v1.ProjectService/CreateProject"
-	ProjectService_UpdateProject_FullMethodName     = "/bytebase.v1.ProjectService/UpdateProject"
-	ProjectService_DeleteProject_FullMethodName     = "/bytebase.v1.ProjectService/DeleteProject"
-	ProjectService_UndeleteProject_FullMethodName   = "/bytebase.v1.ProjectService/UndeleteProject"
-	ProjectService_GetIamPolicy_FullMethodName      = "/bytebase.v1.ProjectService/GetIamPolicy"
-	ProjectService_BatchGetIamPolicy_FullMethodName = "/bytebase.v1.ProjectService/BatchGetIamPolicy"
-	ProjectService_SetIamPolicy_FullMethodName      = "/bytebase.v1.ProjectService/SetIamPolicy"
-	ProjectService_AddWebhook_FullMethodName        = "/bytebase.v1.ProjectService/AddWebhook"
-	ProjectService_UpdateWebhook_FullMethodName     = "/bytebase.v1.ProjectService/UpdateWebhook"
-	ProjectService_RemoveWebhook_FullMethodName     = "/bytebase.v1.ProjectService/RemoveWebhook"
-	ProjectService_TestWebhook_FullMethodName       = "/bytebase.v1.ProjectService/TestWebhook"
+	ProjectService_GetProject_FullMethodName          = "/bytebase.v1.ProjectService/GetProject"
+	ProjectService_ListProjects_FullMethodName        = "/bytebase.v1.ProjectService/ListProjects"
+	ProjectService_SearchProjects_FullMethodName      = "/bytebase.v1.ProjectService/SearchProjects"
+	ProjectService_CreateProject_FullMethodName       = "/bytebase.v1.ProjectService/CreateProject"
+	ProjectService_UpdateProject_FullMethodName       = "/bytebase.v1.ProjectService/UpdateProject"
+	ProjectService_DeleteProject_FullMethodName       = "/bytebase.v1.ProjectService/DeleteProject"
+	ProjectService_UndeleteProject_FullMethodName     = "/bytebase.v1.ProjectService/UndeleteProject"
+	ProjectService_BatchDeleteProjects_FullMethodName = "/bytebase.v1.ProjectService/BatchDeleteProjects"
+	ProjectService_GetIamPolicy_FullMethodName        = "/bytebase.v1.ProjectService/GetIamPolicy"
+	ProjectService_BatchGetIamPolicy_FullMethodName   = "/bytebase.v1.ProjectService/BatchGetIamPolicy"
+	ProjectService_SetIamPolicy_FullMethodName        = "/bytebase.v1.ProjectService/SetIamPolicy"
+	ProjectService_AddWebhook_FullMethodName          = "/bytebase.v1.ProjectService/AddWebhook"
+	ProjectService_UpdateWebhook_FullMethodName       = "/bytebase.v1.ProjectService/UpdateWebhook"
+	ProjectService_RemoveWebhook_FullMethodName       = "/bytebase.v1.ProjectService/RemoveWebhook"
+	ProjectService_TestWebhook_FullMethodName         = "/bytebase.v1.ProjectService/TestWebhook"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -49,6 +50,7 @@ type ProjectServiceClient interface {
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteProject(ctx context.Context, in *UndeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	BatchDeleteProjects(ctx context.Context, in *BatchDeleteProjectsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	// Deprecated.
 	BatchGetIamPolicy(ctx context.Context, in *BatchGetIamPolicyRequest, opts ...grpc.CallOption) (*BatchGetIamPolicyResponse, error)
@@ -131,6 +133,16 @@ func (c *projectServiceClient) UndeleteProject(ctx context.Context, in *Undelete
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Project)
 	err := c.cc.Invoke(ctx, ProjectService_UndeleteProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) BatchDeleteProjects(ctx context.Context, in *BatchDeleteProjectsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ProjectService_BatchDeleteProjects_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -220,6 +232,7 @@ type ProjectServiceServer interface {
 	UpdateProject(context.Context, *UpdateProjectRequest) (*Project, error)
 	DeleteProject(context.Context, *DeleteProjectRequest) (*emptypb.Empty, error)
 	UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error)
+	BatchDeleteProjects(context.Context, *BatchDeleteProjectsRequest) (*emptypb.Empty, error)
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
 	// Deprecated.
 	BatchGetIamPolicy(context.Context, *BatchGetIamPolicyRequest) (*BatchGetIamPolicyResponse, error)
@@ -258,6 +271,9 @@ func (UnimplementedProjectServiceServer) DeleteProject(context.Context, *DeleteP
 }
 func (UnimplementedProjectServiceServer) UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteProject not implemented")
+}
+func (UnimplementedProjectServiceServer) BatchDeleteProjects(context.Context, *BatchDeleteProjectsRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchDeleteProjects not implemented")
 }
 func (UnimplementedProjectServiceServer) GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetIamPolicy not implemented")
@@ -427,6 +443,24 @@ func _ProjectService_UndeleteProject_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_BatchDeleteProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchDeleteProjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).BatchDeleteProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_BatchDeleteProjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).BatchDeleteProjects(ctx, req.(*BatchDeleteProjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProjectService_GetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetIamPolicyRequest)
 	if err := dec(in); err != nil {
@@ -587,6 +621,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UndeleteProject",
 			Handler:    _ProjectService_UndeleteProject_Handler,
+		},
+		{
+			MethodName: "BatchDeleteProjects",
+			Handler:    _ProjectService_BatchDeleteProjects_Handler,
 		},
 		{
 			MethodName: "GetIamPolicy",
