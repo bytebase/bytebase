@@ -1029,9 +1029,9 @@
     "add-spec": "添加变更项",
     "change-type": "变更类型",
     "schema-migration": "Schema 变更",
-    "schema-migration-description": "修改数据库 Schema (DDL)",
+    "schema-migration-description": "数据库结构变更（DDL），包括表、列、索引、约束和模式变更",
     "data-change": "数据变更",
-    "data-change-description": "修改数据（DML）",
+    "data-change-description": "数据库数据修改（DML），包括插入、更新、删除和数据迁移",
     "select-targets": "选择变更对象",
     "overview": {
       "description": "查看和管理此变更计划中的所有变更项",

@@ -21,7 +21,7 @@
 
       <PagedDatabaseTable
         class="mt-2"
-        mode="PROJECT"
+        mode="PROJECT_SHORT"
         :parent="project"
         :filter="filter"
         :custom-click="true"

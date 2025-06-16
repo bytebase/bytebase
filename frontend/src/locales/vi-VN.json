@@ -1029,9 +1029,9 @@
     "add-spec": "Thêm thông số kỹ thuật",
     "change-type": "Thay đổi loại",
     "schema-migration": "Di chuyển lược đồ",
-    "schema-migration-description": "Sửa đổi lược đồ cơ sở dữ liệu (DDL)",
+    "schema-migration-description": "Thay đổi cấu trúc cơ sở dữ liệu (DDL) bao gồm bảng, cột, chỉ mục, ràng buộc và thay đổi lược đồ",
     "data-change": "Thay đổi dữ liệu",
-    "data-change-description": "Sửa đổi dữ liệu (DML)",
+    "data-change-description": "Sửa đổi nội dung cơ sở dữ liệu (DML) bao gồm chèn, cập nhật, xóa và chuyển đổi dữ liệu",
     "select-targets": "Chọn mục tiêu",
     "overview": {
       "description": "Xem và quản lý tất cả các thông số kỹ thuật trong kế hoạch này",
