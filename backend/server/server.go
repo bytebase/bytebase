@@ -14,7 +14,6 @@ import (
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/soheilhy/cmux"
 	"golang.org/x/net/http2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -72,7 +71,6 @@ type Server struct {
 
 	profile    *config.Profile
 	echoServer *echo.Echo
-	muxServer  cmux.CMux
 	lspServer  *lsp.Server
 	store      *store.Store
 	dbFactory  *dbfactory.DBFactory
@@ -282,18 +280,11 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		return err
 	}
 
-	s.muxServer = cmux.New(listener)
-	httpListener := s.muxServer.Match(cmux.HTTP1Fast(), cmux.Any())
-	s.echoServer.Listener = httpListener
+	s.echoServer.Listener = listener
 
 	go func() {
 		if err := s.echoServer.StartH2CServer(address, &http2.Server{}); err != nil {
 			slog.Error("http server listen error", log.BBError(err))
-		}
-	}()
-	go func() {
-		if err := s.muxServer.Serve(); err != nil {
-			slog.Error("mux server listen error", log.BBError(err))
 		}
 	}()
 
@@ -323,9 +314,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		if err := s.echoServer.Shutdown(ctx); err != nil {
 			s.echoServer.Logger.Fatal(err)
 		}
-	}
-	if s.muxServer != nil {
-		s.muxServer.Close()
 	}
 
 	// Wait for all runners to exit.
