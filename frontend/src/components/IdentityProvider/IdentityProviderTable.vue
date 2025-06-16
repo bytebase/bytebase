@@ -5,7 +5,6 @@
     :columns="columnList"
     :data="identityProviderList"
     :striped="true"
-    :bordered="bordered"
     :row-key="(idp: IdentityProvider) => idp.name"
     :row-props="rowProps"
     :paginate-single-page="false"
@@ -28,11 +27,8 @@ import {
 withDefaults(
   defineProps<{
     identityProviderList: IdentityProvider[];
-    bordered?: boolean;
   }>(),
-  {
-    bordered: true,
-  }
+  {}
 );
 
 const router = useRouter();
