@@ -114,7 +114,7 @@ func (s *OrgPolicyService) CreatePolicy(ctx context.Context, req *connect.Reques
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
 	}
 
-	if err := s.checkPolicyFeatureGuard(request.Policy.Type); err != nil {
+	if err := s.checkPolicyFeatureGuard(req.Msg.Policy.Type); err != nil {
 		return nil, err
 	}
 
@@ -132,7 +132,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
 	}
 
-	if err := s.checkPolicyFeatureGuard(request.Policy.Type); err != nil {
+	if err := s.checkPolicyFeatureGuard(req.Msg.Policy.Type); err != nil {
 		return nil, err
 	}
 

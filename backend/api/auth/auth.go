@@ -151,7 +151,7 @@ func (s overrideStream) Context() context.Context {
 // WrapUnary implements the ConnectRPC interceptor interface for unary RPCs.
 func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		accessTokenStr, err := getTokenFromHeaders(req.Header())
+		accessTokenStr, err := GetTokenFromHeaders(req.Header())
 		if err != nil {
 			return nil, connect.NewError(connect.CodeUnauthenticated, err)
 		}
@@ -185,7 +185,7 @@ func (*APIAuthInterceptor) WrapStreamingClient(next connect.StreamingClientFunc)
 // WrapStreamingHandler implements the ConnectRPC interceptor interface for streaming handlers.
 func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		accessTokenStr, err := getTokenFromHeaders(conn.RequestHeader())
+		accessTokenStr, err := GetTokenFromHeaders(conn.RequestHeader())
 		if err != nil {
 			return connect.NewError(connect.CodeUnauthenticated, err)
 		}
@@ -258,7 +258,6 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 
 	return principalID, nil
 }
-
 
 func (in *APIAuthInterceptor) getPrincipalID(ctx context.Context, accessTokenStr string) (int, error) {
 	principalID, err := in.authenticate(ctx, accessTokenStr)
@@ -334,7 +333,6 @@ func (in *APIAuthInterceptor) getPrincipalIDConnect(ctx context.Context, accessT
 	return principalID, nil
 }
 
-
 // GetUserIDFromMFATempToken returns the user ID from the MFA temp token.
 func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret string) (int, error) {
 	claims := &claimsMessage{}
@@ -384,8 +382,8 @@ func GetTokenFromMetadata(md metadata.MD) (string, error) {
 	return accessToken, nil
 }
 
-// getTokenFromHeaders extracts the access token from HTTP headers for ConnectRPC.
-func getTokenFromHeaders(headers http.Header) (string, error) {
+// GetTokenFromHeaders extracts the access token from HTTP headers for ConnectRPC.
+func GetTokenFromHeaders(headers http.Header) (string, error) {
 	// Check Authorization header first
 	authHeader := headers.Get("Authorization")
 	if authHeader != "" {

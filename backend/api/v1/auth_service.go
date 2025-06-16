@@ -11,9 +11,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -74,6 +72,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	loginViaIDP := request.GetIdpName() != ""
 
 	response := &v1pb.LoginResponse{}
+	resp := connect.NewResponse(response)
 	if !mfaSecondLogin {
 		var err error
 		if loginViaIDP {
@@ -173,21 +172,13 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	}
 
 	if request.Web {
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
+		origin := req.Header().Get("Origin")
+		if origin == "" {
+			origin = req.Header().Get("grpcgateway-origin")
 		}
 		// Pass the request origin header to response.
-		var origin string
-		for _, v := range md.Get("grpcgateway-origin") {
-			origin = v
-		}
-		if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-			auth.GatewayMetadataAccessTokenKey:   response.Token,
-			auth.GatewayMetadataRequestOriginKey: origin,
-		})); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
-		}
+		resp.Header().Set(auth.GatewayMetadataAccessTokenKey, response.Token)
+		resp.Header().Set(auth.GatewayMetadataRequestOriginKey, origin)
 	}
 
 	if _, err := s.store.UpdateUser(ctx, loginUser, &store.UpdateUserMessage{
@@ -208,7 +199,8 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 			"email": loginUser.Email,
 		},
 	})
-	return connect.NewResponse(response), nil
+
+	return resp, nil
 }
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage) bool {
@@ -253,23 +245,16 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 }
 
 // Logout is the auth logout method.
-func (s *AuthService) Logout(ctx context.Context, _ *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
-	}
-	accessTokenStr, err := auth.GetTokenFromMetadata(md)
+func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
+	accessTokenStr, err := auth.GetTokenFromHeaders(req.Header())
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 	s.stateCfg.ExpireCache.Add(accessTokenStr, true)
 
-	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-		auth.GatewayMetadataAccessTokenKey: "",
-	})); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
-	}
-	return connect.NewResponse(&emptypb.Empty{}), nil
+	resp := connect.NewResponse(&emptypb.Empty{})
+	resp.Header().Set(auth.GatewayMetadataAccessTokenKey, "")
+	return resp, nil
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
