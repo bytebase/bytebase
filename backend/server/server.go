@@ -200,7 +200,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{Store: s.store}
+	gatewayModifier := auth.GatewayResponseModifier{Store: s.store, LicenseService: s.licenseService}
 	mux := grpcruntime.NewServeMux(
 		grpcruntime.WithMarshalerOption(grpcruntime.MIMEWildcard, &grpcruntime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{},

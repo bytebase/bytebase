@@ -127,7 +127,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 	if !isWorkspaceAdmin && loginUser.Type == storepb.PrincipalType_END_USER && !mfaSecondLogin {
 		// Disallow password signin for end users.
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err == nil {
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err == nil {
 			if setting.DisallowPasswordSignin && !loginViaIDP {
 				return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
 			}
@@ -139,7 +139,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}
 	}
 
-	tokenDuration := auth.GetTokenDuration(ctx, s.store)
+	tokenDuration := auth.GetTokenDuration(ctx, s.store, s.licenseService)
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
 	if s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TWO_FA) == nil && !mfaSecondLogin && userMFAEnabled {
