@@ -330,7 +330,7 @@ func validatePolicyType(policyType storepb.Policy_Type, policyResourceType store
 }
 
 func (s *OrgPolicyService) checkPolicyFeatureGuard(policyType v1pb.PolicyType) error {
-	if policyType == v1pb.PolicyType_DATA_QUERY {
+	if policyType == v1pb.PolicyType_DATA_QUERY || policyType == v1pb.PolicyType_DATA_SOURCE_QUERY {
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return status.Error(codes.PermissionDenied, err.Error())
 		}
