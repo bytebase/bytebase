@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -16,11 +17,12 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // SheetService implements the sheet service.
 type SheetService struct {
-	v1pb.UnimplementedSheetServiceServer
+	v1connect.UnimplementedSheetServiceHandler
 	store          *store.Store
 	sheetManager   *sheet.Manager
 	licenseService *enterprise.LicenseService
@@ -40,8 +42,8 @@ func NewSheetService(store *store.Store, sheetManager *sheet.Manager, licenseSer
 }
 
 // CreateSheet creates a new sheet.
-func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateSheetRequest) (*v1pb.Sheet, error) {
-	if request.Sheet == nil {
+func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request[v1pb.CreateSheetRequest]) (*connect.Response[v1pb.Sheet], error) {
+	if request.Msg.Sheet == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "sheet must be set")
 	}
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -49,7 +51,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
-	projectResourceID, err := common.GetProjectID(request.Parent)
+	projectResourceID, err := common.GetProjectID(request.Msg.Parent)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -66,7 +68,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
-	storeSheetCreate, err := convertToStoreSheetMessage(project.ResourceID, principalID, request.Sheet)
+	storeSheetCreate, err := convertToStoreSheetMessage(project.ResourceID, principalID, request.Msg.Sheet)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert sheet: %v", err)
 	}
@@ -78,11 +80,11 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 	if err != nil {
 		return nil, err
 	}
-	return v1pbSheet, nil
+	return connect.NewResponse(v1pbSheet), nil
 }
 
-func (s *SheetService) BatchCreateSheets(ctx context.Context, request *v1pb.BatchCreateSheetsRequest) (*v1pb.BatchCreateSheetsResponse, error) {
-	if len(request.Requests) == 0 {
+func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.Request[v1pb.BatchCreateSheetsRequest]) (*connect.Response[v1pb.BatchCreateSheetsResponse], error) {
+	if len(request.Msg.Requests) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "requests must be set")
 	}
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
@@ -90,7 +92,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *v1pb.Batc
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	projectResourceID, err := common.GetProjectID(request.Parent)
+	projectResourceID, err := common.GetProjectID(request.Msg.Parent)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -108,9 +110,9 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *v1pb.Batc
 	}
 
 	var sheetCreates []*store.SheetMessage
-	for _, r := range request.Requests {
-		if r.Parent != "" && r.Parent != request.Parent {
-			return nil, status.Errorf(codes.InvalidArgument, "Sheet Parent %q does not match BatchCreateSheetsRequest.Parent %q", r.Parent, request.Parent)
+	for _, r := range request.Msg.Requests {
+		if r.Parent != "" && r.Parent != request.Msg.Parent {
+			return nil, status.Errorf(codes.InvalidArgument, "Sheet Parent %q does not match BatchCreateSheetsRequest.Parent %q", r.Parent, request.Msg.Parent)
 		}
 
 		storeSheetCreate, err := convertToStoreSheetMessage(project.ResourceID, user.ID, r.Sheet)
@@ -133,12 +135,12 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *v1pb.Batc
 		}
 		response.Sheets = append(response.Sheets, v1pbSheet)
 	}
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // GetSheet returns the requested sheet, cutoff the content if the content is too long and the `raw` flag in request is false.
-func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetRequest) (*v1pb.Sheet, error) {
-	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Name)
+func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1pb.GetSheetRequest]) (*connect.Response[v1pb.Sheet], error) {
+	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -162,7 +164,7 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 	find := &store.FindSheetMessage{
 		ProjectID: &project.ResourceID,
 		UID:       &sheetUID,
-		LoadFull:  request.Raw,
+		LoadFull:  request.Msg.Raw,
 	}
 	sheet, err := s.findSheet(ctx, find)
 	if err != nil {
@@ -173,22 +175,22 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 	if err != nil {
 		return nil, err
 	}
-	return v1pbSheet, nil
+	return connect.NewResponse(v1pbSheet), nil
 }
 
 // UpdateSheet updates a sheet.
-func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateSheetRequest) (*v1pb.Sheet, error) {
-	if request.Sheet == nil {
+func (s *SheetService) UpdateSheet(ctx context.Context, request *connect.Request[v1pb.UpdateSheetRequest]) (*connect.Response[v1pb.Sheet], error) {
+	if request.Msg.Sheet == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "sheet cannot be empty")
 	}
-	if request.UpdateMask == nil {
+	if request.Msg.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update mask cannot be empty")
 	}
-	if request.Sheet.Name == "" {
+	if request.Msg.Sheet.Name == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "sheet name cannot be empty")
 	}
 
-	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Sheet.Name)
+	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Msg.Sheet.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -221,7 +223,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 		return nil, status.Errorf(codes.Internal, "failed to get sheet: %v", err)
 	}
 	if sheet == nil {
-		return nil, status.Errorf(codes.NotFound, "sheet %q not found", request.Sheet.Name)
+		return nil, status.Errorf(codes.NotFound, "sheet %q not found", request.Msg.Sheet.Name)
 	}
 
 	sheetPatch := &store.PatchSheetMessage{
@@ -229,10 +231,10 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 		UpdaterID: principalID,
 	}
 
-	for _, path := range request.UpdateMask.Paths {
+	for _, path := range request.Msg.UpdateMask.Paths {
 		switch path {
 		case "content":
-			statement := string(request.Sheet.Content)
+			statement := string(request.Msg.Sheet.Content)
 			sheetPatch.Statement = &statement
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %q", path)
@@ -247,7 +249,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 		return nil, err
 	}
 
-	return v1pbSheet, nil
+	return connect.NewResponse(v1pbSheet), nil
 }
 
 func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessage) (*store.SheetMessage, error) {

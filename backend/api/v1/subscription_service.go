@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -12,11 +13,12 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // SubscriptionService implements the subscription service.
 type SubscriptionService struct {
-	v1pb.UnimplementedSubscriptionServiceServer
+	v1connect.UnimplementedSubscriptionServiceHandler
 	store          *store.Store
 	profile        *config.Profile
 	metricReporter *metricreport.Reporter
@@ -38,18 +40,20 @@ func NewSubscriptionService(
 }
 
 // GetSubscription gets the subscription.
-func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *v1pb.GetSubscriptionRequest) (*v1pb.Subscription, error) {
-	return s.licenseService.LoadSubscription(ctx), nil
+func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Request[v1pb.GetSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
+	subscription := s.licenseService.LoadSubscription(ctx)
+	return connect.NewResponse(subscription), nil
 }
 
 // UpdateSubscription updates the subscription license.
-func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v1pb.UpdateSubscriptionRequest) (*v1pb.Subscription, error) {
-	if err := s.licenseService.StoreLicense(ctx, request.License); err != nil {
+func (s *SubscriptionService) UpdateSubscription(ctx context.Context, req *connect.Request[v1pb.UpdateSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
+	if err := s.licenseService.StoreLicense(ctx, req.Msg.License); err != nil {
 		if common.ErrorCode(err) == common.Invalid {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Errorf(codes.Internal, "failed to store license: %v", err.Error())
 	}
 
-	return s.licenseService.LoadSubscription(ctx), nil
+	subscription := s.licenseService.LoadSubscription(ctx)
+	return connect.NewResponse(subscription), nil
 }

@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -15,11 +16,12 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // ReviewConfigService implements the review config service.
 type ReviewConfigService struct {
-	v1pb.UnimplementedReviewConfigServiceServer
+	v1connect.UnimplementedReviewConfigServiceHandler
 	store          *store.Store
 	licenseService *enterprise.LicenseService
 }
@@ -33,11 +35,11 @@ func NewReviewConfigService(store *store.Store, licenseService *enterprise.Licen
 }
 
 // CreateReviewConfig creates a new review config.
-func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v1pb.CreateReviewConfigRequest) (*v1pb.ReviewConfig, error) {
-	if err := validateSQLReviewRules(request.ReviewConfig.Rules); err != nil {
+func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, req *connect.Request[v1pb.CreateReviewConfigRequest]) (*connect.Response[v1pb.ReviewConfig], error) {
+	if err := validateSQLReviewRules(req.Msg.ReviewConfig.Rules); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	reviewConfigMessage, err := convertToReviewConfigMessage(request.ReviewConfig)
+	reviewConfigMessage, err := convertToReviewConfigMessage(req.Msg.ReviewConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -46,11 +48,15 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return s.convertToV1ReviewConfig(ctx, created)
+	result, err := s.convertToV1ReviewConfig(ctx, created)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // ListReviewConfigs lists the review configs.
-func (s *ReviewConfigService) ListReviewConfigs(ctx context.Context, _ *v1pb.ListReviewConfigsRequest) (*v1pb.ListReviewConfigsResponse, error) {
+func (s *ReviewConfigService) ListReviewConfigs(ctx context.Context, _ *connect.Request[v1pb.ListReviewConfigsRequest]) (*connect.Response[v1pb.ListReviewConfigsResponse], error) {
 	messages, err := s.store.ListReviewConfigs(ctx, &store.FindReviewConfigMessage{})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -64,12 +70,12 @@ func (s *ReviewConfigService) ListReviewConfigs(ctx context.Context, _ *v1pb.Lis
 		}
 		response.ReviewConfigs = append(response.ReviewConfigs, sqlReview)
 	}
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // GetReviewConfig gets the review config.
-func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, request *v1pb.GetReviewConfigRequest) (*v1pb.ReviewConfig, error) {
-	id, err := common.GetReviewConfigID(request.Name)
+func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, req *connect.Request[v1pb.GetReviewConfigRequest]) (*connect.Response[v1pb.ReviewConfig], error) {
+	id, err := common.GetReviewConfigID(req.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -79,14 +85,18 @@ func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, request *v1pb
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if message == nil {
-		return nil, status.Errorf(codes.NotFound, "cannot found review config %s", request.Name)
+		return nil, status.Errorf(codes.NotFound, "cannot found review config %s", req.Msg.Name)
 	}
-	return s.convertToV1ReviewConfig(ctx, message)
+	result, err := s.convertToV1ReviewConfig(ctx, message)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // UpdateReviewConfig updates the review config.
-func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v1pb.UpdateReviewConfigRequest) (*v1pb.ReviewConfig, error) {
-	id, err := common.GetReviewConfigID(request.ReviewConfig.Name)
+func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *connect.Request[v1pb.UpdateReviewConfigRequest]) (*connect.Response[v1pb.ReviewConfig], error) {
+	id, err := common.GetReviewConfigID(req.Msg.ReviewConfig.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -96,10 +106,10 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, "failed to get review config %q with error: %v", id, err)
 	}
 	if existed == nil {
-		if request.AllowMissing {
-			return s.CreateReviewConfig(ctx, &v1pb.CreateReviewConfigRequest{
-				ReviewConfig: request.ReviewConfig,
-			})
+		if req.Msg.AllowMissing {
+			return s.CreateReviewConfig(ctx, connect.NewRequest(&v1pb.CreateReviewConfigRequest{
+				ReviewConfig: req.Msg.ReviewConfig,
+			}))
 		}
 		return nil, status.Errorf(codes.NotFound, "review config %q not found", id)
 	}
@@ -108,12 +118,12 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 		ID: id,
 	}
 
-	for _, path := range request.UpdateMask.Paths {
+	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "title":
-			patch.Name = &request.ReviewConfig.Title
+			patch.Name = &req.Msg.ReviewConfig.Title
 		case "rules":
-			ruleList, err := convertToSQLReviewRules(request.ReviewConfig.Rules)
+			ruleList, err := convertToSQLReviewRules(req.Msg.ReviewConfig.Rules)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert rules, error %v", err)
 			}
@@ -121,7 +131,7 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 				SqlReviewRules: ruleList,
 			}
 		case "enabled":
-			patch.Enforce = &request.ReviewConfig.Enabled
+			patch.Enforce = &req.Msg.ReviewConfig.Enabled
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %q", path)
 		}
@@ -131,12 +141,16 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return s.convertToV1ReviewConfig(ctx, message)
+	result, err := s.convertToV1ReviewConfig(ctx, message)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // DeleteReviewConfig deletes the review config.
-func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, request *v1pb.DeleteReviewConfigRequest) (*emptypb.Empty, error) {
-	id, err := common.GetReviewConfigID(request.Name)
+func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *connect.Request[v1pb.DeleteReviewConfigRequest]) (*connect.Response[emptypb.Empty], error) {
+	id, err := common.GetReviewConfigID(req.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -145,7 +159,7 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, "failed to delete review config: %v", err)
 	}
 
-	return &emptypb.Empty{}, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.ReviewConfigMessage, error) {
