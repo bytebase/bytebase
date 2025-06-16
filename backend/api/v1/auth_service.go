@@ -8,11 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -33,6 +32,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 var (
@@ -41,7 +41,7 @@ var (
 
 // AuthService implements the auth service.
 type AuthService struct {
-	v1pb.UnimplementedAuthServiceServer
+	v1connect.UnimplementedAuthServiceHandler
 	store          *store.Store
 	secret         string
 	licenseService *enterprise.LicenseService
@@ -65,12 +65,14 @@ func NewAuthService(store *store.Store, secret string, licenseService *enterpris
 }
 
 // Login is the auth login method including SSO.
-func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
+func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.LoginRequest]) (*connect.Response[v1pb.LoginResponse], error) {
+	request := req.Msg
 	var loginUser *store.UserMessage
 	mfaSecondLogin := request.MfaTempToken != nil && *request.MfaTempToken != ""
 	loginViaIDP := request.GetIdpName() != ""
 
 	response := &v1pb.LoginResponse{}
+	resp := connect.NewResponse(response)
 	if !mfaSecondLogin {
 		var err error
 		if loginViaIDP {
@@ -147,9 +149,9 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
 		}
-		return &v1pb.LoginResponse{
+		return connect.NewResponse(&v1pb.LoginResponse{
 			MfaTempToken: &mfaTempToken,
-		}, nil
+		}), nil
 	}
 
 	switch loginUser.Type {
@@ -170,21 +172,13 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 
 	if request.Web {
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
+		origin := req.Header().Get("Origin")
+		if origin == "" {
+			origin = req.Header().Get("grpcgateway-origin")
 		}
 		// Pass the request origin header to response.
-		var origin string
-		for _, v := range md.Get("grpcgateway-origin") {
-			origin = v
-		}
-		if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-			auth.GatewayMetadataAccessTokenKey:   response.Token,
-			auth.GatewayMetadataRequestOriginKey: origin,
-		})); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
-		}
+		resp.Header().Set(auth.GatewayMetadataAccessTokenKey, response.Token)
+		resp.Header().Set(auth.GatewayMetadataRequestOriginKey, origin)
 	}
 
 	if _, err := s.store.UpdateUser(ctx, loginUser, &store.UpdateUserMessage{
@@ -205,7 +199,8 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			"email": loginUser.Email,
 		},
 	})
-	return response, nil
+
+	return resp, nil
 }
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage) bool {
@@ -250,23 +245,16 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 }
 
 // Logout is the auth logout method.
-func (s *AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb.Empty, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
-	}
-	accessTokenStr, err := auth.GetTokenFromMetadata(md)
+func (s *AuthService) Logout(_ context.Context, req *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
+	accessTokenStr, err := auth.GetTokenFromHeaders(req.Header())
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 	s.stateCfg.ExpireCache.Add(accessTokenStr, true)
 
-	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-		auth.GatewayMetadataAccessTokenKey: "",
-	})); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
-	}
-	return &emptypb.Empty{}, nil
+	resp := connect.NewResponse(&emptypb.Empty{})
+	resp.Header().Set(auth.GatewayMetadataAccessTokenKey, "")
+	return resp, nil
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {

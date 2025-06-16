@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
@@ -17,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 var (
@@ -37,7 +39,7 @@ var (
 
 // OrgPolicyService implements the workspace policy service.
 type OrgPolicyService struct {
-	v1pb.UnimplementedOrgPolicyServiceServer
+	v1connect.UnimplementedOrgPolicyServiceHandler
 	store          *store.Store
 	licenseService *enterprise.LicenseService
 }
@@ -51,8 +53,8 @@ func NewOrgPolicyService(store *store.Store, licenseService *enterprise.LicenseS
 }
 
 // GetPolicy gets a policy in a specific resource.
-func (s *OrgPolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolicyRequest) (*v1pb.Policy, error) {
-	policy, _, err := s.findPolicyMessage(ctx, request.Name)
+func (s *OrgPolicyService) GetPolicy(ctx context.Context, req *connect.Request[v1pb.GetPolicyRequest]) (*connect.Response[v1pb.Policy], error) {
+	policy, _, err := s.findPolicyMessage(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -62,12 +64,12 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolic
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // ListPolicies lists policies in a specific resource.
-func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListPoliciesRequest) (*v1pb.ListPoliciesResponse, error) {
-	resourceType, resource, err := getPolicyResourceTypeAndResource(request.Parent)
+func (s *OrgPolicyService) ListPolicies(ctx context.Context, req *connect.Request[v1pb.ListPoliciesRequest]) (*connect.Response[v1pb.ListPoliciesResponse], error) {
+	resourceType, resource, err := getPolicyResourceTypeAndResource(req.Msg.Parent)
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +77,10 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 	find := &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     resource,
-		ShowAll:      request.ShowDeleted,
+		ShowAll:      req.Msg.ShowDeleted,
 	}
 
-	if v := request.PolicyType; v != nil {
+	if v := req.Msg.PolicyType; v != nil {
 		policyType, err := convertV1PBToStorePBPolicyType(*v)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -103,43 +105,51 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 		}
 		response.Policies = append(response.Policies, p)
 	}
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // CreatePolicy creates a policy in a specific resource.
-func (s *OrgPolicyService) CreatePolicy(ctx context.Context, request *v1pb.CreatePolicyRequest) (*v1pb.Policy, error) {
-	if request.Policy == nil {
+func (s *OrgPolicyService) CreatePolicy(ctx context.Context, req *connect.Request[v1pb.CreatePolicyRequest]) (*connect.Response[v1pb.Policy], error) {
+	if req.Msg.Policy == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
 	}
 
-	if err := s.checkPolicyFeatureGuard(request.Policy.Type); err != nil {
+	if err := s.checkPolicyFeatureGuard(req.Msg.Policy.Type); err != nil {
 		return nil, err
 	}
 
 	// TODO(d): validate policy.
-	return s.createPolicyMessage(ctx, request.Parent, request.Policy)
+	response, err := s.createPolicyMessage(ctx, req.Msg.Parent, req.Msg.Policy)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(response), nil
 }
 
 // UpdatePolicy updates a policy in a specific resource.
-func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.UpdatePolicyRequest) (*v1pb.Policy, error) {
-	if request.Policy == nil {
+func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Request[v1pb.UpdatePolicyRequest]) (*connect.Response[v1pb.Policy], error) {
+	if req.Msg.Policy == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
 	}
 
-	if err := s.checkPolicyFeatureGuard(request.Policy.Type); err != nil {
+	if err := s.checkPolicyFeatureGuard(req.Msg.Policy.Type); err != nil {
 		return nil, err
 	}
 
-	policy, parent, err := s.findPolicyMessage(ctx, request.Policy.Name)
+	policy, parent, err := s.findPolicyMessage(ctx, req.Msg.Policy.Name)
 	if err != nil {
 		st := status.Convert(err)
-		if st.Code() == codes.NotFound && request.AllowMissing {
-			return s.createPolicyMessage(ctx, parent, request.Policy)
+		if st.Code() == codes.NotFound && req.Msg.AllowMissing {
+			response, err := s.createPolicyMessage(ctx, parent, req.Msg.Policy)
+			if err != nil {
+				return nil, err
+			}
+			return connect.NewResponse(response), nil
 		}
 		return nil, err
 	}
 
-	if request.UpdateMask == nil {
+	if req.Msg.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
@@ -148,21 +158,21 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 		Type:         policy.Type,
 		Resource:     policy.Resource,
 	}
-	for _, path := range request.UpdateMask.Paths {
+	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "inherit_from_parent":
-			patch.InheritFromParent = &request.Policy.InheritFromParent
+			patch.InheritFromParent = &req.Msg.Policy.InheritFromParent
 		case "payload":
-			if err := validatePolicyPayload(policy.Type, request.Policy); err != nil {
+			if err := validatePolicyPayload(policy.Type, req.Msg.Policy); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid policy: %v", err)
 			}
-			payloadStr, err := s.convertPolicyPayloadToString(ctx, request.Policy)
+			payloadStr, err := s.convertPolicyPayloadToString(ctx, req.Msg.Policy)
 			if err != nil {
 				return nil, err
 			}
 			patch.Payload = &payloadStr
 		case "enforce":
-			patch.Enforce = &request.Policy.Enforce
+			patch.Enforce = &req.Msg.Policy.Enforce
 		}
 	}
 
@@ -176,12 +186,12 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // DeletePolicy deletes a policy for a specific resource.
-func (s *OrgPolicyService) DeletePolicy(ctx context.Context, request *v1pb.DeletePolicyRequest) (*emptypb.Empty, error) {
-	policy, _, err := s.findPolicyMessage(ctx, request.Name)
+func (s *OrgPolicyService) DeletePolicy(ctx context.Context, req *connect.Request[v1pb.DeletePolicyRequest]) (*connect.Response[emptypb.Empty], error) {
+	policy, _, err := s.findPolicyMessage(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +200,7 @@ func (s *OrgPolicyService) DeletePolicy(ctx context.Context, request *v1pb.Delet
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &emptypb.Empty{}, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 // findPolicyMessage finds the policy and the parent name by the policy name.

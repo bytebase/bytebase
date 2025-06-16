@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -13,11 +14,12 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // GroupService implements the group service.
 type GroupService struct {
-	v1pb.UnimplementedGroupServiceServer
+	v1connect.UnimplementedGroupServiceHandler
 	store          *store.Store
 	iamManager     *iam.Manager
 	licenseService *enterprise.LicenseService
@@ -33,8 +35,8 @@ func NewGroupService(store *store.Store, iamManager *iam.Manager, licenseService
 }
 
 // GetGroup gets a group.
-func (s *GroupService) GetGroup(ctx context.Context, request *v1pb.GetGroupRequest) (*v1pb.Group, error) {
-	email, err := common.GetGroupEmail(request.Name)
+func (s *GroupService) GetGroup(ctx context.Context, req *connect.Request[v1pb.GetGroupRequest]) (*connect.Response[v1pb.Group], error) {
+	email, err := common.GetGroupEmail(req.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -44,11 +46,15 @@ func (s *GroupService) GetGroup(ctx context.Context, request *v1pb.GetGroupReque
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return s.convertToV1Group(ctx, group)
+	result, err := s.convertToV1Group(ctx, group)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // ListGroups lists all groups.
-func (s *GroupService) ListGroups(ctx context.Context, _ *v1pb.ListGroupsRequest) (*v1pb.ListGroupsResponse, error) {
+func (s *GroupService) ListGroups(ctx context.Context, _ *connect.Request[v1pb.ListGroupsRequest]) (*connect.Response[v1pb.ListGroupsResponse], error) {
 	groups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -62,15 +68,15 @@ func (s *GroupService) ListGroups(ctx context.Context, _ *v1pb.ListGroupsRequest
 		}
 		response.Groups = append(response.Groups, group)
 	}
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // CreateGroup creates a group.
-func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGroupRequest) (*v1pb.Group, error) {
+func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1pb.CreateGroupRequest]) (*connect.Response[v1pb.Group], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
-	groupMessage, err := s.convertToGroupMessage(ctx, request)
+	groupMessage, err := s.convertToGroupMessage(ctx, req.Msg)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -88,15 +94,19 @@ func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGrou
 		return nil, err
 	}
 
-	return s.convertToV1Group(ctx, group)
+	result, err := s.convertToV1Group(ctx, group)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // UpdateGroup updates a group.
-func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGroupRequest) (*v1pb.Group, error) {
+func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1pb.UpdateGroupRequest]) (*connect.Response[v1pb.Group], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
-	groupEmail, err := common.GetGroupEmail(request.Group.Name)
+	groupEmail, err := common.GetGroupEmail(req.Msg.Group.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -111,7 +121,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 		return nil, status.Errorf(codes.Internal, "failed to get group %q with error: %v", groupEmail, err)
 	}
 	if group == nil {
-		if request.AllowMissing {
+		if req.Msg.AllowMissing {
 			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionGroupsCreate, user)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
@@ -119,10 +129,10 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 			if !ok {
 				return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionGroupsCreate)
 			}
-			return s.CreateGroup(ctx, &v1pb.CreateGroupRequest{
-				Group:      request.Group,
+			return s.CreateGroup(ctx, connect.NewRequest(&v1pb.CreateGroupRequest{
+				Group:      req.Msg.Group,
 				GroupEmail: groupEmail,
-			})
+			}))
 		}
 		return nil, status.Errorf(codes.NotFound, "group %q not found", groupEmail)
 	}
@@ -132,17 +142,17 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 	}
 
 	patch := &store.UpdateGroupMessage{}
-	for _, path := range request.UpdateMask.Paths {
+	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "title":
-			patch.Title = &request.Group.Title
+			patch.Title = &req.Msg.Group.Title
 		case "description":
-			patch.Description = &request.Group.Description
+			patch.Description = &req.Msg.Group.Description
 		case "members":
 			if group.Payload.Source != "" {
 				return nil, status.Errorf(codes.InvalidArgument, "cannot change members for external group")
 			}
-			payload, err := s.convertToGroupPayload(ctx, request.Group)
+			payload, err := s.convertToGroupPayload(ctx, req.Msg.Group)
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -161,12 +171,16 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 		return nil, err
 	}
 
-	return s.convertToV1Group(ctx, groupMessage)
+	result, err := s.convertToV1Group(ctx, groupMessage)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(result), nil
 }
 
 // DeleteGroup deletes a group.
-func (s *GroupService) DeleteGroup(ctx context.Context, request *v1pb.DeleteGroupRequest) (*emptypb.Empty, error) {
-	email, err := common.GetGroupEmail(request.Name)
+func (s *GroupService) DeleteGroup(ctx context.Context, req *connect.Request[v1pb.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error) {
+	email, err := common.GetGroupEmail(req.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -181,7 +195,7 @@ func (s *GroupService) DeleteGroup(ctx context.Context, request *v1pb.DeleteGrou
 		return nil, status.Errorf(codes.Internal, "failed to get group %q with error: %v", email, err)
 	}
 	if group == nil {
-		return nil, status.Errorf(codes.NotFound, "cannot found the group %v", request.Name)
+		return nil, status.Errorf(codes.NotFound, "cannot found the group %v", req.Msg.Name)
 	}
 
 	if err := s.checkPermission(ctx, group, user, iam.PermissionGroupsDelete); err != nil {
@@ -196,7 +210,7 @@ func (s *GroupService) DeleteGroup(ctx context.Context, request *v1pb.DeleteGrou
 		return nil, err
 	}
 
-	return &emptypb.Empty{}, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMessage, user *store.UserMessage, permission string) error {
