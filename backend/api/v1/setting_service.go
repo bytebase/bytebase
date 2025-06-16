@@ -190,8 +190,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				if s.profile.SaaS {
 					return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 				}
-				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
-					return nil, status.Error(codes.PermissionDenied, err.Error())
+				if payload.DisallowSignup {
+					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
+						return nil, status.Error(codes.PermissionDenied, err.Error())
+					}
 				}
 				oldSetting.DisallowSignup = payload.DisallowSignup
 			case "value.workspace_profile_setting_value.external_url":
@@ -249,8 +251,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			case "value.workspace_profile_setting_value.database_change_mode":
 				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
 			case "value.workspace_profile_setting_value.disallow_password_signin":
-				// TODO(steven): add feature flag checks.
 				if payload.DisallowPasswordSignin {
+					// We should still allow users to turn it off.
+					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+						return nil, status.Error(codes.PermissionDenied, err.Error())
+					}
+
 					identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
 					if err != nil {
 						return nil, status.Errorf(codes.Internal, "failed to list identity providers: %v", err)
