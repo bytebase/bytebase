@@ -173,6 +173,10 @@
         "title": "Exportación de datos",
         "desc": "Exporte resultados de consultas en varios formatos."
       },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "title": "Exportación de datos sin conexión",
+        "desc": "Exporte datos para uso y análisis sin conexión."
+      },
       "FEATURE_QUERY_HISTORY": {
         "title": "Historial de consultas",
         "desc": "Acceda al historial completo de ejecución de consultas con capacidades de búsqueda."
@@ -300,6 +304,10 @@
       "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
         "title": "Restricción de dominio de correo electrónico",
         "desc": "Restrinja el inicio de sesión a usuarios de dominios de correo especificados."
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "title": "Gestión de proyectos",
+        "desc": "Gestione y organice proyectos con capacidades avanzadas."
       },
       "FEATURE_ENVIRONMENT_MANAGEMENT": {
         "title": "Gestión de entornos",

@@ -173,6 +173,10 @@
         "title": "Data export",
         "desc": "Export query results in various formats."
       },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "title": "Data offline export",
+        "desc": "Export data for offline use and analysis."
+      },
       "FEATURE_QUERY_HISTORY": {
         "title": "Query history",
         "desc": "Access full query execution history with search capabilities."
@@ -300,6 +304,10 @@
       "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
         "title": "Email domain restriction",
         "desc": "Restrict sign-in to users from specified email domains."
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "title": "Project management",
+        "desc": "Manage and organize projects with advanced capabilities."
       },
       "FEATURE_ENVIRONMENT_MANAGEMENT": {
         "title": "Environment management",
