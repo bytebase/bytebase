@@ -943,44 +943,50 @@ const handleCreate = async () => {
 };
 
 // Watchers
-watch(selectedType, (newType, oldType) => {
-  // Only process if type actually changed, not on initial mount
-  if (oldType === undefined) {
-    // Initial mount - set up OAuth2 defaults if needed
-    if (newType === IdentityProviderType.OAUTH2) {
-      if (!selectedTemplate.value) {
-        selectedTemplate.value = head(templateList.value);
+watch(
+  selectedType,
+  (newType, oldType) => {
+    // Only process if type actually changed, not on initial mount
+    if (oldType === undefined) {
+      // Initial mount - set up OAuth2 defaults if needed
+      if (newType === IdentityProviderType.OAUTH2) {
+        if (!selectedTemplate.value) {
+          selectedTemplate.value = head(templateList.value);
+        }
+        if (selectedTemplate.value) {
+          handleTemplateSelect(selectedTemplate.value);
+        }
       }
-      if (selectedTemplate.value) {
-        handleTemplateSelect(selectedTemplate.value);
+      return;
+    }
+
+    if (newType !== oldType) {
+      // Type changed - reset form but preserve resource ID
+      if (newType === IdentityProviderType.OAUTH2) {
+        // Switching to OAuth2
+        if (!selectedTemplate.value) {
+          selectedTemplate.value = head(templateList.value);
+        }
+        if (selectedTemplate.value) {
+          handleTemplateSelect(selectedTemplate.value);
+        }
+      } else {
+        // Switching to OIDC or LDAP
+        identityProvider.value.title = "";
+        identityProvider.value.domain = "";
+
+        // Clear field mapping
+        Object.keys(fieldMapping).forEach((key) => {
+          delete fieldMapping[key as keyof FieldMapping];
+        });
+        scopesStringOfConfig.value = "";
       }
     }
-    return;
+  },
+  {
+    immediate: true,
   }
-
-  if (newType !== oldType) {
-    // Type changed - reset form but preserve resource ID
-    if (newType === IdentityProviderType.OAUTH2) {
-      // Switching to OAuth2
-      if (!selectedTemplate.value) {
-        selectedTemplate.value = head(templateList.value);
-      }
-      if (selectedTemplate.value) {
-        handleTemplateSelect(selectedTemplate.value);
-      }
-    } else {
-      // Switching to OIDC or LDAP
-      identityProvider.value.title = "";
-      identityProvider.value.domain = "";
-
-      // Clear field mapping
-      Object.keys(fieldMapping).forEach((key) => {
-        delete fieldMapping[key as keyof FieldMapping];
-      });
-      scopesStringOfConfig.value = "";
-    }
-  }
-});
+);
 
 // Watch for template changes to ensure form is updated
 watch(
