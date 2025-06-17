@@ -3,6 +3,7 @@ package oracle
 import (
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -18,11 +19,147 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 	}
 
 	var buf strings.Builder
-
 	schema := to.Schemas[0]
+
+	// First generate sequences (they need to exist before tables that reference them)
+	for _, sequence := range schema.Sequences {
+		// Skip system-generated sequences
+		if !strings.HasPrefix(sequence.Name, "ISEQ$$_") {
+			if err := writeSequence(&buf, sequence); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	// Build dependency graph for topological sorting
+	graph := base.NewGraph()
+	tableMap := make(map[string]*storepb.TableMetadata)
+	viewMap := make(map[string]*storepb.ViewMetadata)
+	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
+	functionMap := make(map[string]*storepb.FunctionMetadata)
+	procedureMap := make(map[string]*storepb.ProcedureMetadata)
+
+	// Add tables to graph
 	for _, table := range schema.Tables {
-		if err := writeTable(&buf, schema.Name, table); err != nil {
-			return "", err
+		tableID := getObjectID(schema.Name, table.Name)
+		tableMap[tableID] = table
+		graph.AddNode(tableID)
+	}
+
+	// Add views to graph
+	for _, view := range schema.Views {
+		viewID := getObjectID(schema.Name, view.Name)
+		viewMap[viewID] = view
+		graph.AddNode(viewID)
+		// Add dependencies from view to tables/views it references
+		for _, dependency := range view.DependencyColumns {
+			dependencyID := getObjectID(dependency.Schema, dependency.Table)
+			graph.AddEdge(dependencyID, viewID)
+		}
+	}
+
+	// Add materialized views to graph
+	for _, view := range schema.MaterializedViews {
+		viewID := getObjectID(schema.Name, view.Name)
+		materializedViewMap[viewID] = view
+		graph.AddNode(viewID)
+		// Add dependencies from materialized view to tables/views it references
+		for _, dependency := range view.DependencyColumns {
+			dependencyID := getObjectID(dependency.Schema, dependency.Table)
+			graph.AddEdge(dependencyID, viewID)
+		}
+	}
+
+	// Add functions to graph
+	for _, function := range schema.Functions {
+		functionID := getObjectID(schema.Name, function.Name)
+		functionMap[functionID] = function
+		graph.AddNode(functionID)
+		// Add dependencies from function to tables it references
+		for _, dependency := range function.DependencyTables {
+			dependencyID := getObjectID(dependency.Schema, dependency.Table)
+			graph.AddEdge(dependencyID, functionID)
+		}
+	}
+
+	// Add procedures to graph
+	for _, procedure := range schema.Procedures {
+		procedureID := getObjectID(schema.Name, procedure.Name)
+		procedureMap[procedureID] = procedure
+		graph.AddNode(procedureID)
+		// Note: ProcedureMetadata doesn't have DependencyTables field
+		// Procedures will be created after tables by default order
+	}
+
+	// Add foreign key dependencies between tables
+	for _, table := range schema.Tables {
+		tableID := getObjectID(schema.Name, table.Name)
+		for _, fk := range table.ForeignKeys {
+			if fk.ReferencedTable != table.Name { // Avoid self-references
+				referencedTableID := getObjectID(schema.Name, fk.ReferencedTable)
+				graph.AddEdge(referencedTableID, tableID)
+			}
+		}
+	}
+
+	// Perform topological sort
+	orderedList, err := graph.TopologicalSort()
+	if err != nil {
+		// If there are cycles, fall back to original order
+		for _, table := range schema.Tables {
+			if err := writeTable(&buf, schema.Name, table); err != nil {
+				return "", err
+			}
+		}
+		for _, view := range schema.Views {
+			if err := writeView(&buf, schema.Name, view); err != nil {
+				return "", err
+			}
+		}
+		for _, view := range schema.MaterializedViews {
+			if err := writeMaterializedView(&buf, schema.Name, view); err != nil {
+				return "", err
+			}
+		}
+		for _, function := range schema.Functions {
+			if err := writeFunction(&buf, schema.Name, function); err != nil {
+				return "", err
+			}
+		}
+		for _, procedure := range schema.Procedures {
+			if err := writeProcedure(&buf, schema.Name, procedure); err != nil {
+				return "", err
+			}
+		}
+		return buf.String(), nil
+	}
+
+	// Generate objects in dependency order
+	for _, objectID := range orderedList {
+		if table, ok := tableMap[objectID]; ok {
+			if err := writeTable(&buf, schema.Name, table); err != nil {
+				return "", err
+			}
+		}
+		if view, ok := viewMap[objectID]; ok {
+			if err := writeView(&buf, schema.Name, view); err != nil {
+				return "", err
+			}
+		}
+		if view, ok := materializedViewMap[objectID]; ok {
+			if err := writeMaterializedView(&buf, schema.Name, view); err != nil {
+				return "", err
+			}
+		}
+		if function, ok := functionMap[objectID]; ok {
+			if err := writeFunction(&buf, schema.Name, function); err != nil {
+				return "", err
+			}
+		}
+		if procedure, ok := procedureMap[objectID]; ok {
+			if err := writeProcedure(&buf, schema.Name, procedure); err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -123,6 +260,13 @@ func writeTable(buf *strings.Builder, schema string, table *storepb.TableMetadat
 		}
 	}
 
+	// Write triggers for this table
+	for _, trigger := range table.Triggers {
+		if err := writeTrigger(buf, schema, trigger); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -213,8 +357,13 @@ func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata
 		}
 	}
 
-	_, err := buf.WriteString(`);\n\n`)
-	return err
+	if _, err := buf.WriteString(`);`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("\n\n"); err != nil {
+		return err
+	}
+	return nil
 }
 
 func writeForeignKey(buf *strings.Builder, schema string, fk *storepb.ForeignKeyMetadata) error {
@@ -378,34 +527,211 @@ func writeColumn(buf *strings.Builder, column *storepb.ColumnMetadata) error {
 	if _, err := buf.WriteString(column.Type); err != nil {
 		return err
 	}
-	if column.Collation != "" {
-		if _, err := buf.WriteString(` COLLATE "`); err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(column.Collation); err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(`"`); err != nil {
-			return err
-		}
-	}
+	// Skip collation for Oracle as it causes issues with standard string size settings
+	// if column.Collation != "" {
+	//	if _, err := buf.WriteString(` COLLATE "`); err != nil {
+	//		return err
+	//	}
+	//	if _, err := buf.WriteString(column.Collation); err != nil {
+	//		return err
+	//	}
+	//	if _, err := buf.WriteString(`"`); err != nil {
+	//		return err
+	//	}
+	// }
 	if column.DefaultValue != nil {
-		if _, err := buf.WriteString(` DEFAULT `); err != nil {
-			return err
-		}
-		if column.DefaultOnNull {
-			if _, err := buf.WriteString(`ON NULL `); err != nil {
+		defaultExpr := column.GetDefaultExpression()
+		// Skip system-generated sequence references as they can't be manually created
+		if !strings.Contains(defaultExpr, "ISEQ$$_") {
+			if _, err := buf.WriteString(` DEFAULT `); err != nil {
 				return err
 			}
-		}
-		if _, err := buf.WriteString(column.GetDefaultExpression()); err != nil {
-			return err
+			if column.DefaultOnNull {
+				if _, err := buf.WriteString(`ON NULL `); err != nil {
+					return err
+				}
+			}
+			if _, err := buf.WriteString(defaultExpr); err != nil {
+				return err
+			}
 		}
 	}
 	if !column.Nullable {
 		if _, err := buf.WriteString(` NOT NULL`); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func writeSequence(buf *strings.Builder, sequence *storepb.SequenceMetadata) error {
+	if _, err := buf.WriteString("CREATE SEQUENCE \""); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(sequence.Name); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("\""); err != nil {
+		return err
+	}
+
+	if sequence.Start != "" && sequence.Start != "0" {
+		if _, err := buf.WriteString(" START WITH "); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(sequence.Start); err != nil {
+			return err
+		}
+	}
+
+	if sequence.Increment != "" && sequence.Increment != "0" && sequence.Increment != "1" {
+		if _, err := buf.WriteString(" INCREMENT BY "); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(sequence.Increment); err != nil {
+			return err
+		}
+	}
+
+	if sequence.MaxValue != "" && sequence.MaxValue != "0" {
+		if _, err := buf.WriteString(" MAXVALUE "); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(sequence.MaxValue); err != nil {
+			return err
+		}
+	}
+
+	if sequence.Cycle {
+		if _, err := buf.WriteString(" CYCLE"); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString(";\n\n"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// getObjectID returns a unique identifier for database objects
+func getObjectID(schema, objectName string) string {
+	if schema == "" {
+		return objectName
+	}
+	return schema + "." + objectName
+}
+
+// writeView writes a CREATE VIEW statement
+func writeView(buf *strings.Builder, _ string, view *storepb.ViewMetadata) error {
+	if _, err := buf.WriteString(`CREATE VIEW "`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(view.Name); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`" AS `); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(view.Definition); err != nil {
+		return err
+	}
+	if !strings.HasSuffix(strings.TrimSpace(view.Definition), ";") {
+		if _, err := buf.WriteString(`;`); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString("\n\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// writeMaterializedView writes a CREATE MATERIALIZED VIEW statement
+func writeMaterializedView(buf *strings.Builder, _ string, view *storepb.MaterializedViewMetadata) error {
+	if _, err := buf.WriteString(`CREATE MATERIALIZED VIEW "`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(view.Name); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`" AS `); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(view.Definition); err != nil {
+		return err
+	}
+	if !strings.HasSuffix(strings.TrimSpace(view.Definition), ";") {
+		if _, err := buf.WriteString(`;`); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString("\n\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// writeFunction writes a CREATE FUNCTION statement
+func writeFunction(buf *strings.Builder, _ string, function *storepb.FunctionMetadata) error {
+	definition := function.Definition
+	// If the definition doesn't start with CREATE, add the CREATE OR REPLACE prefix
+	if !strings.HasPrefix(strings.ToUpper(strings.TrimSpace(definition)), "CREATE") {
+		if _, err := buf.WriteString("CREATE OR REPLACE "); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString(definition); err != nil {
+		return err
+	}
+	if !strings.HasSuffix(strings.TrimSpace(definition), ";") {
+		if _, err := buf.WriteString(";"); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString("\n\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// writeProcedure writes a CREATE PROCEDURE statement
+func writeProcedure(buf *strings.Builder, _ string, procedure *storepb.ProcedureMetadata) error {
+	definition := procedure.Definition
+	// If the definition doesn't start with CREATE, add the CREATE OR REPLACE prefix
+	if !strings.HasPrefix(strings.ToUpper(strings.TrimSpace(definition)), "CREATE") {
+		if _, err := buf.WriteString("CREATE OR REPLACE "); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString(definition); err != nil {
+		return err
+	}
+	if !strings.HasSuffix(strings.TrimSpace(definition), ";") {
+		if _, err := buf.WriteString(";"); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString("\n\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// writeTrigger writes a CREATE TRIGGER statement
+func writeTrigger(buf *strings.Builder, _ string, trigger *storepb.TriggerMetadata) error {
+	// The trigger body should already contain the full CREATE TRIGGER statement
+	if _, err := buf.WriteString(trigger.Body); err != nil {
+		return err
+	}
+	if !strings.HasSuffix(strings.TrimSpace(trigger.Body), ";") {
+		if _, err := buf.WriteString(";"); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString("\n\n"); err != nil {
+		return err
 	}
 	return nil
 }
