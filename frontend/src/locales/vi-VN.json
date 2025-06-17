@@ -1606,7 +1606,8 @@
       "new-baseline": {
         "self": "Đường cơ sở mới",
         "successfully-established": "Đã thiết lập thành công đường cơ sở mới"
-      }
+      },
+      "view-diff": "Xem sự khác biệt"
     }
   },
   "project": {
