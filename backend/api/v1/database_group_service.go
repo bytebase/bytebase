@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -41,36 +40,36 @@ func NewDatabaseGroupService(store *store.Store, profile *config.Profile, iamMan
 // CreateDatabaseGroup creates a database group.
 func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *connect.Request[v1pb.CreateDatabaseGroupRequest]) (*connect.Response[v1pb.DatabaseGroup], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATABASE_GROUPS); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	projectResourceID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", req.Msg.Parent)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", req.Msg.Parent))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", req.Msg.Parent)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Parent))
 	}
 
 	if !isValidResourceID(req.Msg.DatabaseGroupId) {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid database group id %q", req.Msg.DatabaseGroupId)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database group id %q", req.Msg.DatabaseGroupId))
 	}
 	if req.Msg.DatabaseGroup.Title == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group database placeholder is required"))
 	}
 	if req.Msg.DatabaseGroup.DatabaseExpr == nil || req.Msg.DatabaseGroup.DatabaseExpr.Expression == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group database expression is required"))
 	}
 	if _, err := common.ValidateGroupCELExpr(req.Msg.DatabaseGroup.DatabaseExpr.Expression); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid database group expression"))
 	}
 
 	storeDatabaseGroup := &store.DatabaseGroupMessage{
@@ -89,19 +88,19 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	hasPermission, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsUpdate, user, project.ResourceID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission with error"))
 	}
 	if !hasPermission {
-		return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionProjectsUpdate)
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionProjectsUpdate))
 	}
 
 	databaseGroup, err := s.store.CreateDatabaseGroup(ctx, storeDatabaseGroup)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result, err := convertStoreToAPIDatabaseGroupFull(ctx, s.store, databaseGroup, projectResourceID)
 	if err != nil {
@@ -113,33 +112,33 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 // UpdateDatabaseGroup updates a database group.
 func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *connect.Request[v1pb.UpdateDatabaseGroupRequest]) (*connect.Response[v1pb.DatabaseGroup], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATABASE_GROUPS); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(req.Msg.DatabaseGroup.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectResourceID))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectResourceID))
 	}
 	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectID:  &project.ResourceID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if existedDatabaseGroup == nil {
-		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database group %q not found", databaseGroupResourceID))
 	}
 
 	var updateDatabaseGroup store.UpdateDatabaseGroupMessage
@@ -147,24 +146,24 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 		switch path {
 		case "title":
 			if req.Msg.DatabaseGroup.Title == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group database placeholder is required"))
 			}
 			updateDatabaseGroup.Placeholder = &req.Msg.DatabaseGroup.Title
 		case "database_expr":
 			if req.Msg.DatabaseGroup.DatabaseExpr == nil || req.Msg.DatabaseGroup.DatabaseExpr.Expression == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group expr is required"))
 			}
 			if _, err := common.ValidateGroupCELExpr(req.Msg.DatabaseGroup.DatabaseExpr.Expression); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid database group expression"))
 			}
 			updateDatabaseGroup.Expression = req.Msg.DatabaseGroup.DatabaseExpr
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported path: %q", path))
 		}
 	}
 	databaseGroup, err := s.store.UpdateDatabaseGroup(ctx, existedDatabaseGroup.ProjectID, existedDatabaseGroup.ResourceID, &updateDatabaseGroup)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result, err := convertStoreToAPIDatabaseGroupFull(ctx, s.store, databaseGroup, projectResourceID)
 	if err != nil {
@@ -177,34 +176,34 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 func (s *DatabaseGroupService) DeleteDatabaseGroup(ctx context.Context, req *connect.Request[v1pb.DeleteDatabaseGroupRequest]) (*connect.Response[emptypb.Empty], error) {
 	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(req.Msg.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectResourceID))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectResourceID))
 	}
 	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectID:  &project.ResourceID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if existedDatabaseGroup == nil {
-		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database group %q not found", databaseGroupResourceID))
 	}
 
 	err = s.store.DeleteDatabaseGroup(ctx, existedDatabaseGroup.ProjectID, existedDatabaseGroup.ResourceID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
@@ -213,24 +212,24 @@ func (s *DatabaseGroupService) DeleteDatabaseGroup(ctx context.Context, req *con
 func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, req *connect.Request[v1pb.ListDatabaseGroupsRequest]) (*connect.Response[v1pb.ListDatabaseGroupsResponse], error) {
 	projectResourceID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectResourceID))
 	}
 
 	databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{
 		ProjectID: &project.ResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list database groups, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list database groups, err"))
 	}
 
 	var apiDatabaseGroups []*v1pb.DatabaseGroup
@@ -238,7 +237,7 @@ func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, req *conn
 		if req.Msg.View == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
 			fullDatabaseGroup, err := convertStoreToAPIDatabaseGroupFull(ctx, s.store, databaseGroup, projectResourceID)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert database group %q to full view, err: %v", databaseGroup.ResourceID, err)
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database group %q to full view", databaseGroup.ResourceID))
 			}
 			apiDatabaseGroups = append(apiDatabaseGroups, fullDatabaseGroup)
 		} else {
@@ -262,26 +261,26 @@ func (s *DatabaseGroupService) GetDatabaseGroup(ctx context.Context, req *connec
 func getDatabaseGroupByName(ctx context.Context, stores *store.Store, databaseGroupName string, view v1pb.DatabaseGroupView) (*v1pb.DatabaseGroup, error) {
 	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(databaseGroupName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectResourceID))
 	}
 	databaseGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectID:  &project.ResourceID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if databaseGroup == nil {
-		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database group %q not found", databaseGroupResourceID))
 	}
 	if view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
 		return convertStoreToAPIDatabaseGroupFull(ctx, stores, databaseGroup, projectResourceID)
@@ -294,7 +293,7 @@ func convertStoreToAPIDatabaseGroupFull(ctx context.Context, stores *store.Store
 		ProjectID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	ret := convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID)

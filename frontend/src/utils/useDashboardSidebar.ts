@@ -1,4 +1,18 @@
-import type { SidebarItem } from "@/components/v2/Sidebar/CommonSidebar.vue";
+import {
+  DatabaseIcon,
+  GalleryHorizontalEndIcon,
+  HomeIcon,
+  LayersIcon,
+  LinkIcon,
+  SettingsIcon,
+  ShieldCheck,
+  SquareStackIcon,
+  UsersIcon,
+  WorkflowIcon,
+} from "lucide-vue-next";
+import { computed, h } from "vue";
+import { useRoute } from "vue-router";
+import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
 import { t } from "@/plugins/i18n";
 import workspaceRoutes from "@/router/dashboard/workspace";
@@ -21,7 +35,7 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SSO,
   WORKSPACE_ROUTE_USER_PROFILE,
-  WORKSPACE_ROUTE_USERS
+  WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import {
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
@@ -31,20 +45,6 @@ import {
 import { useAppFeature, usePermissionStore } from "@/store";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import {
-  DatabaseIcon,
-  GalleryHorizontalEndIcon,
-  HomeIcon,
-  LayersIcon,
-  LinkIcon,
-  SettingsIcon,
-  ShieldCheck,
-  SquareStackIcon,
-  UsersIcon,
-  WorkflowIcon,
-} from "lucide-vue-next";
-import { computed, h } from "vue";
-import { useRoute } from "vue-router";
 
 export interface DashboardSidebarItem extends SidebarItem {
   navigationId?: string;

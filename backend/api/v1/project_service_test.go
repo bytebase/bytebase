@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -375,11 +375,11 @@ func TestListProjectFilter(t *testing.T) {
 	testCases := []struct {
 		input string
 		want  *store.ListResourceFilter
-		error error
+		error *connect.Error
 	}{
 		{
 			input: `title == "sample project"`,
-			error: status.Errorf(codes.InvalidArgument, "unsupport variable %q", "title"),
+			error: connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", "title")),
 		},
 		{
 			input: `name == "sample project"`,
@@ -427,7 +427,10 @@ func TestListProjectFilter(t *testing.T) {
 		filter, err := getListProjectFilter(tc.input)
 		if tc.error != nil {
 			require.Error(t, err)
-			require.Equal(t, tc.error, err)
+			connectErr := new(connect.Error)
+			require.True(t, errors.As(err, &connectErr))
+			require.Equal(t, tc.error.Message(), connectErr.Message())
+			require.Equal(t, tc.error.Code(), connectErr.Code())
 		} else {
 			require.NoError(t, err)
 			require.Equal(t, tc.want.Where, filter.Where)

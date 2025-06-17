@@ -1,17 +1,8 @@
 <template>
-  <template v-if="!hideBanner">
-    <BannerUpgradeSubscription />
-    <template v-if="shouldShowDemoBanner">
-      <BannerDemo />
-    </template>
-    <template v-if="shouldShowSubscriptionBanner">
-      <BannerSubscription />
-    </template>
-    <template v-if="shouldShowExternalUrlBanner">
-      <BannerExternalUrl />
-    </template>
-  </template>
-
+  <BannerUpgradeSubscription />
+  <BannerDemo v-if="shouldShowDemoBanner" />
+  <BannerSubscription v-if="shouldShowSubscriptionBanner" />
+  <BannerExternalUrl v-if="shouldShowExternalUrlBanner" />
   <BannerAnnouncement />
 </template>
 
@@ -21,7 +12,6 @@ import { computed } from "vue";
 import {
   LICENSE_EXPIRATION_THRESHOLD,
   useActuatorV1Store,
-  useAppFeature,
   useSubscriptionV1Store,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -35,7 +25,6 @@ import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
-const hideBanner = useAppFeature("bb.feature.hide-banner");
 const { needConfigureExternalUrl } = storeToRefs(actuatorStore);
 const { isExpired, isTrialing, currentPlan, daysBeforeExpire } =
   storeToRefs(subscriptionStore);

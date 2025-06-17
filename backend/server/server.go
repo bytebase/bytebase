@@ -11,12 +11,11 @@ import (
 	"sync"
 	"time"
 
+	"connectrpc.com/connect"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"golang.org/x/net/http2"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -205,7 +204,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 			err := &grpcruntime.HTTPStatusError{
 				HTTPStatus: httpStatus,
-				Err:        status.Errorf(codes.NotFound, "Routing error. Please check the request URI %v", r.RequestURI),
+				Err:        connect.NewError(connect.CodeNotFound, errors.Errorf("Routing error. Please check the request URI %v", r.RequestURI)),
 			}
 
 			grpcruntime.DefaultHTTPErrorHandler(ctx, sm, m, w, r, err)

@@ -9,7 +9,6 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import { useAppFeature } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   instanceOfSQLEditorTreeNode,
@@ -40,9 +39,6 @@ export const useDropdown = () => {
   const router = useRouter();
   const editorContext = useSQLEditorContext();
   const { events: editorEvents, showConnectionPanel } = editorContext;
-  const disallowNavigateAwaySQLEditor = useAppFeature(
-    "bb.feature.disallow-navigate-to-console"
-  );
 
   const show = ref(false);
   const position = ref<Position>({
@@ -115,42 +111,40 @@ export const useDropdown = () => {
           });
         }
       }
-      if (!disallowNavigateAwaySQLEditor.value) {
-        if (type === "database") {
-          const database = target as ComposedDatabase;
-          items.push({
-            key: "view-database-detail",
-            label: t("sql-editor.view-database-detail"),
-            icon: () => <ExternalLinkIcon class="w-4 h-4" />,
-            onSelect: () => {
-              const route = router.resolve({
-                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-                params: {
-                  projectId: extractProjectResourceName(database.project),
-                  instanceId: extractInstanceResourceName(database.instance),
-                  databaseName: database.databaseName,
-                },
-              });
-              const url = route.href;
-              window.open(url, "_blank");
-            },
-          });
-          if (instanceV1HasAlterSchema(database.instanceResource)) {
-            items.push({
-              key: "alter-schema",
-              label: t("database.edit-schema"),
-              icon: () => <SquarePenIcon class="w-4 h-4" />,
-              onSelect: () => {
-                const db = node.meta.target as ComposedDatabase;
-                editorEvents.emit("alter-schema", {
-                  databaseName: db.name,
-                  schema: "",
-                  table: "",
-                });
-                showConnectionPanel.value = false;
+      if (type === "database") {
+        const database = target as ComposedDatabase;
+        items.push({
+          key: "view-database-detail",
+          label: t("sql-editor.view-database-detail"),
+          icon: () => <ExternalLinkIcon class="w-4 h-4" />,
+          onSelect: () => {
+            const route = router.resolve({
+              name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+              params: {
+                projectId: extractProjectResourceName(database.project),
+                instanceId: extractInstanceResourceName(database.instance),
+                databaseName: database.databaseName,
               },
             });
-          }
+            const url = route.href;
+            window.open(url, "_blank");
+          },
+        });
+        if (instanceV1HasAlterSchema(database.instanceResource)) {
+          items.push({
+            key: "alter-schema",
+            label: t("database.edit-schema"),
+            icon: () => <SquarePenIcon class="w-4 h-4" />,
+            onSelect: () => {
+              const db = node.meta.target as ComposedDatabase;
+              editorEvents.emit("alter-schema", {
+                databaseName: db.name,
+                schema: "",
+                table: "",
+              });
+              showConnectionPanel.value = false;
+            },
+          });
         }
       }
       return items;

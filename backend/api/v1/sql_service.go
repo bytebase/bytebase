@@ -20,8 +20,6 @@ import (
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -102,7 +100,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			if err == io.EOF {
 				return nil
 			}
-			return status.Errorf(codes.Internal, "failed to receive request: %v", err)
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to receive request: %v", err))
 		}
 
 		user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
@@ -114,13 +112,13 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		if driver == nil {
 			driver, err = s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 			if err != nil {
-				return status.Errorf(codes.Internal, "failed to get database driver: %v", err)
+				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
 			}
 			sqlDB := driver.GetDB()
 			if sqlDB != nil {
 				conn, err = sqlDB.Conn(ctx)
 				if err != nil {
-					return status.Errorf(codes.Internal, "failed to get database connection: %v", err)
+					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database connection: %v", err))
 				}
 			}
 		}
@@ -148,7 +146,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		}
 
 		if err := stream.Send(response); err != nil {
-			return status.Errorf(codes.Internal, "failed to send response: %v", err)
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to send response: %v", err))
 		}
 	}
 }
@@ -185,7 +183,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		ReadOnly:     dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
 	}
 	defer driver.Close(ctx)
 
@@ -194,7 +192,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	if sqlDB != nil {
 		conn, err = sqlDB.Conn(ctx)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get database connection: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database connection: %v", err))
 		}
 		defer conn.Close()
 	}
@@ -235,31 +233,14 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		return nil, err
 	}
 	if queryErr != nil {
-		code := codes.Internal
-		if errorStatus, ok := status.FromError(queryErr); ok {
-			if errorStatus.Code() != codes.OK && errorStatus.Code() != codes.Unknown {
-				code = errorStatus.Code()
-			}
+		code := connect.CodeInternal
+		// If queryErr is already a connect.Error, preserve its code
+		if connectErr, ok := queryErr.(*connect.Error); ok {
+			code = connectErr.Code()
 		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
-			querySyntaxError, err := status.New(codes.InvalidArgument, queryErr.Error()).WithDetails(
-				&v1pb.PlanCheckRun_Result{
-					Code:    int32(advisor.StatementSyntaxError),
-					Content: syntaxErr.Message,
-					Title:   "Syntax error",
-					Status:  v1pb.PlanCheckRun_Result_ERROR,
-					Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
-						SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-							Line:   int32(syntaxErr.Position.GetLine()),
-							Column: int32(syntaxErr.Position.GetColumn()),
-						},
-					},
-				},
-			)
-			if err == nil {
-				return nil, querySyntaxError.Err()
-			}
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("syntax error: %s", syntaxErr.Message))
 		}
-		return nil, status.Error(code, queryErr.Error())
+		return nil, connect.NewError(code, errors.New(queryErr.Error()))
 	}
 
 	for _, result := range results {
@@ -447,7 +428,7 @@ func queryRetry(
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
-				return nil, nil, time.Duration(0), status.Error(codes.Internal, err.Error())
+				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
 		}
 	}
@@ -511,7 +492,7 @@ func queryRetry(
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
-				return nil, nil, time.Duration(0), status.Error(codes.Internal, err.Error())
+				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
 		}
 	}
@@ -519,10 +500,10 @@ func queryRetry(
 	for i, result := range results {
 		if i < len(spans) && result.Error == "" {
 			if spans[i].FunctionNotSupportedError != nil {
-				return nil, nil, duration, status.Errorf(codes.Internal, "failed to mask data: %v", spans[i].FunctionNotSupportedError)
+				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Errorf("failed to mask data: %v", spans[i].FunctionNotSupportedError))
 			}
 			if spans[i].NotFoundError != nil {
-				return nil, nil, duration, status.Errorf(codes.Internal, "failed to mask data: %v", spans[i].NotFoundError)
+				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Errorf("failed to mask data: %v", spans[i].NotFoundError))
 			}
 		}
 	}
@@ -531,11 +512,11 @@ func queryRetry(
 		// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
 		if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {
 			if len(spans) != 1 {
-				return nil, nil, duration, status.Error(codes.Internal, "expected one span for CosmosDB")
+				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New("expected one span for CosmosDB"))
 			}
 			objectSchema, err := getCosmosDBContainerObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, queryContext.Container)
 			if err != nil {
-				return nil, nil, duration, status.Error(codes.Internal, err.Error())
+				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
 			for pathStr, predicatePath := range spans[0].PredicatePaths {
 				semanticType := getFirstSemanticTypeInPath(predicatePath, objectSchema)
@@ -561,22 +542,22 @@ func queryRetry(
 						}
 						semanticTypeToMaskerMap, err := buildSemanticTypeToMaskerMap(ctx, stores)
 						if err != nil {
-							return nil, nil, duration, status.Error(codes.Internal, err.Error())
+							return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 						}
 						// Unmarshal the document.
 						doc := make(map[string]any)
 						if err := json.Unmarshal([]byte(value), &doc); err != nil {
-							return nil, nil, duration, status.Errorf(codes.Internal, "failed to unmarshal document: %v", err)
+							return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal document: %v", err))
 						}
 						// Mask the document.
 						maskedDoc, err := maskCosmosDB(spans[0], doc, objectSchema, semanticTypeToMaskerMap)
 						if err != nil {
-							return nil, nil, duration, status.Errorf(codes.Internal, "failed to mask document: %v", err)
+							return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Errorf("failed to mask document: %v", err))
 						}
 						// Marshal the masked document.
 						maskedValue, err := json.Marshal(maskedDoc)
 						if err != nil {
-							return nil, nil, duration, status.Errorf(codes.Internal, "failed to marshal masked document: %v", err)
+							return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal masked document: %v", err))
 						}
 						row.Values[0] = &v1pb.RowValue{
 							Kind: &v1pb.RowValue_StringValue{
@@ -589,7 +570,7 @@ func queryRetry(
 		} else {
 			masker := NewQueryResultMasker(stores)
 			if err := masker.MaskResults(ctx, spans, results, instance, user, action); err != nil {
-				return nil, nil, duration, status.Error(codes.Internal, err.Error())
+				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
 
 			for i, result := range results {
@@ -712,10 +693,10 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// Check if data export is allowed.
 	exportDataPolicy, err := s.store.GetExportDataPolicy(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get data export policy: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get data export policy: %v", err))
 	}
 	if exportDataPolicy.Disable {
-		return nil, status.Errorf(codes.PermissionDenied, "data export is not allowed")
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data export is not allowed"))
 	}
 
 	// Prepare related message.
@@ -749,7 +730,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	}
 
 	if exportErr != nil {
-		return nil, status.Error(codes.Internal, exportErr.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.New(exportErr.Error()))
 	}
 
 	return connect.NewResponse(&v1pb.ExportResponse{
@@ -760,22 +741,22 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
 	_, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(requestName)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse rollout ID: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse rollout ID: %v", err))
 	}
 	rollout, err := s.store.GetRollout(ctx, rolloutID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get rollout: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout: %v", err))
 	}
 	if rollout == nil {
-		return nil, status.Errorf(codes.NotFound, "rollout %d not found", rolloutID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found", rolloutID))
 	}
 
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rollout.ID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get tasks: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks: %v", err))
 	}
 	if len(tasks) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "rollout %d has no task", rollout.ID)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", rollout.ID))
 	}
 
 	exportArchiveUIDs := []int{}
@@ -788,22 +769,22 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 			Status:  &targetTaskRunStatus,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get task run: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run: %v", err))
 		}
 		if len(taskRuns) == 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "rollout %v has no task run", requestName)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %v has no task run", requestName))
 		}
 		taskRun := taskRuns[0]
 		exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
 		if exportArchiveUID == 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "issue %v has no export archive", requestName)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue %v has no export archive", requestName))
 		}
 		exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get export archive: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get export archive: %v", err))
 		}
 		if exportArchive == nil {
-			return nil, status.Errorf(codes.NotFound, "export archive %d not found", exportArchiveUID)
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("export archive %d not found", exportArchiveUID))
 		}
 		exportArchiveUIDs = append(exportArchiveUIDs, exportArchiveUID)
 		contents = append(contents, &exportData{
@@ -817,7 +798,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		Format:   v1pb.ExportFormat(tasks[0].Payload.GetFormat()),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to encrypt data: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to encrypt data: %v", err))
 	}
 
 	for _, exportArchiveUID := range exportArchiveUIDs {
@@ -847,7 +828,7 @@ func DoExport(
 	dataSource *storepb.DataSource,
 ) ([]byte, time.Duration, error) {
 	if dataSource == nil {
-		return nil, 0, status.Errorf(codes.NotFound, "cannot found valid data source")
+		return nil, 0, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found valid data source"))
 	}
 	driver, err := dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
 		DatabaseName: database.DatabaseName,
@@ -855,7 +836,7 @@ func DoExport(
 		ReadOnly:     true,
 	})
 	if err != nil {
-		return nil, 0, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
+		return nil, 0, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
 	}
 	defer driver.Close(ctx)
 
@@ -931,7 +912,7 @@ func DoExport(
 	case v1pb.ExportFormat_SQL:
 		resourceList, err := getResources(ctx, stores, instance.Metadata.GetEngine(), database.DatabaseName, request.Statement, instance)
 		if err != nil {
-			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
+			return nil, 0, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to extract resource list: %v", err))
 		}
 		statementPrefix, err := getSQLStatementPrefix(instance.Metadata.GetEngine(), resourceList, result.ColumnNames)
 		if err != nil {
@@ -947,7 +928,7 @@ func DoExport(
 			return nil, duration, err
 		}
 	default:
-		return nil, duration, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+		return nil, duration, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported export format: %s", request.Format.String()))
 	}
 
 	if request.Password == "" {
@@ -1028,7 +1009,7 @@ func (s *SQLService) createQueryHistory(ctx context.Context, database *store.Dat
 	}
 
 	if _, err := s.store.CreateQueryHistory(ctx, qh); err != nil {
-		return status.Errorf(codes.Internal, "Failed to create export history with error: %v", err)
+		return connect.NewError(connect.CodeInternal, errors.Errorf("Failed to create export history with error: %v", err))
 	}
 	return nil
 }
@@ -1040,11 +1021,11 @@ func getListQueryHistoryFilter(filter string) (*store.ListResourceFilter, error)
 
 	e, err := cel.NewEnv()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
 	}
 	ast, iss := e.Parse(filter)
 	if iss != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
 	}
 
 	var getFilter func(expr celast.Expr) (string, error)
@@ -1055,7 +1036,7 @@ func getListQueryHistoryFilter(filter string) (*store.ListResourceFilter, error)
 		case "project":
 			projectID, err := common.GetProjectID(value.(string))
 			if err != nil {
-				return "", status.Errorf(codes.InvalidArgument, "invalid project filter %q", value)
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project filter %q", value))
 			}
 			positionalArgs = append(positionalArgs, projectID)
 			return fmt.Sprintf("query_history.project_id = $%d", len(positionalArgs)), nil
@@ -1070,7 +1051,7 @@ func getListQueryHistoryFilter(filter string) (*store.ListResourceFilter, error)
 			positionalArgs = append(positionalArgs, historyType)
 			return fmt.Sprintf("query_history.type = $%d", len(positionalArgs)), nil
 		default:
-			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 		}
 	}
 
@@ -1090,22 +1071,22 @@ func getListQueryHistoryFilter(filter string) (*store.ListResourceFilter, error)
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
-					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
 				}
 				value := args[0].AsLiteral().Value()
 				if variable != "statement" {
-					return "", status.Errorf(codes.InvalidArgument, `only "statement" support %q operator, but found %q`, celoverloads.Matches, variable)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "statement" support %q operator, but found %q`, celoverloads.Matches, variable))
 				}
 				strValue, ok := value.(string)
 				if !ok {
-					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
 				}
 				return "query_history.statement LIKE '%" + strValue + "%'", nil
 			default:
-				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
 			}
 		default:
-			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
 		}
 	}
 
@@ -1135,7 +1116,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
 	}
 
 	find := &store.FindQueryHistoryMessage{
@@ -1151,14 +1132,14 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 
 	historyList, err := s.store.ListQueryHistories(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list history: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list history: %v", err.Error()))
 	}
 
 	nextPageToken := ""
 	if len(historyList) == limitPlusOne {
 		historyList = historyList[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal next page token, error: %v", err))
 		}
 	}
 
@@ -1168,7 +1149,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	for _, history := range historyList {
 		queryHistory, err := s.convertToV1QueryHistory(ctx, history)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert log entity, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert log entity, error: %v", err))
 		}
 		if queryHistory == nil {
 			continue
@@ -1331,7 +1312,7 @@ func (s *SQLService) accessCheck(
 		return err
 	}
 	if project == nil {
-		return status.Errorf(codes.InvalidArgument, "project %q not found", database.ProjectID)
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q not found", database.ProjectID))
 	}
 
 	for _, span := range spans {
@@ -1340,7 +1321,7 @@ func (s *SQLService) accessCheck(
 			var permission iam.Permission
 			switch span.Type {
 			case parserbase.QueryTypeUnknown:
-				return status.Error(codes.PermissionDenied, "disallowed query type")
+				return connect.NewError(connect.CodePermissionDenied, errors.New("disallowed query type"))
 			case parserbase.DDL:
 				permission = iam.PermissionSQLDdl
 			case parserbase.DML:
@@ -1363,10 +1344,10 @@ func (s *SQLService) accessCheck(
 			if permission != "" {
 				ok, err := s.iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
 				if err != nil {
-					return status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
+					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 				}
 				if !ok {
-					return status.Errorf(codes.PermissionDenied, "user %q does not have permission %q on project %q", user.Email, permission, project.ResourceID)
+					return connect.NewError(connect.CodePermissionDenied, errors.Errorf("user %q does not have permission %q on project %q", user.Email, permission, project.ResourceID))
 				}
 			}
 		}
@@ -1389,29 +1370,29 @@ func (s *SQLService) accessCheck(
 					return err
 				}
 				if databaseMessage == nil {
-					return status.Errorf(codes.InvalidArgument, "database %q not found", column.Database)
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database %q not found", column.Database))
 				}
 				project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &databaseMessage.ProjectID})
 				if err != nil {
 					return err
 				}
 				if project == nil {
-					return status.Errorf(codes.InvalidArgument, "project %q not found", databaseMessage.ProjectID)
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q not found", databaseMessage.ProjectID))
 				}
 
 				workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
 				if err != nil {
-					return status.Errorf(codes.Internal, "failed to get workspace iam policy, error: %v", err)
+					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace iam policy, error: %v", err))
 				}
 				// Allow query databases across different projects.
 				projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 				if err != nil {
-					return status.Error(codes.Internal, err.Error())
+					return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 				}
 
 				ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, attributes, isExport)
 				if err != nil {
-					return status.Errorf(codes.Internal, "failed to check access control for database: %q, error %v", column.Database, err)
+					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", column.Database, err))
 				}
 				if !ok {
 					resource := attributes["resource.database"]
@@ -1421,9 +1402,9 @@ func (s *SQLService) accessCheck(
 					if table, ok := attributes["resource.table"]; ok && table != "" {
 						resource = fmt.Sprintf("%s/tables/%s", resource, table)
 					}
-					return status.Errorf(
-						codes.PermissionDenied,
-						"permission denied to access resource: %s", resource,
+					return connect.NewError(
+						connect.CodePermissionDenied,
+						errors.Errorf("permission denied to access resource: %s", resource),
 					)
 				}
 			}
@@ -1451,22 +1432,22 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName string) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
 	user, err := s.getUser(ctx)
 	if err != nil {
-		return nil, nil, nil, status.Error(codes.Internal, err.Error())
+		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
 	database, err := getDatabaseMessage(ctx, s.store, requestName)
 	if err != nil {
-		return nil, nil, nil, status.Error(codes.Internal, err.Error())
+		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
 	})
 	if err != nil {
-		return nil, nil, nil, status.Error(codes.Internal, err.Error())
+		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 	if instance == nil {
-		return nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
+		return nil, nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
 	}
 
 	return user, instance, database, nil
@@ -1477,24 +1458,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	if err != nil {
 		syntaxErr, ok := err.(*parserbase.SyntaxError)
 		if ok {
-			querySyntaxError, err := status.New(codes.InvalidArgument, syntaxErr.Error()).WithDetails(
-				&v1pb.PlanCheckRun_Result{
-					Code:    int32(advisor.StatementSyntaxError),
-					Content: syntaxErr.Message,
-					Title:   "Syntax error",
-					Status:  v1pb.PlanCheckRun_Result_ERROR,
-					Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
-						SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-							Line:   int32(syntaxErr.Position.GetLine()),
-							Column: int32(syntaxErr.Position.GetColumn()),
-						},
-					},
-				},
-			)
-			if err != nil {
-				return syntaxErr
-			}
-			return querySyntaxError.Err()
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("syntax error: %s", syntaxErr.Message))
 		}
 		return err
 	}
@@ -1540,10 +1504,10 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	if user.MemberDeleted {
-		return nil, status.Errorf(codes.PermissionDenied, "the user has been deactivated.")
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("the user has been deactivated"))
 	}
 	return user, nil
 }
@@ -1551,22 +1515,22 @@ func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 func (s *SQLService) Check(ctx context.Context, req *connect.Request[v1pb.CheckRequest]) (*connect.Response[v1pb.CheckResponse], error) {
 	request := req.Msg
 	if len(request.Statement) > common.MaxSheetCheckSize {
-		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024)
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024))
 	}
 
 	database, err := getDatabaseMessage(ctx, s.store, request.Name)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance, error: %v", err))
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
 	}
 
 	checkResponse := &v1pb.CheckResponse{}
@@ -1575,7 +1539,7 @@ func (s *SQLService) Check(ctx context.Context, req *connect.Request[v1pb.CheckR
 	// Including affected rows.
 	summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, request.Statement)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get SQL summary report, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get SQL summary report, error: %v", err))
 	}
 	if summaryReport != nil {
 		checkResponse.AffectedRows = summaryReport.AffectedRows
@@ -1643,16 +1607,16 @@ func (s *SQLService) SQLReviewCheck(
 
 	catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance), dbMetadata)
 	if err != nil {
-		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to create a catalog: %v", err)
+		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create a catalog: %v", err))
 	}
 
 	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database, changeType)
 	if err != nil {
-		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get use database owner: %v", err)
+		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get use database owner: %v", err))
 	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: useDatabaseOwner})
 	if err != nil {
-		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
+		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
 	}
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
@@ -1680,13 +1644,13 @@ func (s *SQLService) SQLReviewCheck(
 			// Continue to check the builtin rules.
 			reviewConfig = &storepb.ReviewConfigPayload{}
 		} else {
-			return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get SQL review policy with error: %v", err)
+			return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get SQL review policy with error: %v", err))
 		}
 	}
 
 	res, err := advisor.SQLReviewCheck(ctx, s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
 	if err != nil {
-		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to exec SQL review with error: %v", err)
+		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to exec SQL review with error: %v", err))
 	}
 
 	adviceLevel := storepb.Advice_SUCCESS
@@ -1756,10 +1720,10 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	switch request.Engine {
 	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported engine: %v", request.Engine))
 	}
 	if request.SourceMetadata == nil || request.TargetMetadata == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("source_metadata and target_metadata are required"))
 	}
 	storeSourceMetadata, err := convertV1DatabaseMetadata(request.SourceMetadata)
 	if err != nil {
@@ -1804,7 +1768,7 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 		StrictMode:          true,
 	}, sourceSchema, targetSchema)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute diff between source and target schemas, error: %v", err))
 	}
 
 	return connect.NewResponse(&v1pb.DiffMetadataResponse{
@@ -1839,19 +1803,19 @@ func (*SQLService) Pretty(_ context.Context, req *connect.Request[v1pb.PrettyReq
 	request := req.Msg
 	engine := convertEngine(request.Engine)
 	if _, err := transform.CheckFormat(engine, request.ExpectedSchema); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "User SDL is not SDL format: %s", err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("User SDL is not SDL format: %s", err.Error()))
 	}
 	if _, err := transform.CheckFormat(engine, request.CurrentSchema); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Dumped SDL is not SDL format: %s", err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("Dumped SDL is not SDL format: %s", err.Error()))
 	}
 
 	prettyExpectedSchema, err := transform.SchemaTransform(engine, request.ExpectedSchema)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to transform user SDL: %s", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to transform user SDL: %s", err.Error()))
 	}
 	prettyCurrentSchema, err := transform.Normalize(engine, request.CurrentSchema, prettyExpectedSchema)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to normalize dumped SDL: %s", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to normalize dumped SDL: %s", err.Error()))
 	}
 
 	return connect.NewResponse(&v1pb.PrettyResponse{
@@ -1882,15 +1846,15 @@ func checkAndGetDataSourceQueriable(
 	dataSourceID string,
 ) (*storepb.DataSource, error) {
 	if dataSourceID == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "data source id is required")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data source id is required"))
 	}
 
 	instance, err := storeInstance.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get instance %v with error: %v", database.InstanceID, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance %v with error: %v", database.InstanceID, err.Error()))
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
 	}
 	dataSource := func() *storepb.DataSource {
 		for _, ds := range instance.Metadata.GetDataSources() {
@@ -1901,13 +1865,13 @@ func checkAndGetDataSourceQueriable(
 		return nil
 	}()
 	if dataSource == nil {
-		return nil, status.Errorf(codes.NotFound, "data source %q not found", dataSourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("data source %q not found", dataSourceID))
 	}
 
 	// Always allow non-admin data source.
 	if dataSource.GetType() != storepb.DataSourceType_ADMIN {
 		if err := licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.New(err.Error()))
 		}
 		return dataSource, nil
 	}
@@ -1919,10 +1883,10 @@ func checkAndGetDataSourceQueriable(
 	var envAdminDataSourceRestriction, projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
 	environment, err := storeInstance.GetEnvironmentByID(ctx, database.EffectiveEnvironmentID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get environment %s with error %v", database.EffectiveEnvironmentID, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environment %s with error %v", database.EffectiveEnvironmentID, err.Error()))
 	}
 	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID))
 	}
 	dataSourceQueryPolicyType := storepb.Policy_DATA_SOURCE_QUERY
 	environmentResourceType := storepb.Policy_ENVIRONMENT
@@ -1933,12 +1897,12 @@ func checkAndGetDataSourceQueriable(
 		Type:         &dataSourceQueryPolicyType,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get environment data source policy with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environment data source policy with error: %v", err.Error()))
 	}
 	if environmentPolicy != nil {
 		envPayload, err := convertToV1PBDataSourceQueryPolicy(environmentPolicy.Payload)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert environment data source policy payload with error: %v", err.Error())
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert environment data source policy payload with error: %v", err.Error()))
 		}
 		envAdminDataSourceRestriction = envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
 	}
@@ -1951,23 +1915,23 @@ func checkAndGetDataSourceQueriable(
 		Type:         &dataSourceQueryPolicyType,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project data source policy with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project data source policy with error: %v", err.Error()))
 	}
 	if projectPolicy != nil {
 		projectPayload, err := convertToV1PBDataSourceQueryPolicy(projectPolicy.Payload)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert project data source policy payload with error: %v", err.Error())
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert project data source policy payload with error: %v", err.Error()))
 		}
 		projectAdminDataSourceRestriction = projectPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
 	}
 
 	// If any of the policy is DISALLOW, then return false.
 	if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW {
-		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data source %q is not queryable", dataSourceID))
 	} else if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK {
 		// If there is any read-only data source, then return false.
 		if ds := GetQueriableDataSource(instance); ds != nil && ds.Type == storepb.DataSourceType_READ_ONLY {
-			return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data source %q is not queryable", dataSourceID))
 		}
 	}
 
@@ -1986,7 +1950,7 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 		return err
 	}
 	if environment == nil {
-		return status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID))
 	}
 	resourceType := storepb.Policy_ENVIRONMENT
 	environmentResource := common.FormatEnvironment(environment.Id)
@@ -2002,16 +1966,16 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 	if dataSourceQueryPolicy != nil {
 		policy := &v1pb.DataSourceQueryPolicy{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(dataSourceQueryPolicy.Payload), policy); err != nil {
-			return status.Errorf(codes.Internal, "failed to unmarshal data source query policy payload")
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal data source query policy payload"))
 		}
 		switch statementTp {
 		case parserbase.DDL:
 			if policy.DisallowDdl {
-				return status.Errorf(codes.PermissionDenied, "disallow execute DDL statement in environment %q", environment.Title)
+				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DDL statement in environment %q", environment.Title))
 			}
 		case parserbase.DML:
 			if policy.DisallowDml {
-				return status.Errorf(codes.PermissionDenied, "disallow execute DML statement in environment %q", environment.Title)
+				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DML statement in environment %q", environment.Title))
 			}
 		}
 	}

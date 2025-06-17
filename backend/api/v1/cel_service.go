@@ -4,9 +4,8 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	expr "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/google/cel-go/cel"
 
@@ -32,17 +31,17 @@ func (*CelService) BatchParse(
 ) (*connect.Response[v1pb.BatchParseResponse], error) {
 	e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create CEL environment: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create CEL environment"))
 	}
 	resp := &v1pb.BatchParseResponse{}
 	for _, expression := range req.Msg.Expressions {
 		ast, issues := e.Parse(expression)
 		if issues != nil && issues.Err() != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to parse expression: %v", issues.Err())
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(issues.Err(), "failed to parse expression"))
 		}
 		parsedExpr, err := cel.AstToParsedExpr(ast)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert ast to parsed expression: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert ast to parsed expression"))
 		}
 		resp.Expressions = append(resp.Expressions, parsedExpr.Expr)
 	}
@@ -59,7 +58,7 @@ func (*CelService) BatchDeparse(
 		ast := cel.ParsedExprToAst(&expr.ParsedExpr{Expr: expression})
 		expressionStr, err := cel.AstToString(ast)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to deparse expression: %v", err)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to deparse expression"))
 		}
 		resp.Expressions = append(resp.Expressions, expressionStr)
 	}

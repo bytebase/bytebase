@@ -10,6 +10,7 @@ import Long from "long";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { Timestamp } from "../google/protobuf/timestamp";
 import {
   Engine,
   engineFromJSON,
@@ -332,6 +333,8 @@ export interface Instance {
    * Default empty, means sync all schemas & databases.
    */
   syncDatabases: string[];
+  /** The last time the instance was synced. */
+  lastSyncTime: Timestamp | undefined;
 }
 
 export interface DataSourceExternalSecret {
@@ -2148,6 +2151,7 @@ function createBaseInstance(): Instance {
     syncInterval: undefined,
     maximumConnections: 0,
     syncDatabases: [],
+    lastSyncTime: undefined,
   };
 }
 
@@ -2191,6 +2195,9 @@ export const Instance: MessageFns<Instance> = {
     }
     for (const v of message.syncDatabases) {
       writer.uint32(122).string(v!);
+    }
+    if (message.lastSyncTime !== undefined) {
+      Timestamp.encode(message.lastSyncTime, writer.uint32(130).fork()).join();
     }
     return writer;
   },
@@ -2306,6 +2313,14 @@ export const Instance: MessageFns<Instance> = {
           message.syncDatabases.push(reader.string());
           continue;
         }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.lastSyncTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2334,6 +2349,7 @@ export const Instance: MessageFns<Instance> = {
       syncDatabases: globalThis.Array.isArray(object?.syncDatabases)
         ? object.syncDatabases.map((e: any) => globalThis.String(e))
         : [],
+      lastSyncTime: isSet(object.lastSyncTime) ? fromJsonTimestamp(object.lastSyncTime) : undefined,
     };
   },
 
@@ -2378,6 +2394,9 @@ export const Instance: MessageFns<Instance> = {
     if (message.syncDatabases?.length) {
       obj.syncDatabases = message.syncDatabases;
     }
+    if (message.lastSyncTime !== undefined) {
+      obj.lastSyncTime = fromTimestamp(message.lastSyncTime).toISOString();
+    }
     return obj;
   },
 
@@ -2401,6 +2420,9 @@ export const Instance: MessageFns<Instance> = {
       : undefined;
     message.maximumConnections = object.maximumConnections ?? 0;
     message.syncDatabases = object.syncDatabases?.map((e) => e) || [];
+    message.lastSyncTime = (object.lastSyncTime !== undefined && object.lastSyncTime !== null)
+      ? Timestamp.fromPartial(object.lastSyncTime)
+      : undefined;
     return message;
   },
 };
@@ -4916,6 +4938,32 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Timestamp {
+  if (o instanceof globalThis.Date) {
+    return toTimestamp(o);
+  } else if (typeof o === "string") {
+    return toTimestamp(new globalThis.Date(o));
+  } else {
+    return Timestamp.fromJSON(o);
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
 
 function isObject(value: any): boolean {
   return typeof value === "object" && value !== null;

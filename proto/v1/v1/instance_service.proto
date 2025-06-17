@@ -9,6 +9,7 @@ import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/instance_role_service.proto";
@@ -393,6 +394,9 @@ message Instance {
   // Enable sync for following databases.
   // Default empty, means sync all schemas & databases.
   repeated string sync_databases = 15;
+
+  // The last time the instance was synced.
+  google.protobuf.Timestamp last_sync_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message DataSourceExternalSecret {

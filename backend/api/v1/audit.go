@@ -7,14 +7,13 @@ import (
 	"reflect"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/status"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -144,7 +143,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return status.Errorf(codes.Internal, "auth context not found")
+		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
 
 	requestMetadata := getRequestMetadataFromHeaders(headers)

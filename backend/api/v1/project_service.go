@@ -16,8 +16,6 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -93,14 +91,14 @@ func (s *ProjectService) ListProjects(ctx context.Context, req *connect.Request[
 	find.Filter = filter
 	projects, err := s.store.ListProjectV2(ctx, find)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	nextPageToken := ""
 	if len(projects) == limitPlusOne {
 		projects = projects[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
 	}
 
@@ -119,11 +117,11 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 	}
 	e, err := cel.NewEnv()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
 	}
 	ast, iss := e.Parse(filter)
 	if iss != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
 	}
 
 	var getFilter func(expr celast.Expr) (string, error)
@@ -146,12 +144,12 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 		case "state":
 			v1State, ok := v1pb.State_value[value.(string)]
 			if !ok {
-				return "", status.Errorf(codes.InvalidArgument, "invalid state filter %q", value)
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid state filter %q", value))
 			}
 			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
 			return fmt.Sprintf("project.deleted = $%d", len(positionalArgs)), nil
 		default:
-			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 		}
 	}
 
@@ -171,12 +169,12 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
-					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
 				}
 				value := args[0].AsLiteral().Value()
 				strValue, ok := value.(string)
 				if !ok {
-					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
 				}
 
 				switch variable {
@@ -185,13 +183,13 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 				case "resource_id":
 					return "LOWER(project.resource_id) LIKE '%" + strings.ToLower(strValue) + "%'", nil
 				default:
-					return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 				}
 			default:
-				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
 			}
 		default:
-			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
 		}
 	}
 
@@ -210,7 +208,7 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Request[v1pb.SearchProjectsRequest]) (*connect.Response[v1pb.SearchProjectsResponse], error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -236,27 +234,27 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 
 	projects, err := s.store.ListProjectV2(ctx, find)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	nextPageToken := ""
 	if len(projects) == limitPlusOne {
 		projects = projects[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
 	}
 
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check permission, error %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
 	}
 	if !ok {
 		var ps []*store.ProjectMessage
 		for _, project := range projects {
 			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check permission for project %q: %v", project.ResourceID, err)
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission for project %q", project.ResourceID))
 			}
 			if ok {
 				ps = append(ps, project)
@@ -277,12 +275,12 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 // CreateProject creates a project.
 func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request[v1pb.CreateProjectRequest]) (*connect.Response[v1pb.Project], error) {
 	if !isValidResourceID(req.Msg.ProjectId) {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid project ID %v", req.Msg.ProjectId)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project ID %v", req.Msg.ProjectId))
 	}
 
 	projectMessage, err := convertToProjectMessage(req.Msg.ProjectId, req.Msg.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	setting, err := s.store.GetDataClassificationSetting(ctx)
@@ -295,14 +293,14 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
 	}
 	project, err := s.store.CreateProjectV2(ctx,
 		projectMessage,
 		principalID,
 	)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil
 }
@@ -310,10 +308,10 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 // UpdateProject updates a project.
 func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request[v1pb.UpdateProjectRequest]) (*connect.Response[v1pb.Project], error) {
 	if req.Msg.Project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project must be set")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project must be set"))
 	}
 	if req.Msg.UpdateMask == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
 
 	project, err := s.getProjectMessage(ctx, req.Msg.Project.Name)
@@ -321,10 +319,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		return nil, err
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", req.Msg.Project.Name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Project.Name))
 	}
 	if project.ResourceID == common.DefaultProjectID {
-		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be updated")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be updated"))
 	}
 
 	patch := &store.UpdateProjectMessage{
@@ -338,7 +336,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		case "data_classification_config_id":
 			setting, err := s.store.GetDataClassificationSetting(ctx)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get data classification setting")
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get data classification setting"))
 			}
 			existConfig := false
 			for _, config := range setting.Configs {
@@ -348,7 +346,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 				}
 			}
 			if !existConfig {
-				return nil, status.Errorf(codes.InvalidArgument, "data classification %s not exists", req.Msg.Project.DataClassificationConfigId)
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data classification %s not exists", req.Msg.Project.DataClassificationConfigId))
 			}
 			patch.DataClassificationConfigID = &req.Msg.Project.DataClassificationConfigId
 		case "issue_labels":
@@ -408,13 +406,13 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			projectSettings.ParallelTasksPerRollout = req.Msg.Project.ParallelTasksPerRollout
 			patch.Setting = projectSettings
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupport update_mask "%s"`, path))
 		}
 	}
 
 	project, err = s.store.UpdateProjectV2(ctx, patch)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil
 }
@@ -426,23 +424,23 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		return nil, err
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", req.Msg.Name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Name))
 	}
 	if project.ResourceID == common.DefaultProjectID {
-		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be deleted")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be deleted"))
 	}
 
 	// Resources prevent project deletion.
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID, ShowDeleted: true})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	// We don't move the sheet to default project because BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
 	if req.Msg.Force {
 		if len(databases) > 0 {
 			defaultProject := common.DefaultProjectID
 			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProject}); err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 		}
 		// We don't close the issues because they might be open still.
@@ -450,13 +448,13 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		// Return the open issue error first because that's more important than transferring out databases.
 		openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectIDs: &[]string{project.ResourceID}, StatusList: []storepb.Issue_Status{storepb.Issue_OPEN}})
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		if len(openIssues) > 0 {
-			return nil, status.Errorf(codes.FailedPrecondition, "resolve all open issues before deleting the project")
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("resolve all open issues before deleting the project"))
 		}
 		if len(databases) > 0 {
-			return nil, status.Errorf(codes.FailedPrecondition, "transfer all databases to the default project before deleting the project")
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("transfer all databases to the default project before deleting the project"))
 		}
 	}
 
@@ -464,7 +462,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		ResourceID: project.ResourceID,
 		Delete:     &deletePatch,
 	}); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -477,7 +475,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 		return nil, err
 	}
 	if !project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q is active", req.Msg.Name)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q is active", req.Msg.Name))
 	}
 
 	project, err = s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
@@ -485,7 +483,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 		Delete:     &undeletePatch,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil
 }
@@ -493,7 +491,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 // BatchDeleteProjects deletes multiple projects in batch.
 func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *connect.Request[v1pb.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error) {
 	if len(request.Msg.Names) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "names cannot be empty")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("names cannot be empty"))
 	}
 
 	// Phase 1: Load all projects and check permissions
@@ -504,10 +502,10 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 			return nil, err
 		}
 		if project.Deleted {
-			return nil, status.Errorf(codes.NotFound, "project %q has already been deleted", name)
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has already been deleted", name))
 		}
 		if project.ResourceID == common.DefaultProjectID {
-			return nil, status.Errorf(codes.InvalidArgument, "default project cannot be deleted")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("default project cannot be deleted"))
 		}
 		projects = append(projects, project)
 	}
@@ -522,7 +520,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 				StatusList: []storepb.Issue_Status{storepb.Issue_OPEN},
 			})
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 			if len(openIssues) > 0 {
 				blockedProjects = append(blockedProjects, project.ResourceID)
@@ -535,7 +533,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 				ShowDeleted: true,
 			})
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 			if len(databases) > 0 {
 				blockedProjects = append(blockedProjects, project.ResourceID)
@@ -543,9 +541,9 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		}
 
 		if len(blockedProjects) > 0 {
-			return nil, status.Errorf(codes.FailedPrecondition,
-				"the following projects have open issues or databases and cannot be deleted: %v. Use force=true to move databases to default project",
-				blockedProjects)
+			return nil, connect.NewError(connect.CodeFailedPrecondition,
+				errors.Errorf("the following projects have open issues or databases and cannot be deleted: %v. Use force=true to move databases to default project",
+					blockedProjects))
 		}
 	} else {
 		// Phase 3: Execute deletions
@@ -557,7 +555,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 				ShowDeleted: true,
 			})
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 			dbs = append(dbs, databases...)
 		}
@@ -567,7 +565,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 			if _, err := s.store.BatchUpdateDatabases(ctx, dbs, &store.BatchUpdateDatabases{
 				ProjectID: &defaultProject,
 			}); err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 		}
 	}
@@ -582,7 +580,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 	}
 
 	if _, err := s.store.BatchUpdateProjectsV2(ctx, updatePatches); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -592,21 +590,21 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 func (s *ProjectService) GetIamPolicy(ctx context.Context, req *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	projectID, err := common.GetProjectID(req.Msg.Resource)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "cannot found project %s", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found project %s", projectID))
 	}
 
 	policy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	iamPolicy, err := convertToV1IamPolicy(ctx, s.store, policy)
@@ -622,21 +620,21 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, req *connect.Req
 	for _, name := range req.Msg.Names {
 		projectID, err := common.GetProjectID(name)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 			ResourceID: &projectID,
 		})
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		if project == nil {
 			continue
 		}
 		policy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 
 		iamPolicy, err := convertToV1IamPolicy(ctx, s.store, policy)
@@ -655,27 +653,27 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, req *connect.Req
 func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	projectID, err := common.GetProjectID(req.Msg.Resource)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", req.Msg.Resource)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", req.Msg.Resource))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", req.Msg.Resource)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Resource))
 	}
 
 	oldIamPolicyMsg, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find project iam policy with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project iam policy with error"))
 	}
 	if req.Msg.Etag != "" && req.Msg.Etag != oldIamPolicyMsg.Etag {
-		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the project iam policy, please refresh and try again.")
+		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
 	}
 
 	existProjectOwner, err := validateIAMPolicy(ctx, s.store, s.iamManager, req.Msg.Policy, oldIamPolicyMsg)
@@ -684,7 +682,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	}
 	// Must contain one owner binding.
 	if !existProjectOwner {
-		return nil, status.Errorf(codes.InvalidArgument, "IAM Policy must have at least one binding with %s", common.ProjectOwner)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("IAM Policy must have at least one binding with %s", common.ProjectOwner))
 	}
 
 	policy, err := convertToStoreIamPolicy(ctx, s.store, req.Msg.Policy)
@@ -694,7 +692,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 
 	policyPayload, err := protojson.Marshal(policy)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
 		Resource:          common.FormatProject(project.ResourceID),
@@ -705,12 +703,12 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
 	}); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
@@ -845,35 +843,35 @@ func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.
 func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1pb.AddWebhookRequest]) (*connect.Response[v1pb.Project], error) {
 	projectID, err := common.GetProjectID(req.Msg.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", req.Msg.Project)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", req.Msg.Project))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", req.Msg.Project)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Project))
 	}
 
 	create, err := convertToStoreProjectWebhookMessage(req.Msg.Webhook)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	if _, err := s.store.CreateProjectWebhookV2(ctx, project.ResourceID, create); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil
 }
@@ -882,24 +880,24 @@ func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1
 func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request[v1pb.UpdateWebhookRequest]) (*connect.Response[v1pb.Project], error) {
 	projectID, webhookID, err := common.GetProjectIDWebhookID(req.Msg.Webhook.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	webhookIDInt, err := strconv.Atoi(webhookID)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid webhook id %q", webhookID)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid webhook id %q", webhookID))
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectID))
 	}
 
 	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
@@ -907,17 +905,17 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		ID:        &webhookIDInt,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if webhook == nil {
-		return nil, status.Errorf(codes.NotFound, "webhook %q not found", req.Msg.Webhook.Url)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
 	}
 
 	update := &store.UpdateProjectWebhookMessage{}
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "type":
-			return nil, status.Errorf(codes.InvalidArgument, "type cannot be updated")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("type cannot be updated"))
 		case "title":
 			update.Title = &req.Msg.Webhook.Title
 		case "url":
@@ -925,10 +923,10 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		case "notification_type":
 			types, err := convertToActivityTypeStrings(req.Msg.Webhook.NotificationTypes)
 			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
 			if len(types) == 0 {
-				return nil, status.Errorf(codes.InvalidArgument, "notification types should not be empty")
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("notification types should not be empty"))
 			}
 			update.Events = types
 		case "direct_message":
@@ -936,19 +934,19 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 				DirectMessage: req.Msg.Webhook.DirectMessage,
 			}
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid field %q", path)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid field %q", path))
 		}
 	}
 
 	if _, err := s.store.UpdateProjectWebhookV2(ctx, project.ResourceID, webhook.ID, update); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil
 }
@@ -957,24 +955,24 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request[v1pb.RemoveWebhookRequest]) (*connect.Response[v1pb.Project], error) {
 	projectID, webhookID, err := common.GetProjectIDWebhookID(req.Msg.Webhook.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	webhookIDInt, err := strconv.Atoi(webhookID)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid webhook id %q", webhookID)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid webhook id %q", webhookID))
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", webhookID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", webhookID))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectID))
 	}
 
 	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
@@ -982,21 +980,21 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 		ID:        &webhookIDInt,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if webhook == nil {
-		return nil, status.Errorf(codes.NotFound, "webhook %q not found", req.Msg.Webhook.Url)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
 	}
 
 	if err := s.store.DeleteProjectWebhookV2(ctx, project.ResourceID, webhook.ID); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil
 }
@@ -1005,32 +1003,32 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v1pb.TestWebhookRequest]) (*connect.Response[v1pb.TestWebhookResponse], error) {
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
 	}
 	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
 	}
 
 	projectID, err := common.GetProjectID(req.Msg.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", req.Msg.Project)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", req.Msg.Project))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", req.Msg.Project)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Project))
 	}
 
 	webhook, err := convertToStoreProjectWebhookMessage(req.Msg.Webhook)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	resp := &v1pb.TestWebhookResponse{}
@@ -1198,7 +1196,7 @@ func convertWebhookTypeString(tp string) v1pb.Webhook_Type {
 func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
 	projectID, err := common.GetProjectID(name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	find := &store.FindProjectMessage{
@@ -1207,10 +1205,10 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	}
 	project, err := s.store.GetProjectV2(ctx, find)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", name))
 	}
 
 	return project, nil
@@ -1270,15 +1268,15 @@ func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *s
 		if v1pbBinding.Condition.Expression != "" {
 			e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to create cel environment with error: %v", err)
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create cel environment"))
 			}
 			ast, issues := e.Parse(v1pbBinding.Condition.Expression)
 			if issues != nil && issues.Err() != nil {
-				return nil, status.Errorf(codes.Internal, "failed to parse expression with error: %v", issues.Err())
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to parse expression with error: %v", issues.Err()))
 			}
 			expr, err := cel.AstToParsedExpr(ast)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert ast to parsed expression with error: %v", err)
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert ast to parsed expression with error"))
 			}
 			v1pbBinding.ParsedExpr = expr.Expr
 		}
@@ -1299,7 +1297,7 @@ func convertToStoreIamPolicy(ctx context.Context, stores *store.Store, iamPolicy
 		for _, member := range utils.Uniq(binding.Members) {
 			storeMember, err := convertToStoreIamPolicyMember(ctx, stores, member)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert iam member with error: %v", err.Error())
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert iam member with error"))
 			}
 			members = append(members, storeMember)
 		}
@@ -1319,7 +1317,7 @@ func convertToStoreIamPolicy(ctx context.Context, stores *store.Store, iamPolicy
 	}
 
 	if len(bindings) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "policy binding is empty")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("policy binding is empty"))
 	}
 
 	return &storepb.IamPolicy{
@@ -1332,10 +1330,10 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 		email := strings.TrimPrefix(member, common.UserBindingPrefix)
 		user, err := stores.GetUserByEmail(ctx, email)
 		if err != nil {
-			return "", status.Error(codes.Internal, err.Error())
+			return "", connect.NewError(connect.CodeInternal, err)
 		}
 		if user == nil {
-			return "", status.Errorf(codes.NotFound, "user %q not found", member)
+			return "", connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", member))
 		}
 		return common.FormatUserUID(user.ID), nil
 	} else if strings.HasPrefix(member, common.GroupBindingPrefix) {
@@ -1344,7 +1342,7 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 	} else if member == common.AllUsers {
 		return member, nil
 	}
-	return "", status.Errorf(codes.InvalidArgument, "unsupport member %s", member)
+	return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport member %s", member))
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
@@ -1454,15 +1452,15 @@ func validateIAMPolicy(
 	oldPolicyMessage *store.IamPolicyMessage,
 ) (bool, error) {
 	if policy == nil {
-		return false, status.Error(codes.InvalidArgument, "IAM Policy is required")
+		return false, connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Policy is required"))
 	}
 	if len(policy.Bindings) == 0 {
-		return false, status.Error(codes.InvalidArgument, "IAM Binding is empty")
+		return false, connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
 	}
 
 	generalSetting, err := stores.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return false, status.Error(codes.Internal, "failed to get workspace general setting")
+		return false, connect.NewError(connect.CodeInternal, errors.New("failed to get workspace general setting"))
 	}
 	var maximumRoleExpiration *durationpb.Duration
 	if generalSetting != nil {
@@ -1471,7 +1469,7 @@ func validateIAMPolicy(
 
 	roleMessages, err := stores.ListRoles(ctx)
 	if err != nil {
-		return false, status.Errorf(codes.Internal, "failed to list roles: %v", err)
+		return false, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
 	}
 	roleMessages = append(roleMessages, iamManager.PredefinedRoles...)
 
@@ -1508,10 +1506,10 @@ func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maxi
 
 	for _, binding := range bindings {
 		if binding.Role == "" {
-			return status.Error(codes.InvalidArgument, "IAM Binding role is required")
+			return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding role is required"))
 		}
 		if !existingRoles[binding.Role] {
-			return status.Errorf(codes.InvalidArgument, "IAM Binding role %s does not exist", binding.Role)
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("IAM Binding role %s does not exist", binding.Role))
 		}
 
 		if _, err := common.ValidateProjectMemberCELExpr(binding.Condition); err != nil {
@@ -1521,7 +1519,7 @@ func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maxi
 		if binding.Role != fmt.Sprintf("roles/%s", common.ProjectOwner) && maximumRoleExpiration != nil {
 			// Only validate when maximumRoleExpiration is set and the role is not project owner.
 			if err := validateExpirationInExpression(binding.GetCondition().GetExpression(), maximumRoleExpiration); err != nil {
-				return status.Errorf(codes.InvalidArgument, "failed to validate expiration for binding %v: %v", binding.Role, err.Error())
+				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate expiration for binding %v", binding.Role))
 			}
 		}
 	}

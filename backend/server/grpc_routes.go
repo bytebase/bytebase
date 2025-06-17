@@ -7,15 +7,12 @@ import (
 	"net/http"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 
 	"connectrpc.com/connect"
-	connectcors "connectrpc.com/cors"
+	"connectrpc.com/grpcreflect"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
-	"github.com/rs/cors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
@@ -34,20 +31,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
-
-// withCORS adds CORS support to a Connect HTTP handler following Connect RPC documentation.
-func withCORS(h http.Handler) http.Handler {
-	middleware := cors.New(cors.Options{
-		AllowOriginFunc: func(string) bool {
-			return true
-		},
-		AllowedMethods:   connectcors.AllowedMethods(),
-		AllowedHeaders:   connectcors.AllowedHeaders(),
-		ExposedHeaders:   connectcors.ExposedHeaders(),
-		AllowCredentials: true,
-	})
-	return middleware.Handler(h)
-}
 
 func configureGrpcRouters(
 	ctx context.Context,
@@ -98,7 +81,7 @@ func configureGrpcRouters(
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack
 		slog.Error("v1 server panic error", "method", s.Procedure, log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
-		return status.Errorf(codes.Internal, "error: %v\n%s", p, stack)
+		return connect.NewError(connect.CodeInternal, errors.Errorf("error: %v\n%s", p, stack))
 	}
 
 	handlerOpts := connect.WithHandlerOptions(
@@ -114,91 +97,129 @@ func configureGrpcRouters(
 	connectHandlers := make(map[string]http.Handler)
 
 	actuatorPath, actuatorHandler := v1connect.NewActuatorServiceHandler(actuatorService, handlerOpts)
-	connectHandlers[actuatorPath] = withCORS(actuatorHandler)
+	connectHandlers[actuatorPath] = actuatorHandler
 
 	auditLogPath, auditLogHandler := v1connect.NewAuditLogServiceHandler(auditLogService, handlerOpts)
-	connectHandlers[auditLogPath] = withCORS(auditLogHandler)
+	connectHandlers[auditLogPath] = auditLogHandler
 
 	authPath, authHandler := v1connect.NewAuthServiceHandler(authService, handlerOpts)
-	connectHandlers[authPath] = withCORS(authHandler)
+	connectHandlers[authPath] = authHandler
 
 	celPath, celHandler := v1connect.NewCelServiceHandler(celService, handlerOpts)
-	connectHandlers[celPath] = withCORS(celHandler)
+	connectHandlers[celPath] = celHandler
 
 	changelistPath, changelistHandler := v1connect.NewChangelistServiceHandler(changelistService, handlerOpts)
-	connectHandlers[changelistPath] = withCORS(changelistHandler)
+	connectHandlers[changelistPath] = changelistHandler
 
 	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService, handlerOpts)
-	connectHandlers[databaseCatalogPath] = withCORS(databaseCatalogHandler)
+	connectHandlers[databaseCatalogPath] = databaseCatalogHandler
 
 	databaseGroupPath, databaseGroupHandler := v1connect.NewDatabaseGroupServiceHandler(databaseGroupService, handlerOpts)
-	connectHandlers[databaseGroupPath] = withCORS(databaseGroupHandler)
+	connectHandlers[databaseGroupPath] = databaseGroupHandler
 
 	databasePath, databaseHandler := v1connect.NewDatabaseServiceHandler(databaseService, handlerOpts)
-	connectHandlers[databasePath] = withCORS(databaseHandler)
+	connectHandlers[databasePath] = databaseHandler
 
 	groupPath, groupHandler := v1connect.NewGroupServiceHandler(groupService, handlerOpts)
-	connectHandlers[groupPath] = withCORS(groupHandler)
+	connectHandlers[groupPath] = groupHandler
 
 	identityProviderPath, identityProviderHandler := v1connect.NewIdentityProviderServiceHandler(identityProviderService, handlerOpts)
-	connectHandlers[identityProviderPath] = withCORS(identityProviderHandler)
+	connectHandlers[identityProviderPath] = identityProviderHandler
 
 	instanceRolePath, instanceRoleHandler := v1connect.NewInstanceRoleServiceHandler(instanceRoleService, handlerOpts)
-	connectHandlers[instanceRolePath] = withCORS(instanceRoleHandler)
+	connectHandlers[instanceRolePath] = instanceRoleHandler
 
 	instancePath, instanceHandler := v1connect.NewInstanceServiceHandler(instanceService, handlerOpts)
-	connectHandlers[instancePath] = withCORS(instanceHandler)
+	connectHandlers[instancePath] = instanceHandler
 
 	issuePath, issueHandler := v1connect.NewIssueServiceHandler(issueService, handlerOpts)
-	connectHandlers[issuePath] = withCORS(issueHandler)
+	connectHandlers[issuePath] = issueHandler
 
 	orgPolicyPath, orgPolicyHandler := v1connect.NewOrgPolicyServiceHandler(orgPolicyService, handlerOpts)
-	connectHandlers[orgPolicyPath] = withCORS(orgPolicyHandler)
+	connectHandlers[orgPolicyPath] = orgPolicyHandler
 
 	planPath, planHandler := v1connect.NewPlanServiceHandler(planService, handlerOpts)
-	connectHandlers[planPath] = withCORS(planHandler)
+	connectHandlers[planPath] = planHandler
 
 	projectPath, projectHandler := v1connect.NewProjectServiceHandler(projectService, handlerOpts)
-	connectHandlers[projectPath] = withCORS(projectHandler)
+	connectHandlers[projectPath] = projectHandler
 
 	releasePath, releaseHandler := v1connect.NewReleaseServiceHandler(releaseService, handlerOpts)
-	connectHandlers[releasePath] = withCORS(releaseHandler)
+	connectHandlers[releasePath] = releaseHandler
 
 	reviewConfigPath, reviewConfigHandler := v1connect.NewReviewConfigServiceHandler(reviewConfigService, handlerOpts)
-	connectHandlers[reviewConfigPath] = withCORS(reviewConfigHandler)
+	connectHandlers[reviewConfigPath] = reviewConfigHandler
 
 	revisionPath, revisionHandler := v1connect.NewRevisionServiceHandler(revisionService, handlerOpts)
-	connectHandlers[revisionPath] = withCORS(revisionHandler)
+	connectHandlers[revisionPath] = revisionHandler
 
 	riskPath, riskHandler := v1connect.NewRiskServiceHandler(riskService, handlerOpts)
-	connectHandlers[riskPath] = withCORS(riskHandler)
+	connectHandlers[riskPath] = riskHandler
 
 	rolePath, roleHandler := v1connect.NewRoleServiceHandler(roleService, handlerOpts)
-	connectHandlers[rolePath] = withCORS(roleHandler)
+	connectHandlers[rolePath] = roleHandler
 
 	rolloutPath, rolloutHandler := v1connect.NewRolloutServiceHandler(rolloutService, handlerOpts)
-	connectHandlers[rolloutPath] = withCORS(rolloutHandler)
+	connectHandlers[rolloutPath] = rolloutHandler
 
 	settingPath, settingHandler := v1connect.NewSettingServiceHandler(settingService, handlerOpts)
-	connectHandlers[settingPath] = withCORS(settingHandler)
+	connectHandlers[settingPath] = settingHandler
 
 	sheetPath, sheetHandler := v1connect.NewSheetServiceHandler(sheetService, handlerOpts)
-	connectHandlers[sheetPath] = withCORS(sheetHandler)
+	connectHandlers[sheetPath] = sheetHandler
 
 	sqlPath, sqlHandler := v1connect.NewSQLServiceHandler(sqlService, handlerOpts)
-	connectHandlers[sqlPath] = withCORS(sqlHandler)
+	connectHandlers[sqlPath] = sqlHandler
 
 	subscriptionPath, subscriptionHandler := v1connect.NewSubscriptionServiceHandler(subscriptionService, handlerOpts)
-	connectHandlers[subscriptionPath] = withCORS(subscriptionHandler)
+	connectHandlers[subscriptionPath] = subscriptionHandler
 
 	userPath, userHandler := v1connect.NewUserServiceHandler(userService, handlerOpts)
-	connectHandlers[userPath] = withCORS(userHandler)
+	connectHandlers[userPath] = userHandler
 
 	worksheetPath, worksheetHandler := v1connect.NewWorksheetServiceHandler(worksheetService, handlerOpts)
-	connectHandlers[worksheetPath] = withCORS(worksheetHandler)
+	connectHandlers[worksheetPath] = worksheetHandler
 
 	workspacePath, workspaceHandler := v1connect.NewWorkspaceServiceHandler(workspaceService, handlerOpts)
-	connectHandlers[workspacePath] = withCORS(workspaceHandler)
+	connectHandlers[workspacePath] = workspaceHandler
+
+	// grpc reflection handlers.
+	reflector := grpcreflect.NewStaticReflector(
+		v1connect.ActuatorServiceName,
+		v1connect.AuditLogServiceName,
+		v1connect.AuthServiceName,
+		v1connect.CelServiceName,
+		v1connect.ChangelistServiceName,
+		v1connect.DatabaseCatalogServiceName,
+		v1connect.DatabaseGroupServiceName,
+		v1connect.DatabaseServiceName,
+		v1connect.GroupServiceName,
+		v1connect.IdentityProviderServiceName,
+		v1connect.InstanceRoleServiceName,
+		v1connect.InstanceServiceName,
+		v1connect.IssueServiceName,
+		v1connect.OrgPolicyServiceName,
+		v1connect.PlanServiceName,
+		v1connect.ProjectServiceName,
+		v1connect.ReleaseServiceName,
+		v1connect.ReviewConfigServiceName,
+		v1connect.RevisionServiceName,
+		v1connect.RiskServiceName,
+		v1connect.RoleServiceName,
+		v1connect.RolloutServiceName,
+		v1connect.SettingServiceName,
+		v1connect.SheetServiceName,
+		v1connect.SQLServiceName,
+		v1connect.SubscriptionServiceName,
+		v1connect.UserServiceName,
+		v1connect.WorksheetServiceName,
+		v1connect.WorkspaceServiceName,
+	)
+	reflectPath, reflectHandler := grpcreflect.NewHandlerV1(reflector)
+	connectHandlers[reflectPath] = reflectHandler
+
+	reflectAlphaPath, reflectAlphaHandler := grpcreflect.NewHandlerV1Alpha(reflector)
+	connectHandlers[reflectAlphaPath] = reflectAlphaHandler
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.Port)

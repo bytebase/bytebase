@@ -5,7 +5,7 @@
       class="w-4 textinfolabel"
     />
     <NCheckbox
-      v-else-if="!disallowBatchQuery && canQuery"
+      v-else-if="canQuery"
       :checked="checked"
       @click.stop.prevent=""
       @update:checked="$emit('update:checked', $event)"
@@ -60,15 +60,8 @@ defineEmits<{
 
 const tabStore = useSQLEditorTabStore();
 
-const disallowBatchQuery = useAppFeature(
-  "bb.feature.sql-editor.disallow-batch-query"
-);
-
 const disallowRequestQuery = useAppFeature(
   "bb.feature.sql-editor.disallow-request-query"
-);
-const hideEnvironments = useAppFeature(
-  "bb.feature.sql-editor.hide-environments"
 );
 
 const database = computed(
@@ -90,10 +83,6 @@ const hasEnvironmentContext = computed(() => {
 });
 
 const showEnvironment = computed(() => {
-  // Don't show environment tag anyway if disabled via appFeature
-  if (hideEnvironments.value) {
-    return false;
-  }
   // If we don't have "environment" factor in the custom tree structure
   // we should indicate the database's environment
   if (!hasEnvironmentContext.value) {
