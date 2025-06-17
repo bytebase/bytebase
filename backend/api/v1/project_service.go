@@ -247,14 +247,14 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission, error %v"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
 	}
 	if !ok {
 		var ps []*store.ProjectMessage
 		for _, project := range projects {
 			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission for project %q: %v", project.ResourceID))
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission for project %q", project.ResourceID))
 			}
 			if ok {
 				ps = append(ps, project)
@@ -1003,7 +1003,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v1pb.TestWebhookRequest]) (*connect.Response[v1pb.TestWebhookResponse], error) {
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting: %v"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
 	}
 	if setting.ExternalUrl == "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
@@ -1268,7 +1268,7 @@ func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *s
 		if v1pbBinding.Condition.Expression != "" {
 			e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create cel environment with error: %v"))
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create cel environment"))
 			}
 			ast, issues := e.Parse(v1pbBinding.Condition.Expression)
 			if issues != nil && issues.Err() != nil {
@@ -1469,7 +1469,7 @@ func validateIAMPolicy(
 
 	roleMessages, err := stores.ListRoles(ctx)
 	if err != nil {
-		return false, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles: %v"))
+		return false, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
 	}
 	roleMessages = append(roleMessages, iamManager.PredefinedRoles...)
 

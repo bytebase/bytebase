@@ -371,7 +371,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		pwd, err := common.RandomString(20)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate access key for service account."))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate access key for service account"))
 		}
 		password = fmt.Sprintf("%s%s", common.ServiceAccountAccessKeyPrefix, pwd)
 	} else {
@@ -382,7 +382,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		} else {
 			pwd, err := common.RandomString(20)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password for service account."))
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password for service account"))
 			}
 			password = pwd
 		}
@@ -529,7 +529,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 			}
 			val, err := common.RandomString(20)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate access key for service account."))
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate access key for service account"))
 			}
 			password := fmt.Sprintf("%s%s", common.ServiceAccountAccessKeyPrefix, val)
 			passwordPatch = &password

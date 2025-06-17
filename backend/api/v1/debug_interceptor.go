@@ -8,12 +8,13 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/metric"
 	metricplugin "github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
-	"github.com/pkg/errors"
 )
 
 // DebugInterceptor is the v1 debug interceptor for gRPC server.
