@@ -13,7 +13,7 @@
       <div class="border-t -mx-3" />
       <NTooltip :showArrow="false">
         <template #trigger>
-          <p class="textinfolabel -mb-2">
+          <p class="textinfolabel">
             {{ $t("plan.options.self") }}
             <span class="opacity-80">
               ({{
