@@ -4,11 +4,8 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
-
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -37,7 +34,7 @@ func NewReviewConfigService(store *store.Store, licenseService *enterprise.Licen
 // CreateReviewConfig creates a new review config.
 func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, req *connect.Request[v1pb.CreateReviewConfigRequest]) (*connect.Response[v1pb.ReviewConfig], error) {
 	if err := validateSQLReviewRules(req.Msg.ReviewConfig.Rules); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	reviewConfigMessage, err := convertToReviewConfigMessage(req.Msg.ReviewConfig)
 	if err != nil {
@@ -46,7 +43,7 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, req *conne
 
 	created, err := s.store.CreateReviewConfig(ctx, reviewConfigMessage)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result, err := s.convertToV1ReviewConfig(ctx, created)
 	if err != nil {
@@ -59,14 +56,14 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, req *conne
 func (s *ReviewConfigService) ListReviewConfigs(ctx context.Context, _ *connect.Request[v1pb.ListReviewConfigsRequest]) (*connect.Response[v1pb.ListReviewConfigsResponse], error) {
 	messages, err := s.store.ListReviewConfigs(ctx, &store.FindReviewConfigMessage{})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	response := &v1pb.ListReviewConfigsResponse{}
 	for _, message := range messages {
 		sqlReview, err := s.convertToV1ReviewConfig(ctx, message)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		response.ReviewConfigs = append(response.ReviewConfigs, sqlReview)
 	}
@@ -77,15 +74,15 @@ func (s *ReviewConfigService) ListReviewConfigs(ctx context.Context, _ *connect.
 func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, req *connect.Request[v1pb.GetReviewConfigRequest]) (*connect.Response[v1pb.ReviewConfig], error) {
 	id, err := common.GetReviewConfigID(req.Msg.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	message, err := s.store.GetReviewConfig(ctx, id)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if message == nil {
-		return nil, status.Errorf(codes.NotFound, "cannot found review config %s", req.Msg.Name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found review config %s", req.Msg.Name))
 	}
 	result, err := s.convertToV1ReviewConfig(ctx, message)
 	if err != nil {
@@ -98,12 +95,12 @@ func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, req *connect.
 func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *connect.Request[v1pb.UpdateReviewConfigRequest]) (*connect.Response[v1pb.ReviewConfig], error) {
 	id, err := common.GetReviewConfigID(req.Msg.ReviewConfig.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	existed, err := s.store.GetReviewConfig(ctx, id)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get review config %q with error: %v", id, err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get review config %q", id))
 	}
 	if existed == nil {
 		if req.Msg.AllowMissing {
@@ -111,7 +108,7 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *conne
 				ReviewConfig: req.Msg.ReviewConfig,
 			}))
 		}
-		return nil, status.Errorf(codes.NotFound, "review config %q not found", id)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("review config %q not found", id))
 	}
 
 	patch := &store.PatchReviewConfigMessage{
@@ -125,7 +122,7 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *conne
 		case "rules":
 			ruleList, err := convertToSQLReviewRules(req.Msg.ReviewConfig.Rules)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert rules, error %v", err)
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to convert rules"))
 			}
 			patch.Payload = &storepb.ReviewConfigPayload{
 				SqlReviewRules: ruleList,
@@ -133,13 +130,13 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *conne
 		case "enabled":
 			patch.Enforce = &req.Msg.ReviewConfig.Enabled
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %q", path)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 		}
 	}
 
 	message, err := s.store.UpdateReviewConfig(ctx, patch)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result, err := s.convertToV1ReviewConfig(ctx, message)
 	if err != nil {
@@ -152,11 +149,11 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *conne
 func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *connect.Request[v1pb.DeleteReviewConfigRequest]) (*connect.Response[emptypb.Empty], error) {
 	id, err := common.GetReviewConfigID(req.Msg.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	if err := s.store.DeleteReviewConfig(ctx, id); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete review config: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to delete review config"))
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -165,16 +162,16 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.ReviewConfigMessage, error) {
 	ruleList, err := convertToSQLReviewRules(reviewConfig.Rules)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert rules, error %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to convert rules"))
 	}
 
 	id, err := common.GetReviewConfigID(reviewConfig.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid config name %s, error %v", reviewConfig.Name, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid config name %s", reviewConfig.Name))
 	}
 
 	if !isValidResourceID(id) {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid config id %v", reviewConfig.Name)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid config id %v", reviewConfig.Name))
 	}
 
 	return &store.ReviewConfigMessage{
@@ -194,7 +191,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		ShowAll: false,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list tag policy, error %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list tag policy"))
 	}
 
 	config := &v1pb.ReviewConfig{
@@ -207,7 +204,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 	for _, policy := range tagPolicies {
 		p := &v1pb.TagPolicy{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal tag policy, error %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to unmarshal tag policy"))
 		}
 		if p.Tags[string(common.ReservedTagReviewConfig)] != config.Name {
 			continue
@@ -221,7 +218,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 			}
 			environment, err := s.store.GetEnvironmentByID(ctx, environmentID)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get environment %s with error: %v", environmentID, err)
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get environment %s", environmentID))
 			}
 			if environment == nil {
 				continue
@@ -237,7 +234,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 				ShowDeleted: false,
 			})
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get project %s with error: %v", projectID, err)
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %s", projectID))
 			}
 			if project == nil {
 				continue

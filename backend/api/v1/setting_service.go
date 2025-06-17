@@ -10,8 +10,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -81,7 +79,7 @@ var whitelistSettings = []storepb.SettingName{
 func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1pb.ListSettingsRequest]) (*connect.Response[v1pb.ListSettingsResponse], error) {
 	settings, err := s.store.ListSettingV2(ctx, &store.FindSettingMessage{})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list settings: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list settings: %v", err))
 	}
 
 	response := &v1pb.ListSettingsResponse{}
@@ -91,7 +89,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 		}
 		settingMessage, err := convertToSettingMessage(setting)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 		}
 		response.Settings = append(response.Settings, settingMessage)
 	}
@@ -102,30 +100,30 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 func (s *SettingService) GetSetting(ctx context.Context, request *connect.Request[v1pb.GetSettingRequest]) (*connect.Response[v1pb.Setting], error) {
 	settingName, err := common.GetSettingName(request.Msg.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "setting name is invalid: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting name is invalid: %v", err))
 	}
 	if settingName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "setting name is empty")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting name is empty"))
 	}
 	apiSettingName, err := convertStringToSettingName(settingName)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid setting name: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
 	}
 	if !settingInWhitelist(apiSettingName) {
-		return nil, status.Errorf(codes.InvalidArgument, "setting is not available")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 
 	setting, err := s.store.GetSettingV2(ctx, apiSettingName)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get setting: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting: %v", err))
 	}
 	if setting == nil {
-		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// Only return whitelisted setting.
 	settingMessage, err := convertToSettingMessage(setting)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}
 	return connect.NewResponse(settingMessage), nil
 }
@@ -134,7 +132,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest]) (*connect.Response[v1pb.Setting], error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
 	settingName, err := common.GetSettingName(request.Msg.Setting.Name)
@@ -142,21 +140,21 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, err
 	}
 	if settingName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "setting name is empty")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting name is empty"))
 	}
 	if s.profile.IsFeatureUnavailable(settingName) {
-		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 	}
 	apiSettingName, err := convertStringToSettingName(settingName)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid setting name: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
 	}
 	existedSetting, err := s.store.GetSettingV2(ctx, apiSettingName)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find setting %s with error: %v", settingName, err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", settingName, err))
 	}
 	if existedSetting == nil && !request.Msg.AllowMissing {
-		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// audit log.
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && existedSetting != nil {
@@ -175,59 +173,59 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	switch apiSettingName {
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		if request.Msg.UpdateMask == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "update mask is required")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
 		payload := new(storepb.WorkspaceProfileSetting)
 		if err := convertProtoToProto(request.Msg.Setting.Value.GetWorkspaceProfileSettingValue(), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
 		}
 		oldSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find setting %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", apiSettingName, err))
 		}
 
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {
 			case "value.workspace_profile_setting_value.disallow_signup":
 				if s.profile.SaaS {
-					return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 				}
 				if payload.DisallowSignup {
 					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
-						return nil, status.Error(codes.PermissionDenied, err.Error())
+						return nil, connect.NewError(connect.CodePermissionDenied, err)
 					}
 				}
 				oldSetting.DisallowSignup = payload.DisallowSignup
 			case "value.workspace_profile_setting_value.external_url":
 				if s.profile.SaaS {
-					return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 				}
 				if payload.ExternalUrl != "" {
 					externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
 					if err != nil {
-						return nil, status.Errorf(codes.InvalidArgument, "invalid external url: %v", err)
+						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid external url: %v", err))
 					}
 					payload.ExternalUrl = externalURL
 				}
 				oldSetting.ExternalUrl = payload.ExternalUrl
 			case "value.workspace_profile_setting_value.require_2fa":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TWO_FA); err != nil {
-					return nil, status.Error(codes.PermissionDenied, err.Error())
+					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				oldSetting.Require_2Fa = payload.Require_2Fa
 			case "value.workspace_profile_setting_value.outbound_ip_list":
 				// We're not support update outbound_ip_list via api.
 			case "value.workspace_profile_setting_value.token_duration":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
-					return nil, status.Error(codes.PermissionDenied, err.Error())
+					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
-					return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("refresh token duration should be at least one hour"))
 				}
 				oldSetting.TokenDuration = payload.TokenDuration
 			case "value.workspace_profile_setting_value.announcement":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT); err != nil {
-					return nil, status.Error(codes.PermissionDenied, err.Error())
+					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				oldSetting.Announcement = payload.Announcement
 			case "value.workspace_profile_setting_value.maximum_role_expiration":
@@ -240,13 +238,13 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				oldSetting.MaximumRoleExpiration = payload.MaximumRoleExpiration
 			case "value.workspace_profile_setting_value.domains":
 				if err := validateDomains(payload.Domains); err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid domains, error %v", err)
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid domains, error %v", err))
 				}
 				oldSetting.Domains = payload.Domains
 			case "value.workspace_profile_setting_value.enforce_identity_domain":
 				if payload.EnforceIdentityDomain {
 					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION); err != nil {
-						return nil, status.Error(codes.PermissionDenied, err.Error())
+						return nil, connect.NewError(connect.CodePermissionDenied, err)
 					}
 				}
 				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
@@ -256,34 +254,34 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				if payload.DisallowPasswordSignin {
 					// We should still allow users to turn it off.
 					if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err != nil {
-						return nil, status.Error(codes.PermissionDenied, err.Error())
+						return nil, connect.NewError(connect.CodePermissionDenied, err)
 					}
 
 					identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to list identity providers: %v", err)
+						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list identity providers: %v", err))
 					}
 					if len(identityProviders) == 0 {
-						return nil, status.Errorf(codes.InvalidArgument, "cannot disallow password signin when no identity provider is set")
+						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot disallow password signin when no identity provider is set"))
 					}
 				}
 				oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
 			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
 		}
 
 		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
-			return nil, status.Errorf(codes.InvalidArgument, "identity domain can be enforced only when workspace domains are set")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity domain can be enforced only when workspace domains are set"))
 		}
 		bytes, err := protojson.Marshal(oldSetting)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 
 		payload := &storepb.WorkspaceApprovalSetting{}
@@ -293,12 +291,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				return nil, err
 			}
 			if err := validateApprovalTemplate(rule.Template); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid approval template: %v, err: %v", rule.Template, err)
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid approval template: %v, err: %v", rule.Template, err))
 			}
 
 			flow := new(storepb.ApprovalFlow)
 			if err := convertProtoToProto(rule.Template.Flow, flow); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to unmarshal approval flow with error: %v", err)
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal approval flow with error: %v", err))
 			}
 			payload.Rules = append(payload.Rules, &storepb.WorkspaceApprovalSetting_Rule{
 				Condition: rule.Condition,
@@ -311,71 +309,71 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_BRANDING_LOGO:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_CUSTOM_LOGO); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
 	case storepb.SettingName_PLUGIN_AGENT:
 		payload := new(storepb.AgentPluginSetting)
 		if err := convertProtoToProto(request.Msg.Setting.Value.GetAgentPluginSettingValue(), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
 		}
 
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 
 	case storepb.SettingName_APP_IM:
 		payload := new(storepb.AppIMSetting)
 		if err := convertProtoToProto(request.Msg.Setting.Value.GetAppImSettingValue(), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s, error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s, error: %v", apiSettingName, err))
 		}
 		setting, err := s.store.GetAppIMSetting(ctx)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get old app im setting")
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get old app im setting"))
 		}
 		if request.Msg.UpdateMask == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "update mask is required")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {
 			case "value.app_im_setting_value.slack":
 				if err := slack.ValidateToken(ctx, payload.Slack.GetToken()); err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "validation failed, error: %v", err)
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 				setting.Slack = payload.Slack
 
 			case "value.app_im_setting_value.feishu":
 				if err := feishu.Validate(ctx, payload.GetFeishu().GetAppId(), payload.GetFeishu().GetAppSecret(), user.Email); err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "validation failed, error: %v", err)
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 				setting.Feishu = payload.Feishu
 
 			case "value.app_im_setting_value.wecom":
 				if err := wecom.Validate(ctx, payload.GetWecom().GetCorpId(), payload.GetWecom().GetAgentId(), payload.GetWecom().GetSecret()); err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "validation failed, error: %v", err)
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 				setting.Wecom = payload.Wecom
 
 			case "value.app_im_setting_value.lark":
 				if err := lark.Validate(ctx, payload.GetLark().GetAppId(), payload.GetLark().GetAppSecret(), user.Email); err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "validation failed, error: %v", err)
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 				setting.Lark = payload.Lark
 			case "value.app_im_setting_value.dingtalk":
 				if err := dingtalk.Validate(ctx, payload.GetDingtalk().GetClientId(), payload.GetDingtalk().GetClientSecret(), payload.GetDingtalk().RobotCode, user.Phone); err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "validation failed, error: %v", err)
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
 				}
 				setting.Dingtalk = payload.Dingtalk
 
 			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
 		}
 		if request.Msg.ValidateOnly {
@@ -391,14 +389,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		bytes, err := protojson.Marshal(setting)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s, error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s, error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 
 	case storepb.SettingName_SCHEMA_TEMPLATE:
 		schemaTemplateSetting := request.Msg.Setting.Value.GetSchemaTemplateSettingValue()
 		if schemaTemplateSetting == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting schema template setting")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("value cannot be nil when setting schema template setting"))
 		}
 
 		if err := s.validateSchemaTemplate(ctx, schemaTemplateSetting); err != nil {
@@ -411,138 +409,138 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal external approval setting, error: %v", err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 		payload := new(storepb.DataClassificationSetting)
 		if err := convertProtoToProto(request.Msg.Setting.Value.GetDataClassificationSettingValue(), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
 		}
 		// it's a temporary solution to limit only 1 classification config before we support manage it in the UX.
 		if len(payload.Configs) != 1 {
-			return nil, status.Errorf(codes.InvalidArgument, "only support define 1 classification config for now")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("only support define 1 classification config for now"))
 		}
 		if len(payload.Configs[0].Classification) == 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "missing classification map")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("missing classification map"))
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_SEMANTIC_TYPES:
 		storeSemanticTypeSetting := new(storepb.SemanticTypeSetting)
 		if err := convertProtoToProto(request.Msg.Setting.Value.GetSemanticTypeSettingValue(), storeSemanticTypeSetting); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
 		}
 		idMap := make(map[string]bool)
 		for _, tp := range storeSemanticTypeSetting.Types {
 			if tp.Title == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "category title cannot be empty: %s", tp.Id)
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("category title cannot be empty: %s", tp.Id))
 			}
 			if idMap[tp.Id] {
-				return nil, status.Errorf(codes.InvalidArgument, "duplicate semantic type id: %s", tp.Id)
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("duplicate semantic type id: %s", tp.Id))
 			}
 			m, ok := tp.GetAlgorithm().GetMask().(*storepb.Algorithm_InnerOuterMask_)
 			if ok && m.InnerOuterMask != nil {
 				if m.InnerOuterMask.Type == storepb.Algorithm_InnerOuterMask_MASK_TYPE_UNSPECIFIED {
-					return nil, status.Errorf(codes.InvalidArgument, "inner outer mask type has to be specified")
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("inner outer mask type has to be specified"))
 				}
 			}
 			idMap[tp.Id] = true
 		}
 		bytes, err := protojson.Marshal(storeSemanticTypeSetting)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_WATERMARK:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_WATERMARK); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
 	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
 		maximumSQLResultSizeSetting := new(storepb.MaximumSQLResultSizeSetting)
 		if err := convertProtoToProto(request.Msg.Setting.Value.GetMaximumSqlResultSizeSetting(), maximumSQLResultSizeSetting); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
 		}
 		if maximumSQLResultSizeSetting.Limit <= 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid maximum sql result size")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid maximum sql result size"))
 		}
 		bytes, err := protojson.Marshal(maximumSQLResultSizeSetting)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_SCIM:
 		scimToken, err := common.RandomString(32)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate random SCIM secret with error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random SCIM secret with error: %v", err))
 		}
 		bytes, err := protojson.Marshal(&storepb.SCIMSetting{
 			Token: scimToken,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal SCIM setting with error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal SCIM setting with error: %v", err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_PASSWORD_RESTRICTION:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 		passwordSetting := new(storepb.PasswordRestrictionSetting)
 		if err := convertProtoToProto(request.Msg.Setting.Value.GetPasswordRestrictionSetting(), passwordSetting); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
 		}
 		if passwordSetting.MinLength < 8 {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid password minimum length, should no less than 8")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
 		}
 		bytes, err := protojson.Marshal(passwordSetting)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_AI:
 		aiSetting := &storepb.AISetting{}
 		if err := convertProtoToProto(request.Msg.Setting.Value.GetAiSetting(), aiSetting); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
 		}
 		if aiSetting.Enabled {
 			if aiSetting.Endpoint == "" || aiSetting.Model == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "API endpoint and model are required")
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
 			}
 			if existedSetting != nil {
 				existedAISetting, err := convertToSettingMessage(existedSetting)
 				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to unmarshal existed ai setting with error: %v", err)
+					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal existed ai setting with error: %v", err))
 				}
 				if aiSetting.ApiKey == "" {
 					aiSetting.ApiKey = existedAISetting.Value.GetAiSetting().GetApiKey()
 				}
 			}
 			if aiSetting.ApiKey == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "API key is required")
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API key is required"))
 			}
 		}
 
 		bytes, err := protojson.Marshal(aiSetting)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_ENVIRONMENT:
 		if serr := validateEnvironments(request.Msg.Setting.Value.GetEnvironmentSetting().GetEnvironments()); serr != nil {
-			return nil, serr.Err()
+			return nil, serr
 		}
 
 		environmentSetting := convertEnvironmentSetting(request.Msg.Setting.Value.GetEnvironmentSetting())
 		oldEnvironmentSetting, err := s.store.GetEnvironmentSetting(ctx)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get old environment setting with error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get old environment setting with error: %v", err))
 		}
 		newEnvIDMap := map[string]bool{}
 		for _, env := range environmentSetting.Environments {
@@ -554,24 +552,24 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				// check if instances are using the environments
 				count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{EnvironmentID: &env.Id})
 				if err != nil {
-					return nil, status.Error(codes.Internal, err.Error())
+					return nil, connect.NewError(connect.CodeInternal, err)
 				}
 				if count > 0 {
-					return nil, status.Errorf(codes.FailedPrecondition, "all instances in the environment %v should be deleted first", env.Id)
+					return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("all instances in the environment %v should be deleted first", env.Id))
 				}
 				uses, err := s.store.CheckDatabaseUseEnvironment(ctx, env.Id)
 				if err != nil {
-					return nil, status.Error(codes.Internal, err.Error())
+					return nil, connect.NewError(connect.CodeInternal, err)
 				}
 				if uses {
-					return nil, status.Errorf(codes.FailedPrecondition, "all databases in the environment %v should be deleted first", env.Id)
+					return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("all databases in the environment %v should be deleted first", env.Id))
 				}
 			}
 		}
 
 		bytes, err := protojson.Marshal(environmentSetting)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
 	default:
@@ -582,12 +580,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		Value: storeSettingValue,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to set setting: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
 	}
 
 	settingMessage, err := convertToSettingMessage(setting)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}
 
 	// it's a temporary solution to map the classification to all projects before we support it in the UX.
@@ -595,7 +593,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		classificationID := settingMessage.Value.GetDataClassificationSettingValue().Configs[0].Id
 		projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: false})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to list projects with error: %v", err.Error())
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list projects with error: %v", err))
 		}
 		for _, project := range projects {
 			patch := &store.UpdateProjectMessage{
@@ -603,7 +601,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				DataClassificationConfigID: &classificationID,
 			}
 			if _, err = s.store.UpdateProjectV2(ctx, patch); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to patch project %s with error: %v", project.Title, err.Error())
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to patch project %s with error: %v", project.Title, err))
 			}
 		}
 	}
@@ -614,10 +612,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 func convertProtoToProto(inputPB, outputPB protoreflect.ProtoMessage) error {
 	bytes, err := protojson.Marshal(inputPB)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to marshal setting: %v", err)
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting: %v", err))
 	}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(bytes, outputPB); err != nil {
-		return status.Errorf(codes.Internal, "failed to unmarshal setting: %v", err)
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting: %v", err))
 	}
 	return nil
 }
@@ -628,7 +626,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_APP_IM:
 		storeValue := new(storepb.AppIMSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -657,7 +655,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_PLUGIN_AGENT:
 		v1Value := new(v1pb.AgentPluginSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -670,7 +668,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		v1Value := new(v1pb.WorkspaceProfileSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -683,7 +681,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		storeValue := new(storepb.WorkspaceApprovalSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		v1Value := &v1pb.WorkspaceApprovalSetting{}
 		for _, rule := range storeValue.Rules {
@@ -704,7 +702,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_SCHEMA_TEMPLATE:
 		value := new(storepb.SchemaTemplateSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 
 		sts, err := convertSchemaTemplateSetting(value)
@@ -722,7 +720,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		v1Value := new(v1pb.DataClassificationSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -735,7 +733,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_SEMANTIC_TYPES:
 		v1Value := new(v1pb.SemanticTypeSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -748,7 +746,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
 		v1Value := new(v1pb.MaximumSQLResultSizeSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		if v1Value.GetLimit() <= 0 {
 			v1Value.Limit = common.DefaultMaximumSQLResultSize
@@ -764,7 +762,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_SCIM:
 		v1Value := new(v1pb.SCIMSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -777,7 +775,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_PASSWORD_RESTRICTION:
 		v1Value := new(v1pb.PasswordRestrictionSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -790,7 +788,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_AI:
 		v1Value := &v1pb.AISetting{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		// DO NOT expose the api key.
 		v1Value.ApiKey = ""
@@ -805,7 +803,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case storepb.SettingName_ENVIRONMENT:
 		v1Value, err := convertToEnvironmentSetting(setting.Value)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert setting value for %s with error: %v", setting.Name, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -830,7 +828,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTemplateSetting *v1pb.SchemaTemplateSetting) error {
 	oldStoreSetting, err := s.store.GetSettingV2(ctx, storepb.SettingName_SCHEMA_TEMPLATE)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to get setting %q: %v", storepb.SettingName_SCHEMA_TEMPLATE, err)
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting %q: %v", storepb.SettingName_SCHEMA_TEMPLATE, err))
 	}
 	settingValue := "{}"
 	if oldStoreSetting != nil {
@@ -839,7 +837,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 
 	value := new(storepb.SchemaTemplateSetting)
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(settingValue), value); err != nil {
-		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %v with error: %v", storepb.SettingName_SCHEMA_TEMPLATE, err)
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %v with error: %v", storepb.SettingName_SCHEMA_TEMPLATE, err))
 	}
 	v1Value, err := convertSchemaTemplateSetting(value)
 	if err != nil {
@@ -1186,17 +1184,17 @@ func validateDomains(domains []string) error {
 	return nil
 }
 
-func validateEnvironments(envs []*v1pb.EnvironmentSetting_Environment) *status.Status {
+func validateEnvironments(envs []*v1pb.EnvironmentSetting_Environment) error {
 	used := map[string]bool{}
 	for _, env := range envs {
 		if env.Title == "" {
-			return status.Newf(codes.InvalidArgument, "environment title cannot be empty")
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("environment title cannot be empty"))
 		}
 		if !isValidResourceID(env.Id) {
-			return status.Newf(codes.InvalidArgument, "invalid environment ID %v", env.Id)
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment ID %v", env.Id))
 		}
 		if used[env.Id] {
-			return status.Newf(codes.InvalidArgument, "duplicate environment ID %v", env.Id)
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("duplicate environment ID %v", env.Id))
 		}
 		used[env.Id] = true
 	}

@@ -10,10 +10,9 @@ import (
 	"strings"
 	"unicode"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -122,7 +121,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		return err
 	}
 	if newUser == nil {
-		return status.Errorf(codes.Internal, "user %v not found", userID)
+		return connect.NewError(connect.CodeInternal, errors.Errorf("user %v not found", userID))
 	}
 	for _, binding := range policyMessage.Policy.Bindings {
 		if binding.Role != grantRequest.Role {
@@ -248,12 +247,12 @@ func CheckDatabaseGroupMatch(ctx context.Context, expression string, database *s
 		},
 	})
 	if err != nil {
-		return false, status.Error(codes.Internal, err.Error())
+		return false, connect.NewError(connect.CodeInternal, err)
 	}
 
 	val, err := res.ConvertToNative(reflect.TypeOf(false))
 	if err != nil {
-		return false, status.Errorf(codes.Internal, "expect bool result")
+		return false, connect.NewError(connect.CodeInternal, errors.New("expect bool result"))
 	}
 	if boolVal, ok := val.(bool); ok && boolVal {
 		return true, nil

@@ -9,12 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/xuri/excelize/v2"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -331,7 +330,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 				// If database not found, skip.
 				return nil, nil
 			}
-			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database"))
 		}
 		if database == nil {
 			return nil, nil
@@ -339,7 +338,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 
 		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
 
 		var result []base.SchemaResource
@@ -359,14 +358,14 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 						IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 					})
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", sourceColumn.Database, instance.ResourceID, err)
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database %v in instance %v", sourceColumn.Database, instance.ResourceID))
 					}
 					if resourceDB == nil {
 						continue
 					}
 					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", sourceColumn.Database, instance.ResourceID, err)
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema %v in instance %v", sourceColumn.Database, instance.ResourceID))
 					}
 					if !resourceExists(resourceDBSchema, sr) {
 						// If table not found, we regard it as a CTE/alias/... and skip.
@@ -400,7 +399,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database"))
 		}
 		if database == nil {
 			return nil, nil
@@ -408,7 +407,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 
 		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
 
 		var result []base.SchemaResource
@@ -453,7 +452,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database"))
 		}
 		if database == nil {
 			return nil, nil
@@ -461,7 +460,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 
 		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
 
 		var result []base.SchemaResource
@@ -480,14 +479,14 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 						IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 					})
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database %v in instance %v", sr.Database, instance.ResourceID))
 					}
 					if resourceDB == nil {
 						continue
 					}
 					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema %v in instance %v", sr.Database, instance.ResourceID))
 					}
 					if !resourceExists(resourceDBSchema, sr) {
 						// If table not found, we regard it as a CTE/alias/... and skip.
@@ -515,7 +514,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 			dataSource = adminDataSource
 		}
 		if dataSource == nil {
-			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find data source for instance: %s", instance.ResourceID))
 		}
 		spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
 			InstanceID:                    instance.ResourceID,
@@ -536,7 +535,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 				// If database not found, skip.
 				return nil, nil
 			}
-			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database"))
 		}
 		if database == nil {
 			return nil, nil
@@ -544,7 +543,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 
 		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
 
 		var result []base.SchemaResource
@@ -564,14 +563,14 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 						IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 					})
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database %v in instance %v", sr.Database, instance.ResourceID))
 					}
 					if resourceDB == nil {
 						continue
 					}
 					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema %v in instance %v", sr.Database, instance.ResourceID))
 					}
 					if !resourceExists(resourceDBSchema, sr) {
 						// If table not found, we regard it as a CTE/alias/... and skip.
@@ -597,7 +596,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 			dataSource = adminDataSource
 		}
 		if dataSource == nil {
-			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find data source for instance: %s", instance.ResourceID))
 		}
 		spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
 			InstanceID:                    instance.ResourceID,
@@ -618,7 +617,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 				// If database not found, skip.
 				return nil, nil
 			}
-			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database"))
 		}
 		if database == nil {
 			return nil, nil
@@ -626,7 +625,7 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 
 		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
 
 		var result []base.SchemaResource
@@ -650,14 +649,14 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 						IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 					})
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database %v in instance %v", sr.Database, instance.ResourceID))
 					}
 					if resourceDB == nil {
 						continue
 					}
 					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
 					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", sr.Database, instance.ResourceID, err)
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema %v in instance %v", sr.Database, instance.ResourceID))
 					}
 					if !resourceExists(resourceDBSchema, sr) {
 						// If table not found, we regard it as a CTE/alias/... and skip.

@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -40,10 +38,10 @@ func (s *RevisionService) ListRevisions(
 	request := req.Msg
 	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to found database %v", request.Parent)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
 	}
 	if database == nil || database.Deleted {
-		return nil, status.Errorf(codes.NotFound, "database %v not found", request.Parent)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -66,20 +64,20 @@ func (s *RevisionService) ListRevisions(
 
 	revisions, err := s.store.ListRevisions(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find revisions, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find revisions, err"))
 	}
 
 	var nextPageToken string
 	if len(revisions) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token, error"))
 		}
 		revisions = revisions[:offset.limit]
 	}
 
 	converted, err := convertToRevisions(ctx, s.store, request.Parent, revisions)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to revisions, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revisions, err"))
 	}
 
 	return connect.NewResponse(&v1pb.ListRevisionsResponse{
@@ -95,16 +93,16 @@ func (s *RevisionService) GetRevision(
 	request := req.Msg
 	instanceName, databaseName, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision UID from %v", request.Name))
 	}
 	revision, err := s.store.GetRevision(ctx, revisionUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete revision %v, err: %v", revisionUID, err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete revision %v", revisionUID))
 	}
 	parent := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instanceName, common.DatabaseIDPrefix, databaseName)
 	converted, err := convertToRevision(ctx, s.store, parent, revision)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to revision, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision, err"))
 	}
 	return connect.NewResponse(converted), nil
 }
@@ -115,95 +113,95 @@ func (s *RevisionService) CreateRevision(
 ) (*connect.Response[v1pb.Revision], error) {
 	request := req.Msg
 	if request.Revision == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request.Revision is not set")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request.Revision is not set"))
 	}
 	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to found database %v", request.Parent)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
 	}
 	if database == nil || database.Deleted {
-		return nil, status.Errorf(codes.NotFound, "database %v not found", request.Parent)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Revision.Sheet)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get sheet from %v, err: %v", request.Revision.Sheet, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get sheet from %v", request.Revision.Sheet))
 	}
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get sheet, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet, err"))
 	}
 	if sheet == nil {
-		return nil, status.Errorf(codes.NotFound, "sheet %q not found", request.Revision.Sheet)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", request.Revision.Sheet))
 	}
 
 	if request.Revision.TaskRun != "" {
 		projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Revision.TaskRun)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to get taskRun from %q", request.Revision.TaskRun)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get taskRun from %q", request.Revision.TaskRun))
 		}
 		taskRun, err := s.store.GetTaskRun(ctx, taskRunID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get taskRun, err: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get taskRun, err"))
 		}
 		if taskRun == nil {
-			return nil, status.Errorf(codes.NotFound, "taskRun %q not found", request.Revision.TaskRun)
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", request.Revision.TaskRun))
 		}
 		if taskRun.ProjectID != projectID ||
 			taskRun.PipelineUID != rolloutID ||
 			taskRun.Environment != stageID ||
 			taskRun.TaskUID != taskID {
-			return nil, status.Errorf(codes.NotFound, "taskRun %q not found", request.Revision.TaskRun)
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", request.Revision.TaskRun))
 		}
 	}
 
 	if request.Revision.Issue != "" {
 		_, _, err := common.GetProjectIDIssueUID(request.Revision.Issue)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to get issue from %q", request.Revision.Issue)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get issue from %q", request.Revision.Issue))
 		}
 	}
 
 	if (request.Revision.Release == "") != (request.Revision.File == "") {
-		return nil, status.Errorf(codes.InvalidArgument, "revision.release and revision.file must be set or unset")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("revision.release and revision.file must be set or unset"))
 	}
 	if request.Revision.Release != "" && request.Revision.File != "" {
 		if !strings.HasPrefix(request.Revision.File, request.Revision.Release) {
-			return nil, status.Errorf(codes.InvalidArgument, "file %q is not in release %q", request.Revision.File, request.Revision.Release)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("file %q is not in release %q", request.Revision.File, request.Revision.Release))
 		}
 		_, releaseUID, fileID, err := common.GetProjectReleaseUIDFile(request.Revision.File)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to get release and file from %q", request.Revision.File)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get release and file from %q", request.Revision.File))
 		}
 		release, err := s.store.GetRelease(ctx, releaseUID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get release, err: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release, err"))
 		}
 		if release == nil {
-			return nil, status.Errorf(codes.NotFound, "release %q not found", request.Revision.Release)
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %q not found", request.Revision.Release))
 		}
 		foundFile := false
 		for _, f := range release.Payload.Files {
 			if f.Id == fileID {
 				foundFile = true
 				if f.Sheet != request.Revision.Sheet {
-					return nil, status.Errorf(codes.InvalidArgument, "The sheet in file %q is %q which is different from revision.sheet %q", fileID, f.Sheet, request.Revision.Sheet)
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("The sheet in file %q is %q which is different from revision.sheet %q", fileID, f.Sheet, request.Revision.Sheet))
 				}
 				break
 			}
 		}
 		if !foundFile {
-			return nil, status.Errorf(codes.InvalidArgument, "file %q not found in release %q", fileID, request.Revision.Release)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("file %q not found in release %q", fileID, request.Revision.Release))
 		}
 	}
 
 	revisionCreate := convertRevision(request.Revision, database, sheet)
 	revisionM, err := s.store.CreateRevision(ctx, revisionCreate)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create revision, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision, err"))
 	}
 	converted, err := convertToRevision(ctx, s.store, request.Parent, revisionM)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to revision, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision, err"))
 	}
 
 	return connect.NewResponse(converted), nil
@@ -216,23 +214,23 @@ func (s *RevisionService) BatchCreateRevisions(
 	request := req.Msg
 	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to found database %v", request.Parent)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
 	}
 	if database == nil || database.Deleted {
-		return nil, status.Errorf(codes.NotFound, "database %v not found", request.Parent)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
 
 	var revisions []*v1pb.Revision
 	for _, req := range request.Requests {
 		// Validate parent matches
 		if req.Parent != request.Parent {
-			return nil, status.Errorf(codes.InvalidArgument, "request parent %q does not match batch parent %q", req.Parent, request.Parent)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request parent %q does not match batch parent %q", req.Parent, request.Parent))
 		}
 
 		// Reuse the CreateRevision logic by calling it directly
 		revisionResp, err := s.CreateRevision(ctx, connect.NewRequest(req))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create revision for request: %v, err: %v", req, err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision for request"))
 		}
 		revisions = append(revisions, revisionResp.Msg)
 	}
@@ -249,14 +247,14 @@ func (s *RevisionService) DeleteRevision(
 	request := req.Msg
 	_, _, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision UID from %v", request.Name))
 	}
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	if err := s.store.DeleteRevision(ctx, revisionUID, user.ID); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete revision %v, err: %v", revisionUID, err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete revision %v", revisionUID))
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }

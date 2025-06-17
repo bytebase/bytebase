@@ -6,10 +6,9 @@ import (
 	"regexp"
 	"strings"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/ebnf"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -422,10 +421,10 @@ func parseLimitAndOffset(size *pageSize) (*pageOffset, error) {
 	if size.token != "" {
 		var token storepb.PageToken
 		if err := unmarshalPageToken(size.token, &token); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid page token"))
 		}
 		if token.Limit < 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("page size cannot be negative"))
 		}
 		offset.limit = int(size.limit)
 		offset.offset = int(token.Offset)

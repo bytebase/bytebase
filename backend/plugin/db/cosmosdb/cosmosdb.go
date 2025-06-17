@@ -7,8 +7,7 @@ import (
 	"io"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -90,7 +89,7 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64, error) {
-	return 0, status.Errorf(codes.Unimplemented, "method Execute unimplemented")
+	return 0, connect.NewError(connect.CodeUnimplemented, errors.New("method Execute unimplemented"))
 }
 
 // Dump dumps the database.
@@ -101,19 +100,19 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMet
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Container == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "container argument is required for CosmosDB")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("container argument is required for CosmosDB"))
 	}
 
 	// Allow `SELECT * FROM {container} [alias]` only.
 	_, _, err := base.ValidateSQLForEditor(storepb.Engine_COSMOSDB, statement)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "support simple SELECT statement for Cosmos DB engine only, err: %s", err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support simple SELECT statement for Cosmos DB engine only, err: %s", err.Error()))
 	}
 
 	startTime := time.Now()
 	container, err := d.client.NewContainer(d.databaseName, queryContext.Container)
 	if err != nil {
-		return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to create container").Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create container"))
 	}
 
 	var queryOption *azcosmos.QueryOptions
@@ -130,7 +129,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	for pager.More() {
 		response, err := pager.NextPage(ctx)
 		if err != nil {
-			return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to read more items").Error())
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to read more items"))
 		}
 		var stop bool
 		for _, item := range response.Items {

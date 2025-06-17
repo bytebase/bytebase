@@ -10,8 +10,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -50,29 +48,29 @@ func NewReleaseService(
 
 func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request[v1pb.CreateReleaseRequest]) (*connect.Response[v1pb.Release], error) {
 	if req.Msg.Release == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request.Release cannot be nil")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request.Release cannot be nil"))
 	}
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
 	projectID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get project id, err: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id, err"))
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find project, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project, err"))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
 	req.Msg.Release.Files, err = validateAndSanitizeReleaseFiles(ctx, s.store, req.Msg.Release.Files)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files, err"))
 	}
 	sheetsToCreate := []*store.SheetMessage{}
 	var filesWithoutSheet []*v1pb.Release_File
@@ -94,10 +92,10 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 	if len(sheetsToCreate) > 0 {
 		createdSheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetsToCreate, project.ResourceID, user.ID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create sheets, err: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheets, err"))
 		}
 		if len(createdSheets) != len(sheetsToCreate) {
-			return nil, status.Errorf(codes.Internal, "failed to create all sheets, expected %d but got %d", len(sheetsToCreate), len(createdSheets))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create all sheets, expected %d but got %d", len(sheetsToCreate), len(createdSheets)))
 		}
 
 		// Map created sheets back to files.
@@ -108,7 +106,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	files, err := convertReleaseFiles(ctx, s.store, req.Msg.Release.Files)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert files, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert files, err"))
 	}
 
 	releaseMessage := &store.ReleaseMessage{
@@ -122,12 +120,12 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	release, err := s.store.CreateRelease(ctx, releaseMessage, user.ID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create release, err"))
 	}
 
 	converted, err := convertToRelease(ctx, s.store, release)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release, err"))
 	}
 
 	return connect.NewResponse(converted), nil
@@ -136,37 +134,37 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 func (s *ReleaseService) GetRelease(ctx context.Context, req *connect.Request[v1pb.GetReleaseRequest]) (*connect.Response[v1pb.Release], error) {
 	_, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid, err"))
 	}
 	releaseMessage, err := s.store.GetRelease(ctx, releaseUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release, err"))
 	}
 	if releaseMessage == nil {
-		return nil, status.Errorf(codes.NotFound, "release %v not found", releaseUID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %v not found", releaseUID))
 	}
 	release, err := convertToRelease(ctx, s.store, releaseMessage)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to release, err"))
 	}
 	return connect.NewResponse(release), nil
 }
 
 func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[v1pb.ListReleasesRequest]) (*connect.Response[v1pb.ListReleasesResponse], error) {
 	if req.Msg.PageSize < 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "page size must be non-negative: %d", req.Msg.PageSize)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size must be non-negative: %d", req.Msg.PageSize))
 	}
 
 	projectID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get project id, err: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id, err"))
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find project, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project, err"))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -188,20 +186,20 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 
 	releaseMessages, err := s.store.ListReleases(ctx, releaseFind)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list releases, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list releases, err"))
 	}
 
 	var nextPageToken string
 	if len(releaseMessages) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token, error"))
 		}
 		releaseMessages = releaseMessages[:offset.limit]
 	}
 
 	releases, err := convertToReleases(ctx, s.store, releaseMessages)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to release, err"))
 	}
 
 	return connect.NewResponse(&v1pb.ListReleasesResponse{
@@ -212,22 +210,22 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 
 func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request[v1pb.UpdateReleaseRequest]) (*connect.Response[v1pb.Release], error) {
 	if req.Msg.UpdateMask == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
 
 	_, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Release.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid, err"))
 	}
 	release, err := s.store.GetRelease(ctx, releaseUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release, err"))
 	}
 	if release == nil {
-		return nil, status.Errorf(codes.NotFound, "release %v not found", releaseUID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %v not found", releaseUID))
 	}
 	if release.Deleted {
-		return nil, status.Errorf(codes.FailedPrecondition, "release %d is deleted", releaseUID)
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("release %d is deleted", releaseUID))
 	}
 
 	update := &store.UpdateReleaseMessage{
@@ -243,11 +241,11 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 
 	releaseMessage, err := s.store.UpdateRelease(ctx, update)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update release, err"))
 	}
 	converted, err := convertToRelease(ctx, s.store, releaseMessage)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release, err"))
 	}
 	return connect.NewResponse(converted), nil
 }
@@ -255,13 +253,13 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 func (s *ReleaseService) DeleteRelease(ctx context.Context, req *connect.Request[v1pb.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error) {
 	_, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid, err"))
 	}
 	if _, err := s.store.UpdateRelease(ctx, &store.UpdateReleaseMessage{
 		UID:     releaseUID,
 		Deleted: &deletePatch,
 	}); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete release, err"))
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
@@ -269,18 +267,18 @@ func (s *ReleaseService) DeleteRelease(ctx context.Context, req *connect.Request
 func (s *ReleaseService) UndeleteRelease(ctx context.Context, req *connect.Request[v1pb.UndeleteReleaseRequest]) (*connect.Response[v1pb.Release], error) {
 	_, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid, err"))
 	}
 	releaseMessage, err := s.store.UpdateRelease(ctx, &store.UpdateReleaseMessage{
 		UID:     releaseUID,
 		Deleted: &undeletePatch,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to undelete release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete release, err"))
 	}
 	release, err := convertToRelease(ctx, s.store, releaseMessage)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert release, err: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release, err"))
 	}
 	return connect.NewResponse(release), nil
 }

@@ -11,8 +11,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -65,36 +63,36 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, req *connect.Reques
 	request := req.Msg
 	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 
 	// Validate plan specs
 	if err := validateSpecs(request.Plan.Specs); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan specs, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 	}
 
 	specs := convertPlanSpecs(request.Plan.Specs)
 
 	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, request.GetPlan().GetName(), specs, nil /* snapshot */, project)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
 	if len(rollout.Tasks) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "plan has no stage created, hint: check deployment config setting that the target database is in a stage")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("plan has no stage created, hint: check deployment config setting that the target database is in a stage"))
 	}
 
 	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 	}
 	return connect.NewResponse(rolloutV1), nil
 }
@@ -104,28 +102,28 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 	request := req.Msg
 	projectID, rolloutID, err := common.GetProjectIDRolloutID(request.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 	rollout, err := s.store.GetRollout(ctx, rolloutID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get pipeline, error: %v", err))
 	}
 	if rollout == nil {
-		return nil, status.Errorf(codes.NotFound, "rollout not found for id: %d", rolloutID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout not found for id: %d", rolloutID))
 	}
 
 	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 	}
 	return connect.NewResponse(rolloutV1), nil
 }
@@ -135,16 +133,16 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	request := req.Msg
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -164,14 +162,14 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	}
 	pipelines, err := s.store.ListPipelineV2(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list pipelines, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list pipelines, error: %v", err))
 	}
 
 	var nextPageToken string
 	// has more pages
 	if len(pipelines) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get next page token, error: %v", err))
 		}
 		pipelines = pipelines[:offset.limit]
 	}
@@ -180,14 +178,14 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	for _, pipeline := range pipelines {
 		rolloutMessage, err := s.store.GetRollout(ctx, pipeline.ID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get rollout, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
 		}
 		if rolloutMessage == nil {
-			return nil, status.Errorf(codes.Internal, "failed to get rollout %d", pipeline.ID)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout %d", pipeline.ID))
 		}
 		rollout, err := convertToRollout(ctx, s.store, project, rolloutMessage)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 		}
 		rollouts = append(rollouts, rollout)
 	}
@@ -203,32 +201,32 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	request := req.Msg
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("principal ID not found"))
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 
 	_, planID, err := common.GetProjectIDPlanID(request.GetRollout().GetPlan())
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
 	}
 	if plan == nil {
-		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan not found for id: %d", planID))
 	}
 
 	rolloutTitle := request.GetRollout().GetTitle()
@@ -237,38 +235,38 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, rolloutTitle, plan.Config.GetSpecs(), plan.Config.GetDeployment(), project)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
 	if len(pipelineCreate.Tasks) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting that the target database is in a stage")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("no database matched for deployment, hint: check deployment config setting that the target database is in a stage"))
 	}
 	if isChangeDatabasePlan(plan.Config.GetSpecs()) {
 		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment(), pipelineCreate, request.Target)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to filter stages with stageId, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to filter stages with stageId, error: %v", err))
 		}
 	}
 	if request.ValidateOnly {
 		rolloutV1, err := convertToRollout(ctx, s.store, project, pipelineCreate)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 		}
 		rolloutV1.Plan = request.Rollout.GetPlan()
 		return connect.NewResponse(rolloutV1), nil
 	}
 	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create pipeline, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pipeline, error: %v", err))
 	}
 
 	rollout, err := s.store.GetRollout(ctx, pipelineUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get pipeline, error: %v", err))
 	}
 
 	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 	}
 
 	// Tickle task run scheduler.
@@ -282,17 +280,17 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 	request := req.Msg
 	projectID, rolloutID, maybeStageID, maybeTaskID, err := common.GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(request.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find project, error: %v", err))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
@@ -301,12 +299,12 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		TaskUID:     maybeTaskID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list task runs, error: %v", err))
 	}
 
 	taskRunsV1, err := convertToTaskRuns(ctx, s.store, s.stateCfg, taskRuns)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to task runs, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to task runs, error: %v", err))
 	}
 	return connect.NewResponse(&v1pb.ListTaskRunsResponse{
 		TaskRuns:      taskRunsV1,
@@ -319,15 +317,15 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 	request := req.Msg
 	_, _, _, _, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	taskRun, err := s.store.GetTaskRun(ctx, taskRunUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get task run, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run, error: %v", err))
 	}
 	taskRunV1, err := convertToTaskRun(ctx, s.store, s.stateCfg, taskRun)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to task run, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to task run, error: %v", err))
 	}
 	return connect.NewResponse(taskRunV1), nil
 }
@@ -336,11 +334,11 @@ func (s *RolloutService) GetTaskRunLog(ctx context.Context, req *connect.Request
 	request := req.Msg
 	_, _, _, _, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get task run uid, error: %v", err))
 	}
 	logs, err := s.store.ListTaskRunLogs(ctx, taskRunUID)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to list task run logs, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to list task run logs, error: %v", err))
 	}
 	return connect.NewResponse(convertToTaskRunLog(request.Parent, logs)), nil
 }
@@ -349,36 +347,36 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	request := req.Msg
 	_, _, _, taskUID, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get task run uid, error: %v", err))
 	}
 	connIDAny, ok := s.stateCfg.TaskRunConnectionID.Load(taskRunUID)
 	if !ok {
-		return nil, status.Errorf(codes.FailedPrecondition, "connection id not found for task run %d", taskRunUID)
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("connection id not found for task run %d", taskRunUID))
 	}
 	connID, ok := connIDAny.(string)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "expect connection id to be of type string but found %T", connIDAny)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("expect connection id to be of type string but found %T", connIDAny))
 	}
 
 	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get task, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task, error: %v", err))
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance, error: %v", err))
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil, db.ConnectionContext{})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get driver, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get driver, error: %v", err))
 	}
 	defer driver.Close(ctx)
 
 	session, err := getSession(ctx, instance.Metadata.GetEngine(), driver.GetDB(), connID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get session, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get session, error: %v", err))
 	}
 
 	session.Name = request.Parent + "/session"
@@ -484,33 +482,33 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request[v1pb.BatchRunTasksRequest]) (*connect.Response[v1pb.BatchRunTasksResponse], error) {
 	request := req.Msg
 	if len(request.Tasks) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "The tasks in request cannot be empty")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("The tasks in request cannot be empty"))
 	}
 	projectID, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(request.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find project, error: %v", err))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
 	rollout, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find rollout, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find rollout, error: %v", err))
 	}
 	if rollout == nil {
-		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %v not found", rolloutID))
 	}
 
 	issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find issue, error: %v", err))
 	}
 
 	// Parse requested task IDs and group by their environment
@@ -519,13 +517,13 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	for _, task := range request.Tasks {
 		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		taskEnvironments[stageID] = append(taskEnvironments[stageID], taskID)
 		taskIDsToRunMap[taskID] = true
 	}
 	if len(taskEnvironments) > 1 {
-		return nil, status.Errorf(codes.InvalidArgument, "tasks should be in the same environment")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("tasks should be in the same environment"))
 	}
 
 	// Get the environment for the tasks to run
@@ -538,39 +536,39 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	// Get all tasks in the same environment
 	stageToRunTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rolloutID, Environment: &environmentToRun})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list tasks, error: %v", err))
 	}
 	if len(stageToRunTasks) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "No tasks to run in the stage")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("No tasks to run in the stage"))
 	}
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
 	ok, err = s.canUserRunEnvironmentTasks(ctx, user, project, issueN, environmentToRun, rollout.CreatorUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the user can run tasks, error: %v", err))
 	}
 	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "Not allowed to run tasks")
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("Not allowed to run tasks"))
 	}
 
 	// Don't need to check if issue is approved if
 	// the user has bb.taskruns.create permission.
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check permission with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
 		if issueN != nil {
 			approved, err := utils.CheckIssueApproved(issueN)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check if the issue is approved, error: %v", err)
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the issue is approved, error: %v", err))
 			}
 			if !approved {
-				return nil, status.Errorf(codes.FailedPrecondition, "cannot run the tasks because the issue is not approved")
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot run the tasks because the issue is not approved"))
 			}
 		}
 	}
@@ -600,7 +598,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	})
 
 	if err := s.store.CreatePendingTaskRuns(ctx, taskRunCreates...); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create pending task runs, error %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
 	}
 
 	if issueN != nil {
@@ -630,34 +628,34 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	request := req.Msg
 	projectID, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(request.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find project, error: %v", err))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
 	rollout, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find rollout, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find rollout, error: %v", err))
 	}
 	if rollout == nil {
-		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %v not found", rolloutID))
 	}
 
 	issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find issue, error: %v", err))
 	}
 
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rolloutID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list tasks, error: %v", err))
 	}
 
 	taskByID := make(map[int]*store.TaskMessage)
@@ -667,7 +665,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 	var taskUIDs []int
 	var tasksToSkip []*store.TaskMessage
@@ -675,11 +673,11 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	for _, task := range request.Tasks {
 		_, _, _, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		taskMsg, ok := taskByID[taskID]
 		if !ok {
-			return nil, status.Errorf(codes.NotFound, "task %v not found in the rollout", taskID)
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task %v not found in the rollout", taskID))
 		}
 		taskUIDs = append(taskUIDs, taskID)
 		tasksToSkip = append(tasksToSkip, taskMsg)
@@ -689,15 +687,15 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	for environment := range environmentSet {
 		ok, err = s.canUserSkipEnvironmentTasks(ctx, user, project, issueN, environment, rollout.CreatorUID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check if the user can skip tasks, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the user can skip tasks, error: %v", err))
 		}
 		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "not allowed to skip tasks in environment %q", environment)
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("not allowed to skip tasks in environment %q", environment))
 		}
 	}
 
 	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to skip tasks, error: %v", err))
 	}
 
 	for _, task := range tasksToSkip {
@@ -729,58 +727,58 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.Request[v1pb.BatchCancelTaskRunsRequest]) (*connect.Response[v1pb.BatchCancelTaskRunsResponse], error) {
 	request := req.Msg
 	if len(request.TaskRuns) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "task runs cannot be empty")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("task runs cannot be empty"))
 	}
 
 	projectID, rolloutID, stageID, _, err := common.GetProjectIDRolloutIDStageIDMaybeTaskID(request.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find project, error: %v", err))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
 	rollout, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find rollout, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find rollout, error: %v", err))
 	}
 	if rollout == nil {
-		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %v not found", rolloutID))
 	}
 
 	issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find issue, error: %v", err))
 	}
 
 	for _, taskRun := range request.TaskRuns {
 		_, _, taskRunStageID, _, _, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		if taskRunStageID != stageID {
-			return nil, status.Errorf(codes.InvalidArgument, "task run %v is not in the specified stage %v", taskRun, stageID)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v is not in the specified stage %v", taskRun, stageID))
 		}
 	}
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
 	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, stageID, rollout.CreatorUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the user can run tasks, error: %v", err))
 	}
 	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "Not allowed to cancel tasks")
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("Not allowed to cancel tasks"))
 	}
 
 	var taskRunIDs []int
@@ -788,7 +786,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	for _, taskRun := range request.TaskRuns {
 		projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		taskRunIDs = append(taskRunIDs, taskRunID)
 		taskNames = append(taskNames, common.FormatTask(projectID, rolloutID, stageID, taskID))
@@ -798,7 +796,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		UIDs: &taskRunIDs,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list task runs, error: %v", err))
 	}
 
 	for _, taskRun := range taskRuns {
@@ -806,7 +804,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		case storepb.TaskRun_PENDING:
 		case storepb.TaskRun_RUNNING:
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "taskRun %v is not pending or running", taskRun.ID)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("taskRun %v is not pending or running", taskRun.ID))
 		}
 	}
 
@@ -819,7 +817,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch patch task run status to canceled, error: %v", err))
 	}
 
 	if issueN != nil {
@@ -846,53 +844,53 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 	request := req.Msg
 	_, _, _, taskUID, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get task run uid, error: %v", err))
 	}
 
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
 		UID: &taskRunUID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list task runs, error: %v", err))
 	}
 	if len(taskRuns) == 0 {
-		return nil, status.Errorf(codes.NotFound, "task run %v not found", taskRunUID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %v not found", taskRunUID))
 	}
 	if len(taskRuns) > 1 {
-		return nil, status.Errorf(codes.Internal, "found multiple task runs with the same uid %v", taskRunUID)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("found multiple task runs with the same uid %v", taskRunUID))
 	}
 
 	taskRun := taskRuns[0]
 
 	if taskRun.Status != storepb.TaskRun_DONE {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v is not done", taskRun.ID)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v is not done", taskRun.ID))
 	}
 
 	if taskRun.ResultProto == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no result", taskRun.ID)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no result", taskRun.ID))
 	}
 
 	backupDetail := taskRun.ResultProto.PriorBackupDetail
 	if backupDetail == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no rollback", taskRun.ID)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no rollback", taskRun.ID))
 	}
 
 	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get task, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task, error: %v", err))
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance, error: %v", err))
 	}
 
 	if taskRun.SheetUID == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no sheet", taskRun.ID)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no sheet", taskRun.ID))
 	}
 	statements, err := s.store.GetSheetStatementByID(ctx, *taskRun.SheetUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get sheet statements, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet statements, error: %v", err))
 	}
 
 	var results []string
@@ -904,7 +902,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 			IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
 		}, statements, item)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate restore sql, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate restore sql, error: %v", err))
 		}
 		results = append(results, restore)
 	}

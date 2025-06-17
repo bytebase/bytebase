@@ -9,8 +9,6 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/pkg/errors"
 
@@ -49,14 +47,14 @@ func (s *SQLService) AICompletion(ctx context.Context, req *connect.Request[v1pb
 		return nil, err
 	}
 	if !aiSetting.Enabled {
-		return nil, status.Errorf(codes.FailedPrecondition, "AI is not enabled")
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("AI is not enabled"))
 	}
 
 	switch aiSetting.Provider {
 	case storepb.AISetting_OPEN_AI, storepb.AISetting_AZURE_OPENAI:
 		return callOpenAI(ctx, aiSetting, request)
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupported AI provider %s", aiSetting.Provider)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported AI provider %s", aiSetting.Provider))
 	}
 }
 

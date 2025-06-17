@@ -3,13 +3,12 @@ package common
 import (
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
 	celtypes "github.com/google/cel-go/common/types"
 	"github.com/pkg/errors"
 	exprproto "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const celLimit = 1024 * 1024
@@ -88,11 +87,11 @@ func ConvertUnparsedRisk(expression *expr.Expr) (*exprproto.ParsedExpr, error) {
 
 	ast, issues := e.Parse(expression.Expression)
 	if issues != nil && issues.Err() != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse expression: %v", issues.Err())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse expression: %v", issues.Err()))
 	}
 	expr, err := cel.AstToParsedExpr(ast)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert ast to parsed expression: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert ast to parsed expression: %v", err))
 	}
 	return expr, nil
 }
@@ -109,11 +108,11 @@ func ConvertUnparsedApproval(expression *expr.Expr) (*exprproto.ParsedExpr, erro
 
 	ast, issues := e.Parse(expression.Expression)
 	if issues != nil && issues.Err() != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse expression: %v", issues.Err())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse expression: %v", issues.Err()))
 	}
 	expr, err := cel.AstToParsedExpr(ast)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert ast to parsed expression: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert ast to parsed expression: %v", err))
 	}
 	return expr, nil
 }
@@ -143,15 +142,15 @@ func ValidateMaskingRuleCELExpr(expr string) (cel.Program, error) {
 		MaskingRulePolicyCELAttributes...,
 	)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	ast, issues := e.Compile(expr)
 	if issues != nil && issues.Err() != nil {
-		return nil, status.Error(codes.InvalidArgument, issues.Err().Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, issues.Err())
 	}
 	prog, err := e.Program(ast)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return prog, nil
 }
@@ -173,15 +172,15 @@ func validateCELExpr(expression *expr.Expr, conditionCELAttributes []cel.EnvOpti
 		conditionCELAttributes...,
 	)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	ast, issues := e.Compile(expression.Expression)
 	if issues != nil && issues.Err() != nil {
-		return nil, status.Error(codes.InvalidArgument, issues.Err().Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, issues.Err())
 	}
 	prog, err := e.Program(ast)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return prog, nil
 }

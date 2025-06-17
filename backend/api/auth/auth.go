@@ -11,9 +11,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -218,24 +216,24 @@ func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret str
 	claims := &claimsMessage{}
 	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
-			return nil, status.Errorf(codes.Unauthenticated, "unexpected MFA temp token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
+			return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("unexpected MFA temp token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256))
 		}
 		if kid, ok := t.Header["kid"].(string); ok {
 			if kid == "v1" {
 				return []byte(secret), nil
 			}
 		}
-		return nil, status.Errorf(codes.Unauthenticated, "unexpected MFA temp token kid=%v", t.Header["kid"])
+		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("unexpected MFA temp token kid=%v", t.Header["kid"]))
 	})
 	if err != nil {
-		return 0, status.Errorf(codes.Unauthenticated, "failed to parse claim")
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
 	}
 	if !audienceContains(claims.Audience, fmt.Sprintf(MFATempTokenAudienceFmt, mode)) {
-		return 0, status.Errorf(codes.Unauthenticated, "invalid MFA temp token, audience mismatch")
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("invalid MFA temp token, audience mismatch"))
 	}
 	userID, err := strconv.Atoi(claims.Subject)
 	if err != nil {
-		return 0, status.Errorf(codes.Unauthenticated, "malformed ID %q in the MFA temp token", claims.Subject)
+		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("malformed ID %q in the MFA temp token", claims.Subject))
 	}
 	return userID, nil
 }
@@ -407,13 +405,13 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 func (in *APIAuthInterceptor) getUser(ctx context.Context, principalID int) (*store.UserMessage, error) {
 	user, err := in.store.GetUserByID(ctx, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)
+		return nil, connect.NewError(connect.CodePermissionDenied, errs.Errorf("failed to get member for user %v in processing authorize request.", principalID))
 	}
 	if user == nil {
-		return nil, status.Errorf(codes.PermissionDenied, "member not found for user %v in processing authorize request.", principalID)
+		return nil, connect.NewError(connect.CodePermissionDenied, errs.Errorf("member not found for user %v in processing authorize request.", principalID))
 	}
 	if user.MemberDeleted {
-		return nil, status.Errorf(codes.PermissionDenied, "the user %v has been deactivated by the admin.", principalID)
+		return nil, connect.NewError(connect.CodePermissionDenied, errs.Errorf("the user %v has been deactivated by the admin.", principalID))
 	}
 
 	return user, nil
