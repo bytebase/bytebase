@@ -213,8 +213,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				oldSetting.Require_2Fa = payload.Require_2Fa
-			case "value.workspace_profile_setting_value.outbound_ip_list":
-				// We're not support update outbound_ip_list via api.
 			case "value.workspace_profile_setting_value.token_duration":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)

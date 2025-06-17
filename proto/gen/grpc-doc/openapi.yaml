@@ -14123,11 +14123,6 @@ components:
                 require2fa:
                     type: boolean
                     description: Require 2FA for all users.
-                outboundIpList:
-                    type: array
-                    items:
-                        type: string
-                    description: outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
                 tokenDuration:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string

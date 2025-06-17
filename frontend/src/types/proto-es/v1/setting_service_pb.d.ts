@@ -609,13 +609,6 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   require2fa: boolean;
 
   /**
-   * outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
-   *
-   * @generated from field: repeated string outbound_ip_list = 4;
-   */
-  outboundIpList: string[];
-
-  /**
    * The duration for token.
    *
    * @generated from field: google.protobuf.Duration token_duration = 6;

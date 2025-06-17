@@ -1070,8 +1070,6 @@ type WorkspaceProfileSetting struct {
 	DisallowSignup bool `protobuf:"varint,2,opt,name=disallow_signup,json=disallowSignup,proto3" json:"disallow_signup,omitempty"`
 	// Require 2FA for all users.
 	Require_2Fa bool `protobuf:"varint,3,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
-	// outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
-	OutboundIpList []string `protobuf:"bytes,4,rep,name=outbound_ip_list,json=outboundIpList,proto3" json:"outbound_ip_list,omitempty"`
 	// The duration for token.
 	TokenDuration *durationpb.Duration `protobuf:"bytes,6,opt,name=token_duration,json=tokenDuration,proto3" json:"token_duration,omitempty"`
 	// The setting of custom announcement
@@ -1139,13 +1137,6 @@ func (x *WorkspaceProfileSetting) GetRequire_2Fa() bool {
 		return x.Require_2Fa
 	}
 	return false
-}
-
-func (x *WorkspaceProfileSetting) GetOutboundIpList() []string {
-	if x != nil {
-		return x.OutboundIpList
-	}
-	return nil
 }
 
 func (x *WorkspaceProfileSetting) GetTokenDuration() *durationpb.Duration {
@@ -3197,13 +3188,12 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"robot_code\x18\x04 \x01(\tB\x04\xe2A\x01\x04R\trobotCode\"<\n" +
 	"\x12AgentPluginSetting\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05token\"\xe3\x04\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\"\xb9\x04\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
 	"\vrequire_2fa\x18\x03 \x01(\bR\n" +
-	"require2fa\x12(\n" +
-	"\x10outbound_ip_list\x18\x04 \x03(\tR\x0eoutboundIpList\x12@\n" +
+	"require2fa\x12@\n" +
 	"\x0etoken_duration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\rtokenDuration\x12=\n" +
 	"\fannouncement\x18\a \x01(\v2\x19.bytebase.v1.AnnouncementR\fannouncement\x12Q\n" +
 	"\x17maximum_role_expiration\x18\b \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
