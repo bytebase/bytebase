@@ -13168,11 +13168,11 @@ components:
         Subscription:
             type: object
             properties:
-                seatCount:
+                seats:
                     readOnly: true
                     type: integer
                     format: int32
-                instanceCount:
+                activeInstances:
                     readOnly: true
                     type: integer
                     format: int32
@@ -13195,6 +13195,10 @@ components:
                 orgName:
                     readOnly: true
                     type: string
+                instances:
+                    readOnly: true
+                    type: integer
+                    format: int32
         SyncDatabaseRequest:
             required:
                 - name

@@ -48,9 +48,9 @@ enum PlanType {
 }
 
 message Subscription {
-  int32 seat_count = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 seats = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  int32 instance_count = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 active_instances = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp expires_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -59,6 +59,8 @@ message Subscription {
   bool trialing = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string org_name = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 instances = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // PlanFeature represents the available features in Bytebase
