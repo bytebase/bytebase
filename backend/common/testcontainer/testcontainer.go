@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 type Container struct {
@@ -55,6 +56,7 @@ func GetMySQLContainer(ctx context.Context) (retc *Container, retErr error) {
 			"MYSQL_ROOT_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"3306/tcp"},
+		WaitingFor:   wait.ForLog("ready for connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
 	}
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
