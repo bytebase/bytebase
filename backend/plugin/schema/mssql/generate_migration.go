@@ -174,6 +174,33 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 
+	// 1.6.1 Drop all tables in schemas that are being dropped
+	// This handles cases where the schema differ doesn't detect tables in dropped schemas
+	for _, schemaDiff := range diff.SchemaChanges {
+		if schemaDiff.Action == schema.MetadataDiffActionDrop && schemaDiff.OldSchema != nil {
+			// Drop all tables in this schema
+			for _, table := range schemaDiff.OldSchema.Tables {
+				// Check if this table is already handled by tableDiff
+				alreadyHandled := false
+				for _, tableDiff := range diff.TableChanges {
+					if tableDiff.Action == schema.MetadataDiffActionDrop &&
+						tableDiff.SchemaName == schemaDiff.SchemaName &&
+						tableDiff.TableName == table.Name {
+						alreadyHandled = true
+						break
+					}
+				}
+				if !alreadyHandled {
+					_, _ = buf.WriteString("DROP TABLE [")
+					_, _ = buf.WriteString(schemaDiff.SchemaName)
+					_, _ = buf.WriteString("].[")
+					_, _ = buf.WriteString(table.Name)
+					_, _ = buf.WriteString("];\n")
+				}
+			}
+		}
+	}
+
 	// 1.7 Drop schemas (must be empty)
 	for _, schemaDiff := range diff.SchemaChanges {
 		if schemaDiff.Action == schema.MetadataDiffActionDrop {
