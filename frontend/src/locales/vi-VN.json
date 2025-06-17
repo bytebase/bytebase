@@ -1208,7 +1208,6 @@
       "console": {
         "snowflake": "URL bảng điều khiển bên ngoài quản lý phiên bản này (ví dụ: bảng điều khiển AWS RDS, bảng điều khiển phiên bản cơ sở dữ liệu nội bộ của bạn)"
       },
-      "outbound-ip-list": "Nếu bạn sử dụng quy tắc tường lửa gửi đến cho phiên bản cơ sở dữ liệu của mình, vui lòng bao gồm các địa chỉ IP sau trong danh sách cho phép để cho phép truy cập bởi Bytebase Cloud.",
       "create-admin-user": "Đây là người dùng kết nối được Bytebase sử dụng để thực hiện các hoạt động DDL và DML (không phải SELECT).",
       "create-readonly-user": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc như truy vấn SELECT.",
       "create-admin-user-non-sql": "Đây là người dùng kết nối được Bytebase sử dụng để thực hiện các hoạt động ghi và quản trị.",
@@ -1249,7 +1248,8 @@
         "redis": {
           "template": "Dưới đây là ví dụ để tạo người dùng {user} với mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết."
         }
-      }
+      },
+      "firewall-info": "Nếu bạn sử dụng các quy tắc tường lửa gửi đến cho thể hiện cơ sở dữ liệu của mình, vui lòng tham khảo Hướng dẫn kết nối đám mây Bytebase."
     },
     "no-password": "Không có mật khẩu",
     "type-or-paste-credentials": "Nhập hoặc dán THÔNG TIN XÁC THỰC",

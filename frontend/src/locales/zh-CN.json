@@ -1208,7 +1208,6 @@
       "console": {
         "snowflake": "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
       },
-      "outbound-ip-list": "如果您的数据库使用了入站 IP 白名单，请将以下 IP 加入白名单以允许 Bytebase Cloud 的连接。",
       "create-admin-user": "这是 Bytebase 用于连接数据库，执行 DDL 和 DML (非 SELECT) 操作的用户。",
       "create-readonly-user": "这是 Bytebase 用于连接数据库，执行诸如 SELECT 的只读操作的用户。",
       "create-admin-user-non-sql": "这是 Bytebase 用于连接数据库，执行写和管理操作的用户。",
@@ -1249,7 +1248,8 @@
         "redis": {
           "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
         }
-      }
+      },
+      "firewall-info": "如果您为数据库实例使用入站防火墙规则，请参阅 ByteBase Cloud Connection 文档。"
     },
     "no-password": "无密码",
     "type-or-paste-credentials": "输入或粘贴 CREDENTIALS",

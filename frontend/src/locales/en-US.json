@@ -1208,7 +1208,7 @@
       "console": {
         "snowflake": "The external console URL managing this instance (e.g. AWS RDS console, your in-house DB instance console)"
       },
-      "outbound-ip-list": "If you make use of inbound firewall rules for your database instance, please include the following IP addresses in its allowlist to allow access by Bytebase Cloud.",
+      "firewall-info": "If you use inbound firewall rules for your database instance, please refer to Bytebase Cloud connection instruction.",
       "create-admin-user": "This is the connection user used by Bytebase to perform DDL and DML (non-SELECT) operations.",
       "create-readonly-user": "This is the connection used by Bytebase to perform read-only operations such as SELECT query.",
       "create-admin-user-non-sql": "This is the connection user used by Bytebase to perform write and admin operations.",
