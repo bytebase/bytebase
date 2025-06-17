@@ -10829,13 +10829,13 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
 | seats | [int32](#int32) |  |  |
+| instances | [int32](#int32) |  |  |
 | active_instances | [int32](#int32) |  |  |
 | expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
 | trialing | [bool](#bool) |  |  |
 | org_name | [string](#string) |  |  |
-| instances | [int32](#int32) |  |  |
 
 
 

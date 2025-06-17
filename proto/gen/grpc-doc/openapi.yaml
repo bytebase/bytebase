@@ -13168,7 +13168,20 @@ components:
         Subscription:
             type: object
             properties:
+                plan:
+                    readOnly: true
+                    enum:
+                        - PLAN_TYPE_UNSPECIFIED
+                        - FREE
+                        - TEAM
+                        - ENTERPRISE
+                    type: string
+                    format: enum
                 seats:
+                    readOnly: true
+                    type: integer
+                    format: int32
+                instances:
                     readOnly: true
                     type: integer
                     format: int32
@@ -13180,25 +13193,12 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                plan:
-                    readOnly: true
-                    enum:
-                        - PLAN_TYPE_UNSPECIFIED
-                        - FREE
-                        - TEAM
-                        - ENTERPRISE
-                    type: string
-                    format: enum
                 trialing:
                     readOnly: true
                     type: boolean
                 orgName:
                     readOnly: true
                     type: string
-                instances:
-                    readOnly: true
-                    type: integer
-                    format: int32
         SyncDatabaseRequest:
             required:
                 - name
