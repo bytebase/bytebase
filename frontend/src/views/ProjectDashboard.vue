@@ -32,6 +32,7 @@
         :bordered="false"
         :footer-class="'mx-4'"
         :prevent-default="!!onRowClick"
+        :show-selection="true"
         :selected-project-names="selectedProjectNames"
         @update:selected-project-names="updateSelectedProjects"
         @row-click="onRowClick"
@@ -59,8 +60,8 @@ import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import { SearchBox, PagedProjectTable } from "@/components/v2";
-import ProjectOperations from "@/components/v2/Model/Project/ProjectOperations.vue";
 import { Drawer } from "@/components/v2";
+import ProjectOperations from "@/components/v2/Model/Project/ProjectOperations.vue";
 import { useProjectV1Store, useUIStateStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
