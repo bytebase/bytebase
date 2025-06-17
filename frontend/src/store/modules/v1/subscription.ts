@@ -59,7 +59,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         case PlanType.FREE:
           return limit;
         default: {
-          const seatCount = state.subscription?.seatCount ?? 0;
+          const seatCount = state.subscription?.seats ?? 0;
           if (seatCount < 0) {
             return Number.MAX_VALUE;
           }
@@ -71,7 +71,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
     },
     instanceLicenseCount(state): number {
-      const count = state.subscription?.instanceCount ?? 0;
+      const count = state.subscription?.activeInstances ?? 0;
       if (count < 0) {
         return Number.MAX_VALUE;
       }
