@@ -493,10 +493,10 @@ func normalizeOracleMetadata(metadata *storepb.DatabaseSchemaMetadata) {
 						column.DefaultValue = nil
 					}
 				}
-				
+
 				// Clear collation information as we skip it in DDL generation
 				column.Collation = ""
-				
+
 				// Normalize NVARCHAR2 type size differences
 				// Oracle stores NVARCHAR2 sizes in max bytes, but DDL defines in characters
 				if strings.HasPrefix(column.Type, "NVARCHAR2") {
