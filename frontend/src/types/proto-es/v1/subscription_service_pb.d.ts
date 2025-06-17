@@ -44,32 +44,37 @@ export declare const UpdateSubscriptionRequestSchema: GenMessage<UpdateSubscript
  */
 export declare type Subscription = Message<"bytebase.v1.Subscription"> & {
   /**
-   * @generated from field: int32 seat_count = 1;
-   */
-  seatCount: number;
-
-  /**
-   * @generated from field: int32 instance_count = 2;
-   */
-  instanceCount: number;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp expires_time = 3;
-   */
-  expiresTime?: Timestamp;
-
-  /**
-   * @generated from field: bytebase.v1.PlanType plan = 4;
+   * @generated from field: bytebase.v1.PlanType plan = 1;
    */
   plan: PlanType;
 
   /**
-   * @generated from field: bool trialing = 5;
+   * @generated from field: int32 seats = 2;
+   */
+  seats: number;
+
+  /**
+   * @generated from field: int32 instances = 3;
+   */
+  instances: number;
+
+  /**
+   * @generated from field: int32 active_instances = 4;
+   */
+  activeInstances: number;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_time = 5;
+   */
+  expiresTime?: Timestamp;
+
+  /**
+   * @generated from field: bool trialing = 6;
    */
   trialing: boolean;
 
   /**
-   * @generated from field: string org_name = 6;
+   * @generated from field: string org_name = 7;
    */
   orgName: string;
 };

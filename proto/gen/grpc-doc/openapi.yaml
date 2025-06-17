@@ -13168,18 +13168,6 @@ components:
         Subscription:
             type: object
             properties:
-                seatCount:
-                    readOnly: true
-                    type: integer
-                    format: int32
-                instanceCount:
-                    readOnly: true
-                    type: integer
-                    format: int32
-                expiresTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
                 plan:
                     readOnly: true
                     enum:
@@ -13189,6 +13177,22 @@ components:
                         - ENTERPRISE
                     type: string
                     format: enum
+                seats:
+                    readOnly: true
+                    type: integer
+                    format: int32
+                instances:
+                    readOnly: true
+                    type: integer
+                    format: int32
+                activeInstances:
+                    readOnly: true
+                    type: integer
+                    format: int32
+                expiresTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
                 trialing:
                     readOnly: true
                     type: boolean
