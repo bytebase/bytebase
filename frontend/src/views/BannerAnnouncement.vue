@@ -19,14 +19,18 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useSettingV1Store } from "@/store";
+import { useSettingV1Store, hasFeature } from "@/store";
 import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { urlfy } from "@/utils";
 
 const settingV1Store = useSettingV1Store();
 
 const showBanner = computed(() => {
-  return announcementText.value !== "";
+  return (
+    announcementText.value !== "" &&
+    hasFeature(PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT)
+  );
 });
 
 const bgColor = computed(() => {
