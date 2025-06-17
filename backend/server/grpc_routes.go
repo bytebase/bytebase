@@ -11,6 +11,7 @@ import (
 
 	"connectrpc.com/connect"
 	connectcors "connectrpc.com/cors"
+	"connectrpc.com/grpcreflect"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/cors"
@@ -197,6 +198,44 @@ func configureGrpcRouters(
 
 	workspacePath, workspaceHandler := v1connect.NewWorkspaceServiceHandler(workspaceService, handlerOpts)
 	connectHandlers[workspacePath] = withCORS(workspaceHandler)
+
+	// grpc reflection handlers.
+	reflector := grpcreflect.NewStaticReflector(
+		v1connect.ActuatorServiceName,
+		v1connect.AuditLogServiceName,
+		v1connect.AuthServiceName,
+		v1connect.CelServiceName,
+		v1connect.ChangelistServiceName,
+		v1connect.DatabaseCatalogServiceName,
+		v1connect.DatabaseGroupServiceName,
+		v1connect.DatabaseServiceName,
+		v1connect.GroupServiceName,
+		v1connect.IdentityProviderServiceName,
+		v1connect.InstanceRoleServiceName,
+		v1connect.InstanceServiceName,
+		v1connect.IssueServiceName,
+		v1connect.OrgPolicyServiceName,
+		v1connect.PlanServiceName,
+		v1connect.ProjectServiceName,
+		v1connect.ReleaseServiceName,
+		v1connect.ReviewConfigServiceName,
+		v1connect.RevisionServiceName,
+		v1connect.RiskServiceName,
+		v1connect.RoleServiceName,
+		v1connect.RolloutServiceName,
+		v1connect.SettingServiceName,
+		v1connect.SheetServiceName,
+		v1connect.SQLServiceName,
+		v1connect.SubscriptionServiceName,
+		v1connect.UserServiceName,
+		v1connect.WorksheetServiceName,
+		v1connect.WorkspaceServiceName,
+	)
+	reflectPath, reflectHandler := grpcreflect.NewHandlerV1(reflector)
+	connectHandlers[reflectPath] = reflectHandler
+
+	reflectAlphaPath, reflectAlphaHandler := grpcreflect.NewHandlerV1Alpha(reflector)
+	connectHandlers[reflectAlphaPath] = reflectAlphaHandler
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.Port)
