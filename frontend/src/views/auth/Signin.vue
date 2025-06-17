@@ -268,7 +268,6 @@ onMounted(async () => {
       title: `Request error occurred`,
       description: (error as any).message,
     });
-    return;
   }
   // Check if there is an identity provider in the query string and try to sign in with it.
   if (route.query["idp"]) {
