@@ -2,12 +2,10 @@
   <div class="h-full flex flex-col overflow-hidden">
     <div class="flex-1 flex overflow-hidden">
       <div
-        class="flex flex-col min-w-0 flex-1"
-        :class="!hideHeader && 'border-x border-block-border'"
+        class="flex flex-col min-w-0 flex-1 border-x border-block-border"
         data-label="bb-main-body-wrapper"
       >
         <nav
-          v-if="!hideHeader"
           class="bg-white border-b border-block-border"
           data-label="bb-dashboard-header"
         >
@@ -36,14 +34,11 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import { useAppFeature } from "@/store";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import Quickstart from "../components/Quickstart.vue";
 import { provideBodyLayoutContext } from "./common";
 
 const mainContainerRef = ref<HTMLDivElement>();
-
-const hideHeader = useAppFeature("bb.feature.console.hide-header");
 
 const { mainContainerClasses } = provideBodyLayoutContext({
   mainContainerRef,

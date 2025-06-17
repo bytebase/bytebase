@@ -100,6 +100,23 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
+import {
+  ArrowRightLeftIcon,
+  ChevronsDownIcon,
+  DownloadIcon,
+  PencilIcon,
+  PenSquareIcon,
+  RefreshCcwIcon,
+  SquareStackIcon,
+  TagIcon,
+  UnlinkIcon,
+} from "lucide-vue-next";
+import { NButton, NScrollbar, NTooltip, useDialog } from "naive-ui";
+import type { VNode } from "vue";
+import { computed, h, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
@@ -129,25 +146,8 @@ import {
   hasPermissionToCreateChangeDatabaseIssue,
   hasPermissionToCreateDataExportIssue,
   hasProjectPermissionV2,
-  instanceV1HasAlterSchema
+  instanceV1HasAlterSchema,
 } from "@/utils";
-import { computedAsync } from "@vueuse/core";
-import {
-  ArrowRightLeftIcon,
-  ChevronsDownIcon,
-  DownloadIcon,
-  PencilIcon,
-  PenSquareIcon,
-  RefreshCcwIcon,
-  SquareStackIcon,
-  TagIcon,
-  UnlinkIcon,
-} from "lucide-vue-next";
-import { NButton, NScrollbar, NTooltip, useDialog } from "naive-ui";
-import type { VNode } from "vue";
-import { computed, h, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 
 interface DatabaseAction {
   icon: VNode;
@@ -193,9 +193,6 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const disableSchemaEditor = useAppFeature(
-  "bb.feature.issue.disable-schema-editor"
-);
 const dialog = useDialog();
 
 const selectedProjectNames = computed(() => {
@@ -249,9 +246,8 @@ const allowChangeData = computed(() => {
 });
 
 const allowTransferOutProject = computed(() => {
-  return props.databases.every(
-    (db) =>
-      hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
+  return props.databases.every((db) =>
+    hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
   );
 });
 
@@ -331,8 +327,7 @@ const generateMultiDb = async (
   if (
     props.databases.length === 1 &&
     type === "bb.issue.database.schema.update" &&
-    allowUsingSchemaEditor(props.databases) &&
-    !disableSchemaEditor.value
+    allowUsingSchemaEditor(props.databases)
   ) {
     state.showSchemaEditorModal = true;
     return;

@@ -87,7 +87,6 @@
           </template>
         </NPopover>
         <NPopover
-          v-if="!disallowShareWorksheet"
           trigger="click"
           placement="bottom-end"
           :show-arrow="false"
@@ -101,7 +100,6 @@
                   :disabled="!allowShare"
                   size="small"
                   style="--n-padding: 0 5px"
-                  @click="handleShareButtonClick"
                 >
                   <template #icon>
                     <Share2Icon class="w-4 h-4" />
@@ -145,22 +143,6 @@
 </template>
 
 <script lang="ts" setup>
-import { FeatureModal } from "@/components/FeatureGuard";
-import {
-  useAppFeature,
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorStore,
-  useSQLEditorTabStore,
-  useUIStateStore,
-  useWorkSheetStore
-} from "@/store";
-import {
-  DEFAULT_SQL_EDITOR_TAB_MODE,
-  type SQLEditorQueryParams,
-} from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
-import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
 import {
   ChevronLeftIcon,
   PlayIcon,
@@ -171,6 +153,21 @@ import { NButton, NButtonGroup, NPopover, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { FeatureModal } from "@/components/FeatureGuard";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
+  useUIStateStore,
+  useWorkSheetStore,
+} from "@/store";
+import {
+  DEFAULT_SQL_EDITOR_TAB_MODE,
+  type SQLEditorQueryParams,
+} from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import ContainerChooser from "./ContainerChooser.vue";
@@ -198,9 +195,6 @@ const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
 const { events } = useSQLEditorContext();
 const { resultRowsLimit } = storeToRefs(useSQLEditorStore());
-const disallowShareWorksheet = useAppFeature(
-  "bb.feature.sql-editor.disallow-share-worksheet"
-);
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
@@ -335,8 +329,5 @@ const handleClickSave = () => {
   events.emit("save-sheet", {
     tab,
   });
-};
-
-const handleShareButtonClick = () => {
 };
 </script>

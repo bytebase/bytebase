@@ -58,16 +58,15 @@ import { computed, reactive, watch } from "vue";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import { SearchBox } from "@/components/v2";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import {
   featureToRef,
-  useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
   useSQLEditorTabStore,
   useDBGroupListByProject,
 } from "@/store/modules";
 import { isValidDatabaseName } from "@/types";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   keyword: string;
@@ -86,9 +85,8 @@ const state = reactive<LocalState>({
 // Save the stringified label key-value pairs.
 const currentTab = computed(() => tabStore.currentTab);
 const hasBatchQueryFeature = featureToRef(PlanFeature.FEATURE_BATCH_QUERY);
-const hasDatabaseGroupFeature = featureToRef(PlanFeature.FEATURE_DATABASE_GROUPS);
-const disallowBatchQuery = useAppFeature(
-  "bb.feature.sql-editor.disallow-batch-query"
+const hasDatabaseGroupFeature = featureToRef(
+  PlanFeature.FEATURE_DATABASE_GROUPS
 );
 const { database } = useConnectionOfCurrentSQLEditorTab();
 
@@ -110,9 +108,6 @@ const filteredDbGroupList = computed(() => {
 });
 
 const showBatchQuerySelector = computed(() => {
-  if (disallowBatchQuery.value) {
-    return false;
-  }
   const tab = currentTab.value;
   return (
     tab &&

@@ -93,9 +93,6 @@ defineProps<{
 
 const uiStateStore = useUIStateStore();
 const databaseStore = useDatabaseV1Store();
-const hideUnassignedDatabases = useAppFeature(
-  "bb.feature.databases.hide-unassigned"
-);
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
@@ -181,7 +178,7 @@ const filter = computed(() => ({
   project: selectedProject.value,
   query: state.params.query,
   labels: selectedLabels.value,
-  excludeUnassigned: hideUnassignedDatabases.value,
+  excludeUnassigned: false,
   engines: selectedEngines.value,
 }));
 

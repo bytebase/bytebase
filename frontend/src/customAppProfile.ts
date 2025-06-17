@@ -2,7 +2,10 @@ import { computed } from "vue";
 import i18n from "./plugins/i18n";
 import { useActuatorV1Store, useSettingByName } from "./store";
 import { defaultAppProfile } from "./types";
-import { DatabaseChangeMode, Setting_SettingName } from "./types/proto/v1/setting_service";
+import {
+  DatabaseChangeMode,
+  Setting_SettingName,
+} from "./types/proto/v1/setting_service";
 
 export const overrideAppProfile = () => {
   const setting = useSettingByName(Setting_SettingName.WORKSPACE_PROFILE);
@@ -13,10 +16,10 @@ export const overrideAppProfile = () => {
     return DatabaseChangeMode.PIPELINE;
   });
 
-  const query = new URLSearchParams(window.location.search);
-  overrideAppFeatures(databaseChangeMode.value, query);
+  overrideAppFeatures(databaseChangeMode.value);
 
   // Override app language.
+  const query = new URLSearchParams(window.location.search);
   const lang = query.get("lang");
   if (lang) {
     i18n.global.locale.value = lang;
@@ -24,8 +27,7 @@ export const overrideAppProfile = () => {
 };
 
 const overrideAppFeatures = (
-  databaseChangeMode: DatabaseChangeMode.PIPELINE | DatabaseChangeMode.EDITOR,
-  query: URLSearchParams
+  databaseChangeMode: DatabaseChangeMode.PIPELINE | DatabaseChangeMode.EDITOR
 ) => {
   const actuatorStore = useActuatorV1Store();
 
@@ -34,61 +36,20 @@ const overrideAppFeatures = (
     "bb.feature.database-change-mode": databaseChangeMode,
   });
 
-  const modeInQuery = query.get("mode");
-  if (modeInQuery === "STANDALONE") {
-    // The webapp is embedded within iframe.
-    actuatorStore.appProfile.embedded = true;
-
-    // mode=STANDALONE is not easy to read, but for legacy support we keep it as
-    // some customers are using it.
-    actuatorStore.overrideAppFeatures({
-      "bb.feature.databases.operations": new Set([
-        "CHANGE-DATA",
-        "EDIT-SCHEMA",
-      ]),
-      "bb.feature.hide-banner": true,
-      "bb.feature.hide-help": true,
-      "bb.feature.hide-quick-start": true,
-      "bb.feature.hide-release-remind": true,
-      "bb.feature.disallow-navigate-to-console": true,
-      "bb.feature.console.hide-sidebar": true,
-      "bb.feature.console.hide-header": true,
-      "bb.feature.console.hide-quick-action": true,
-      "bb.feature.project.hide-default": true,
-      "bb.feature.issue.disable-schema-editor": true,
-      "bb.feature.issue.hide-subscribers": true,
-      "bb.feature.sql-check.hide-doc-link": true,
-      "bb.feature.databases.hide-unassigned": true,
-      "bb.feature.databases.hide-inalterable": true,
-      "bb.feature.sql-editor.disallow-share-worksheet": true,
-      "bb.feature.sql-editor.disable-setting": true,
-      "bb.feature.sql-editor.disallow-request-query": true,
-      "bb.feature.sql-editor.disallow-sync-schema": true,
-      "bb.feature.sql-editor.disallow-export-query-data": true,
-      "bb.feature.sql-editor.hide-bytebase-logo": true,
-      "bb.feature.sql-editor.hide-profile": true,
-      "bb.feature.sql-editor.hide-readonly-datasource-hint": true,
-    });
-  }
-
   if (databaseChangeMode === "EDITOR") {
     actuatorStore.overrideAppFeatures({
-      "bb.feature.default-workspace-view": "EDITOR",
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-trial": true,
       "bb.feature.sql-editor.disallow-edit-schema": true,
       "bb.feature.sql-editor.sql-check-style": "PREFLIGHT",
       "bb.feature.sql-editor.disallow-request-query": true,
+      "bb.feature.sql-editor.enable-setting": true,
       "bb.feature.databases.operations": new Set([
         "SYNC-SCHEMA",
         "EDIT-LABELS",
         "TRANSFER-OUT",
       ]),
-    });
-  } else {
-    actuatorStore.overrideAppFeatures({
-      "bb.feature.sql-editor.disable-setting": true,
     });
   }
 };

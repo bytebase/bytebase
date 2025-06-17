@@ -26,13 +26,13 @@ import { computed, ref, h } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { t } from "@/plugins/i18n";
-import { useAppFeature, useRoleStore, featureToRef } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { useRoleStore, featureToRef } from "@/store";
 import {
   PRESET_PROJECT_ROLES,
   PRESET_ROLES,
   PRESET_WORKSPACE_ROLES,
 } from "@/types";
+import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { displayRoleTitle } from "@/utils";
 
 const props = withDefaults(
@@ -65,7 +65,6 @@ const emit = defineEmits<{
 }>();
 
 const roleStore = useRoleStore();
-const hideProjectRoles = useAppFeature("bb.feature.members.hide-project-roles");
 const showFeatureModal = ref(false);
 const hasCustomRoleFeature = featureToRef(PlanFeature.FEATURE_CUSTOM_ROLES);
 
@@ -92,17 +91,15 @@ const availableRoleOptions = computed(
       });
     }
 
-    if (!hideProjectRoles.value) {
-      roleGroups.push({
-        type: "group",
-        key: "project-roles",
-        label: t("role.project-roles.self") + props.suffix,
-        children: PRESET_PROJECT_ROLES.filter(filterRole).map((role) => ({
-          label: displayRoleTitle(role),
-          value: role,
-        })),
-      });
-    }
+    roleGroups.push({
+      type: "group",
+      key: "project-roles",
+      label: t("role.project-roles.self") + props.suffix,
+      children: PRESET_PROJECT_ROLES.filter(filterRole).map((role) => ({
+        label: displayRoleTitle(role),
+        value: role,
+      })),
+    });
 
     const customRoles = roleStore.roleList
       .map((role) => role.name)

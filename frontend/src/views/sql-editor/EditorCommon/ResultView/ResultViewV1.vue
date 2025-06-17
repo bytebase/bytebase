@@ -81,10 +81,7 @@
               :database-resource="missingResource!"
             />
             <SyncDatabaseButton
-              v-else-if="
-                !disallowSyncSchema &&
-                resultSet.error.includes('resource not found')
-              "
+              v-else-if="resultSet.error.includes('resource not found')"
               :type="'primary'"
               :text="true"
               :database="database ?? connectedDatabase"
@@ -182,9 +179,6 @@ const { instance, database: connectedDatabase } =
   useConnectionOfCurrentSQLEditorTab();
 const disallowRequestQuery = useAppFeature(
   "bb.feature.sql-editor.disallow-request-query"
-);
-const disallowSyncSchema = useAppFeature(
-  "bb.feature.sql-editor.disallow-sync-schema"
 );
 const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref(undefined);

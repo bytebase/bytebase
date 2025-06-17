@@ -11,7 +11,6 @@
             <LearnMoreLink
               class="text-sm ml-1"
               url="https://github.com/github/gh-ost/blob/master/doc/command-line-flags.md"
-              hide-when-embedded
             />
           </p>
           <FlagsForm v-model:flags="flags" :readonly="readonly" />
