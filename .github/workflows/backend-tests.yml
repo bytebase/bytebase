@@ -19,24 +19,6 @@ jobs:
   go-tests:
     runs-on: self-hosted
     timeout-minutes: 30
-    
-    services:
-      # Oracle service for tests
-      oracle:
-        image: gvenzl/oracle-free:slim
-        env:
-          ORACLE_RANDOM_PASSWORD: true
-          APP_USER: testuser
-          APP_USER_PASSWORD: testpass
-        ports:
-          - 11521:1521
-        options: >-
-          --health-cmd healthcheck.sh
-          --health-interval 20s
-          --health-timeout 10s
-          --health-retries 15
-          --shm-size 1g
-    
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -47,26 +29,7 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code
-      - name: Wait for Oracle service
-        run: |
-          echo "Waiting for Oracle service to be healthy..."
-          # Wait for Oracle to be available on port 11521
-          for i in {1..60}; do
-            if nc -z localhost 11521 2>/dev/null; then
-              echo "Oracle is ready!"
-              break
-            fi
-            echo "Waiting for Oracle... (attempt $i/60)"
-            sleep 5
-          done
       - name: Run all tests
-        env:
-          # Environment variables for Oracle tests to use service instead of testcontainers
-          ORACLE_CI_HOST: localhost
-          ORACLE_CI_PORT: 11521
-          ORACLE_CI_USER: testuser
-          ORACLE_CI_PASSWORD: testpass
-          ORACLE_CI_SERVICE: FREEPDB1
         run: go test -p=8 -timeout 30m -ldflags "-w -s" -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
         # grep: filter out lines like "--- PASS: Test (15.04s)"
