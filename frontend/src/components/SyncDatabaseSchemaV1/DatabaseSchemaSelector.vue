@@ -53,11 +53,16 @@
 </template>
 
 <script lang="tsx" setup>
+import { head } from "lodash-es";
+import type { SelectOption } from "naive-ui";
+import { NSelect, NTag } from "naive-ui";
+import { computed, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { DatabaseSelect, EnvironmentSelect } from "@/components/v2";
 import {
   useChangelogStore,
   useDBSchemaV1Store,
-  useDatabaseV1Store
+  useDatabaseV1Store,
 } from "@/store";
 import {
   UNKNOWN_ID,
@@ -67,6 +72,7 @@ import {
 } from "@/types";
 import type { Changelog } from "@/types/proto/v1/database_service";
 import {
+  Changelog_Status,
   Changelog_Type,
   changelog_TypeToJSON,
 } from "@/types/proto/v1/database_service";
@@ -75,11 +81,6 @@ import {
   isValidChangelogName,
   mockLatestChangelog,
 } from "@/utils/v1/changelog";
-import { head } from "lodash-es";
-import type { SelectOption } from "naive-ui";
-import { NSelect, NTag } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import { ALLOWED_ENGINES, type ChangelogSourceSchema } from "./types";
 
@@ -143,7 +144,11 @@ const handleDatabaseSelect = async (name: string | undefined) => {
 const databaseChangelogList = (databaseName: string) => {
   return changelogStore
     .changelogListByDatabase(databaseName)
-    .filter((changelog) => ALLOWED_CHANGELOG_TYPES.includes(changelog.type));
+    .filter(
+      (changelog) =>
+        ALLOWED_CHANGELOG_TYPES.includes(changelog.type) &&
+        changelog.status === Changelog_Status.DONE
+    );
 };
 
 const schemaVersionOptions = computed(() => {
