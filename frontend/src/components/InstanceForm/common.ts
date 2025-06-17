@@ -12,7 +12,10 @@ import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { calcUpdateMask } from "@/utils";
 
-export type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
+export type BasicInfo = Omit<
+  Instance,
+  "dataSources" | "engineVersion" | "lastSyncTime"
+>;
 
 export type EditDataSource = DataSource & {
   pendingCreate: boolean;
