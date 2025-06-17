@@ -34,7 +34,7 @@ const props = withDefaults(
   }>(),
   {
     selectedProjectNames: () => [],
-    showSelection: true,
+    showSelection: false,
   }
 );
 
@@ -56,7 +56,6 @@ const refresh = () => {
 };
 
 defineExpose({ refresh });
-
 
 const fetchProjects = async ({
   pageToken,
