@@ -20,9 +20,6 @@
       >
         {{ $t(readableCurrentPlan) }}
       </router-link>
-      <div v-if="subscriptionViewMode === 'PLAIN'">
-        {{ $t(readableCurrentPlan) }}
-      </div>
     </div>
 
     <NTooltip v-bind="tooltipProps">
@@ -57,7 +54,7 @@
     @cancel="state.showTrialModal = false"
   />
   <ReleaseRemindModal
-    v-if="!hideReleaseRemind && state.showReleaseModal"
+    v-if="state.showReleaseModal"
     @cancel="state.showReleaseModal = false"
   />
 </template>
@@ -88,11 +85,7 @@ defineProps<{
 
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
-const hideReleaseRemind = useAppFeature("bb.feature.hide-release-remind");
 const hideTrial = useAppFeature("bb.feature.hide-trial");
-const disallowNavigateToConsole = useAppFeature(
-  "bb.feature.disallow-navigate-to-console"
-);
 
 const state = reactive<LocalState>({
   showTrialModal: false,
@@ -105,9 +98,6 @@ const canUpgrade = computed(() => {
 });
 
 const subscriptionViewMode = computed(() => {
-  if (disallowNavigateToConsole.value) {
-    return "PLAIN";
-  }
   if (
     !hideTrial.value &&
     subscriptionStore.currentPlan === PlanType.FREE &&

@@ -11,7 +11,7 @@ import { computed, h, unref, type MaybeRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { DatabaseIcon } from "@/components/Icon";
-import type { SidebarItem } from "@/components/v2/Sidebar/CommonSidebar.vue";
+import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { getFlattenRoutes } from "@/components/v2/Sidebar/utils";
 import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
@@ -37,7 +37,7 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
   const route = useRoute();
   const permissionStore = usePermissionStore();
   const { t } = useI18n();
-  const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
+  const enableSetting = useAppFeature("bb.feature.sql-editor.enable-setting");
 
   const getItemClass = (item: SidebarItem) => {
     if (route.name === item.name) {
@@ -75,7 +75,7 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
   };
 
   const itemList = computed((): SidebarItem[] => {
-    if (disableSetting.value && !unref(ignoreModeCheck)) {
+    if (!enableSetting.value && !unref(ignoreModeCheck)) {
       // Hide SQL Editor settings entirely if
       // - embedded in iframe
       // - or workspace mode is Issue mode

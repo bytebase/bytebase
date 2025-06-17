@@ -3,9 +3,7 @@
     <BBAttention
       v-if="remainingInstanceCount <= 3"
       :type="'warning'"
-      :title="
-        $t('subscription.usage.instance-count.title')
-      "
+      :title="$t('subscription.usage.instance-count.title')"
       :description="instanceCountAttention"
     />
     <div class="px-4 flex items-center space-x-2">
@@ -52,7 +50,7 @@
     @close="state.showCreateDrawer = false"
   >
     <InstanceForm
-      :hide-advanced-features="hideAdvancedFeatures"
+      :hide-advanced-features="false"
       :drawer="true"
       @dismiss="state.showCreateDrawer = false"
     >
@@ -67,6 +65,11 @@
 </template>
 
 <script lang="tsx" setup>
+import { PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
+import { computed, onMounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
@@ -84,7 +87,6 @@ import {
 } from "@/components/v2";
 import {
   useActuatorV1Store,
-  useAppFeature,
   useInstanceV1Store,
   useSubscriptionV1Store,
   useUIStateStore,
@@ -94,11 +96,6 @@ import { isValidInstanceName } from "@/types";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
-import { PlusIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 
 interface LocalState {
   params: SearchParams;
@@ -128,10 +125,6 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   selectedInstance: new Set(),
 });
-
-const hideAdvancedFeatures = useAppFeature(
-  "bb.feature.sql-editor.hide-advance-instance-features"
-);
 
 const onInstanceCreated = (instance: Instance) => {
   if (props.onRowClick) {
@@ -218,26 +211,18 @@ const remainingInstanceCount = computed((): number => {
 });
 
 const instanceCountAttention = computed((): string => {
-  const upgrade = t(
-    "subscription.usage.instance-count.upgrade"
-  );
+  const upgrade = t("subscription.usage.instance-count.upgrade");
   let status = "";
 
   if (remainingInstanceCount.value > 0) {
-    status = t(
-      "subscription.usage.instance-count.remaining",
-      {
-        total: subscriptionStore.instanceCountLimit,
-        count: remainingInstanceCount.value,
-      }
-    );
+    status = t("subscription.usage.instance-count.remaining", {
+      total: subscriptionStore.instanceCountLimit,
+      count: remainingInstanceCount.value,
+    });
   } else {
-    status = t(
-      "subscription.usage.instance-count.runoutof",
-      {
-        total: subscriptionStore.instanceCountLimit,
-      }
-    );
+    status = t("subscription.usage.instance-count.runoutof", {
+      total: subscriptionStore.instanceCountLimit,
+    });
   }
 
   return `${status} ${upgrade}`;

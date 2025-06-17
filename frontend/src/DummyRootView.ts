@@ -1,5 +1,6 @@
 import { defineComponent, watch } from "vue";
 import { useRouter } from "vue-router";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { WORKSPACE_ROUTE_LANDING } from "./router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "./router/sqlEditor";
 import { useRecentVisit } from "./router/useRecentVisit";
@@ -10,14 +11,12 @@ export default defineComponent({
   setup() {
     const { lastVisit } = useRecentVisit();
     const router = useRouter();
-    const defaultWorkspaceView = useAppFeature(
-      "bb.feature.default-workspace-view"
-    );
+    const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
     watch(
-      defaultWorkspaceView,
+      databaseChangeMode,
       () => {
-        if (defaultWorkspaceView.value === "EDITOR") {
+        if (databaseChangeMode.value === DatabaseChangeMode.EDITOR) {
           router.replace({
             name: SQL_EDITOR_HOME_MODULE,
           });

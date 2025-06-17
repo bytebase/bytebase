@@ -314,9 +314,6 @@ const {
   allowAlterSchema,
   allowListChangelogs,
 } = useDatabaseDetailContext();
-const disableSchemaEditor = useAppFeature(
-  "bb.feature.issue.disable-schema-editor"
-);
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 watch(
@@ -369,8 +366,7 @@ const createMigration = async (
   if (type === "bb.issue.database.schema.update") {
     if (
       database.value.state === State.ACTIVE &&
-      allowUsingSchemaEditor([database.value]) &&
-      !disableSchemaEditor.value
+      allowUsingSchemaEditor([database.value])
     ) {
       state.showSchemaEditorModal = true;
       return;

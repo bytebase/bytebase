@@ -6,11 +6,10 @@
     >
       <template #default>
         <div class="space-y-6">
-          <div v-if="!hideServiceAccount" class="w-full mb-4 space-y-2">
+          <div class="w-full mb-4 space-y-2">
             <div class="flex items-center space-x-1">
               <div class="text-sm font-medium">{{ $t("common.type") }}</div>
               <a
-                v-if="!hideServiceAccount"
                 href="https://docs.bytebase.com/get-started/terraform?source=console"
                 target="_blank"
               >
@@ -126,7 +125,6 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
   pushNotification,
-  useAppFeature,
   useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
@@ -153,10 +151,6 @@ const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
-
-const hideServiceAccount = useAppFeature(
-  "bb.feature.members.hide-service-account"
-);
 
 const state = reactive<LocalState>({
   isRequesting: false,

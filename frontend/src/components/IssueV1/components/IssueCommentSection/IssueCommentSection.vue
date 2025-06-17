@@ -5,7 +5,7 @@
         {{ $t("common.activity") }}
       </span>
 
-      <Subscribers v-if="!hideSubscribers" />
+      <Subscribers />
     </div>
 
     <IssueCommentList />
@@ -13,9 +13,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useAppFeature } from "@/store";
 import IssueCommentList from "./IssueCommentList.vue";
 import Subscribers from "./Subscribers";
-
-const hideSubscribers = useAppFeature("bb.feature.issue.hide-subscribers");
 </script>

@@ -273,9 +273,6 @@ export const useDropdown = () => {
   const disallowEditSchema = useAppFeature(
     "bb.feature.sql-editor.disallow-edit-schema"
   );
-  const disallowNavigateToConsole = useAppFeature(
-    "bb.feature.disallow-navigate-to-console"
-  );
   const $d = useDialog();
 
   const show = ref(false);
@@ -376,7 +373,7 @@ export const useDropdown = () => {
           });
         }
 
-        if (!disallowEditSchema.value && !disallowNavigateToConsole.value) {
+        if (!disallowEditSchema.value) {
           if (instanceV1HasAlterSchema(db.instanceResource)) {
             items.push({
               key: "edit-schema",
