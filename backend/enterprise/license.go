@@ -122,7 +122,7 @@ func (s *LicenseService) IsFeatureEnabledForInstance(f v1pb.PlanFeature, instanc
 
 // GetActivatedInstanceLimit returns the activated instance limit for the current subscription.
 func (s *LicenseService) GetActivatedInstanceLimit(ctx context.Context) int {
-	limit := s.LoadSubscription(ctx).InstanceCount
+	limit := s.LoadSubscription(ctx).ActiveInstances
 	if limit < 0 {
 		return math.MaxInt
 	}
@@ -138,15 +138,12 @@ func (s *LicenseService) GetUserLimit(ctx context.Context) int {
 	}
 
 	// To be compatible with old licenses which don't have seat field set in the claim.
-	if subscription.SeatCount == 0 {
+	// Unlimited seat license.
+	if subscription.Seats <= 0 {
 		return math.MaxInt
 	}
 
-	// Unlimited seat license.
-	if subscription.SeatCount < 0 {
-		return math.MaxInt
-	}
-	return int(subscription.SeatCount)
+	return int(subscription.Seats)
 }
 
 // GetInstanceLimit gets the instance limit value for the plan.
@@ -154,6 +151,10 @@ func (s *LicenseService) GetInstanceLimit(ctx context.Context) int {
 	subscription := s.LoadSubscription(ctx)
 	limit := instanceLimitValues[subscription.Plan]
 	if limit == -1 {
+		// Enterprise license.
+		if subscription.Instances > 0 {
+			return int(subscription.Instances)
+		}
 		limit = math.MaxInt
 	}
 	return limit
