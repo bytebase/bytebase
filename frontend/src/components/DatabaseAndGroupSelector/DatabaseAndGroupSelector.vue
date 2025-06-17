@@ -29,6 +29,7 @@
         :database-group-list="dbGroupList"
         :show-selection="true"
         :single-selection="true"
+        :show-external-link="true"
         :selected-database-group-names="
           databaseSelectState.selectedDatabaseGroup
             ? [databaseSelectState.selectedDatabaseGroup]

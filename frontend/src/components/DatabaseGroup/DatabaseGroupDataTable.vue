@@ -19,9 +19,13 @@
 </template>
 
 <script lang="tsx" setup>
+import { ExternalLinkIcon } from "lucide-vue-next";
 import { NDataTable, NEllipsis, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
+import { getProjectNameAndDatabaseGroupName } from "@/store";
 import type { ComposedDatabaseGroup } from "@/types";
 
 type DatabaseGroupDataTableColumn = DataTableColumn<ComposedDatabaseGroup> & {
@@ -33,10 +37,9 @@ const props = withDefaults(
     databaseGroupList: ComposedDatabaseGroup[];
     bordered?: boolean;
     loading?: boolean;
-    showProject?: boolean;
     customClick?: boolean;
     showSelection?: boolean;
-    showActions?: boolean;
+    showExternalLink?: boolean;
     singleSelection?: boolean;
     selectedDatabaseGroupNames?: string[];
   }>(),
@@ -56,6 +59,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 
 const columnList = computed((): DatabaseGroupDataTableColumn[] => {
   const rawColumnList: DatabaseGroupDataTableColumn[] = [
@@ -74,22 +78,15 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
     {
       key: "title",
       title: t("common.name"),
-      minWidth: 128,
+      width: 256,
+      ellipsis: true,
+      resizable: true,
       render: (data) => {
         return (
           <div class="space-x-2">
             <span>{data.title}</span>
           </div>
         );
-      },
-    },
-    {
-      key: "project",
-      title: t("common.project"),
-      minWidth: 128,
-      hide: !props.showProject,
-      render: (data) => {
-        return <span>{data.projectEntity.title}</span>;
       },
     },
     {
@@ -101,6 +98,36 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
           return <span class="textinfolabel italic">{t("common.empty")}</span>;
         }
         return <NEllipsis>{data.databaseExpr.expression}</NEllipsis>;
+      },
+    },
+    {
+      key: "externalLink",
+      title: "",
+      width: 48,
+      hide: !props.showExternalLink,
+      render: (data) => {
+        const openExternalLink = (e: MouseEvent) => {
+          e.stopPropagation();
+          const [projectId, databaseGroupName] =
+            getProjectNameAndDatabaseGroupName(data.name);
+          const url = router.resolve({
+            name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+            params: {
+              projectId,
+              databaseGroupName,
+            },
+          }).fullPath;
+          window.open(url, "_blank");
+        };
+
+        return (
+          <div
+            class="flex items-center justify-end cursor-pointer w-6 h-6 p-1 opacity-60 hover:opacity-100 hover:bg-white hover:shadow rounded"
+            onClick={openExternalLink}
+          >
+            <ExternalLinkIcon class="w-4 h-auto" />
+          </div>
+        );
       },
     },
   ];
