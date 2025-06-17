@@ -573,6 +573,9 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	if !instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q is active", req.Msg.Name)
 	}
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
 
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
