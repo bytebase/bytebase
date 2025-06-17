@@ -11,12 +11,9 @@ import {
   useEnvironmentV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import {
-  isValidEnvironmentName,
-  unknownEnvironment,
-} from "@/types";
+import { isValidEnvironmentName, unknownEnvironment } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
-import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
+import { Instance, type DataSource } from "@/types/proto/v1/instance_service";
 import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
@@ -305,11 +302,11 @@ export const provideInstanceFormContext = (baseContext: {
 
   const pendingCreateInstance = computed(() => {
     // When creating new instance, use the adminDataSource.
-    const instance: Instance = {
+    const instance: Instance = Instance.fromPartial({
       ...basicInfo.value,
       engineVersion: "",
       dataSources: [],
-    };
+    });
     if (editingDataSource.value) {
       const dataSourceCreate = extractDataSourceFromEdit(
         instance,
@@ -362,11 +359,11 @@ export const provideInstanceFormContext = (baseContext: {
     if (isCreating.value) {
       // When creating new instance, use
       // adminDataSource + CreateInstanceRequest.validateOnly = true
-      const instance: Instance = {
+      const instance: Instance = Instance.fromPartial({
         ...basicInfo.value,
         engineVersion: "",
         dataSources: [],
-      };
+      });
       const dataSourceCreate = extractDataSourceFromEdit(instance, editingDS);
       instance.dataSources = [dataSourceCreate];
       try {
