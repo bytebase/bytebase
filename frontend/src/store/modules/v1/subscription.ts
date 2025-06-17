@@ -1,3 +1,7 @@
+import dayjs from "dayjs";
+import { defineStore } from "pinia";
+import type { Ref } from "vue";
+import { computed } from "vue";
 import { subscriptionServiceClient } from "@/grpcweb";
 import {
   PLANS,
@@ -5,7 +9,7 @@ import {
   hasInstanceFeature as checkInstanceFeature,
   getDateForPbTimestamp,
   getMinimumRequiredPlan,
-  instanceLimitFeature
+  instanceLimitFeature,
 } from "@/types";
 import type {
   Instance,
@@ -18,10 +22,6 @@ import {
   planTypeFromJSON,
   planTypeToNumber,
 } from "@/types/proto/v1/subscription_service";
-import dayjs from "dayjs";
-import { defineStore } from "pinia";
-import type { Ref } from "vue";
-import { computed } from "vue";
 
 // The threshold of days before the license expiration date to show the warning.
 // Default is 7 days.
@@ -38,11 +38,15 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     trialingDays: 14,
   }),
   getters: {
-    instanceCountLimit(): number {
+    instanceCountLimit(state): number {
       const limit =
         PLANS.find((plan) => plan.type === this.currentPlan)
           ?.maximumInstanceCount ?? 0;
       if (limit < 0) {
+        const instanceLimitInLicense = state.subscription?.instances ?? 0;
+        if (instanceLimitInLicense > 0) {
+          return instanceLimitInLicense;
+        }
         return Number.MAX_VALUE;
       }
       return limit;
@@ -162,13 +166,17 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       if (this.currentPlan === PlanType.FREE) {
         return this.hasFeature(feature);
       }
-      
+
       // If no instance provided or feature is not instance-limited
       if (!instance || !instanceLimitFeature.has(feature)) {
         return this.hasFeature(feature);
       }
-      
-      return checkInstanceFeature(this.currentPlan, feature, instance.activation);
+
+      return checkInstanceFeature(
+        this.currentPlan,
+        feature,
+        instance.activation
+      );
     },
     instanceMissingLicense(
       feature: PlanFeature,
