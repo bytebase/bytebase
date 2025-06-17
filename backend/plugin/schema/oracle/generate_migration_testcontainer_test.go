@@ -45,7 +45,7 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 			"APP_USER":          "testuser",
 			"APP_USER_PASSWORD": "testpass",
 		},
-		ExposedPorts: []string{"1521/tcp"},
+		ExposedPorts: []string{"11521/tcp"},
 		WaitingFor: wait.ForLog("DATABASE IS READY TO USE!").
 			WithStartupTimeout(10 * time.Minute),
 		HostConfigModifier: func(hc *container.HostConfig) {
@@ -78,7 +78,7 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	// Get connection details
 	host, err := container.Host(ctx)
 	require.NoError(t, err)
-	port, err := container.MappedPort(ctx, "1521")
+	port, err := container.MappedPort(ctx, "11521")
 	require.NoError(t, err)
 
 	// Test cases with various schema changes
