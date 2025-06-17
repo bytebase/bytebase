@@ -19,12 +19,14 @@ func TestMain(m *testing.M) {
 
 func startMain(ctx context.Context, m *testing.M) (int, error) {
 	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
 	if err != nil {
 		return 0, err
 	}
+	defer func() {
+		if pgContainer != nil {
+			pgContainer.Close(ctx)
+		}
+	}()
 	externalPgHost = pgContainer.host
 	externalPgPort = pgContainer.port
 
