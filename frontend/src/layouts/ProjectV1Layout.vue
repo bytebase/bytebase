@@ -1,7 +1,7 @@
 <template>
   <template v-if="initialized">
     <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
-    <template v-if="!hideDefaultProject && isDefaultProject">
+    <template v-if="isDefaultProject">
       <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
         {{ $t("database.unassigned-databases") }}
       </h1>
@@ -82,7 +82,6 @@ import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import {
   pushNotification,
-  useAppFeature,
   usePermissionStore,
   useProjectByName,
   useProjectV1Store,
@@ -119,8 +118,6 @@ const projectStore = useProjectV1Store();
 const { remove: removeVisit } = useRecentVisit();
 const permissionStore = usePermissionStore();
 
-const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
-const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 
 watchEffect(async () => {
@@ -233,7 +230,7 @@ const quickActionList = computed(() => {
 });
 
 const hideQuickActionPanel = computed(() => {
-  return hideQuickAction.value || quickActionList.value.length === 0;
+  return quickActionList.value.length === 0;
 });
 
 const { overrideMainContainerClass } = useBodyLayoutContext();

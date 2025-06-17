@@ -45,7 +45,6 @@ import {
   useWorkSheetStore,
   useGroupStore,
   pushNotification,
-  useAppFeature,
 } from "@/store";
 import type { SQLEditorConnection } from "@/types";
 import {
@@ -95,7 +94,6 @@ const {
   events: editorEvents,
   maybeSwitchProject,
 } = useSQLEditorContext();
-const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
 const fallbackToFirstProject = async () => {
   const { projects } = await projectStore.fetchProjectList({
@@ -133,12 +131,7 @@ const initializeProjects = async () => {
     editorStore.strictProject = "strict" in route.query;
   } else {
     // plain "/sql-editor"
-    if (hideProjects.value) {
-      // Direct to Default Project
-      project = DEFAULT_PROJECT_NAME;
-    } else {
-      project = editorStore.storedLastViewedProject;
-    }
+    project = editorStore.storedLastViewedProject;
     editorStore.strictProject = false;
   }
 

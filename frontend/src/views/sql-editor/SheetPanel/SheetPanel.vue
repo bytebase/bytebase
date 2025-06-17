@@ -15,11 +15,7 @@
           @select-sheet="handleSelectSheet"
         />
       </NTabPane>
-      <NTabPane
-        v-if="!disallowShareWorksheet"
-        name="shared"
-        :tab="$t('sheet.shared')"
-      >
+      <NTabPane name="shared" :tab="$t('sheet.shared')">
         <SheetTable
           view="shared"
           :keyword="keyword"
@@ -48,7 +44,6 @@ import { NButton, NTabs, NTabPane } from "naive-ui";
 import { ref } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
-import { useAppFeature } from "@/store";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { useSheetContext, openWorksheetByName, addNewSheet } from "../Sheet";
 import { useSQLEditorContext } from "../context";
@@ -61,9 +56,6 @@ const emit = defineEmits<{
 const editorContext = useSQLEditorContext();
 const worksheetContext = useSheetContext();
 const { view, isFetching, events } = worksheetContext;
-const disallowShareWorksheet = useAppFeature(
-  "bb.feature.sql-editor.disallow-share-worksheet"
-);
 const keyword = ref("");
 
 const handleSelectSheet = async (sheet: Worksheet) => {

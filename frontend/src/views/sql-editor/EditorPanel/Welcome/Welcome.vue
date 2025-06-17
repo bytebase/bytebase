@@ -3,7 +3,7 @@
     class="w-full flex-1 flex flex-col items-center justify-start gap-y-4"
     style="padding-top: calc(clamp(40px, 15vh, 200px))"
   >
-    <BytebaseLogo v-if="!hideLogo" />
+    <BytebaseLogo />
 
     <div
       class="hidden lg:grid items-center gap-4"
@@ -75,7 +75,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
-import { useAppFeature, useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/store";
 import { useSidebarItems as useSettingItems } from "../../Setting/Sidebar";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";
@@ -83,7 +83,6 @@ import Button from "./Button.vue";
 const { showConnectionPanel, asidePanelTab } = useSQLEditorContext();
 const { itemList: settingItemList } = useSettingItems();
 const router = useRouter();
-const hideLogo = useAppFeature("bb.feature.sql-editor.hide-bytebase-logo");
 
 const showCreateInstanceButton = computed(() => {
   return (
