@@ -258,8 +258,17 @@ watchEffect(() => {
 });
 
 onMounted(async () => {
-  await identityProviderStore.fetchIdentityProviderList();
-
+  try {
+    // Prepare all identity providers.
+    await identityProviderStore.fetchIdentityProviderList();
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `Request error occurred`,
+      description: (error as any).message,
+    });
+  }
   // Check if there is an identity provider in the query string and try to sign in with it.
   if (route.query["idp"]) {
     const idpName = `${idpNamePrefix}${route.query["idp"] as string}`;
