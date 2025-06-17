@@ -38,6 +38,7 @@
         :database-group-list="filteredDbGroupList"
         :single-selection="false"
         :show-selection="true"
+        :show-external-link="true"
         :loading="!ready"
         v-model:selected-database-group-names="state.selectedDatabaseGroupNames"
       />
