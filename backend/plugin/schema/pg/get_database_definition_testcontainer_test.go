@@ -2,19 +2,16 @@ package pg
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	pgdb "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -27,34 +24,12 @@ import (
 func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
-	// Start PostgreSQL container
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
-		postgres.WithDatabase("test_db"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("test"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Minute),
-		),
-	)
-	require.NoError(t, err)
-	defer func() {
-		if err := pgContainer.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}()
+	// Get PostgreSQL container from testcontainer.go
+	pgContainer := testcontainer.GetTestPgContainer(ctx, t)
+	defer pgContainer.Close(ctx)
 
-	// Get connection string
-	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-
-	// Connect to the database
-	connConfig, err := pgx.ParseConfig(connectionString)
-	require.NoError(t, err)
-	db := stdlib.OpenDB(*connConfig)
-	defer db.Close()
+	// Get the database connection
+	db := pgContainer.GetDB()
 
 	// Test cases with various PostgreSQL features
 	testCases := []struct {
@@ -272,9 +247,9 @@ EXECUTE FUNCTION log_account_changes();
 			}()
 
 			// Connect to database A
-			testConnConfigA := *connConfig
-			testConnConfigA.Database = dbNameA
-			testDBA := stdlib.OpenDB(testConnConfigA)
+			testDBA, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s sslmode=disable",
+				pgContainer.GetHost(), pgContainer.GetPort(), dbNameA))
+			require.NoError(t, err)
 			defer testDBA.Close()
 
 			// Execute the original DDL
@@ -282,7 +257,7 @@ EXECUTE FUNCTION log_account_changes();
 			require.NoError(t, err)
 
 			// Get metadata A using Driver.SyncDBSchema
-			metadataA, err := getDBSyncMetadata(ctx, &testConnConfigA, dbNameA)
+			metadataA, err := getDBSyncMetadata(ctx, pgContainer, dbNameA)
 			require.NoError(t, err)
 
 			// Generate database definition using GetDatabaseDefinition
@@ -299,9 +274,9 @@ EXECUTE FUNCTION log_account_changes();
 			}()
 
 			// Connect to database B
-			testConnConfigB := *connConfig
-			testConnConfigB.Database = dbNameB
-			testDBB := stdlib.OpenDB(testConnConfigB)
+			testDBB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s sslmode=disable",
+				pgContainer.GetHost(), pgContainer.GetPort(), dbNameB))
+			require.NoError(t, err)
 			defer testDBB.Close()
 
 			// Execute the generated DDL
@@ -309,7 +284,7 @@ EXECUTE FUNCTION log_account_changes();
 			require.NoError(t, err, "failed to execute generated DDL: %s", generatedDDL)
 
 			// Get metadata B using Driver.SyncDBSchema
-			metadataB, err := getDBSyncMetadata(ctx, &testConnConfigB, dbNameB)
+			metadataB, err := getDBSyncMetadata(ctx, pgContainer, dbNameB)
 			require.NoError(t, err)
 
 			// Compare metadata A and B
@@ -318,8 +293,8 @@ EXECUTE FUNCTION log_account_changes();
 	}
 }
 
-// getSyncMetadata retrieves metadata from the live database using Driver.SyncDBSchema
-func getDBSyncMetadata(ctx context.Context, connConfig *pgx.ConnConfig, dbName string) (*storepb.DatabaseSchemaMetadata, error) {
+// getDBSyncMetadata retrieves metadata from the live database using Driver.SyncDBSchema
+func getDBSyncMetadata(ctx context.Context, container *testcontainer.Container, dbName string) (*storepb.DatabaseSchemaMetadata, error) {
 	// Create a driver instance using the pg package
 	driver := &pgdb.Driver{}
 
@@ -327,12 +302,12 @@ func getDBSyncMetadata(ctx context.Context, connConfig *pgx.ConnConfig, dbName s
 	config := db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Type:     storepb.DataSourceType_ADMIN,
-			Username: connConfig.User,
-			Host:     connConfig.Host,
-			Port:     fmt.Sprintf("%d", connConfig.Port),
+			Username: "postgres",
+			Host:     container.GetHost(),
+			Port:     container.GetPort(),
 			Database: dbName,
 		},
-		Password: connConfig.Password,
+		Password: "root-password",
 		ConnectionContext: db.ConnectionContext{
 			EngineVersion: "16.0", // PostgreSQL 16
 			DatabaseName:  dbName,
@@ -450,7 +425,7 @@ func filterExplicitSequences(sequences []*storepb.SequenceMetadata) []*storepb.S
 	return result
 }
 
-// compareMaterializedViews compares materialized views between two schemas
+// compareMaterializedViewsDef compares materialized views between two schemas
 func compareMaterializedViewsDef(t *testing.T, viewsA, viewsB []*storepb.MaterializedViewMetadata) {
 	require.Equal(t, len(viewsA), len(viewsB), "number of materialized views should match")
 
@@ -475,7 +450,7 @@ func compareMaterializedViewsDef(t *testing.T, viewsA, viewsB []*storepb.Materia
 	}
 }
 
-// normalizeSQL normalizes SQL for comparison
+// normalizeSQLDef normalizes SQL for comparison
 func normalizeSQLDef(sql string) string {
 	// Convert to lowercase
 	sql = strings.ToLower(sql)
@@ -495,7 +470,7 @@ func normalizeSQLDef(sql string) string {
 	return sql
 }
 
-// normalizeExpression normalizes an expression for comparison
+// normalizeExprDef normalizes an expression for comparison
 func normalizeExprDef(expr string) string {
 	// Convert to lowercase
 	expr = strings.ToLower(expr)
@@ -515,7 +490,7 @@ func normalizeExprDef(expr string) string {
 	return expr
 }
 
-// compareTables compares tables between two schemas
+// compareTablesDef compares tables between two schemas
 func compareTablesDef(t *testing.T, tablesA, tablesB []*storepb.TableMetadata) {
 	require.Equal(t, len(tablesA), len(tablesB), "number of tables should match")
 
@@ -558,7 +533,7 @@ func compareTablesDef(t *testing.T, tablesA, tablesB []*storepb.TableMetadata) {
 	}
 }
 
-// compareColumns compares columns between two tables
+// compareColumnsDef compares columns between two tables
 func compareColumnsDef(t *testing.T, tableName string, colsA, colsB []*storepb.ColumnMetadata) {
 	require.Equal(t, len(colsA), len(colsB), "table %s: number of columns should match", tableName)
 
@@ -585,7 +560,7 @@ func compareColumnsDef(t *testing.T, tableName string, colsA, colsB []*storepb.C
 	}
 }
 
-// compareIndexes compares indexes between two tables
+// compareIndexesDef compares indexes between two tables
 func compareIndexesDef(t *testing.T, tableName string, indexesA, indexesB []*storepb.IndexMetadata) {
 	// Create maps for easier comparison
 	mapA := make(map[string]*storepb.IndexMetadata)
@@ -627,7 +602,7 @@ func compareIndexesDef(t *testing.T, tableName string, indexesA, indexesB []*sto
 	}
 }
 
-// compareForeignKeys compares foreign keys between two tables
+// compareForeignKeysDef compares foreign keys between two tables
 func compareForeignKeysDef(t *testing.T, tableName string, fksA, fksB []*storepb.ForeignKeyMetadata) {
 	require.Equal(t, len(fksA), len(fksB), "table %s: number of foreign keys should match", tableName)
 
@@ -647,7 +622,7 @@ func compareForeignKeysDef(t *testing.T, tableName string, fksA, fksB []*storepb
 	}
 }
 
-// compareCheckConstraints compares check constraints between two tables
+// compareCheckConstraintsDef compares check constraints between two tables
 func compareCheckConstraintsDef(t *testing.T, tableName string, checksA, checksB []*storepb.CheckConstraintMetadata) {
 	require.Equal(t, len(checksA), len(checksB), "table %s: number of check constraints should match", tableName)
 
@@ -668,7 +643,7 @@ func compareCheckConstraintsDef(t *testing.T, tableName string, checksA, checksB
 	}
 }
 
-// comparePartitions compares partitions between two tables
+// comparePartitionsDef compares partitions between two tables
 func comparePartitionsDef(t *testing.T, tableName string, partsA, partsB []*storepb.TablePartitionMetadata) {
 	require.Equal(t, len(partsA), len(partsB), "table %s: number of partitions should match", tableName)
 
@@ -686,7 +661,7 @@ func comparePartitionsDef(t *testing.T, tableName string, partsA, partsB []*stor
 	}
 }
 
-// compareTriggers compares triggers between two tables
+// compareTriggersDef compares triggers between two tables
 func compareTriggersDef(t *testing.T, tableName string, triggersA, triggersB []*storepb.TriggerMetadata) {
 	require.Equal(t, len(triggersA), len(triggersB), "table %s: number of triggers should match", tableName)
 
@@ -708,7 +683,7 @@ func compareTriggersDef(t *testing.T, tableName string, triggersA, triggersB []*
 	}
 }
 
-// compareViews compares views between two schemas
+// compareViewsDef compares views between two schemas
 func compareViewsDef(t *testing.T, viewsA, viewsB []*storepb.ViewMetadata) {
 	require.Equal(t, len(viewsA), len(viewsB), "number of views should match")
 
@@ -732,7 +707,7 @@ func compareViewsDef(t *testing.T, viewsA, viewsB []*storepb.ViewMetadata) {
 	}
 }
 
-// compareFunctions compares functions between two schemas
+// compareFunctionsDef compares functions between two schemas
 func compareFunctionsDef(t *testing.T, funcsA, funcsB []*storepb.FunctionMetadata) {
 	require.Equal(t, len(funcsA), len(funcsB), "number of functions should match")
 
@@ -756,7 +731,7 @@ func compareFunctionsDef(t *testing.T, funcsA, funcsB []*storepb.FunctionMetadat
 	}
 }
 
-// compareEnums compares enum types between two schemas
+// compareEnumsDef compares enum types between two schemas
 func compareEnumsDef(t *testing.T, enumsA, enumsB []*storepb.EnumTypeMetadata) {
 	require.Equal(t, len(enumsA), len(enumsB), "number of enums should match")
 
@@ -774,7 +749,7 @@ func compareEnumsDef(t *testing.T, enumsA, enumsB []*storepb.EnumTypeMetadata) {
 	}
 }
 
-// compareExtensions compares extensions between two databases
+// compareExtensionsDef compares extensions between two databases
 func compareExtensionsDef(t *testing.T, extsA, extsB []*storepb.ExtensionMetadata) {
 	// Create maps for easier comparison
 	mapA := make(map[string]*storepb.ExtensionMetadata)
