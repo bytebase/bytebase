@@ -360,6 +360,7 @@
           ref="scanIntervalInputRef"
           :scan-interval="basicInfo.syncInterval"
           :allow-edit="allowEdit"
+          :instance="instance as ComposedInstance"
           @update:scan-interval="changeScanInterval"
         />
 
