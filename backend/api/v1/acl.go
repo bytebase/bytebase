@@ -8,8 +8,6 @@ import (
 
 	"connectrpc.com/connect"
 	annotationsproto "google.golang.org/genproto/googleapis/api/annotations"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -112,7 +110,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
 	if user == nil {

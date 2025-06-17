@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -280,7 +278,7 @@ func validateDataSources(metadata *storepb.Instance) error {
 	adminCount := 0
 	for _, dataSource := range metadata.GetDataSources() {
 		if dataSourceMap[dataSource.GetId()] {
-			return status.Errorf(codes.InvalidArgument, "duplicate data source ID %s", dataSource.GetId())
+			return errors.Errorf("duplicate data source ID %s", dataSource.GetId())
 		}
 		dataSourceMap[dataSource.GetId()] = true
 		if dataSource.GetType() == storepb.DataSourceType_ADMIN {
@@ -288,7 +286,7 @@ func validateDataSources(metadata *storepb.Instance) error {
 		}
 	}
 	if adminCount != 1 {
-		return status.Errorf(codes.InvalidArgument, "require exactly one admin data source")
+		return errors.Errorf("require exactly one admin data source")
 	}
 	return nil
 }

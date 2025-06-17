@@ -11,11 +11,10 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"connectrpc.com/connect"
 	"github.com/cockroachdb/cockroachdb-parser/pkg/util/timeofday"
 	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/runtime/protoimpl"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -125,7 +124,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, rawStatement string
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if _, _, err := base.ValidateSQLForEditor(storepb.Engine_CASSANDRA, stmt); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "support Cassandra SELECT statement only, err: %s", err.Error())
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support Cassandra SELECT statement only, err: %s", err.Error()))
 			}
 			result := &v1pb.QueryResult{}
 			pageSize := 0

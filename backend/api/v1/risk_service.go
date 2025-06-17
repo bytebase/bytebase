@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -46,7 +45,7 @@ func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
 func (s *RiskService) ListRisks(ctx context.Context, _ *connect.Request[v1pb.ListRisksRequest]) (*connect.Response[v1pb.ListRisksResponse], error) {
 	risks, err := s.store.ListRisks(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	response := &v1pb.ListRisksResponse{}
 	for _, risk := range risks {
@@ -75,11 +74,11 @@ func (s *RiskService) GetRisk(ctx context.Context, request *connect.Request[v1pb
 // CreateRisk creates a risk.
 func (s *RiskService) CreateRisk(ctx context.Context, request *connect.Request[v1pb.CreateRiskRequest]) (*connect.Response[v1pb.Risk], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RISK_ASSESSMENT); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	// Validate the condition.
 	if _, err := common.ConvertUnparsedRisk(request.Msg.Risk.Condition); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate risk expression"))
 	}
 
 	risk, err := s.store.CreateRisk(ctx, &store.RiskMessage{
@@ -90,7 +89,7 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *connect.Request[v
 		Expression: request.Msg.Risk.Condition,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	r, err := convertToRisk(risk)
 	if err != nil {
@@ -102,10 +101,10 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *connect.Request[v
 // UpdateRisk updates a risk.
 func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v1pb.UpdateRiskRequest]) (*connect.Response[v1pb.Risk], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RISK_ASSESSMENT); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	if request.Msg.UpdateMask == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must be set"))
 	}
 	risk, err := s.getRiskByName(ctx, request.Msg.Risk.Name)
 	if err != nil {
@@ -123,7 +122,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v
 			patch.Level = &request.Msg.Risk.Level
 		case "condition":
 			if _, err := common.ConvertUnparsedRisk(request.Msg.Risk.Condition); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate risk expression"))
 			}
 			patch.Expression = request.Msg.Risk.Condition
 		case "source":
@@ -136,7 +135,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v
 
 	risk, err = s.store.UpdateRisk(ctx, patch, risk.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	r, err := convertToRisk(risk)
@@ -150,11 +149,11 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v
 func (s *RiskService) DeleteRisk(ctx context.Context, request *connect.Request[v1pb.DeleteRiskRequest]) (*connect.Response[emptypb.Empty], error) {
 	riskID, err := common.GetRiskID(request.Msg.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	if err := s.store.DeleteRisk(ctx, riskID); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -163,14 +162,14 @@ func (s *RiskService) DeleteRisk(ctx context.Context, request *connect.Request[v
 func (s *RiskService) getRiskByName(ctx context.Context, name string) (*store.RiskMessage, error) {
 	riskID, err := common.GetRiskID(name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	risk, err := s.store.GetRisk(ctx, riskID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get risk, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get risk"))
 	}
 	if risk == nil {
-		return nil, status.Errorf(codes.NotFound, "risk %v not found", name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("risk %v not found", name))
 	}
 	return risk, nil
 }
