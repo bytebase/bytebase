@@ -80,9 +80,6 @@ const emit = defineEmits<{
 const router = useRouter();
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
-const disallowNavigateToConsole = useAppFeature(
-  "bb.feature.disallow-navigate-to-console"
-);
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const statement = computed(() => {
@@ -102,10 +99,7 @@ const actions = computed(() => {
   if (hasWorkspacePermissionV2("bb.sql.admin")) {
     actions.admin = true;
   }
-  if (
-    !disallowNavigateToConsole.value &&
-    databaseChangeMode.value === DatabaseChangeMode.PIPELINE
-  ) {
+  if (databaseChangeMode.value === DatabaseChangeMode.PIPELINE) {
     actions.issue = true;
   }
 

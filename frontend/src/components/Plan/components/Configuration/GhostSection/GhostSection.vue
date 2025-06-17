@@ -18,7 +18,6 @@
                 <LearnMoreLink
                   url="https://docs.bytebase.com/change-database/online-schema-migration-for-mysql?source=console"
                   color="light"
-                  hide-when-embedded
                 />
               </template>
             </i18n-t>

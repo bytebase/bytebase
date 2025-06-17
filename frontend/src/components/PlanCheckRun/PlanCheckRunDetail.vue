@@ -83,7 +83,7 @@
             </span>
           </div>
 
-          <div v-if="!hideDocLink" class="pl-2 first:pl-0">
+          <div class="pl-2 first:pl-0">
             <a
               v-if="row.link"
               class="normal-link"
@@ -174,7 +174,7 @@
         </template>
 
         <a
-          v-if="!hideDocLink && row.link"
+          v-if="row.link"
           class="ml-1 normal-link"
           :href="row.link.url"
           :target="row.link.target"
@@ -243,7 +243,7 @@ import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { planServiceClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
-import { useAppFeature, useReviewPolicyForDatabase } from "@/store";
+import { useReviewPolicyForDatabase } from "@/store";
 import {
   getProjectNamePlanIdPlanCheckRunId,
   planNamePrefix,
@@ -293,7 +293,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const hideDocLink = useAppFeature("bb.feature.sql-check.hide-doc-link");
 const state = reactive<LocalState>({
   activeRule: undefined,
 });

@@ -306,9 +306,6 @@ const router = useRouter();
 const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
-const appFeatureDisallowExport = useAppFeature(
-  "bb.feature.sql-editor.disallow-export-query-data"
-);
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
@@ -321,10 +318,7 @@ const { policy: exportDataPolicy } = usePolicyByParentAndType(
 );
 
 const disallowExportQueryData = computed(() => {
-  const disableDataExport =
-    exportDataPolicy.value?.exportDataPolicy?.disable ?? false;
-
-  return disableDataExport || appFeatureDisallowExport.value;
+  return exportDataPolicy.value?.exportDataPolicy?.disable ?? false;
 });
 
 const viewMode = computed((): ViewMode => {

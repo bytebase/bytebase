@@ -1,5 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
-import { cloneDeep, orderBy, pullAt, uniq, flatten } from "lodash-es";
+import { cloneDeep, orderBy, uniq, flatten } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
 import type {
@@ -22,11 +22,7 @@ import {
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import type { Environment } from "@/types/v1/environment";
 import { getSemanticLabelValue, groupBy, isDatabaseV1Queryable } from "@/utils";
-import {
-  useAppFeature,
-  useEnvironmentV1Store,
-  useInstanceResourceByName,
-} from "../v1";
+import { useEnvironmentV1Store, useInstanceResourceByName } from "../v1";
 import { useSQLEditorStore } from "./editor";
 
 export const ROOT_NODE_ID = "ROOT";
@@ -35,20 +31,9 @@ const defaultEnvironmentFactor: StatefulFactor = {
   factor: "environment",
   disabled: false,
 };
-const defaultInstanceFactor: StatefulFactor = {
-  factor: "instance",
-  disabled: false,
-};
 
 export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
-  const hideEnvironments = useAppFeature(
-    "bb.feature.sql-editor.hide-environments"
-  );
-
   const defaultFactorList = (): StatefulFactor[] => {
-    if (hideEnvironments.value) {
-      return [defaultInstanceFactor];
-    }
     return [defaultEnvironmentFactor];
   };
 
@@ -120,9 +105,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   });
 
   const availableFactorList = computed(() => {
-    const PRESET_FACTORS: Factor[] = hideEnvironments.value
-      ? ["instance"]
-      : ["instance", "environment"];
+    const PRESET_FACTORS: Factor[] = ["instance", "environment"];
     const labelFactors = orderBy(
       uniq(
         databaseList.value.flatMap((db) => Object.keys(db.labels))
@@ -137,26 +120,6 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
       all: [...PRESET_FACTORS, ...labelFactors],
     };
   });
-
-  watch(
-    [hideEnvironments, factorList],
-    () => {
-      if (hideEnvironments.value) {
-        const index = factorList.value.findIndex(
-          (factor) => factor.factor === "environment"
-        );
-        if (index >= 0) {
-          pullAt(factorList.value, index);
-        }
-        if (factorList.value.length === 0) {
-          factorList.value = [defaultInstanceFactor];
-        }
-      }
-    },
-    {
-      immediate: true,
-    }
-  );
 
   const state = ref<TreeState>("UNSET");
   const tree = ref<TreeNode[]>([]);

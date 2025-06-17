@@ -11,7 +11,7 @@ import {
 import { computed, h, unref } from "vue";
 import type { RouteLocationNormalizedLoaded } from "vue-router";
 import { useRoute } from "vue-router";
-import type { SidebarItem } from "@/components/v2/Sidebar/CommonSidebar.vue";
+import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
 import { t } from "@/plugins/i18n";
 import projectV1Routes, {
