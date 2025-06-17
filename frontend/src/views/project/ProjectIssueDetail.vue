@@ -1,5 +1,5 @@
 <template>
-  <div class="relative overflow-x-hidden">
+  <div class="relative overflow-x-hidden h-full">
     <template v-if="ready">
       <GrantRequestIssueDetailPage v-if="isGrantRequestIssue(issue)" />
       <DataExportIssueDetailPage v-else-if="isDatabaseDataExportIssue(issue)" />
@@ -12,6 +12,11 @@
 </template>
 
 <script lang="ts" setup>
+import { useTitle } from "@vueuse/core";
+import Emittery from "emittery";
+import { NSpin } from "naive-ui";
+import { computed, onMounted, toRef } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   DataExportIssueDetailPage,
   GrantRequestIssueDetailPage,
@@ -31,11 +36,6 @@ import {
   isGrantRequestIssue,
   isValidIssueName,
 } from "@/utils";
-import { useTitle } from "@vueuse/core";
-import Emittery from "emittery";
-import { NSpin } from "naive-ui";
-import { computed, onMounted, toRef } from "vue";
-import { useI18n } from "vue-i18n";
 
 defineOptions({
   inheritAttrs: false,
