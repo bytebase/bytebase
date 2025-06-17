@@ -53,7 +53,7 @@ const props = withDefaults(
     currentProject: undefined,
     keyword: undefined,
     selectedProjectNames: () => [],
-    showSelection: true,
+    showSelection: false,
   }
 );
 
@@ -65,10 +65,13 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 
+const hasDeletePermission = computed(() =>
+  hasWorkspacePermissionV2("bb.projects.delete")
+);
 
-const hasDeletePermission = computed(() => hasWorkspacePermissionV2('bb.projects.delete'));
-
-const shouldShowSelection = computed(() => props.showSelection && hasDeletePermission.value);
+const shouldShowSelection = computed(
+  () => props.showSelection && hasDeletePermission.value
+);
 
 const updateSelectedProjects = (checkedRowKeys: (string | number)[]) => {
   emit("update:selected-project-names", checkedRowKeys as string[]);
@@ -82,24 +85,30 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         type: shouldShowSelection.value ? "selection" : undefined,
         width: 32,
         hide: !shouldShowSelection.value && !props.currentProject,
-        disabled: shouldShowSelection.value ? (project: ComposedProject) => {
-          // Disable selection for default project
-          return extractProjectResourceName(project.name) === "default";
-        } : undefined,
-        cellProps: shouldShowSelection.value ? () => {
-          return {
-            onClick: (e: MouseEvent) => {
-              e.stopPropagation();
+        disabled: shouldShowSelection.value
+          ? (project: ComposedProject) => {
+              // Disable selection for default project
+              return extractProjectResourceName(project.name) === "default";
+            }
+          : undefined,
+        cellProps: shouldShowSelection.value
+          ? () => {
+              return {
+                onClick: (e: MouseEvent) => {
+                  e.stopPropagation();
+                },
+              };
+            }
+          : undefined,
+        render: shouldShowSelection.value
+          ? undefined
+          : (project) => {
+              return (
+                props.currentProject?.name === project.name && (
+                  <CheckIcon class="w-4 text-accent" />
+                )
+              );
             },
-          };
-        } : undefined,
-        render: shouldShowSelection.value ? undefined : (project) => {
-          return (
-            props.currentProject?.name === project.name && (
-              <CheckIcon class="w-4 text-accent" />
-            )
-          );
-        },
       },
       {
         key: "id",
@@ -138,7 +147,7 @@ const rowProps = (project: ComposedProject) => {
       if (!props.preventDefault) {
         const currentRouteName = router.currentRoute.value.name?.toString();
         let routeName = PROJECT_V1_ROUTE_DETAIL;
-        
+
         if (currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD)) {
           routeName = PROJECT_V1_ROUTE_DETAIL;
         }
