@@ -210,9 +210,6 @@ message WorkspaceProfileSetting {
   // Require 2FA for all users.
   bool require_2fa = 3;
 
-  // outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
-  repeated string outbound_ip_list = 4;
-
   // The duration for token.
   google.protobuf.Duration token_duration = 6;
 
