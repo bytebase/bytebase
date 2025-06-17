@@ -36,11 +36,9 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 		}
 	}
 
-	// Then, write all tables
-	for _, schema := range to.Schemas {
-		for _, table := range schema.Tables {
-			writeTable(&buf, schema.Name, table)
-		}
+	// Then, write all tables in dependency order
+	if hasTables(to.Schemas) {
+		writeAllTablesInOrder(&buf, to.Schemas)
 	}
 
 	// Then, write all views in dependency order across all schemas
@@ -90,6 +88,119 @@ func hasViews(schemas []*storepb.SchemaMetadata) bool {
 		}
 	}
 	return false
+}
+
+func hasTables(schemas []*storepb.SchemaMetadata) bool {
+	for _, schema := range schemas {
+		if len(schema.Tables) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func writeAllTablesInOrder(out *strings.Builder, schemas []*storepb.SchemaMetadata) {
+	// Collect all tables from all schemas
+	var allTables []*tableWithSchema
+	for _, schema := range schemas {
+		for _, table := range schema.Tables {
+			allTables = append(allTables, &tableWithSchema{
+				schema: schema.Name,
+				table:  table,
+			})
+		}
+	}
+
+	if len(allTables) == 0 {
+		return
+	}
+
+	// Sort tables by foreign key dependencies across all schemas
+	sortedTables := sortTablesByDependenciesAcrossSchemas(allTables)
+
+	// Write sorted tables
+	for _, tws := range sortedTables {
+		writeTable(out, tws.schema, tws.table)
+	}
+}
+
+type tableWithSchema struct {
+	schema string
+	table  *storepb.TableMetadata
+}
+
+// sortTablesByDependenciesAcrossSchemas sorts tables using topological sort considering cross-schema foreign key dependencies
+func sortTablesByDependenciesAcrossSchemas(tables []*tableWithSchema) []*tableWithSchema {
+	if len(tables) <= 1 {
+		return tables
+	}
+
+	// Create a map for quick lookup
+	tableMap := make(map[string]*tableWithSchema)
+	for _, tws := range tables {
+		tableID := getObjectID(tws.schema, tws.table.Name)
+		tableMap[tableID] = tws
+	}
+
+	// Build dependency graph
+	graph := base.NewGraph()
+
+	// Add all table nodes
+	for _, tws := range tables {
+		tableID := getObjectID(tws.schema, tws.table.Name)
+		graph.AddNode(tableID)
+	}
+
+	// Add edges based on foreign key dependencies
+	for _, tws := range tables {
+		tableID := getObjectID(tws.schema, tws.table.Name)
+
+		// For each foreign key in this table
+		for _, fk := range tws.table.ForeignKeys {
+			// Get the referenced table ID
+			referencedTableID := getObjectID(fk.ReferencedSchema, fk.ReferencedTable)
+
+			// If the referenced table exists in our set, add a dependency edge
+			// The edge goes from referenced table to current table (referenced table must be created first)
+			if _, exists := tableMap[referencedTableID]; exists {
+				graph.AddEdge(referencedTableID, tableID)
+			}
+		}
+	}
+
+	// Perform topological sort
+	sortedIDs, err := graph.TopologicalSort()
+	if err != nil {
+		// If there's a cycle (circular foreign key references), fall back to original order
+		// This shouldn't happen with well-designed schemas, but we handle it gracefully
+		return tables
+	}
+
+	// Build result in topologically sorted order
+	var result []*tableWithSchema
+	for _, tableID := range sortedIDs {
+		if tws, exists := tableMap[tableID]; exists {
+			result = append(result, tws)
+		}
+	}
+
+	// Add any tables that weren't in the dependency graph (shouldn't happen)
+	for _, tws := range tables {
+		tableID := getObjectID(tws.schema, tws.table.Name)
+		found := false
+		for _, resultTws := range result {
+			resultTableID := getObjectID(resultTws.schema, resultTws.table.Name)
+			if tableID == resultTableID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, tws)
+		}
+	}
+
+	return result
 }
 
 func writeAllViewsInOrder(out *strings.Builder, schemas []*storepb.SchemaMetadata) {
