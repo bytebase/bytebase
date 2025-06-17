@@ -152,7 +152,7 @@ const testConnection = async () => {
     // Ensure event listener is set up for the correct IDP name
     const eventName = `bb.oauth.signin.${idpForTesting.name}`;
 
-    // Remove any existing listener first
+    // Remove any existing listener first.
     if (currentEventName.value) {
       window.removeEventListener(
         currentEventName.value,
@@ -160,16 +160,13 @@ const testConnection = async () => {
         false
       );
     }
-
-    // Add the listener only if it's not already registered for this event
-    if (currentEventName.value !== eventName) {
-      window.addEventListener(
-        eventName,
-        loginWithIdentityProviderEventListener,
-        false
-      );
-      currentEventName.value = eventName;
-    }
+    // Add a new event listener.
+    window.addEventListener(
+      eventName,
+      loginWithIdentityProviderEventListener,
+      false
+    );
+    currentEventName.value = eventName;
 
     try {
       await openWindowForSSO(idpForTesting);
