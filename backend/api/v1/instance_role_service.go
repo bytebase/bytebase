@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/store"
@@ -38,7 +37,7 @@ func (*InstanceRoleService) GetInstanceRole(_ context.Context, _ *connect.Reques
 func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, req *connect.Request[v1pb.ListInstanceRolesRequest]) (*connect.Response[v1pb.ListInstanceRolesResponse], error) {
 	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get instance: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance"))
 	}
 	instanceRoles := convertInstanceRoles(instance, instance.Metadata.GetRoles())
 	return connect.NewResponse(&v1pb.ListInstanceRolesResponse{

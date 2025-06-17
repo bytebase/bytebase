@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -379,7 +379,7 @@ func TestListProjectFilter(t *testing.T) {
 	}{
 		{
 			input: `title == "sample project"`,
-			error: status.Errorf(codes.InvalidArgument, "unsupport variable %q", "title"),
+			error: connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", "title")),
 		},
 		{
 			input: `name == "sample project"`,

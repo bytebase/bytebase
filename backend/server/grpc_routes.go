@@ -7,9 +7,7 @@ import (
 	"net/http"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 
 	"connectrpc.com/connect"
 	connectcors "connectrpc.com/cors"
@@ -98,7 +96,7 @@ func configureGrpcRouters(
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack
 		slog.Error("v1 server panic error", "method", s.Procedure, log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
-		return status.Errorf(codes.Internal, "error: %v\n%s", p, stack)
+		return connect.NewError(connect.CodeInternal, errors.Errorf("error: %v\n%s", p, stack))
 	}
 
 	handlerOpts := connect.WithHandlerOptions(

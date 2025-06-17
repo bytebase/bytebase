@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pkg/errors"
@@ -21,10 +19,10 @@ import (
 func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Request[v1pb.ListChangelogsRequest]) (*connect.Response[v1pb.ListChangelogsResponse], error) {
 	database, err := getDatabaseMessage(ctx, s.store, req.Msg.Parent)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if database == nil || database.Deleted {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", req.Msg.Parent)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Parent))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -49,11 +47,11 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 
 	filters, err := ParseFilter(req.Msg.Filter)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	for _, expr := range filters {
 		if expr.Operator != ComparatorTypeEqual {
-			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for filter`)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`only support "=" operation for filter`))
 		}
 		switch expr.Key {
 		case "type":
@@ -62,19 +60,19 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 			resourcesFilter := expr.Value
 			find.ResourcesFilter = &resourcesFilter
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", expr.Key)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid filter key %q", expr.Key))
 		}
 	}
 
 	changelogs, err := s.store.ListChangelogs(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list changelogs, errors: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list changelogs"))
 	}
 
 	nextPageToken := ""
 	if len(changelogs) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
 		}
 		changelogs = changelogs[:offset.limit]
 	}
@@ -82,7 +80,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	// no subsequent pages
 	converted, err := s.convertToChangelogs(database, changelogs)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert changelogs, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert changelogs"))
 	}
 	return connect.NewResponse(&v1pb.ListChangelogsResponse{
 		Changelogs:    converted,
@@ -93,7 +91,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request[v1pb.GetChangelogRequest]) (*connect.Response[v1pb.Changelog], error) {
 	instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(req.Msg.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	find := &store.FindChangelogMessage{
@@ -105,10 +103,10 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 
 	changelog, err := s.store.GetChangelog(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list changelogs, errors: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list changelogs"))
 	}
 	if changelog == nil {
-		return nil, status.Errorf(codes.NotFound, "changelog %q not found", changelogUID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %q not found", changelogUID))
 	}
 
 	// Get related database to convert changelog from store.
@@ -116,10 +114,10 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:      &instanceID,
@@ -127,28 +125,28 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
 
 	converted, err := s.convertToChangelog(database, changelog)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert changelog, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert changelog"))
 	}
 	if req.Msg.SdlFormat {
 		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, converted.Schema)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert schema to sdl format"))
 			}
 			converted.Schema = sdlSchema
 			converted.SchemaSize = int64(len(sdlSchema))
 			sdlSchema, err = transform.SchemaTransform(storepb.Engine_MYSQL, converted.PrevSchema)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert previous schema to sdl format, error %v", err.Error())
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert previous schema to sdl format"))
 			}
 			converted.PrevSchema = sdlSchema
 			converted.PrevSchemaSize = int64(len(sdlSchema))

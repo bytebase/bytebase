@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -20,7 +20,7 @@ func TestListUserFilter(t *testing.T) {
 	}{
 		{
 			input: `title == "ed"`,
-			error: status.Errorf(codes.InvalidArgument, "unsupport variable %q", "title"),
+			error: connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", "title")),
 		},
 		{
 			input: `name == "ed"`,

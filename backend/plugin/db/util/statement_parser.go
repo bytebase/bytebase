@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"cloud.google.com/go/spanner"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 )
 
 var ddlStatements = map[string]bool{"CREATE": true, "DROP": true, "ALTER": true}
@@ -38,7 +38,7 @@ func removeCommentsAndTrim(sql string) (string, error) {
 		c := runes[index]
 		if isInQuoted {
 			if (c == '\n' || c == '\r') && !isTripleQuoted {
-				return "", spanner.ToSpannerError(status.Errorf(codes.InvalidArgument, "statement contains an unclosed literal: %s", sql))
+				return "", spanner.ToSpannerError(connect.NewError(connect.CodeInvalidArgument, errors.Errorf("statement contains an unclosed literal: %s", sql)))
 			} else if c == startQuote {
 				if lastCharWasEscapeChar {
 					lastCharWasEscapeChar = false
@@ -101,7 +101,7 @@ func removeCommentsAndTrim(sql string) (string, error) {
 		index++
 	}
 	if isInQuoted {
-		return "", spanner.ToSpannerError(status.Errorf(codes.InvalidArgument, "statement contains an unclosed literal: %s", sql))
+		return "", spanner.ToSpannerError(connect.NewError(connect.CodeInvalidArgument, errors.Errorf("statement contains an unclosed literal: %s", sql)))
 	}
 	trimmed := strings.TrimSpace(res.String())
 	if len(trimmed) > 0 && trimmed[len(trimmed)-1] == ';' {
@@ -128,7 +128,7 @@ func splitStatement(sql string) ([]string, error) {
 		c := runes[index]
 		if isInQuoted {
 			if (c == '\n' || c == '\r') && !isTripleQuoted {
-				return nil, spanner.ToSpannerError(status.Errorf(codes.InvalidArgument, "statement contains an unclosed literal: %s", sql))
+				return nil, spanner.ToSpannerError(connect.NewError(connect.CodeInvalidArgument, errors.Errorf("statement contains an unclosed literal: %s", sql)))
 			} else if c == startQuote {
 				if lastCharWasEscapeChar {
 					lastCharWasEscapeChar = false
@@ -179,7 +179,7 @@ func splitStatement(sql string) ([]string, error) {
 		index++
 	}
 	if isInQuoted {
-		return nil, spanner.ToSpannerError(status.Errorf(codes.InvalidArgument, "statement contains an unclosed literal: %s", sql))
+		return nil, spanner.ToSpannerError(connect.NewError(connect.CodeInvalidArgument, errors.Errorf("statement contains an unclosed literal: %s", sql)))
 	}
 	if res.Len() > 0 {
 		stmt := strings.Trim(res.String(), " \n\t")

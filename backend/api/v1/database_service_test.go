@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
@@ -143,7 +143,7 @@ func TestListDatabaseFilter(t *testing.T) {
 		},
 		{
 			input: `environment == "test"`,
-			error: status.Errorf(codes.InvalidArgument, "invalid environment filter %q", "test"),
+			error: connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", "test")),
 		},
 		{
 			input: `project == "projects/sample"`,
