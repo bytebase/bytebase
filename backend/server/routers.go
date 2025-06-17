@@ -3,7 +3,6 @@ package server
 import (
 	"log/slog"
 	"net/http"
-	"strings"
 
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo-contrib/prometheus"
@@ -46,18 +45,6 @@ func configureEchoRouters(
 
 	e.HideBanner = true
 	e.HidePort = true
-
-	grpcSkipper := func(c echo.Context) bool {
-		// Skip grpc and webhook calls.
-		return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
-			strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute") ||
-			strings.HasPrefix(c.Request().URL.Path, lspAPI) ||
-			strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix)
-	}
-	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		Skipper: grpcSkipper,
-		Timeout: 0, // unlimited
-	}))
 
 	registerPprof(e, &profile.RuntimeDebug)
 
