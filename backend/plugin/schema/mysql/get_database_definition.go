@@ -239,19 +239,25 @@ func writeEvent(out io.Writer, event *storepb.EventMetadata) error {
 	if _, err := io.WriteString(out, setSQLMode); err != nil {
 		return err
 	}
+	if _, err := io.WriteString(out, "'"); err != nil {
+		return err
+	}
 	if _, err := io.WriteString(out, event.SqlMode); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
+	if _, err := io.WriteString(out, "';\n"); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, setTimezone); err != nil {
 		return err
 	}
+	if _, err := io.WriteString(out, "'"); err != nil {
+		return err
+	}
 	if _, err := io.WriteString(out, event.TimeZone); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
+	if _, err := io.WriteString(out, "';\n"); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
@@ -326,10 +332,13 @@ func writeTrigger(out io.Writer, tableName string, trigger *storepb.TriggerMetad
 	if _, err := io.WriteString(out, setSQLMode); err != nil {
 		return err
 	}
+	if _, err := io.WriteString(out, "'"); err != nil {
+		return err
+	}
 	if _, err := io.WriteString(out, trigger.SqlMode); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, ";\n"); err != nil {
+	if _, err := io.WriteString(out, "';\n"); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
@@ -1264,10 +1273,13 @@ func writeAdditionalEventsIfSet(out io.Writer, characterSetClient, characterSetR
 		if _, err := io.WriteString(out, setSQLMode); err != nil {
 			return err
 		}
+		if _, err := io.WriteString(out, "'"); err != nil {
+			return err
+		}
 		if _, err := io.WriteString(out, sqlMode); err != nil {
 			return err
 		}
-		if _, err := io.WriteString(out, ";\n"); err != nil {
+		if _, err := io.WriteString(out, "';\n"); err != nil {
 			return err
 		}
 	}
