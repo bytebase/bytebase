@@ -7,6 +7,16 @@
       <label class="textlabel">
         {{ $t("instance.scan-interval.self") }}
       </label>
+
+      <span v-if="instance.lastSyncTime" class="textinfolabel"
+        >({{
+          $t("sql-editor.last-synced", {
+            time: dayjs(getDateForPbTimestamp(instance.lastSyncTime)).format(
+              "YYYY-MM-DD HH:mm:ss"
+            ),
+          })
+        }})</span
+      >
     </div>
     <div class="textinfolabel">
       {{ $t("instance.scan-interval.description") }}
@@ -57,9 +67,11 @@
 </template>
 
 <script setup lang="ts">
-import { Duration } from "@/types/proto/google/protobuf/duration";
+import dayjs from "dayjs";
 import { NInputNumber, NRadio } from "naive-ui";
 import { reactive, watch } from "vue";
+import { getDateForPbTimestamp, type ComposedInstance } from "@/types";
+import { Duration } from "@/types/proto/google/protobuf/duration";
 import { useInstanceFormContext } from "./context";
 
 type Mode = "DEFAULT" | "CUSTOM";
@@ -75,6 +87,7 @@ const MIN_MINUTES = 30;
 const props = defineProps<{
   scanInterval?: Duration | undefined;
   allowEdit: boolean;
+  instance: ComposedInstance;
 }>();
 
 const emit = defineEmits<{
