@@ -1208,7 +1208,6 @@
       "console": {
         "snowflake": "La URL de la consola externa que administra esta instancia (por ejemplo, la consola de AWS RDS, la consola de la instancia de base de datos interna)"
       },
-      "outbound-ip-list": "Si utiliza reglas de firewall de entrada para su instancia de base de datos, incluya las siguientes direcciones IP en su lista de permisos para permitir el acceso desde Bytebase Cloud.",
       "create-admin-user": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones DDL y DML (no SELECT).",
       "create-readonly-user": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura como la consulta SELECT.",
       "create-admin-user-non-sql": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones de escritura y administración.",
@@ -1249,7 +1248,8 @@
         "redis": {
           "template": "A continuación se muestra un ejemplo para crear el usuario {user} con la contraseña {password} y otorgar al usuario los privilegios necesarios."
         }
-      }
+      },
+      "firewall-info": "Si usa reglas de firewall entrante para su instancia de base de datos, consulte la instrucción de conexión de Bytebase Cloud."
     },
     "no-password": "Sin contraseña",
     "type-or-paste-credentials": "Escriba o pegue las CREDENCIALES",

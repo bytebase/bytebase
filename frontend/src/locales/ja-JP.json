@@ -1208,7 +1208,6 @@
       "console": {
         "snowflake": "この @:{'common.instance'} を管理する外部コンソール URL (AWS RDS コンソール、@:{'common.database'} コンソールなど)"
       },
-      "outbound-ip-list": "データベースが受信 IP ホワイトリストを使用している場合は、次の IP をホワイトリストに登録して、Bytebase Cloud への接続を許可します。",
       "create-admin-user": "これは、データベースに接続し、DDL および DML (非 SELECT) 操作を実行するために Bytebase によって使用されるユーザーです。",
       "create-readonly-user": "これは、データベースに接続し、SELECT などの読み取り専用操作を実行するために Bytebase によって使用されるユーザーです。",
       "create-admin-user-non-sql": "これは、データベースに接続し、書き込みおよび管理操作を実行するために Bytebase によって使用されるユーザーです。",
@@ -1249,7 +1248,8 @@
         "redis": {
           "template": "ユーザー {user}、パスワード {password} を作成し、必要な権限を付与する例は次のとおりです。"
         }
-      }
+      },
+      "firewall-info": "データベースインスタンスにインバウンドファイアウォールルールを使用する場合は、ByteBase Cloud Connection命令を参照してください。"
     },
     "no-password": "パスワードがありません",
     "type-or-paste-credentials": "資格情報を入力または貼り付けます",
