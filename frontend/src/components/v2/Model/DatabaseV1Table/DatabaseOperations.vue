@@ -435,16 +435,17 @@ const actions = computed((): DatabaseAction[] => {
         resp.push({
           icon: h(DownloadIcon),
           text: t("custom-approval.risk-rule.risk.namespace.data_export"),
-          disabled: !allowExportData.value,
+          disabled:
+            !allowExportData.value ||
+            !selectedProjectName.value ||
+            props.databases.length < 1 ||
+            selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
           click: () => generateMultiDb("bb.issue.database.data.export"),
           tooltip: (action) => {
             if (!allowExportData.value) {
               return t("database.batch-action-permission-denied", {
                 action,
               });
-            }
-            if (props.databases.length > 1) {
-              return t("database.data-export-action-disabled");
             }
             return "";
           },
