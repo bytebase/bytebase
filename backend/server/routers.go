@@ -12,6 +12,7 @@ import (
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 
 	connectcors "connectrpc.com/cors"
+
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/common/log"
