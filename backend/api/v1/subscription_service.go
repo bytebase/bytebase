@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -49,9 +48,9 @@ func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Re
 func (s *SubscriptionService) UpdateSubscription(ctx context.Context, req *connect.Request[v1pb.UpdateSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
 	if err := s.licenseService.StoreLicense(ctx, req.Msg.License); err != nil {
 		if common.ErrorCode(err) == common.Invalid {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		return nil, status.Errorf(codes.Internal, "failed to store license: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to store license"))
 	}
 
 	subscription := s.licenseService.LoadSubscription(ctx)

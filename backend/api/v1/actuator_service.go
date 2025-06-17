@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -105,7 +103,7 @@ func (s *ActuatorService) GetResourcePackage(
 ) (*connect.Response[v1pb.ResourcePackage], error) {
 	brandingSetting, err := s.store.GetSettingV2(ctx, storepb.SettingName_BRANDING_LOGO)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace branding: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace branding"))
 	}
 	if brandingSetting == nil {
 		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_BRANDING_LOGO)
@@ -124,7 +122,7 @@ func (s *ActuatorService) SetupSample(
 ) (*connect.Response[emptypb.Empty], error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok || user == nil {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 	if s.profile.SampleDatabasePort != 0 {
 		if err := s.generateOnboardingData(ctx, user); err != nil {
@@ -281,31 +279,31 @@ func (s *ActuatorService) generateInstance(
 func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
 	count, err := s.store.CountUsers(ctx, storepb.PrincipalType_END_USER)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 	}
 
 	passwordRestrictionSetting, err := s.store.GetPasswordRestrictionSetting(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find password restriction setting: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find password restriction setting"))
 	}
 	passwordSetting := new(v1pb.PasswordRestrictionSetting)
 	if err := convertProtoToProto(passwordRestrictionSetting, passwordSetting); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmarshal password restriction setting with error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to unmarshal password restriction setting"))
 	}
 
 	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	usedFeatures, err := s.getUsedFeatures(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get used features, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get used features"))
 	}
 	unlicensedFeatures := s.getUnlicensedFeatures(usedFeatures)
 	var unlicensedFeaturesString []string
@@ -334,7 +332,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 
 	stats, err := s.store.StatUsers(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to stat users, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to stat users"))
 	}
 	for _, stat := range stats {
 		serverInfo.UserStats = append(serverInfo.UserStats, &v1pb.ActuatorInfo_StatUser{
@@ -346,13 +344,13 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 
 	activatedInstanceCount, err := s.store.GetActivatedInstanceCount(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to count activated instance, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count activated instance"))
 	}
 	serverInfo.ActivatedInstanceCount = int32(activatedInstanceCount)
 
 	totalInstanceCount, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to count total instance, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count total instance"))
 	}
 	serverInfo.TotalInstanceCount = int32(totalInstanceCount)
 

@@ -12,8 +12,6 @@ import (
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -79,11 +77,11 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 	}
 	e, err := cel.NewEnv()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create cel env"))
 	}
 	ast, iss := e.Parse(filter)
 	if iss != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
 	}
 
 	var getFilter func(expr celast.Expr) (string, error)
@@ -100,21 +98,21 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 		case "environment":
 			environmentID, err := common.GetEnvironmentID(value.(string))
 			if err != nil {
-				return "", status.Errorf(codes.InvalidArgument, "invalid environment filter %q", value)
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
 			}
 			positionalArgs = append(positionalArgs, environmentID)
 			return fmt.Sprintf("instance.environment = $%d", len(positionalArgs)), nil
 		case "state":
 			v1State, ok := v1pb.State_value[value.(string)]
 			if !ok {
-				return "", status.Errorf(codes.InvalidArgument, "invalid state filter %q", value)
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid state filter %q", value))
 			}
 			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
 			return fmt.Sprintf("instance.deleted = $%d", len(positionalArgs)), nil
 		case "engine":
 			v1Engine, ok := v1pb.Engine_value[value.(string)]
 			if !ok {
-				return "", status.Errorf(codes.InvalidArgument, "invalid engine filter %q", value)
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid engine filter %q", value))
 			}
 			engine := convertEngine(v1pb.Engine(v1Engine))
 			positionalArgs = append(positionalArgs, engine)
@@ -128,12 +126,12 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 		case "project":
 			projectID, err := common.GetProjectID(value.(string))
 			if err != nil {
-				return "", status.Errorf(codes.InvalidArgument, "invalid project filter %q", value)
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project filter %q", value))
 			}
 			positionalArgs = append(positionalArgs, projectID)
 			return fmt.Sprintf("db.project = $%d", len(positionalArgs)), nil
 		default:
-			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 		}
 	}
 
@@ -153,15 +151,15 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
-					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
 				}
 				value := args[0].AsLiteral().Value()
 				strValue, ok := value.(string)
 				if !ok {
-					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
 				}
 				if strValue == "" {
-					return "", status.Errorf(codes.InvalidArgument, `empty value for %q`, variable)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`empty value for %q`, variable))
 				}
 
 				switch variable {
@@ -172,21 +170,21 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 				case "host", "port":
 					return "ds ->> '" + variable + "' LIKE '%" + strValue + "%'", nil
 				default:
-					return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 				}
 			case celoperators.In:
 				return parseToEngineSQL(expr, "IN")
 			case celoperators.LogicalNot:
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
-					return "", status.Errorf(codes.InvalidArgument, `only support !(engine in ["{engine1}", "{engine2}"]) format`)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.New(`only support !(engine in ["{engine1}", "{engine2}"]) format`))
 				}
 				return parseToEngineSQL(args[0], "NOT IN")
 			default:
-				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
 			}
 		default:
-			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
 		}
 	}
 
@@ -225,14 +223,14 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	find.Filter = filter
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	nextPageToken := ""
 	if len(instances) == limitPlusOne {
 		instances = instances[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
 	}
 
@@ -256,23 +254,23 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect
 	if req.Msg.Instance != nil {
 		instanceID, err := common.GetInstanceID(req.Msg.Name)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 
 		if instanceMessage, err = convertInstanceToInstanceMessage(instanceID, req.Msg.Instance); err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 	} else {
 		instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		instanceMessage = instance
 	}
 
 	instanceMeta, err := s.schemaSyncer.GetInstanceMeta(ctx, instanceMessage)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	response := &v1pb.ListInstanceDatabaseResponse{}
@@ -285,10 +283,10 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect
 // CreateInstance creates an instance.
 func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Request[v1pb.CreateInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
 	if req.Msg.Instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("instance must be set"))
 	}
 	if !isValidResourceID(req.Msg.InstanceId) {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", req.Msg.InstanceId)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance ID %v", req.Msg.InstanceId))
 	}
 
 	if err := s.instanceCountGuard(ctx); err != nil {
@@ -297,7 +295,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 
 	instanceMessage, err := convertInstanceToInstanceMessage(req.Msg.InstanceId, req.Msg.Instance)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	// Test connection.
@@ -311,11 +309,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 					},
 				)
 				if err != nil {
-					return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
+					return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
 				}
 				defer driver.Close(ctx)
 				if err := driver.Ping(ctx); err != nil {
-					return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", ds.GetType(), err)
+					return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid datasource %s", ds.GetType()))
 				}
 				return nil
 			}()
@@ -335,10 +333,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	if instanceMessage.Metadata.GetActivation() {
 		count, err := s.store.GetActivatedInstanceCount(ctx)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		if count >= activatedInstanceLimit {
-			return nil, status.Errorf(codes.ResourceExhausted, instanceExceededError, activatedInstanceLimit)
+			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf(instanceExceededError, activatedInstanceLimit))
 		}
 	}
 
@@ -348,7 +346,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 
 	instance, err := s.store.CreateInstanceV2(ctx, instanceMessage)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
@@ -388,7 +386,7 @@ func (s *InstanceService) checkInstanceDataSources(instance *store.InstanceMessa
 			return err
 		}
 		if dsIDMap[ds.GetId()] {
-			return status.Errorf(codes.InvalidArgument, `duplicate data source id "%s"`, ds.GetId())
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`duplicate data source id "%s"`, ds.GetId()))
 		}
 		dsIDMap[ds.GetId()] = true
 	}
@@ -400,11 +398,11 @@ const instanceExceededError = "activation instance count has reached the limit (
 
 func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataSource *storepb.DataSource) error {
 	if dataSource.GetId() == "" {
-		return status.Errorf(codes.InvalidArgument, "data source id is required")
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("data source id is required"))
 	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER, instance); err != nil {
-		missingFeatureError := status.Error(codes.PermissionDenied, err.Error())
+		missingFeatureError := connect.NewError(connect.CodePermissionDenied, err)
 		if dataSource.GetExternalSecret() != nil {
 			return missingFeatureError
 		}
@@ -420,10 +418,10 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 // UpdateInstance updates an instance.
 func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Request[v1pb.UpdateInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
 	if req.Msg.Instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("instance must be set"))
 	}
 	if req.Msg.UpdateMask == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must be set"))
 	}
 
 	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Instance.Name)
@@ -431,12 +429,12 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Instance.Name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Instance.Name))
 	}
 
 	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "failed to convert instance metadata type")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
 	}
 	patch := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
@@ -450,14 +448,14 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		case "environment":
 			environmentID, err := common.GetEnvironmentID(req.Msg.Instance.Environment)
 			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
 			environment, err := s.store.GetEnvironmentByID(ctx, environmentID)
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 			if environment == nil {
-				return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", environmentID))
 			}
 			patch.EnvironmentID = &environmentID
 		case "external_link":
@@ -465,7 +463,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		case "data_sources":
 			dataSources, err := convertV1DataSources(req.Msg.Instance.DataSources)
 			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
 			if err := s.checkInstanceDataSources(instance, dataSources); err != nil {
 				return nil, err
@@ -478,18 +476,18 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			patch.Metadata.Activation = req.Msg.Instance.Activation
 		case "sync_interval":
 			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME, instance); err != nil {
-				return nil, status.Error(codes.PermissionDenied, err.Error())
+				return nil, connect.NewError(connect.CodePermissionDenied, err)
 			}
 			patch.Metadata.SyncInterval = req.Msg.Instance.SyncInterval
 		case "maximum_connections":
 			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT, instance); err != nil {
-				return nil, status.Error(codes.PermissionDenied, err.Error())
+				return nil, connect.NewError(connect.CodePermissionDenied, err)
 			}
 			patch.Metadata.MaximumConnections = req.Msg.Instance.MaximumConnections
 		case "sync_databases":
 			patch.Metadata.SyncDatabases = req.Msg.Instance.SyncDatabases
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
 		}
 	}
 
@@ -497,16 +495,16 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	if updateActivation {
 		count, err := s.store.GetActivatedInstanceCount(ctx)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		if count >= activatedInstanceLimit {
-			return nil, status.Errorf(codes.ResourceExhausted, instanceExceededError, activatedInstanceLimit)
+			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf(instanceExceededError, activatedInstanceLimit))
 		}
 	}
 
 	ins, err := s.store.UpdateInstanceV2(ctx, patch)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result, err := convertInstanceMessage(ins)
 	if err != nil {
@@ -522,7 +520,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
@@ -533,7 +531,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		if len(databases) > 0 {
 			defaultProjectID := common.DefaultProjectID
 			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProjectID}); err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 		}
 	} else {
@@ -544,13 +542,13 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 			}
 		}
 		if len(databaseNames) > 0 {
-			return nil, status.Errorf(codes.FailedPrecondition, "all databases should be transferred to the unassigned project before deleting the instance")
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("all databases should be transferred to the unassigned project before deleting the instance"))
 		}
 	}
 
 	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "failed to convert instance metadata type")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
 	}
 	metadata.Activation = false
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
@@ -558,7 +556,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		Deleted:    &deletePatch,
 		Metadata:   metadata,
 	}); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -571,7 +569,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		return nil, err
 	}
 	if !instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q is active", req.Msg.Name)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("instance %q is active", req.Msg.Name))
 	}
 	if err := s.instanceCountGuard(ctx); err != nil {
 		return nil, err
@@ -582,7 +580,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		Deleted:    &undeletePatch,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	result, err := convertInstanceMessage(ins)
@@ -599,7 +597,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, req *connect.Request
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}
 
 	updatedInstance, allDatabases, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
@@ -628,12 +626,12 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, req *connect.R
 			return nil, err
 		}
 		if instance.Deleted {
-			return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", r.Name)
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", r.Name))
 		}
 
 		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to sync instance, %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to sync instance"))
 		}
 		if r.EnableFullSync {
 			// Sync all databases in the instance asynchronously.
@@ -662,16 +660,16 @@ func (s *InstanceService) BatchUpdateInstances(ctx context.Context, req *connect
 // AddDataSource adds a data source to an instance.
 func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Request[v1pb.AddDataSourceRequest]) (*connect.Response[v1pb.Instance], error) {
 	if req.Msg.DataSource == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("data sources is required"))
 	}
 	// We only support add RO type datasouce to instance now, see more details in instance_service.proto.
 	if req.Msg.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
-		return nil, status.Errorf(codes.InvalidArgument, "only support adding read-only data source")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only support adding read-only data source"))
 	}
 
 	dataSource, err := convertV1DataSource(req.Msg.DataSource)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("failed to convert data source"))
 	}
 
 	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
@@ -679,11 +677,11 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}
 	for _, ds := range instance.Metadata.GetDataSources() {
 		if ds.GetId() == req.Msg.DataSource.Id {
-			return nil, status.Errorf(codes.NotFound, "data source already exists with the same name")
+			return nil, connect.NewError(connect.CodeNotFound, errors.New("data source already exists with the same name"))
 		}
 	}
 	if err := s.checkDataSource(instance, dataSource); err != nil {
@@ -700,11 +698,11 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 				},
 			)
 			if err != nil {
-				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
+				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {
-				return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", dataSource.GetType(), err)
+				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid datasource %s", dataSource.GetType()))
 			}
 			return nil
 		}()
@@ -719,20 +717,20 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	}
 
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
-		return nil, status.Error(codes.InvalidArgument, "only read-only data source can be added.")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only data source can be added"))
 	}
 	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
 	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
-		return nil, status.Error(codes.Internal, "failed to convert instance metadata type")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
 	}
 	metadata.DataSources = append(metadata.DataSources, dataSource)
 	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	result, err := convertInstanceMessage(instance)
@@ -745,10 +743,10 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 // UpdateDataSource updates a data source of an instance.
 func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Request[v1pb.UpdateDataSourceRequest]) (*connect.Response[v1pb.Instance], error) {
 	if req.Msg.DataSource == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "datasource is required")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("datasource is required"))
 	}
 	if req.Msg.UpdateMask == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must be set"))
 	}
 
 	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
@@ -756,11 +754,11 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}
 	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
-		return nil, status.Error(codes.Internal, "failed to convert instance metadata type")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
 	}
 	var dataSource *storepb.DataSource
 	for _, ds := range metadata.GetDataSources() {
@@ -770,12 +768,12 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		}
 	}
 	if dataSource == nil {
-		return nil, status.Errorf(codes.NotFound, `cannot found data source "%s"`, req.Msg.DataSource.Id)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf(`cannot found data source "%s"`, req.Msg.DataSource.Id))
 	}
 
 	if dataSource.GetType() == storepb.DataSourceType_READ_ONLY {
 		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
-			return nil, status.Error(codes.PermissionDenied, err.Error())
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 	}
 
@@ -863,7 +861,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 				dataSource.IamExtension = nil
 			}
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
 		}
 	}
 
@@ -879,11 +877,11 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 				db.ConnectionContext{ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY},
 			)
 			if err != nil {
-				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
+				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {
-				return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", dataSource.GetType(), err)
+				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid datasource %s", dataSource.GetType()))
 			}
 			return nil
 		}()
@@ -899,7 +897,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 
 	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result, err := convertInstanceMessage(instance)
 	if err != nil {
@@ -911,7 +909,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 // RemoveDataSource removes a data source to an instance.
 func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Request[v1pb.RemoveDataSourceRequest]) (*connect.Response[v1pb.Instance], error) {
 	if req.Msg.DataSource == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("data sources is required"))
 	}
 
 	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
@@ -919,12 +917,12 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", req.Msg.Name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}
 
 	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
-		return nil, status.Error(codes.Internal, "failed to convert instance metadata type")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
 	}
 	var updatedDataSources []*storepb.DataSource
 	var dataSource *storepb.DataSource
@@ -936,25 +934,25 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		}
 	}
 	if dataSource == nil {
-		return nil, status.Errorf(codes.NotFound, "data source not found")
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("data source not found"))
 	}
 
 	// We only support remove RO type datasource to instance now, see more details in instance_service.proto.
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
-		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only support remove read-only data source"))
 	}
 
 	metadata.DataSources = updatedDataSources
 	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instance.ResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	result, err := convertInstanceMessage(instance)
@@ -967,7 +965,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
 	instanceID, err := common.GetInstanceID(name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	find := &store.FindInstanceMessage{
@@ -975,10 +973,10 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	}
 	instance, err := stores.GetInstanceV2(ctx, find)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", name))
 	}
 
 	return instance, nil
@@ -1006,7 +1004,7 @@ func convertInstanceMessage(instance *store.InstanceMessage) (*v1pb.Instance, er
 	engine := convertToEngine(instance.Metadata.GetEngine())
 	dataSources, err := convertDataSources(instance.Metadata.GetDataSources())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert data source with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert data source"))
 	}
 
 	return &v1pb.Instance{
@@ -1115,7 +1113,7 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 	}
 	secret := new(v1pb.DataSourceExternalSecret)
 	if err := convertProtoToProto(externalSecret, secret); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert external secret with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert external secret"))
 	}
 
 	resp := &v1pb.DataSourceExternalSecret{
@@ -1232,37 +1230,37 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 	}
 	secret := new(storepb.DataSourceExternalSecret)
 	if err := convertProtoToProto(externalSecret, secret); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert external secret with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert external secret"))
 	}
 	switch secret.SecretType {
 	case storepb.DataSourceExternalSecret_VAULT_KV_V2:
 		if secret.Url == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "missing Vault URL")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing Vault URL"))
 		}
 		if secret.EngineName == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "missing Vault engine name")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing Vault engine name"))
 		}
 		if secret.SecretName == "" || secret.PasswordKeyName == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "missing secret name or key name")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing secret name or key name"))
 		}
 	case storepb.DataSourceExternalSecret_AWS_SECRETS_MANAGER:
 		if secret.SecretName == "" || secret.PasswordKeyName == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "missing secret name or key name")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing secret name or key name"))
 		}
 	case storepb.DataSourceExternalSecret_GCP_SECRET_MANAGER:
 		if secret.SecretName == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "missing GCP secret name")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing GCP secret name"))
 		}
 	}
 
 	switch secret.AuthType {
 	case storepb.DataSourceExternalSecret_TOKEN:
 		if secret.GetToken() == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "missing token")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing token"))
 		}
 	case storepb.DataSourceExternalSecret_VAULT_APP_ROLE:
 		if secret.GetAppRole() == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "missing Vault approle")
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing Vault approle"))
 		}
 	}
 
@@ -1463,10 +1461,10 @@ func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
 
 	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
 	if err != nil {
-		return status.Error(codes.Internal, err.Error())
+		return connect.NewError(connect.CodeInternal, err)
 	}
 	if count >= instanceLimit {
-		return status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", instanceLimit)
+		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf("reached the maximum instance count %d", instanceLimit))
 	}
 
 	return nil
