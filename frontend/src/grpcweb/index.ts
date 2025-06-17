@@ -38,6 +38,8 @@ import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
 import { WorkspaceServiceDefinition } from "@/types/proto/v1/workspace_service";
 import {
   authInterceptorMiddleware,
+  authInterceptor,
+  errorNotificationInterceptor,
   errorNotificationMiddleware,
   simulateLatencyMiddleware,
 } from "./middlewares";
@@ -230,6 +232,7 @@ export const instanceRoleServiceClient = clientFactory.create(
 const transport = createConnectTransport({
   baseUrl: address,
   useBinaryFormat: true,
+  interceptors: [authInterceptor, errorNotificationInterceptor],
   fetch: (input, init) => fetch(input, { ...init, credentials: "include" }),
 });
 
@@ -237,4 +240,3 @@ export const actuatorServiceClientConnect = createClient(
   ActuatorService,
   transport
 );
-
