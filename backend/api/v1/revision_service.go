@@ -38,7 +38,7 @@ func (s *RevisionService) ListRevisions(
 	request := req.Msg
 	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
 	}
 	if database == nil || database.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
@@ -93,11 +93,11 @@ func (s *RevisionService) GetRevision(
 	request := req.Msg
 	instanceName, databaseName, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision UID from %v, err"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision UID from %v", request.Name))
 	}
 	revision, err := s.store.GetRevision(ctx, revisionUID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete revision %v, err"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete revision %v", revisionUID))
 	}
 	parent := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instanceName, common.DatabaseIDPrefix, databaseName)
 	converted, err := convertToRevision(ctx, s.store, parent, revision)
@@ -117,14 +117,14 @@ func (s *RevisionService) CreateRevision(
 	}
 	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
 	}
 	if database == nil || database.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Revision.Sheet)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get sheet from %v, err"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get sheet from %v", request.Revision.Sheet))
 	}
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
@@ -214,7 +214,7 @@ func (s *RevisionService) BatchCreateRevisions(
 	request := req.Msg
 	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
 	}
 	if database == nil || database.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
@@ -230,7 +230,7 @@ func (s *RevisionService) BatchCreateRevisions(
 		// Reuse the CreateRevision logic by calling it directly
 		revisionResp, err := s.CreateRevision(ctx, connect.NewRequest(req))
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision for request: %v, err"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision for request"))
 		}
 		revisions = append(revisions, revisionResp.Msg)
 	}
@@ -247,14 +247,14 @@ func (s *RevisionService) DeleteRevision(
 	request := req.Msg
 	_, _, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision UID from %v, err"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision UID from %v", request.Name))
 	}
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	if err := s.store.DeleteRevision(ctx, revisionUID, user.ID); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete revision %v, err"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete revision %v", revisionUID))
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }

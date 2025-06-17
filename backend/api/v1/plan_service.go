@@ -308,7 +308,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 	projectID, planID, err := common.GetProjectIDPlanID(req.Plan.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf(err.Error()))
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {

@@ -55,7 +55,7 @@ func (s *WorksheetService) CreateWorksheet(
 
 	projectResourceID, err := common.GetProjectID(request.Worksheet.Project)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(err.Error()))
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
@@ -74,7 +74,7 @@ func (s *WorksheetService) CreateWorksheet(
 	if request.Worksheet.Database != "" {
 		db, err := getDatabaseMessage(ctx, s.store, request.Worksheet.Database)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf(err.Error()))
+			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		// Verify the database belongs to the specified project
 		if db.ProjectID != projectResourceID {
@@ -108,7 +108,7 @@ func (s *WorksheetService) GetWorksheet(
 	request := req.Msg
 	worksheetUID, err := common.GetWorksheetUID(request.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(err.Error()))
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if worksheetUID <= 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid worksheet id %d, must be positive integer", worksheetUID))
@@ -335,7 +335,7 @@ func (s *WorksheetService) UpdateWorksheet(
 
 	worksheetUID, err := common.GetWorksheetUID(request.Worksheet.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(err.Error()))
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if worksheetUID <= 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid worksheet id %d, must be positive integer", worksheetUID))
@@ -421,7 +421,7 @@ func (s *WorksheetService) DeleteWorksheet(
 	request := req.Msg
 	worksheetUID, err := common.GetWorksheetUID(request.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(err.Error()))
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -460,7 +460,7 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 	request := req.Msg
 	worksheetUID, err := common.GetWorksheetUID(request.Organizer.Worksheet)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(err.Error()))
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if worksheetUID <= 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid worksheet id %d, must be positive integer", worksheetUID))
