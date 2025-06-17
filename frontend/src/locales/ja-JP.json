@@ -1606,7 +1606,8 @@
       "new-baseline": {
         "self": "新しいベースライン",
         "successfully-established": "新しいベースラインを確立しました"
-      }
+      },
+      "view-diff": "差分を表示"
     }
   },
   "project": {

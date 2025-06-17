@@ -4,19 +4,37 @@
     tabindex="0"
     v-bind="$attrs"
   >
-    <BBAttention
+    <NAlert
       v-if="database.drifted"
       type="warning"
       :title="$t('database.drifted.schema-drift-detected.self')"
-      :description="$t('database.drifted.schema-drift-detected.description')"
-      :link="'https://docs.bytebase.com/change-database/drift-detection/?source=console'"
-      :action-text="
-        database.project !== DEFAULT_PROJECT_NAME
-          ? $t('database.drifted.new-baseline.self')
-          : undefined
-      "
-      @click="updateDatabaseDrift"
-    />
+    >
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          {{ $t("database.drifted.schema-drift-detected.description") }}
+          <a
+            href="https://docs.bytebase.com/change-database/drift-detection/?source=console"
+            target="_blank"
+            class="text-accent hover:underline ml-1"
+          >
+            {{ $t("common.learn-more") }}
+          </a>
+        </div>
+        <div class="flex justify-end items-center gap-2">
+          <NButton size="small" @click="state.showSchemaDiffModal = true">
+            {{ $t("database.drifted.view-diff") }}
+          </NButton>
+          <NButton
+            v-if="database.project !== DEFAULT_PROJECT_NAME"
+            size="small"
+            type="primary"
+            @click="updateDatabaseDrift"
+          >
+            {{ $t("database.drifted.new-baseline.self") }}
+          </NButton>
+        </div>
+      </div>
+    </NAlert>
 
     <main class="flex-1 relative">
       <!-- Highlight Panel -->
@@ -209,6 +227,27 @@
     alter-type="SINGLE_DB"
     @close="state.showSchemaEditorModal = false"
   />
+
+  <BBModal
+    v-if="state.showSchemaDiffModal"
+    :title="$t('database.drifted.view-diff')"
+    header-class="!border-0"
+    container-class="!pt-0"
+    @close="state.showSchemaDiffModal = false"
+  >
+    <div
+      style="width: calc(100vw - 9rem); height: calc(100vh - 10rem)"
+      class="relative"
+    >
+      <DiffEditor
+        class="w-full h-full border rounded-md overflow-clip"
+        :original="latestChangelogSchema"
+        :modified="currentDatabaseSchema"
+        :readonly="true"
+        language="sql"
+      />
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -216,11 +255,11 @@ import { useTitle } from "@vueuse/core";
 import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
 import { ArrowRightLeftIcon, ClipboardCopyIcon } from "lucide-vue-next";
-import { NButton, NTabPane, NTabs } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { NAlert, NButton, NTabPane, NTabs } from "naive-ui";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
-import { BBAttention, BBModal } from "@/bbkit";
+import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
@@ -233,6 +272,7 @@ import {
   SchemaDiagramButton,
 } from "@/components/DatabaseDetail";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import { DiffEditor } from "@/components/MonacoEditor";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import {
@@ -248,6 +288,7 @@ import {
   useDatabaseV1ByName,
   pushNotification,
   useDatabaseV1Store,
+  useChangelogStore,
 } from "@/store";
 import {
   databaseNamePrefix,
@@ -259,6 +300,7 @@ import {
   DEFAULT_PROJECT_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { ChangelogView } from "@/types/proto/v1/database_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   instanceV1HasAlterSchema,
@@ -282,6 +324,7 @@ interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
   showSchemaEditorModal: boolean;
+  showSchemaDiffModal: boolean;
   currentProjectName: string;
   selectedIndex: number;
   selectedTab: DatabaseHash;
@@ -296,11 +339,13 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
+const changelogStore = useChangelogStore();
 
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
   showSchemaEditorModal: false,
+  showSchemaDiffModal: false,
   currentProjectName: UNKNOWN_PROJECT_NAME,
   selectedIndex: 0,
   selectedTab: "overview",
@@ -444,4 +489,51 @@ const updateDatabaseDrift = async () => {
     title: t("database.drifted.new-baseline.successfully-established"),
   });
 };
+
+const latestChangelogSchema = ref("-- Loading latest changelog schema...");
+const currentDatabaseSchema = ref("-- Loading current database schema...");
+
+const fetchLatestChangelogSchema = async () => {
+  try {
+    const changelogs = await changelogStore.getOrFetchChangelogListOfDatabase(
+      database.value.name,
+      1, // Only get the latest one
+      ChangelogView.CHANGELOG_VIEW_FULL
+    );
+    if (changelogs.length > 0) {
+      const latestChangelog = changelogs[0];
+      latestChangelogSchema.value =
+        latestChangelog.schema || "-- No schema found in latest changelog";
+    } else {
+      latestChangelogSchema.value = "-- No changelogs found for this database";
+    }
+  } catch (error) {
+    console.error("Failed to fetch changelog:", error);
+    latestChangelogSchema.value = "-- Failed to load changelog schema";
+  }
+};
+
+const fetchCurrentDatabaseSchema = async () => {
+  try {
+    const schemaResponse = await databaseStore.fetchDatabaseSchema(
+      database.value.name
+    );
+    currentDatabaseSchema.value =
+      schemaResponse.schema || "-- No schema available";
+  } catch (error) {
+    console.error("Failed to fetch database schema:", error);
+    currentDatabaseSchema.value = "-- Failed to load database schema";
+  }
+};
+
+// Fetch data when modal is opened
+watch(
+  () => state.showSchemaDiffModal,
+  (show) => {
+    if (show && database.value.drifted) {
+      fetchLatestChangelogSchema();
+      fetchCurrentDatabaseSchema();
+    }
+  }
+);
 </script>
