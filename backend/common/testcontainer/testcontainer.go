@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -177,6 +178,141 @@ func GetTestPgContainer(ctx context.Context, t testing.TB) *Container {
 	container, err := GetPgContainer(ctx)
 	if err != nil {
 		t.Fatalf("failed to create PostgreSQL container: %v", err)
+	}
+	return container
+}
+
+// GetOracleContainer creates an Oracle container for testing
+func GetOracleContainer(ctx context.Context) (retC *Container, retErr error) {
+	req := testcontainers.ContainerRequest{
+		Image: "gvenzl/oracle-free:slim",
+		Env: map[string]string{
+			"ORACLE_PASSWORD":   "test123",
+			"APP_USER":          "testuser",
+			"APP_USER_PASSWORD": "testpass",
+		},
+		ExposedPorts: []string{"1521/tcp"},
+		WaitingFor: wait.ForLog("DATABASE IS READY TO USE!").
+			WithStartupTimeout(10 * time.Minute),
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.ShmSize = 1 * 1024 * 1024 * 1024 // 1GB shared memory
+		},
+	}
+
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+	port, err := c.MappedPort(ctx, "1521/tcp")
+	if err != nil {
+		return nil, err
+	}
+
+	// Oracle connection string format: oracle://username:password@host:port/service_name
+	dsn := fmt.Sprintf("oracle://testuser:testpass@%s:%s/FREEPDB1", host, port.Port())
+	db, err := sql.Open("oracle", dsn)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			db.Close()
+		}
+	}()
+
+	if err := waitDBPing(ctx, db); err != nil {
+		return nil, err
+	}
+
+	return &Container{
+		container: c,
+		host:      host,
+		port:      port.Port(),
+		db:        db,
+	}, nil
+}
+
+// GetTestOracleContainer is a helper function for tests that creates an Oracle container
+// and handles the error by failing the test if container creation fails
+func GetTestOracleContainer(ctx context.Context, t testing.TB) *Container {
+	t.Helper()
+	container, err := GetOracleContainer(ctx)
+	if err != nil {
+		t.Fatalf("failed to create Oracle container: %v", err)
+	}
+	return container
+}
+
+// GetMSSQLContainer creates a Microsoft SQL Server container for testing
+func GetMSSQLContainer(ctx context.Context) (retC *Container, retErr error) {
+	req := testcontainers.ContainerRequest{
+		Image: "mcr.microsoft.com/mssql/server:2022-latest",
+		Env: map[string]string{
+			"ACCEPT_EULA": "Y",
+			"SA_PASSWORD": "Test123!",
+			"MSSQL_PID":   "Express",
+		},
+		ExposedPorts: []string{"1433/tcp"},
+		WaitingFor: wait.ForLog("SQL Server is now ready for client connections").
+			WithStartupTimeout(3 * time.Minute),
+	}
+
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+	port, err := c.MappedPort(ctx, "1433/tcp")
+	if err != nil {
+		return nil, err
+	}
+
+	// MSSQL connection string format
+	dsn := fmt.Sprintf("sqlserver://sa:Test123!@%s:%s?database=master", host, port.Port())
+	db, err := sql.Open("sqlserver", dsn)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			db.Close()
+		}
+	}()
+
+	if err := waitDBPing(ctx, db); err != nil {
+		return nil, err
+	}
+
+	return &Container{
+		container: c,
+		host:      host,
+		port:      port.Port(),
+		db:        db,
+	}, nil
+}
+
+// GetTestMSSQLContainer is a helper function for tests that creates a MSSQL container
+// and handles the error by failing the test if container creation fails
+func GetTestMSSQLContainer(ctx context.Context, t testing.TB) *Container {
+	t.Helper()
+	container, err := GetMSSQLContainer(ctx)
+	if err != nil {
+		t.Fatalf("failed to create MSSQL container: %v", err)
 	}
 	return container
 }
