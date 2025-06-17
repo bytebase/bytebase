@@ -1482,7 +1482,6 @@
     "batch-action-permission-denied": "データベース {action} に対する権限がありません",
     "batch-action-disabled": "異なるプロジェクトのデータベース {action} を比較できません",
     "batch-action-disabled-for-unassigned": "未割り当てのデータベース {action} にアクセスできません",
-    "data-export-action-disabled": "複数のデータベースからデータをエクスポートできない",
     "successfully-transferred-databases": "データベースの移行が完了しました",
     "nullable": "null も可能",
     "expression": "表現",
