@@ -1021,6 +1021,7 @@ func convertInstanceMessage(instance *store.InstanceMessage) (*v1pb.Instance, er
 		MaximumConnections: instance.Metadata.GetMaximumConnections(),
 		SyncDatabases:      instance.Metadata.GetSyncDatabases(),
 		Roles:              convertInstanceRoles(instance, instance.Metadata.GetRoles()),
+		LastSyncTime:       instance.Metadata.GetLastSyncTime(),
 	}, nil
 }
 

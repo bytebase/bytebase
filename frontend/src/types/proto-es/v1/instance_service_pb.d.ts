@@ -4,7 +4,7 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { Duration, EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
+import type { Duration, EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { Engine, State } from "./common_pb";
 import type { InstanceRole } from "./instance_role_service_pb";
 
@@ -580,6 +580,13 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
    * @generated from field: repeated string sync_databases = 15;
    */
   syncDatabases: string[];
+
+  /**
+   * The last time the instance was synced.
+   *
+   * @generated from field: google.protobuf.Timestamp last_sync_time = 16;
+   */
+  lastSyncTime?: Timestamp;
 };
 
 /**
