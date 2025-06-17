@@ -717,7 +717,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	}
 
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only data source can be added."))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only data source can be added"))
 	}
 	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)

@@ -35,7 +35,7 @@ import (
 )
 
 var (
-	invalidUserOrPasswordError = connect.NewError(connect.CodeUnauthenticated, errors.Errorf("the email or password is not valid."))
+	invalidUserOrPasswordError = connect.NewError(connect.CodeUnauthenticated, errors.Errorf("the email or password is not valid"))
 )
 
 // AuthService implements the auth service.

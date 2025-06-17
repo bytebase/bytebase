@@ -128,7 +128,7 @@ func TestListDatabaseFilter(t *testing.T) {
 	testCases := []struct {
 		input string
 		want  *store.ListResourceFilter
-		error error
+		error *connect.Error
 	}{
 		{
 			input: `environment == "environments/test"`,
@@ -185,7 +185,10 @@ func TestListDatabaseFilter(t *testing.T) {
 		filter, err := getListDatabaseFilter(tc.input)
 		if tc.error != nil {
 			require.Error(t, err)
-			require.Equal(t, tc.error, err)
+			connectErr := new(connect.Error)
+			require.True(t, errors.As(err, &connectErr))
+			require.Equal(t, tc.error.Message(), connectErr.Message())
+			require.Equal(t, tc.error.Code(), connectErr.Code())
 		} else {
 			require.NoError(t, err)
 			require.Equal(t, tc.want.Where, filter.Where)

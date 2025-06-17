@@ -1507,7 +1507,7 @@ func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	if user.MemberDeleted {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("the user has been deactivated."))
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("the user has been deactivated"))
 	}
 	return user, nil
 }

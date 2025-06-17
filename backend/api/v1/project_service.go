@@ -673,7 +673,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project iam policy with error"))
 	}
 	if req.Msg.Etag != "" && req.Msg.Etag != oldIamPolicyMsg.Etag {
-		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again."))
+		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
 	}
 
 	existProjectOwner, err := validateIAMPolicy(ctx, s.store, s.iamManager, req.Msg.Policy, oldIamPolicyMsg)
