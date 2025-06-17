@@ -471,13 +471,13 @@
         "user-info-url": "用户信息 URL",
         "user-info-url-placeholder": "例如 https://api.github.com/user",
         "scopes": "作用域",
-        "scopes-placeholder": "例如用户电子邮件资料",
-        "scopes-placeholder-oidc": "例如 openid 个人资料电子邮件",
+        "scopes-placeholder": "例如，user、email、profile",
+        "scopes-placeholder-oidc": "例如，openid、user、email、profile",
         "authentication-style": "身份验证方式",
         "in-parameters": "在参数中",
-        "in-parameters-description": "在 POST 正文中发送凭据（推荐）",
-        "in-header": "在标题中",
-        "in-header-description": "使用 HTTP 基本授权发送凭证",
+        "in-parameters-description": "在 POST body 中发送凭证（推荐）",
+        "in-header": "在头信息中",
+        "in-header-description": "使用 HTTP header 中发送凭证",
         "security-options": "安全选项",
         "skip-tls-verification": "跳过 TLS 证书验证",
         "skip-tls-warning": "仅为开发或测试目的启用此功能",
@@ -486,11 +486,11 @@
         "openid-scopes-description": "以空格分隔的 OIDC 范围列表（需要 openid）",
         "host-placeholder": "例如 ldap.example.com",
         "bind-dn": "绑定 DN",
-        "bind-dn-placeholder": "例如uid=系统、ou=用户、dc=示例、dc=com",
+        "bind-dn-placeholder": "例如，uid=system、ou=user、dc=example、dc=com",
         "bind-dn-description": "搜索请求时绑定的用户 DN",
         "bind-password": "绑定密码",
         "base-dn": "基本 DN",
-        "base-dn-placeholder": "例如ou=用户、dc=示例、dc=com",
+        "base-dn-placeholder": "例如，ou=user、dc=example、dc=com",
         "base-dn-description": "搜索用户的基本 DN",
         "user-filter": "用户过滤器",
         "user-filter-placeholder": "例如 (uid=%s)",
@@ -503,16 +503,16 @@
         "none-description": "无加密（不建议用于生产）",
         "domain-optional-hint": "（可选）如果 SSO 所提供的用户唯一标识符不是电子邮件格式，则会用域名进行拼接。",
         "provider-type-readonly-hint": "提供商类型创建后无法更改",
-        "identifier-placeholder": "例如登录名、电子邮件",
-        "display-name-placeholder": "例如名称、显示名称",
-        "phone-placeholder": "例如电话、手机",
-        "groups-placeholder": "例如团体",
+        "identifier-placeholder": "例如，username、email",
+        "display-name-placeholder": "例如，title、nickname",
+        "phone-placeholder": "例如，phone、mobile",
+        "groups-placeholder": "例如，groups",
         "groups-description": "用于基于组的访问控制（仅限 OIDC 提供商）",
         "google-template-description": "使用 Google 帐户登录",
         "github-template-description": "使用 GitHub 帐户登录",
         "gitlab-template-description": "使用 GitLab 帐户登录",
         "microsoft-entra-template-description": "使用 Microsoft Entra ID 登录",
-        "custom-template-description": "配置自定义 OAuth 2.0 提供程序"
+        "custom-template-description": "配置自定义 OAuth 2.0 提供商"
       },
       "copy-redirect-url": "Redirect URL 已复制到剪切板。"
     },
@@ -1029,9 +1029,9 @@
     "add-spec": "添加变更项",
     "change-type": "变更类型",
     "schema-migration": "Schema 变更",
-    "schema-migration-description": "修改数据库 Schema (DDL)",
+    "schema-migration-description": "数据库结构变更（DDL），包括表、列、索引、约束和模式变更",
     "data-change": "数据变更",
-    "data-change-description": "修改数据（DML）",
+    "data-change-description": "数据库数据修改（DML），包括插入、更新、删除和数据迁移",
     "select-targets": "选择变更对象",
     "overview": {
       "description": "查看和管理此变更计划中的所有变更项",
@@ -1775,6 +1775,21 @@
       "self": "脱敏豁免",
       "grant-exemption": "授予豁免",
       "revoke-exemption-title": "是否撤销 {member} 的导出和查询脱敏？"
+    },
+    "batch": {
+      "selected": "已选择 {count} 个项目 | 已选择 {count} 个项目",
+      "archive": {
+        "title": "存档 {count} 项目？| 存档 {count} 项目？",
+        "description": "这将存档所选项目。如有需要，您可以稍后恢复它们。",
+        "success": "成功归档 {count} 个项目 | 成功归档 {count} 个项目",
+        "error": "无法存档项目"
+      },
+      "force-archive-description": "即使项目有数据库也强制存档（数据库将被移动到默认项目）",
+      "projects-to-archive": "要存档的项目",
+      "resource-warning": {
+        "title": "项目与资源",
+        "description": "以下项目包含数据库或未解决的问题："
+      }
     }
   },
   "data-source": {
@@ -2292,6 +2307,9 @@
   },
   "identity-provider": {
     "test-connection": "测试连接",
+    "test-connection-success": "测试连接成功",
+    "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",
+    "no-claims": "身份提供商未返回 claims。",
     "identity-provider-created": "身份提供商创建成功",
     "identity-provider-deleted": "身份提供商已成功删除",
     "identity-provider-update-failed": "无法更新身份提供商",

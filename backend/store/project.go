@@ -206,6 +206,47 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 	return s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &patch.ResourceID})
 }
 
+// BatchUpdateProjectsV2 updates multiple projects in a single transaction.
+func (s *Store) BatchUpdateProjectsV2(ctx context.Context, patches []*UpdateProjectMessage) ([]*ProjectMessage, error) {
+	if len(patches) == 0 {
+		return nil, nil
+	}
+
+	// Remove all projects from cache first
+	for _, patch := range patches {
+		s.removeProjectCache(patch.ResourceID)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Update all projects in the transaction
+	for _, patch := range patches {
+		if err := updateProjectImplV2(ctx, tx, patch); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// Fetch and return all updated projects
+	var updatedProjects []*ProjectMessage
+	for _, patch := range patches {
+		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &patch.ResourceID})
+		if err != nil {
+			return nil, err
+		}
+		updatedProjects = append(updatedProjects, project)
+	}
+
+	return updatedProjects, nil
+}
+
 func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectMessage) error {
 	set, args := []string{}, []any{}
 	if v := patch.Title; v != nil {

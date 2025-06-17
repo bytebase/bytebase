@@ -706,10 +706,11 @@ export interface UpdateSubscriptionRequest {
 }
 
 export interface Subscription {
-  seatCount: number;
-  instanceCount: number;
-  expiresTime: Timestamp | undefined;
   plan: PlanType;
+  seats: number;
+  instances: number;
+  activeInstances: number;
+  expiresTime: Timestamp | undefined;
   trialing: boolean;
   orgName: string;
 }
@@ -831,10 +832,11 @@ export const UpdateSubscriptionRequest: MessageFns<UpdateSubscriptionRequest> = 
 
 function createBaseSubscription(): Subscription {
   return {
-    seatCount: 0,
-    instanceCount: 0,
-    expiresTime: undefined,
     plan: PlanType.PLAN_TYPE_UNSPECIFIED,
+    seats: 0,
+    instances: 0,
+    activeInstances: 0,
+    expiresTime: undefined,
     trialing: false,
     orgName: "",
   };
@@ -842,23 +844,26 @@ function createBaseSubscription(): Subscription {
 
 export const Subscription: MessageFns<Subscription> = {
   encode(message: Subscription, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.seatCount !== 0) {
-      writer.uint32(8).int32(message.seatCount);
+    if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(planTypeToNumber(message.plan));
     }
-    if (message.instanceCount !== 0) {
-      writer.uint32(16).int32(message.instanceCount);
+    if (message.seats !== 0) {
+      writer.uint32(16).int32(message.seats);
+    }
+    if (message.instances !== 0) {
+      writer.uint32(24).int32(message.instances);
+    }
+    if (message.activeInstances !== 0) {
+      writer.uint32(32).int32(message.activeInstances);
     }
     if (message.expiresTime !== undefined) {
-      Timestamp.encode(message.expiresTime, writer.uint32(26).fork()).join();
-    }
-    if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
-      writer.uint32(32).int32(planTypeToNumber(message.plan));
+      Timestamp.encode(message.expiresTime, writer.uint32(42).fork()).join();
     }
     if (message.trialing !== false) {
-      writer.uint32(40).bool(message.trialing);
+      writer.uint32(48).bool(message.trialing);
     }
     if (message.orgName !== "") {
-      writer.uint32(50).string(message.orgName);
+      writer.uint32(58).string(message.orgName);
     }
     return writer;
   },
@@ -875,7 +880,7 @@ export const Subscription: MessageFns<Subscription> = {
             break;
           }
 
-          message.seatCount = reader.int32();
+          message.plan = planTypeFromJSON(reader.int32());
           continue;
         }
         case 2: {
@@ -883,15 +888,15 @@ export const Subscription: MessageFns<Subscription> = {
             break;
           }
 
-          message.instanceCount = reader.int32();
+          message.seats = reader.int32();
           continue;
         }
         case 3: {
-          if (tag !== 26) {
+          if (tag !== 24) {
             break;
           }
 
-          message.expiresTime = Timestamp.decode(reader, reader.uint32());
+          message.instances = reader.int32();
           continue;
         }
         case 4: {
@@ -899,19 +904,27 @@ export const Subscription: MessageFns<Subscription> = {
             break;
           }
 
-          message.plan = planTypeFromJSON(reader.int32());
+          message.activeInstances = reader.int32();
           continue;
         }
         case 5: {
-          if (tag !== 40) {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.expiresTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
             break;
           }
 
           message.trialing = reader.bool();
           continue;
         }
-        case 6: {
-          if (tag !== 50) {
+        case 7: {
+          if (tag !== 58) {
             break;
           }
 
@@ -929,10 +942,11 @@ export const Subscription: MessageFns<Subscription> = {
 
   fromJSON(object: any): Subscription {
     return {
-      seatCount: isSet(object.seatCount) ? globalThis.Number(object.seatCount) : 0,
-      instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
-      expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
       plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : PlanType.PLAN_TYPE_UNSPECIFIED,
+      seats: isSet(object.seats) ? globalThis.Number(object.seats) : 0,
+      instances: isSet(object.instances) ? globalThis.Number(object.instances) : 0,
+      activeInstances: isSet(object.activeInstances) ? globalThis.Number(object.activeInstances) : 0,
+      expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
       trialing: isSet(object.trialing) ? globalThis.Boolean(object.trialing) : false,
       orgName: isSet(object.orgName) ? globalThis.String(object.orgName) : "",
     };
@@ -940,17 +954,20 @@ export const Subscription: MessageFns<Subscription> = {
 
   toJSON(message: Subscription): unknown {
     const obj: any = {};
-    if (message.seatCount !== 0) {
-      obj.seatCount = Math.round(message.seatCount);
+    if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
+      obj.plan = planTypeToJSON(message.plan);
     }
-    if (message.instanceCount !== 0) {
-      obj.instanceCount = Math.round(message.instanceCount);
+    if (message.seats !== 0) {
+      obj.seats = Math.round(message.seats);
+    }
+    if (message.instances !== 0) {
+      obj.instances = Math.round(message.instances);
+    }
+    if (message.activeInstances !== 0) {
+      obj.activeInstances = Math.round(message.activeInstances);
     }
     if (message.expiresTime !== undefined) {
       obj.expiresTime = fromTimestamp(message.expiresTime).toISOString();
-    }
-    if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
-      obj.plan = planTypeToJSON(message.plan);
     }
     if (message.trialing !== false) {
       obj.trialing = message.trialing;
@@ -966,12 +983,13 @@ export const Subscription: MessageFns<Subscription> = {
   },
   fromPartial(object: DeepPartial<Subscription>): Subscription {
     const message = createBaseSubscription();
-    message.seatCount = object.seatCount ?? 0;
-    message.instanceCount = object.instanceCount ?? 0;
+    message.plan = object.plan ?? PlanType.PLAN_TYPE_UNSPECIFIED;
+    message.seats = object.seats ?? 0;
+    message.instances = object.instances ?? 0;
+    message.activeInstances = object.activeInstances ?? 0;
     message.expiresTime = (object.expiresTime !== undefined && object.expiresTime !== null)
       ? Timestamp.fromPartial(object.expiresTime)
       : undefined;
-    message.plan = object.plan ?? PlanType.PLAN_TYPE_UNSPECIFIED;
     message.trialing = object.trialing ?? false;
     message.orgName = object.orgName ?? "";
     return message;

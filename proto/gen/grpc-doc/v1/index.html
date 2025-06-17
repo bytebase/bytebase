@@ -1638,6 +1638,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TestIdentityProviderResponse.ClaimsEntry"><span class="badge">M</span>TestIdentityProviderResponse.ClaimsEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateIdentityProviderRequest"><span class="badge">M</span>UpdateIdentityProviderRequest</a>
                 </li>
               
@@ -1924,6 +1928,10 @@
               
                 <li>
                   <a href="#bytebase.v1.AddWebhookRequest"><span class="badge">M</span>AddWebhookRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchDeleteProjectsRequest"><span class="badge">M</span>BatchDeleteProjectsRequest</a>
                 </li>
               
                 <li>
@@ -18123,6 +18131,54 @@ Should be fetched from the well-known configuration file of the OIDC provider. <
         <p></p>
 
         
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>claims</td>
+                  <td><a href="#bytebase.v1.TestIdentityProviderResponse.ClaimsEntry">TestIdentityProviderResponse.ClaimsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The map of claims returned by the identity provider. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TestIdentityProviderResponse.ClaimsEntry">TestIdentityProviderResponse.ClaimsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       
@@ -21185,6 +21241,41 @@ Format: projects/{project} </p></td>
 
         
       
+        <h3 id="bytebase.v1.BatchDeleteProjectsRequest">BatchDeleteProjectsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The names of the projects to delete.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>force</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, any databases from this project will be moved to default project.
+Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+Open issues will remain open but associated with the deleted project.
+If set to false, the operation will fail if the project has databases or open issues. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.BatchGetIamPolicyRequest">BatchGetIamPolicyRequest</h3>
         <p></p>
 
@@ -21328,7 +21419,10 @@ Format: projects/{project} </p></td>
                   <td>force</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. </p></td>
+                  <td><p>If set to true, any databases from this project will be moved to default project.
+Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+Open issues will remain open but associated with the deleted project.
+If set to false, the operation will fail if the project has databases or open issues. </p></td>
                 </tr>
               
             </tbody>
@@ -22190,6 +22284,13 @@ Users with &#34;bb.projects.get&#34; permission on the workspace or the project 
               </tr>
             
               <tr>
+                <td>BatchDeleteProjects</td>
+                <td><a href="#bytebase.v1.BatchDeleteProjectsRequest">BatchDeleteProjectsRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>GetIamPolicy</td>
                 <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
@@ -22322,6 +22423,16 @@ Users with &#34;bb.projects.get&#34; permission on the workspace or the project 
                 <td>UndeleteProject</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*}:undelete</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchDeleteProjects</td>
+                <td>POST</td>
+                <td>/v1/projects:batchDelete</td>
                 <td>*</td>
               </tr>
               
@@ -29702,14 +29813,28 @@ Only support update the following fields for now:
             <tbody>
               
                 <tr>
-                  <td>seat_count</td>
+                  <td>plan</td>
+                  <td><a href="#bytebase.v1.PlanType">PlanType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>seats</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>instance_count</td>
+                  <td>instances</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>active_instances</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -29718,13 +29843,6 @@ Only support update the following fields for now:
                 <tr>
                   <td>expires_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plan</td>
-                  <td><a href="#bytebase.v1.PlanType">PlanType</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

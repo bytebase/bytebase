@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -20,7 +21,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
+func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[v1pb.CheckReleaseRequest]) (*connect.Response[v1pb.CheckReleaseResponse], error) {
+	request := req.Msg
 	if len(request.Targets) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "targets cannot be empty")
 	}
@@ -294,7 +296,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 		return nil, status.Errorf(codes.Internal, "failed to convert risk level, error: %v", err)
 	}
 	response.RiskLevel = riskLevelEnum
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 func (s *ReleaseService) runSQLReviewCheckForFile(

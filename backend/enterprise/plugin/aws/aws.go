@@ -102,9 +102,10 @@ func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 		}
 		switch *name {
 		case "instance":
-			subscription.InstanceCount = int32(aws.ToInt64(entitlement.MaxCount))
+			subscription.ActiveInstances = int32(aws.ToInt64(entitlement.MaxCount))
+			subscription.Instances = subscription.ActiveInstances
 		case "seat":
-			subscription.SeatCount = int32(aws.ToInt64(entitlement.MaxCount))
+			subscription.Seats = int32(aws.ToInt64(entitlement.MaxCount))
 		}
 	}
 

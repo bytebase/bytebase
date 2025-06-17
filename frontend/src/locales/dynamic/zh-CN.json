@@ -173,6 +173,10 @@
         "title": "数据导出",
         "desc": "以各种格式导出查询结果。"
       },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "title": "数据离线导出",
+        "desc": "导出数据以供离线使用和分析。"
+      },
       "FEATURE_QUERY_HISTORY": {
         "title": "查询历史",
         "desc": "访问具有搜索功能的完整查询执行历史记录。"
@@ -300,6 +304,10 @@
       "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
         "title": "电子邮件域限制",
         "desc": "限制来自指定电子邮件域的用户登录。"
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "title": "项目管理",
+        "desc": "使用高级功能管理和组织项目。"
       },
       "FEATURE_ENVIRONMENT_MANAGEMENT": {
         "title": "环境管理",

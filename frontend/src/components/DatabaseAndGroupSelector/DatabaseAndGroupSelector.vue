@@ -13,7 +13,7 @@
         :scope-options="scopeOptions"
       />
       <PagedDatabaseTable
-        mode="PROJECT"
+        mode="PROJECT_SHORT"
         :show-selection="true"
         :custom-click="true"
         :parent="project.name"

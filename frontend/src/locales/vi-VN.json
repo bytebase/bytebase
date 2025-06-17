@@ -471,8 +471,8 @@
         "user-info-url": "URL thông tin người dùng",
         "user-info-url-placeholder": "ví dụ. https://api.github.com/user",
         "scopes": "Phạm vi",
-        "scopes-placeholder": "ví dụ: hồ sơ email của người dùng",
-        "scopes-placeholder-oidc": "ví dụ email hồ sơ openid",
+        "scopes-placeholder": "ví dụ: user, email, profile",
+        "scopes-placeholder-oidc": "ví dụ: openid, user, email, profile",
         "authentication-style": "Kiểu xác thực",
         "in-parameters": "Trong các tham số",
         "in-parameters-description": "Gửi thông tin xác thực trong nội dung POST (khuyến nghị)",
@@ -1029,9 +1029,9 @@
     "add-spec": "Thêm thông số kỹ thuật",
     "change-type": "Thay đổi loại",
     "schema-migration": "Di chuyển lược đồ",
-    "schema-migration-description": "Sửa đổi lược đồ cơ sở dữ liệu (DDL)",
+    "schema-migration-description": "Thay đổi cấu trúc cơ sở dữ liệu (DDL) bao gồm bảng, cột, chỉ mục, ràng buộc và thay đổi lược đồ",
     "data-change": "Thay đổi dữ liệu",
-    "data-change-description": "Sửa đổi dữ liệu (DML)",
+    "data-change-description": "Sửa đổi nội dung cơ sở dữ liệu (DML) bao gồm chèn, cập nhật, xóa và chuyển đổi dữ liệu",
     "select-targets": "Chọn mục tiêu",
     "overview": {
       "description": "Xem và quản lý tất cả các thông số kỹ thuật trong kế hoạch này",
@@ -1775,6 +1775,21 @@
       "self": "Miễn trừ Che giấu",
       "grant-exemption": "Cấp Miễn trừ",
       "revoke-exemption-title": "Xóa cả miễn trừ che giấu xuất và truy vấn cho {member}?"
+    },
+    "batch": {
+      "selected": "{count} dự án đã chọn | {count} dự án đã chọn",
+      "archive": {
+        "title": "Lưu trữ {count} Dự án? | Lưu trữ {count} Dự án?",
+        "description": "Thao tác này sẽ lưu trữ các dự án đã chọn. Bạn có thể khôi phục chúng sau nếu cần.",
+        "success": "Đã lưu trữ thành công {count} dự án | Đã lưu trữ thành công {count} dự án",
+        "error": "Không lưu trữ được dự án"
+      },
+      "force-archive-description": "Buộc lưu trữ ngay cả khi dự án có cơ sở dữ liệu (cơ sở dữ liệu sẽ được chuyển đến dự án mặc định)",
+      "projects-to-archive": "Dự án để lưu trữ",
+      "resource-warning": {
+        "title": "Dự án có nguồn lực",
+        "description": "Các dự án sau đây chứa cơ sở dữ liệu hoặc các vấn đề chưa giải quyết:"
+      }
     }
   },
   "data-source": {
@@ -2292,6 +2307,9 @@
   },
   "identity-provider": {
     "test-connection": "Kiểm tra kết nối",
+    "test-connection-success": "Kiểm tra kết nối thành công",
+    "claims-description": "Các yêu cầu sau đây đã được nhà cung cấp danh tính trả về. Thông tin này có thể giúp bạn cấu hình ánh xạ trường.",
+    "no-claims": "Nhà cung cấp danh tính không trả lại bất kỳ khiếu nại nào.",
     "identity-provider-created": "Nhà cung cấp danh tính đã được tạo thành công",
     "identity-provider-deleted": "Nhà cung cấp danh tính đã xóa thành công",
     "identity-provider-update-failed": "Không cập nhật được nhà cung cấp danh tính",

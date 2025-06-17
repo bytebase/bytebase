@@ -1,11 +1,7 @@
-import { computedAsync } from "@vueuse/core";
 import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
-import { useRoute } from "vue-router";
-import { useProjectV1Store } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
+import { useCurrentProjectV1 } from "@/store";
 import type { ComposedProject } from "@/types";
-import { unknownProject } from "@/types";
 
 export interface FileToCreate {
   // id is the temporary id for the file, mainly using in frontend.
@@ -35,22 +31,10 @@ export const useReleaseCreateContext = () => {
 };
 
 export const provideReleaseCreateContext = () => {
-  const route = useRoute();
-  const projectV1Store = useProjectV1Store();
+  const { project } = useCurrentProjectV1();
 
   const title = ref("");
   const files = ref<FileToCreate[]>([]);
-
-  const project = computedAsync(async () => {
-    const projectId = route.params.projectId as string;
-    if (!projectId) {
-      return unknownProject();
-    }
-
-    return await projectV1Store.getOrFetchProjectByName(
-      `${projectNamePrefix}${projectId}`
-    );
-  }, unknownProject());
 
   const context: ReleaseCreateContext = {
     title,

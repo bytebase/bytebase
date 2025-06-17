@@ -149,7 +149,10 @@ message OAuth2IdentityProviderTestRequestContext {
   string code = 1;
 }
 
-message TestIdentityProviderResponse {}
+message TestIdentityProviderResponse {
+  // The map of claims returned by the identity provider.
+  map<string, string> claims = 1;
+}
 
 message IdentityProvider {
   option (google.api.resource) = {

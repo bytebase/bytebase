@@ -42,6 +42,9 @@ type MetadataDiff struct {
 
 	// Enum type changes
 	EnumTypeChanges []*EnumTypeDiff
+
+	// Event changes
+	EventChanges []*EventDiff
 }
 
 // nolint
@@ -75,6 +78,9 @@ type TableDiff struct {
 
 	// Partition changes
 	PartitionChanges []*PartitionDiff
+
+	// Trigger changes
+	TriggerChanges []*TriggerDiff
 }
 
 // ColumnDiff represents changes to a column.
@@ -103,6 +109,13 @@ type CheckConstraintDiff struct {
 	Action             MetadataDiffAction
 	OldCheckConstraint *storepb.CheckConstraintMetadata
 	NewCheckConstraint *storepb.CheckConstraintMetadata
+}
+
+// TriggerDiff represents changes to a trigger.
+type TriggerDiff struct {
+	Action     MetadataDiffAction
+	OldTrigger *storepb.TriggerMetadata
+	NewTrigger *storepb.TriggerMetadata
 }
 
 // PartitionDiff represents changes to table partitions.
@@ -164,6 +177,14 @@ type EnumTypeDiff struct {
 	EnumTypeName string
 	OldEnumType  *storepb.EnumTypeMetadata
 	NewEnumType  *storepb.EnumTypeMetadata
+}
+
+// EventDiff represents changes to an event.
+type EventDiff struct {
+	Action    MetadataDiffAction
+	EventName string
+	OldEvent  *storepb.EventMetadata
+	NewEvent  *storepb.EventMetadata
 }
 
 // GetDatabaseSchemaDiff compares two model.DatabaseSchema instances and returns the differences.
@@ -317,6 +338,15 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 			})
 		}
 	}
+
+	// Add all events
+	for _, eventProto := range schemaProto.Events {
+		diff.EventChanges = append(diff.EventChanges, &EventDiff{
+			Action:    MetadataDiffActionCreate,
+			EventName: eventProto.Name,
+			NewEvent:  eventProto,
+		})
+	}
 }
 
 // compareSchemaObjects compares objects between two schemas.
@@ -381,6 +411,9 @@ func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newS
 
 	// Compare enum types
 	compareEnumTypes(diff, schemaName, oldSchema, newSchema)
+
+	// Compare events
+	compareEvents(diff, schemaName, oldSchema, newSchema)
 }
 
 // compareTableDetails compares the details of two tables.
@@ -427,6 +460,13 @@ func compareTableDetails(schemaName, tableName string, oldTable, newTable *model
 	partitionChanges := comparePartitions(oldTable.GetProto().Partitions, newTable.GetProto().Partitions)
 	if len(partitionChanges) > 0 {
 		tableDiff.PartitionChanges = partitionChanges
+		hasChanges = true
+	}
+
+	// Compare triggers
+	triggerChanges := compareTriggers(oldTable.GetProto().Triggers, newTable.GetProto().Triggers)
+	if len(triggerChanges) > 0 {
+		tableDiff.TriggerChanges = triggerChanges
 		hasChanges = true
 	}
 
@@ -737,6 +777,65 @@ func comparePartitions(oldPartitions, newPartitions []*storepb.TablePartitionMet
 	}
 
 	return changes
+}
+
+// compareTriggers compares two lists of triggers.
+func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*TriggerDiff {
+	var changes []*TriggerDiff
+
+	oldTriggerMap := make(map[string]*storepb.TriggerMetadata)
+	for _, trigger := range oldTriggers {
+		oldTriggerMap[trigger.Name] = trigger
+	}
+
+	newTriggerMap := make(map[string]*storepb.TriggerMetadata)
+	for _, trigger := range newTriggers {
+		newTriggerMap[trigger.Name] = trigger
+	}
+
+	// Check for dropped triggers
+	for triggerName, oldTrigger := range oldTriggerMap {
+		if _, exists := newTriggerMap[triggerName]; !exists {
+			changes = append(changes, &TriggerDiff{
+				Action:     MetadataDiffActionDrop,
+				OldTrigger: oldTrigger,
+			})
+		}
+	}
+
+	// Check for new and modified triggers
+	for triggerName, newTrigger := range newTriggerMap {
+		oldTrigger, exists := oldTriggerMap[triggerName]
+		if !exists {
+			changes = append(changes, &TriggerDiff{
+				Action:     MetadataDiffActionCreate,
+				NewTrigger: newTrigger,
+			})
+		} else if !triggersEqual(oldTrigger, newTrigger) {
+			// Drop and recreate the trigger instead of altering
+			changes = append(changes, &TriggerDiff{
+				Action:     MetadataDiffActionDrop,
+				OldTrigger: oldTrigger,
+			})
+			changes = append(changes, &TriggerDiff{
+				Action:     MetadataDiffActionCreate,
+				NewTrigger: newTrigger,
+			})
+		}
+	}
+
+	return changes
+}
+
+// triggersEqual checks if two triggers are equal.
+func triggersEqual(t1, t2 *storepb.TriggerMetadata) bool {
+	if t1 == nil || t2 == nil {
+		return t1 == t2
+	}
+	return t1.Name == t2.Name &&
+		t1.Event == t2.Event &&
+		t1.Timing == t2.Timing &&
+		t1.Body == t2.Body
 }
 
 // partitionsEqual checks if two partitions are equal.
@@ -1080,5 +1179,53 @@ func compareEnumTypes(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 		}
 		// Note: We don't support ALTER enum types yet
 		// PostgreSQL doesn't allow modifying enum values easily
+	}
+}
+
+// compareEvents compares events between old and new schemas.
+func compareEvents(diff *MetadataDiff, _ string, oldSchema, newSchema *model.SchemaMetadata) {
+	oldSchemaProto := oldSchema.GetProto()
+	newSchemaProto := newSchema.GetProto()
+
+	// Build maps of events
+	oldEventMap := make(map[string]*storepb.EventMetadata)
+	for _, event := range oldSchemaProto.Events {
+		oldEventMap[event.Name] = event
+	}
+
+	newEventMap := make(map[string]*storepb.EventMetadata)
+	for _, event := range newSchemaProto.Events {
+		newEventMap[event.Name] = event
+	}
+
+	// Check for dropped events
+	for eventName, oldEvent := range oldEventMap {
+		if _, exists := newEventMap[eventName]; !exists {
+			diff.EventChanges = append(diff.EventChanges, &EventDiff{
+				Action:    MetadataDiffActionDrop,
+				EventName: eventName,
+				OldEvent:  oldEvent,
+			})
+		}
+	}
+
+	// Check for new and modified events
+	for eventName, newEvent := range newEventMap {
+		oldEvent, exists := oldEventMap[eventName]
+		if !exists {
+			diff.EventChanges = append(diff.EventChanges, &EventDiff{
+				Action:    MetadataDiffActionCreate,
+				EventName: eventName,
+				NewEvent:  newEvent,
+			})
+		} else if oldEvent.Definition != newEvent.Definition {
+			// Check if event has changed
+			diff.EventChanges = append(diff.EventChanges, &EventDiff{
+				Action:    MetadataDiffActionAlter,
+				EventName: eventName,
+				OldEvent:  oldEvent,
+				NewEvent:  newEvent,
+			})
+		}
 	}
 }

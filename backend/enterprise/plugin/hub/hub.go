@@ -31,12 +31,13 @@ type Provider struct {
 // claims creates a struct that will be encoded to a JWT.
 // We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
 type claims struct {
-	InstanceCount int    `json:"instanceCount"`
-	Seat          int    `json:"seat"`
-	Trialing      bool   `json:"trialing"`
-	Plan          string `json:"plan"`
-	OrgName       string `json:"orgName"`
-	WorkspaceID   string `json:"workspaceId"`
+	ActiveInstances int    `json:"instanceCount"`
+	Instances       int    `json:"instance"`
+	Seats           int    `json:"seat"`
+	Trialing        bool   `json:"trialing"`
+	Plan            string `json:"plan"`
+	OrgName         string `json:"orgName"`
+	WorkspaceID     string `json:"workspaceId"`
 	jwt.RegisteredClaims
 }
 
@@ -163,7 +164,9 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*v1pb.Subscriptio
 				"Load valid license",
 				slog.String("plan", license.Plan.String()),
 				slog.Time("expiresAt", license.ExpiresTime.AsTime()),
-				slog.Int("instanceCount", int(license.InstanceCount)),
+				slog.Int("activeInstances", int(license.ActiveInstances)),
+				slog.Int("instances", int(license.Instances)),
+				slog.Int("seats", int(license.Seats)),
 			)
 			return license, nil
 		}
@@ -203,12 +206,13 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*v1pb.Subscr
 	}
 
 	license := &v1pb.Subscription{
-		InstanceCount: int32(claim.InstanceCount),
-		SeatCount:     int32(claim.Seat),
-		ExpiresTime:   expiresTime,
-		Plan:          planType,
-		Trialing:      claim.Trialing,
-		OrgName:       claim.OrgName,
+		ActiveInstances: int32(claim.ActiveInstances),
+		Instances:       int32(claim.Instances),
+		Seats:           int32(claim.Seats),
+		ExpiresTime:     expiresTime,
+		Plan:            planType,
+		Trialing:        claim.Trialing,
+		OrgName:         claim.OrgName,
 	}
 
 	return license, nil

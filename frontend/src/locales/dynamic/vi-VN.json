@@ -173,6 +173,10 @@
         "title": "Xuất dữ liệu",
         "desc": "Xuất kết quả truy vấn ở nhiều định dạng khác nhau."
       },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "title": "Xuất dữ liệu ngoại tuyến",
+        "desc": "Xuất dữ liệu để sử dụng và phân tích ngoại tuyến."
+      },
       "FEATURE_QUERY_HISTORY": {
         "title": "Lịch sử truy vấn",
         "desc": "Truy cập lịch sử thực thi truy vấn đầy đủ với khả năng tìm kiếm."
@@ -300,6 +304,10 @@
       "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
         "title": "Hạn chế tên miền email",
         "desc": "Hạn chế đăng nhập cho người dùng từ các tên miền email được chỉ định."
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "title": "Quản lý dự án",
+        "desc": "Quản lý và tổ chức dự án với các khả năng nâng cao."
       },
       "FEATURE_ENVIRONMENT_MANAGEMENT": {
         "title": "Quản lý môi trường",

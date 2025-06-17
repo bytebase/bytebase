@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -17,18 +18,18 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.ListChangelogsRequest) (*v1pb.ListChangelogsResponse, error) {
-	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
+func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Request[v1pb.ListChangelogsRequest]) (*connect.Response[v1pb.ListChangelogsResponse], error) {
+	database, err := getDatabaseMessage(ctx, s.store, req.Msg.Parent)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil || database.Deleted {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Parent)
+		return nil, status.Errorf(codes.NotFound, "database %q not found", req.Msg.Parent)
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
-		token:   request.PageToken,
-		limit:   int(request.PageSize),
+		token:   req.Msg.PageToken,
+		limit:   int(req.Msg.PageSize),
 		maximum: 1000,
 	})
 	if err != nil {
@@ -42,11 +43,11 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 		Limit:        &limitPlusOne,
 		Offset:       &offset.offset,
 	}
-	if request.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
+	if req.Msg.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
 		find.ShowFull = true
 	}
 
-	filters, err := ParseFilter(request.Filter)
+	filters, err := ParseFilter(req.Msg.Filter)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -83,14 +84,14 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert changelogs, error: %v", err)
 	}
-	return &v1pb.ListChangelogsResponse{
+	return connect.NewResponse(&v1pb.ListChangelogsResponse{
 		Changelogs:    converted,
 		NextPageToken: nextPageToken,
-	}, nil
+	}), nil
 }
 
-func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetChangelogRequest) (*v1pb.Changelog, error) {
-	instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(request.Name)
+func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request[v1pb.GetChangelogRequest]) (*connect.Response[v1pb.Changelog], error) {
+	instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(req.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -98,7 +99,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 	find := &store.FindChangelogMessage{
 		UID: &changelogUID,
 	}
-	if request.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
+	if req.Msg.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
 		find.ShowFull = true
 	}
 
@@ -136,7 +137,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert changelog, error: %v", err)
 	}
-	if request.SdlFormat {
+	if req.Msg.SdlFormat {
 		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, converted.Schema)
@@ -153,7 +154,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 			converted.PrevSchemaSize = int64(len(sdlSchema))
 		}
 	}
-	return converted, nil
+	return connect.NewResponse(converted), nil
 }
 
 func (s *DatabaseService) convertToChangelogs(d *store.DatabaseMessage, cs []*store.ChangelogMessage) ([]*v1pb.Changelog, error) {

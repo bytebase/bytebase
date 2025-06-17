@@ -144,7 +144,12 @@ export interface DeleteProjectRequest {
    * Format: projects/{project}
    */
   name: string;
-  /** If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. */
+  /**
+   * If set to true, any databases from this project will be moved to default project.
+   * Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+   * Open issues will remain open but associated with the deleted project.
+   * If set to false, the operation will fail if the project has databases or open issues.
+   */
   force: boolean;
 }
 
@@ -154,6 +159,21 @@ export interface UndeleteProjectRequest {
    * Format: projects/{project}
    */
   name: string;
+}
+
+export interface BatchDeleteProjectsRequest {
+  /**
+   * The names of the projects to delete.
+   * Format: projects/{project}
+   */
+  names: string[];
+  /**
+   * If set to true, any databases from this project will be moved to default project.
+   * Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+   * Open issues will remain open but associated with the deleted project.
+   * If set to false, the operation will fail if the project has databases or open issues.
+   */
+  force: boolean;
 }
 
 export interface BatchGetIamPolicyRequest {
@@ -1232,6 +1252,82 @@ export const UndeleteProjectRequest: MessageFns<UndeleteProjectRequest> = {
   fromPartial(object: DeepPartial<UndeleteProjectRequest>): UndeleteProjectRequest {
     const message = createBaseUndeleteProjectRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseBatchDeleteProjectsRequest(): BatchDeleteProjectsRequest {
+  return { names: [], force: false };
+}
+
+export const BatchDeleteProjectsRequest: MessageFns<BatchDeleteProjectsRequest> = {
+  encode(message: BatchDeleteProjectsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.names) {
+      writer.uint32(10).string(v!);
+    }
+    if (message.force !== false) {
+      writer.uint32(16).bool(message.force);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BatchDeleteProjectsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchDeleteProjectsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.names.push(reader.string());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.force = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchDeleteProjectsRequest {
+    return {
+      names: globalThis.Array.isArray(object?.names) ? object.names.map((e: any) => globalThis.String(e)) : [],
+      force: isSet(object.force) ? globalThis.Boolean(object.force) : false,
+    };
+  },
+
+  toJSON(message: BatchDeleteProjectsRequest): unknown {
+    const obj: any = {};
+    if (message.names?.length) {
+      obj.names = message.names;
+    }
+    if (message.force !== false) {
+      obj.force = message.force;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchDeleteProjectsRequest>): BatchDeleteProjectsRequest {
+    return BatchDeleteProjectsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BatchDeleteProjectsRequest>): BatchDeleteProjectsRequest {
+    const message = createBaseBatchDeleteProjectsRequest();
+    message.names = object.names?.map((e) => e) || [];
+    message.force = object.force ?? false;
     return message;
   },
 };
@@ -2854,6 +2950,55 @@ export const ProjectServiceDefinition = {
               117,
               110,
               100,
+              101,
+              108,
+              101,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    batchDeleteProjects: {
+      name: "BatchDeleteProjects",
+      requestType: BatchDeleteProjectsRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 112, 114, 111, 106, 101, 99, 116, 115, 46, 100, 101, 108, 101, 116, 101]),
+          ],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              29,
+              58,
+              1,
+              42,
+              34,
+              24,
+              47,
+              118,
+              49,
+              47,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              68,
               101,
               108,
               101,

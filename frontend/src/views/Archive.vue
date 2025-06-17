@@ -22,6 +22,7 @@
           excludeDefault: true,
         }"
         :bordered="true"
+        :show-selection="false"
       />
       <PagedInstanceTable
         v-else-if="state.selectedTab == 'INSTANCE'"

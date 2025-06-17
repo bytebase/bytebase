@@ -423,15 +423,16 @@ func (x *UpdateSubscriptionRequest) GetLicense() string {
 }
 
 type Subscription struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SeatCount     int32                  `protobuf:"varint,1,opt,name=seat_count,json=seatCount,proto3" json:"seat_count,omitempty"`
-	InstanceCount int32                  `protobuf:"varint,2,opt,name=instance_count,json=instanceCount,proto3" json:"instance_count,omitempty"`
-	ExpiresTime   *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_time,json=expiresTime,proto3" json:"expires_time,omitempty"`
-	Plan          PlanType               `protobuf:"varint,4,opt,name=plan,proto3,enum=bytebase.v1.PlanType" json:"plan,omitempty"`
-	Trialing      bool                   `protobuf:"varint,5,opt,name=trialing,proto3" json:"trialing,omitempty"`
-	OrgName       string                 `protobuf:"bytes,6,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Plan            PlanType               `protobuf:"varint,1,opt,name=plan,proto3,enum=bytebase.v1.PlanType" json:"plan,omitempty"`
+	Seats           int32                  `protobuf:"varint,2,opt,name=seats,proto3" json:"seats,omitempty"`
+	Instances       int32                  `protobuf:"varint,3,opt,name=instances,proto3" json:"instances,omitempty"`
+	ActiveInstances int32                  `protobuf:"varint,4,opt,name=active_instances,json=activeInstances,proto3" json:"active_instances,omitempty"`
+	ExpiresTime     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=expires_time,json=expiresTime,proto3" json:"expires_time,omitempty"`
+	Trialing        bool                   `protobuf:"varint,6,opt,name=trialing,proto3" json:"trialing,omitempty"`
+	OrgName         string                 `protobuf:"bytes,7,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Subscription) Reset() {
@@ -464,16 +465,30 @@ func (*Subscription) Descriptor() ([]byte, []int) {
 	return file_v1_subscription_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Subscription) GetSeatCount() int32 {
+func (x *Subscription) GetPlan() PlanType {
 	if x != nil {
-		return x.SeatCount
+		return x.Plan
+	}
+	return PlanType_PLAN_TYPE_UNSPECIFIED
+}
+
+func (x *Subscription) GetSeats() int32 {
+	if x != nil {
+		return x.Seats
 	}
 	return 0
 }
 
-func (x *Subscription) GetInstanceCount() int32 {
+func (x *Subscription) GetInstances() int32 {
 	if x != nil {
-		return x.InstanceCount
+		return x.Instances
+	}
+	return 0
+}
+
+func (x *Subscription) GetActiveInstances() int32 {
+	if x != nil {
+		return x.ActiveInstances
 	}
 	return 0
 }
@@ -483,13 +498,6 @@ func (x *Subscription) GetExpiresTime() *timestamppb.Timestamp {
 		return x.ExpiresTime
 	}
 	return nil
-}
-
-func (x *Subscription) GetPlan() PlanType {
-	if x != nil {
-		return x.Plan
-	}
-	return PlanType_PLAN_TYPE_UNSPECIFIED
 }
 
 func (x *Subscription) GetTrialing() bool {
@@ -635,15 +643,15 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x1dv1/subscription_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
 	"\x16GetSubscriptionRequest\"5\n" +
 	"\x19UpdateSubscriptionRequest\x12\x18\n" +
-	"\alicense\x18\x01 \x01(\tR\alicense\"\x99\x02\n" +
-	"\fSubscription\x12#\n" +
-	"\n" +
-	"seat_count\x18\x01 \x01(\x05B\x04\xe2A\x01\x03R\tseatCount\x12+\n" +
-	"\x0einstance_count\x18\x02 \x01(\x05B\x04\xe2A\x01\x03R\rinstanceCount\x12C\n" +
-	"\fexpires_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\vexpiresTime\x12/\n" +
-	"\x04plan\x18\x04 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x04\xe2A\x01\x03R\x04plan\x12 \n" +
-	"\btrialing\x18\x05 \x01(\bB\x04\xe2A\x01\x03R\btrialing\x12\x1f\n" +
-	"\borg_name\x18\x06 \x01(\tB\x04\xe2A\x01\x03R\aorgName\"\x87\x01\n" +
+	"\alicense\x18\x01 \x01(\tR\alicense\"\xb8\x02\n" +
+	"\fSubscription\x12/\n" +
+	"\x04plan\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x04\xe2A\x01\x03R\x04plan\x12\x1a\n" +
+	"\x05seats\x18\x02 \x01(\x05B\x04\xe2A\x01\x03R\x05seats\x12\"\n" +
+	"\tinstances\x18\x03 \x01(\x05B\x04\xe2A\x01\x03R\tinstances\x12/\n" +
+	"\x10active_instances\x18\x04 \x01(\x05B\x04\xe2A\x01\x03R\x0factiveInstances\x12C\n" +
+	"\fexpires_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\vexpiresTime\x12 \n" +
+	"\btrialing\x18\x06 \x01(\bB\x04\xe2A\x01\x03R\btrialing\x12\x1f\n" +
+	"\borg_name\x18\a \x01(\tB\x04\xe2A\x01\x03R\aorgName\"\x87\x01\n" +
 	"\n" +
 	"PlanConfig\x122\n" +
 	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\x12E\n" +
@@ -764,8 +772,8 @@ var file_v1_subscription_service_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil),     // 7: google.protobuf.Timestamp
 }
 var file_v1_subscription_service_proto_depIdxs = []int32{
-	7, // 0: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
-	0, // 1: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
+	0, // 0: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
+	7, // 1: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
 	6, // 2: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
 	1, // 3: bytebase.v1.PlanConfig.instance_features:type_name -> bytebase.v1.PlanFeature
 	0, // 4: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType

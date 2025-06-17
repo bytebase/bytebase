@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -55,6 +56,40 @@ func (in *DebugInterceptor) DebugStreamInterceptor(request any, ss grpc.ServerSt
 	in.debugInterceptorDo(ctx, serverInfo.FullMethod, err, startTime)
 
 	return err
+}
+
+func (in *DebugInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		startTime := time.Now()
+		resp, err := next(ctx, req)
+		in.debugInterceptorDo(ctx, req.Spec().Procedure, err, startTime)
+
+		// Truncate error message to 10240 characters.
+		st, _ := status.FromError(err)
+		if msg, truncated := common.TruncateString(st.Message(), 10240); truncated {
+			slog.Info("Truncated error message", slog.String("fullMethod", req.Spec().Procedure), slog.String("original error message", st.Message()))
+			stp := st.Proto()
+			stp.Message = "[TRUNCATED] " + msg
+			err = status.FromProto(stp).Err()
+		}
+
+		return resp, err
+	}
+}
+
+func (*DebugInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		return next(ctx, spec)
+	}
+}
+func (in *DebugInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		startTime := time.Now()
+		err := next(ctx, conn)
+		in.debugInterceptorDo(ctx, conn.Spec().Procedure, err, startTime)
+
+		return err
+	}
 }
 
 func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod string, err error, startTime time.Time) {

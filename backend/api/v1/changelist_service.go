@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -15,11 +16,12 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // ChangelistService implements the changelist service.
 type ChangelistService struct {
-	v1pb.UnimplementedChangelistServiceServer
+	v1connect.UnimplementedChangelistServiceHandler
 	store      *store.Store
 	profile    *config.Profile
 	iamManager *iam.Manager
@@ -35,8 +37,8 @@ func NewChangelistService(store *store.Store, profile *config.Profile, iamManage
 }
 
 // CreateChangelist creates a changelist.
-func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.CreateChangelistRequest) (*v1pb.Changelist, error) {
-	if request.Changelist == nil {
+func (s *ChangelistService) CreateChangelist(ctx context.Context, req *connect.Request[v1pb.CreateChangelistRequest]) (*connect.Response[v1pb.Changelist], error) {
+	if req.Msg.Changelist == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "changelist must be set")
 	}
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -44,7 +46,7 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
-	projectResourceID, err := common.GetProjectID(request.Parent)
+	projectResourceID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -61,18 +63,18 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
-	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &request.ChangelistId})
+	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &req.Msg.ChangelistId})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if changelist != nil {
-		return nil, status.Errorf(codes.AlreadyExists, "changelist %q already exists", request.ChangelistId)
+		return nil, status.Errorf(codes.AlreadyExists, "changelist %q already exists", req.Msg.ChangelistId)
 	}
 
 	changelist, err = s.store.CreateChangelist(ctx, &store.ChangelistMessage{
 		ProjectID:  project.ResourceID,
-		ResourceID: request.ChangelistId,
-		Payload:    convertV1ChangelistPayload(request.Changelist),
+		ResourceID: req.Msg.ChangelistId,
+		Payload:    convertV1ChangelistPayload(req.Msg.Changelist),
 		CreatorID:  principalID,
 	})
 	if err != nil {
@@ -82,12 +84,12 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, err
 	}
-	return v1Changelist, nil
+	return connect.NewResponse(v1Changelist), nil
 }
 
 // GetChangelist gets a changelist.
-func (s *ChangelistService) GetChangelist(ctx context.Context, request *v1pb.GetChangelistRequest) (*v1pb.Changelist, error) {
-	projectID, changelistID, err := common.GetProjectIDChangelistID(request.Name)
+func (s *ChangelistService) GetChangelist(ctx context.Context, req *connect.Request[v1pb.GetChangelistRequest]) (*connect.Response[v1pb.Changelist], error) {
+	projectID, changelistID, err := common.GetProjectIDChangelistID(req.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -112,12 +114,12 @@ func (s *ChangelistService) GetChangelist(ctx context.Context, request *v1pb.Get
 	if err != nil {
 		return nil, err
 	}
-	return v1Changelist, nil
+	return connect.NewResponse(v1Changelist), nil
 }
 
 // GetChangelist gets a changelist.
-func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.ListChangelistsRequest) (*v1pb.ListChangelistsResponse, error) {
-	projectResourceID, err := common.GetProjectID(request.Parent)
+func (s *ChangelistService) ListChangelists(ctx context.Context, req *connect.Request[v1pb.ListChangelistsRequest]) (*connect.Response[v1pb.ListChangelistsResponse], error) {
+	projectResourceID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -149,19 +151,19 @@ func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.L
 		}
 		resp.Changelists = append(resp.Changelists, v1Changelist)
 	}
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 // UpdateChangelist updates a changelist.
-func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.UpdateChangelistRequest) (*v1pb.Changelist, error) {
-	if request.Changelist == nil {
+func (s *ChangelistService) UpdateChangelist(ctx context.Context, req *connect.Request[v1pb.UpdateChangelistRequest]) (*connect.Response[v1pb.Changelist], error) {
+	if req.Msg.Changelist == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "changelist must be set")
 	}
-	if request.UpdateMask == nil {
+	if req.Msg.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	projectID, changelistID, err := common.GetProjectIDChangelistID(request.Changelist.Name)
+	projectID, changelistID, err := common.GetProjectIDChangelistID(req.Msg.Changelist.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -191,9 +193,9 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 		ProjectID:  project.ResourceID,
 		ResourceID: changelistID,
 	}
-	newChangelist := convertV1ChangelistPayload(request.Changelist)
+	newChangelist := convertV1ChangelistPayload(req.Msg.Changelist)
 
-	for _, path := range request.UpdateMask.Paths {
+	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "description":
 			changelist.Payload.Description = newChangelist.Description
@@ -216,12 +218,12 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, err
 	}
-	return v1Changelist, nil
+	return connect.NewResponse(v1Changelist), nil
 }
 
 // DeleteChangelist deletes a changelist.
-func (s *ChangelistService) DeleteChangelist(ctx context.Context, request *v1pb.DeleteChangelistRequest) (*emptypb.Empty, error) {
-	projectID, changelistID, err := common.GetProjectIDChangelistID(request.Name)
+func (s *ChangelistService) DeleteChangelist(ctx context.Context, req *connect.Request[v1pb.DeleteChangelistRequest]) (*connect.Response[emptypb.Empty], error) {
+	projectID, changelistID, err := common.GetProjectIDChangelistID(req.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -246,7 +248,7 @@ func (s *ChangelistService) DeleteChangelist(ctx context.Context, request *v1pb.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &emptypb.Empty{}, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 func convertV1ChangelistPayload(changelist *v1pb.Changelist) *storepb.Changelist {

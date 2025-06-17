@@ -1029,9 +1029,9 @@
     "add-spec": "Add Specification",
     "change-type": "Change Type",
     "schema-migration": "Schema Migration",
-    "schema-migration-description": "Modify database schema (DDL)",
+    "schema-migration-description": "Database structural changes (DDL) including tables, columns, indexes, constraints and schema alterations",
     "data-change": "Data Change",
-    "data-change-description": "Modify data (DML)",
+    "data-change-description":  "Database content modifications (DML) including inserts, updates, deletes and data transformations",
     "select-targets": "Select Targets",
     "overview": {
       "description": "View and manage all specifications in this plan",
@@ -1775,6 +1775,21 @@
       "self": "Masking Exemptions",
       "grant-exemption": "Grant Exemption",
       "revoke-exemption-title": "Remove both export and query masking exemptions for {member}?"
+    },
+    "batch": {
+      "selected": "{count} project selected | {count} projects selected",
+      "archive": {
+        "title": "Archive {count} Project? | Archive {count} Projects?",
+        "description": "This will archive the selected projects. You can restore them later if needed.",
+        "success": "Successfully archived {count} project | Successfully archived {count} projects",
+        "error": "Failed to archive projects"
+      },
+      "force-archive-description": "Force archive even if projects have databases (databases will be moved to default project)",
+      "projects-to-archive": "Projects to archive",
+      "resource-warning": {
+        "title": "Projects with Resources",
+        "description": "The following projects contain databases or open issues:"
+      }
     }
   },
   "data-source": {
@@ -2292,6 +2307,9 @@
   },
   "identity-provider": {
     "test-connection": "Test Connection",
+    "test-connection-success": "Test Connection Successful",
+    "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
+    "no-claims": "No claims returned by the identity provider.",
     "identity-provider-created": "Identity provider created successfully",
     "identity-provider-deleted": "Identity provider deleted successfully",
     "identity-provider-update-failed": "Failed to update identity provider",

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -41,7 +42,8 @@ type openAIResponse struct {
 }
 
 // AICompletion is the mixer for AI completion.
-func (s *SQLService) AICompletion(ctx context.Context, request *v1pb.AICompletionRequest) (*v1pb.AICompletionResponse, error) {
+func (s *SQLService) AICompletion(ctx context.Context, req *connect.Request[v1pb.AICompletionRequest]) (*connect.Response[v1pb.AICompletionResponse], error) {
+	request := req.Msg
 	aiSetting, err := s.store.GetAISetting(ctx)
 	if err != nil {
 		return nil, err
@@ -58,7 +60,7 @@ func (s *SQLService) AICompletion(ctx context.Context, request *v1pb.AICompletio
 	}
 }
 
-func callOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AICompletionRequest) (*v1pb.AICompletionResponse, error) {
+func callOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AICompletionRequest) (*connect.Response[v1pb.AICompletionResponse], error) {
 	payload := openAIRequest{
 		Model: aiSetting.Model,
 		TopP:  1.0,
@@ -121,5 +123,5 @@ func callOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 			},
 		})
 	}
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
