@@ -11,6 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 
+	connectcors "connectrpc.com/cors"
+
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -26,6 +28,16 @@ func configureEchoRouters(
 	connectHandlers map[string]http.Handler,
 ) {
 	e.Use(recoverMiddleware)
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOriginFunc: func(string) (bool, error) {
+			return true, nil
+		},
+		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodOptions},
+		AllowHeaders:     connectcors.AllowedHeaders(),
+		ExposeHeaders:    connectcors.ExposedHeaders(),
+		AllowCredentials: true,
+	}))
 
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
