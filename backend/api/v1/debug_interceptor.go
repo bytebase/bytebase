@@ -63,22 +63,27 @@ func (in *DebugInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFu
 }
 
 func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod string, err error, startTime time.Time) {
-	connectErr := (&connect.Error{})
-	if !errors.As(err, &connectErr) {
-		connectErr = connect.NewError(connect.CodeUnknown, err)
-	}
 	var logLevel slog.Level
 	var logMsg string
-	switch connectErr.Code() {
-	case connect.CodeUnauthenticated, connect.CodeOutOfRange, connect.CodePermissionDenied, connect.CodeNotFound, connect.CodeInvalidArgument:
+	if common.IsNil(err) {
 		logLevel = slog.LevelDebug
-		logMsg = "client error"
-	case connect.CodeInternal, connect.CodeUnknown, connect.CodeDataLoss, connect.CodeUnavailable, connect.CodeDeadlineExceeded:
-		logLevel = slog.LevelError
-		logMsg = "server error"
-	default:
-		logLevel = slog.LevelError
-		logMsg = "unknown error"
+		logMsg = "ok"
+	} else {
+		connectErr := (&connect.Error{})
+		if !errors.As(err, &connectErr) {
+			connectErr = connect.NewError(connect.CodeUnknown, err)
+		}
+		switch connectErr.Code() {
+		case connect.CodeUnauthenticated, connect.CodeOutOfRange, connect.CodePermissionDenied, connect.CodeNotFound, connect.CodeInvalidArgument:
+			logLevel = slog.LevelDebug
+			logMsg = "client error"
+		case connect.CodeInternal, connect.CodeUnknown, connect.CodeDataLoss, connect.CodeUnavailable, connect.CodeDeadlineExceeded:
+			logLevel = slog.LevelError
+			logMsg = "server error"
+		default:
+			logLevel = slog.LevelError
+			logMsg = "unknown error"
+		}
 	}
 	slog.Log(ctx, logLevel, logMsg, "method", fullMethod, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
 	in.metricReporter.Report(ctx, &metricplugin.Metric{
