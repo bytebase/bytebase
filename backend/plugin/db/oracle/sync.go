@@ -495,8 +495,9 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 		}
 		column.Type = getTypeString(column.Type, dataLength, dataPrecision, dataScale)
 		if defaultStr.Valid {
-			// TODO: use correct default type
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+			// Clean up the default expression to remove current schema name and fix NEXTVAL syntax
+			cleanedDefault := cleanDefaultExpression(defaultStr.String, schemaName)
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: cleanedDefault}
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
@@ -686,6 +687,10 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 			indexMap[key] = append(indexMap[key], index)
 			isConstraint[db.IndexKey{Schema: schemaName, Table: tableName, Index: constraintName}] = true
 		case "C":
+			// Skip system-generated check constraints (e.g., SYS_C*)
+			if strings.HasPrefix(constraintName, "SYS_C") {
+				continue
+			}
 			constraint := &storepb.CheckConstraintMetadata{
 				Name: constraintName,
 			}
@@ -811,10 +816,26 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 			continue
 		}
 
+		// Skip system-generated indexes for materialized views and virtual columns
+		if strings.HasPrefix(index.Name, "I_SNAP$_") || strings.HasPrefix(index.Name, "SYS_") {
+			continue
+		}
+
 		index.Unique = unique == "UNIQUE"
 		indexKey := db.IndexKey{Schema: schemaName, Table: tableName, Index: index.Name}
 		if index.Type == "FUNCTION-BASED" {
 			index.Expressions = indexExpressionMap[indexKey]
+			// Skip indexes that reference system-generated virtual columns
+			hasVirtualColumn := false
+			for _, expr := range index.Expressions {
+				if strings.HasPrefix(expr, "SYS_NC") {
+					hasVirtualColumn = true
+					break
+				}
+			}
+			if hasVirtualColumn {
+				continue
+			}
 		} else {
 			index.Expressions = indexColumnMap[indexKey]
 			index.Descending = descendingMap[indexKey]
@@ -895,6 +916,10 @@ func getSequences(txn *sql.Tx, schemaName string) ([]*storepb.SequenceMetadata, 
 		seq := &storepb.SequenceMetadata{}
 		if err := rows.Scan(&seq.Name); err != nil {
 			return nil, err
+		}
+		// Skip system-generated sequences (e.g., ISEQ$$_* for IDENTITY columns)
+		if strings.HasPrefix(seq.Name, "ISEQ$$_") {
+			continue
 		}
 		sequences = append(sequences, seq)
 	}
@@ -989,4 +1014,32 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	}
 
 	return functions, procedures, packages, nil
+}
+
+// cleanDefaultExpression cleans up Oracle default expressions to make them more portable
+// and fix common syntax issues like schema-qualified sequence NEXTVAL calls
+func cleanDefaultExpression(defaultExpr, currentSchema string) string {
+	if defaultExpr == "" {
+		return defaultExpr
+	}
+
+	// Remove leading/trailing whitespace
+	cleaned := strings.TrimSpace(defaultExpr)
+
+	// Fix schema-qualified sequence NEXTVAL calls
+	// Pattern: "SCHEMA"."SEQUENCE_NAME"."NEXTVAL" -> "SEQUENCE_NAME".NEXTVAL
+	// Keep sequence name quoted for compatibility
+	if strings.Contains(cleaned, ".\"NEXTVAL\"") {
+		// Use regex to match quoted schema and sequence names followed by quoted NEXTVAL
+		re := regexp.MustCompile(`"` + regexp.QuoteMeta(currentSchema) + `"\."([^"]+)"\."NEXTVAL"`)
+		cleaned = re.ReplaceAllString(cleaned, `"$1".NEXTVAL`)
+	}
+
+	// Also handle unquoted NEXTVAL (less common)
+	if strings.Contains(cleaned, ".NEXTVAL") {
+		re := regexp.MustCompile(`"` + regexp.QuoteMeta(currentSchema) + `"\."([^"]+)"\.NEXTVAL`)
+		cleaned = re.ReplaceAllString(cleaned, `"$1".NEXTVAL`)
+	}
+
+	return cleaned
 }
