@@ -1,8 +1,4 @@
-import {
-  Code,
-  ConnectError,
-  type Interceptor,
-} from "@connectrpc/connect";
+import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
 import { ClientError, ServerError, Status } from "nice-grpc-common";
 import type { ClientMiddleware } from "nice-grpc-web";
 import { router } from "@/router";
@@ -82,7 +78,6 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
       return;
     }
   };
-
 
 export const authInterceptor: Interceptor = (next) => async (req) => {
   try {
