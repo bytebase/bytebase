@@ -1031,7 +1031,7 @@
     "schema-migration": "Schema Migration",
     "schema-migration-description": "Database structural changes (DDL) including tables, columns, indexes, constraints and schema alterations",
     "data-change": "Data Change",
-    "data-change-description":  "Database content modifications (DML) including inserts, updates, deletes and data transformations",
+    "data-change-description": "Database content modifications (DML) including inserts, updates, deletes and data transformations",
     "select-targets": "Select Targets",
     "overview": {
       "description": "View and manage all specifications in this plan",
@@ -1606,7 +1606,8 @@
       "new-baseline": {
         "self": "New baseline",
         "successfully-established": "Successfully established new baseline"
-      }
+      },
+      "view-diff": "View diff"
     }
   },
   "project": {

@@ -1606,7 +1606,8 @@
       "new-baseline": {
         "self": "建立新基线",
         "successfully-established": "成功建立新的基线"
-      }
+      },
+      "view-diff": "查看差异"
     }
   },
   "project": {

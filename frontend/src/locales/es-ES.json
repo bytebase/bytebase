@@ -1606,7 +1606,8 @@
       "new-baseline": {
         "self": "Nueva línea base",
         "successfully-established": "Se estableció con éxito una nueva línea base"
-      }
+      },
+      "view-diff": "Ver diferencia"
     }
   },
   "project": {
