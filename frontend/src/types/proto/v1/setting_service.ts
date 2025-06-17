@@ -396,8 +396,6 @@ export interface WorkspaceProfileSetting {
   disallowSignup: boolean;
   /** Require 2FA for all users. */
   require2fa: boolean;
-  /** outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. */
-  outboundIpList: string[];
   /** The duration for token. */
   tokenDuration:
     | Duration
@@ -2295,7 +2293,6 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     externalUrl: "",
     disallowSignup: false,
     require2fa: false,
-    outboundIpList: [],
     tokenDuration: undefined,
     announcement: undefined,
     maximumRoleExpiration: undefined,
@@ -2316,9 +2313,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
     }
     if (message.require2fa !== false) {
       writer.uint32(24).bool(message.require2fa);
-    }
-    for (const v of message.outboundIpList) {
-      writer.uint32(34).string(v!);
     }
     if (message.tokenDuration !== undefined) {
       Duration.encode(message.tokenDuration, writer.uint32(50).fork()).join();
@@ -2373,14 +2367,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
           }
 
           message.require2fa = reader.bool();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.outboundIpList.push(reader.string());
           continue;
         }
         case 6: {
@@ -2453,9 +2439,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
       externalUrl: isSet(object.externalUrl) ? globalThis.String(object.externalUrl) : "",
       disallowSignup: isSet(object.disallowSignup) ? globalThis.Boolean(object.disallowSignup) : false,
       require2fa: isSet(object.require2fa) ? globalThis.Boolean(object.require2fa) : false,
-      outboundIpList: globalThis.Array.isArray(object?.outboundIpList)
-        ? object.outboundIpList.map((e: any) => globalThis.String(e))
-        : [],
       tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
       announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
       maximumRoleExpiration: isSet(object.maximumRoleExpiration)
@@ -2484,9 +2467,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
     }
     if (message.require2fa !== false) {
       obj.require2fa = message.require2fa;
-    }
-    if (message.outboundIpList?.length) {
-      obj.outboundIpList = message.outboundIpList;
     }
     if (message.tokenDuration !== undefined) {
       obj.tokenDuration = Duration.toJSON(message.tokenDuration);
@@ -2520,7 +2500,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
     message.externalUrl = object.externalUrl ?? "";
     message.disallowSignup = object.disallowSignup ?? false;
     message.require2fa = object.require2fa ?? false;
-    message.outboundIpList = object.outboundIpList?.map((e) => e) || [];
     message.tokenDuration = (object.tokenDuration !== undefined && object.tokenDuration !== null)
       ? Duration.fromPartial(object.tokenDuration)
       : undefined;
