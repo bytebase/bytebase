@@ -2708,8 +2708,6 @@
     "title": "Release",
     "releases": "Releases",
     "files": "Files",
-    "create": "Create release",
-    "select": "Select release",
     "archive-this-release": "Archive this release",
     "total-files": "Total {count} files",
     "plan-tip": "This plan is configured to use a release. Database changes will be executed using the SQL statements from the selected release files.",
@@ -2731,13 +2729,8 @@
       "unspecified": "Unspecified"
     },
     "actions": {
-      "new-file": "New file",
-      "import-from-release": "Import from release"
     },
     "messages": {
-      "succeed-to-create-release": "Succeed to create release",
-      "files-will-always-be-sorted-and-executed-in-version-order": "The files will always be sorted and executed in version order.",
-      "cannot-modify-files-after-created": "You cannot modify files after the release is created."
     },
     "usage-description": "The release is only used in custom GitOps with API integration."
   },

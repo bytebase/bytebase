@@ -16,7 +16,7 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { getIdentityProviderResourceId } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderTypeToString } from "@/utils";
@@ -62,7 +62,7 @@ const rowProps = (identityProvider: IdentityProvider) => {
     style: "cursor: pointer;",
     onClick: (_: MouseEvent) => {
       router.push({
-        name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL,
+        name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
         params: {
           idpId: getIdentityProviderResourceId(identityProvider.name),
         },

@@ -2708,8 +2708,6 @@
     "title": "Liberar",
     "releases": "Lanzamientos",
     "files": "Archivos",
-    "create": "Crear lanzamiento",
-    "select": "Seleccionar versión",
     "archive-this-release": "Archivar este comunicado",
     "total-files": "Total de {count} archivos",
     "plan-tip": "Este plan está configurado para usar una versión. Los cambios en la base de datos se ejecutarán mediante las sentencias SQL de los archivos de la versión seleccionada.",
@@ -2731,13 +2729,8 @@
       "unspecified": "No especificado"
     },
     "actions": {
-      "new-file": "Nuevo archivo",
-      "import-from-release": "Importar desde la versión"
     },
     "messages": {
-      "succeed-to-create-release": "Tener éxito en crear el lanzamiento",
-      "files-will-always-be-sorted-and-executed-in-version-order": "Los archivos siempre se ordenarán y ejecutarán en orden de versión.",
-      "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión."
     },
     "usage-description": "El lanzamiento solo se utiliza en GitOps personalizado con integración de API."
   },

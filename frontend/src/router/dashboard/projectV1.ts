@@ -31,7 +31,6 @@ export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
-export const PROJECT_V1_ROUTE_RELEASE_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.release.create`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
 export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollout`;
 export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUTS}.detail`;
@@ -393,16 +392,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             },
             component: () =>
               import("@/views/project/ProjectReleaseDashboard.vue"),
-            props: true,
-          },
-          {
-            path: "new",
-            name: PROJECT_V1_ROUTE_RELEASE_CREATE,
-            meta: {
-              title: () => t("release.create"),
-              requiredPermissionList: () => ["bb.releases.create"],
-            },
-            component: () => import("@/components/Release/ReleaseCreate/"),
             props: true,
           },
           {
