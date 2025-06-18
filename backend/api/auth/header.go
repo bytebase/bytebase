@@ -22,7 +22,7 @@ type GatewayResponseModifier struct {
 }
 
 // Modify is the mux option for modifying response header.
-func (m *GatewayResponseModifier) Modify(ctx context.Context, response http.ResponseWriter, _ proto.Message) error {
+func (*GatewayResponseModifier) Modify(ctx context.Context, response http.ResponseWriter, _ proto.Message) error {
 	md, ok := runtime.ServerMetadataFromContext(ctx)
 	if !ok {
 		return errors.Errorf("failed to get ServerMetadata from context in the gateway response modifier")
