@@ -2708,8 +2708,6 @@
     "title": "リリース",
     "releases": "リリース",
     "files": "ファイル",
-    "create": "リリースを作成",
-    "select": "リリースを選択",
     "archive-this-release": "このリリースをアーカイブする",
     "total-files": "合計 {count} ファイル",
     "plan-tip": "このプランはリリースを使用するように設定されています。データベースの変更は、選択したリリースファイルのSQL文を使用して実行されます。",
@@ -2731,13 +2729,8 @@
       "unspecified": "未指定"
     },
     "actions": {
-      "new-file": "新しいファイル",
-      "import-from-release": "リリースからのインポート"
     },
     "messages": {
-      "succeed-to-create-release": "リリースの作成に成功",
-      "files-will-always-be-sorted-and-executed-in-version-order": "ファイルは常にバージョン順に並べ替えられ、実行されます。",
-      "cannot-modify-files-after-created": "リリースの作成後はファイルを変更できません。"
     },
     "usage-description": "このリリースは、API統合を使用したカスタムGitOpsでのみ使用されます。"
   },

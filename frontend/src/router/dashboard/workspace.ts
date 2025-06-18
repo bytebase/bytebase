@@ -23,7 +23,7 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
   WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
-  WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL,
+  WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_USERS,
 } from "./workspaceRoutes";
@@ -201,7 +201,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
       },
       {
         path: ":idpId",
-        name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL,
+        name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
         meta: {
           requiredPermissionList: () => ["bb.identityProviders.get"],
         },

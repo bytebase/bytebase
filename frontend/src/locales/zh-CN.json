@@ -2708,8 +2708,6 @@
     "title": "发布包",
     "releases": "发布包",
     "files": "文件",
-    "create": "创建发布",
-    "select": "选择发布",
     "archive-this-release": "归档此发布",
     "total-files": "共 {count} 个文件",
     "plan-tip": "此变更计划已配置为使用发布包。数据库变更将使用所选发布包文件中的 SQL 语句执行。",
@@ -2731,13 +2729,8 @@
       "unspecified": "未指定"
     },
     "actions": {
-      "new-file": "新建文件",
-      "import-from-release": "从发布导入"
     },
     "messages": {
-      "succeed-to-create-release": "成功创建发布",
-      "files-will-always-be-sorted-and-executed-in-version-order": "文件将始终按照版本顺序排序和执行。",
-      "cannot-modify-files-after-created": "发布创建后您无法修改文件。"
     },
     "usage-description": "发布包仅用于自定义的 GitOps 与 Bytebase API 集成。"
   },

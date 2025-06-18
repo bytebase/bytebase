@@ -2708,8 +2708,6 @@
     "title": "Giải phóng",
     "releases": "Bản phát hành",
     "files": "Tệp",
-    "create": "Tạo bản phát hành",
-    "select": "Chọn bản phát hành",
     "archive-this-release": "Lưu trữ bản phát hành này",
     "total-files": "Tổng số {count} tệp",
     "plan-tip": "Kế hoạch này được cấu hình để sử dụng bản phát hành. Các thay đổi cơ sở dữ liệu sẽ được thực hiện bằng các câu lệnh SQL từ các tệp phát hành đã chọn.",
@@ -2731,13 +2729,8 @@
       "unspecified": "Không xác định"
     },
     "actions": {
-      "new-file": "Tệp mới",
-      "import-from-release": "Nhập từ bản phát hành"
     },
     "messages": {
-      "succeed-to-create-release": "Đã tạo thành công bản phát hành",
-      "files-will-always-be-sorted-and-executed-in-version-order": "Các tệp sẽ luôn được sắp xếp và thực hiện theo thứ tự phiên bản.",
-      "cannot-modify-files-after-created": "Bạn không thể sửa đổi tệp sau khi bản phát hành được tạo."
     },
     "usage-description": "Bản phát hành chỉ được sử dụng trong GitOps tùy chỉnh với tích hợp API."
   },

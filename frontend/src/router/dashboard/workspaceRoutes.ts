@@ -27,6 +27,6 @@ export const WORKSPACE_ROUTE_ROLES = "workspace.roles";
 
 export const WORKSPACE_ROUTE_IDENTITY_PROVIDERS =
   "workspace.identity-providers";
-export const WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL = `${WORKSPACE_ROUTE_IDENTITY_PROVIDERS}.detail`;
+export const WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL = `${WORKSPACE_ROUTE_IDENTITY_PROVIDERS}.detail`;
 
 export const WORKSPACE_ROUTE_IM = "workspace.im";
