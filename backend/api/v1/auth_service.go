@@ -175,9 +175,9 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 		if origin == "" {
 			origin = req.Header().Get("grpcgateway-origin")
 		}
-		// Pass the request origin header to response.
-		resp.Header().Set(auth.GatewayMetadataAccessTokenKey, response.Token)
-		resp.Header().Set(auth.GatewayMetadataRequestOriginKey, origin)
+
+		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, response.Token)
+		resp.Header().Add("Set-Cookie", cookie.String())
 	}
 
 	if _, err := s.store.UpdateUser(ctx, loginUser, &store.UpdateUserMessage{
@@ -244,7 +244,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 }
 
 // Logout is the auth logout method.
-func (s *AuthService) Logout(_ context.Context, req *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
+func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
 	accessTokenStr, err := auth.GetTokenFromHeaders(req.Header())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, err)
@@ -252,7 +252,13 @@ func (s *AuthService) Logout(_ context.Context, req *connect.Request[v1pb.Logout
 	s.stateCfg.ExpireCache.Add(accessTokenStr, true)
 
 	resp := connect.NewResponse(&emptypb.Empty{})
-	resp.Header().Set(auth.GatewayMetadataAccessTokenKey, "")
+
+	origin := req.Header().Get("Origin")
+	if origin == "" {
+		origin = req.Header().Get("grpcgateway-origin")
+	}
+	cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, "")
+	resp.Header().Add("Set-Cookie", cookie.String())
 	return resp, nil
 }
 
