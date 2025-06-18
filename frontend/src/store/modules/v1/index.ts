@@ -1,4 +1,5 @@
 export * from "./actuator";
+export * from "./auth";
 export * from "./auditLog";
 export * from "./changelist";
 export * from "./changelog";

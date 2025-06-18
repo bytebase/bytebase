@@ -6,7 +6,7 @@ import { Policy, PolicyResourceType, PolicyType, policyTypeToJSON } from "@/type
 import { Status, type ServerError } from "nice-grpc-common";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watchEffect } from "vue";
-import { useCurrentUserV1 } from "../auth";
+import { useCurrentUserV1 } from "./auth";
 
 interface PolicyState {
   policyMapByName: Map<string, Policy>;
