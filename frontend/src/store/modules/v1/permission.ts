@@ -9,7 +9,7 @@ import {
 } from "@/types";
 import { type User } from "@/types/proto/v1/user_service";
 import { bindingListInIAM } from "@/utils";
-import { useCurrentUserV1 } from "../auth";
+import { useCurrentUserV1 } from "./auth";
 import { useRoleStore } from "../role";
 import { useWorkspaceV1Store } from "./workspace";
 
