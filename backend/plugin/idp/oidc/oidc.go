@@ -128,11 +128,6 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Identifier).(string); ok {
 		userInfo.Identifier = v
 	}
-	if userInfo.Identifier == "" {
-		return nil, claims, errors.Errorf("the field %q is not found in claims or has empty value", p.config.FieldMapping.Identifier)
-	}
-
-	// Best effort to map optional fields
 	if p.config.FieldMapping.DisplayName != "" {
 		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.DisplayName).(string); ok {
 			userInfo.DisplayName = v

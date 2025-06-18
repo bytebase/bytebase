@@ -13700,6 +13700,11 @@ components:
                     additionalProperties:
                         type: string
                     description: The map of claims returned by the identity provider.
+                userInfo:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: The matched user info from the claims.
         TestWebhookRequest:
             required:
                 - project

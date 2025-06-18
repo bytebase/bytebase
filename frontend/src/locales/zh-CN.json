@@ -2300,6 +2300,7 @@
   "identity-provider": {
     "test-connection": "测试连接",
     "test-connection-success": "测试连接成功",
+    "userinfo-description": "匹配到的用户信息。",
     "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",
     "no-claims": "身份提供商未返回 claims。",
     "identity-provider-created": "身份提供商创建成功",

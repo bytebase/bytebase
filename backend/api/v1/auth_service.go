@@ -366,9 +366,11 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity provider type %s not supported", idp.Type.String()))
 	}
 	if userInfo == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("identity provider user info not found"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("failed to get user info from identity provider %q", idp.Title))
 	}
-
+	if userInfo.Identifier == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("missing identifier in user info from identity provider %q", idp.Title))
+	}
 	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
 	email := strings.ToLower(userInfo.Identifier)
 	if err := validateEmail(email); err != nil {
