@@ -64,7 +64,6 @@ func (prof *Profile) UseEmbedDB() bool {
 }
 
 var saasFeatureControlMap = map[string]bool{
-	storepb.SettingName_PLUGIN_AGENT.String(): true,
 	storepb.SettingName_WORKSPACE_ID.String(): true,
 }
 

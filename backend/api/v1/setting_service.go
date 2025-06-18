@@ -315,17 +315,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
-	case storepb.SettingName_PLUGIN_AGENT:
-		payload := new(storepb.AgentPluginSetting)
-		if err := convertProtoToProto(request.Msg.Setting.Value.GetAgentPluginSettingValue(), payload); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
-		}
-
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
 
 	case storepb.SettingName_APP_IM:
 		payload := new(storepb.AppIMSetting)
@@ -650,19 +639,6 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 				},
 			},
 		}, nil
-	case storepb.SettingName_PLUGIN_AGENT:
-		v1Value := new(v1pb.AgentPluginSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
-		}
-		return &v1pb.Setting{
-			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_AgentPluginSettingValue{
-					AgentPluginSettingValue: v1Value,
-				},
-			},
-		}, nil
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		v1Value := new(v1pb.WorkspaceProfileSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
@@ -953,8 +929,6 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_WATERMARK
 	case storepb.SettingName_AI:
 		return v1pb.Setting_AI
-	case storepb.SettingName_PLUGIN_AGENT:
-		return v1pb.Setting_PLUGIN_AGENT
 	case storepb.SettingName_SCHEMA_TEMPLATE:
 		return v1pb.Setting_SCHEMA_TEMPLATE
 	case storepb.SettingName_DATA_CLASSIFICATION:
@@ -999,8 +973,6 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_WATERMARK
 	case v1pb.Setting_AI:
 		return storepb.SettingName_AI
-	case v1pb.Setting_PLUGIN_AGENT:
-		return storepb.SettingName_PLUGIN_AGENT
 	case v1pb.Setting_SCHEMA_TEMPLATE:
 		return storepb.SettingName_SCHEMA_TEMPLATE
 	case v1pb.Setting_DATA_CLASSIFICATION:
