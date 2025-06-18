@@ -207,7 +207,6 @@
   
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [AISetting](#bytebase-v1-AISetting)
-    - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [Algorithm](#bytebase-v1-Algorithm)
     - [Algorithm.FullMask](#bytebase-v1-Algorithm-FullMask)
     - [Algorithm.InnerOuterMask](#bytebase-v1-Algorithm-InnerOuterMask)
@@ -3939,22 +3938,6 @@ ANY means approving any node will proceed.
 
 
 
-<a name="bytebase-v1-AgentPluginSetting"></a>
-
-### AgentPluginSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| url | [string](#string) |  | The URL for the agent API. |
-| token | [string](#string) |  | The token for the agent. |
-
-
-
-
-
-
 <a name="bytebase-v1-Algorithm"></a>
 
 ### Algorithm
@@ -4576,8 +4559,7 @@ The data in setting value.
 | ----- | ---- | ----- | ----------- |
 | string_value | [string](#string) |  | Defines this value as being a string value. |
 | app_im_setting_value | [AppIMSetting](#bytebase-v1-AppIMSetting) |  |  |
-| agent_plugin_setting_value | [AgentPluginSetting](#bytebase-v1-AgentPluginSetting) |  |  |
-| workspace_profile_setting_value | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  |  |
+| workspace_profile_setting_value | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  | reserved 4; // was AgentPluginSetting agent_plugin_setting_value |
 | workspace_approval_setting_value | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
 | schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 | data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
@@ -4727,7 +4709,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | APP_IM | 8 |  |
 | WATERMARK | 9 |  |
 | AI | 10 |  |
-| PLUGIN_AGENT | 11 |  |
 | SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |

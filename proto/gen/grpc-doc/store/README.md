@@ -247,7 +247,6 @@
   
 - [store/setting.proto](#store_setting-proto)
     - [AISetting](#bytebase-store-AISetting)
-    - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [Algorithm](#bytebase-store-Algorithm)
     - [Algorithm.FullMask](#bytebase-store-Algorithm-FullMask)
     - [Algorithm.InnerOuterMask](#bytebase-store-Algorithm-InnerOuterMask)
@@ -3889,22 +3888,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 
 
-<a name="bytebase-store-AgentPluginSetting"></a>
-
-### AgentPluginSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| url | [string](#string) |  | The URL for the agent API. |
-| token | [string](#string) |  | The token for the agent. |
-
-
-
-
-
-
 <a name="bytebase-store-Algorithm"></a>
 
 ### Algorithm
@@ -4546,7 +4529,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | APP_IM | 8 |  |
 | WATERMARK | 9 |  |
 | AI | 10 |  |
-| PLUGIN_AGENT | 11 |  |
 | SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |

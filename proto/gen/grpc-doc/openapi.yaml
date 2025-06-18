@@ -8037,15 +8037,6 @@ components:
                          TODO: use range instead.
                 endPosition:
                     $ref: '#/components/schemas/Position'
-        AgentPluginSetting:
-            type: object
-            properties:
-                url:
-                    type: string
-                    description: The URL for the agent API.
-                token:
-                    type: string
-                    description: The token for the agent.
         Algorithm:
             type: object
             properties:
@@ -13928,10 +13919,10 @@ components:
                     description: Defines this value as being a string value.
                 appImSettingValue:
                     $ref: '#/components/schemas/AppIMSetting'
-                agentPluginSettingValue:
-                    $ref: '#/components/schemas/AgentPluginSetting'
                 workspaceProfileSettingValue:
-                    $ref: '#/components/schemas/WorkspaceProfileSetting'
+                    allOf:
+                        - $ref: '#/components/schemas/WorkspaceProfileSetting'
+                    description: reserved 4; // was AgentPluginSetting agent_plugin_setting_value
                 workspaceApprovalSettingValue:
                     $ref: '#/components/schemas/WorkspaceApprovalSetting'
                 schemaTemplateSettingValue:

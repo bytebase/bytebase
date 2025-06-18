@@ -156,7 +156,6 @@ export enum Setting_SettingName {
   APP_IM = "APP_IM",
   WATERMARK = "WATERMARK",
   AI = "AI",
-  PLUGIN_AGENT = "PLUGIN_AGENT",
   SCHEMA_TEMPLATE = "SCHEMA_TEMPLATE",
   DATA_CLASSIFICATION = "DATA_CLASSIFICATION",
   SEMANTIC_TYPES = "SEMANTIC_TYPES",
@@ -202,9 +201,6 @@ export function setting_SettingNameFromJSON(object: any): Setting_SettingName {
     case 10:
     case "AI":
       return Setting_SettingName.AI;
-    case 11:
-    case "PLUGIN_AGENT":
-      return Setting_SettingName.PLUGIN_AGENT;
     case 13:
     case "SCHEMA_TEMPLATE":
       return Setting_SettingName.SCHEMA_TEMPLATE;
@@ -257,8 +253,6 @@ export function setting_SettingNameToJSON(object: Setting_SettingName): string {
       return "WATERMARK";
     case Setting_SettingName.AI:
       return "AI";
-    case Setting_SettingName.PLUGIN_AGENT:
-      return "PLUGIN_AGENT";
     case Setting_SettingName.SCHEMA_TEMPLATE:
       return "SCHEMA_TEMPLATE";
     case Setting_SettingName.DATA_CLASSIFICATION:
@@ -303,8 +297,6 @@ export function setting_SettingNameToNumber(object: Setting_SettingName): number
       return 9;
     case Setting_SettingName.AI:
       return 10;
-    case Setting_SettingName.PLUGIN_AGENT:
-      return 11;
     case Setting_SettingName.SCHEMA_TEMPLATE:
       return 13;
     case Setting_SettingName.DATA_CLASSIFICATION:
@@ -329,8 +321,10 @@ export function setting_SettingNameToNumber(object: Setting_SettingName): number
 export interface Value {
   /** Defines this value as being a string value. */
   stringValue?: string | undefined;
-  appImSettingValue?: AppIMSetting | undefined;
-  agentPluginSettingValue?: AgentPluginSetting | undefined;
+  appImSettingValue?:
+    | AppIMSetting
+    | undefined;
+  /** reserved 4; // was AgentPluginSetting agent_plugin_setting_value */
   workspaceProfileSettingValue?: WorkspaceProfileSetting | undefined;
   workspaceApprovalSettingValue?: WorkspaceApprovalSetting | undefined;
   schemaTemplateSettingValue?: SchemaTemplateSetting | undefined;
@@ -380,13 +374,6 @@ export interface AppIMSetting_DingTalk {
   clientId: string;
   clientSecret: string;
   robotCode: string;
-}
-
-export interface AgentPluginSetting {
-  /** The URL for the agent API. */
-  url: string;
-  /** The token for the agent. */
-  token: string;
 }
 
 export interface WorkspaceProfileSetting {
@@ -1290,7 +1277,6 @@ function createBaseValue(): Value {
   return {
     stringValue: undefined,
     appImSettingValue: undefined,
-    agentPluginSettingValue: undefined,
     workspaceProfileSettingValue: undefined,
     workspaceApprovalSettingValue: undefined,
     schemaTemplateSettingValue: undefined,
@@ -1311,9 +1297,6 @@ export const Value: MessageFns<Value> = {
     }
     if (message.appImSettingValue !== undefined) {
       AppIMSetting.encode(message.appImSettingValue, writer.uint32(26).fork()).join();
-    }
-    if (message.agentPluginSettingValue !== undefined) {
-      AgentPluginSetting.encode(message.agentPluginSettingValue, writer.uint32(34).fork()).join();
     }
     if (message.workspaceProfileSettingValue !== undefined) {
       WorkspaceProfileSetting.encode(message.workspaceProfileSettingValue, writer.uint32(42).fork()).join();
@@ -1369,14 +1352,6 @@ export const Value: MessageFns<Value> = {
           }
 
           message.appImSettingValue = AppIMSetting.decode(reader, reader.uint32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.agentPluginSettingValue = AgentPluginSetting.decode(reader, reader.uint32());
           continue;
         }
         case 5: {
@@ -1472,9 +1447,6 @@ export const Value: MessageFns<Value> = {
     return {
       stringValue: isSet(object.stringValue) ? globalThis.String(object.stringValue) : undefined,
       appImSettingValue: isSet(object.appImSettingValue) ? AppIMSetting.fromJSON(object.appImSettingValue) : undefined,
-      agentPluginSettingValue: isSet(object.agentPluginSettingValue)
-        ? AgentPluginSetting.fromJSON(object.agentPluginSettingValue)
-        : undefined,
       workspaceProfileSettingValue: isSet(object.workspaceProfileSettingValue)
         ? WorkspaceProfileSetting.fromJSON(object.workspaceProfileSettingValue)
         : undefined,
@@ -1511,9 +1483,6 @@ export const Value: MessageFns<Value> = {
     }
     if (message.appImSettingValue !== undefined) {
       obj.appImSettingValue = AppIMSetting.toJSON(message.appImSettingValue);
-    }
-    if (message.agentPluginSettingValue !== undefined) {
-      obj.agentPluginSettingValue = AgentPluginSetting.toJSON(message.agentPluginSettingValue);
     }
     if (message.workspaceProfileSettingValue !== undefined) {
       obj.workspaceProfileSettingValue = WorkspaceProfileSetting.toJSON(message.workspaceProfileSettingValue);
@@ -1557,10 +1526,6 @@ export const Value: MessageFns<Value> = {
     message.appImSettingValue = (object.appImSettingValue !== undefined && object.appImSettingValue !== null)
       ? AppIMSetting.fromPartial(object.appImSettingValue)
       : undefined;
-    message.agentPluginSettingValue =
-      (object.agentPluginSettingValue !== undefined && object.agentPluginSettingValue !== null)
-        ? AgentPluginSetting.fromPartial(object.agentPluginSettingValue)
-        : undefined;
     message.workspaceProfileSettingValue =
       (object.workspaceProfileSettingValue !== undefined && object.workspaceProfileSettingValue !== null)
         ? WorkspaceProfileSetting.fromPartial(object.workspaceProfileSettingValue)
@@ -2208,82 +2173,6 @@ export const AppIMSetting_DingTalk: MessageFns<AppIMSetting_DingTalk> = {
     message.clientId = object.clientId ?? "";
     message.clientSecret = object.clientSecret ?? "";
     message.robotCode = object.robotCode ?? "";
-    return message;
-  },
-};
-
-function createBaseAgentPluginSetting(): AgentPluginSetting {
-  return { url: "", token: "" };
-}
-
-export const AgentPluginSetting: MessageFns<AgentPluginSetting> = {
-  encode(message: AgentPluginSetting, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.url !== "") {
-      writer.uint32(10).string(message.url);
-    }
-    if (message.token !== "") {
-      writer.uint32(18).string(message.token);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): AgentPluginSetting {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAgentPluginSetting();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.url = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.token = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AgentPluginSetting {
-    return {
-      url: isSet(object.url) ? globalThis.String(object.url) : "",
-      token: isSet(object.token) ? globalThis.String(object.token) : "",
-    };
-  },
-
-  toJSON(message: AgentPluginSetting): unknown {
-    const obj: any = {};
-    if (message.url !== "") {
-      obj.url = message.url;
-    }
-    if (message.token !== "") {
-      obj.token = message.token;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
-    return AgentPluginSetting.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
-    const message = createBaseAgentPluginSetting();
-    message.url = object.url ?? "";
-    message.token = object.token ?? "";
     return message;
   },
 };
