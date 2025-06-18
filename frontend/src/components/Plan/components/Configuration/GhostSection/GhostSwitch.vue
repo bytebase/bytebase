@@ -42,11 +42,6 @@ const {
 
 const errors = computed(() => {
   const errors: ErrorItem[] = [];
-  if (databases.value.some((db) => !db.instanceResource.activation)) {
-    errors.push(
-      t("subscription.instance-assignment.missing-license-attention")
-    );
-  }
   const backupUnavailableDatabases = databases.value.filter(
     (db) => !db.backupAvailable || !allowGhostForDatabase(db)
   );
