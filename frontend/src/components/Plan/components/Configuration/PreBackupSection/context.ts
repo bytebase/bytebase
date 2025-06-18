@@ -80,7 +80,7 @@ export const providePreBackupSettingContext = (refs: {
     if (isDatabaseChangeSpec(selectedSpec.value)) {
       // If any of the databases in the spec is not supported, do not show.
       if (
-        !databases.value.some((db) =>
+        !databases.value.every((db) =>
           BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
         )
       ) {

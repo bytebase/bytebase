@@ -5,13 +5,14 @@
     <ReviewSection />
     <IssueLabels />
 
-    <template
-      v-if="
+    <div
+      v-show="
         selectedSpec && (shouldShowPreBackupSection || shouldShowGhostSection)
       "
+      class="space-y-2"
     >
       <div class="border-t -mx-3" />
-      <NTooltip :showArrow="false">
+      <NTooltip v-if="selectedSpec" :showArrow="false">
         <template #trigger>
           <p class="textinfolabel">
             {{ $t("plan.options.self") }}
@@ -31,7 +32,7 @@
       </NTooltip>
       <PreBackupSection ref="preBackupSectionRef" />
       <GhostSection v-if="shouldShowGhostSection" />
-    </template>
+    </div>
   </div>
 </template>
 
