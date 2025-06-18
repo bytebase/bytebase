@@ -138,10 +138,15 @@ import { computed, reactive, ref, watch } from "vue";
 import { BBModal, BBTextField } from "@/bbkit";
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
-import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { isNullOrUndefined } from "@/utils";
 import MaxRowCountSelect from "./GrantRequestPanel/MaxRowCountSelect.vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "./v2";
+
+// Helper function to convert ExportFormat to string
+function exportFormatToJSON(format: ExportFormat): string {
+  return ExportFormat[format];
+}
 
 interface LocalState {
   isRequesting: boolean;

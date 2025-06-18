@@ -30,7 +30,7 @@ import { ProjectV1Name } from "@/components/v2";
 import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
+import { AuditLog_Severity } from "@/types/proto-es/v1/audit_log_service_pb";
 import { UserType } from "@/types/proto/v1/user_service";
 import {
   getDefaultPagination,
@@ -159,13 +159,13 @@ const scopeOptions = computed((): ScopeOption[] => {
       id: "level",
       title: t("audit-log.advanced-search.scope.level.title"),
       description: t("audit-log.advanced-search.scope.level.description"),
-      options: Object.values(AuditLog_Severity).map((severity) => {
-        return {
+      options: Object.keys(AuditLog_Severity).filter((v) => isNaN(Number(v))).map((severity) => {
+          return {
           value: severity,
           keywords: [severity],
           render: () => "",
-        };
-      }),
+          };
+        }),
     },
   ];
   return scopes;

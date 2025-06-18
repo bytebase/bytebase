@@ -2,9 +2,14 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import type { BinaryLike } from "node:crypto";
 import { defineStore } from "pinia";
-import { auditLogServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { auditLogServiceClientConnect } from "@/grpcweb";
 import type { SearchAuditLogsParams } from "@/types";
-import type { ExportFormat } from "@/types/proto/v1/common";
+import {
+  ExportAuditLogsRequestSchema,
+  SearchAuditLogsRequestSchema,
+} from "@/types/proto-es/v1/audit_log_service_pb";
+import { type ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { userNamePrefix } from "./common";
 
 dayjs.extend(utc);
@@ -35,13 +40,14 @@ const buildFilter = (search: SearchAuditLogsParams): string => {
 
 export const useAuditLogStore = defineStore("audit_log", () => {
   const fetchAuditLogs = async (search: SearchAuditLogsParams) => {
-    const resp = await auditLogServiceClient.searchAuditLogs({
+    const request = create(SearchAuditLogsRequestSchema, {
       parent: search.parent,
       filter: buildFilter(search),
       orderBy: search.order ? `create_time ${search.order}` : undefined,
       pageSize: search.pageSize,
       pageToken: search.pageToken,
     });
+    const resp = await auditLogServiceClientConnect.searchAuditLogs(request);
     return resp;
   };
 
@@ -59,7 +65,7 @@ export const useAuditLogStore = defineStore("audit_log", () => {
     content: BinaryLike | Blob;
     nextPageToken: string;
   }> => {
-    return await auditLogServiceClient.exportAuditLogs({
+    const request = create(ExportAuditLogsRequestSchema, {
       parent: search.parent,
       filter: buildFilter(search),
       orderBy: search.order ? `create_time ${search.order}` : undefined,
@@ -67,6 +73,7 @@ export const useAuditLogStore = defineStore("audit_log", () => {
       pageSize,
       pageToken,
     });
+    return await auditLogServiceClientConnect.exportAuditLogs(request);
   };
 
   return {

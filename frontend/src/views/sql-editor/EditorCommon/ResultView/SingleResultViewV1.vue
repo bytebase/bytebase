@@ -234,7 +234,8 @@ import {
   isValidDatabaseName,
   isValidInstanceName,
 } from "@/types";
-import { Engine, ExportFormat } from "@/types/proto/v1/common";
+import { Engine, ExportFormat as ExportFormatOld } from "@/types/proto/v1/common";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type {
@@ -259,6 +260,13 @@ import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import SelectionCopyTooltips from "./SelectionCopyTooltips.vue";
 import { useSQLResultViewContext } from "./context";
+
+// Temporary conversion function until SQL store is migrated
+const convertExportFormat = (format: ExportFormat): ExportFormatOld => {
+  // Convert proto-es enum to string, then back to old enum
+  const formatString = ExportFormat[format];
+  return ExportFormatOld[formatString as keyof typeof ExportFormatOld] ?? ExportFormatOld.FORMAT_UNSPECIFIED;
+};
 
 type LocalState = {
   search: string;
@@ -479,7 +487,7 @@ const handleExportBtnClick = async ({
     const content = await useSQLStore().exportData({
       name: props.database.name,
       dataSourceId: props.params.connection.dataSourceId ?? "",
-      format: options.format,
+      format: convertExportFormat(options.format),
       statement,
       limit,
       admin,
