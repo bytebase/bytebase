@@ -57,7 +57,7 @@ import {
   IdentityProviderTable,
   IdentityProviderCreateWizard,
 } from "@/components/IdentityProvider";
-import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { featureToRef, getIdentityProviderResourceId } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
@@ -103,7 +103,7 @@ const handleCreateSSO = () => {
 const handleProviderCreated = (provider: IdentityProvider) => {
   state.showCreateDrawer = false;
   router.replace({
-    name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL,
+    name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
     params: {
       idpId: getIdentityProviderResourceId(provider.name),
     },
