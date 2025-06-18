@@ -30,7 +30,11 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
 
   // First check if there's a formatted stringValue which should take precedence
   if (value.stringValue) {
-    return value.stringValue;
+    let stringValue = value.stringValue;
+    if (stringValue.startsWith('"') && stringValue.endsWith('"')) {
+      stringValue = stringValue.replace(/^"|"$/g, "");
+    }
+    return stringValue;
   }
 
   // Handle binary data with auto-format detection
