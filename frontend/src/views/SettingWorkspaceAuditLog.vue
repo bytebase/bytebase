@@ -60,8 +60,8 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { type SearchAuditLogsParams } from "@/types";
-import type { AuditLog } from "@/types/proto/v1/audit_log_service";
-import { ExportFormat } from "@/types/proto/v1/common";
+import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import { type SearchParams, extractProjectResourceName } from "@/utils";
 
