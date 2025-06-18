@@ -242,11 +242,6 @@ export enum Setting_SettingName {
   AI = 10,
 
   /**
-   * @generated from enum value: PLUGIN_AGENT = 11;
-   */
-  PLUGIN_AGENT = 11,
-
-  /**
    * @generated from enum value: SCHEMA_TEMPLATE = 13;
    */
   SCHEMA_TEMPLATE = 13,
@@ -314,12 +309,8 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
     case: "appImSettingValue";
   } | {
     /**
-     * @generated from field: bytebase.v1.AgentPluginSetting agent_plugin_setting_value = 4;
-     */
-    value: AgentPluginSetting;
-    case: "agentPluginSettingValue";
-  } | {
-    /**
+     * reserved 4; // was AgentPluginSetting agent_plugin_setting_value
+     *
      * @generated from field: bytebase.v1.WorkspaceProfileSetting workspace_profile_setting_value = 5;
      */
     value: WorkspaceProfileSetting;
@@ -557,31 +548,6 @@ export declare type AppIMSetting_DingTalk = Message<"bytebase.v1.AppIMSetting.Di
  * Use `create(AppIMSetting_DingTalkSchema)` to create a new message.
  */
 export declare const AppIMSetting_DingTalkSchema: GenMessage<AppIMSetting_DingTalk>;
-
-/**
- * @generated from message bytebase.v1.AgentPluginSetting
- */
-export declare type AgentPluginSetting = Message<"bytebase.v1.AgentPluginSetting"> & {
-  /**
-   * The URL for the agent API.
-   *
-   * @generated from field: string url = 1;
-   */
-  url: string;
-
-  /**
-   * The token for the agent.
-   *
-   * @generated from field: string token = 2;
-   */
-  token: string;
-};
-
-/**
- * Describes the message bytebase.v1.AgentPluginSetting.
- * Use `create(AgentPluginSettingSchema)` to create a new message.
- */
-export declare const AgentPluginSettingSchema: GenMessage<AgentPluginSetting>;
 
 /**
  * @generated from message bytebase.v1.WorkspaceProfileSetting
