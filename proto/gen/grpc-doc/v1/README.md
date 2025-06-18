@@ -382,6 +382,7 @@
     - [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest)
     - [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse)
     - [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry)
+    - [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry)
     - [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest)
   
     - [IdentityProviderType](#bytebase-v1-IdentityProviderType)
@@ -6435,6 +6436,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | claims | [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry) | repeated | The map of claims returned by the identity provider. |
+| user_info | [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry) | repeated | The matched user info from the claims. |
 
 
 
@@ -6444,6 +6446,22 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 <a name="bytebase-v1-TestIdentityProviderResponse-ClaimsEntry"></a>
 
 ### TestIdentityProviderResponse.ClaimsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TestIdentityProviderResponse-UserInfoEntry"></a>
+
+### TestIdentityProviderResponse.UserInfoEntry
 
 
 

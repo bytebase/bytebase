@@ -221,9 +221,16 @@ export interface OAuth2IdentityProviderTestRequestContext {
 export interface TestIdentityProviderResponse {
   /** The map of claims returned by the identity provider. */
   claims: { [key: string]: string };
+  /** The matched user info from the claims. */
+  userInfo: { [key: string]: string };
 }
 
 export interface TestIdentityProviderResponse_ClaimsEntry {
+  key: string;
+  value: string;
+}
+
+export interface TestIdentityProviderResponse_UserInfoEntry {
   key: string;
   value: string;
 }
@@ -980,13 +987,16 @@ export const OAuth2IdentityProviderTestRequestContext: MessageFns<OAuth2Identity
 };
 
 function createBaseTestIdentityProviderResponse(): TestIdentityProviderResponse {
-  return { claims: {} };
+  return { claims: {}, userInfo: {} };
 }
 
 export const TestIdentityProviderResponse: MessageFns<TestIdentityProviderResponse> = {
   encode(message: TestIdentityProviderResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     Object.entries(message.claims).forEach(([key, value]) => {
       TestIdentityProviderResponse_ClaimsEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).join();
+    });
+    Object.entries(message.userInfo).forEach(([key, value]) => {
+      TestIdentityProviderResponse_UserInfoEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).join();
     });
     return writer;
   },
@@ -1009,6 +1019,17 @@ export const TestIdentityProviderResponse: MessageFns<TestIdentityProviderRespon
           }
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = TestIdentityProviderResponse_UserInfoEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.userInfo[entry2.key] = entry2.value;
+          }
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1022,6 +1043,12 @@ export const TestIdentityProviderResponse: MessageFns<TestIdentityProviderRespon
     return {
       claims: isObject(object.claims)
         ? Object.entries(object.claims).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      userInfo: isObject(object.userInfo)
+        ? Object.entries(object.userInfo).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
           return acc;
         }, {})
@@ -1040,6 +1067,15 @@ export const TestIdentityProviderResponse: MessageFns<TestIdentityProviderRespon
         });
       }
     }
+    if (message.userInfo) {
+      const entries = Object.entries(message.userInfo);
+      if (entries.length > 0) {
+        obj.userInfo = {};
+        entries.forEach(([k, v]) => {
+          obj.userInfo[k] = v;
+        });
+      }
+    }
     return obj;
   },
 
@@ -1049,6 +1085,12 @@ export const TestIdentityProviderResponse: MessageFns<TestIdentityProviderRespon
   fromPartial(object: DeepPartial<TestIdentityProviderResponse>): TestIdentityProviderResponse {
     const message = createBaseTestIdentityProviderResponse();
     message.claims = Object.entries(object.claims ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = globalThis.String(value);
+      }
+      return acc;
+    }, {});
+    message.userInfo = Object.entries(object.userInfo ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = globalThis.String(value);
       }
@@ -1128,6 +1170,84 @@ export const TestIdentityProviderResponse_ClaimsEntry: MessageFns<TestIdentityPr
   },
   fromPartial(object: DeepPartial<TestIdentityProviderResponse_ClaimsEntry>): TestIdentityProviderResponse_ClaimsEntry {
     const message = createBaseTestIdentityProviderResponse_ClaimsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseTestIdentityProviderResponse_UserInfoEntry(): TestIdentityProviderResponse_UserInfoEntry {
+  return { key: "", value: "" };
+}
+
+export const TestIdentityProviderResponse_UserInfoEntry: MessageFns<TestIdentityProviderResponse_UserInfoEntry> = {
+  encode(message: TestIdentityProviderResponse_UserInfoEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TestIdentityProviderResponse_UserInfoEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTestIdentityProviderResponse_UserInfoEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TestIdentityProviderResponse_UserInfoEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: TestIdentityProviderResponse_UserInfoEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TestIdentityProviderResponse_UserInfoEntry>): TestIdentityProviderResponse_UserInfoEntry {
+    return TestIdentityProviderResponse_UserInfoEntry.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<TestIdentityProviderResponse_UserInfoEntry>,
+  ): TestIdentityProviderResponse_UserInfoEntry {
+    const message = createBaseTestIdentityProviderResponse_UserInfoEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
     return message;

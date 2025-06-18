@@ -21,21 +21,44 @@
         <span>{{ $t("identity-provider.test-connection-success") }}</span>
       </div>
     </template>
-    <div class="space-y-4">
+    <div v-if="testIdentityProviderResponse" class="space-y-4">
+      <p class="text-sm text-control-light">
+        {{ $t("identity-provider.userinfo-description") }}
+      </p>
+      <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+        <div class="space-y-2">
+          <div
+            v-for="[key, value] in Object.entries(
+              testIdentityProviderResponse.userInfo
+            )"
+            :key="key"
+            class="grid grid-cols-3 gap-2 py-1 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
+          >
+            <div class="text-sm font-medium text-control truncate" :title="key">
+              {{ key }}
+            </div>
+            <div class="col-span-2 text-sm text-main break-all" :title="value">
+              {{ value }}
+            </div>
+          </div>
+        </div>
+      </div>
       <p class="text-sm text-control-light">
         {{ $t("identity-provider.claims-description") }}
       </p>
       <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
         <div class="space-y-2">
           <div
-            v-if="Object.keys(claims).length === 0"
+            v-if="Object.keys(testIdentityProviderResponse.claims).length === 0"
             class="text-sm text-control-light italic"
           >
             {{ $t("identity-provider.no-claims") }}
           </div>
-          <div v-else>
+          <template v-else>
             <div
-              v-for="[key, value] in Object.entries(claims)"
+              v-for="[key, value] in Object.entries(
+                testIdentityProviderResponse.claims
+              )"
               :key="key"
               class="grid grid-cols-3 gap-2 py-1 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
             >
@@ -52,9 +75,14 @@
                 {{ value }}
               </div>
             </div>
-          </div>
+          </template>
         </div>
       </div>
+    </div>
+    <div v-else>
+      <p class="text-sm text-control-light">
+        No user info or claims available for this identity provider.
+      </p>
     </div>
   </NModal>
 </template>
@@ -67,6 +95,7 @@ import { pushNotification } from "@/store";
 import type { OAuthWindowEventPayload } from "@/types";
 import {
   IdentityProviderType,
+  TestIdentityProviderResponse,
   type IdentityProvider,
 } from "@/types/proto/v1/idp_service";
 import { openWindowForSSO } from "@/utils";
@@ -78,7 +107,9 @@ const props = defineProps<{
 
 // Reactive state for the claims dialog
 const showClaimsDialog = ref(false);
-const claims = ref<Record<string, string>>({});
+const testIdentityProviderResponse = ref<TestIdentityProviderResponse | null>(
+  null
+);
 
 // Track current event listener to prevent duplicates
 const currentEventName = ref<string>("");
@@ -113,8 +144,7 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
       },
     });
 
-    // Show claims in dialog
-    claims.value = response.claims || {};
+    testIdentityProviderResponse.value = response;
     showClaimsDialog.value = true;
   } catch (error) {
     pushNotification({
@@ -186,7 +216,7 @@ const testConnection = async () => {
       });
 
       // Show claims in dialog (LDAP will have empty claims)
-      claims.value = response.claims || {};
+      testIdentityProviderResponse.value = response;
       showClaimsDialog.value = true;
     } catch (error) {
       pushNotification({

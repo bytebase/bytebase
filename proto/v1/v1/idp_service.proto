@@ -152,6 +152,8 @@ message OAuth2IdentityProviderTestRequestContext {
 message TestIdentityProviderResponse {
   // The map of claims returned by the identity provider.
   map<string, string> claims = 1;
+  // The matched user info from the claims.
+  map<string, string> user_info = 2;
 }
 
 message IdentityProvider {

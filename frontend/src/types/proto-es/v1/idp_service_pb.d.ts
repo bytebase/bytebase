@@ -227,6 +227,13 @@ export declare type TestIdentityProviderResponse = Message<"bytebase.v1.TestIden
    * @generated from field: map<string, string> claims = 1;
    */
   claims: { [key: string]: string };
+
+  /**
+   * The matched user info from the claims.
+   *
+   * @generated from field: map<string, string> user_info = 2;
+   */
+  userInfo: { [key: string]: string };
 };
 
 /**
