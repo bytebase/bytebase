@@ -46,9 +46,6 @@ export const errorNotificationMiddleware: ClientMiddleware<SilentRequestOptions>
           // ignored
         } else {
           const details = [error.message];
-          if (error.code === Status.UNKNOWN) {
-            details.push("The backend server may be unavailable");
-          }
           maybePushNotification(
             `Code ${error.code}: ${Status[error.code]}`,
             details.join("\n")
@@ -114,9 +111,6 @@ export const errorNotificationInterceptor: Interceptor =
           // ignored
         } else {
           const details = [error.message];
-          if (error.code === Code.Unknown) {
-            details.push("The backend server may be unavailable");
-          }
           maybePushNotification(
             `Code ${error.code}: ${Status[error.code]}`,
             details.join("\n")
