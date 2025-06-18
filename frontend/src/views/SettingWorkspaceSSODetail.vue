@@ -43,9 +43,9 @@ import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
 
 const props = defineProps<{
-  ssoId?: string;
-  onCreated?: (sso: IdentityProvider) => void;
-  onUpdated?: (sso: IdentityProvider) => void;
+  idpId?: string;
+  onCreated?: (identityProvider: IdentityProvider) => void;
+  onUpdated?: (identityProvider: IdentityProvider) => void;
   onDeleted?: () => void;
   onCanceled?: () => void;
 }>();
@@ -61,10 +61,10 @@ const identityProviderStore = useIdentityProviderStore();
 const isLoading = ref<boolean>(true);
 
 const idpName = computed(() => {
-  if (!props.ssoId) {
+  if (!props.idpId) {
     return "";
   }
-  return `${idpNamePrefix}${props.ssoId}`;
+  return `${idpNamePrefix}${props.idpId}`;
 });
 
 watchEffect(async () => {

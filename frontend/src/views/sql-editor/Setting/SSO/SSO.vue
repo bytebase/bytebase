@@ -12,8 +12,15 @@
       body-style="width: 60vw; min-width: 440px; max-width: calc(100vw - 4rem)"
     >
       <SettingWorkspaceSSODetail
-        :sso-id="state.detail.sso ? getSSOId(state.detail.sso.name) : undefined"
-        :on-created="(sso) => (state.detail.sso = sso)"
+        :idp-id="
+          state.detail.identityProvider
+            ? getIdentityProviderResourceId(state.detail.identityProvider.name)
+            : undefined
+        "
+        :on-created="
+          (identityProvider) =>
+            (state.detail.identityProvider = identityProvider)
+        "
         :on-updated="() => (state.detail.show = false)"
         :on-deleted="() => (state.detail.show = false)"
       />
@@ -25,7 +32,7 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { getSSOId } from "@/store/modules/v1/common";
+import { getIdentityProviderResourceId } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import SettingWorkspaceSSO from "@/views/SettingWorkspaceSSO.vue";
 import SettingWorkspaceSSODetail from "@/views/SettingWorkspaceSSODetail.vue";
@@ -33,7 +40,7 @@ import SettingWorkspaceSSODetail from "@/views/SettingWorkspaceSSODetail.vue";
 type LocalState = {
   detail: {
     show: boolean;
-    sso: IdentityProvider | undefined;
+    identityProvider: IdentityProvider | undefined;
   };
 };
 const { t } = useI18n();
@@ -41,26 +48,26 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   detail: {
     show: false,
-    sso: undefined,
+    identityProvider: undefined,
   },
 });
 
 const drawerTitle = computed(() => {
-  const { sso } = state.detail;
-  if (!sso) return t("settings.sso.create");
-  return sso.title;
+  const { identityProvider } = state.detail;
+  if (!identityProvider) return t("settings.sso.create");
+  return identityProvider.title;
 });
 
 const handleClickCreate = () => {
   state.detail = {
     show: true,
-    sso: undefined,
+    identityProvider: undefined,
   };
 };
-const handleClickView = (sso: IdentityProvider) => {
+const handleClickView = (identityProvider: IdentityProvider) => {
   state.detail = {
     show: true,
-    sso,
+    identityProvider,
   };
 };
 </script>
