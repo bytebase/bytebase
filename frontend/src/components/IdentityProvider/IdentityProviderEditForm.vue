@@ -207,7 +207,7 @@
               :button-text="$t('settings.sso.delete')"
               :ok-text="$t('common.delete')"
               :confirm-title="$t('settings.sso.delete')"
-              :confirm-description="deleteConfirmDescription"
+              :confirm-description="t('identity-provider.delete-warning')"
               :require-confirm="true"
               @confirm="handleDelete"
             />
@@ -382,10 +382,6 @@ const canUpdate = computed(() => {
 
 const allowTestConnection = computed(() => {
   return isFormValid.value;
-});
-
-const deleteConfirmDescription = computed(() => {
-  return t("identity-provider.delete-warning");
 });
 
 // Methods
