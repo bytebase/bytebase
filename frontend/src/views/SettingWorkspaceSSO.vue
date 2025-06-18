@@ -57,15 +57,12 @@ import {
   IdentityProviderTable,
   IdentityProviderCreateWizard,
 } from "@/components/IdentityProvider";
-import { WORKSPACE_ROUTE_SSO_DETAIL } from "@/router/dashboard/workspaceRoutes";
-import { featureToRef } from "@/store";
+import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL } from "@/router/dashboard/workspaceRoutes";
+import { featureToRef, getIdentityProviderResourceId } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
-import {
-  extractIdentityProviderResourceName,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   isLoading: boolean;
@@ -106,9 +103,9 @@ const handleCreateSSO = () => {
 const handleProviderCreated = (provider: IdentityProvider) => {
   state.showCreateDrawer = false;
   router.replace({
-    name: WORKSPACE_ROUTE_SSO_DETAIL,
+    name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL,
     params: {
-      ssoId: extractIdentityProviderResourceName(provider.name),
+      idpId: getIdentityProviderResourceId(provider.name),
     },
   });
 };
