@@ -84,6 +84,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -91,6 +92,7 @@ import { computed, reactive, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import { useAuthStore, useActuatorV1Store } from "@/store";
+import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 
 interface LocalState {
   email: string;
@@ -146,11 +148,13 @@ const trySignin = async () => {
   if (state.isLoading) return;
   state.isLoading = true;
   try {
-    await authStore.login({
-      email: state.email,
-      password: state.password,
-      web: true,
-    });
+    await authStore.login(
+      create(LoginRequestSchema, {
+        email: state.email,
+        password: state.password,
+        web: true,
+      })
+    );
   } finally {
     state.isLoading = false;
   }

@@ -21,7 +21,7 @@ import {
   isSimilarSQLEditorTab,
   useDynamicLocalStorage,
 } from "@/utils";
-import { useCurrentUserV1 } from "../auth";
+import { useCurrentUserV1 } from "../v1/auth";
 import {
   useDatabaseV1Store,
   useDatabaseV1ByName,
