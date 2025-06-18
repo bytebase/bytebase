@@ -2308,7 +2308,8 @@
     "identity-provider-update-failed": "无法更新身份提供商",
     "identity-provider-create-failed": "无法创建身份提供商",
     "identity-provider-delete-failed": "无法删除身份提供商",
-    "identity-provider-permission-denied": "没有权限"
+    "identity-provider-permission-denied": "没有权限",
+    "delete-warning": "您确定要删除此身份提供者吗？通过此 SSO 注册的用户将无法再使用该身份提供者登录。如果您在工作区设置中禁用了密码登录，这些用户可能会被完全锁定。"
   },
   "sensitive-data": {
     "self": "敏感数据"

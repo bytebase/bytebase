@@ -2308,7 +2308,8 @@
     "identity-provider-update-failed": "Không cập nhật được nhà cung cấp danh tính",
     "identity-provider-create-failed": "Không tạo được nhà cung cấp danh tính",
     "identity-provider-delete-failed": "Không xóa được nhà cung cấp danh tính",
-    "identity-provider-permission-denied": "Quyền bị từ chối"
+    "identity-provider-permission-denied": "Quyền bị từ chối",
+    "delete-warning": "Bạn có chắc chắn muốn xóa nhà cung cấp danh tính này không? Người dùng đã đăng ký qua SSO này sẽ không thể đăng nhập bằng SSO này nữa. Nếu đăng nhập bằng mật khẩu bị vô hiệu hóa trong cài đặt không gian làm việc của bạn, những người dùng này có thể bị khóa hoàn toàn."
   },
   "sensitive-data": {
     "self": "Dữ liệu nhạy cảm"
