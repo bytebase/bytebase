@@ -160,9 +160,6 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 	}
 
 	identifier := entry.GetAttributeValue(p.config.FieldMapping.Identifier)
-	if identifier == "" {
-		return nil, errors.Errorf("the attribute %q is not found or has empty value", p.config.FieldMapping.Identifier)
-	}
 	return &storepb.IdentityProviderUserInfo{
 		Identifier:  identifier,
 		DisplayName: entry.GetAttributeValue(p.config.FieldMapping.DisplayName),

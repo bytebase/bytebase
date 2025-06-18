@@ -2300,6 +2300,7 @@
   "identity-provider": {
     "test-connection": "Test Connection",
     "test-connection-success": "Test Connection Successful",
+    "userinfo-description": "The matched user information.",
     "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
     "no-claims": "No claims returned by the identity provider.",
     "identity-provider-created": "Identity provider created successfully",
