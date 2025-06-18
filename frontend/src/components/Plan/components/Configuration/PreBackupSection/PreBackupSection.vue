@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full flex items-center justify-start gap-x-2 flex-wrap min-h-[34px] whitespace-nowrap"
+    class="w-full flex items-center justify-start gap-x-2 flex-wrap whitespace-nowrap"
   >
     <PreBackupSwitch />
     <NTooltip>

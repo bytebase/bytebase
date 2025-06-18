@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full flex items-center justify-between gap-x-2 gap-y-1 flex-wrap min-h-[34px] whitespace-nowrap"
+    class="w-full flex items-center justify-between gap-x-2 gap-y-1 flex-wrap whitespace-nowrap"
   >
     <NTooltip>
       <template #trigger>
