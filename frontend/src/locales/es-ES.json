@@ -2300,6 +2300,7 @@
   "identity-provider": {
     "test-connection": "Probar conexión",
     "test-connection-success": "Conexión de prueba exitosa",
+    "userinfo-description": "La información del usuario coincidente.",
     "claims-description": "El proveedor de identidad devolvió las siguientes notificaciones. Esta información puede ayudarle a configurar las asignaciones de campos.",
     "no-claims": "El proveedor de identidad no devolvió ninguna reclamación.",
     "identity-provider-created": "Proveedor de identidad creado exitosamente",

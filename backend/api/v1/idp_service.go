@@ -257,17 +257,28 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to exchange access token, error: %s", err.Error()))
 		}
-		_, claims, err := oauth2IdentityProvider.UserInfo(token)
+		userInfo, claims, err := oauth2IdentityProvider.UserInfo(token)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get user info, error: %s", err.Error()))
 		}
 
-		// Convert claims to map[string]string for protobuf
-		stringClaims := make(map[string]string)
+		claimsMap := make(map[string]string)
 		for key, value := range claims {
-			stringClaims[key] = fmt.Sprintf("%v", value)
+			claimsMap[key] = fmt.Sprintf("%v", value)
 		}
-		return connect.NewResponse(&v1pb.TestIdentityProviderResponse{Claims: stringClaims}), nil
+		userInfoMap := make(map[string]string)
+		if userInfo != nil {
+			if userInfo.Identifier != "" {
+				userInfoMap["email"] = userInfo.Identifier
+			}
+			if userInfo.DisplayName != "" {
+				userInfoMap["title"] = userInfo.DisplayName
+			}
+			if userInfo.Phone != "" {
+				userInfoMap["phone"] = userInfo.Phone
+			}
+		}
+		return connect.NewResponse(&v1pb.TestIdentityProviderResponse{Claims: claimsMap, UserInfo: userInfoMap}), nil
 	case v1pb.IdentityProviderType_OIDC:
 		// Find client secret for those existed identity providers.
 		if identityProvider.Config.GetOidcConfig().ClientSecret == "" {
@@ -295,17 +306,31 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to exchange access token, error: %s", err.Error()))
 		}
-		_, claims, err := oidcIdentityProvider.UserInfo(ctx, token, "")
+		userInfo, claims, err := oidcIdentityProvider.UserInfo(ctx, token, "")
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get user info, error: %s", err.Error()))
 		}
 
-		// Convert claims to map[string]string for protobuf
-		stringClaims := make(map[string]string)
+		claimsMap := make(map[string]string)
 		for key, value := range claims {
-			stringClaims[key] = fmt.Sprintf("%v", value)
+			claimsMap[key] = fmt.Sprintf("%v", value)
 		}
-		return connect.NewResponse(&v1pb.TestIdentityProviderResponse{Claims: stringClaims}), nil
+		userInfoMap := make(map[string]string)
+		if userInfo != nil {
+			if userInfo.Identifier != "" {
+				userInfoMap["email"] = userInfo.Identifier
+			}
+			if userInfo.DisplayName != "" {
+				userInfoMap["title"] = userInfo.DisplayName
+			}
+			if userInfo.Phone != "" {
+				userInfoMap["phone"] = userInfo.Phone
+			}
+			if userInfo.Groups != nil {
+				userInfoMap["groups"] = fmt.Sprintf("%v", userInfo.Groups)
+			}
+		}
+		return connect.NewResponse(&v1pb.TestIdentityProviderResponse{Claims: claimsMap, UserInfo: userInfoMap}), nil
 	case v1pb.IdentityProviderType_LDAP:
 		// Retrieve bind password from stored identity provider if not provided.
 		if identityProvider.Config.GetLdapConfig().BindPassword == "" {
@@ -342,7 +367,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 		}
 		_ = conn.Close()
 
-		// LDAP doesn't return claims like OAuth2/OIDC, so return empty claims
+		// LDAP cannot return claims without username and password so we return an empty claims map.
 		return connect.NewResponse(&v1pb.TestIdentityProviderResponse{Claims: make(map[string]string)}), nil
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity provider type %s not supported", identityProvider.Type.String()))
