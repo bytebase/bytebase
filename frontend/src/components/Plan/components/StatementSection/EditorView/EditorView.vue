@@ -93,11 +93,7 @@
       </template>
     </BBAttention>
 
-    <div
-      ref="editorContainerElRef"
-      class="whitespace-pre-wrap overflow-hidden min-h-[120px] relative"
-      :data-height="editorContainerHeight"
-    >
+    <div class="relative">
       <MonacoEditor
         ref="monacoEditorRef"
         class="w-full h-auto max-h-[240px] min-h-[120px] border rounded-[3px]"
@@ -116,11 +112,10 @@
         }"
         @update:content="handleStatementChange"
       />
-      <div class="absolute bottom-[3px] right-[18px]">
+      <div class="absolute bottom-1 right-4">
         <NButton
           size="small"
           :quaternary="true"
-          style="--n-padding: 0 5px"
           @click="state.showEditorModal = true"
         >
           <template #icon>
@@ -170,7 +165,6 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from "@vueuse/core";
 import { cloneDeep, head, isEmpty } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
@@ -220,9 +214,7 @@ const dialog = useDialog();
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, events, planCheckRunList } = usePlanContext();
 const { selectedSpec } = usePlanSpecContext();
-const editorContainerElRef = ref<HTMLElement>();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
-const { height: editorContainerHeight } = useElementSize(editorContainerElRef);
 
 const state = reactive<LocalState>({
   isEditing: false,

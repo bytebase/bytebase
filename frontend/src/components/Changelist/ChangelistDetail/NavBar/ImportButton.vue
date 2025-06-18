@@ -23,7 +23,7 @@
 import { UploadIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import UploadFilesButton from "@/components/Release/ReleaseCreate/FileToCreateTable/UploadFilesButton.vue";
+import UploadFilesButton from "@/components/UploadFilesButton.vue";
 import { pushNotification, useChangelistStore, useSheetV1Store } from "@/store";
 import {
   Changelist_Change as Change,
