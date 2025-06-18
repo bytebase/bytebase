@@ -23,7 +23,6 @@ enum SettingName {
   APP_IM = 8;
   WATERMARK = 9;
   AI = 10;
-  PLUGIN_AGENT = 11;
   SCHEMA_TEMPLATE = 13;
   DATA_CLASSIFICATION = 14;
   SEMANTIC_TYPES = 15;
@@ -82,14 +81,6 @@ message Announcement {
 
   // The optional link, user can follow the link to check extra details
   string link = 3;
-}
-
-message AgentPluginSetting {
-  // The URL for the agent API.
-  string url = 1;
-
-  // The token for the agent.
-  string token = 2;
 }
 
 message WorkspaceApprovalSetting {

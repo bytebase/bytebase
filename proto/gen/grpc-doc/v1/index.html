@@ -968,10 +968,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.AgentPluginSetting"><span class="badge">M</span>AgentPluginSetting</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Algorithm"><span class="badge">M</span>Algorithm</a>
                 </li>
               
@@ -11862,37 +11858,6 @@ The access is based on approval flow.</p></td>
 
         
       
-        <h3 id="bytebase.v1.AgentPluginSetting">AgentPluginSetting</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The URL for the agent API. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The token for the agent. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.Algorithm">Algorithm</h3>
         <p></p>
 
@@ -13276,17 +13241,10 @@ server would not persist the setting value if it is true. </p></td>
                 </tr>
               
                 <tr>
-                  <td>agent_plugin_setting_value</td>
-                  <td><a href="#bytebase.v1.AgentPluginSetting">AgentPluginSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>workspace_profile_setting_value</td>
                   <td><a href="#bytebase.v1.WorkspaceProfileSetting">WorkspaceProfileSetting</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>reserved 4; // was AgentPluginSetting agent_plugin_setting_value </p></td>
                 </tr>
               
                 <tr>
@@ -13717,12 +13675,6 @@ Default to this mode.</p></td>
               <tr>
                 <td>AI</td>
                 <td>10</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PLUGIN_AGENT</td>
-                <td>11</td>
                 <td><p></p></td>
               </tr>
             

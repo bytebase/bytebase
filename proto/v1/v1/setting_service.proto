@@ -116,7 +116,6 @@ message Setting {
     APP_IM = 8;
     WATERMARK = 9;
     AI = 10;
-    PLUGIN_AGENT = 11;
     SCHEMA_TEMPLATE = 13;
     DATA_CLASSIFICATION = 14;
     SEMANTIC_TYPES = 15;
@@ -143,7 +142,7 @@ message Value {
     // Defines this value as being a string value.
     string string_value = 1;
     AppIMSetting app_im_setting_value = 3;
-    AgentPluginSetting agent_plugin_setting_value = 4;
+    // reserved 4; // was AgentPluginSetting agent_plugin_setting_value
     WorkspaceProfileSetting workspace_profile_setting_value = 5;
     WorkspaceApprovalSetting workspace_approval_setting_value = 6;
     SchemaTemplateSetting schema_template_setting_value = 9;
@@ -190,14 +189,6 @@ message AppIMSetting {
   Wecom wecom = 3;
   Lark lark = 4;
   DingTalk dingtalk = 5;
-}
-
-message AgentPluginSetting {
-  // The URL for the agent API.
-  string url = 1;
-
-  // The token for the agent.
-  string token = 2;
 }
 
 message WorkspaceProfileSetting {
