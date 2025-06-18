@@ -25,12 +25,9 @@
   <NDivider />
 
   <div class="flex flex-col">
-    <p class="w-auto flex items-center text-base text-main mb-2">
+    <p class="w-auto flex items-center text-base text-main mb-2 gap-x-2">
       <span>{{ $t("common.statement") }}</span>
-      <ClipboardIcon
-        class="ml-1 w-4 h-4 cursor-pointer hover:opacity-80"
-        @click.prevent="copyStatement"
-      />
+      <CopyButton :content="statement" />
     </p>
     <MonacoEditor
       class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
@@ -51,23 +48,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ClipboardIcon } from "lucide-vue-next";
 import { NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import { CopyButton } from "@/components/v2";
 import { rolloutServiceClient } from "@/grpcweb";
-import {
-  pushNotification,
-  useRevisionStore,
-  useSheetV1Store,
-} from "@/store";
+import { useRevisionStore, useSheetV1Store } from "@/store";
 import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
 import type { TaskRun } from "@/types/proto/v1/rollout_service";
-import {
-  extractIssueUID,
-  getSheetStatement,
-  toClipboard,
-} from "@/utils";
+import { extractIssueUID, getSheetStatement } from "@/utils";
 import TaskRunLogTable from "../IssueV1/components/TaskRunSection/TaskRunLogTable/TaskRunLogTable.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 
@@ -131,14 +120,4 @@ const relatedIssueUID = computed(() => {
   if (!uid) return null;
   return uid;
 });
-
-const copyStatement = async () => {
-  toClipboard(statement.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: `Statement copied to clipboard.`,
-    });
-  });
-};
 </script>

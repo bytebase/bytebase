@@ -27,18 +27,11 @@
                     class="w-5 h-5"
                   />
                 </h1>
-                <div class="flex items-center">
+                <div class="flex items-center space-x-1">
                   <span class="textinfolabel">
                     {{ database.name }}
                   </span>
-                  <NButton
-                    v-if="isSupported"
-                    quaternary
-                    size="tiny"
-                    @click="handleCopyDatabaseName(database.name)"
-                  >
-                    <ClipboardCopyIcon class="w-4 h-4" />
-                  </NButton>
+                  <CopyButton :content="database.name" />
                 </div>
               </div>
             </div>
@@ -201,12 +194,10 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
-import { ArrowRightLeftIcon, ClipboardCopyIcon } from "lucide-vue-next";
+import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
@@ -230,12 +221,12 @@ import {
   ProductionEnvironmentV1Icon,
   ProjectV1Name,
 } from "@/components/v2";
+import { CopyButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAppFeature,
   useEnvironmentV1Store,
   useDatabaseV1ByName,
-  pushNotification,
 } from "@/store";
 import {
   databaseNamePrefix,
@@ -277,7 +268,6 @@ const props = defineProps<{
   databaseName: string;
 }>();
 
-const { t } = useI18n();
 const router = useRouter();
 
 const state = reactive<LocalState>({
@@ -396,20 +386,4 @@ const environment = computed(() => {
 });
 
 useTitle(computed(() => database.value.databaseName));
-
-const { copy: copyTextToClipboard, isSupported } = useClipboard({
-  legacy: true,
-});
-const handleCopyDatabaseName = (name: string) => {
-  if (!isSupported.value) {
-    return;
-  }
-  copyTextToClipboard(name).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.copied"),
-    });
-  });
-};
 </script>

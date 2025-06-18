@@ -513,8 +513,7 @@
         "gitlab-template-description": "Sign in with GitLab accounts",
         "microsoft-entra-template-description": "Sign in with Microsoft Entra ID",
         "custom-template-description": "Configure custom OAuth 2.0 provider"
-      },
-      "copy-redirect-url": "Redirect URL copied to clipboard."
+      }
     },
     "general": {
       "workspace": {
@@ -741,7 +740,6 @@
       "classification": {
         "upload": "Upload classification",
         "upload-label": "You can upload classification file with JSON format.",
-        "copy-succeed": "Copy example succeed",
         "override-title": "Classification data override",
         "override-desc": "Existed classification data will be overridden and affect all projects.",
         "override-confirm": "Still upload"
@@ -1309,7 +1307,6 @@
     "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {0}",
     "successfully-created-instance-createdinstance-name": "Successfully created instance '{0}'.",
     "successfully-updated-instance-instance-name": "Successfully updated instance '{0}'.",
-    "copy-grant-statement": "CREATE USER and GRANT statements copied to clipboard. Paste to your {engine} client to apply.",
     "successfully-connected-instance": "Successfully connected instance.",
     "failed-to-connect-instance": "Failed to connect instance.",
     "failed-to-connect-instance-localhost": "If you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
@@ -1871,10 +1868,6 @@
       }
     },
     "copy-url": "Copy URL",
-    "notify": {
-      "copy-code-succeed": "Copy code succeed",
-      "copy-share-link": "The share link was copied to Clipboard."
-    },
     "connect-to-a-database": "Connect to a database",
     "link-access": "Link access",
     "private": "Private",
@@ -1940,7 +1933,6 @@
     "pending-query": "Pending query",
     "executing-query": "Executing query",
     "request-query": "Request query",
-    "copy-success": "Copy success",
     "connect-in-new-tab": "Connect in new tab",
     "copy-name": "Copy name",
     "preview-table-data": "Preview table data",
@@ -2416,7 +2408,6 @@
           "no-more": "no more"
         }
       },
-      "statement-copied": "Statement copied to clipboard",
       "text2sql": "Text2SQL",
       "actions": {
         "explain-code": "Explain code",

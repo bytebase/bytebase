@@ -48,19 +48,17 @@
         v-if="user.userType === UserType.SERVICE_ACCOUNT && allowEdit"
         class="ml-3 text-xs"
       >
-        <NButton
-          v-if="user.serviceKey"
-          tertiary
+        <CopyButton
+          quaternary
           size="small"
-          @click.prevent="() => copyServiceKey(user.serviceKey)"
+          :text="false"
+          :tertiary="true"
+          :content="user.serviceKey"
         >
-          <template #icon>
-            <ClipboardIcon class="w-4 h-4" />
-          </template>
           {{ $t("settings.members.copy-service-key") }}
-        </NButton>
+        </CopyButton>
         <NButton
-          v-else
+          v-if="!user.serviceKey"
           tertiary
           size="small"
           @click.prevent="$emit('reset-service-key', user)"
@@ -76,22 +74,18 @@
 </template>
 
 <script lang="ts" setup>
-import { ClipboardIcon, ReplyIcon } from "lucide-vue-next";
+import { ReplyIcon } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  usePermissionStore,
-} from "@/store";
+import { CopyButton } from "@/components/v2";
+import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { UserType, type User } from "@/types/proto/v1/user_service";
-import { hasWorkspacePermissionV2, toClipboard } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{
   user: User;
@@ -102,21 +96,10 @@ defineEmits<{
   (event: "reset-service-key", user: User): void;
 }>();
 
-const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const permissionStore = usePermissionStore();
 
 const allowEdit = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
-
-const copyServiceKey = (serviceKey: string) => {
-  toClipboard(serviceKey).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: t("settings.members.service-key-copied"),
-    });
-  });
-};
 </script>

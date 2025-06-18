@@ -67,15 +67,9 @@
           </div>
         </div>
         <div class="flex flex-col gap-y-2">
-          <p class="flex items-center text-lg text-main capitalize">
+          <p class="flex items-center text-lg text-main capitalize gap-x-2">
             {{ $t("common.statement") }}
-            <button
-              tabindex="-1"
-              class="btn-icon ml-1"
-              @click.prevent="copyStatement"
-            >
-              <ClipboardIcon class="w-5 h-5" />
-            </button>
+            <CopyButton size="small" :content="changelogStatement" />
           </p>
           <MonacoEditor
             class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
@@ -85,15 +79,9 @@
           />
         </div>
         <div v-if="showSchemaSnapshot" class="flex flex-col gap-y-2">
-          <p class="flex items-center text-lg text-main capitalize">
+          <p class="flex items-center text-lg text-main capitalize gap-x-2">
             Schema {{ $t("common.snapshot") }}
-            <button
-              tabindex="-1"
-              class="btn-icon ml-1"
-              @click.prevent="copySchema"
-            >
-              <ClipboardIcon class="w-5 h-5" />
-            </button>
+            <CopyButton size="small" :content="changelogSchema" />
           </p>
           <div class="flex flex-row items-center gap-x-2">
             <div v-if="allowShowDiff" class="flex space-x-1 items-center">
@@ -140,13 +128,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ClipboardIcon } from "lucide-vue-next";
 import { NSwitch, NTag } from "naive-ui";
 import { computed, reactive, watch, unref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
+import { CopyButton } from "@/components/v2";
 import {
-  pushNotification,
   useChangelogStore,
   useDBSchemaV1Store,
   useDatabaseV1ByName,
@@ -160,7 +147,6 @@ import {
 } from "@/types/proto/v1/database_service";
 import {
   extractIssueUID,
-  toClipboard,
   getStatementSize,
   hasProjectPermissionV2,
   getAffectedTableDisplayName,
@@ -245,32 +231,6 @@ const allowShowDiff = computed((): boolean => {
   }
   return getChangelogChangeType(changelog.value.type) === "DDL";
 });
-
-const copyStatement = async () => {
-  if (!changelogStatement.value) {
-    return false;
-  }
-  toClipboard(changelogStatement.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: `Statement copied to clipboard.`,
-    });
-  });
-};
-
-const copySchema = async () => {
-  if (!changelogSchema.value) {
-    return false;
-  }
-  toClipboard(changelogSchema.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: `Schema copied to clipboard.`,
-    });
-  });
-};
 
 watch(
   [database.value.name, changelogName],

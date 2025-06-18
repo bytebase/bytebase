@@ -193,13 +193,11 @@
             :code="grantStatement"
           />
         </NConfigProvider>
-        <button
-          tabindex="-1"
-          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed rounded-r-[3px]"
-          @click.prevent="copyGrantStatement"
+        <div
+          class="flex items-center -ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed rounded-r-[3px]"
         >
-          <heroicons-outline:clipboard class="w-6 h-6" />
-        </button>
+          <CopyButton :content="grantStatement" />
+        </div>
       </div>
     </div>
   </div>
@@ -209,9 +207,8 @@
 import hljs from "highlight.js/lib/core";
 import { NCode, NConfigProvider } from "naive-ui";
 import { reactive, computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
-import { pushNotification } from "@/store";
+import { CopyButton } from "@/components/v2";
 import {
   languageOfEngineV1,
   DATASOURCE_ADMIN_USER_NAME,
@@ -222,7 +219,6 @@ import {
   DataSourceType,
   DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
-import { engineNameV1, toClipboard } from "@/utils";
 
 interface LocalState {
   showCreateUserExample: boolean;
@@ -243,8 +239,6 @@ const props = withDefaults(
     dataSourceType: DataSourceType.ADMIN,
   }
 );
-
-const { t } = useI18n();
 
 const state = reactive<LocalState>({
   showCreateUserExample: props.createInstanceFlag,
@@ -601,17 +595,5 @@ db.createUser({
 
 const toggleCreateUserExample = () => {
   state.showCreateUserExample = !state.showCreateUserExample;
-};
-
-const copyGrantStatement = () => {
-  toClipboard(grantStatement.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: t("instance.copy-grant-statement", {
-        engine: engineNameV1(props.engine),
-      }),
-    });
-  });
 };
 </script>

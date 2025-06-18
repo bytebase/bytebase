@@ -17,15 +17,9 @@
   <NDivider />
 
   <div class="flex flex-col gap-y-2">
-    <p class="w-auto flex items-center text-base text-main mb-2">
+    <p class="w-auto flex items-center text-base text-main mb-2 gap-x-2">
       {{ $t("common.statement") }}
-      <button
-        tabindex="-1"
-        class="btn-icon ml-1"
-        @click.prevent="copyStatement"
-      >
-        <ClipboardIcon class="w-4 h-4" />
-      </button>
+      <CopyButton :content="statement" />
     </p>
     <MonacoEditor
       class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
@@ -37,14 +31,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ClipboardIcon } from "lucide-vue-next";
 import { NDivider } from "naive-ui";
 import { computed } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import { pushNotification } from "@/store";
+import { CopyButton } from "@/components/v2";
 import { type ComposedRelease } from "@/types";
 import type { Release_File } from "@/types/proto/v1/release_service";
-import { getReleaseFileStatement, toClipboard } from "@/utils";
+import { getReleaseFileStatement } from "@/utils";
 
 const props = defineProps<{
   release: ComposedRelease;
@@ -52,14 +45,4 @@ const props = defineProps<{
 }>();
 
 const statement = computed(() => getReleaseFileStatement(props.releaseFile));
-
-const copyStatement = async () => {
-  toClipboard(statement.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: `Statement copied to clipboard.`,
-    });
-  });
-};
 </script>

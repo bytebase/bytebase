@@ -513,8 +513,7 @@
         "gitlab-template-description": "GitLabアカウントでサインイン",
         "microsoft-entra-template-description": "Microsoft Entra IDでサインイン",
         "custom-template-description": "カスタムOAuth 2.0プロバイダーを構成する"
-      },
-      "copy-redirect-url": "リダイレクト URL がクリップボードにコピーされました。"
+      }
     },
     "general": {
       "workspace": {
@@ -741,7 +740,6 @@
       "classification": {
         "upload": "分類をアップロード",
         "upload-label": "データを分類・分類したJSON形式ファイルをアップロードできます。",
-        "copy-succeed": "サンプルをコピーしました",
         "override-title": "カバレッジの分類および等級付けされたデータ",
         "override-desc": "既存の分類およびグレーディング データは上書きされ、関連するすべてのプロジェクトが影響を受けます。",
         "override-confirm": "インポートを続行する"
@@ -1309,7 +1307,6 @@
     "unable-to-connect": "Bytebase はインスタンスに接続できません。接続情報を再度確認することをお勧めします。ただし、今のところこの警告は無視してかまいません。作成後もインスタンスの詳細ページで接続情報を修正できます。\n\nエラーの詳細:{0}",
     "successfully-created-instance-createdinstance-name": "インスタンス '{0}' が正常に作成されました。",
     "successfully-updated-instance-instance-name": "インスタンス '{0}' が正常に更新されました。",
-    "copy-grant-statement": "CREATE USER および GRANT ステートメントがクリップボードにコピーされました。 {engine} クライアントに貼り付けます。",
     "successfully-connected-instance": "インスタンスに正常に接続されました。",
     "failed-to-connect-instance": "インスタンスへの接続に失敗しました。",
     "failed-to-connect-instance-localhost": "Docker デプロイメントを使用している場合は、ホスト アドレスとして「host.docker.internal」を使用してみてください。",
@@ -1871,10 +1868,6 @@
       }
     },
     "copy-url": "URLをコピー",
-    "notify": {
-      "copy-code-succeed": "コードが正常にコピーされました",
-      "copy-share-link": "共有リンクがクリップボードにコピーされました"
-    },
     "connect-to-a-database": "データベースに接続する",
     "link-access": "リンクアクセス",
     "private": "プライベート",
@@ -1940,7 +1933,6 @@
     "pending-query": "保留中のクエリ",
     "executing-query": "クエリの実行",
     "request-query": "リクエストクエリ",
-    "copy-success": "正常にコピーされました",
     "connect-in-new-tab": "新しいタブで接続する",
     "copy-name": "名前をコピーする",
     "preview-table-data": "テーブルデータのプレビュー",
@@ -2416,7 +2408,6 @@
           "no-more": "何も残っていない"
         }
       },
-      "statement-copied": "ステートメントがクリップボードにコピーされました",
       "text2sql": "Text2SQL",
       "actions": {
         "explain-code": "コードの説明",

@@ -110,7 +110,7 @@ import type { ScopeOption } from "./types";
 const props = withDefaults(
   defineProps<{
     params: SearchParams;
-    scopeOptions: ScopeOption[];
+    scopeOptions?: ScopeOption[];
     placeholder?: string | undefined;
     autofocus?: boolean;
   }>(),
