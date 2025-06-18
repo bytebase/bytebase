@@ -203,19 +203,19 @@ const isEmptyQueryItem = (item: BatchQueryItem) => {
   );
 };
 
-const filteredItems = computed(() => {
-  if (showEmpty.value) {
-    return items.value;
-  }
-
-  return items.value.filter((item) => !isEmptyQueryItem(item));
-});
-
 const showEmptySwitch = computed(() => {
   if (items.value.length <= 1) {
     return false;
   }
   return items.value.some((item) => isEmptyQueryItem(item));
+});
+
+const filteredItems = computed(() => {
+  if (showEmpty.value || !showEmptySwitch.value) {
+    return items.value;
+  }
+
+  return items.value.filter((item) => !isEmptyQueryItem(item));
 });
 
 const isDatabaseQueryFailed = (item: BatchQueryItem) => {
