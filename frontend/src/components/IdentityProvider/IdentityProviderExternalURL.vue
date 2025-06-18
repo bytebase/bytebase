@@ -11,7 +11,7 @@
         <p class="text-sm text-gray-600 mb-3">
           {{ $t("settings.sso.form.redirect-url-description") }}
         </p>
-        
+
         <div class="flex items-center space-x-3">
           <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -23,13 +23,9 @@
                 readonly
                 class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm font-mono text-gray-700 pr-10"
               />
-              <button
-                type="button"
-                class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
-                @click="copyRedirectUrl"
-              >
-                <ClipboardIcon class="w-4 h-4" />
-              </button>
+              <div class="absolute inset-y-0 right-2 top-2">
+                <CopyButton :content="redirectUrl" />
+              </div>
             </div>
           </div>
         </div>
@@ -39,18 +35,15 @@
 </template>
 
 <script setup lang="ts">
-import { ClipboardIcon, InfoIcon } from "lucide-vue-next";
+import { InfoIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import { CopyButton } from "@/components/v2";
+import { useActuatorV1Store } from "@/store";
 import { IdentityProviderType } from "@/types/proto/v1/idp_service";
-import { toClipboard } from "@/utils";
 
 const props = defineProps<{
   type: IdentityProviderType;
 }>();
-
-const { t } = useI18n();
 
 const externalUrl = computed(
   () => useActuatorV1Store().serverInfo?.externalUrl ?? ""
@@ -67,14 +60,4 @@ const redirectUrl = computed(() => {
       return "";
   }
 });
-
-const copyRedirectUrl = () => {
-  toClipboard(redirectUrl.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("settings.sso.copy-redirect-url"),
-    });
-  });
-};
 </script>

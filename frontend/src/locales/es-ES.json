@@ -513,8 +513,7 @@
         "gitlab-template-description": "Iniciar sesión con cuentas de GitLab",
         "microsoft-entra-template-description": "Iniciar sesión con el ID de Microsoft Entra",
         "custom-template-description": "Configurar un proveedor OAuth 2.0 personalizado"
-      },
-      "copy-redirect-url": "URL de redireccionamiento copiada al portapapeles."
+      }
     },
     "general": {
       "workspace": {
@@ -741,7 +740,6 @@
       "classification": {
         "upload": "Subir clasificación",
         "upload-label": "Puede cargar un archivo de clasificación con formato JSON.",
-        "copy-succeed": "Copiar ejemplo correctamente",
         "override-title": "Anulación de datos de clasificación",
         "override-desc": "Los datos de clasificación existentes se anularán y afectarán a todos los proyectos.",
         "override-confirm": "Aún subiendo"
@@ -1309,7 +1307,6 @@
     "unable-to-connect": "Bytebase no puede conectar la instancia. Le recomendamos que revise la información de conexión nuevamente. Pero está bien ignorar esta advertencia por ahora. Aún puede solucionar la información de conexión desde la página de detalles de la instancia después de la creación.\n\nDetalle del error: {0}",
     "successfully-created-instance-createdinstance-name": "Se ha creado correctamente la instancia '{0}'.",
     "successfully-updated-instance-instance-name": "Se ha actualizado correctamente la instancia '{0}'.",
-    "copy-grant-statement": "Se ha copiado la declaración CREATE USER y GRANT al portapapeles. Pegue en su cliente de {engine} para aplicar.",
     "successfully-connected-instance": "Instancia conectada correctamente.",
     "failed-to-connect-instance": "Error al conectar la instancia.",
     "failed-to-connect-instance-localhost": "Si ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
@@ -1871,10 +1868,6 @@
       }
     },
     "copy-url": "Copiar URL",
-    "notify": {
-      "copy-code-succeed": "Copia de código exitosa",
-      "copy-share-link": "El enlace compartido se copió al portapapeles."
-    },
     "connect-to-a-database": "Conectarse a una base de datos",
     "link-access": "Acceso al enlace",
     "private": "Privado",
@@ -1940,7 +1933,6 @@
     "pending-query": "Consulta pendiente",
     "executing-query": "Ejecutando consulta",
     "request-query": "Solicitar consulta",
-    "copy-success": "Copiado al portapapeles",
     "connect-in-new-tab": "Conéctate en una nueva pestaña",
     "copy-name": "Copiar nombre",
     "preview-table-data": "Vista previa de datos de la tabla",
@@ -2416,7 +2408,6 @@
           "no-more": "No más"
         }
       },
-      "statement-copied": "Declaración copiada al portapapeles",
       "text2sql": "Text2SQL",
       "actions": {
         "explain-code": "Explicar el código",

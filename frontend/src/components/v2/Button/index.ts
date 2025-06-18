@@ -1,4 +1,5 @@
 import ContextMenuButton from "./ContextMenuButton.vue";
+import CopyButton from "./CopyButton.vue";
 import DeleteConfirmButton from "./DeleteConfirmButton.vue";
 import ErrorTipsButton from "./ErrorTipsButton.vue";
 import MiniActionButton from "./MiniActionButton.vue";
@@ -10,5 +11,6 @@ export {
   ErrorTipsButton,
   MiniActionButton,
   DeleteConfirmButton,
+  CopyButton,
 };
 export * from "./types";
