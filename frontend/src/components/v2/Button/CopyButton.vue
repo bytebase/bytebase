@@ -3,8 +3,6 @@
     v-if="isSupported && content"
     v-bind="$attrs"
     :text="text"
-    :quaternary="quaternary"
-    :tertiary="tertiary"
     :size="size"
     :disabled="disabled"
     @click="handleCopy"
