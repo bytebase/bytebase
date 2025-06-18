@@ -277,9 +277,6 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 			if userInfo.Phone != "" {
 				userInfoMap["phone"] = userInfo.Phone
 			}
-			if userInfo.Groups != nil {
-				userInfoMap["groups"] = fmt.Sprintf("%v", userInfo.Groups)
-			}
 		}
 		return connect.NewResponse(&v1pb.TestIdentityProviderResponse{Claims: claimsMap, UserInfo: userInfoMap}), nil
 	case v1pb.IdentityProviderType_OIDC:
