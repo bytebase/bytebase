@@ -145,11 +145,6 @@ export const getProjectNameAndDatabaseGroupName = (name: string): string[] => {
   return tokens;
 };
 
-export const getSSOId = (name: string) => {
-  const tokens = getNameParentTokens(name, [idpNamePrefix]);
-  return tokens[0];
-};
-
 export const getProjectIdIssueIdIssueCommentId = (name: string) => {
   const tokens = getNameParentTokens(name, [
     projectNamePrefix,

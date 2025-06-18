@@ -33,7 +33,7 @@ import {
   WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SQL_REVIEW,
-  WORKSPACE_ROUTE_SSO,
+  WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
@@ -177,7 +177,7 @@ export const useDashboardSidebar = () => {
           },
           {
             title: t("settings.sidebar.sso"),
-            name: WORKSPACE_ROUTE_SSO,
+            name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
             type: "route",
           },
           {
