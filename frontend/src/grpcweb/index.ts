@@ -8,8 +8,8 @@ import {
   WebsocketTransport,
 } from "nice-grpc-web";
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
+import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
 import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
-import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseCatalogServiceDefinition } from "@/types/proto/v1/database_catalog_service";
@@ -74,11 +74,6 @@ const clientFactory = createClientFactory()
  *   silent: true,
  * })
  */
-
-export const authServiceClient = clientFactory.create(
-  AuthServiceDefinition,
-  channel
-);
 
 export const userServiceClient = clientFactory.create(
   UserServiceDefinition,
@@ -240,3 +235,5 @@ export const actuatorServiceClientConnect = createClient(
   ActuatorService,
   transport
 );
+
+export const authServiceClientConnect = createClient(AuthService, transport);

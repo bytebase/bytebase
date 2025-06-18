@@ -15,7 +15,7 @@ import {
   isWorksheetWritableV1,
   getStatementSize,
 } from "@/utils";
-import { useCurrentUserV1 } from "../auth";
+import { useCurrentUserV1 } from "./auth";
 import { useSQLEditorTabStore } from "../sqlEditor";
 import { useUserStore } from "../user";
 import { extractUserId } from "./common";

@@ -1,9 +1,9 @@
+import { create } from "@bufbuild/protobuf";
 import { useLocalStorage } from "@vueuse/core";
-import axios from "axios";
 import { uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { userServiceClient } from "@/grpcweb";
+import { authServiceClientConnect, userServiceClient } from "@/grpcweb";
 import { router } from "@/router";
 import {
   AUTH_SIGNIN_MODULE,
@@ -19,9 +19,14 @@ import {
   useUserStore,
 } from "@/store";
 import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
-import type { LoginRequest } from "@/types/proto/v1/auth_service";
-import { LoginResponse } from "@/types/proto/v1/auth_service";
-import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import {
+  LoginRequestSchema,
+  type LoginRequest,
+} from "@/types/proto-es/v1/auth_service_pb";
+import {
+  DatabaseChangeMode,
+  Setting_SettingName,
+} from "@/types/proto/v1/setting_service";
 import { User, UserType } from "@/types/proto/v1/user_service";
 
 export const useAuthStore = defineStore("auth_v1", () => {
@@ -65,25 +70,22 @@ export const useAuthStore = defineStore("auth_v1", () => {
     return query.get("redirect");
   };
 
-  const login = async (
-    request: Partial<LoginRequest>,
-    redirect: string = ""
-  ) => {
-    const { data } = await axios.post<LoginResponse>("/v1/auth/login", request);
+  const login = async (request: LoginRequest, redirect: string = "") => {
+    const resp = await authServiceClientConnect.login(request);
     const redirectUrl = redirect || getRedirectQuery() || "/";
-    if (data.mfaTempToken) {
+    if (resp.mfaTempToken) {
       unauthenticatedOccurred.value = false;
       return router.push({
         name: AUTH_MFA_MODULE,
         query: {
-          mfaTempToken: data.mfaTempToken,
+          mfaTempToken: resp.mfaTempToken,
           redirect: redirectUrl,
         },
       });
     }
 
     await fetchCurrentUser();
-    setRequireResetPassword(data.requireResetPassword);
+    setRequireResetPassword(resp.requireResetPassword);
 
     await useSettingV1Store().getOrFetchSettingByName(
       Setting_SettingName.WORKSPACE_PROFILE,
@@ -108,7 +110,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
         });
         nextPage = route.fullPath;
       }
-      if (data.requireResetPassword) {
+      if (resp.requireResetPassword) {
         return router.push({
           name: AUTH_PASSWORD_RESET_MODULE,
           query: {
@@ -130,16 +132,18 @@ export const useAuthStore = defineStore("auth_v1", () => {
         userType: UserType.USER,
       },
     });
-    await login({
-      email: request.email,
-      password: request.password,
-      web: true,
-    });
+    await login(
+      create(LoginRequestSchema, {
+        email: request.email,
+        password: request.password,
+        web: true,
+      })
+    );
   };
 
   const logout = async () => {
     try {
-      await axios.post("/v1/auth/logout");
+      await authServiceClientConnect.logout({});
     } catch {
       // nothing
     } finally {
