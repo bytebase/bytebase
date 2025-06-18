@@ -337,7 +337,7 @@ watch(
       }
       const db = databaseStore.getDatabaseByName(name);
       const schema = await databaseStore.fetchDatabaseSchema(
-        `${db.name}/schema`,
+        db.name,
         false /* sdlFormat */
       );
       databaseSchemaCache.value[name] = schema.schema;

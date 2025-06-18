@@ -155,7 +155,7 @@ const sourceSchemaString = asyncComputed(async () => {
       return "";
     } else if (isValidDatabaseName(changelogSourceSchemaState.databaseName)) {
       const databaseSchema = await databaseStore.fetchDatabaseSchema(
-        `${changelogSourceSchemaState.databaseName}/schema`
+        changelogSourceSchemaState.databaseName
       );
       return databaseSchema.schema;
     }
