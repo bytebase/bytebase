@@ -2308,7 +2308,8 @@
     "identity-provider-update-failed": "IDプロバイダの更新に失敗しました",
     "identity-provider-create-failed": "IDプロバイダの作成に失敗しました",
     "identity-provider-delete-failed": "IDプロバイダの削除に失敗しました",
-    "identity-provider-permission-denied": "許可が拒否されました"
+    "identity-provider-permission-denied": "許可が拒否されました",
+    "delete-warning": "このアイデンティティプロバイダを削除してもよろしいですか？このSSO経由でサインアップしたユーザーは、今後このSSOでサインインできなくなります。ワークスペースの設定でパスワードによるサインインが無効になっている場合、これらのユーザーは完全にロックアウトされる可能性があります。"
   },
   "sensitive-data": {
     "self": "機密データ"
