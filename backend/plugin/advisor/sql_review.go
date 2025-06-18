@@ -1121,7 +1121,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableDropNamingConvention, nil
-		case storepb.Engine_POSTGRES:
+		case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
 			return PostgreSQLTableDropNamingConvention, nil
 		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeTableDropNamingConvention, nil

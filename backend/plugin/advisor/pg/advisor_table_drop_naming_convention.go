@@ -22,6 +22,7 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_REDSHIFT, advisor.PostgreSQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.
