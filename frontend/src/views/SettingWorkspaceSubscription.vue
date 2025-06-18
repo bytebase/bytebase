@@ -88,21 +88,20 @@
       <div class="mb-3 text-sm text-gray-400">
         {{ $t("settings.general.workspace.id-description") }}
       </div>
-      <div class="mb-4 flex space-x-2">
+      <div class="mb-4 flex items-center space-x-2">
         <NInput
           ref="workspaceIdField"
-          class="mb-4 w-full"
+          class="w-full"
           readonly
           :value="workspaceId"
           @click="selectWorkspaceId"
         />
-        <NButton
-          v-if="isSupported"
-          :disabled="!workspaceId"
-          @click="handleCopyId"
-        >
-          <ClipboardCopyIcon class="w-4 h-4" />
-        </NButton>
+        <CopyButton
+          quaternary
+          :text="false"
+          :size="'small'"
+          :content="workspaceId"
+        />
       </div>
     </div>
     <div
@@ -155,10 +154,15 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton, NDivider, NInput } from "naive-ui";
+import { storeToRefs } from "pinia";
+import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import TrialModal from "@/components/TrialModal.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicenseStats.vue";
+import { CopyButton } from "@/components/v2";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
@@ -170,12 +174,6 @@ import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useClipboard } from "@vueuse/core";
-import { ClipboardCopyIcon } from "lucide-vue-next";
-import { NButton, NDivider, NInput } from "naive-ui";
-import { storeToRefs } from "pinia";
-import { computed, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 
 interface LocalState {
   loading: boolean;
@@ -220,27 +218,13 @@ const workspaceIdField = ref<HTMLInputElement | null>(null);
 
 const workspaceId = computed(() => {
   return (
-    settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID)?.value?.stringValue ?? ""
+    settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID)?.value
+      ?.stringValue ?? ""
   );
 });
 
 const selectWorkspaceId = () => {
   workspaceIdField.value?.select();
-};
-
-const { copy: copyTextToClipboard, isSupported } = useClipboard({
-  legacy: true,
-});
-
-const handleCopyId = () => {
-  selectWorkspaceId();
-  copyTextToClipboard(workspaceId.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.copied"),
-    });
-  });
 };
 
 const uploadLicense = async () => {

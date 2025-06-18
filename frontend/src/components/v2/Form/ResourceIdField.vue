@@ -5,11 +5,7 @@
         {{ $t("resource-id.self", { resource: resourceName }) }}:
         <div v-if="state.resourceId" class="text-gray-600 font-medium mr-1 flex items-center gap-x-1">
           {{ state.resourceId }}
-          <NButton v-if="isSupported && readonly" text size="tiny" @click="handleCopy">
-            <template #icon>
-              <CopyIcon class="w-3 h-3" />
-            </template>
-          </NButton>
+          <CopyButton v-if="readonly" :content="value"/>
         </div>
         <span v-else class="text-control-placeholder italic">
           {{ "<EMPTY>" }}
@@ -63,16 +59,14 @@
 </template>
 
 <script lang="ts" setup>
-import { NInput, NButton, type InputProps } from "naive-ui";
+import { NInput, type InputProps } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { randomString } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
-import { CopyIcon } from "lucide-vue-next";
-import { useClipboard } from "@vueuse/core";
-import { pushNotification } from "@/store"
+import { CopyButton } from "@/components/v2"
 
 // characters is the validated characters for resource id.
 const characters = "abcdefghijklmnopqrstuvwxyz1234567890-";
@@ -296,24 +290,6 @@ watch(
     immediate: true,
   }
 );
-
-const { copy: copyTextToClipboard, isSupported } = useClipboard({
-  legacy: true,
-});
-
-const handleCopy = () => {
-  if (!isSupported.value) {
-    return;
-  }
-  copyTextToClipboard(props.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.copied"),
-    });
-  });
-};
-
 
 defineExpose({
   resourceId: computed(() => state.resourceId),

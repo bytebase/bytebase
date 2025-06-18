@@ -1,13 +1,11 @@
 <template>
   <div class="flex flex-col space-y-4">
-    <div class="flex items-center justify-between px-4">
-      <div class="flex items-center space-x-2">
-        <SearchBox
-          v-model:value="state.searchText"
-          style="max-width: 100%"
-          :placeholder="$t('common.filter-by-name')"
-        />
-      </div>
+    <div class="flex items-center justify-between px-4 space-x-2">
+      <AdvancedSearch
+        v-model:params="state.params"
+        :autofocus="false"
+        :placeholder="$t('common.filter-by-name')"
+      />
       <NButton
         v-if="hasWorkspacePermissionV2('bb.projects.create')"
         type="primary"
@@ -58,16 +56,17 @@ import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
+import AdvancedSearch from "@/components/AdvancedSearch";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
-import { SearchBox, PagedProjectTable } from "@/components/v2";
+import { PagedProjectTable } from "@/components/v2";
 import { Drawer } from "@/components/v2";
 import ProjectOperations from "@/components/v2/Model/Project/ProjectOperations.vue";
 import { useProjectV1Store, useUIStateStore } from "@/store";
 import type { ComposedProject } from "@/types";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, type SearchParams } from "@/utils";
 
 interface LocalState {
-  searchText: string;
+  params: SearchParams;
   showCreateDrawer: boolean;
   selectedProjects: Set<string>;
 }
@@ -77,7 +76,10 @@ const props = defineProps<{
 }>();
 
 const state = reactive<LocalState>({
-  searchText: "",
+  params: {
+    query: "",
+    scopes: [],
+  },
   showCreateDrawer: false,
   selectedProjects: new Set(),
 });
@@ -88,7 +90,7 @@ const projectStore = useProjectV1Store();
 const pagedProjectTableRef = ref<ComponentExposed<typeof PagedProjectTable>>();
 
 const filter = computed(() => ({
-  query: state.searchText,
+  query: state.params.query,
   excludeDefault: true,
 }));
 

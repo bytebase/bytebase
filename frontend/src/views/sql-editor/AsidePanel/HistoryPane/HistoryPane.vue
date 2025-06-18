@@ -23,14 +23,12 @@
               {{ titleOfQueryHistory(history) }}
             </span>
           </div>
-          <span
-            class="rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200"
-          >
-            <heroicons-outline:clipboard-document
-              class="w-4 h-4"
-              @click.stop="handleCopy(history)"
-            />
-          </span>
+          <CopyButton
+            quaternary
+            :text="false"
+            :content="history.statement"
+            @click.stop
+          />
         </div>
         <p
           class="max-w-full text-xs break-words font-mono line-clamp-3"
@@ -68,7 +66,6 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
 import { escape } from "lodash-es";
 import { NButton, useDialog } from "naive-ui";
@@ -76,8 +73,8 @@ import { computed, h, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
+import { CopyButton } from "@/components/v2";
 import {
-  pushNotification,
   useSQLEditorQueryHistoryStore,
   useSQLEditorTabStore,
   useSQLEditorStore,
@@ -148,10 +145,6 @@ watch(
   }
 );
 
-const { copy: copyTextToClipboard, isSupported } = useClipboard({
-  legacy: true,
-});
-
 const getFormattedStatement = (statement: string) => {
   return state.search
     ? getHighlightHTMLByKeyWords(escape(statement), escape(state.search))
@@ -164,28 +157,8 @@ const titleOfQueryHistory = (history: QueryHistory) => {
   );
 };
 
-const handleCopy = (history: QueryHistory) => {
-  if (!isSupported.value) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Copy to clipboard is not enabled in your browser.",
-    });
-    return;
-  }
-
-  copyTextToClipboard(history.statement);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("sql-editor.notify.copy-code-succeed"),
-  });
-};
-
-const confirmOverrideCurrentStatement = (): Promise<
-  "CANCEL" | "OVERRIDE" | "COPY"
-> => {
-  const d = defer<"CANCEL" | "OVERRIDE" | "COPY">();
+const confirmOverrideCurrentStatement = (): Promise<"CANCEL" | "OVERRIDE"> => {
+  const d = defer<"CANCEL" | "OVERRIDE">();
   const dialog = $d.warning({
     title: t("common.warning"),
     content: t("sql-editor.current-editing-statement-is-not-empty"),
@@ -209,15 +182,6 @@ const confirmOverrideCurrentStatement = (): Promise<
             onClick: () => d.resolve("OVERRIDE"),
           },
           { default: () => t("common.override") }
-        ),
-        h(
-          NButton,
-          {
-            size: "small",
-            type: "primary",
-            onClick: () => d.resolve("COPY"),
-          },
-          { default: () => t("common.copy") }
         ),
       ];
       return h(
@@ -261,7 +225,6 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
       });
       return;
     }
-    handleCopy(queryHistory);
   };
 
   if (tab) {

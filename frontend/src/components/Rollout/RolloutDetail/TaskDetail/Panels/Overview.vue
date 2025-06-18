@@ -14,13 +14,9 @@
       <ExternalLinkIcon class="ml-1" :size="16" />
     </router-link>
   </NAlert>
-  <p class="w-auto flex items-center mb-2">
+  <p class="w-auto flex items-center mb-2 gap-x-2">
     <span class="text-base text-main">{{ $t("common.statement") }}</span>
-    <NButton class="ml-1" text @click.prevent="copyStatement">
-      <template #icon>
-        <ClipboardIcon class="w-4 h-4" />
-      </template>
-    </NButton>
+    <CopyButton :content="statement" />
   </p>
   <MonacoEditor
     class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
@@ -32,12 +28,13 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { ClipboardIcon, ExternalLinkIcon } from "lucide-vue-next";
-import { NAlert, NButton } from "naive-ui";
+import { ExternalLinkIcon } from "lucide-vue-next";
+import { NAlert } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import { pushNotification, useSheetV1Store } from "@/store";
-import { getSheetStatement, sheetNameOfTaskV1, toClipboard } from "@/utils";
+import { CopyButton } from "@/components/v2";
+import { useSheetV1Store } from "@/store";
+import { getSheetStatement, sheetNameOfTaskV1 } from "@/utils";
 import { useTaskDetailContext } from "../context";
 
 const { task, taskRuns } = useTaskDetailContext();
@@ -53,16 +50,6 @@ const statement = computed(() => {
 
 // The latest task run of the task.
 const taskRun = computed(() => head(taskRuns.value));
-
-const copyStatement = async () => {
-  toClipboard(statement.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: `Statement copied to clipboard.`,
-    });
-  });
-};
 
 watchEffect(async () => {
   // Prepare the sheet for the task.

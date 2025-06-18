@@ -69,33 +69,27 @@
           <heroicons-solid:link class="w-5 h-auto" />
         </div>
       </NInputGroupLabel>
-      <NInput v-model:value="sharedTabLink" disabled />
-      <NButton
-        class="w-20"
-        :type="copied ? 'success' : 'primary'"
-        :disabled="tabStore.currentTab?.status !== 'CLEAN'"
-        @click="handleCopy"
-      >
-        <heroicons-solid:check v-if="copied" class="h-4 w-4" />
-        {{ copied ? $t("common.copied") : $t("common.copy") }}
-      </NButton>
+      <NInput :value="sharedTabLink" disabled />
+      <div class="pl-2">
+        <CopyButton
+          quaternary
+          :text="false"
+          :size="'medium'"
+          :content="sharedTabLink"
+          :disabled="tabStore.currentTab?.status !== 'CLEAN'"
+        />
+      </div>
     </NInputGroup>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { useClipboard } from "@vueuse/core";
 import { LockKeyholeIcon, UsersIcon } from "lucide-vue-next";
-import {
-  NButton,
-  NInput,
-  NInputGroup,
-  NInputGroupLabel,
-  NPopover,
-} from "naive-ui";
+import { NInput, NInputGroup, NInputGroupLabel, NPopover } from "naive-ui";
 import { ref, computed, onMounted, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { CopyButton } from "@/components/v2";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
@@ -190,20 +184,6 @@ const sharedTabLink = computed(() => {
     workspaceExternalURL.value || window.location.origin
   ).href;
 });
-
-const { copy, copied } = useClipboard({
-  source: sharedTabLink.value,
-  legacy: true,
-});
-
-const handleCopy = async () => {
-  await copy();
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("sql-editor.notify.copy-share-link"),
-  });
-};
 
 onMounted(() => {
   if (sheet.value) {

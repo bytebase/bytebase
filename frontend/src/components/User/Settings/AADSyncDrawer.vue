@@ -45,15 +45,16 @@
                 class="w-full"
                 readonly
                 :value="scimUrl"
-                @click="handleCopyUrl(scimUrlFieldRef)"
+                @click="handleSelect(scimUrlFieldRef)"
               />
-              <NButton
-                v-if="isSupported"
+              <CopyButton
+                quaternary
+                :text="false"
+                :size="'medium'"
+                :content="scimUrl"
                 :disabled="!scimUrl"
-                @click="handleCopyUrl(scimUrlFieldRef)"
-              >
-                <ClipboardIcon class="w-4 h-4" />
-              </NButton>
+                @click="handleSelect(scimUrlFieldRef)"
+              />
             </div>
           </div>
 
@@ -73,15 +74,16 @@
                 readonly
                 type="password"
                 :value="scimToken"
-                @click="handleCopyUrl(scimTokenFieldRef)"
+                @click="handleSelect(scimTokenFieldRef)"
               />
-              <NButton
-                v-if="isSupported"
+              <CopyButton
+                quaternary
+                :text="false"
+                :size="'medium'"
+                :content="scimToken"
                 :disabled="!scimToken"
-                @click="handleCopyUrl(scimTokenFieldRef)"
-              >
-                <ClipboardIcon class="w-4 h-4" />
-              </NButton>
+                @click="handleSelect(scimTokenFieldRef)"
+              />
             </div>
             <NButton
               v-if="hasPermission"
@@ -110,8 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { useClipboard } from "@vueuse/core";
-import { ClipboardIcon, ReplyIcon } from "lucide-vue-next";
+import { ReplyIcon } from "lucide-vue-next";
 import { NButton, NInput, useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -119,6 +120,7 @@ import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { CopyButton } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
@@ -168,24 +170,8 @@ const scimToken = computed(() => {
   );
 });
 
-const { copy: copyTextToClipboard, isSupported } = useClipboard({
-  legacy: true,
-});
-
-const handleCopyUrl = (component: HTMLInputElement | null) => {
+const handleSelect = (component: HTMLInputElement | null) => {
   component?.select();
-  const value = component?.value;
-  if (!value) {
-    return;
-  }
-
-  copyTextToClipboard(value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.copied"),
-    });
-  });
 };
 
 const configureSetting = () => {
@@ -221,8 +207,6 @@ const resetToken = () => {
             style: "SUCCESS",
             title: t("common.updated"),
           });
-
-          handleCopyUrl(scimTokenFieldRef.value);
         });
     },
   });
