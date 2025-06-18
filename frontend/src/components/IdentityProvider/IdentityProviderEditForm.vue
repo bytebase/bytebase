@@ -207,7 +207,7 @@
               :button-text="$t('settings.sso.delete')"
               :ok-text="$t('common.delete')"
               :confirm-title="$t('settings.sso.delete')"
-              :confirm-description="$t('common.cannot-undo-this-action')"
+              :confirm-description="t('identity-provider.delete-warning')"
               :require-confirm="true"
               @confirm="handleDelete"
             />

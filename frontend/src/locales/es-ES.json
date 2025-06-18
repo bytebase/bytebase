@@ -2308,7 +2308,8 @@
     "identity-provider-update-failed": "No se pudo actualizar el proveedor de identidad",
     "identity-provider-create-failed": "No se pudo crear el proveedor de identidad",
     "identity-provider-delete-failed": "No se pudo eliminar el proveedor de identidad",
-    "identity-provider-permission-denied": "Permiso denegado"
+    "identity-provider-permission-denied": "Permiso denegado",
+    "delete-warning": "¿Seguro que desea eliminar este proveedor de identidad? Los usuarios que se registraron con este SSO ya no podrán iniciar sesión con él. Si el inicio de sesión con contraseña está deshabilitado en la configuración de su espacio de trabajo, es posible que estos usuarios queden completamente bloqueados."
   },
   "sensitive-data": {
     "self": "Datos Sensibles"

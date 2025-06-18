@@ -2308,7 +2308,8 @@
     "identity-provider-update-failed": "Failed to update identity provider",
     "identity-provider-create-failed": "Failed to create identity provider",
     "identity-provider-delete-failed": "Failed to delete identity provider",
-    "identity-provider-permission-denied": "Permission denied"
+    "identity-provider-permission-denied": "Permission denied",
+    "delete-warning": "Are you sure you want to delete this identity provider? Users who signed up via this SSO will not be able to sign in with it anymore. If password sign-in is disabled in your workspace settings, these users may be locked out completely."
   },
   "sensitive-data": {
     "self": "Sensitive Data"
