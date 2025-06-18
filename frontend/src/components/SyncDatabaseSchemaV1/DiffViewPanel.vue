@@ -30,15 +30,9 @@
 
       <template v-if="tab === 'ddl'">
         <div class="w-full flex flex-col justify-start">
-          <div class="flex flex-row justify-start items-center">
+          <div class="flex flex-row justify-start items-center space-x-2">
             <span>{{ $t("database.sync-schema.synchronize-statements") }}</span>
-            <button
-              type="button"
-              class="btn-icon ml-2"
-              @click.prevent="$emit('copy-statement')"
-            >
-              <heroicons-outline:clipboard class="h-5 w-5" />
-            </button>
+            <CopyButton size="small" :content="statement" />
           </div>
           <div class="textinfolabel">
             {{ $t("database.sync-schema.synchronize-statements-description") }}
@@ -60,6 +54,7 @@
 import { NTabs, NTab } from "naive-ui";
 import { ref } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import { CopyButton } from "@/components/v2";
 import { dialectOfEngineV1 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import SchemaDiffViewer from "./SchemaDiffViewer.vue";
@@ -75,7 +70,6 @@ defineProps<{
 
 defineEmits<{
   (event: "statement-change", statement: string): void;
-  (event: "copy-statement"): void;
 }>();
 
 const tab = ref<"diff" | "ddl">("diff");

@@ -92,12 +92,13 @@
             @click.stop
           />
 
-          <NButton v-if="!disallowCopyingData" size="small" @click="handleCopy">
-            <template #icon>
-              <ClipboardIcon class="w-4 h-4" />
-            </template>
-            {{ $t("common.copy") }}
-          </NButton>
+          <CopyButton
+            v-if="!disallowCopyingData"
+            quaternary
+            size="small"
+            :text="false"
+            :content="copyContent"
+          />
         </div>
       </div>
       <NScrollbar
@@ -143,19 +144,17 @@
 </template>
 
 <script setup lang="ts">
-import { onKeyStroke, useClipboard, useLocalStorage } from "@vueuse/core";
+import { onKeyStroke, useLocalStorage } from "@vueuse/core";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
-  ClipboardIcon,
   BracesIcon,
   WrapTextIcon,
 } from "lucide-vue-next";
 import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
-import { pushNotification } from "@/store";
+import { CopyButton } from "@/components/v2";
 import type { RowValue } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValuePlain } from "@/utils";
 import {
@@ -167,7 +166,6 @@ import BinaryFormatButton from "../DataTable/common/BinaryFormatButton.vue";
 import { useSQLResultViewContext } from "../context";
 import PrettyJSON from "./PrettyJSON.vue";
 
-const { t } = useI18n();
 const { dark, detail, disallowCopyingData } = useSQLResultViewContext();
 const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
 
@@ -270,44 +268,30 @@ const contentClass = computed(() => {
   return classes.join(" ");
 });
 
-const { copy, copied } = useClipboard({
-  source: computed(() => {
-    const raw = content.value ?? "";
+const copyContent = computed(() => {
+  const raw = content.value ?? "";
 
-    // For JSON content
-    if (guessedIsJSON.value && format.value) {
-      try {
-        const obj = JSON.parse(raw);
-        return JSON.stringify(obj, null, "  ");
-      } catch {
-        console.warn(
-          "[DetailPanel]",
-          "failed to parse and format (maybe) JSON value"
-        );
-        return raw;
-      }
-    }
-
-    // For binary data, copy according to the selected format
-    if (isBinaryData.value) {
+  // For JSON content
+  if (guessedIsJSON.value && format.value) {
+    try {
+      const obj = JSON.parse(raw);
+      return JSON.stringify(obj, null, "  ");
+    } catch {
+      console.warn(
+        "[DetailPanel]",
+        "failed to parse and format (maybe) JSON value"
+      );
       return raw;
     }
+  }
 
+  // For binary data, copy according to the selected format
+  if (isBinaryData.value) {
     return raw;
-  }),
-  legacy: true,
+  }
+
+  return raw;
 });
-const handleCopy = () => {
-  copy().then(() => {
-    if (copied.value) {
-      pushNotification({
-        module: "bytebase",
-        style: "INFO",
-        title: t("common.copied"),
-      });
-    }
-  });
-};
 
 const move = (offset: number) => {
   if (!detail.value) {

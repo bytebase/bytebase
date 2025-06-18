@@ -26,10 +26,10 @@ import { NDataTable } from "naive-ui";
 import { computed, reactive, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
-import { useUserStore, useWorkspaceV1Store } from "@/store";
+import { useUserStore, useWorkspaceV1Store, pushNotification } from "@/store";
 import type { Group } from "@/types/proto/v1/group_service";
 import { type User } from "@/types/proto/v1/user_service";
-import { copyServiceKeyToClipboardIfNeeded } from "../common";
+import { toClipboard } from "@/utils";
 import GroupsCell from "./cells/GroupsCell.vue";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
@@ -143,7 +143,15 @@ const resetServiceKey = () => {
       regenerateTempMfaSecret: false,
     })
     .then((updatedUser) => {
-      copyServiceKeyToClipboardIfNeeded(updatedUser);
+      if (updatedUser.serviceKey) {
+        toClipboard(updatedUser.serviceKey).then(() => {
+          pushNotification({
+            module: "bytebase",
+            style: "INFO",
+            title: t("settings.members.service-key-copied"),
+          });
+        });
+      }
     });
 };
 </script>
