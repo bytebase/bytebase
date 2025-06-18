@@ -56,8 +56,8 @@ import { FeatureAttention } from "@/components/FeatureGuard";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { featureToRef, useAuditLogStore, useUserStore } from "@/store";
 import { type SearchAuditLogsParams } from "@/types";
-import type { AuditLog } from "@/types/proto/v1/audit_log_service";
-import { ExportFormat } from "@/types/proto/v1/common";
+import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto/v1/subscription_service";
 import type { SearchParams, SearchScope } from "@/utils";
 
