@@ -103,7 +103,7 @@ func getStatementWithResultLimit(statement string, limit int) string {
 }
 
 func makeValueByTypeName(typeName string, columnType *sql.ColumnType) any {
-	if strings.HasPrefix(typeName, "TUPLE") || strings.HasPrefix(typeName, "ARRAY") || strings.HasPrefix(typeName, "MAP") {
+	if typeName == "UUID" || strings.HasPrefix(typeName, "TUPLE") || strings.HasPrefix(typeName, "ARRAY") || strings.HasPrefix(typeName, "MAP") {
 		// For TUPLE, ARRAY, MAP type in ClickHouse, we pass any and the driver will do the rest.
 		var it any
 		return &it
