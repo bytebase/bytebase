@@ -16,13 +16,10 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { WORKSPACE_ROUTE_SSO_DETAIL } from "@/router/dashboard/workspaceRoutes";
-import { getSSOId } from "@/store/modules/v1/common";
+import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL } from "@/router/dashboard/workspaceRoutes";
+import { getIdentityProviderResourceId } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import {
-  extractIdentityProviderResourceName,
-  identityProviderTypeToString,
-} from "@/utils";
+import { identityProviderTypeToString } from "@/utils";
 
 withDefaults(
   defineProps<{
@@ -40,7 +37,7 @@ const columnList = computed((): DataTableColumn<IdentityProvider>[] => {
       key: "id",
       title: t("common.id"),
       width: "164px",
-      render: (idp) => extractIdentityProviderResourceName(idp.name),
+      render: (idp) => getIdentityProviderResourceId(idp.name),
     },
     {
       key: "title",
@@ -65,9 +62,9 @@ const rowProps = (identityProvider: IdentityProvider) => {
     style: "cursor: pointer;",
     onClick: (_: MouseEvent) => {
       router.push({
-        name: WORKSPACE_ROUTE_SSO_DETAIL,
+        name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS_DETAIL,
         params: {
-          ssoId: getSSOId(identityProvider.name),
+          idpId: getIdentityProviderResourceId(identityProvider.name),
         },
       });
     },

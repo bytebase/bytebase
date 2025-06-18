@@ -253,7 +253,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField, BBButtonConfirm } from "@/bbkit";
 import { ResourceIdField } from "@/components/v2";
-import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { getIdentityProviderResourceId } from "@/store/modules/v1/common";
@@ -527,7 +527,7 @@ const handleDelete = async () => {
 
     emit("deleted");
     router.replace({
-      name: WORKSPACE_ROUTE_SSO,
+      name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
     });
   } catch {
     pushNotification({
