@@ -83,7 +83,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       {
         key: "selection",
         type: shouldShowSelection.value ? "selection" : undefined,
-        width: 32,
+        width: !shouldShowSelection.value ? 32 : undefined,
         hide: !shouldShowSelection.value && !props.currentProject,
         disabled: shouldShowSelection.value
           ? (project: ComposedProject) => {
