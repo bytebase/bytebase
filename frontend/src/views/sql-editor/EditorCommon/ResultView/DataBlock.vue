@@ -60,7 +60,7 @@ import { computed, watch, ref } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import TableCell from "./DataTable/TableCell.vue";
 import SensitiveDataIcon from "./DataTable/common/SensitiveDataIcon.vue";
 import { getColumnType } from "./DataTable/common/utils";

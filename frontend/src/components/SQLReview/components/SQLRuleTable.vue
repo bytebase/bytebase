@@ -55,7 +55,7 @@
                     $t("sql-review.not-available-for-free", {
                       plan: $t(
                         `subscription.plan.${
-                          currentPlan.toLowerCase()
+                          PlanType[currentPlan].toLowerCase()
                         }.title`
                       ),
                     })
@@ -130,6 +130,7 @@ import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentPlan } from "@/store";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import type { RuleTemplateV2 } from "@/types";
 import {
   getRuleLocalization,

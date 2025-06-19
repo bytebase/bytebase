@@ -40,7 +40,7 @@ import { IdentityProviderEditForm } from "@/components/IdentityProvider";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 const props = defineProps<{
   idpId?: string;

@@ -3,7 +3,7 @@ import {
   PlanType,
   type PlanConfig,
   type PlanLimitConfig
-} from "@/types/proto/v1/subscription_service";
+} from "@/types/proto-es/v1/subscription_service_pb";
 import planData from "./plan.yaml";
 
 export const PLANS: PlanLimitConfig[] = planData.plans;

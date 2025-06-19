@@ -172,7 +172,7 @@ import {
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

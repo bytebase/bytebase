@@ -47,7 +47,7 @@ import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
 import { MiniActionButton } from "@/components/v2";
 import { useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
 

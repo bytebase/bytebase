@@ -28,7 +28,7 @@ import type {
   QueryDataSourceType,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import {

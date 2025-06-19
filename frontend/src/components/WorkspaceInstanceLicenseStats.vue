@@ -43,7 +43,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;

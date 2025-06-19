@@ -33,7 +33,7 @@ import {
   useWorkspaceApprovalSettingStore,
   useRiskStore,
 } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 interface LocalState {
   ready: boolean;

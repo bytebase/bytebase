@@ -141,7 +141,7 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { type QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
 import {

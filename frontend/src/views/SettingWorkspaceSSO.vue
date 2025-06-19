@@ -61,7 +61,7 @@ import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/wor
 import { featureToRef, getIdentityProviderResourceId } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

@@ -16,7 +16,7 @@
                 >{{
                   t("subscription.plan-features", {
                     plan: t(
-                      `subscription.plan.${neededPlan.toLowerCase()}.title`
+                      `subscription.plan.${PlanType[neededPlan].toLowerCase()}.title`
                     ),
                   })
                 }}</span
@@ -55,7 +55,9 @@
           ({{
             $t(
               `subscription.plan.${
-                subscriptionStore.getMinimumRequiredPlan(feature as PlanFeature).toLowerCase()
+                PlanType[subscriptionStore.getMinimumRequiredPlan(
+                  PlanFeature[feature as keyof typeof PlanFeature] ?? PlanFeature.FEATURE_UNSPECIFIED
+                )].toLowerCase()
               }.title`
             )
           }})
@@ -74,10 +76,7 @@
 import { BBModal } from "@/bbkit";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
-import {
-  PlanFeature, PlanType,
-  planTypeToNumber
-} from "@/types/proto/v1/subscription_service";
+import { PlanFeature, PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -98,8 +97,7 @@ const state = reactive<LocalState>({
 const showBanner = computed(() => {
   return (
     unlicensedFeatures.value.length > 0 &&
-    planTypeToNumber(neededPlan.value) >
-      planTypeToNumber(subscriptionStore.currentPlan)
+    neededPlan.value > subscriptionStore.currentPlan
   );
 });
 
@@ -111,10 +109,9 @@ const neededPlan = computed(() => {
   let plan = PlanType.FREE;
 
   for (const feature of unlicensedFeatures.value) {
-    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(
-      feature as PlanFeature
-    );
-    if (planTypeToNumber(requiredPlan) > planTypeToNumber(plan)) {
+    const featureEnum = PlanFeature[feature as keyof typeof PlanFeature] ?? PlanFeature.FEATURE_UNSPECIFIED;
+    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(featureEnum);
+    if (requiredPlan > plan) {
       plan = requiredPlan;
     }
   }
@@ -124,7 +121,7 @@ const neededPlan = computed(() => {
 
 const currentPlan = computed(() => {
   return t(
-    `subscription.plan.${subscriptionStore.currentPlan.toLowerCase()}.title`
+    `subscription.plan.${PlanType[subscriptionStore.currentPlan].toLowerCase()}.title`
   );
 });
 

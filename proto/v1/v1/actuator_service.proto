@@ -122,6 +122,7 @@ message ActuatorInfo {
   bool debug = 15;
 
   repeated string unlicensed_features = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated PlanFeature unlicensed_features = 19;
 
   // disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
   bool disallow_password_signin = 20 [(google.api.field_behavior) = OUTPUT_ONLY];

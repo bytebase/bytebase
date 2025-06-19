@@ -85,7 +85,7 @@ import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { SearchBox } from "@/components/v2";
 import { featureToRef, usePolicyV1Store, useDatabaseCatalog } from "@/store";
 import { type ComposedDatabase } from "@/types";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   ObjectSchema_Type,
   type ObjectSchema,

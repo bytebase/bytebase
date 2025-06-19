@@ -67,7 +67,7 @@ import {
   useDBGroupListByProject,
 } from "@/store/modules";
 import { isValidDatabaseName } from "@/types";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 interface LocalState {
   keyword: string;
