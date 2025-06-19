@@ -733,7 +733,11 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 		}
 	}()
 	slog.Info("TaskSkippedOrDoneListener started")
-	environmentDoneConfirmed := map[string]bool{}
+	type pipelineEnvironment struct {
+		pipelineUID int
+		environment string
+	}
+	pipelineEnvironmentDoneConfirmed := map[pipelineEnvironment]bool{}
 
 	for {
 		select {
@@ -743,7 +747,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				if err != nil {
 					return errors.Wrapf(err, "failed to get task")
 				}
-				if environmentDoneConfirmed[task.Environment] {
+				if pipelineEnvironmentDoneConfirmed[pipelineEnvironment{pipelineUID: task.PipelineID, environment: task.Environment}] {
 					return nil
 				}
 
@@ -760,7 +764,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					return nil
 				}
 
-				environmentDoneConfirmed[task.Environment] = true
+				pipelineEnvironmentDoneConfirmed[pipelineEnvironment{pipelineUID: task.PipelineID, environment: task.Environment}] = true
 
 				// Get all tasks to determine environments and their order
 				allTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &task.PipelineID})
