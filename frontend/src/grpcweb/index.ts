@@ -11,6 +11,7 @@ import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
 import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
+import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseCatalogServiceDefinition } from "@/types/proto/v1/database_catalog_service";
@@ -35,7 +36,6 @@ import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { UserServiceDefinition } from "@/types/proto/v1/user_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
-import { WorkspaceServiceDefinition } from "@/types/proto/v1/workspace_service";
 import {
   authInterceptorMiddleware,
   authInterceptor,
@@ -186,11 +186,6 @@ export const reviewConfigServiceClient = clientFactory.create(
   channel
 );
 
-export const workspaceServiceClient = clientFactory.create(
-  WorkspaceServiceDefinition,
-  channel
-);
-
 export const releaseServiceClient = clientFactory.create(
   ReleaseServiceDefinition,
   channel
@@ -236,5 +231,10 @@ export const auditLogServiceClientConnect = createClient(
 
 export const subscriptionServiceClientConnect = createClient(
   SubscriptionService,
+  transport
+);
+
+export const workspaceServiceClientConnect = createClient(
+  WorkspaceService,
   transport
 );
