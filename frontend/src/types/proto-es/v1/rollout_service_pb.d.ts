@@ -1772,6 +1772,8 @@ export declare const PreviewTaskRunRollbackResponseSchema: GenMessage<PreviewTas
  */
 export declare const RolloutService: GenService<{
   /**
+   * Permissions required: rollouts.get
+   *
    * @generated from rpc bytebase.v1.RolloutService.GetRollout
    */
   getRollout: {
@@ -1780,6 +1782,8 @@ export declare const RolloutService: GenService<{
     output: typeof RolloutSchema;
   },
   /**
+   * Permissions required: rollouts.list
+   *
    * @generated from rpc bytebase.v1.RolloutService.ListRollouts
    */
   listRollouts: {
@@ -1789,6 +1793,7 @@ export declare const RolloutService: GenService<{
   },
   /**
    * CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
+   * Permissions required: rollouts.create
    *
    * @generated from rpc bytebase.v1.RolloutService.CreateRollout
    */
@@ -1798,6 +1803,8 @@ export declare const RolloutService: GenService<{
     output: typeof RolloutSchema;
   },
   /**
+   * Permissions required: rollouts.preview
+   *
    * @generated from rpc bytebase.v1.RolloutService.PreviewRollout
    */
   previewRollout: {
@@ -1806,6 +1813,8 @@ export declare const RolloutService: GenService<{
     output: typeof RolloutSchema;
   },
   /**
+   * Permissions required: taskRuns.list
+   *
    * @generated from rpc bytebase.v1.RolloutService.ListTaskRuns
    */
   listTaskRuns: {
@@ -1814,6 +1823,8 @@ export declare const RolloutService: GenService<{
     output: typeof ListTaskRunsResponseSchema;
   },
   /**
+   * Permissions required: taskRuns.list
+   *
    * @generated from rpc bytebase.v1.RolloutService.GetTaskRun
    */
   getTaskRun: {
@@ -1822,6 +1833,8 @@ export declare const RolloutService: GenService<{
     output: typeof TaskRunSchema;
   },
   /**
+   * Permissions required: taskRuns.list
+   *
    * @generated from rpc bytebase.v1.RolloutService.GetTaskRunLog
    */
   getTaskRunLog: {
@@ -1830,6 +1843,8 @@ export declare const RolloutService: GenService<{
     output: typeof TaskRunLogSchema;
   },
   /**
+   * Permissions required: taskRuns.list
+   *
    * @generated from rpc bytebase.v1.RolloutService.GetTaskRunSession
    */
   getTaskRunSession: {
@@ -1842,6 +1857,7 @@ export declare const RolloutService: GenService<{
    * DataExport issue only allows the creator to run the task.
    * Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
    * Follow role-based rollout policy for the environment.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.RolloutService.BatchRunTasks
    */
@@ -1853,6 +1869,7 @@ export declare const RolloutService: GenService<{
   /**
    * BatchSkipTasks skips the specified tasks.
    * The access is the same as BatchRunTasks().
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.RolloutService.BatchSkipTasks
    */
@@ -1864,6 +1881,7 @@ export declare const RolloutService: GenService<{
   /**
    * BatchCancelTaskRuns cancels the specified task runs in batch.
    * The access is the same as BatchRunTasks().
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.RolloutService.BatchCancelTaskRuns
    */
@@ -1873,6 +1891,8 @@ export declare const RolloutService: GenService<{
     output: typeof BatchCancelTaskRunsResponseSchema;
   },
   /**
+   * Permissions required: taskRuns.list
+   *
    * @generated from rpc bytebase.v1.RolloutService.PreviewTaskRunRollback
    */
   previewTaskRunRollback: {

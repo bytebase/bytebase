@@ -31,10 +31,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OrgPolicyServiceClient interface {
+	// Permissions required: policies.get
 	GetPolicy(ctx context.Context, in *GetPolicyRequest, opts ...grpc.CallOption) (*Policy, error)
+	// Permissions required: policies.list
 	ListPolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error)
+	// Permissions required: policies.create
 	CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
+	// Permissions required: policies.update
 	UpdatePolicy(ctx context.Context, in *UpdatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
+	// Permissions required: policies.delete
 	DeletePolicy(ctx context.Context, in *DeletePolicyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -100,10 +105,15 @@ func (c *orgPolicyServiceClient) DeletePolicy(ctx context.Context, in *DeletePol
 // All implementations must embed UnimplementedOrgPolicyServiceServer
 // for forward compatibility.
 type OrgPolicyServiceServer interface {
+	// Permissions required: policies.get
 	GetPolicy(context.Context, *GetPolicyRequest) (*Policy, error)
+	// Permissions required: policies.list
 	ListPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error)
+	// Permissions required: policies.create
 	CreatePolicy(context.Context, *CreatePolicyRequest) (*Policy, error)
+	// Permissions required: policies.update
 	UpdatePolicy(context.Context, *UpdatePolicyRequest) (*Policy, error)
+	// Permissions required: policies.delete
 	DeletePolicy(context.Context, *DeletePolicyRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedOrgPolicyServiceServer()
 }

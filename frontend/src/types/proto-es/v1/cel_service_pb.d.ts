@@ -80,6 +80,8 @@ export declare const BatchDeparseResponseSchema: GenMessage<BatchDeparseResponse
  */
 export declare const CelService: GenService<{
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.CelService.BatchParse
    */
   batchParse: {
@@ -88,6 +90,8 @@ export declare const CelService: GenService<{
     output: typeof BatchParseResponseSchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.CelService.BatchDeparse
    */
   batchDeparse: {

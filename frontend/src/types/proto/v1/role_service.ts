@@ -706,6 +706,7 @@ export const RoleServiceDefinition = {
   name: "RoleService",
   fullName: "bytebase.v1.RoleService",
   methods: {
+    /** Permissions required: roles.list */
     listRoles: {
       name: "ListRoles",
       requestType: ListRolesRequest,
@@ -720,6 +721,7 @@ export const RoleServiceDefinition = {
         },
       },
     },
+    /** Permissions required: roles.get */
     getRole: {
       name: "GetRole",
       requestType: GetRoleRequest,
@@ -759,6 +761,7 @@ export const RoleServiceDefinition = {
         },
       },
     },
+    /** Permissions required: roles.create */
     createRole: {
       name: "CreateRole",
       requestType: CreateRoleRequest,
@@ -774,6 +777,7 @@ export const RoleServiceDefinition = {
         },
       },
     },
+    /** Permissions required: roles.update */
     updateRole: {
       name: "UpdateRole",
       requestType: UpdateRoleRequest,
@@ -825,6 +829,7 @@ export const RoleServiceDefinition = {
         },
       },
     },
+    /** Permissions required: roles.delete */
     deleteRole: {
       name: "DeleteRole",
       requestType: DeleteRoleRequest,

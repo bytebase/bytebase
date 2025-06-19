@@ -13,18 +13,21 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service RevisionService {
+  // Permissions required: revisions.list
   rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.revisions.list";
     option (bytebase.v1.auth_method) = IAM;
   }
+  // Permissions required: revisions.get
   rpc GetRevision(GetRevisionRequest) returns (Revision) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.revisions.get";
     option (bytebase.v1.auth_method) = IAM;
   }
+  // Permissions required: revisions.create
   rpc CreateRevision(CreateRevisionRequest) returns (Revision) {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*/databases/*}/revisions"
@@ -33,6 +36,7 @@ service RevisionService {
     option (bytebase.v1.permission) = "bb.revisions.create";
     option (bytebase.v1.auth_method) = IAM;
   }
+  // Permissions required: revisions.create
   rpc BatchCreateRevisions(BatchCreateRevisionsRequest) returns (BatchCreateRevisionsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*/databases/*}/revisions:batchCreate"
@@ -41,6 +45,7 @@ service RevisionService {
     option (bytebase.v1.permission) = "bb.revisions.create";
     option (bytebase.v1.auth_method) = IAM;
   }
+  // Permissions required: revisions.delete
   rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";

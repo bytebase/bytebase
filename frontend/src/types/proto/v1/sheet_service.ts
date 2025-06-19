@@ -867,6 +867,7 @@ export const SheetServiceDefinition = {
   name: "SheetService",
   fullName: "bytebase.v1.SheetService",
   methods: {
+    /** Permissions required: sheets.create */
     createSheet: {
       name: "CreateSheet",
       requestType: CreateSheetRequest,
@@ -925,6 +926,7 @@ export const SheetServiceDefinition = {
         },
       },
     },
+    /** Permissions required: sheets.create */
     batchCreateSheets: {
       name: "BatchCreateSheets",
       requestType: BatchCreateSheetsRequest,
@@ -990,6 +992,7 @@ export const SheetServiceDefinition = {
         },
       },
     },
+    /** Permissions required: sheets.get */
     getSheet: {
       name: "GetSheet",
       requestType: GetSheetRequest,
@@ -1041,6 +1044,7 @@ export const SheetServiceDefinition = {
         },
       },
     },
+    /** Permissions required: sheets.update */
     updateSheet: {
       name: "UpdateSheet",
       requestType: UpdateSheetRequest,

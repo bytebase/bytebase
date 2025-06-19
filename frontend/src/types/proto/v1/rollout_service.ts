@@ -5647,6 +5647,7 @@ export const RolloutServiceDefinition = {
   name: "RolloutService",
   fullName: "bytebase.v1.RolloutService",
   methods: {
+    /** Permissions required: rollouts.get */
     getRollout: {
       name: "GetRollout",
       requestType: GetRolloutRequest,
@@ -5700,6 +5701,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /** Permissions required: rollouts.list */
     listRollouts: {
       name: "ListRollouts",
       requestType: ListRolloutsRequest,
@@ -5753,7 +5755,10 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /** CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages. */
+    /**
+     * CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
+     * Permissions required: rollouts.create
+     */
     createRollout: {
       name: "CreateRollout",
       requestType: CreateRolloutRequest,
@@ -5819,6 +5824,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /** Permissions required: rollouts.preview */
     previewRollout: {
       name: "PreviewRollout",
       requestType: PreviewRolloutRequest,
@@ -5905,6 +5911,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /** Permissions required: taskRuns.list */
     listTaskRuns: {
       name: "ListTaskRuns",
       requestType: ListTaskRunsRequest,
@@ -5986,6 +5993,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /** Permissions required: taskRuns.list */
     getTaskRun: {
       name: "GetTaskRun",
       requestType: GetTaskRunRequest,
@@ -6067,6 +6075,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /** Permissions required: taskRuns.list */
     getTaskRunLog: {
       name: "GetTaskRunLog",
       requestType: GetTaskRunLogRequest,
@@ -6154,6 +6163,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /** Permissions required: taskRuns.list */
     getTaskRunSession: {
       name: "GetTaskRunSession",
       requestType: GetTaskRunSessionRequest,
@@ -6250,6 +6260,7 @@ export const RolloutServiceDefinition = {
      * DataExport issue only allows the creator to run the task.
      * Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
      * Follow role-based rollout policy for the environment.
+     * Permissions required: None
      */
     batchRunTasks: {
       name: "BatchRunTasks",
@@ -6335,6 +6346,7 @@ export const RolloutServiceDefinition = {
     /**
      * BatchSkipTasks skips the specified tasks.
      * The access is the same as BatchRunTasks().
+     * Permissions required: None
      */
     batchSkipTasks: {
       name: "BatchSkipTasks",
@@ -6421,6 +6433,7 @@ export const RolloutServiceDefinition = {
     /**
      * BatchCancelTaskRuns cancels the specified task runs in batch.
      * The access is the same as BatchRunTasks().
+     * Permissions required: None
      */
     batchCancelTaskRuns: {
       name: "BatchCancelTaskRuns",
@@ -6517,6 +6530,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /** Permissions required: taskRuns.list */
     previewTaskRunRollback: {
       name: "PreviewTaskRunRollback",
       requestType: PreviewTaskRunRollbackRequest,

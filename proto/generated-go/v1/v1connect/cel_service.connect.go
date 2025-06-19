@@ -41,7 +41,9 @@ const (
 
 // CelServiceClient is a client for the bytebase.v1.CelService service.
 type CelServiceClient interface {
+	// Permissions required: None
 	BatchParse(context.Context, *connect.Request[v1.BatchParseRequest]) (*connect.Response[v1.BatchParseResponse], error)
+	// Permissions required: None
 	BatchDeparse(context.Context, *connect.Request[v1.BatchDeparseRequest]) (*connect.Response[v1.BatchDeparseResponse], error)
 }
 
@@ -89,7 +91,9 @@ func (c *celServiceClient) BatchDeparse(ctx context.Context, req *connect.Reques
 
 // CelServiceHandler is an implementation of the bytebase.v1.CelService service.
 type CelServiceHandler interface {
+	// Permissions required: None
 	BatchParse(context.Context, *connect.Request[v1.BatchParseRequest]) (*connect.Response[v1.BatchParseResponse], error)
+	// Permissions required: None
 	BatchDeparse(context.Context, *connect.Request[v1.BatchDeparseRequest]) (*connect.Response[v1.BatchDeparseResponse], error)
 }
 

@@ -302,6 +302,8 @@ export declare const ObjectSchema_TypeSchema: GenEnum<ObjectSchema_Type>;
  */
 export declare const DatabaseCatalogService: GenService<{
   /**
+   * Permissions required: databaseCatalogs.get
+   *
    * @generated from rpc bytebase.v1.DatabaseCatalogService.GetDatabaseCatalog
    */
   getDatabaseCatalog: {
@@ -310,6 +312,8 @@ export declare const DatabaseCatalogService: GenService<{
     output: typeof DatabaseCatalogSchema;
   },
   /**
+   * Permissions required: databaseCatalogs.update
+   *
    * @generated from rpc bytebase.v1.DatabaseCatalogService.UpdateDatabaseCatalog
    */
   updateDatabaseCatalog: {

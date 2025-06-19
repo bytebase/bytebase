@@ -1168,6 +1168,7 @@ export const DatabaseCatalogServiceDefinition = {
   name: "DatabaseCatalogService",
   fullName: "bytebase.v1.DatabaseCatalogService",
   methods: {
+    /** Permissions required: databaseCatalogs.get */
     getDatabaseCatalog: {
       name: "GetDatabaseCatalog",
       requestType: GetDatabaseCatalogRequest,
@@ -1258,6 +1259,7 @@ export const DatabaseCatalogServiceDefinition = {
         },
       },
     },
+    /** Permissions required: databaseCatalogs.update */
     updateDatabaseCatalog: {
       name: "UpdateDatabaseCatalog",
       requestType: UpdateDatabaseCatalogRequest,

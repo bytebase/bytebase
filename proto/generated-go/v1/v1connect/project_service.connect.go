@@ -85,21 +85,36 @@ const (
 type ProjectServiceClient interface {
 	// GetProject retrieves a project by name.
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+	// Permissions required: projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.list
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	// Permissions required: None
 	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)
+	// Permissions required: projects.create
 	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.update
 	UpdateProject(context.Context, *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.delete
 	DeleteProject(context.Context, *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: projects.undelete
 	UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.delete
 	BatchDeleteProjects(context.Context, *connect.Request[v1.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: projects.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 	// Deprecated.
+	// Permissions required: projects.getIamPolicy
 	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
+	// Permissions required: projects.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Permissions required: projects.update
 	AddWebhook(context.Context, *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.update
 	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.update
 	RemoveWebhook(context.Context, *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.update
 	TestWebhook(context.Context, *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error)
 }
 
@@ -305,21 +320,36 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, req *connect.Req
 type ProjectServiceHandler interface {
 	// GetProject retrieves a project by name.
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+	// Permissions required: projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.list
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	// Permissions required: None
 	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)
+	// Permissions required: projects.create
 	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.update
 	UpdateProject(context.Context, *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.delete
 	DeleteProject(context.Context, *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: projects.undelete
 	UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.delete
 	BatchDeleteProjects(context.Context, *connect.Request[v1.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: projects.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 	// Deprecated.
+	// Permissions required: projects.getIamPolicy
 	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
+	// Permissions required: projects.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Permissions required: projects.update
 	AddWebhook(context.Context, *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.update
 	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.update
 	RemoveWebhook(context.Context, *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: projects.update
 	TestWebhook(context.Context, *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error)
 }
 

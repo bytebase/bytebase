@@ -532,6 +532,8 @@ export declare const ReleaseFileTypeSchema: GenEnum<ReleaseFileType>;
  */
 export declare const ReleaseService: GenService<{
   /**
+   * Permissions required: releases.get
+   *
    * @generated from rpc bytebase.v1.ReleaseService.GetRelease
    */
   getRelease: {
@@ -540,6 +542,8 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
+   * Permissions required: releases.list
+   *
    * @generated from rpc bytebase.v1.ReleaseService.ListReleases
    */
   listReleases: {
@@ -548,6 +552,8 @@ export declare const ReleaseService: GenService<{
     output: typeof ListReleasesResponseSchema;
   },
   /**
+   * Permissions required: releases.create
+   *
    * @generated from rpc bytebase.v1.ReleaseService.CreateRelease
    */
   createRelease: {
@@ -556,6 +562,8 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
+   * Permissions required: releases.update
+   *
    * @generated from rpc bytebase.v1.ReleaseService.UpdateRelease
    */
   updateRelease: {
@@ -564,6 +572,8 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
+   * Permissions required: releases.delete
+   *
    * @generated from rpc bytebase.v1.ReleaseService.DeleteRelease
    */
   deleteRelease: {
@@ -572,6 +582,8 @@ export declare const ReleaseService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: releases.undelete
+   *
    * @generated from rpc bytebase.v1.ReleaseService.UndeleteRelease
    */
   undeleteRelease: {
@@ -580,6 +592,8 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
+   * Permissions required: releases.check
+   *
    * @generated from rpc bytebase.v1.ReleaseService.CheckRelease
    */
   checkRelease: {

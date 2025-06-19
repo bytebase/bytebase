@@ -317,6 +317,8 @@ export declare const DatabaseGroupViewSchema: GenEnum<DatabaseGroupView>;
  */
 export declare const DatabaseGroupService: GenService<{
   /**
+   * Permissions required: projects.get
+   *
    * @generated from rpc bytebase.v1.DatabaseGroupService.ListDatabaseGroups
    */
   listDatabaseGroups: {
@@ -325,6 +327,8 @@ export declare const DatabaseGroupService: GenService<{
     output: typeof ListDatabaseGroupsResponseSchema;
   },
   /**
+   * Permissions required: projects.get
+   *
    * @generated from rpc bytebase.v1.DatabaseGroupService.GetDatabaseGroup
    */
   getDatabaseGroup: {
@@ -333,6 +337,8 @@ export declare const DatabaseGroupService: GenService<{
     output: typeof DatabaseGroupSchema;
   },
   /**
+   * Permissions required: projects.update
+   *
    * @generated from rpc bytebase.v1.DatabaseGroupService.CreateDatabaseGroup
    */
   createDatabaseGroup: {
@@ -341,6 +347,8 @@ export declare const DatabaseGroupService: GenService<{
     output: typeof DatabaseGroupSchema;
   },
   /**
+   * Permissions required: projects.update
+   *
    * @generated from rpc bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup
    */
   updateDatabaseGroup: {
@@ -349,6 +357,8 @@ export declare const DatabaseGroupService: GenService<{
     output: typeof DatabaseGroupSchema;
   },
   /**
+   * Permissions required: projects.update
+   *
    * @generated from rpc bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup
    */
   deleteDatabaseGroup: {

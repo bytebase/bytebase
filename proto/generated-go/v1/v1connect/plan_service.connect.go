@@ -56,16 +56,24 @@ const (
 
 // PlanServiceClient is a client for the bytebase.v1.PlanService service.
 type PlanServiceClient interface {
+	// Permissions required: plans.get
 	GetPlan(context.Context, *connect.Request[v1.GetPlanRequest]) (*connect.Response[v1.Plan], error)
+	// Permissions required: plans.list
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
+	// Permissions required: plans.get
 	SearchPlans(context.Context, *connect.Request[v1.SearchPlansRequest]) (*connect.Response[v1.SearchPlansResponse], error)
+	// Permissions required: plans.create
 	CreatePlan(context.Context, *connect.Request[v1.CreatePlanRequest]) (*connect.Response[v1.Plan], error)
 	// UpdatePlan updates the plan.
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
+	// Permissions required: plans.update
 	UpdatePlan(context.Context, *connect.Request[v1.UpdatePlanRequest]) (*connect.Response[v1.Plan], error)
+	// Permissions required: planCheckRuns.list
 	ListPlanCheckRuns(context.Context, *connect.Request[v1.ListPlanCheckRunsRequest]) (*connect.Response[v1.ListPlanCheckRunsResponse], error)
+	// Permissions required: planCheckRuns.run
 	RunPlanChecks(context.Context, *connect.Request[v1.RunPlanChecksRequest]) (*connect.Response[v1.RunPlanChecksResponse], error)
+	// Permissions required: planCheckRuns.run
 	BatchCancelPlanCheckRuns(context.Context, *connect.Request[v1.BatchCancelPlanCheckRunsRequest]) (*connect.Response[v1.BatchCancelPlanCheckRunsResponse], error)
 }
 
@@ -185,16 +193,24 @@ func (c *planServiceClient) BatchCancelPlanCheckRuns(ctx context.Context, req *c
 
 // PlanServiceHandler is an implementation of the bytebase.v1.PlanService service.
 type PlanServiceHandler interface {
+	// Permissions required: plans.get
 	GetPlan(context.Context, *connect.Request[v1.GetPlanRequest]) (*connect.Response[v1.Plan], error)
+	// Permissions required: plans.list
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
+	// Permissions required: plans.get
 	SearchPlans(context.Context, *connect.Request[v1.SearchPlansRequest]) (*connect.Response[v1.SearchPlansResponse], error)
+	// Permissions required: plans.create
 	CreatePlan(context.Context, *connect.Request[v1.CreatePlanRequest]) (*connect.Response[v1.Plan], error)
 	// UpdatePlan updates the plan.
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
+	// Permissions required: plans.update
 	UpdatePlan(context.Context, *connect.Request[v1.UpdatePlanRequest]) (*connect.Response[v1.Plan], error)
+	// Permissions required: planCheckRuns.list
 	ListPlanCheckRuns(context.Context, *connect.Request[v1.ListPlanCheckRunsRequest]) (*connect.Response[v1.ListPlanCheckRunsResponse], error)
+	// Permissions required: planCheckRuns.run
 	RunPlanChecks(context.Context, *connect.Request[v1.RunPlanChecksRequest]) (*connect.Response[v1.RunPlanChecksResponse], error)
+	// Permissions required: planCheckRuns.run
 	BatchCancelPlanCheckRuns(context.Context, *connect.Request[v1.BatchCancelPlanCheckRunsRequest]) (*connect.Response[v1.BatchCancelPlanCheckRunsResponse], error)
 }
 

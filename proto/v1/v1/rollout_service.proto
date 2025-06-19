@@ -14,6 +14,7 @@ import "v1/plan_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service RolloutService {
+  // Permissions required: rollouts.get
   rpc GetRollout(GetRolloutRequest) returns (Rollout) {
     option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*}"};
     option (google.api.method_signature) = "name";
@@ -21,6 +22,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: rollouts.list
   rpc ListRollouts(ListRolloutsRequest) returns (ListRolloutsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/rollouts"};
     option (google.api.method_signature) = "parent";
@@ -29,6 +31,7 @@ service RolloutService {
   }
 
   // CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
+  // Permissions required: rollouts.create
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/rollouts"
@@ -40,6 +43,7 @@ service RolloutService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: rollouts.preview
   rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:previewRollout"
@@ -50,6 +54,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: taskRuns.list
   rpc ListTaskRuns(ListTaskRunsRequest) returns (ListTaskRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"};
     option (google.api.method_signature) = "parent";
@@ -57,6 +62,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: taskRuns.list
   rpc GetTaskRun(GetTaskRunRequest) returns (TaskRun) {
     option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}"};
     option (google.api.method_signature) = "name";
@@ -64,6 +70,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: taskRuns.list
   rpc GetTaskRunLog(GetTaskRunLogRequest) returns (TaskRunLog) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log"};
     option (google.api.method_signature) = "parent";
@@ -71,6 +78,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: taskRuns.list
   rpc GetTaskRunSession(GetTaskRunSessionRequest) returns (TaskRunSession) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session"};
     option (google.api.method_signature) = "parent";
@@ -82,6 +90,7 @@ service RolloutService {
   // DataExport issue only allows the creator to run the task.
   // Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
   // Follow role-based rollout policy for the environment.
+  // Permissions required: None
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun"
@@ -93,6 +102,7 @@ service RolloutService {
 
   // BatchSkipTasks skips the specified tasks.
   // The access is the same as BatchRunTasks().
+  // Permissions required: None
   rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip"
@@ -104,6 +114,7 @@ service RolloutService {
 
   // BatchCancelTaskRuns cancels the specified task runs in batch.
   // The access is the same as BatchRunTasks().
+  // Permissions required: None
   rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel"
@@ -113,6 +124,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Permissions required: taskRuns.list
   rpc PreviewTaskRunRollback(PreviewTaskRunRollbackRequest) returns (PreviewTaskRunRollbackResponse) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}:previewRollback"

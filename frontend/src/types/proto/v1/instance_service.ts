@@ -4071,6 +4071,7 @@ export const InstanceServiceDefinition = {
   name: "InstanceService",
   fullName: "bytebase.v1.InstanceService",
   methods: {
+    /** Permissions required: instances.get */
     getInstance: {
       name: "GetInstance",
       requestType: GetInstanceRequest,
@@ -4114,6 +4115,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.list */
     listInstances: {
       name: "ListInstances",
       requestType: ListInstancesRequest,
@@ -4129,6 +4131,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.create */
     createInstance: {
       name: "CreateInstance",
       requestType: CreateInstanceRequest,
@@ -4176,6 +4179,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.update */
     updateInstance: {
       name: "UpdateInstance",
       requestType: UpdateInstanceRequest,
@@ -4286,6 +4290,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.delete */
     deleteInstance: {
       name: "DeleteInstance",
       requestType: DeleteInstanceRequest,
@@ -4353,6 +4358,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.undelete */
     undeleteInstance: {
       name: "UndeleteInstance",
       requestType: UndeleteInstanceRequest,
@@ -4433,6 +4439,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.sync */
     syncInstance: {
       name: "SyncInstance",
       requestType: SyncInstanceRequest,
@@ -4483,6 +4490,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.get */
     listInstanceDatabase: {
       name: "ListInstanceDatabase",
       requestType: ListInstanceDatabaseRequest,
@@ -4538,6 +4546,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.sync */
     batchSyncInstances: {
       name: "BatchSyncInstances",
       requestType: BatchSyncInstancesRequest,
@@ -4584,6 +4593,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.update */
     batchUpdateInstances: {
       name: "BatchUpdateInstances",
       requestType: BatchUpdateInstancesRequest,
@@ -4656,6 +4666,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.update */
     addDataSource: {
       name: "AddDataSource",
       requestType: AddDataSourceRequest,
@@ -4739,6 +4750,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.update */
     removeDataSource: {
       name: "RemoveDataSource",
       requestType: RemoveDataSourceRequest,
@@ -4825,6 +4837,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: instances.update */
     updateDataSource: {
       name: "UpdateDataSource",
       requestType: UpdateDataSourceRequest,

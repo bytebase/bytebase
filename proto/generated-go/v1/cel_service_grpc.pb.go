@@ -27,7 +27,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CelServiceClient interface {
+	// Permissions required: None
 	BatchParse(ctx context.Context, in *BatchParseRequest, opts ...grpc.CallOption) (*BatchParseResponse, error)
+	// Permissions required: None
 	BatchDeparse(ctx context.Context, in *BatchDeparseRequest, opts ...grpc.CallOption) (*BatchDeparseResponse, error)
 }
 
@@ -63,7 +65,9 @@ func (c *celServiceClient) BatchDeparse(ctx context.Context, in *BatchDeparseReq
 // All implementations must embed UnimplementedCelServiceServer
 // for forward compatibility.
 type CelServiceServer interface {
+	// Permissions required: None
 	BatchParse(context.Context, *BatchParseRequest) (*BatchParseResponse, error)
+	// Permissions required: None
 	BatchDeparse(context.Context, *BatchDeparseRequest) (*BatchDeparseResponse, error)
 	mustEmbedUnimplementedCelServiceServer()
 }
