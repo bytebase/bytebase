@@ -44,7 +44,7 @@ import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import { SemanticTypeSetting_SemanticType, Setting_SettingName } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
 import type { SemanticItem } from "./components/SemanticTypesTable.vue";

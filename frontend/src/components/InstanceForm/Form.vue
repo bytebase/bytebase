@@ -522,7 +522,7 @@ import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSource_AuthenticationType } from "@/types/proto/v1/instance_service";
 import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   isDev,
   extractInstanceResourceName,

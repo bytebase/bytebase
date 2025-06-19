@@ -39,7 +39,7 @@ import { featureToRef, useCurrentUserV1, extractUserId, useActuatorV1Store } fro
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { UNKNOWN_USER_NAME } from "@/types";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 const GAP = 320;
 const SIZE = 16;

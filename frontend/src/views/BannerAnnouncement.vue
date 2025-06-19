@@ -21,7 +21,7 @@
 import { computed } from "vue";
 import { useSettingV1Store, hasFeature } from "@/store";
 import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { urlfy } from "@/utils";
 
 const settingV1Store = useSettingV1Store();

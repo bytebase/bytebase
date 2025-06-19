@@ -67,7 +67,7 @@ import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, hasFeature } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";

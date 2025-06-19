@@ -81,7 +81,7 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";

@@ -42,7 +42,7 @@ import {
 import { provideRiskFilter } from "@/components/CustomApproval/Settings/components/common";
 import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
 import { featureToRef, useRiskStore } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

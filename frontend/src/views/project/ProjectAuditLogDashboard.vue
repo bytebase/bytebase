@@ -58,7 +58,7 @@ import { featureToRef, useAuditLogStore, useUserStore } from "@/store";
 import { type SearchAuditLogsParams } from "@/types";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 
 interface LocalState {

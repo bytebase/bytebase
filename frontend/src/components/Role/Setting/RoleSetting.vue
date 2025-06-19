@@ -65,7 +65,7 @@ import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { featureToRef, useRoleStore } from "@/store";
 import { PRESET_ROLES } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { RoleDataTable, RolePanel } from "./components";
 import { provideCustomRoleSettingContext } from "./context";

@@ -62,7 +62,7 @@ import {
   DataSourceType,
   Instance,
 } from "@/types/proto/v1/instance_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { defer, isValidSpannerHost } from "@/utils";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton } from "naive-ui";

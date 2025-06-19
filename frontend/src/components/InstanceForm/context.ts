@@ -21,7 +21,7 @@ import {
   DataSource_AuthenticationType,
   DataSource_RedisType,
 } from "@/types/proto/v1/instance_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractInstanceResourceName,
   hasWorkspacePermissionV2,

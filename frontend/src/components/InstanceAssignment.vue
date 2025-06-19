@@ -92,7 +92,7 @@ import {
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import { Instance } from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "./LearnMoreLink.vue";
 
