@@ -20,10 +20,13 @@ import { NSelect, type SelectOption } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
-import { instanceRoleServiceClient } from "@/grpcweb";
+import { instanceRoleServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
 import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
+import { create } from "@bufbuild/protobuf";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import { ListInstanceRolesRequestSchema } from "@/types/proto-es/v1/instance_role_service_pb";
+import { convertNewInstanceRoleToOld } from "@/utils/v1/instance-role-conversions";
 import { useEditorContext } from "./context";
 
 /**
@@ -56,11 +59,12 @@ const instanceRoles = ref<InstanceRole[]>([]);
 watch(
   () => database.value.instance,
   async () => {
-    const { roles } = await instanceRoleServiceClient.listInstanceRoles({
+    const request = create(ListInstanceRolesRequestSchema, {
       parent: database.value.instance,
       pageSize: DEFAULT_PAGE_SIZE,
     });
-    instanceRoles.value = roles;
+    const response = await instanceRoleServiceClientConnect.listInstanceRoles(request);
+    instanceRoles.value = response.roles.map(convertNewInstanceRoleToOld);
   },
   {
     immediate: true,

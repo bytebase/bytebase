@@ -1,10 +1,18 @@
-import { settingServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { settingServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import { 
+  GetSettingRequestSchema, 
+  UpdateSettingRequestSchema
+} from "@/types/proto-es/v1/setting_service_pb";
+import { convertNewSettingToOld, convertOldSettingToNew, convertOldSettingNameToNew } from "@/utils/v1/setting-conversions";
 import type { ResourceId } from "@/types";
 import { unknownEnvironment } from "@/types";
 import {
   EnvironmentSetting,
   EnvironmentSetting_Environment,
-  Setting_SettingName,
+  Setting_SettingName as OldSettingName,
 } from "@/types/proto/v1/setting_service";
 import type { Environment } from "@/types/v1/environment";
 import { orderBy } from "lodash-es";
@@ -61,32 +69,50 @@ const convertEnvironments = (
 const getEnvironmentSetting = async (
   silent = false
 ): Promise<Environment[]> => {
-  const setting = await settingServiceClient.getSetting(
-    {
-      name: `settings/${Setting_SettingName.ENVIRONMENT}`,
-    },
-    { silent }
-  );
-  const settingEnvironments =
-    setting.value?.environmentSetting?.environments ?? [];
-  return convertToEnvironments(settingEnvironments);
+  const newName = convertOldSettingNameToNew(OldSettingName.ENVIRONMENT);
+  const request = create(GetSettingRequestSchema, {
+    name: `settings/${newName}`,
+  });
+  const response = await settingServiceClientConnect.getSetting(request, {
+    contextValues: createContextValues().set(silentContextKey, silent),
+  });
+  // Extract environments from new proto format
+  if (response.value?.value?.case === "environmentSetting") {
+    const oldSetting = convertNewSettingToOld(response);
+    const settingEnvironments =
+      oldSetting.value?.environmentSetting?.environments ?? [];
+    return convertToEnvironments(settingEnvironments);
+  }
+  return [];
 };
 
 const updateEnvironmentSetting = async (
   environment: EnvironmentSetting
 ): Promise<Environment[]> => {
-  const setting = await settingServiceClient.updateSetting({
-    setting: {
-      name: `settings/${Setting_SettingName.ENVIRONMENT}`,
-      value: {
-        environmentSetting: environment,
-      },
+  // Create old setting object and convert to new format
+  const newName = convertOldSettingNameToNew(OldSettingName.ENVIRONMENT);
+  const oldSetting = {
+    name: `settings/${newName}`,
+    value: {
+      environmentSetting: environment,
     },
-    updateMask: ["environment_setting"],
+  };
+  const newSetting = convertOldSettingToNew(oldSetting);
+  
+  const request = create(UpdateSettingRequestSchema, {
+    setting: newSetting,
+    updateMask: { paths: ["environment_setting"] },
   });
-  const settingEnvironments =
-    setting.value?.environmentSetting?.environments ?? [];
-  return convertToEnvironments(settingEnvironments);
+  const response = await settingServiceClientConnect.updateSetting(request);
+  
+  // Extract environments from response
+  if (response.value?.value?.case === "environmentSetting") {
+    const oldResponse = convertNewSettingToOld(response);
+    const settingEnvironments =
+      oldResponse.value?.environmentSetting?.environments ?? [];
+    return convertToEnvironments(settingEnvironments);
+  }
+  return [];
 };
 
 export const useEnvironmentV1Store = defineStore("environment_v1", {

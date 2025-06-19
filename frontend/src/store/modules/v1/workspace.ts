@@ -1,22 +1,36 @@
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { workspaceServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { workspaceServiceClientConnect } from "@/grpcweb";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { groupBindingPrefix, ALL_USERS_USER_EMAIL } from "@/types";
-import { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
+import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import {
+  IamPolicySchema,
+  BindingSchema,
+  GetIamPolicyRequestSchema,
+  SetIamPolicyRequestSchema,
+} from "@/types/proto-es/v1/iam_policy_pb";
 import { bindingListInIAM, getUserEmailListInBinding } from "@/utils";
 import { extractUserId } from "./common";
 import { extractGroupEmail } from "./group";
+import { convertNewIamPolicyToOld } from "@/utils/v1/iam-conversions";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
-  const workspaceIamPolicy = ref<IamPolicy>(IamPolicy.fromPartial({}));
+  // Internal state uses proto-es types
+  const _workspaceIamPolicy = ref<IamPolicy>(create(IamPolicySchema, {}));
+  
+  // Computed property that provides old proto type for compatibility
+  const workspaceIamPolicy = computed(() => {
+    return convertNewIamPolicyToOld(_workspaceIamPolicy.value);
+  });
 
   // roleMapToUsers returns Map<roles/{role}, Set<users/{email}>>
   // the user could includes users/ALL_USERS_USER_EMAIL
   const roleMapToUsers = computed(() => {
     const map = new Map<string, Set<string>>();
-    for (const binding of workspaceIamPolicy.value.bindings) {
+    for (const binding of _workspaceIamPolicy.value.bindings) {
       if (!map.has(binding.role)) {
         map.set(binding.role, new Set());
       }
@@ -34,7 +48,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   // the user could includes users/ALL_USERS_USER_EMAIL
   const userMapToRoles = computed(() => {
     const map = new Map<string, Set<string>>();
-    for (const binding of workspaceIamPolicy.value.bindings) {
+    for (const binding of _workspaceIamPolicy.value.bindings) {
       for (const email of getUserEmailListInBinding({
         binding,
         ignoreGroup: false,
@@ -50,10 +64,11 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   });
 
   const fetchIamPolicy = async () => {
-    const policy = await workspaceServiceClient.getIamPolicy({
+    const request = create(GetIamPolicyRequestSchema, {
       resource: "workspaces/-",
     });
-    workspaceIamPolicy.value = policy;
+    const policy = await workspaceServiceClientConnect.getIamPolicy(request);
+    _workspaceIamPolicy.value = policy;
   };
 
   const mergeBinding = ({
@@ -85,7 +100,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
 
     for (const role of newRolesSet) {
       workspacePolicy.bindings.push(
-        Binding.fromPartial({
+        create(BindingSchema, {
           role,
           members: [member],
         })
@@ -104,7 +119,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     if (batchPatch.length === 0) {
       return;
     }
-    let workspacePolicy = cloneDeep(workspaceIamPolicy.value);
+    let workspacePolicy = cloneDeep(_workspaceIamPolicy.value);
     for (const patch of batchPatch) {
       workspacePolicy = mergeBinding({
         ...patch,
@@ -112,12 +127,13 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
       });
     }
 
-    const policy = await workspaceServiceClient.setIamPolicy({
+    const request = create(SetIamPolicyRequestSchema, {
       resource: "workspaces/-",
       policy: workspacePolicy,
       etag: workspacePolicy.etag,
     });
-    workspaceIamPolicy.value = policy;
+    const policy = await workspaceServiceClientConnect.setIamPolicy(request);
+    _workspaceIamPolicy.value = policy;
   };
 
   const findRolesByMember = ({
@@ -134,7 +150,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
       email = extractUserId(member);
     }
     return bindingListInIAM({
-      policy: workspaceIamPolicy.value,
+      policy: _workspaceIamPolicy.value,
       email,
       ignoreGroup,
     }).map((binding) => binding.role);

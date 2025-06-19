@@ -10,15 +10,17 @@ import {
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
 import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
+import { CelService } from "@/types/proto-es/v1/cel_service_pb";
+import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { InstanceRoleService } from "@/types/proto-es/v1/instance_role_service_pb";
+import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
-import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
+import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
-import { DatabaseCatalogServiceDefinition } from "@/types/proto/v1/database_catalog_service";
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { GroupServiceDefinition } from "@/types/proto/v1/group_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
-import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
@@ -30,12 +32,10 @@ import { RevisionServiceDefinition } from "@/types/proto/v1/revision_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
-import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { UserServiceDefinition } from "@/types/proto/v1/user_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
-import { WorkspaceServiceDefinition } from "@/types/proto/v1/workspace_service";
 import {
   authInterceptorMiddleware,
   authInterceptor,
@@ -105,10 +105,6 @@ export const databaseServiceClient = clientFactory.create(
   channel
 );
 
-export const databaseCatalogServiceClient = clientFactory.create(
-  DatabaseCatalogServiceDefinition,
-  channel
-);
 
 export const databaseGroupServiceClient = clientFactory.create(
   DatabaseGroupServiceDefinition,
@@ -122,11 +118,6 @@ export const identityProviderClient = clientFactory.create(
 
 export const riskServiceClient = clientFactory.create(
   RiskServiceDefinition,
-  channel
-);
-
-export const settingServiceClient = clientFactory.create(
-  SettingServiceDefinition,
   channel
 );
 
@@ -165,11 +156,6 @@ export const sqlStreamingServiceClient = clientFactory.create(
   websocketChannel
 );
 
-export const celServiceClient = clientFactory.create(
-  CelServiceDefinition,
-  channel
-);
-
 export const changelistServiceClient = clientFactory.create(
   ChangelistServiceDefinition,
   channel
@@ -186,11 +172,6 @@ export const reviewConfigServiceClient = clientFactory.create(
   channel
 );
 
-export const workspaceServiceClient = clientFactory.create(
-  WorkspaceServiceDefinition,
-  channel
-);
-
 export const releaseServiceClient = clientFactory.create(
   ReleaseServiceDefinition,
   channel
@@ -201,10 +182,6 @@ export const revisionServiceClient = clientFactory.create(
   channel
 );
 
-export const instanceRoleServiceClient = clientFactory.create(
-  InstanceRoleServiceDefinition,
-  channel
-);
 
 // e.g. How to use `authServiceClient`?
 //
@@ -236,5 +213,27 @@ export const auditLogServiceClientConnect = createClient(
 
 export const subscriptionServiceClientConnect = createClient(
   SubscriptionService,
+  transport
+);
+
+export const workspaceServiceClientConnect = createClient(
+  WorkspaceService,
+  transport
+);
+
+export const settingServiceClientConnect = createClient(
+  SettingService,
+  transport
+);
+
+export const celServiceClientConnect = createClient(CelService, transport);
+
+export const databaseCatalogServiceClientConnect = createClient(
+  DatabaseCatalogService,
+  transport
+);
+
+export const instanceRoleServiceClientConnect = createClient(
+  InstanceRoleService,
   transport
 );
