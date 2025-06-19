@@ -12,7 +12,7 @@ import {
   useInstanceV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,

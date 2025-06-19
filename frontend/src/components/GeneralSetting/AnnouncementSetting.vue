@@ -107,7 +107,7 @@ import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Announcement } from "@/types/proto/v1/setting_service";
 import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 
 const props = defineProps<{

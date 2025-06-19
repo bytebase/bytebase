@@ -69,7 +69,7 @@ import {
   useAppFeature,
   useSubscriptionV1Store,
 } from "@/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import ReleaseRemindModal from "../ReleaseRemindModal.vue";
 import TrialModal from "../TrialModal.vue";

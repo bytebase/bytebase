@@ -143,7 +143,7 @@ import {
   PolicyResourceType,
   MaskingRulePolicy_MaskingRule,
 } from "@/types/proto/v1/org_policy_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   arraySwap,
   hasWorkspacePermissionV2,
