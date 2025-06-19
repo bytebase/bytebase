@@ -11,16 +11,16 @@ import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
 import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
 import { CelService } from "@/types/proto-es/v1/cel_service_pb";
+import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { InstanceRoleService } from "@/types/proto-es/v1/instance_role_service_pb";
 import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
-import { DatabaseCatalogServiceDefinition } from "@/types/proto/v1/database_catalog_service";
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { GroupServiceDefinition } from "@/types/proto/v1/group_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
-import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
@@ -105,10 +105,6 @@ export const databaseServiceClient = clientFactory.create(
   channel
 );
 
-export const databaseCatalogServiceClient = clientFactory.create(
-  DatabaseCatalogServiceDefinition,
-  channel
-);
 
 export const databaseGroupServiceClient = clientFactory.create(
   DatabaseGroupServiceDefinition,
@@ -186,10 +182,6 @@ export const revisionServiceClient = clientFactory.create(
   channel
 );
 
-export const instanceRoleServiceClient = clientFactory.create(
-  InstanceRoleServiceDefinition,
-  channel
-);
 
 // e.g. How to use `authServiceClient`?
 //
@@ -235,3 +227,13 @@ export const settingServiceClientConnect = createClient(
 );
 
 export const celServiceClientConnect = createClient(CelService, transport);
+
+export const databaseCatalogServiceClientConnect = createClient(
+  DatabaseCatalogService,
+  transport
+);
+
+export const instanceRoleServiceClientConnect = createClient(
+  InstanceRoleService,
+  transport
+);
