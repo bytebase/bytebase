@@ -32,7 +32,7 @@ type SubscriptionServiceClient interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	// Permissions required: None
 	GetSubscription(ctx context.Context, in *GetSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
-	// Permissions required: settings.set
+	// Permissions required: bb.settings.set
 	UpdateSubscription(ctx context.Context, in *UpdateSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
 }
 
@@ -73,7 +73,7 @@ type SubscriptionServiceServer interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	// Permissions required: None
 	GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error)
-	// Permissions required: settings.set
+	// Permissions required: bb.settings.set
 	UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*Subscription, error)
 	mustEmbedUnimplementedSubscriptionServiceServer()
 }

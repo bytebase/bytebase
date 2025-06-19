@@ -17,6 +17,7 @@ service CelService {
     };
     option (bytebase.v1.allow_without_credential) = true;
   }
+
   // Permissions required: None
   rpc BatchDeparse(BatchDeparseRequest) returns (BatchDeparseResponse) {
     option (google.api.http) = {

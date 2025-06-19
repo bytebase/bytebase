@@ -1288,7 +1288,7 @@ export declare const DataSourceTypeSchema: GenEnum<DataSourceType>;
  */
 export declare const InstanceService: GenService<{
   /**
-   * Permissions required: instances.get
+   * Permissions required: bb.instances.get
    *
    * @generated from rpc bytebase.v1.InstanceService.GetInstance
    */
@@ -1298,7 +1298,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
-   * Permissions required: instances.list
+   * Permissions required: bb.instances.list
    *
    * @generated from rpc bytebase.v1.InstanceService.ListInstances
    */
@@ -1308,7 +1308,7 @@ export declare const InstanceService: GenService<{
     output: typeof ListInstancesResponseSchema;
   },
   /**
-   * Permissions required: instances.create
+   * Permissions required: bb.instances.create
    *
    * @generated from rpc bytebase.v1.InstanceService.CreateInstance
    */
@@ -1318,7 +1318,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
-   * Permissions required: instances.update
+   * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.UpdateInstance
    */
@@ -1328,7 +1328,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
-   * Permissions required: instances.delete
+   * Permissions required: bb.instances.delete
    *
    * @generated from rpc bytebase.v1.InstanceService.DeleteInstance
    */
@@ -1338,7 +1338,7 @@ export declare const InstanceService: GenService<{
     output: typeof EmptySchema;
   },
   /**
-   * Permissions required: instances.undelete
+   * Permissions required: bb.instances.undelete
    *
    * @generated from rpc bytebase.v1.InstanceService.UndeleteInstance
    */
@@ -1348,7 +1348,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
-   * Permissions required: instances.sync
+   * Permissions required: bb.instances.sync
    *
    * @generated from rpc bytebase.v1.InstanceService.SyncInstance
    */
@@ -1358,7 +1358,7 @@ export declare const InstanceService: GenService<{
     output: typeof SyncInstanceResponseSchema;
   },
   /**
-   * Permissions required: instances.get
+   * Permissions required: bb.instances.get
    *
    * @generated from rpc bytebase.v1.InstanceService.ListInstanceDatabase
    */
@@ -1368,7 +1368,7 @@ export declare const InstanceService: GenService<{
     output: typeof ListInstanceDatabaseResponseSchema;
   },
   /**
-   * Permissions required: instances.sync
+   * Permissions required: bb.instances.sync
    *
    * @generated from rpc bytebase.v1.InstanceService.BatchSyncInstances
    */
@@ -1378,7 +1378,7 @@ export declare const InstanceService: GenService<{
     output: typeof BatchSyncInstancesResponseSchema;
   },
   /**
-   * Permissions required: instances.update
+   * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.BatchUpdateInstances
    */
@@ -1388,7 +1388,7 @@ export declare const InstanceService: GenService<{
     output: typeof BatchUpdateInstancesResponseSchema;
   },
   /**
-   * Permissions required: instances.update
+   * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.AddDataSource
    */
@@ -1398,7 +1398,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
-   * Permissions required: instances.update
+   * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.RemoveDataSource
    */
@@ -1408,7 +1408,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
-   * Permissions required: instances.update
+   * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.UpdateDataSource
    */

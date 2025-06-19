@@ -954,7 +954,7 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
-    /** Permissions required: settings.set */
+    /** Permissions required: bb.settings.set */
     updateActuatorInfo: {
       name: "UpdateActuatorInfo",
       requestType: UpdateActuatorInfoRequest,
@@ -1027,7 +1027,7 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
-    /** Permissions required: projects.create */
+    /** Permissions required: bb.projects.create */
     setupSample: {
       name: "SetupSample",
       requestType: SetupSampleRequest,

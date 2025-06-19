@@ -480,7 +480,7 @@ export const InstanceRoleServiceDefinition = {
   name: "InstanceRoleService",
   fullName: "bytebase.v1.InstanceRoleService",
   methods: {
-    /** Permissions required: instanceRoles.get */
+    /** Permissions required: bb.instanceRoles.get */
     getInstanceRole: {
       name: "GetInstanceRole",
       requestType: GetInstanceRoleRequest,
@@ -556,7 +556,7 @@ export const InstanceRoleServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instanceRoles.get */
+    /** Permissions required: bb.instanceRoles.get */
     listInstanceRoles: {
       name: "ListInstanceRoles",
       requestType: ListInstanceRolesRequest,

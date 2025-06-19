@@ -1078,7 +1078,7 @@ export declare const PlanCheckRun_StatusSchema: GenEnum<PlanCheckRun_Status>;
  */
 export declare const PlanService: GenService<{
   /**
-   * Permissions required: plans.get
+   * Permissions required: bb.plans.get
    *
    * @generated from rpc bytebase.v1.PlanService.GetPlan
    */
@@ -1088,7 +1088,7 @@ export declare const PlanService: GenService<{
     output: typeof PlanSchema;
   },
   /**
-   * Permissions required: plans.list
+   * Permissions required: bb.plans.list
    *
    * @generated from rpc bytebase.v1.PlanService.ListPlans
    */
@@ -1099,7 +1099,7 @@ export declare const PlanService: GenService<{
   },
   /**
    * Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
-   * Permissions required: plans.get
+   * Permissions required: bb.plans.get
    *
    * @generated from rpc bytebase.v1.PlanService.SearchPlans
    */
@@ -1109,7 +1109,7 @@ export declare const PlanService: GenService<{
     output: typeof SearchPlansResponseSchema;
   },
   /**
-   * Permissions required: plans.create
+   * Permissions required: bb.plans.create
    *
    * @generated from rpc bytebase.v1.PlanService.CreatePlan
    */
@@ -1121,7 +1121,7 @@ export declare const PlanService: GenService<{
   /**
    * UpdatePlan updates the plan.
    * The plan creator and the user with bb.plans.update permission on the project can update the plan.
-   * Permissions required: plans.update
+   * Permissions required: bb.plans.update
    *
    * @generated from rpc bytebase.v1.PlanService.UpdatePlan
    */
@@ -1131,7 +1131,7 @@ export declare const PlanService: GenService<{
     output: typeof PlanSchema;
   },
   /**
-   * Permissions required: planCheckRuns.list
+   * Permissions required: bb.planCheckRuns.list
    *
    * @generated from rpc bytebase.v1.PlanService.ListPlanCheckRuns
    */
@@ -1141,7 +1141,7 @@ export declare const PlanService: GenService<{
     output: typeof ListPlanCheckRunsResponseSchema;
   },
   /**
-   * Permissions required: planCheckRuns.run
+   * Permissions required: bb.planCheckRuns.run
    *
    * @generated from rpc bytebase.v1.PlanService.RunPlanChecks
    */
@@ -1151,7 +1151,7 @@ export declare const PlanService: GenService<{
     output: typeof RunPlanChecksResponseSchema;
   },
   /**
-   * Permissions required: planCheckRuns.run
+   * Permissions required: bb.planCheckRuns.run
    *
    * @generated from rpc bytebase.v1.PlanService.BatchCancelPlanCheckRuns
    */

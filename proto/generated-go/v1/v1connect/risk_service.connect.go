@@ -48,15 +48,15 @@ const (
 
 // RiskServiceClient is a client for the bytebase.v1.RiskService service.
 type RiskServiceClient interface {
-	// Permissions required: risks.list
+	// Permissions required: bb.risks.list
 	ListRisks(context.Context, *connect.Request[v1.ListRisksRequest]) (*connect.Response[v1.ListRisksResponse], error)
-	// Permissions required: risks.create
+	// Permissions required: bb.risks.create
 	CreateRisk(context.Context, *connect.Request[v1.CreateRiskRequest]) (*connect.Response[v1.Risk], error)
-	// Permissions required: risks.list
+	// Permissions required: bb.risks.list
 	GetRisk(context.Context, *connect.Request[v1.GetRiskRequest]) (*connect.Response[v1.Risk], error)
-	// Permissions required: risks.update
+	// Permissions required: bb.risks.update
 	UpdateRisk(context.Context, *connect.Request[v1.UpdateRiskRequest]) (*connect.Response[v1.Risk], error)
-	// Permissions required: risks.delete
+	// Permissions required: bb.risks.delete
 	DeleteRisk(context.Context, *connect.Request[v1.DeleteRiskRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -140,15 +140,15 @@ func (c *riskServiceClient) DeleteRisk(ctx context.Context, req *connect.Request
 
 // RiskServiceHandler is an implementation of the bytebase.v1.RiskService service.
 type RiskServiceHandler interface {
-	// Permissions required: risks.list
+	// Permissions required: bb.risks.list
 	ListRisks(context.Context, *connect.Request[v1.ListRisksRequest]) (*connect.Response[v1.ListRisksResponse], error)
-	// Permissions required: risks.create
+	// Permissions required: bb.risks.create
 	CreateRisk(context.Context, *connect.Request[v1.CreateRiskRequest]) (*connect.Response[v1.Risk], error)
-	// Permissions required: risks.list
+	// Permissions required: bb.risks.list
 	GetRisk(context.Context, *connect.Request[v1.GetRiskRequest]) (*connect.Response[v1.Risk], error)
-	// Permissions required: risks.update
+	// Permissions required: bb.risks.update
 	UpdateRisk(context.Context, *connect.Request[v1.UpdateRiskRequest]) (*connect.Response[v1.Risk], error)
-	// Permissions required: risks.delete
+	// Permissions required: bb.risks.delete
 	DeleteRisk(context.Context, *connect.Request[v1.DeleteRiskRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

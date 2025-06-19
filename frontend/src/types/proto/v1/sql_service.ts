@@ -4274,7 +4274,7 @@ export const SQLServiceDefinition = {
   name: "SQLService",
   fullName: "bytebase.v1.SQLService",
   methods: {
-    /** Permissions required: databases.get */
+    /** Permissions required: bb.databases.get */
     query: {
       name: "Query",
       requestType: QueryRequest,
@@ -4374,7 +4374,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
-    /** Permissions required: sql.admin */
+    /** Permissions required: bb.sql.admin */
     adminExecute: {
       name: "AdminExecute",
       requestType: AdminExecuteRequest,
@@ -4443,7 +4443,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.get */
+    /** Permissions required: bb.databases.get */
     export: {
       name: "Export",
       requestType: ExportRequest,
@@ -4647,7 +4647,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.check */
+    /** Permissions required: bb.databases.check */
     check: {
       name: "Check",
       requestType: CheckRequest,

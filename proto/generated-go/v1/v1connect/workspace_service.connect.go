@@ -43,9 +43,9 @@ const (
 
 // WorkspaceServiceClient is a client for the bytebase.v1.WorkspaceService service.
 type WorkspaceServiceClient interface {
-	// Permissions required: workspaces.getIamPolicy
+	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
-	// Permissions required: workspaces.setIamPolicy
+	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 }
 
@@ -93,9 +93,9 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, req *connect.
 
 // WorkspaceServiceHandler is an implementation of the bytebase.v1.WorkspaceService service.
 type WorkspaceServiceHandler interface {
-	// Permissions required: workspaces.getIamPolicy
+	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
-	// Permissions required: workspaces.setIamPolicy
+	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 }
 

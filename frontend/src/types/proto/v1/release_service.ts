@@ -1631,7 +1631,7 @@ export const ReleaseServiceDefinition = {
   name: "ReleaseService",
   fullName: "bytebase.v1.ReleaseService",
   methods: {
-    /** Permissions required: releases.get */
+    /** Permissions required: bb.releases.get */
     getRelease: {
       name: "GetRelease",
       requestType: GetReleaseRequest,
@@ -1685,7 +1685,7 @@ export const ReleaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: releases.list */
+    /** Permissions required: bb.releases.list */
     listReleases: {
       name: "ListReleases",
       requestType: ListReleasesRequest,
@@ -1739,7 +1739,7 @@ export const ReleaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: releases.create */
+    /** Permissions required: bb.releases.create */
     createRelease: {
       name: "CreateRelease",
       requestType: CreateReleaseRequest,
@@ -1804,7 +1804,7 @@ export const ReleaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: releases.update */
+    /** Permissions required: bb.releases.update */
     updateRelease: {
       name: "UpdateRelease",
       requestType: UpdateReleaseRequest,
@@ -1900,7 +1900,7 @@ export const ReleaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: releases.delete */
+    /** Permissions required: bb.releases.delete */
     deleteRelease: {
       name: "DeleteRelease",
       requestType: DeleteReleaseRequest,
@@ -1956,7 +1956,7 @@ export const ReleaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: releases.undelete */
+    /** Permissions required: bb.releases.undelete */
     undeleteRelease: {
       name: "UndeleteRelease",
       requestType: UndeleteReleaseRequest,
@@ -2042,7 +2042,7 @@ export const ReleaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: releases.check */
+    /** Permissions required: bb.releases.check */
     checkRelease: {
       name: "CheckRelease",
       requestType: CheckReleaseRequest,

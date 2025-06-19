@@ -229,7 +229,7 @@ export declare const Role_TypeSchema: GenEnum<Role_Type>;
  */
 export declare const RoleService: GenService<{
   /**
-   * Permissions required: roles.list
+   * Permissions required: bb.roles.list
    *
    * @generated from rpc bytebase.v1.RoleService.ListRoles
    */
@@ -239,7 +239,7 @@ export declare const RoleService: GenService<{
     output: typeof ListRolesResponseSchema;
   },
   /**
-   * Permissions required: roles.get
+   * Permissions required: bb.roles.get
    *
    * @generated from rpc bytebase.v1.RoleService.GetRole
    */
@@ -249,7 +249,7 @@ export declare const RoleService: GenService<{
     output: typeof RoleSchema;
   },
   /**
-   * Permissions required: roles.create
+   * Permissions required: bb.roles.create
    *
    * @generated from rpc bytebase.v1.RoleService.CreateRole
    */
@@ -259,7 +259,7 @@ export declare const RoleService: GenService<{
     output: typeof RoleSchema;
   },
   /**
-   * Permissions required: roles.update
+   * Permissions required: bb.roles.update
    *
    * @generated from rpc bytebase.v1.RoleService.UpdateRole
    */
@@ -269,7 +269,7 @@ export declare const RoleService: GenService<{
     output: typeof RoleSchema;
   },
   /**
-   * Permissions required: roles.delete
+   * Permissions required: bb.roles.delete
    *
    * @generated from rpc bytebase.v1.RoleService.DeleteRole
    */

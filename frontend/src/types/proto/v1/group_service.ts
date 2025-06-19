@@ -808,7 +808,7 @@ export const GroupServiceDefinition = {
   name: "GroupService",
   fullName: "bytebase.v1.GroupService",
   methods: {
-    /** Permissions required: groups.get */
+    /** Permissions required: bb.groups.get */
     getGroup: {
       name: "GetGroup",
       requestType: GetGroupRequest,
@@ -849,7 +849,7 @@ export const GroupServiceDefinition = {
         },
       },
     },
-    /** Permissions required: groups.list */
+    /** Permissions required: bb.groups.list */
     listGroups: {
       name: "ListGroups",
       requestType: ListGroupsRequest,
@@ -865,7 +865,7 @@ export const GroupServiceDefinition = {
         },
       },
     },
-    /** Permissions required: groups.create */
+    /** Permissions required: bb.groups.create */
     createGroup: {
       name: "CreateGroup",
       requestType: CreateGroupRequest,
@@ -887,7 +887,7 @@ export const GroupServiceDefinition = {
     /**
      * UpdateGroup updates the group.
      * Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
-     * Permissions required: groups.update
+     * Permissions required: bb.groups.update
      */
     updateGroup: {
       name: "UpdateGroup",
@@ -943,7 +943,7 @@ export const GroupServiceDefinition = {
         },
       },
     },
-    /** Permissions required: groups.delete */
+    /** Permissions required: bb.groups.delete */
     deleteGroup: {
       name: "DeleteGroup",
       requestType: DeleteGroupRequest,

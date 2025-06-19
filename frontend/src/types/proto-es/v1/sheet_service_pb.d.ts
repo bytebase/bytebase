@@ -278,7 +278,7 @@ export declare const SheetCommandSchema: GenMessage<SheetCommand>;
  */
 export declare const SheetService: GenService<{
   /**
-   * Permissions required: sheets.create
+   * Permissions required: bb.sheets.create
    *
    * @generated from rpc bytebase.v1.SheetService.CreateSheet
    */
@@ -288,7 +288,7 @@ export declare const SheetService: GenService<{
     output: typeof SheetSchema;
   },
   /**
-   * Permissions required: sheets.create
+   * Permissions required: bb.sheets.create
    *
    * @generated from rpc bytebase.v1.SheetService.BatchCreateSheets
    */
@@ -298,7 +298,7 @@ export declare const SheetService: GenService<{
     output: typeof BatchCreateSheetsResponseSchema;
   },
   /**
-   * Permissions required: sheets.get
+   * Permissions required: bb.sheets.get
    *
    * @generated from rpc bytebase.v1.SheetService.GetSheet
    */
@@ -308,7 +308,7 @@ export declare const SheetService: GenService<{
     output: typeof SheetSchema;
   },
   /**
-   * Permissions required: sheets.update
+   * Permissions required: bb.sheets.update
    *
    * @generated from rpc bytebase.v1.SheetService.UpdateSheet
    */

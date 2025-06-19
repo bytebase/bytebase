@@ -28,7 +28,8 @@ service AuditLogService {
     option (bytebase.v1.permission) = "bb.auditLogs.search";
     option (bytebase.v1.auth_method) = IAM;
   }
-  // Permissions required: auditLogs.export
+
+  // Permissions required: bb.auditLogs.export
   rpc ExportAuditLogs(ExportAuditLogsRequest) returns (ExportAuditLogsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/auditLogs:export"

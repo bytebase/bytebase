@@ -169,7 +169,7 @@ export declare const InstanceRoleSchema: GenMessage<InstanceRole>;
  */
 export declare const InstanceRoleService: GenService<{
   /**
-   * Permissions required: instanceRoles.get
+   * Permissions required: bb.instanceRoles.get
    *
    * @generated from rpc bytebase.v1.InstanceRoleService.GetInstanceRole
    */
@@ -179,7 +179,7 @@ export declare const InstanceRoleService: GenService<{
     output: typeof InstanceRoleSchema;
   },
   /**
-   * Permissions required: instanceRoles.get
+   * Permissions required: bb.instanceRoles.get
    *
    * @generated from rpc bytebase.v1.InstanceRoleService.ListInstanceRoles
    */

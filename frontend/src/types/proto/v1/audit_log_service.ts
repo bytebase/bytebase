@@ -1153,7 +1153,7 @@ export const AuditLogServiceDefinition = {
         },
       },
     },
-    /** Permissions required: auditLogs.export */
+    /** Permissions required: bb.auditLogs.export */
     exportAuditLogs: {
       name: "ExportAuditLogs",
       requestType: ExportAuditLogsRequest,

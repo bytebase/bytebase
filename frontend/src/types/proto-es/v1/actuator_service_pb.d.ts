@@ -306,7 +306,7 @@ export declare const ActuatorService: GenService<{
     output: typeof ActuatorInfoSchema;
   },
   /**
-   * Permissions required: settings.set
+   * Permissions required: bb.settings.set
    *
    * @generated from rpc bytebase.v1.ActuatorService.UpdateActuatorInfo
    */
@@ -316,7 +316,7 @@ export declare const ActuatorService: GenService<{
     output: typeof ActuatorInfoSchema;
   },
   /**
-   * Permissions required: projects.create
+   * Permissions required: bb.projects.create
    *
    * @generated from rpc bytebase.v1.ActuatorService.SetupSample
    */

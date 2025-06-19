@@ -29,7 +29,7 @@ const (
 type AuditLogServiceClient interface {
 	// Permissions required: None
 	SearchAuditLogs(ctx context.Context, in *SearchAuditLogsRequest, opts ...grpc.CallOption) (*SearchAuditLogsResponse, error)
-	// Permissions required: auditLogs.export
+	// Permissions required: bb.auditLogs.export
 	ExportAuditLogs(ctx context.Context, in *ExportAuditLogsRequest, opts ...grpc.CallOption) (*ExportAuditLogsResponse, error)
 }
 
@@ -67,7 +67,7 @@ func (c *auditLogServiceClient) ExportAuditLogs(ctx context.Context, in *ExportA
 type AuditLogServiceServer interface {
 	// Permissions required: None
 	SearchAuditLogs(context.Context, *SearchAuditLogsRequest) (*SearchAuditLogsResponse, error)
-	// Permissions required: auditLogs.export
+	// Permissions required: bb.auditLogs.export
 	ExportAuditLogs(context.Context, *ExportAuditLogsRequest) (*ExportAuditLogsResponse, error)
 	mustEmbedUnimplementedAuditLogServiceServer()
 }

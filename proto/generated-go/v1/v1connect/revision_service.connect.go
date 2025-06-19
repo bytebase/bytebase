@@ -53,15 +53,15 @@ const (
 
 // RevisionServiceClient is a client for the bytebase.v1.RevisionService service.
 type RevisionServiceClient interface {
-	// Permissions required: revisions.list
+	// Permissions required: bb.revisions.list
 	ListRevisions(context.Context, *connect.Request[v1.ListRevisionsRequest]) (*connect.Response[v1.ListRevisionsResponse], error)
-	// Permissions required: revisions.get
+	// Permissions required: bb.revisions.get
 	GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error)
-	// Permissions required: revisions.create
+	// Permissions required: bb.revisions.create
 	CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error)
-	// Permissions required: revisions.create
+	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error)
-	// Permissions required: revisions.delete
+	// Permissions required: bb.revisions.delete
 	DeleteRevision(context.Context, *connect.Request[v1.DeleteRevisionRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -145,15 +145,15 @@ func (c *revisionServiceClient) DeleteRevision(ctx context.Context, req *connect
 
 // RevisionServiceHandler is an implementation of the bytebase.v1.RevisionService service.
 type RevisionServiceHandler interface {
-	// Permissions required: revisions.list
+	// Permissions required: bb.revisions.list
 	ListRevisions(context.Context, *connect.Request[v1.ListRevisionsRequest]) (*connect.Response[v1.ListRevisionsResponse], error)
-	// Permissions required: revisions.get
+	// Permissions required: bb.revisions.get
 	GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error)
-	// Permissions required: revisions.create
+	// Permissions required: bb.revisions.create
 	CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error)
-	// Permissions required: revisions.create
+	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error)
-	// Permissions required: revisions.delete
+	// Permissions required: bb.revisions.delete
 	DeleteRevision(context.Context, *connect.Request[v1.DeleteRevisionRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

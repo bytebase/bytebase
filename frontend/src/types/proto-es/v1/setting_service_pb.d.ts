@@ -1493,7 +1493,7 @@ export declare const DatabaseChangeModeSchema: GenEnum<DatabaseChangeMode>;
  */
 export declare const SettingService: GenService<{
   /**
-   * Permissions required: settings.list
+   * Permissions required: bb.settings.list
    *
    * @generated from rpc bytebase.v1.SettingService.ListSettings
    */
@@ -1503,7 +1503,7 @@ export declare const SettingService: GenService<{
     output: typeof ListSettingsResponseSchema;
   },
   /**
-   * Permissions required: settings.get
+   * Permissions required: bb.settings.get
    *
    * @generated from rpc bytebase.v1.SettingService.GetSetting
    */
@@ -1513,7 +1513,7 @@ export declare const SettingService: GenService<{
     output: typeof SettingSchema;
   },
   /**
-   * Permissions required: settings.set
+   * Permissions required: bb.settings.set
    *
    * @generated from rpc bytebase.v1.SettingService.UpdateSetting
    */

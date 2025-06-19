@@ -3191,7 +3191,7 @@ export declare const ChangelogViewSchema: GenEnum<ChangelogView>;
  */
 export declare const DatabaseService: GenService<{
   /**
-   * Permissions required: databases.get
+   * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.DatabaseService.GetDatabase
    */
@@ -3201,7 +3201,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseSchema$;
   },
   /**
-   * Permissions required: databases.get
+   * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.DatabaseService.BatchGetDatabases
    */
@@ -3211,7 +3211,7 @@ export declare const DatabaseService: GenService<{
     output: typeof BatchGetDatabasesResponseSchema;
   },
   /**
-   * Permissions required: databases.list
+   * Permissions required: bb.databases.list
    *
    * @generated from rpc bytebase.v1.DatabaseService.ListDatabases
    */
@@ -3221,7 +3221,7 @@ export declare const DatabaseService: GenService<{
     output: typeof ListDatabasesResponseSchema;
   },
   /**
-   * Permissions required: databases.update
+   * Permissions required: bb.databases.update
    *
    * @generated from rpc bytebase.v1.DatabaseService.UpdateDatabase
    */
@@ -3231,7 +3231,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseSchema$;
   },
   /**
-   * Permissions required: databases.update
+   * Permissions required: bb.databases.update
    *
    * @generated from rpc bytebase.v1.DatabaseService.BatchUpdateDatabases
    */
@@ -3241,7 +3241,7 @@ export declare const DatabaseService: GenService<{
     output: typeof BatchUpdateDatabasesResponseSchema;
   },
   /**
-   * Permissions required: databases.sync
+   * Permissions required: bb.databases.sync
    *
    * @generated from rpc bytebase.v1.DatabaseService.SyncDatabase
    */
@@ -3251,7 +3251,7 @@ export declare const DatabaseService: GenService<{
     output: typeof SyncDatabaseResponseSchema;
   },
   /**
-   * Permissions required: databases.sync
+   * Permissions required: bb.databases.sync
    *
    * @generated from rpc bytebase.v1.DatabaseService.BatchSyncDatabases
    */
@@ -3261,7 +3261,7 @@ export declare const DatabaseService: GenService<{
     output: typeof BatchSyncDatabasesResponseSchema;
   },
   /**
-   * Permissions required: databases.getSchema
+   * Permissions required: bb.databases.getSchema
    *
    * @generated from rpc bytebase.v1.DatabaseService.GetDatabaseMetadata
    */
@@ -3271,7 +3271,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseMetadataSchema;
   },
   /**
-   * Permissions required: databases.getSchema
+   * Permissions required: bb.databases.getSchema
    *
    * @generated from rpc bytebase.v1.DatabaseService.GetDatabaseSchema
    */
@@ -3281,7 +3281,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseSchemaSchema;
   },
   /**
-   * Permissions required: databases.get
+   * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.DatabaseService.DiffSchema
    */
@@ -3291,7 +3291,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DiffSchemaResponseSchema;
   },
   /**
-   * Permissions required: databaseSecrets.list
+   * Permissions required: bb.databaseSecrets.list
    *
    * @generated from rpc bytebase.v1.DatabaseService.ListSecrets
    */
@@ -3301,7 +3301,7 @@ export declare const DatabaseService: GenService<{
     output: typeof ListSecretsResponseSchema;
   },
   /**
-   * Permissions required: databaseSecrets.update
+   * Permissions required: bb.databaseSecrets.update
    *
    * @generated from rpc bytebase.v1.DatabaseService.UpdateSecret
    */
@@ -3311,7 +3311,7 @@ export declare const DatabaseService: GenService<{
     output: typeof SecretSchema;
   },
   /**
-   * Permissions required: databaseSecrets.delete
+   * Permissions required: bb.databaseSecrets.delete
    *
    * @generated from rpc bytebase.v1.DatabaseService.DeleteSecret
    */
@@ -3321,7 +3321,7 @@ export declare const DatabaseService: GenService<{
     output: typeof EmptySchema;
   },
   /**
-   * Permissions required: changelogs.list
+   * Permissions required: bb.changelogs.list
    *
    * @generated from rpc bytebase.v1.DatabaseService.ListChangelogs
    */

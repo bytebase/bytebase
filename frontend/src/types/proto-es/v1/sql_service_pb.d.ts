@@ -1350,7 +1350,7 @@ export declare const AICompletionResponse_Candidate_Content_PartSchema: GenMessa
  */
 export declare const SQLService: GenService<{
   /**
-   * Permissions required: databases.get
+   * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.SQLService.Query
    */
@@ -1360,7 +1360,7 @@ export declare const SQLService: GenService<{
     output: typeof QueryResponseSchema;
   },
   /**
-   * Permissions required: sql.admin
+   * Permissions required: bb.sql.admin
    *
    * @generated from rpc bytebase.v1.SQLService.AdminExecute
    */
@@ -1381,7 +1381,7 @@ export declare const SQLService: GenService<{
     output: typeof SearchQueryHistoriesResponseSchema;
   },
   /**
-   * Permissions required: databases.get
+   * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.SQLService.Export
    */
@@ -1391,7 +1391,7 @@ export declare const SQLService: GenService<{
     output: typeof ExportResponseSchema;
   },
   /**
-   * Permissions required: databases.check
+   * Permissions required: bb.databases.check
    *
    * @generated from rpc bytebase.v1.SQLService.Check
    */

@@ -416,7 +416,7 @@ export declare const UserService: GenService<{
   /**
    * Get the user.
    * Any authenticated user can get the user.
-   * Permissions required: users.get
+   * Permissions required: bb.users.get
    *
    * @generated from rpc bytebase.v1.UserService.GetUser
    */
@@ -428,7 +428,7 @@ export declare const UserService: GenService<{
   /**
    * Get the users in batch.
    * Any authenticated user can batch get users.
-   * Permissions required: users.get
+   * Permissions required: bb.users.get
    *
    * @generated from rpc bytebase.v1.UserService.BatchGetUsers
    */
@@ -451,7 +451,7 @@ export declare const UserService: GenService<{
   /**
    * List all users.
    * Any authenticated user can list users.
-   * Permissions required: users.list
+   * Permissions required: bb.users.list
    *
    * @generated from rpc bytebase.v1.UserService.ListUsers
    */
@@ -464,7 +464,7 @@ export declare const UserService: GenService<{
    * Create a user.
    * When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
    * Otherwise, any unauthenticated user can create a user.
-   * Permissions required: users.create
+   * Permissions required: bb.users.create
    *
    * @generated from rpc bytebase.v1.UserService.CreateUser
    */
@@ -475,7 +475,7 @@ export declare const UserService: GenService<{
   },
   /**
    * Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-   * Permissions required: users.update
+   * Permissions required: bb.users.update
    *
    * @generated from rpc bytebase.v1.UserService.UpdateUser
    */
@@ -487,7 +487,7 @@ export declare const UserService: GenService<{
   /**
    * Only the user with bb.users.delete permission on the workspace can delete the user.
    * The last remaining workspace admin cannot be deleted.
-   * Permissions required: users.delete
+   * Permissions required: bb.users.delete
    *
    * @generated from rpc bytebase.v1.UserService.DeleteUser
    */
@@ -498,7 +498,7 @@ export declare const UserService: GenService<{
   },
   /**
    * Only the user with bb.users.undelete permission on the workspace can undelete the user.
-   * Permissions required: users.undelete
+   * Permissions required: bb.users.undelete
    *
    * @generated from rpc bytebase.v1.UserService.UndeleteUser
    */

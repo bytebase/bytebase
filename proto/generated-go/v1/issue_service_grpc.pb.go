@@ -37,24 +37,24 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IssueServiceClient interface {
-	// Permissions required: issues.get
+	// Permissions required: bb.issues.get
 	GetIssue(ctx context.Context, in *GetIssueRequest, opts ...grpc.CallOption) (*Issue, error)
-	// Permissions required: issues.create
+	// Permissions required: bb.issues.create
 	CreateIssue(ctx context.Context, in *CreateIssueRequest, opts ...grpc.CallOption) (*Issue, error)
-	// Permissions required: issues.list
+	// Permissions required: bb.issues.list
 	ListIssues(ctx context.Context, in *ListIssuesRequest, opts ...grpc.CallOption) (*ListIssuesResponse, error)
 	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
-	// Permissions required: issues.get
+	// Permissions required: bb.issues.get
 	SearchIssues(ctx context.Context, in *SearchIssuesRequest, opts ...grpc.CallOption) (*SearchIssuesResponse, error)
-	// Permissions required: issues.update
+	// Permissions required: bb.issues.update
 	UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*Issue, error)
-	// Permissions required: issueComments.list
+	// Permissions required: bb.issueComments.list
 	ListIssueComments(ctx context.Context, in *ListIssueCommentsRequest, opts ...grpc.CallOption) (*ListIssueCommentsResponse, error)
-	// Permissions required: issueComments.create
+	// Permissions required: bb.issueComments.create
 	CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
-	// Permissions required: issueComments.update
+	// Permissions required: bb.issueComments.update
 	UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
-	// Permissions required: issues.update
+	// Permissions required: bb.issues.update
 	BatchUpdateIssuesStatus(ctx context.Context, in *BatchUpdateIssuesStatusRequest, opts ...grpc.CallOption) (*BatchUpdateIssuesStatusResponse, error)
 	// ApproveIssue approves the issue.
 	// The access is based on approval flow.
@@ -202,24 +202,24 @@ func (c *issueServiceClient) RequestIssue(ctx context.Context, in *RequestIssueR
 // All implementations must embed UnimplementedIssueServiceServer
 // for forward compatibility.
 type IssueServiceServer interface {
-	// Permissions required: issues.get
+	// Permissions required: bb.issues.get
 	GetIssue(context.Context, *GetIssueRequest) (*Issue, error)
-	// Permissions required: issues.create
+	// Permissions required: bb.issues.create
 	CreateIssue(context.Context, *CreateIssueRequest) (*Issue, error)
-	// Permissions required: issues.list
+	// Permissions required: bb.issues.list
 	ListIssues(context.Context, *ListIssuesRequest) (*ListIssuesResponse, error)
 	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
-	// Permissions required: issues.get
+	// Permissions required: bb.issues.get
 	SearchIssues(context.Context, *SearchIssuesRequest) (*SearchIssuesResponse, error)
-	// Permissions required: issues.update
+	// Permissions required: bb.issues.update
 	UpdateIssue(context.Context, *UpdateIssueRequest) (*Issue, error)
-	// Permissions required: issueComments.list
+	// Permissions required: bb.issueComments.list
 	ListIssueComments(context.Context, *ListIssueCommentsRequest) (*ListIssueCommentsResponse, error)
-	// Permissions required: issueComments.create
+	// Permissions required: bb.issueComments.create
 	CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error)
-	// Permissions required: issueComments.update
+	// Permissions required: bb.issueComments.update
 	UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*IssueComment, error)
-	// Permissions required: issues.update
+	// Permissions required: bb.issues.update
 	BatchUpdateIssuesStatus(context.Context, *BatchUpdateIssuesStatusRequest) (*BatchUpdateIssuesStatusResponse, error)
 	// ApproveIssue approves the issue.
 	// The access is based on approval flow.

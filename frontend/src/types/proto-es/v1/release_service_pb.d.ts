@@ -532,7 +532,7 @@ export declare const ReleaseFileTypeSchema: GenEnum<ReleaseFileType>;
  */
 export declare const ReleaseService: GenService<{
   /**
-   * Permissions required: releases.get
+   * Permissions required: bb.releases.get
    *
    * @generated from rpc bytebase.v1.ReleaseService.GetRelease
    */
@@ -542,7 +542,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
-   * Permissions required: releases.list
+   * Permissions required: bb.releases.list
    *
    * @generated from rpc bytebase.v1.ReleaseService.ListReleases
    */
@@ -552,7 +552,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ListReleasesResponseSchema;
   },
   /**
-   * Permissions required: releases.create
+   * Permissions required: bb.releases.create
    *
    * @generated from rpc bytebase.v1.ReleaseService.CreateRelease
    */
@@ -562,7 +562,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
-   * Permissions required: releases.update
+   * Permissions required: bb.releases.update
    *
    * @generated from rpc bytebase.v1.ReleaseService.UpdateRelease
    */
@@ -572,7 +572,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
-   * Permissions required: releases.delete
+   * Permissions required: bb.releases.delete
    *
    * @generated from rpc bytebase.v1.ReleaseService.DeleteRelease
    */
@@ -582,7 +582,7 @@ export declare const ReleaseService: GenService<{
     output: typeof EmptySchema;
   },
   /**
-   * Permissions required: releases.undelete
+   * Permissions required: bb.releases.undelete
    *
    * @generated from rpc bytebase.v1.ReleaseService.UndeleteRelease
    */
@@ -592,7 +592,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
-   * Permissions required: releases.check
+   * Permissions required: bb.releases.check
    *
    * @generated from rpc bytebase.v1.ReleaseService.CheckRelease
    */

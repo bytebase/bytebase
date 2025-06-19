@@ -77,31 +77,31 @@ const (
 
 // InstanceServiceClient is a client for the bytebase.v1.InstanceService service.
 type InstanceServiceClient interface {
-	// Permissions required: instances.get
+	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.list
+	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error)
-	// Permissions required: instances.create
+	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.delete
+	// Permissions required: bb.instances.delete
 	DeleteInstance(context.Context, *connect.Request[v1.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error)
-	// Permissions required: instances.undelete
+	// Permissions required: bb.instances.undelete
 	UndeleteInstance(context.Context, *connect.Request[v1.UndeleteInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.sync
+	// Permissions required: bb.instances.sync
 	SyncInstance(context.Context, *connect.Request[v1.SyncInstanceRequest]) (*connect.Response[v1.SyncInstanceResponse], error)
-	// Permissions required: instances.get
+	// Permissions required: bb.instances.get
 	ListInstanceDatabase(context.Context, *connect.Request[v1.ListInstanceDatabaseRequest]) (*connect.Response[v1.ListInstanceDatabaseResponse], error)
-	// Permissions required: instances.sync
+	// Permissions required: bb.instances.sync
 	BatchSyncInstances(context.Context, *connect.Request[v1.BatchSyncInstancesRequest]) (*connect.Response[v1.BatchSyncInstancesResponse], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	BatchUpdateInstances(context.Context, *connect.Request[v1.BatchUpdateInstancesRequest]) (*connect.Response[v1.BatchUpdateInstancesResponse], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	AddDataSource(context.Context, *connect.Request[v1.AddDataSourceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	RemoveDataSource(context.Context, *connect.Request[v1.RemoveDataSourceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	UpdateDataSource(context.Context, *connect.Request[v1.UpdateDataSourceRequest]) (*connect.Response[v1.Instance], error)
 }
 
@@ -281,31 +281,31 @@ func (c *instanceServiceClient) UpdateDataSource(ctx context.Context, req *conne
 
 // InstanceServiceHandler is an implementation of the bytebase.v1.InstanceService service.
 type InstanceServiceHandler interface {
-	// Permissions required: instances.get
+	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.list
+	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error)
-	// Permissions required: instances.create
+	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.delete
+	// Permissions required: bb.instances.delete
 	DeleteInstance(context.Context, *connect.Request[v1.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error)
-	// Permissions required: instances.undelete
+	// Permissions required: bb.instances.undelete
 	UndeleteInstance(context.Context, *connect.Request[v1.UndeleteInstanceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.sync
+	// Permissions required: bb.instances.sync
 	SyncInstance(context.Context, *connect.Request[v1.SyncInstanceRequest]) (*connect.Response[v1.SyncInstanceResponse], error)
-	// Permissions required: instances.get
+	// Permissions required: bb.instances.get
 	ListInstanceDatabase(context.Context, *connect.Request[v1.ListInstanceDatabaseRequest]) (*connect.Response[v1.ListInstanceDatabaseResponse], error)
-	// Permissions required: instances.sync
+	// Permissions required: bb.instances.sync
 	BatchSyncInstances(context.Context, *connect.Request[v1.BatchSyncInstancesRequest]) (*connect.Response[v1.BatchSyncInstancesResponse], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	BatchUpdateInstances(context.Context, *connect.Request[v1.BatchUpdateInstancesRequest]) (*connect.Response[v1.BatchUpdateInstancesResponse], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	AddDataSource(context.Context, *connect.Request[v1.AddDataSourceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	RemoveDataSource(context.Context, *connect.Request[v1.RemoveDataSourceRequest]) (*connect.Response[v1.Instance], error)
-	// Permissions required: instances.update
+	// Permissions required: bb.instances.update
 	UpdateDataSource(context.Context, *connect.Request[v1.UpdateDataSourceRequest]) (*connect.Response[v1.Instance], error)
 }
 

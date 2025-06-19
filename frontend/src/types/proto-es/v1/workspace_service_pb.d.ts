@@ -15,7 +15,7 @@ export declare const file_v1_workspace_service: GenFile;
  */
 export declare const WorkspaceService: GenService<{
   /**
-   * Permissions required: workspaces.getIamPolicy
+   * Permissions required: bb.workspaces.getIamPolicy
    *
    * @generated from rpc bytebase.v1.WorkspaceService.GetIamPolicy
    */
@@ -25,7 +25,7 @@ export declare const WorkspaceService: GenService<{
     output: typeof IamPolicySchema;
   },
   /**
-   * Permissions required: workspaces.setIamPolicy
+   * Permissions required: bb.workspaces.setIamPolicy
    *
    * @generated from rpc bytebase.v1.WorkspaceService.SetIamPolicy
    */

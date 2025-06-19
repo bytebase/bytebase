@@ -4071,7 +4071,7 @@ export const InstanceServiceDefinition = {
   name: "InstanceService",
   fullName: "bytebase.v1.InstanceService",
   methods: {
-    /** Permissions required: instances.get */
+    /** Permissions required: bb.instances.get */
     getInstance: {
       name: "GetInstance",
       requestType: GetInstanceRequest,
@@ -4115,7 +4115,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.list */
+    /** Permissions required: bb.instances.list */
     listInstances: {
       name: "ListInstances",
       requestType: ListInstancesRequest,
@@ -4131,7 +4131,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.create */
+    /** Permissions required: bb.instances.create */
     createInstance: {
       name: "CreateInstance",
       requestType: CreateInstanceRequest,
@@ -4179,7 +4179,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.update */
+    /** Permissions required: bb.instances.update */
     updateInstance: {
       name: "UpdateInstance",
       requestType: UpdateInstanceRequest,
@@ -4290,7 +4290,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.delete */
+    /** Permissions required: bb.instances.delete */
     deleteInstance: {
       name: "DeleteInstance",
       requestType: DeleteInstanceRequest,
@@ -4358,7 +4358,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.undelete */
+    /** Permissions required: bb.instances.undelete */
     undeleteInstance: {
       name: "UndeleteInstance",
       requestType: UndeleteInstanceRequest,
@@ -4439,7 +4439,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.sync */
+    /** Permissions required: bb.instances.sync */
     syncInstance: {
       name: "SyncInstance",
       requestType: SyncInstanceRequest,
@@ -4490,7 +4490,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.get */
+    /** Permissions required: bb.instances.get */
     listInstanceDatabase: {
       name: "ListInstanceDatabase",
       requestType: ListInstanceDatabaseRequest,
@@ -4546,7 +4546,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.sync */
+    /** Permissions required: bb.instances.sync */
     batchSyncInstances: {
       name: "BatchSyncInstances",
       requestType: BatchSyncInstancesRequest,
@@ -4593,7 +4593,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.update */
+    /** Permissions required: bb.instances.update */
     batchUpdateInstances: {
       name: "BatchUpdateInstances",
       requestType: BatchUpdateInstancesRequest,
@@ -4666,7 +4666,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.update */
+    /** Permissions required: bb.instances.update */
     addDataSource: {
       name: "AddDataSource",
       requestType: AddDataSourceRequest,
@@ -4750,7 +4750,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.update */
+    /** Permissions required: bb.instances.update */
     removeDataSource: {
       name: "RemoveDataSource",
       requestType: RemoveDataSourceRequest,
@@ -4837,7 +4837,7 @@ export const InstanceServiceDefinition = {
         },
       },
     },
-    /** Permissions required: instances.update */
+    /** Permissions required: bb.instances.update */
     updateDataSource: {
       name: "UpdateDataSource",
       requestType: UpdateDataSourceRequest,

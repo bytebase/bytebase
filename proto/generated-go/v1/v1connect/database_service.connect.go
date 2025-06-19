@@ -86,33 +86,33 @@ const (
 
 // DatabaseServiceClient is a client for the bytebase.v1.DatabaseService service.
 type DatabaseServiceClient interface {
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *connect.Request[v1.GetDatabaseRequest]) (*connect.Response[v1.Database], error)
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	BatchGetDatabases(context.Context, *connect.Request[v1.BatchGetDatabasesRequest]) (*connect.Response[v1.BatchGetDatabasesResponse], error)
-	// Permissions required: databases.list
+	// Permissions required: bb.databases.list
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
-	// Permissions required: databases.update
+	// Permissions required: bb.databases.update
 	UpdateDatabase(context.Context, *connect.Request[v1.UpdateDatabaseRequest]) (*connect.Response[v1.Database], error)
-	// Permissions required: databases.update
+	// Permissions required: bb.databases.update
 	BatchUpdateDatabases(context.Context, *connect.Request[v1.BatchUpdateDatabasesRequest]) (*connect.Response[v1.BatchUpdateDatabasesResponse], error)
-	// Permissions required: databases.sync
+	// Permissions required: bb.databases.sync
 	SyncDatabase(context.Context, *connect.Request[v1.SyncDatabaseRequest]) (*connect.Response[v1.SyncDatabaseResponse], error)
-	// Permissions required: databases.sync
+	// Permissions required: bb.databases.sync
 	BatchSyncDatabases(context.Context, *connect.Request[v1.BatchSyncDatabasesRequest]) (*connect.Response[v1.BatchSyncDatabasesResponse], error)
-	// Permissions required: databases.getSchema
+	// Permissions required: bb.databases.getSchema
 	GetDatabaseMetadata(context.Context, *connect.Request[v1.GetDatabaseMetadataRequest]) (*connect.Response[v1.DatabaseMetadata], error)
-	// Permissions required: databases.getSchema
+	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(context.Context, *connect.Request[v1.GetDatabaseSchemaRequest]) (*connect.Response[v1.DatabaseSchema], error)
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
-	// Permissions required: databaseSecrets.list
+	// Permissions required: bb.databaseSecrets.list
 	ListSecrets(context.Context, *connect.Request[v1.ListSecretsRequest]) (*connect.Response[v1.ListSecretsResponse], error)
-	// Permissions required: databaseSecrets.update
+	// Permissions required: bb.databaseSecrets.update
 	UpdateSecret(context.Context, *connect.Request[v1.UpdateSecretRequest]) (*connect.Response[v1.Secret], error)
-	// Permissions required: databaseSecrets.delete
+	// Permissions required: bb.databaseSecrets.delete
 	DeleteSecret(context.Context, *connect.Request[v1.DeleteSecretRequest]) (*connect.Response[emptypb.Empty], error)
-	// Permissions required: changelogs.list
+	// Permissions required: bb.changelogs.list
 	ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error)
 	// Permissions required: changelogs.get
 	GetChangelog(context.Context, *connect.Request[v1.GetChangelogRequest]) (*connect.Response[v1.Changelog], error)
@@ -332,33 +332,33 @@ func (c *databaseServiceClient) GetSchemaString(ctx context.Context, req *connec
 
 // DatabaseServiceHandler is an implementation of the bytebase.v1.DatabaseService service.
 type DatabaseServiceHandler interface {
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *connect.Request[v1.GetDatabaseRequest]) (*connect.Response[v1.Database], error)
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	BatchGetDatabases(context.Context, *connect.Request[v1.BatchGetDatabasesRequest]) (*connect.Response[v1.BatchGetDatabasesResponse], error)
-	// Permissions required: databases.list
+	// Permissions required: bb.databases.list
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
-	// Permissions required: databases.update
+	// Permissions required: bb.databases.update
 	UpdateDatabase(context.Context, *connect.Request[v1.UpdateDatabaseRequest]) (*connect.Response[v1.Database], error)
-	// Permissions required: databases.update
+	// Permissions required: bb.databases.update
 	BatchUpdateDatabases(context.Context, *connect.Request[v1.BatchUpdateDatabasesRequest]) (*connect.Response[v1.BatchUpdateDatabasesResponse], error)
-	// Permissions required: databases.sync
+	// Permissions required: bb.databases.sync
 	SyncDatabase(context.Context, *connect.Request[v1.SyncDatabaseRequest]) (*connect.Response[v1.SyncDatabaseResponse], error)
-	// Permissions required: databases.sync
+	// Permissions required: bb.databases.sync
 	BatchSyncDatabases(context.Context, *connect.Request[v1.BatchSyncDatabasesRequest]) (*connect.Response[v1.BatchSyncDatabasesResponse], error)
-	// Permissions required: databases.getSchema
+	// Permissions required: bb.databases.getSchema
 	GetDatabaseMetadata(context.Context, *connect.Request[v1.GetDatabaseMetadataRequest]) (*connect.Response[v1.DatabaseMetadata], error)
-	// Permissions required: databases.getSchema
+	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(context.Context, *connect.Request[v1.GetDatabaseSchemaRequest]) (*connect.Response[v1.DatabaseSchema], error)
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
-	// Permissions required: databaseSecrets.list
+	// Permissions required: bb.databaseSecrets.list
 	ListSecrets(context.Context, *connect.Request[v1.ListSecretsRequest]) (*connect.Response[v1.ListSecretsResponse], error)
-	// Permissions required: databaseSecrets.update
+	// Permissions required: bb.databaseSecrets.update
 	UpdateSecret(context.Context, *connect.Request[v1.UpdateSecretRequest]) (*connect.Response[v1.Secret], error)
-	// Permissions required: databaseSecrets.delete
+	// Permissions required: bb.databaseSecrets.delete
 	DeleteSecret(context.Context, *connect.Request[v1.DeleteSecretRequest]) (*connect.Response[emptypb.Empty], error)
-	// Permissions required: changelogs.list
+	// Permissions required: bb.changelogs.list
 	ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error)
 	// Permissions required: changelogs.get
 	GetChangelog(context.Context, *connect.Request[v1.GetChangelogRequest]) (*connect.Response[v1.Changelog], error)

@@ -33,16 +33,16 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SQLServiceClient interface {
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
-	// Permissions required: sql.admin
+	// Permissions required: bb.sql.admin
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AdminExecuteRequest, AdminExecuteResponse], error)
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	// Permissions required: databases.check
+	// Permissions required: bb.databases.check
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
 	// Permissions required: None
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
@@ -147,16 +147,16 @@ func (c *sQLServiceClient) AICompletion(ctx context.Context, in *AICompletionReq
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility.
 type SQLServiceServer interface {
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
-	// Permissions required: sql.admin
+	// Permissions required: bb.sql.admin
 	AdminExecute(grpc.BidiStreamingServer[AdminExecuteRequest, AdminExecuteResponse]) error
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
-	// Permissions required: databases.get
+	// Permissions required: bb.databases.get
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
-	// Permissions required: databases.check
+	// Permissions required: bb.databases.check
 	Check(context.Context, *CheckRequest) (*CheckResponse, error)
 	// Permissions required: None
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)

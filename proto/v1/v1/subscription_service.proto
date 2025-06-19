@@ -21,7 +21,7 @@ service SubscriptionService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
-  // Permissions required: settings.set
+  // Permissions required: bb.settings.set
   rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {
       patch: "/v1/subscription"

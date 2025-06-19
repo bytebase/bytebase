@@ -906,7 +906,7 @@ export const DatabaseGroupServiceDefinition = {
   name: "DatabaseGroupService",
   fullName: "bytebase.v1.DatabaseGroupService",
   methods: {
-    /** Permissions required: projects.get */
+    /** Permissions required: bb.projects.get */
     listDatabaseGroups: {
       name: "ListDatabaseGroups",
       requestType: ListDatabaseGroupsRequest,
@@ -966,7 +966,7 @@ export const DatabaseGroupServiceDefinition = {
         },
       },
     },
-    /** Permissions required: projects.get */
+    /** Permissions required: bb.projects.get */
     getDatabaseGroup: {
       name: "GetDatabaseGroup",
       requestType: GetDatabaseGroupRequest,
@@ -1026,7 +1026,7 @@ export const DatabaseGroupServiceDefinition = {
         },
       },
     },
-    /** Permissions required: projects.update */
+    /** Permissions required: bb.projects.update */
     createDatabaseGroup: {
       name: "CreateDatabaseGroup",
       requestType: CreateDatabaseGroupRequest,
@@ -1129,7 +1129,7 @@ export const DatabaseGroupServiceDefinition = {
         },
       },
     },
-    /** Permissions required: projects.update */
+    /** Permissions required: bb.projects.update */
     updateDatabaseGroup: {
       name: "UpdateDatabaseGroup",
       requestType: UpdateDatabaseGroupRequest,
@@ -1253,7 +1253,7 @@ export const DatabaseGroupServiceDefinition = {
         },
       },
     },
-    /** Permissions required: projects.update */
+    /** Permissions required: bb.projects.update */
     deleteDatabaseGroup: {
       name: "DeleteDatabaseGroup",
       requestType: DeleteDatabaseGroupRequest,

@@ -55,9 +55,9 @@ const (
 type ActuatorServiceClient interface {
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
-	// Permissions required: settings.set
+	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
-	// Permissions required: projects.create
+	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
 	// Permissions required: None
 	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)
@@ -147,9 +147,9 @@ func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, req *con
 type ActuatorServiceHandler interface {
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
-	// Permissions required: settings.set
+	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
-	// Permissions required: projects.create
+	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
 	// Permissions required: None
 	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)

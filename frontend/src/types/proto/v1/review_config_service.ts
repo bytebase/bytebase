@@ -654,7 +654,7 @@ export const ReviewConfigServiceDefinition = {
   name: "ReviewConfigService",
   fullName: "bytebase.v1.ReviewConfigService",
   methods: {
-    /** Permissions required: reviewConfigs.create */
+    /** Permissions required: bb.reviewConfigs.create */
     createReviewConfig: {
       name: "CreateReviewConfig",
       requestType: CreateReviewConfigRequest,
@@ -735,7 +735,7 @@ export const ReviewConfigServiceDefinition = {
         },
       },
     },
-    /** Permissions required: reviewConfigs.list */
+    /** Permissions required: bb.reviewConfigs.list */
     listReviewConfigs: {
       name: "ListReviewConfigs",
       requestType: ListReviewConfigsRequest,
@@ -799,7 +799,7 @@ export const ReviewConfigServiceDefinition = {
         },
       },
     },
-    /** Permissions required: reviewConfigs.get */
+    /** Permissions required: bb.reviewConfigs.get */
     getReviewConfig: {
       name: "GetReviewConfig",
       requestType: GetReviewConfigRequest,
@@ -871,7 +871,7 @@ export const ReviewConfigServiceDefinition = {
         },
       },
     },
-    /** Permissions required: reviewConfigs.update */
+    /** Permissions required: bb.reviewConfigs.update */
     updateReviewConfig: {
       name: "UpdateReviewConfig",
       requestType: UpdateReviewConfigRequest,
@@ -1004,7 +1004,7 @@ export const ReviewConfigServiceDefinition = {
         },
       },
     },
-    /** Permissions required: reviewConfigs.delete */
+    /** Permissions required: bb.reviewConfigs.delete */
     deleteReviewConfig: {
       name: "DeleteReviewConfig",
       requestType: DeleteReviewConfigRequest,

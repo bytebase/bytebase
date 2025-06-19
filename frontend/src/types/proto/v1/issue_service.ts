@@ -4138,7 +4138,7 @@ export const IssueServiceDefinition = {
   name: "IssueService",
   fullName: "bytebase.v1.IssueService",
   methods: {
-    /** Permissions required: issues.get */
+    /** Permissions required: bb.issues.get */
     getIssue: {
       name: "GetIssue",
       requestType: GetIssueRequest,
@@ -4190,7 +4190,7 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    /** Permissions required: issues.create */
+    /** Permissions required: bb.issues.create */
     createIssue: {
       name: "CreateIssue",
       requestType: CreateIssueRequest,
@@ -4250,7 +4250,7 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    /** Permissions required: issues.list */
+    /** Permissions required: bb.issues.list */
     listIssues: {
       name: "ListIssues",
       requestType: ListIssuesRequest,
@@ -4304,7 +4304,7 @@ export const IssueServiceDefinition = {
     },
     /**
      * Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
-     * Permissions required: issues.get
+     * Permissions required: bb.issues.get
      */
     searchIssues: {
       name: "SearchIssues",
@@ -4366,7 +4366,7 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    /** Permissions required: issues.update */
+    /** Permissions required: bb.issues.update */
     updateIssue: {
       name: "UpdateIssue",
       requestType: UpdateIssueRequest,
@@ -4432,7 +4432,7 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    /** Permissions required: issueComments.list */
+    /** Permissions required: bb.issueComments.list */
     listIssueComments: {
       name: "ListIssueComments",
       requestType: ListIssueCommentsRequest,
@@ -4525,7 +4525,7 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    /** Permissions required: issueComments.create */
+    /** Permissions required: bb.issueComments.create */
     createIssueComment: {
       name: "CreateIssueComment",
       requestType: CreateIssueCommentRequest,
@@ -4654,7 +4654,7 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    /** Permissions required: issueComments.update */
+    /** Permissions required: bb.issueComments.update */
     updateIssueComment: {
       name: "UpdateIssueComment",
       requestType: UpdateIssueCommentRequest,
@@ -4795,7 +4795,7 @@ export const IssueServiceDefinition = {
         },
       },
     },
-    /** Permissions required: issues.update */
+    /** Permissions required: bb.issues.update */
     batchUpdateIssuesStatus: {
       name: "BatchUpdateIssuesStatus",
       requestType: BatchUpdateIssuesStatusRequest,

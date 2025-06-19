@@ -1235,7 +1235,7 @@ export const SubscriptionServiceDefinition = {
         },
       },
     },
-    /** Permissions required: settings.set */
+    /** Permissions required: bb.settings.set */
     updateSubscription: {
       name: "UpdateSubscription",
       requestType: UpdateSubscriptionRequest,

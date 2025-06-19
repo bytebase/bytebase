@@ -33,9 +33,9 @@ const (
 type ActuatorServiceClient interface {
 	// Permissions required: None
 	GetActuatorInfo(ctx context.Context, in *GetActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
-	// Permissions required: settings.set
+	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(ctx context.Context, in *UpdateActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
-	// Permissions required: projects.create
+	// Permissions required: bb.projects.create
 	SetupSample(ctx context.Context, in *SetupSampleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Permissions required: None
 	DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -107,9 +107,9 @@ func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, in *GetR
 type ActuatorServiceServer interface {
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error)
-	// Permissions required: settings.set
+	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error)
-	// Permissions required: projects.create
+	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *SetupSampleRequest) (*emptypb.Empty, error)
 	// Permissions required: None
 	DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error)

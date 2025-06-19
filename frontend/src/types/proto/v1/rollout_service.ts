@@ -5647,7 +5647,7 @@ export const RolloutServiceDefinition = {
   name: "RolloutService",
   fullName: "bytebase.v1.RolloutService",
   methods: {
-    /** Permissions required: rollouts.get */
+    /** Permissions required: bb.rollouts.get */
     getRollout: {
       name: "GetRollout",
       requestType: GetRolloutRequest,
@@ -5701,7 +5701,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /** Permissions required: rollouts.list */
+    /** Permissions required: bb.rollouts.list */
     listRollouts: {
       name: "ListRollouts",
       requestType: ListRolloutsRequest,
@@ -5755,10 +5755,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /**
-     * CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
-     * Permissions required: rollouts.create
-     */
+    /** Permissions required: bb.rollouts.create */
     createRollout: {
       name: "CreateRollout",
       requestType: CreateRolloutRequest,
@@ -5824,7 +5821,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /** Permissions required: rollouts.preview */
+    /** Permissions required: bb.rollouts.preview */
     previewRollout: {
       name: "PreviewRollout",
       requestType: PreviewRolloutRequest,
@@ -5911,7 +5908,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /** Permissions required: taskRuns.list */
+    /** Permissions required: bb.taskRuns.list */
     listTaskRuns: {
       name: "ListTaskRuns",
       requestType: ListTaskRunsRequest,
@@ -5993,7 +5990,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /** Permissions required: taskRuns.list */
+    /** Permissions required: bb.taskRuns.list */
     getTaskRun: {
       name: "GetTaskRun",
       requestType: GetTaskRunRequest,
@@ -6075,7 +6072,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /** Permissions required: taskRuns.list */
+    /** Permissions required: bb.taskRuns.list */
     getTaskRunLog: {
       name: "GetTaskRunLog",
       requestType: GetTaskRunLogRequest,
@@ -6163,7 +6160,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /** Permissions required: taskRuns.list */
+    /** Permissions required: bb.taskRuns.list */
     getTaskRunSession: {
       name: "GetTaskRunSession",
       requestType: GetTaskRunSessionRequest,
@@ -6255,13 +6252,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /**
-     * BatchRunTasks creates task runs for the specified tasks.
-     * DataExport issue only allows the creator to run the task.
-     * Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
-     * Follow role-based rollout policy for the environment.
-     * Permissions required: None
-     */
+    /** Permissions required: None */
     batchRunTasks: {
       name: "BatchRunTasks",
       requestType: BatchRunTasksRequest,
@@ -6343,11 +6334,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /**
-     * BatchSkipTasks skips the specified tasks.
-     * The access is the same as BatchRunTasks().
-     * Permissions required: None
-     */
+    /** Permissions required: None */
     batchSkipTasks: {
       name: "BatchSkipTasks",
       requestType: BatchSkipTasksRequest,
@@ -6430,11 +6417,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /**
-     * BatchCancelTaskRuns cancels the specified task runs in batch.
-     * The access is the same as BatchRunTasks().
-     * Permissions required: None
-     */
+    /** Permissions required: None */
     batchCancelTaskRuns: {
       name: "BatchCancelTaskRuns",
       requestType: BatchCancelTaskRunsRequest,
@@ -6530,7 +6513,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
-    /** Permissions required: taskRuns.list */
+    /** Permissions required: bb.taskRuns.list */
     previewTaskRunRollback: {
       name: "PreviewTaskRunRollback",
       requestType: PreviewTaskRunRollbackRequest,

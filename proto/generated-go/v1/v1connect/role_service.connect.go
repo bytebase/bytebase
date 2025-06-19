@@ -48,15 +48,15 @@ const (
 
 // RoleServiceClient is a client for the bytebase.v1.RoleService service.
 type RoleServiceClient interface {
-	// Permissions required: roles.list
+	// Permissions required: bb.roles.list
 	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
-	// Permissions required: roles.get
+	// Permissions required: bb.roles.get
 	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.Role], error)
-	// Permissions required: roles.create
+	// Permissions required: bb.roles.create
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error)
-	// Permissions required: roles.update
+	// Permissions required: bb.roles.update
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error)
-	// Permissions required: roles.delete
+	// Permissions required: bb.roles.delete
 	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -140,15 +140,15 @@ func (c *roleServiceClient) DeleteRole(ctx context.Context, req *connect.Request
 
 // RoleServiceHandler is an implementation of the bytebase.v1.RoleService service.
 type RoleServiceHandler interface {
-	// Permissions required: roles.list
+	// Permissions required: bb.roles.list
 	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
-	// Permissions required: roles.get
+	// Permissions required: bb.roles.get
 	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.Role], error)
-	// Permissions required: roles.create
+	// Permissions required: bb.roles.create
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error)
-	// Permissions required: roles.update
+	// Permissions required: bb.roles.update
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error)
-	// Permissions required: roles.delete
+	// Permissions required: bb.roles.delete
 	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

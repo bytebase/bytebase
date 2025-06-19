@@ -297,7 +297,7 @@ export declare const RevisionSchema: GenMessage<Revision>;
  */
 export declare const RevisionService: GenService<{
   /**
-   * Permissions required: revisions.list
+   * Permissions required: bb.revisions.list
    *
    * @generated from rpc bytebase.v1.RevisionService.ListRevisions
    */
@@ -307,7 +307,7 @@ export declare const RevisionService: GenService<{
     output: typeof ListRevisionsResponseSchema;
   },
   /**
-   * Permissions required: revisions.get
+   * Permissions required: bb.revisions.get
    *
    * @generated from rpc bytebase.v1.RevisionService.GetRevision
    */
@@ -317,7 +317,7 @@ export declare const RevisionService: GenService<{
     output: typeof RevisionSchema;
   },
   /**
-   * Permissions required: revisions.create
+   * Permissions required: bb.revisions.create
    *
    * @generated from rpc bytebase.v1.RevisionService.CreateRevision
    */
@@ -327,7 +327,7 @@ export declare const RevisionService: GenService<{
     output: typeof RevisionSchema;
   },
   /**
-   * Permissions required: revisions.create
+   * Permissions required: bb.revisions.create
    *
    * @generated from rpc bytebase.v1.RevisionService.BatchCreateRevisions
    */
@@ -337,7 +337,7 @@ export declare const RevisionService: GenService<{
     output: typeof BatchCreateRevisionsResponseSchema;
   },
   /**
-   * Permissions required: revisions.delete
+   * Permissions required: bb.revisions.delete
    *
    * @generated from rpc bytebase.v1.RevisionService.DeleteRevision
    */

@@ -888,7 +888,7 @@ export declare const ProjectService: GenService<{
   /**
    * GetProject retrieves a project by name.
    * Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
-   * Permissions required: projects.get
+   * Permissions required: bb.projects.get
    *
    * @generated from rpc bytebase.v1.ProjectService.GetProject
    */
@@ -898,7 +898,7 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
-   * Permissions required: projects.list
+   * Permissions required: bb.projects.list
    *
    * @generated from rpc bytebase.v1.ProjectService.ListProjects
    */
@@ -918,7 +918,7 @@ export declare const ProjectService: GenService<{
     output: typeof SearchProjectsResponseSchema;
   },
   /**
-   * Permissions required: projects.create
+   * Permissions required: bb.projects.create
    *
    * @generated from rpc bytebase.v1.ProjectService.CreateProject
    */
@@ -928,7 +928,7 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
-   * Permissions required: projects.update
+   * Permissions required: bb.projects.update
    *
    * @generated from rpc bytebase.v1.ProjectService.UpdateProject
    */
@@ -938,7 +938,7 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
-   * Permissions required: projects.delete
+   * Permissions required: bb.projects.delete
    *
    * @generated from rpc bytebase.v1.ProjectService.DeleteProject
    */
@@ -948,7 +948,7 @@ export declare const ProjectService: GenService<{
     output: typeof EmptySchema;
   },
   /**
-   * Permissions required: projects.undelete
+   * Permissions required: bb.projects.undelete
    *
    * @generated from rpc bytebase.v1.ProjectService.UndeleteProject
    */
@@ -958,7 +958,7 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
-   * Permissions required: projects.delete
+   * Permissions required: bb.projects.delete
    *
    * @generated from rpc bytebase.v1.ProjectService.BatchDeleteProjects
    */
@@ -968,7 +968,7 @@ export declare const ProjectService: GenService<{
     output: typeof EmptySchema;
   },
   /**
-   * Permissions required: projects.getIamPolicy
+   * Permissions required: bb.projects.getIamPolicy
    *
    * @generated from rpc bytebase.v1.ProjectService.GetIamPolicy
    */
@@ -979,7 +979,7 @@ export declare const ProjectService: GenService<{
   },
   /**
    * Deprecated.
-   * Permissions required: projects.getIamPolicy
+   * Permissions required: bb.projects.getIamPolicy
    *
    * @generated from rpc bytebase.v1.ProjectService.BatchGetIamPolicy
    */
@@ -989,7 +989,7 @@ export declare const ProjectService: GenService<{
     output: typeof BatchGetIamPolicyResponseSchema;
   },
   /**
-   * Permissions required: projects.setIamPolicy
+   * Permissions required: bb.projects.setIamPolicy
    *
    * @generated from rpc bytebase.v1.ProjectService.SetIamPolicy
    */
@@ -999,7 +999,7 @@ export declare const ProjectService: GenService<{
     output: typeof IamPolicySchema;
   },
   /**
-   * Permissions required: projects.update
+   * Permissions required: bb.projects.update
    *
    * @generated from rpc bytebase.v1.ProjectService.AddWebhook
    */
@@ -1009,7 +1009,7 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
-   * Permissions required: projects.update
+   * Permissions required: bb.projects.update
    *
    * @generated from rpc bytebase.v1.ProjectService.UpdateWebhook
    */
@@ -1019,7 +1019,7 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
-   * Permissions required: projects.update
+   * Permissions required: bb.projects.update
    *
    * @generated from rpc bytebase.v1.ProjectService.RemoveWebhook
    */
@@ -1029,7 +1029,7 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
-   * Permissions required: projects.update
+   * Permissions required: bb.projects.update
    *
    * @generated from rpc bytebase.v1.ProjectService.TestWebhook
    */

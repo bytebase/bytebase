@@ -267,7 +267,7 @@ export declare const GroupSchema: GenMessage<Group>;
  */
 export declare const GroupService: GenService<{
   /**
-   * Permissions required: groups.get
+   * Permissions required: bb.groups.get
    *
    * @generated from rpc bytebase.v1.GroupService.GetGroup
    */
@@ -277,7 +277,7 @@ export declare const GroupService: GenService<{
     output: typeof GroupSchema;
   },
   /**
-   * Permissions required: groups.list
+   * Permissions required: bb.groups.list
    *
    * @generated from rpc bytebase.v1.GroupService.ListGroups
    */
@@ -287,7 +287,7 @@ export declare const GroupService: GenService<{
     output: typeof ListGroupsResponseSchema;
   },
   /**
-   * Permissions required: groups.create
+   * Permissions required: bb.groups.create
    *
    * @generated from rpc bytebase.v1.GroupService.CreateGroup
    */
@@ -299,7 +299,7 @@ export declare const GroupService: GenService<{
   /**
    * UpdateGroup updates the group.
    * Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
-   * Permissions required: groups.update
+   * Permissions required: bb.groups.update
    *
    * @generated from rpc bytebase.v1.GroupService.UpdateGroup
    */
@@ -309,7 +309,7 @@ export declare const GroupService: GenService<{
     output: typeof GroupSchema;
   },
   /**
-   * Permissions required: groups.delete
+   * Permissions required: bb.groups.delete
    *
    * @generated from rpc bytebase.v1.GroupService.DeleteGroup
    */

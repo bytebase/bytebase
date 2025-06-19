@@ -9,15 +9,14 @@ To ensure that required permissions for each API endpoint are clearly documented
 - **For every `rpc` operation**, add a comment immediately above the `rpc` definition indicating the required permissions.
 - The comment must be of the form:
   - `// Permissions required: None` (if no permission is required)
-  - `// Permissions required: permission.name` (if one permission is required, with the `bb.` prefix stripped)
-  - `// Permissions required: permission.one, permission.two` (if multiple permissions are required, all listed, `bb.` prefix stripped)
+  - `// Permissions required: bb.permission.name` (if one permission is required, with the `bb.` prefix included)
+  - `// Permissions required: bb.permission.one, bb.permission.two` (if multiple permissions are required, all listed, `bb.` prefix included)
 - The comment must be placed **immediately above the `rpc` line** so that OpenAPI generators (such as gnostic) include it in the endpoint's description.
-- Do **not** include the `bb.` prefix in the comment.
 
 ## Example
 
 ```proto
-// Permissions required: projects.get
+// Permissions required: bb.projects.get
 rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
   option (bytebase.v1.permission) = "bb.projects.get";
   // ...
@@ -28,7 +27,7 @@ rpc GetStatus(GetStatusRequest) returns (StatusResponse) {
   // ...
 }
 
-// Permissions required: projects.update, projects.delete
+// Permissions required: bb.projects.update, bb.projects.delete
 rpc UpdateOrDelete(UpdateOrDeleteRequest) returns (UpdateOrDeleteResponse) {
   option (bytebase.v1.permission) = "bb.projects.update,bb.projects.delete";
   // ...

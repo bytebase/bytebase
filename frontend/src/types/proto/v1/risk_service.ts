@@ -785,7 +785,7 @@ export const RiskServiceDefinition = {
   name: "RiskService",
   fullName: "bytebase.v1.RiskService",
   methods: {
-    /** Permissions required: risks.list */
+    /** Permissions required: bb.risks.list */
     listRisks: {
       name: "ListRisks",
       requestType: ListRisksRequest,
@@ -801,7 +801,7 @@ export const RiskServiceDefinition = {
         },
       },
     },
-    /** Permissions required: risks.create */
+    /** Permissions required: bb.risks.create */
     createRisk: {
       name: "CreateRisk",
       requestType: CreateRiskRequest,
@@ -818,7 +818,7 @@ export const RiskServiceDefinition = {
         },
       },
     },
-    /** Permissions required: risks.list */
+    /** Permissions required: bb.risks.list */
     getRisk: {
       name: "GetRisk",
       requestType: GetRiskRequest,
@@ -858,7 +858,7 @@ export const RiskServiceDefinition = {
         },
       },
     },
-    /** Permissions required: risks.update */
+    /** Permissions required: bb.risks.update */
     updateRisk: {
       name: "UpdateRisk",
       requestType: UpdateRiskRequest,
@@ -910,7 +910,7 @@ export const RiskServiceDefinition = {
         },
       },
     },
-    /** Permissions required: risks.delete */
+    /** Permissions required: bb.risks.delete */
     deleteRisk: {
       name: "DeleteRisk",
       requestType: DeleteRiskRequest,

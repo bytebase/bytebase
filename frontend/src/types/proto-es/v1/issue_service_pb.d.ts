@@ -1324,7 +1324,7 @@ export declare const IssueStatusSchema: GenEnum<IssueStatus>;
  */
 export declare const IssueService: GenService<{
   /**
-   * Permissions required: issues.get
+   * Permissions required: bb.issues.get
    *
    * @generated from rpc bytebase.v1.IssueService.GetIssue
    */
@@ -1334,7 +1334,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
-   * Permissions required: issues.create
+   * Permissions required: bb.issues.create
    *
    * @generated from rpc bytebase.v1.IssueService.CreateIssue
    */
@@ -1344,7 +1344,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
-   * Permissions required: issues.list
+   * Permissions required: bb.issues.list
    *
    * @generated from rpc bytebase.v1.IssueService.ListIssues
    */
@@ -1355,7 +1355,7 @@ export declare const IssueService: GenService<{
   },
   /**
    * Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
-   * Permissions required: issues.get
+   * Permissions required: bb.issues.get
    *
    * @generated from rpc bytebase.v1.IssueService.SearchIssues
    */
@@ -1365,7 +1365,7 @@ export declare const IssueService: GenService<{
     output: typeof SearchIssuesResponseSchema;
   },
   /**
-   * Permissions required: issues.update
+   * Permissions required: bb.issues.update
    *
    * @generated from rpc bytebase.v1.IssueService.UpdateIssue
    */
@@ -1375,7 +1375,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
-   * Permissions required: issueComments.list
+   * Permissions required: bb.issueComments.list
    *
    * @generated from rpc bytebase.v1.IssueService.ListIssueComments
    */
@@ -1385,7 +1385,7 @@ export declare const IssueService: GenService<{
     output: typeof ListIssueCommentsResponseSchema;
   },
   /**
-   * Permissions required: issueComments.create
+   * Permissions required: bb.issueComments.create
    *
    * @generated from rpc bytebase.v1.IssueService.CreateIssueComment
    */
@@ -1395,7 +1395,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueCommentSchema;
   },
   /**
-   * Permissions required: issueComments.update
+   * Permissions required: bb.issueComments.update
    *
    * @generated from rpc bytebase.v1.IssueService.UpdateIssueComment
    */
@@ -1405,7 +1405,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueCommentSchema;
   },
   /**
-   * Permissions required: issues.update
+   * Permissions required: bb.issues.update
    *
    * @generated from rpc bytebase.v1.IssueService.BatchUpdateIssuesStatus
    */

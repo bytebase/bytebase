@@ -579,7 +579,7 @@ export declare const SubscriptionService: GenService<{
     output: typeof SubscriptionSchema;
   },
   /**
-   * Permissions required: settings.set
+   * Permissions required: bb.settings.set
    *
    * @generated from rpc bytebase.v1.SubscriptionService.UpdateSubscription
    */

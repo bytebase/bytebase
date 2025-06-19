@@ -23,7 +23,7 @@ service ActuatorService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
-  // Permissions required: settings.set
+  // Permissions required: bb.settings.set
   rpc UpdateActuatorInfo(UpdateActuatorInfoRequest) returns (ActuatorInfo) {
     option (google.api.http) = {
       patch: "/v1/actuator/info"
@@ -34,7 +34,7 @@ service ActuatorService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Permissions required: projects.create
+  // Permissions required: bb.projects.create
   rpc SetupSample(SetupSampleRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/actuator:setupSample"

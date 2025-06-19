@@ -45,7 +45,7 @@ const (
 type AuditLogServiceClient interface {
 	// Permissions required: None
 	SearchAuditLogs(context.Context, *connect.Request[v1.SearchAuditLogsRequest]) (*connect.Response[v1.SearchAuditLogsResponse], error)
-	// Permissions required: auditLogs.export
+	// Permissions required: bb.auditLogs.export
 	ExportAuditLogs(context.Context, *connect.Request[v1.ExportAuditLogsRequest]) (*connect.Response[v1.ExportAuditLogsResponse], error)
 }
 
@@ -95,7 +95,7 @@ func (c *auditLogServiceClient) ExportAuditLogs(ctx context.Context, req *connec
 type AuditLogServiceHandler interface {
 	// Permissions required: None
 	SearchAuditLogs(context.Context, *connect.Request[v1.SearchAuditLogsRequest]) (*connect.Response[v1.SearchAuditLogsResponse], error)
-	// Permissions required: auditLogs.export
+	// Permissions required: bb.auditLogs.export
 	ExportAuditLogs(context.Context, *connect.Request[v1.ExportAuditLogsRequest]) (*connect.Response[v1.ExportAuditLogsResponse], error)
 }
 

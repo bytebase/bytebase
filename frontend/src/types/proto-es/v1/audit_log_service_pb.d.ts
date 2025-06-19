@@ -389,7 +389,7 @@ export declare const AuditLogService: GenService<{
     output: typeof SearchAuditLogsResponseSchema;
   },
   /**
-   * Permissions required: auditLogs.export
+   * Permissions required: bb.auditLogs.export
    *
    * @generated from rpc bytebase.v1.AuditLogService.ExportAuditLogs
    */

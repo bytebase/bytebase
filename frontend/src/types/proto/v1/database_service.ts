@@ -9551,7 +9551,7 @@ export const DatabaseServiceDefinition = {
   name: "DatabaseService",
   fullName: "bytebase.v1.DatabaseService",
   methods: {
-    /** Permissions required: databases.get */
+    /** Permissions required: bb.databases.get */
     getDatabase: {
       name: "GetDatabase",
       requestType: GetDatabaseRequest,
@@ -9607,7 +9607,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.get */
+    /** Permissions required: bb.databases.get */
     batchGetDatabases: {
       name: "BatchGetDatabases",
       requestType: BatchGetDatabasesRequest,
@@ -9717,7 +9717,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.list */
+    /** Permissions required: bb.databases.list */
     listDatabases: {
       name: "ListDatabases",
       requestType: ListDatabasesRequest,
@@ -9849,7 +9849,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.update */
+    /** Permissions required: bb.databases.update */
     updateDatabase: {
       name: "UpdateDatabase",
       requestType: UpdateDatabaseRequest,
@@ -9951,7 +9951,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.update */
+    /** Permissions required: bb.databases.update */
     batchUpdateDatabases: {
       name: "BatchUpdateDatabases",
       requestType: BatchUpdateDatabasesRequest,
@@ -10024,7 +10024,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.sync */
+    /** Permissions required: bb.databases.sync */
     syncDatabase: {
       name: "SyncDatabase",
       requestType: SyncDatabaseRequest,
@@ -10087,7 +10087,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.sync */
+    /** Permissions required: bb.databases.sync */
     batchSyncDatabases: {
       name: "BatchSyncDatabases",
       requestType: BatchSyncDatabasesRequest,
@@ -10155,7 +10155,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.getSchema */
+    /** Permissions required: bb.databases.getSchema */
     getDatabaseMetadata: {
       name: "GetDatabaseMetadata",
       requestType: GetDatabaseMetadataRequest,
@@ -10245,7 +10245,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.getSchema */
+    /** Permissions required: bb.databases.getSchema */
     getDatabaseSchema: {
       name: "GetDatabaseSchema",
       requestType: GetDatabaseSchemaRequest,
@@ -10333,7 +10333,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databases.get */
+    /** Permissions required: bb.databases.get */
     diffSchema: {
       name: "DiffSchema",
       requestType: DiffSchemaRequest,
@@ -10467,7 +10467,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databaseSecrets.list */
+    /** Permissions required: bb.databaseSecrets.list */
     listSecrets: {
       name: "ListSecrets",
       requestType: ListSecretsRequest,
@@ -10560,7 +10560,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databaseSecrets.update */
+    /** Permissions required: bb.databaseSecrets.update */
     updateSecret: {
       name: "UpdateSecret",
       requestType: UpdateSecretRequest,
@@ -10670,7 +10670,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: databaseSecrets.delete */
+    /** Permissions required: bb.databaseSecrets.delete */
     deleteSecret: {
       name: "DeleteSecret",
       requestType: DeleteSecretRequest,
@@ -10765,7 +10765,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Permissions required: changelogs.list */
+    /** Permissions required: bb.changelogs.list */
     listChangelogs: {
       name: "ListChangelogs",
       requestType: ListChangelogsRequest,
