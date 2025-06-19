@@ -14,10 +14,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
+	"github.com/google/uuid"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/shopspring/decimal"
-	"github.com/xtgo/uuid"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -103,7 +103,7 @@ func getStatementWithResultLimit(statement string, limit int) string {
 }
 
 func makeValueByTypeName(typeName string, columnType *sql.ColumnType) any {
-	if typeName == "UUID" || strings.HasPrefix(typeName, "TUPLE") || strings.HasPrefix(typeName, "ARRAY") || strings.HasPrefix(typeName, "MAP") {
+	if strings.HasPrefix(typeName, "TUPLE") || strings.HasPrefix(typeName, "ARRAY") || strings.HasPrefix(typeName, "MAP") {
 		// For TUPLE, ARRAY, MAP type in ClickHouse, we pass any and the driver will do the rest.
 		var it any
 		return &it
