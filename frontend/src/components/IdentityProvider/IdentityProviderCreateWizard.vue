@@ -474,7 +474,7 @@ import {
   OIDCIdentityProviderConfig,
   LDAPIdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { OAuth2IdentityProviderTemplate } from "@/utils";
 import { identityProviderTypeToString } from "@/utils";
 import IdentityProviderExternalURL from "./IdentityProviderExternalURL.vue";

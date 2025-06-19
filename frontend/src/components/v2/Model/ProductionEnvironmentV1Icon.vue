@@ -17,7 +17,7 @@ import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { featureToRef } from "@/store";
 import type { Environment } from "@/types/v1/environment";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 const props = withDefaults(
   defineProps<{

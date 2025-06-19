@@ -29,7 +29,7 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
-import { PlanFeature, PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanFeature, PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -125,7 +125,7 @@ const actionText = computed(() => {
   return t("subscription.instance-assignment.assign-license");
 });
 
-const featureKey = props.feature.split(".").join("-");
+const featureKey = PlanFeature[props.feature].split(".").join("-");
 
 const descriptionText = computed(() => {
   let description = props.description;
@@ -147,7 +147,7 @@ const descriptionText = computed(() => {
     }
     const trialText = t("subscription.required-plan-with-trial", {
       requiredPlan: t(
-        `subscription.plan.${requiredPlan.toLowerCase()}.title`
+        `subscription.plan.${PlanType[requiredPlan].toLowerCase()}.title`
       ),
       startTrial: startTrial,
     });

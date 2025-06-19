@@ -8,5 +8,5 @@
 <script lang="tsx" setup>
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { SemanticTypesView } from "@/components/SensitiveData";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 </script>

@@ -30,7 +30,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { AUTH_SIGNUP_MODULE } from "@/router/auth";
 import { useSubscriptionV1Store } from "@/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 const router = useRouter();
 const subscriptionStore = useSubscriptionV1Store();

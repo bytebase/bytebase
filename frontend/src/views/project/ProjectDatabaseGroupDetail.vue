@@ -66,7 +66,7 @@ import {
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 

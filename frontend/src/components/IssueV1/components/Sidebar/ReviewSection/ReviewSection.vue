@@ -77,7 +77,7 @@ import { BBSpin } from "@/bbkit";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import { useIssueContext, useWrappedReviewStepsV1 } from "@/components/IssueV1";
 import { useIssueV1Store } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import RiskLevelTag from "./RiskLevelTag.vue";
 import Timeline from "./Timeline.vue";
 

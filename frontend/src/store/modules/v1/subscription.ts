@@ -2,12 +2,13 @@ import dayjs from "dayjs";
 import { defineStore } from "pinia";
 import type { Ref } from "vue";
 import { computed } from "vue";
-import { subscriptionServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { subscriptionServiceClientConnect } from "@/grpcweb";
 import {
   PLANS,
   hasFeature as checkFeature,
   hasInstanceFeature as checkInstanceFeature,
-  getDateForPbTimestamp,
+  getDateForPbTimestampProtoEs,
   getMinimumRequiredPlan,
   instanceLimitFeature,
 } from "@/types";
@@ -15,13 +16,13 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
-import type { Subscription } from "@/types/proto/v1/subscription_service";
+import type { Subscription } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  GetSubscriptionRequestSchema,
+  UpdateSubscriptionRequestSchema,
   PlanFeature,
   PlanType,
-  planTypeFromJSON,
-  planTypeToNumber,
-} from "@/types/proto/v1/subscription_service";
+} from "@/types/proto-es/v1/subscription_service_pb";
 
 // The threshold of days before the license expiration date to show the warning.
 // Default is 7 days.
@@ -85,7 +86,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       if (!state.subscription) {
         return PlanType.FREE;
       }
-      return planTypeFromJSON(state.subscription.plan);
+      return state.subscription.plan;
     },
     isFreePlan(): boolean {
       return this.currentPlan == PlanType.FREE;
@@ -100,7 +101,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
 
       return dayjs(
-        getDateForPbTimestamp(state.subscription.expiresTime)
+        getDateForPbTimestampProtoEs(state.subscription.expiresTime)
       ).format("YYYY/MM/DD HH:mm:ss");
     },
     isTrialing(state): boolean {
@@ -115,7 +116,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         return false;
       }
       return dayjs(
-        getDateForPbTimestamp(state.subscription.expiresTime)
+        getDateForPbTimestampProtoEs(state.subscription.expiresTime)
       ).isBefore(new Date());
     },
     daysBeforeExpire(state): number {
@@ -128,7 +129,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
 
       const expiresTime = dayjs(
-        getDateForPbTimestamp(state.subscription.expiresTime)
+        getDateForPbTimestampProtoEs(state.subscription.expiresTime)
       );
       return Math.max(expiresTime.diff(new Date(), "day"), 0);
     },
@@ -193,16 +194,15 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       return this.hasFeature(feature) && !instance.activation;
     },
     currentPlanGTE(plan: PlanType): boolean {
-      return planTypeToNumber(this.currentPlan) >= planTypeToNumber(plan);
+      return this.currentPlan >= plan;
     },
     getMinimumRequiredPlan(feature: PlanFeature): PlanType {
       return getMinimumRequiredPlan(feature);
     },
     async fetchSubscription() {
       try {
-        const subscription = await subscriptionServiceClient.getSubscription(
-          {}
-        );
+        const request = create(GetSubscriptionRequestSchema, {});
+        const subscription = await subscriptionServiceClientConnect.getSubscription(request);
         this.setSubscription(subscription);
         return subscription;
       } catch (e) {
@@ -210,9 +210,10 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
     },
     async patchSubscription(license: string) {
-      const subscription = await subscriptionServiceClient.updateSubscription({
+      const request = create(UpdateSubscriptionRequestSchema, {
         license,
       });
+      const subscription = await subscriptionServiceClientConnect.updateSubscription(request);
       this.setSubscription(subscription);
       return subscription;
     },
