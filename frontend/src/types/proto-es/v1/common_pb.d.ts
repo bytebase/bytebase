@@ -232,6 +232,11 @@ export enum Engine {
    * @generated from enum value: CASSANDRA = 28;
    */
   CASSANDRA = 28,
+
+  /**
+   * @generated from enum value: OPENSEARCH = 29;
+   */
+  OPENSEARCH = 29,
 }
 
 /**

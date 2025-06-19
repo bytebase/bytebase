@@ -9608,6 +9608,7 @@ components:
                         - COSMOSDB
                         - TRINO
                         - CASSANDRA
+                        - OPENSEARCH
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -10282,6 +10283,7 @@ components:
                         - COSMOSDB
                         - TRINO
                         - CASSANDRA
+                        - OPENSEARCH
                     type: string
                     format: enum
                 activation:
@@ -10361,6 +10363,7 @@ components:
                         - COSMOSDB
                         - TRINO
                         - CASSANDRA
+                        - OPENSEARCH
                     type: string
                     format: enum
                 engineVersion:
@@ -11524,6 +11527,7 @@ components:
                         - COSMOSDB
                         - TRINO
                         - CASSANDRA
+                        - OPENSEARCH
                     type: string
                     format: enum
                 currentSchema:
@@ -12476,6 +12480,7 @@ components:
                         - COSMOSDB
                         - TRINO
                         - CASSANDRA
+                        - OPENSEARCH
                     type: string
                     format: enum
                 comment:
@@ -12538,6 +12543,7 @@ components:
                         - COSMOSDB
                         - TRINO
                         - CASSANDRA
+                        - OPENSEARCH
                     type: string
                     format: enum
                 enabled:
@@ -12582,6 +12588,7 @@ components:
                         - COSMOSDB
                         - TRINO
                         - CASSANDRA
+                        - OPENSEARCH
                     type: string
                     format: enum
                 category:
@@ -12626,6 +12633,7 @@ components:
                         - COSMOSDB
                         - TRINO
                         - CASSANDRA
+                        - OPENSEARCH
                     type: string
                     format: enum
                 category:
@@ -13093,6 +13101,7 @@ components:
                         - COSMOSDB
                         - TRINO
                         - CASSANDRA
+                        - OPENSEARCH
                     type: string
                     description: The SQL dialect.
                     format: enum

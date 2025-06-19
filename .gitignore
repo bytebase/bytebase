@@ -27,3 +27,9 @@ bytebase-build
 .idea
 
 .DS_Store
+
+# Air hot-reload build directory
+.air/
+
+# Monaco editor workers
+frontend/public/monaco-workers/

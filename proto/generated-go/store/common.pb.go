@@ -53,6 +53,7 @@ const (
 	Engine_COSMOSDB           Engine = 26
 	Engine_TRINO              Engine = 27
 	Engine_CASSANDRA          Engine = 28
+	Engine_OPENSEARCH         Engine = 29
 )
 
 // Enum value maps for Engine.
@@ -87,6 +88,7 @@ var (
 		26: "COSMOSDB",
 		27: "TRINO",
 		28: "CASSANDRA",
+		29: "OPENSEARCH",
 	}
 	Engine_value = map[string]int32{
 		"ENGINE_UNSPECIFIED": 0,
@@ -118,6 +120,7 @@ var (
 		"COSMOSDB":           26,
 		"TRINO":              27,
 		"CASSANDRA":          28,
+		"OPENSEARCH":         29,
 	}
 )
 
@@ -484,7 +487,7 @@ const file_store_common_proto_rawDesc = "" +
 	"\x06column\x18\x02 \x01(\x05R\x06column\"/\n" +
 	"\x05Range\x12\x14\n" +
 	"\x05start\x18\x01 \x01(\x05R\x05start\x12\x10\n" +
-	"\x03end\x18\x02 \x01(\x05R\x03end*\x9e\x03\n" +
+	"\x03end\x18\x02 \x01(\x05R\x03end*\xae\x03\n" +
 	"\x06Engine\x12\x16\n" +
 	"\x12ENGINE_UNSPECIFIED\x10\x00\x12\x0e\n" +
 	"\n" +
@@ -520,7 +523,9 @@ const file_store_common_proto_rawDesc = "" +
 	"\vCOCKROACHDB\x10\x19\x12\f\n" +
 	"\bCOSMOSDB\x10\x1a\x12\t\n" +
 	"\x05TRINO\x10\x1b\x12\r\n" +
-	"\tCASSANDRA\x10\x1c*\\\n" +
+	"\tCASSANDRA\x10\x1c\x12\x0e\n" +
+	"\n" +
+	"OPENSEARCH\x10\x1d*\\\n" +
 	"\aVCSType\x12\x18\n" +
 	"\x14VCS_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +

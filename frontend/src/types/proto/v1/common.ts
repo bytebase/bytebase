@@ -93,6 +93,7 @@ export enum Engine {
   COSMOSDB = "COSMOSDB",
   TRINO = "TRINO",
   CASSANDRA = "CASSANDRA",
+  OPENSEARCH = "OPENSEARCH",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -185,6 +186,9 @@ export function engineFromJSON(object: any): Engine {
     case 28:
     case "CASSANDRA":
       return Engine.CASSANDRA;
+    case 29:
+    case "OPENSEARCH":
+      return Engine.OPENSEARCH;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -252,6 +256,8 @@ export function engineToJSON(object: Engine): string {
       return "TRINO";
     case Engine.CASSANDRA:
       return "CASSANDRA";
+    case Engine.OPENSEARCH:
+      return "OPENSEARCH";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -318,6 +324,8 @@ export function engineToNumber(object: Engine): number {
       return 27;
     case Engine.CASSANDRA:
       return 28;
+    case Engine.OPENSEARCH:
+      return 29;
     case Engine.UNRECOGNIZED:
     default:
       return -1;

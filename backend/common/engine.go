@@ -36,6 +36,7 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 		storepb.Engine_DORIS,
 		storepb.Engine_DYNAMODB,
 		storepb.Engine_ELASTICSEARCH,
+		storepb.Engine_OPENSEARCH,
 		storepb.Engine_DATABRICKS,
 		storepb.Engine_COSMOSDB,
 		storepb.Engine_TRINO:

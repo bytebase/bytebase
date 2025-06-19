@@ -431,6 +431,7 @@ offset.
 | COSMOSDB | 26 |  |
 | TRINO | 27 |  |
 | CASSANDRA | 28 |  |
+| OPENSEARCH | 29 |  |
 
 
 
