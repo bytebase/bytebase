@@ -316,3 +316,63 @@ func GetTestMSSQLContainer(ctx context.Context, t testing.TB) *Container {
 	}
 	return container
 }
+
+// GetTiDBContainer creates a TiDB container for testing
+func GetTiDBContainer(ctx context.Context) (retC *Container, retErr error) {
+	req := testcontainers.ContainerRequest{
+		Image:        "pingcap/tidb:v8.5.0",
+		ExposedPorts: []string{"4000/tcp"},
+		WaitingFor:   wait.ForLog("server is running MySQL protocol").WithStartupTimeout(5 * time.Minute),
+	}
+
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+	port, err := c.MappedPort(ctx, "4000/tcp")
+	if err != nil {
+		return nil, err
+	}
+
+	// TiDB uses MySQL protocol, so we use MySQL driver
+	dsn := fmt.Sprintf("root@tcp(%s:%s)/?multiStatements=true&tls=false", host, port.Port())
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			db.Close()
+		}
+	}()
+
+	if err := waitDBPing(ctx, db); err != nil {
+		return nil, err
+	}
+
+	return &Container{
+		container: c,
+		host:      host,
+		port:      port.Port(),
+		db:        db,
+	}, nil
+}
+
+// GetTestTiDBContainer is a helper function for tests that creates a TiDB container
+// and handles the error by failing the test if container creation fails
+func GetTestTiDBContainer(ctx context.Context, t testing.TB) *Container {
+	t.Helper()
+	container, err := GetTiDBContainer(ctx)
+	if err != nil {
+		t.Fatalf("failed to create TiDB container: %v", err)
+	}
+	return container
+}
