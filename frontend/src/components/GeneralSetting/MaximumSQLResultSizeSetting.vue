@@ -4,6 +4,7 @@
       <span class="mr-2">
         {{ $t("settings.general.workspace.maximum-sql-result.self") }}
       </span>
+      <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
     </p>
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.maximum-sql-result.description") }}
@@ -11,7 +12,7 @@
     <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
       <NInputNumber
         :value="maximumSQLResultLimit"
-        :disabled="!allowEdit"
+        :disabled="!allowEdit || !hasQueryPolicyFeature"
         class="w-60"
         :min="1"
         :precision="0"
@@ -27,8 +28,10 @@
 import Long from "long";
 import { NInputNumber } from "naive-ui";
 import { ref, computed } from "vue";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useSettingV1Store, featureToRef } from "@/store";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { FeatureBadge } from "../FeatureGuard";
 
 defineProps<{
   allowEdit: boolean;
@@ -36,6 +39,7 @@ defineProps<{
 
 const settingV1Store = useSettingV1Store();
 const timing = ref<ReturnType<typeof setTimeout>>();
+const hasQueryPolicyFeature = featureToRef(PlanFeature.FEATURE_QUERY_POLICY);
 
 const initialState = () => {
   const limit =
