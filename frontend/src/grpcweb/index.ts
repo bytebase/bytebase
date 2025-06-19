@@ -10,9 +10,10 @@ import {
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
 import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
+import { CelService } from "@/types/proto-es/v1/cel_service_pb";
+import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
-import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseCatalogServiceDefinition } from "@/types/proto/v1/database_catalog_service";
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
@@ -31,7 +32,6 @@ import { RevisionServiceDefinition } from "@/types/proto/v1/revision_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
-import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { UserServiceDefinition } from "@/types/proto/v1/user_service";
@@ -125,11 +125,6 @@ export const riskServiceClient = clientFactory.create(
   channel
 );
 
-export const settingServiceClient = clientFactory.create(
-  SettingServiceDefinition,
-  channel
-);
-
 export const sheetServiceClient = clientFactory.create(
   SheetServiceDefinition,
   channel
@@ -163,11 +158,6 @@ export const sqlServiceClient = clientFactory.create(
 export const sqlStreamingServiceClient = clientFactory.create(
   SQLServiceDefinition,
   websocketChannel
-);
-
-export const celServiceClient = clientFactory.create(
-  CelServiceDefinition,
-  channel
 );
 
 export const changelistServiceClient = clientFactory.create(
@@ -238,3 +228,10 @@ export const workspaceServiceClientConnect = createClient(
   WorkspaceService,
   transport
 );
+
+export const settingServiceClientConnect = createClient(
+  SettingService,
+  transport
+);
+
+export const celServiceClientConnect = createClient(CelService, transport);
