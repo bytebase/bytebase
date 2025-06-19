@@ -1,6 +1,16 @@
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { settingServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { settingServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import { 
+  GetSettingRequestSchema, 
+  UpdateSettingRequestSchema, 
+  ListSettingsRequestSchema,
+  type Setting as NewSetting
+} from "@/types/proto-es/v1/setting_service_pb";
+import { convertNewSettingToOld, convertOldSettingToNew, convertOldSettingNameToNew } from "@/utils/v1/setting-conversions";
 import { settingNamePrefix } from "@/store/modules/v1/common";
 import type {
   Setting,
@@ -8,11 +18,14 @@ import type {
   WorkspaceProfileSetting,
   DataClassificationSetting_DataClassificationConfig,
 } from "@/types/proto/v1/setting_service";
-import { PasswordRestrictionSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { PasswordRestrictionSetting, Setting_SettingName as OldSettingName } from "@/types/proto/v1/setting_service";
 import { useActuatorV1Store } from "./actuator";
 
+// Re-export the old Setting_SettingName for compatibility
+export { Setting_SettingName } from "@/types/proto/v1/setting_service";
+
 interface SettingState {
-  settingMapByName: Map<string, Setting>;
+  settingMapByName: Map<string, NewSetting>;
 }
 
 export const useSettingV1Store = defineStore("setting_v1", {
@@ -21,74 +34,124 @@ export const useSettingV1Store = defineStore("setting_v1", {
   }),
   getters: {
     workspaceProfileSetting(state): WorkspaceProfileSetting | undefined {
+      const newName = convertOldSettingNameToNew(OldSettingName.WORKSPACE_PROFILE);
       const setting = state.settingMapByName.get(
-        `${settingNamePrefix}${Setting_SettingName.WORKSPACE_PROFILE}`
+        `${settingNamePrefix}${newName}`
       );
-      return setting?.value?.workspaceProfileSettingValue;
+      if (!setting?.value?.value) return undefined;
+      const value = setting.value.value;
+      if (value.case === "workspaceProfileSettingValue") {
+        // Convert new proto to old for compatibility
+        const oldSetting = convertNewSettingToOld(setting);
+        return oldSetting.value?.workspaceProfileSettingValue;
+      }
+      return undefined;
     },
     brandingLogo(state): string | undefined {
+      const newName = convertOldSettingNameToNew(OldSettingName.BRANDING_LOGO);
       const setting = state.settingMapByName.get(
-        `${settingNamePrefix}${Setting_SettingName.BRANDING_LOGO}`
+        `${settingNamePrefix}${newName}`
       );
-      return setting?.value?.stringValue;
+      if (!setting?.value?.value) return undefined;
+      const value = setting.value.value;
+      if (value.case === "stringValue") {
+        return value.value;
+      }
+      return undefined;
     },
     classification(): DataClassificationSetting_DataClassificationConfig[] {
+      const newName = convertOldSettingNameToNew(OldSettingName.DATA_CLASSIFICATION);
       const setting = this.settingMapByName.get(
-        `${settingNamePrefix}${Setting_SettingName.DATA_CLASSIFICATION}`
+        `${settingNamePrefix}${newName}`
       );
-      return setting?.value?.dataClassificationSettingValue?.configs ?? [];
+      if (!setting?.value?.value) return [];
+      const value = setting.value.value;
+      if (value.case === "dataClassificationSettingValue") {
+        // Convert new proto to old for compatibility
+        const oldSetting = convertNewSettingToOld(setting);
+        return oldSetting.value?.dataClassificationSettingValue?.configs ?? [];
+      }
+      return [];
     },
     passwordRestriction(): PasswordRestrictionSetting {
+      const newName = convertOldSettingNameToNew(OldSettingName.PASSWORD_RESTRICTION);
       const setting = this.settingMapByName.get(
-        `${settingNamePrefix}${Setting_SettingName.PASSWORD_RESTRICTION}`
+        `${settingNamePrefix}${newName}`
       );
-      return (
-        setting?.value?.passwordRestrictionSetting ??
-        PasswordRestrictionSetting.fromPartial({
+      if (!setting?.value?.value) {
+        return PasswordRestrictionSetting.fromPartial({
           minLength: 8,
           requireLetter: true,
-        })
-      );
+        });
+      }
+      const value = setting.value.value;
+      if (value.case === "passwordRestrictionSetting") {
+        // Convert new proto to old for compatibility
+        const oldSetting = convertNewSettingToOld(setting);
+        return oldSetting.value?.passwordRestrictionSetting ?? PasswordRestrictionSetting.fromPartial({
+          minLength: 8,
+          requireLetter: true,
+        });
+      }
+      return PasswordRestrictionSetting.fromPartial({
+        minLength: 8,
+        requireLetter: true,
+      });
     },
   },
   actions: {
     getProjectClassification(
       classificationId: string
     ): DataClassificationSetting_DataClassificationConfig | undefined {
+      const newName = convertOldSettingNameToNew(OldSettingName.DATA_CLASSIFICATION);
       const setting = this.settingMapByName.get(
-        `${settingNamePrefix}${Setting_SettingName.DATA_CLASSIFICATION}`
+        `${settingNamePrefix}${newName}`
       );
-      return setting?.value?.dataClassificationSettingValue?.configs.find(
-        (config) => config.id === classificationId
-      );
-    },
-    async fetchSettingByName(name: Setting_SettingName, silent = false) {
-      try {
-        const setting = await settingServiceClient.getSetting(
-          {
-            name: `${settingNamePrefix}${name}`,
-          },
-          { silent }
+      if (!setting?.value?.value) return undefined;
+      const value = setting.value.value;
+      if (value.case === "dataClassificationSettingValue") {
+        // Convert new proto to old for compatibility
+        const oldSetting = convertNewSettingToOld(setting);
+        return oldSetting.value?.dataClassificationSettingValue?.configs.find(
+          (config) => config.id === classificationId
         );
-        this.settingMapByName.set(setting.name, setting);
-        return setting;
+      }
+      return undefined;
+    },
+    async fetchSettingByName(name: OldSettingName, silent = false): Promise<Setting | undefined> {
+      try {
+        const newName = convertOldSettingNameToNew(name);
+        const request = create(GetSettingRequestSchema, {
+          name: `${settingNamePrefix}${newName}`,
+        });
+        const response = await settingServiceClientConnect.getSetting(request, {
+          contextValues: createContextValues().set(silentContextKey, silent),
+        });
+        this.settingMapByName.set(response.name, response);
+        // Return old proto for compatibility
+        return convertNewSettingToOld(response);
       } catch {
         return;
       }
     },
-    getOrFetchSettingByName(name: Setting_SettingName, silent = false) {
+    getOrFetchSettingByName(name: OldSettingName, silent = false): Promise<Setting | undefined> | Setting | undefined {
       const setting = this.getSettingByName(name);
       if (setting) {
         return setting;
       }
       return this.fetchSettingByName(name, silent);
     },
-    getSettingByName(name: Setting_SettingName) {
-      return this.settingMapByName.get(`${settingNamePrefix}${name}`);
+    getSettingByName(name: OldSettingName): Setting | undefined {
+      const newName = convertOldSettingNameToNew(name);
+      const newSetting = this.settingMapByName.get(`${settingNamePrefix}${newName}`);
+      if (!newSetting) return undefined;
+      // Return old proto for compatibility
+      return convertNewSettingToOld(newSetting);
     },
     async fetchSettingList() {
-      const { settings } = await settingServiceClient.listSettings({});
-      for (const setting of settings) {
+      const request = create(ListSettingsRequestSchema, {});
+      const response = await settingServiceClientConnect.listSettings(request);
+      for (const setting of response.settings) {
         this.settingMapByName.set(setting.name, setting);
       }
     },
@@ -98,22 +161,29 @@ export const useSettingV1Store = defineStore("setting_v1", {
       validateOnly = false,
       updateMask,
     }: {
-      name: Setting_SettingName;
+      name: OldSettingName;
       value: SettingValue;
       validateOnly?: boolean;
       updateMask?: string[] | undefined;
-    }) {
-      const resp = await settingServiceClient.updateSetting({
-        setting: {
-          name: `${settingNamePrefix}${name}`,
-          value,
-        },
+    }): Promise<Setting> {
+      // Convert old value to new proto-es format
+      const newName = convertOldSettingNameToNew(name);
+      const oldSetting = {
+        name: `${settingNamePrefix}${newName}`,
+        value,
+      };
+      const newSetting = convertOldSettingToNew(oldSetting);
+      
+      const request = create(UpdateSettingRequestSchema, {
+        setting: newSetting,
         validateOnly,
         allowMissing: true,
-        updateMask,
+        updateMask: updateMask ? { paths: updateMask } : undefined,
       });
-      this.settingMapByName.set(resp.name, resp);
-      return resp;
+      const response = await settingServiceClientConnect.updateSetting(request);
+      this.settingMapByName.set(response.name, response);
+      // Return old proto for compatibility
+      return convertNewSettingToOld(response);
     },
     async updateWorkspaceProfile({
       payload,
@@ -130,7 +200,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
         ...payload,
       };
       await this.upsertSetting({
-        name: Setting_SettingName.WORKSPACE_PROFILE,
+        name: OldSettingName.WORKSPACE_PROFILE,
         value: {
           workspaceProfileSettingValue: profileSetting,
         },
@@ -142,7 +212,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
   },
 });
 
-export const useSettingByName = (name: Setting_SettingName) => {
+export const useSettingByName = (name: OldSettingName) => {
   const store = useSettingV1Store();
   const setting = computed(() => store.getSettingByName(name));
   store.getOrFetchSettingByName(name, /* silent */ true);
