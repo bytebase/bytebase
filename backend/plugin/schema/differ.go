@@ -522,13 +522,98 @@ func columnsEqual(col1, col2 *storepb.ColumnMetadata) bool {
 	if col1.Nullable != col2.Nullable {
 		return false
 	}
-	if col1.DefaultValue != col2.DefaultValue {
+	// Compare default values (oneof field)
+	if !defaultValuesEqual(col1.GetDefaultValue(), col2.GetDefaultValue()) {
 		return false
 	}
 	if col1.Comment != col2.Comment {
 		return false
 	}
+	// Compare character set and collation
+	if col1.CharacterSet != col2.CharacterSet {
+		return false
+	}
+	if col1.Collation != col2.Collation {
+		return false
+	}
+	// Compare on update clause
+	if col1.OnUpdate != col2.OnUpdate {
+		return false
+	}
+	// Compare Oracle specific metadata
+	if col1.DefaultOnNull != col2.DefaultOnNull {
+		return false
+	}
+	// Compare generated column metadata
+	if !generationMetadataEqual(col1.Generation, col2.Generation) {
+		return false
+	}
+	// Compare identity column metadata
+	if col1.IsIdentity != col2.IsIdentity {
+		return false
+	}
+	if col1.IdentityGeneration != col2.IdentityGeneration {
+		return false
+	}
+	if col1.IdentitySeed != col2.IdentitySeed {
+		return false
+	}
+	// Compare user comment
+	if col1.UserComment != col2.UserComment {
+		return false
+	}
 	return true
+}
+
+// defaultValuesEqual compares two default value oneof fields.
+func defaultValuesEqual(dv1, dv2 any) bool {
+	if dv1 == nil && dv2 == nil {
+		return true
+	}
+	if dv1 == nil || dv2 == nil {
+		return false
+	}
+
+	switch v1 := dv1.(type) {
+	case *storepb.ColumnMetadata_Default:
+		v2, ok := dv2.(*storepb.ColumnMetadata_Default)
+		if !ok {
+			return false
+		}
+		// Compare wrapped string values
+		if v1.Default == nil && v2.Default == nil {
+			return true
+		}
+		if v1.Default == nil || v2.Default == nil {
+			return false
+		}
+		return v1.Default.Value == v2.Default.Value
+	case *storepb.ColumnMetadata_DefaultNull:
+		v2, ok := dv2.(*storepb.ColumnMetadata_DefaultNull)
+		if !ok {
+			return false
+		}
+		return v1.DefaultNull == v2.DefaultNull
+	case *storepb.ColumnMetadata_DefaultExpression:
+		v2, ok := dv2.(*storepb.ColumnMetadata_DefaultExpression)
+		if !ok {
+			return false
+		}
+		return v1.DefaultExpression == v2.DefaultExpression
+	default:
+		return false
+	}
+}
+
+// generationMetadataEqual compares two generation metadata structs.
+func generationMetadataEqual(gen1, gen2 *storepb.GenerationMetadata) bool {
+	if gen1 == nil && gen2 == nil {
+		return true
+	}
+	if gen1 == nil || gen2 == nil {
+		return false
+	}
+	return gen1.Type == gen2.Type && gen1.Expression == gen2.Expression
 }
 
 // compareIndexes compares indexes between two tables.
