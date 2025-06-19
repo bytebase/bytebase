@@ -1,6 +1,11 @@
 import { head } from "lodash-es";
-import { celServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { celServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import { BatchParseRequestSchema } from "@/types/proto-es/v1/cel_service_pb";
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { convertNewExprToOld } from "@/utils/v1/cel-conversions";
 import type { ConditionExpr, ConditionGroupExpr, SimpleExpr } from "../types";
 import {
   isEqualityExpr,
@@ -31,18 +36,15 @@ export const buildCELExpr = async (
       if (!expr.content) {
         return undefined;
       }
-      const celExpr = head(
-        (
-          await celServiceClient.batchParse(
-            {
-              expressions: [expr.content],
-            },
-            {
-              silent: true,
-            }
-          )
-        ).expressions
-      );
+      const request = create(BatchParseRequestSchema, {
+        expressions: [expr.content],
+      });
+      const response = await celServiceClientConnect.batchParse(request, {
+        contextValues: createContextValues().set(silentContextKey, true),
+      });
+      // Convert the first expression from new to old format
+      const newExpr = head(response.expressions);
+      const celExpr = newExpr ? convertNewExprToOld(newExpr) : undefined;
       if (celExpr) {
         return celExpr;
       } else {
