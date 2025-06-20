@@ -49,7 +49,7 @@ export const convertOldSettingNameToNew = (oldName: OldSettingName): string => {
 // Convert new string format to old enum
 export const convertNewSettingNameToOld = (newNameString: string): OldSettingName => {
   // Find the numeric enum value from the string
-  const newEnumValue = Object.entries(NewSettingName).find(([key, value]) => key === newNameString)?.[1] as NewSettingName | undefined;
+  const newEnumValue = Object.entries(NewSettingName).find(([key]) => key === newNameString)?.[1] as NewSettingName | undefined;
   if (newEnumValue === undefined) {
     return OldSettingName.UNRECOGNIZED;
   }
