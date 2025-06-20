@@ -31,12 +31,17 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GroupServiceClient interface {
+	// Permissions required: bb.groups.get
 	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*Group, error)
+	// Permissions required: bb.groups.list
 	ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error)
+	// Permissions required: bb.groups.create
 	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*Group, error)
 	// UpdateGroup updates the group.
 	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
+	// Permissions required: bb.groups.update
 	UpdateGroup(ctx context.Context, in *UpdateGroupRequest, opts ...grpc.CallOption) (*Group, error)
+	// Permissions required: bb.groups.delete
 	DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -102,12 +107,17 @@ func (c *groupServiceClient) DeleteGroup(ctx context.Context, in *DeleteGroupReq
 // All implementations must embed UnimplementedGroupServiceServer
 // for forward compatibility.
 type GroupServiceServer interface {
+	// Permissions required: bb.groups.get
 	GetGroup(context.Context, *GetGroupRequest) (*Group, error)
+	// Permissions required: bb.groups.list
 	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
+	// Permissions required: bb.groups.create
 	CreateGroup(context.Context, *CreateGroupRequest) (*Group, error)
 	// UpdateGroup updates the group.
 	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
+	// Permissions required: bb.groups.update
 	UpdateGroup(context.Context, *UpdateGroupRequest) (*Group, error)
+	// Permissions required: bb.groups.delete
 	DeleteGroup(context.Context, *DeleteGroupRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedGroupServiceServer()
 }

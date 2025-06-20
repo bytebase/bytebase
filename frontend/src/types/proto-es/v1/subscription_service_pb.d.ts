@@ -569,6 +569,7 @@ export declare const SubscriptionService: GenService<{
    * GetSubscription returns the current subscription.
    * If there is no license, we will return a free plan subscription without expiration time.
    * If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.SubscriptionService.GetSubscription
    */
@@ -578,6 +579,8 @@ export declare const SubscriptionService: GenService<{
     output: typeof SubscriptionSchema;
   },
   /**
+   * Permissions required: bb.settings.set
+   *
    * @generated from rpc bytebase.v1.SubscriptionService.UpdateSubscription
    */
   updateSubscription: {

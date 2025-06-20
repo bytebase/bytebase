@@ -33,12 +33,19 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ReleaseServiceClient interface {
+	// Permissions required: bb.releases.get
 	GetRelease(ctx context.Context, in *GetReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	// Permissions required: bb.releases.list
 	ListReleases(ctx context.Context, in *ListReleasesRequest, opts ...grpc.CallOption) (*ListReleasesResponse, error)
+	// Permissions required: bb.releases.create
 	CreateRelease(ctx context.Context, in *CreateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	// Permissions required: bb.releases.update
 	UpdateRelease(ctx context.Context, in *UpdateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	// Permissions required: bb.releases.delete
 	DeleteRelease(ctx context.Context, in *DeleteReleaseRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Permissions required: bb.releases.undelete
 	UndeleteRelease(ctx context.Context, in *UndeleteReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	// Permissions required: bb.releases.check
 	CheckRelease(ctx context.Context, in *CheckReleaseRequest, opts ...grpc.CallOption) (*CheckReleaseResponse, error)
 }
 
@@ -124,12 +131,19 @@ func (c *releaseServiceClient) CheckRelease(ctx context.Context, in *CheckReleas
 // All implementations must embed UnimplementedReleaseServiceServer
 // for forward compatibility.
 type ReleaseServiceServer interface {
+	// Permissions required: bb.releases.get
 	GetRelease(context.Context, *GetReleaseRequest) (*Release, error)
+	// Permissions required: bb.releases.list
 	ListReleases(context.Context, *ListReleasesRequest) (*ListReleasesResponse, error)
+	// Permissions required: bb.releases.create
 	CreateRelease(context.Context, *CreateReleaseRequest) (*Release, error)
+	// Permissions required: bb.releases.update
 	UpdateRelease(context.Context, *UpdateReleaseRequest) (*Release, error)
+	// Permissions required: bb.releases.delete
 	DeleteRelease(context.Context, *DeleteReleaseRequest) (*emptypb.Empty, error)
+	// Permissions required: bb.releases.undelete
 	UndeleteRelease(context.Context, *UndeleteReleaseRequest) (*Release, error)
+	// Permissions required: bb.releases.check
 	CheckRelease(context.Context, *CheckReleaseRequest) (*CheckReleaseResponse, error)
 	mustEmbedUnimplementedReleaseServiceServer()
 }

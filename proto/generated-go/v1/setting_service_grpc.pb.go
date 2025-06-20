@@ -28,8 +28,11 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SettingServiceClient interface {
+	// Permissions required: bb.settings.list
 	ListSettings(ctx context.Context, in *ListSettingsRequest, opts ...grpc.CallOption) (*ListSettingsResponse, error)
+	// Permissions required: bb.settings.get
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*Setting, error)
+	// Permissions required: bb.settings.set
 	UpdateSetting(ctx context.Context, in *UpdateSettingRequest, opts ...grpc.CallOption) (*Setting, error)
 }
 
@@ -75,8 +78,11 @@ func (c *settingServiceClient) UpdateSetting(ctx context.Context, in *UpdateSett
 // All implementations must embed UnimplementedSettingServiceServer
 // for forward compatibility.
 type SettingServiceServer interface {
+	// Permissions required: bb.settings.list
 	ListSettings(context.Context, *ListSettingsRequest) (*ListSettingsResponse, error)
+	// Permissions required: bb.settings.get
 	GetSetting(context.Context, *GetSettingRequest) (*Setting, error)
+	// Permissions required: bb.settings.set
 	UpdateSetting(context.Context, *UpdateSettingRequest) (*Setting, error)
 	mustEmbedUnimplementedSettingServiceServer()
 }

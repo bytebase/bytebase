@@ -16,6 +16,7 @@ import "v1/common.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service OrgPolicyService {
+  // Permissions required: bb.policies.get
   rpc GetPolicy(GetPolicyRequest) returns (Policy) {
     option (google.api.http) = {
       get: "/v1/{name=policies/*}"
@@ -30,6 +31,7 @@ service OrgPolicyService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.policies.list
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
     option (google.api.http) = {
       get: "/v1/policies"
@@ -44,6 +46,7 @@ service OrgPolicyService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.policies.create
   rpc CreatePolicy(CreatePolicyRequest) returns (Policy) {
     option (google.api.http) = {
       post: "/v1/policies"
@@ -72,6 +75,7 @@ service OrgPolicyService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.policies.update
   rpc UpdatePolicy(UpdatePolicyRequest) returns (Policy) {
     option (google.api.http) = {
       patch: "/v1/{policy.name=policies/*}"
@@ -100,6 +104,7 @@ service OrgPolicyService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.policies.delete
   rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/v1/{name=policies/*}"

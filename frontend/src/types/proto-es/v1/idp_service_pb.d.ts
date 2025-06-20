@@ -653,6 +653,8 @@ export declare const OAuth2AuthStyleSchema: GenEnum<OAuth2AuthStyle>;
  */
 export declare const IdentityProviderService: GenService<{
   /**
+   * Permissions required: bb.identityProviders.get
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.GetIdentityProvider
    */
   getIdentityProvider: {
@@ -661,6 +663,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.ListIdentityProviders
    */
   listIdentityProviders: {
@@ -669,6 +673,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof ListIdentityProvidersResponseSchema;
   },
   /**
+   * Permissions required: bb.identityProviders.create
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.CreateIdentityProvider
    */
   createIdentityProvider: {
@@ -677,6 +683,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
+   * Permissions required: bb.identityProviders.update
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.UpdateIdentityProvider
    */
   updateIdentityProvider: {
@@ -685,6 +693,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
+   * Permissions required: bb.identityProviders.delete
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.DeleteIdentityProvider
    */
   deleteIdentityProvider: {
@@ -693,6 +703,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: bb.identityProviders.update
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.TestIdentityProvider
    */
   testIdentityProvider: {

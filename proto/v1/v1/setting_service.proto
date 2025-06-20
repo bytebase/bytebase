@@ -18,6 +18,7 @@ import "v1/issue_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service SettingService {
+  // Permissions required: bb.settings.list
   rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {
     option (google.api.http) = {get: "/v1/settings"};
     option (google.api.method_signature) = "";
@@ -25,6 +26,7 @@ service SettingService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.settings.get
   rpc GetSetting(GetSettingRequest) returns (Setting) {
     option (google.api.http) = {get: "/v1/{name=settings/*}"};
     option (google.api.method_signature) = "name";
@@ -32,6 +34,7 @@ service SettingService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.settings.set
   rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
     option (google.api.http) = {
       patch: "/v1/{setting.name=settings/*}"

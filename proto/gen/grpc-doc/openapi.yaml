@@ -10,7 +10,9 @@ paths:
         get:
             tags:
                 - ProjectService
-            description: Deprecated.
+            description: |-
+                Deprecated.
+                 Permissions required: bb.projects.getIamPolicy
             operationId: ProjectService_BatchGetIamPolicy
             parameters:
                 - name: '*'
@@ -42,6 +44,7 @@ paths:
         delete:
             tags:
                 - ActuatorService
+            description: 'Permissions required: None'
             operationId: ActuatorService_DeleteCache
             responses:
                 "200":
@@ -57,6 +60,7 @@ paths:
         get:
             tags:
                 - ActuatorService
+            description: 'Permissions required: None'
             operationId: ActuatorService_GetActuatorInfo
             responses:
                 "200":
@@ -74,6 +78,7 @@ paths:
         patch:
             tags:
                 - ActuatorService
+            description: 'Permissions required: bb.settings.set'
             operationId: ActuatorService_UpdateActuatorInfo
             parameters:
                 - name: updateMask
@@ -105,6 +110,7 @@ paths:
         get:
             tags:
                 - ActuatorService
+            description: 'Permissions required: None'
             operationId: ActuatorService_GetResourcePackage
             responses:
                 "200":
@@ -123,6 +129,7 @@ paths:
         post:
             tags:
                 - ActuatorService
+            description: 'Permissions required: bb.projects.create'
             operationId: ActuatorService_SetupSample
             responses:
                 "200":
@@ -138,6 +145,7 @@ paths:
         post:
             tags:
                 - AuditLogService
+            description: 'Permissions required: bb.auditLogs.export'
             operationId: AuditLogService_ExportAuditLogs
             requestBody:
                 content:
@@ -162,6 +170,7 @@ paths:
         post:
             tags:
                 - AuditLogService
+            description: 'Permissions required: None'
             operationId: AuditLogService_SearchAuditLogs
             requestBody:
                 content:
@@ -186,6 +195,7 @@ paths:
         post:
             tags:
                 - AuthService
+            description: 'Permissions required: None'
             operationId: AuthService_Login
             requestBody:
                 content:
@@ -210,6 +220,7 @@ paths:
         post:
             tags:
                 - AuthService
+            description: 'Permissions required: None'
             operationId: AuthService_Logout
             requestBody:
                 content:
@@ -231,6 +242,7 @@ paths:
         post:
             tags:
                 - CelService
+            description: 'Permissions required: None'
             operationId: CelService_BatchDeparse
             requestBody:
                 content:
@@ -255,6 +267,7 @@ paths:
         post:
             tags:
                 - CelService
+            description: 'Permissions required: None'
             operationId: CelService_BatchParse
             requestBody:
                 content:
@@ -279,6 +292,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.list'
             operationId: OrgPolicyService_ListPolicies
             parameters:
                 - name: environment
@@ -346,6 +360,7 @@ paths:
         post:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.create'
             operationId: OrgPolicyService_CreatePolicy
             parameters:
                 - name: environment
@@ -393,6 +408,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.get'
             operationId: OrgPolicyService_GetPolicy
             parameters:
                 - name: environment
@@ -423,6 +439,7 @@ paths:
         delete:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.delete'
             operationId: OrgPolicyService_DeletePolicy
             parameters:
                 - name: environment
@@ -450,6 +467,7 @@ paths:
         patch:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.update'
             operationId: OrgPolicyService_UpdatePolicy
             parameters:
                 - name: environment
@@ -500,6 +518,7 @@ paths:
         get:
             tags:
                 - GroupService
+            description: 'Permissions required: bb.groups.list'
             operationId: GroupService_ListGroups
             parameters:
                 - name: pageSize
@@ -540,6 +559,7 @@ paths:
         post:
             tags:
                 - GroupService
+            description: 'Permissions required: bb.groups.create'
             operationId: GroupService_CreateGroup
             parameters:
                 - name: groupEmail
@@ -572,6 +592,7 @@ paths:
         get:
             tags:
                 - GroupService
+            description: 'Permissions required: bb.groups.get'
             operationId: GroupService_GetGroup
             parameters:
                 - name: group
@@ -596,6 +617,7 @@ paths:
         delete:
             tags:
                 - GroupService
+            description: 'Permissions required: bb.groups.delete'
             operationId: GroupService_DeleteGroup
             parameters:
                 - name: group
@@ -620,6 +642,7 @@ paths:
             description: |-
                 UpdateGroup updates the group.
                  Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
+                 Permissions required: bb.groups.update
             operationId: GroupService_UpdateGroup
             parameters:
                 - name: group
@@ -664,6 +687,7 @@ paths:
         get:
             tags:
                 - IdentityProviderService
+            description: 'Permissions required: None'
             operationId: IdentityProviderService_ListIdentityProviders
             parameters:
                 - name: pageSize
@@ -704,6 +728,7 @@ paths:
         post:
             tags:
                 - IdentityProviderService
+            description: 'Permissions required: bb.identityProviders.create'
             operationId: IdentityProviderService_CreateIdentityProvider
             parameters:
                 - name: identityProviderId
@@ -744,6 +769,7 @@ paths:
         post:
             tags:
                 - IdentityProviderService
+            description: 'Permissions required: bb.identityProviders.update'
             operationId: IdentityProviderService_TestIdentityProvider
             requestBody:
                 content:
@@ -768,6 +794,7 @@ paths:
         get:
             tags:
                 - IdentityProviderService
+            description: 'Permissions required: bb.identityProviders.get'
             operationId: IdentityProviderService_GetIdentityProvider
             parameters:
                 - name: idp
@@ -792,6 +819,7 @@ paths:
         delete:
             tags:
                 - IdentityProviderService
+            description: 'Permissions required: bb.identityProviders.delete'
             operationId: IdentityProviderService_DeleteIdentityProvider
             parameters:
                 - name: idp
@@ -813,6 +841,7 @@ paths:
         patch:
             tags:
                 - IdentityProviderService
+            description: 'Permissions required: bb.identityProviders.update'
             operationId: IdentityProviderService_UpdateIdentityProvider
             parameters:
                 - name: idp
@@ -850,6 +879,7 @@ paths:
         get:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.list'
             operationId: InstanceService_ListInstances
             parameters:
                 - name: pageSize
@@ -929,6 +959,7 @@ paths:
         post:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.create'
             operationId: InstanceService_CreateInstance
             parameters:
                 - name: instanceId
@@ -969,6 +1000,7 @@ paths:
         get:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.get'
             operationId: InstanceService_GetInstance
             parameters:
                 - name: instance
@@ -993,6 +1025,7 @@ paths:
         delete:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.delete'
             operationId: InstanceService_DeleteInstance
             parameters:
                 - name: instance
@@ -1019,6 +1052,7 @@ paths:
         patch:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.update'
             operationId: InstanceService_UpdateInstance
             parameters:
                 - name: instance
@@ -1056,6 +1090,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.list'
             operationId: DatabaseService_ListDatabases
             parameters:
                 - name: instance
@@ -1139,6 +1174,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.get'
             operationId: DatabaseService_GetDatabase
             parameters:
                 - name: instance
@@ -1169,6 +1205,7 @@ paths:
         patch:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.update'
             operationId: DatabaseService_UpdateDatabase
             parameters:
                 - name: instance
@@ -1212,6 +1249,7 @@ paths:
         get:
             tags:
                 - DatabaseCatalogService
+            description: 'Permissions required: bb.databaseCatalogs.get'
             operationId: DatabaseCatalogService_GetDatabaseCatalog
             parameters:
                 - name: instance
@@ -1242,6 +1280,7 @@ paths:
         patch:
             tags:
                 - DatabaseCatalogService
+            description: 'Permissions required: bb.databaseCatalogs.update'
             operationId: DatabaseCatalogService_UpdateDatabaseCatalog
             parameters:
                 - name: instance
@@ -1279,6 +1318,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.changelogs.list'
             operationId: DatabaseService_ListChangelogs
             parameters:
                 - name: instance
@@ -1373,6 +1413,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: changelogs.get'
             operationId: DatabaseService_GetChangelog
             parameters:
                 - name: instance
@@ -1424,6 +1465,7 @@ paths:
         post:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.get'
             operationId: DatabaseService_DiffSchema
             parameters:
                 - name: instance
@@ -1467,6 +1509,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.getSchema'
             operationId: DatabaseService_GetDatabaseMetadata
             parameters:
                 - name: instance
@@ -1517,6 +1560,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.list'
             operationId: OrgPolicyService_ListPolicies
             parameters:
                 - name: instance
@@ -1590,6 +1634,7 @@ paths:
         post:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.create'
             operationId: OrgPolicyService_CreatePolicy
             parameters:
                 - name: instance
@@ -1643,6 +1688,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.get'
             operationId: OrgPolicyService_GetPolicy
             parameters:
                 - name: instance
@@ -1679,6 +1725,7 @@ paths:
         delete:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.delete'
             operationId: OrgPolicyService_DeletePolicy
             parameters:
                 - name: instance
@@ -1712,6 +1759,7 @@ paths:
         patch:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.update'
             operationId: OrgPolicyService_UpdatePolicy
             parameters:
                 - name: instance
@@ -1768,6 +1816,7 @@ paths:
         get:
             tags:
                 - RevisionService
+            description: 'Permissions required: bb.revisions.list'
             operationId: RevisionService_ListRevisions
             parameters:
                 - name: instance
@@ -1821,6 +1870,7 @@ paths:
         post:
             tags:
                 - RevisionService
+            description: 'Permissions required: bb.revisions.create'
             operationId: RevisionService_CreateRevision
             parameters:
                 - name: instance
@@ -1858,6 +1908,7 @@ paths:
         get:
             tags:
                 - RevisionService
+            description: 'Permissions required: bb.revisions.get'
             operationId: RevisionService_GetRevision
             parameters:
                 - name: instance
@@ -1894,6 +1945,7 @@ paths:
         delete:
             tags:
                 - RevisionService
+            description: 'Permissions required: bb.revisions.delete'
             operationId: RevisionService_DeleteRevision
             parameters:
                 - name: instance
@@ -1928,6 +1980,7 @@ paths:
         post:
             tags:
                 - RevisionService
+            description: 'Permissions required: bb.revisions.create'
             operationId: RevisionService_BatchCreateRevisions
             parameters:
                 - name: instance
@@ -1965,6 +2018,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.getSchema'
             operationId: DatabaseService_GetDatabaseSchema
             parameters:
                 - name: instance
@@ -2001,6 +2055,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: databases.getSchema'
             operationId: DatabaseService_GetSchemaString
             parameters:
                 - name: instance
@@ -2084,6 +2139,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databaseSecrets.list'
             operationId: DatabaseService_ListSecrets
             parameters:
                 - name: instance
@@ -2137,6 +2193,7 @@ paths:
         delete:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databaseSecrets.delete'
             operationId: DatabaseService_DeleteSecret
             parameters:
                 - name: instance
@@ -2170,6 +2227,7 @@ paths:
         patch:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databaseSecrets.update'
             operationId: DatabaseService_UpdateSecret
             parameters:
                 - name: instance
@@ -2224,6 +2282,7 @@ paths:
         post:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.get'
             operationId: DatabaseService_DiffSchema
             parameters:
                 - name: instance
@@ -2261,6 +2320,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: bb.databases.get'
             operationId: SQLService_Export
             parameters:
                 - name: instance
@@ -2298,6 +2358,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: bb.databases.get'
             operationId: SQLService_Query
             parameters:
                 - name: instance
@@ -2335,6 +2396,7 @@ paths:
         post:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.sync'
             operationId: DatabaseService_SyncDatabase
             parameters:
                 - name: instance
@@ -2372,6 +2434,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.get'
             operationId: DatabaseService_BatchGetDatabases
             parameters:
                 - name: instance
@@ -2404,6 +2467,7 @@ paths:
         post:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.sync'
             operationId: DatabaseService_BatchSyncDatabases
             parameters:
                 - name: instance
@@ -2435,6 +2499,7 @@ paths:
         post:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.update'
             operationId: DatabaseService_BatchUpdateDatabases
             parameters:
                 - name: instance
@@ -2466,6 +2531,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.list'
             operationId: OrgPolicyService_ListPolicies
             parameters:
                 - name: instance
@@ -2533,6 +2599,7 @@ paths:
         post:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.create'
             operationId: OrgPolicyService_CreatePolicy
             parameters:
                 - name: instance
@@ -2580,6 +2647,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.get'
             operationId: OrgPolicyService_GetPolicy
             parameters:
                 - name: instance
@@ -2610,6 +2678,7 @@ paths:
         delete:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.delete'
             operationId: OrgPolicyService_DeletePolicy
             parameters:
                 - name: instance
@@ -2637,6 +2706,7 @@ paths:
         patch:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.update'
             operationId: OrgPolicyService_UpdatePolicy
             parameters:
                 - name: instance
@@ -2687,6 +2757,7 @@ paths:
         get:
             tags:
                 - InstanceRoleService
+            description: 'Permissions required: bb.instanceRoles.get'
             operationId: InstanceRoleService_ListInstanceRoles
             parameters:
                 - name: instance
@@ -2739,6 +2810,7 @@ paths:
         get:
             tags:
                 - InstanceRoleService
+            description: 'Permissions required: bb.instanceRoles.get'
             operationId: InstanceRoleService_GetInstanceRole
             parameters:
                 - name: instance
@@ -2770,6 +2842,7 @@ paths:
         post:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.update'
             operationId: InstanceService_AddDataSource
             parameters:
                 - name: instance
@@ -2801,6 +2874,7 @@ paths:
         post:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.get'
             operationId: InstanceService_ListInstanceDatabase
             parameters:
                 - name: instance
@@ -2832,6 +2906,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: bb.databases.get'
             operationId: SQLService_Export
             parameters:
                 - name: instance
@@ -2863,6 +2938,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: bb.databases.get'
             operationId: SQLService_Query
             parameters:
                 - name: instance
@@ -2894,6 +2970,7 @@ paths:
         post:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.update'
             operationId: InstanceService_RemoveDataSource
             parameters:
                 - name: instance
@@ -2925,6 +3002,7 @@ paths:
         post:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.sync'
             operationId: InstanceService_SyncInstance
             parameters:
                 - name: instance
@@ -2956,6 +3034,7 @@ paths:
         post:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.undelete'
             operationId: InstanceService_UndeleteInstance
             parameters:
                 - name: instance
@@ -2987,6 +3066,7 @@ paths:
         patch:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.update'
             operationId: InstanceService_UpdateDataSource
             parameters:
                 - name: instance
@@ -3018,6 +3098,7 @@ paths:
         post:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.sync'
             operationId: InstanceService_BatchSyncInstances
             requestBody:
                 content:
@@ -3042,6 +3123,7 @@ paths:
         post:
             tags:
                 - InstanceService
+            description: 'Permissions required: bb.instances.update'
             operationId: InstanceService_BatchUpdateInstances
             requestBody:
                 content:
@@ -3066,6 +3148,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.list'
             operationId: OrgPolicyService_ListPolicies
             parameters:
                 - name: parent
@@ -3134,6 +3217,7 @@ paths:
         post:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.create'
             operationId: OrgPolicyService_CreatePolicy
             parameters:
                 - name: parent
@@ -3185,6 +3269,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.get'
             operationId: OrgPolicyService_GetPolicy
             parameters:
                 - name: policy
@@ -3209,6 +3294,7 @@ paths:
         delete:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.delete'
             operationId: OrgPolicyService_DeletePolicy
             parameters:
                 - name: policy
@@ -3230,6 +3316,7 @@ paths:
         patch:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.update'
             operationId: OrgPolicyService_UpdatePolicy
             parameters:
                 - name: policy
@@ -3274,6 +3361,7 @@ paths:
         get:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.list'
             operationId: ProjectService_ListProjects
             parameters:
                 - name: pageSize
@@ -3324,6 +3412,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.create'
             operationId: ProjectService_CreateProject
             parameters:
                 - name: projectId
@@ -3362,6 +3451,7 @@ paths:
             description: |-
                 GetProject retrieves a project by name.
                  Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+                 Permissions required: bb.projects.get
             operationId: ProjectService_GetProject
             parameters:
                 - name: project
@@ -3386,6 +3476,7 @@ paths:
         delete:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.delete'
             operationId: ProjectService_DeleteProject
             parameters:
                 - name: project
@@ -3416,6 +3507,7 @@ paths:
         patch:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.update'
             operationId: ProjectService_UpdateProject
             parameters:
                 - name: project
@@ -3453,6 +3545,7 @@ paths:
         post:
             tags:
                 - AuditLogService
+            description: 'Permissions required: bb.auditLogs.export'
             operationId: AuditLogService_ExportAuditLogs
             parameters:
                 - name: project
@@ -3484,6 +3577,7 @@ paths:
         post:
             tags:
                 - AuditLogService
+            description: 'Permissions required: None'
             operationId: AuditLogService_SearchAuditLogs
             parameters:
                 - name: project
@@ -3515,6 +3609,7 @@ paths:
         get:
             tags:
                 - ChangelistService
+            description: 'Permissions required: bb.changelists.list'
             operationId: ChangelistService_ListChangelists
             parameters:
                 - name: project
@@ -3561,6 +3656,7 @@ paths:
         post:
             tags:
                 - ChangelistService
+            description: 'Permissions required: bb.changelists.create'
             operationId: ChangelistService_CreateChangelist
             parameters:
                 - name: project
@@ -3602,6 +3698,7 @@ paths:
         get:
             tags:
                 - ChangelistService
+            description: 'Permissions required: bb.changelists.get'
             operationId: ChangelistService_GetChangelist
             parameters:
                 - name: project
@@ -3632,6 +3729,7 @@ paths:
         delete:
             tags:
                 - ChangelistService
+            description: 'Permissions required: bb.changelists.delete'
             operationId: ChangelistService_DeleteChangelist
             parameters:
                 - name: project
@@ -3659,6 +3757,7 @@ paths:
         patch:
             tags:
                 - ChangelistService
+            description: 'Permissions required: bb.changelists.update'
             operationId: ChangelistService_UpdateChangelist
             parameters:
                 - name: project
@@ -3702,6 +3801,7 @@ paths:
         get:
             tags:
                 - DatabaseGroupService
+            description: 'Permissions required: bb.projects.get'
             operationId: DatabaseGroupService_ListDatabaseGroups
             parameters:
                 - name: project
@@ -3758,6 +3858,7 @@ paths:
         post:
             tags:
                 - DatabaseGroupService
+            description: 'Permissions required: bb.projects.update'
             operationId: DatabaseGroupService_CreateDatabaseGroup
             parameters:
                 - name: project
@@ -3804,6 +3905,7 @@ paths:
         get:
             tags:
                 - DatabaseGroupService
+            description: 'Permissions required: bb.projects.get'
             operationId: DatabaseGroupService_GetDatabaseGroup
             parameters:
                 - name: project
@@ -3844,6 +3946,7 @@ paths:
         delete:
             tags:
                 - DatabaseGroupService
+            description: 'Permissions required: bb.projects.update'
             operationId: DatabaseGroupService_DeleteDatabaseGroup
             parameters:
                 - name: project
@@ -3871,6 +3974,7 @@ paths:
         patch:
             tags:
                 - DatabaseGroupService
+            description: 'Permissions required: bb.projects.update'
             operationId: DatabaseGroupService_UpdateDatabaseGroup
             parameters:
                 - name: project
@@ -3914,6 +4018,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.list'
             operationId: DatabaseService_ListDatabases
             parameters:
                 - name: project
@@ -3997,6 +4102,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.get'
             operationId: DatabaseService_BatchGetDatabases
             parameters:
                 - name: project
@@ -4029,6 +4135,7 @@ paths:
         get:
             tags:
                 - IssueService
+            description: 'Permissions required: bb.issues.list'
             operationId: IssueService_ListIssues
             parameters:
                 - name: project
@@ -4103,6 +4210,7 @@ paths:
         post:
             tags:
                 - IssueService
+            description: 'Permissions required: bb.issues.create'
             operationId: IssueService_CreateIssue
             parameters:
                 - name: project
@@ -4134,6 +4242,7 @@ paths:
         get:
             tags:
                 - IssueService
+            description: 'Permissions required: bb.issues.get'
             operationId: IssueService_GetIssue
             parameters:
                 - name: project
@@ -4168,6 +4277,7 @@ paths:
         patch:
             tags:
                 - IssueService
+            description: 'Permissions required: bb.issues.update'
             operationId: IssueService_UpdateIssue
             parameters:
                 - name: project
@@ -4211,6 +4321,7 @@ paths:
         get:
             tags:
                 - IssueService
+            description: 'Permissions required: bb.issueComments.list'
             operationId: IssueService_ListIssueComments
             parameters:
                 - name: project
@@ -4265,6 +4376,7 @@ paths:
             description: |-
                 ApproveIssue approves the issue.
                  The access is based on approval flow.
+                 Permissions required: None
             operationId: IssueService_ApproveIssue
             parameters:
                 - name: project
@@ -4302,6 +4414,7 @@ paths:
         post:
             tags:
                 - IssueService
+            description: 'Permissions required: bb.issueComments.create'
             operationId: IssueService_CreateIssueComment
             parameters:
                 - name: project
@@ -4338,6 +4451,7 @@ paths:
         patch:
             tags:
                 - IssueService
+            description: 'Permissions required: bb.issueComments.update'
             operationId: IssueService_UpdateIssueComment
             parameters:
                 - name: project
@@ -4384,6 +4498,7 @@ paths:
             description: |-
                 RejectIssue rejects the issue.
                  The access is based on approval flow.
+                 Permissions required: None
             operationId: IssueService_RejectIssue
             parameters:
                 - name: project
@@ -4424,6 +4539,7 @@ paths:
             description: |-
                 RequestIssue requests the issue.
                  The access is based on approval flow.
+                 Permissions required: None
             operationId: IssueService_RequestIssue
             parameters:
                 - name: project
@@ -4461,6 +4577,7 @@ paths:
         post:
             tags:
                 - IssueService
+            description: 'Permissions required: bb.issues.update'
             operationId: IssueService_BatchUpdateIssuesStatus
             parameters:
                 - name: project
@@ -4492,7 +4609,9 @@ paths:
         post:
             tags:
                 - IssueService
-            description: Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
+            description: |-
+                Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
+                 Permissions required: bb.issues.get
             operationId: IssueService_SearchIssues
             parameters:
                 - name: project
@@ -4524,6 +4643,7 @@ paths:
         get:
             tags:
                 - PlanService
+            description: 'Permissions required: bb.plans.list'
             operationId: PlanService_ListPlans
             parameters:
                 - name: project
@@ -4568,6 +4688,7 @@ paths:
         post:
             tags:
                 - PlanService
+            description: 'Permissions required: bb.plans.create'
             operationId: PlanService_CreatePlan
             parameters:
                 - name: project
@@ -4599,6 +4720,7 @@ paths:
         get:
             tags:
                 - PlanService
+            description: 'Permissions required: bb.plans.get'
             operationId: PlanService_GetPlan
             parameters:
                 - name: project
@@ -4632,6 +4754,7 @@ paths:
             description: |-
                 UpdatePlan updates the plan.
                  The plan creator and the user with bb.plans.update permission on the project can update the plan.
+                 Permissions required: bb.plans.update
             operationId: PlanService_UpdatePlan
             parameters:
                 - name: project
@@ -4675,6 +4798,7 @@ paths:
         get:
             tags:
                 - PlanService
+            description: 'Permissions required: bb.planCheckRuns.list'
             operationId: PlanService_ListPlanCheckRuns
             parameters:
                 - name: project
@@ -4750,6 +4874,7 @@ paths:
         post:
             tags:
                 - PlanService
+            description: 'Permissions required: bb.planCheckRuns.run'
             operationId: PlanService_BatchCancelPlanCheckRuns
             parameters:
                 - name: project
@@ -4787,6 +4912,7 @@ paths:
         post:
             tags:
                 - PlanService
+            description: 'Permissions required: bb.planCheckRuns.run'
             operationId: PlanService_RunPlanChecks
             parameters:
                 - name: project
@@ -4824,7 +4950,9 @@ paths:
         post:
             tags:
                 - PlanService
-            description: Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
+            description: |-
+                Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
+                 Permissions required: bb.plans.get
             operationId: PlanService_SearchPlans
             parameters:
                 - name: project
@@ -4856,6 +4984,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.list'
             operationId: OrgPolicyService_ListPolicies
             parameters:
                 - name: project
@@ -4923,6 +5052,7 @@ paths:
         post:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.create'
             operationId: OrgPolicyService_CreatePolicy
             parameters:
                 - name: project
@@ -4970,6 +5100,7 @@ paths:
         get:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.get'
             operationId: OrgPolicyService_GetPolicy
             parameters:
                 - name: project
@@ -5000,6 +5131,7 @@ paths:
         delete:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.delete'
             operationId: OrgPolicyService_DeletePolicy
             parameters:
                 - name: project
@@ -5027,6 +5159,7 @@ paths:
         patch:
             tags:
                 - OrgPolicyService
+            description: 'Permissions required: bb.policies.update'
             operationId: OrgPolicyService_UpdatePolicy
             parameters:
                 - name: project
@@ -5077,6 +5210,7 @@ paths:
         get:
             tags:
                 - ReleaseService
+            description: 'Permissions required: bb.releases.list'
             operationId: ReleaseService_ListReleases
             parameters:
                 - name: project
@@ -5126,6 +5260,7 @@ paths:
         post:
             tags:
                 - ReleaseService
+            description: 'Permissions required: bb.releases.create'
             operationId: ReleaseService_CreateRelease
             parameters:
                 - name: project
@@ -5157,6 +5292,7 @@ paths:
         get:
             tags:
                 - ReleaseService
+            description: 'Permissions required: bb.releases.get'
             operationId: ReleaseService_GetRelease
             parameters:
                 - name: project
@@ -5187,6 +5323,7 @@ paths:
         delete:
             tags:
                 - ReleaseService
+            description: 'Permissions required: bb.releases.delete'
             operationId: ReleaseService_DeleteRelease
             parameters:
                 - name: project
@@ -5214,6 +5351,7 @@ paths:
         patch:
             tags:
                 - ReleaseService
+            description: 'Permissions required: bb.releases.update'
             operationId: ReleaseService_UpdateRelease
             parameters:
                 - name: project
@@ -5257,6 +5395,7 @@ paths:
         post:
             tags:
                 - ReleaseService
+            description: 'Permissions required: bb.releases.undelete'
             operationId: ReleaseService_UndeleteRelease
             parameters:
                 - name: project
@@ -5288,6 +5427,7 @@ paths:
         post:
             tags:
                 - ReleaseService
+            description: 'Permissions required: bb.releases.check'
             operationId: ReleaseService_CheckRelease
             parameters:
                 - name: project
@@ -5319,6 +5459,7 @@ paths:
         get:
             tags:
                 - RolloutService
+            description: 'Permissions required: bb.rollouts.list'
             operationId: RolloutService_ListRollouts
             parameters:
                 - name: project
@@ -5363,7 +5504,7 @@ paths:
         post:
             tags:
                 - RolloutService
-            description: CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
+            description: 'Permissions required: bb.rollouts.create'
             operationId: RolloutService_CreateRollout
             parameters:
                 - name: project
@@ -5411,6 +5552,7 @@ paths:
         get:
             tags:
                 - RolloutService
+            description: 'Permissions required: bb.rollouts.get'
             operationId: RolloutService_GetRollout
             parameters:
                 - name: project
@@ -5442,6 +5584,7 @@ paths:
         get:
             tags:
                 - RolloutService
+            description: 'Permissions required: bb.taskRuns.list'
             operationId: RolloutService_ListTaskRuns
             parameters:
                 - name: project
@@ -5507,6 +5650,7 @@ paths:
         get:
             tags:
                 - RolloutService
+            description: 'Permissions required: bb.taskRuns.list'
             operationId: RolloutService_GetTaskRun
             parameters:
                 - name: project
@@ -5556,6 +5700,7 @@ paths:
         get:
             tags:
                 - RolloutService
+            description: 'Permissions required: bb.taskRuns.list'
             operationId: RolloutService_GetTaskRunLog
             parameters:
                 - name: project
@@ -5605,6 +5750,7 @@ paths:
         get:
             tags:
                 - RolloutService
+            description: 'Permissions required: bb.taskRuns.list'
             operationId: RolloutService_GetTaskRunSession
             parameters:
                 - name: project
@@ -5654,6 +5800,7 @@ paths:
         post:
             tags:
                 - RolloutService
+            description: 'Permissions required: bb.taskRuns.list'
             operationId: RolloutService_PreviewTaskRunRollback
             parameters:
                 - name: project
@@ -5709,9 +5856,7 @@ paths:
         post:
             tags:
                 - RolloutService
-            description: |-
-                BatchCancelTaskRuns cancels the specified task runs in batch.
-                 The access is the same as BatchRunTasks().
+            description: 'Permissions required: None'
             operationId: RolloutService_BatchCancelTaskRuns
             parameters:
                 - name: project
@@ -5761,11 +5906,7 @@ paths:
         post:
             tags:
                 - RolloutService
-            description: |-
-                BatchRunTasks creates task runs for the specified tasks.
-                 DataExport issue only allows the creator to run the task.
-                 Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
-                 Follow role-based rollout policy for the environment.
+            description: 'Permissions required: None'
             operationId: RolloutService_BatchRunTasks
             parameters:
                 - name: project
@@ -5809,9 +5950,7 @@ paths:
         post:
             tags:
                 - RolloutService
-            description: |-
-                BatchSkipTasks skips the specified tasks.
-                 The access is the same as BatchRunTasks().
+            description: 'Permissions required: None'
             operationId: RolloutService_BatchSkipTasks
             parameters:
                 - name: project
@@ -5855,6 +5994,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: bb.databases.get'
             operationId: SQLService_Export
             parameters:
                 - name: project
@@ -5898,6 +6038,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: bb.databases.get'
             operationId: SQLService_Export
             parameters:
                 - name: project
@@ -5935,6 +6076,7 @@ paths:
         post:
             tags:
                 - SheetService
+            description: 'Permissions required: bb.sheets.create'
             operationId: SheetService_CreateSheet
             parameters:
                 - name: project
@@ -5966,6 +6108,7 @@ paths:
         get:
             tags:
                 - SheetService
+            description: 'Permissions required: bb.sheets.get'
             operationId: SheetService_GetSheet
             parameters:
                 - name: project
@@ -6001,6 +6144,7 @@ paths:
         patch:
             tags:
                 - SheetService
+            description: 'Permissions required: bb.sheets.update'
             operationId: SheetService_UpdateSheet
             parameters:
                 - name: project
@@ -6050,6 +6194,7 @@ paths:
         post:
             tags:
                 - SheetService
+            description: 'Permissions required: bb.sheets.create'
             operationId: SheetService_BatchCreateSheets
             parameters:
                 - name: project
@@ -6081,6 +6226,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.update'
             operationId: ProjectService_RemoveWebhook
             parameters:
                 - name: project
@@ -6118,6 +6264,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.update'
             operationId: ProjectService_UpdateWebhook
             parameters:
                 - name: project
@@ -6155,6 +6302,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.update'
             operationId: ProjectService_AddWebhook
             parameters:
                 - name: project
@@ -6186,6 +6334,7 @@ paths:
         get:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.getIamPolicy'
             operationId: ProjectService_GetIamPolicy
             parameters:
                 - name: project
@@ -6211,6 +6360,7 @@ paths:
         post:
             tags:
                 - RolloutService
+            description: 'Permissions required: bb.rollouts.preview'
             operationId: RolloutService_PreviewRollout
             parameters:
                 - name: project
@@ -6242,6 +6392,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.setIamPolicy'
             operationId: ProjectService_SetIamPolicy
             parameters:
                 - name: project
@@ -6273,6 +6424,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.update'
             operationId: ProjectService_TestWebhook
             parameters:
                 - name: project
@@ -6304,6 +6456,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.undelete'
             operationId: ProjectService_UndeleteProject
             parameters:
                 - name: project
@@ -6335,6 +6488,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: 'Permissions required: bb.projects.delete'
             operationId: ProjectService_BatchDeleteProjects
             requestBody:
                 content:
@@ -6356,6 +6510,7 @@ paths:
         post:
             tags:
                 - ProjectService
+            description: 'Permissions required: None'
             operationId: ProjectService_SearchProjects
             requestBody:
                 content:
@@ -6380,7 +6535,9 @@ paths:
         post:
             tags:
                 - SQLService
-            description: SearchQueryHistories searches query histories for the caller.
+            description: |-
+                SearchQueryHistories searches query histories for the caller.
+                 Permissions required: None
             operationId: SQLService_SearchQueryHistories
             requestBody:
                 content:
@@ -6405,6 +6562,7 @@ paths:
         get:
             tags:
                 - ReviewConfigService
+            description: 'Permissions required: bb.reviewConfigs.list'
             operationId: ReviewConfigService_ListReviewConfigs
             parameters:
                 - name: pageSize
@@ -6444,6 +6602,7 @@ paths:
         post:
             tags:
                 - ReviewConfigService
+            description: 'Permissions required: bb.reviewConfigs.create'
             operationId: ReviewConfigService_CreateReviewConfig
             requestBody:
                 content:
@@ -6468,6 +6627,7 @@ paths:
         get:
             tags:
                 - ReviewConfigService
+            description: 'Permissions required: bb.reviewConfigs.get'
             operationId: ReviewConfigService_GetReviewConfig
             parameters:
                 - name: reviewConfig
@@ -6492,6 +6652,7 @@ paths:
         delete:
             tags:
                 - ReviewConfigService
+            description: 'Permissions required: bb.reviewConfigs.delete'
             operationId: ReviewConfigService_DeleteReviewConfig
             parameters:
                 - name: reviewConfig
@@ -6513,6 +6674,7 @@ paths:
         patch:
             tags:
                 - ReviewConfigService
+            description: 'Permissions required: bb.reviewConfigs.update'
             operationId: ReviewConfigService_UpdateReviewConfig
             parameters:
                 - name: reviewConfig
@@ -6557,6 +6719,7 @@ paths:
         get:
             tags:
                 - RiskService
+            description: 'Permissions required: bb.risks.list'
             operationId: RiskService_ListRisks
             parameters:
                 - name: pageSize
@@ -6597,6 +6760,7 @@ paths:
         post:
             tags:
                 - RiskService
+            description: 'Permissions required: bb.risks.create'
             operationId: RiskService_CreateRisk
             requestBody:
                 content:
@@ -6621,6 +6785,7 @@ paths:
         get:
             tags:
                 - RiskService
+            description: 'Permissions required: bb.risks.list'
             operationId: RiskService_GetRisk
             parameters:
                 - name: risk
@@ -6645,6 +6810,7 @@ paths:
         delete:
             tags:
                 - RiskService
+            description: 'Permissions required: bb.risks.delete'
             operationId: RiskService_DeleteRisk
             parameters:
                 - name: risk
@@ -6666,6 +6832,7 @@ paths:
         patch:
             tags:
                 - RiskService
+            description: 'Permissions required: bb.risks.update'
             operationId: RiskService_UpdateRisk
             parameters:
                 - name: risk
@@ -6703,6 +6870,7 @@ paths:
         get:
             tags:
                 - RoleService
+            description: 'Permissions required: bb.roles.list'
             operationId: RoleService_ListRoles
             parameters:
                 - name: pageSize
@@ -6743,6 +6911,7 @@ paths:
         post:
             tags:
                 - RoleService
+            description: 'Permissions required: bb.roles.create'
             operationId: RoleService_CreateRole
             parameters:
                 - name: roleId
@@ -6778,6 +6947,7 @@ paths:
         get:
             tags:
                 - RoleService
+            description: 'Permissions required: bb.roles.get'
             operationId: RoleService_GetRole
             parameters:
                 - name: role
@@ -6802,6 +6972,7 @@ paths:
         delete:
             tags:
                 - RoleService
+            description: 'Permissions required: bb.roles.delete'
             operationId: RoleService_DeleteRole
             parameters:
                 - name: role
@@ -6823,6 +6994,7 @@ paths:
         patch:
             tags:
                 - RoleService
+            description: 'Permissions required: bb.roles.update'
             operationId: RoleService_UpdateRole
             parameters:
                 - name: role
@@ -6864,6 +7036,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: None'
             operationId: SQLService_DiffMetadata
             requestBody:
                 content:
@@ -6888,6 +7061,7 @@ paths:
         get:
             tags:
                 - SettingService
+            description: 'Permissions required: bb.settings.list'
             operationId: SettingService_ListSettings
             parameters:
                 - name: pageSize
@@ -6929,6 +7103,7 @@ paths:
         get:
             tags:
                 - SettingService
+            description: 'Permissions required: bb.settings.get'
             operationId: SettingService_GetSetting
             parameters:
                 - name: setting
@@ -6953,6 +7128,7 @@ paths:
         patch:
             tags:
                 - SettingService
+            description: 'Permissions required: bb.settings.set'
             operationId: SettingService_UpdateSetting
             parameters:
                 - name: setting
@@ -7000,6 +7176,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: None'
             operationId: SQLService_AICompletion
             requestBody:
                 content:
@@ -7024,6 +7201,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: bb.databases.check'
             operationId: SQLService_Check
             requestBody:
                 content:
@@ -7048,6 +7226,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: 'Permissions required: None'
             operationId: SQLService_Pretty
             requestBody:
                 content:
@@ -7076,6 +7255,7 @@ paths:
                 GetSubscription returns the current subscription.
                  If there is no license, we will return a free plan subscription without expiration time.
                  If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+                 Permissions required: None
             operationId: SubscriptionService_GetSubscription
             responses:
                 "200":
@@ -7093,6 +7273,7 @@ paths:
         patch:
             tags:
                 - SubscriptionService
+            description: 'Permissions required: bb.settings.set'
             operationId: SubscriptionService_UpdateSubscription
             requestBody:
                 content:
@@ -7120,6 +7301,7 @@ paths:
             description: |-
                 List all users.
                  Any authenticated user can list users.
+                 Permissions required: bb.users.list
             operationId: UserService_ListUsers
             parameters:
                 - name: pageSize
@@ -7195,6 +7377,7 @@ paths:
                 Create a user.
                  When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
                  Otherwise, any unauthenticated user can create a user.
+                 Permissions required: bb.users.create
             operationId: UserService_CreateUser
             requestBody:
                 content:
@@ -7219,7 +7402,9 @@ paths:
         get:
             tags:
                 - UserService
-            description: Get the current authenticated user.
+            description: |-
+                Get the current authenticated user.
+                 Permissions required: None
             operationId: UserService_GetCurrentUser
             responses:
                 "200":
@@ -7241,6 +7426,7 @@ paths:
             description: |-
                 Get the user.
                  Any authenticated user can get the user.
+                 Permissions required: bb.users.get
             operationId: UserService_GetUser
             parameters:
                 - name: user
@@ -7268,6 +7454,7 @@ paths:
             description: |-
                 Only the user with bb.users.delete permission on the workspace can delete the user.
                  The last remaining workspace admin cannot be deleted.
+                 Permissions required: bb.users.delete
             operationId: UserService_DeleteUser
             parameters:
                 - name: user
@@ -7289,7 +7476,9 @@ paths:
         patch:
             tags:
                 - UserService
-            description: Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+            description: |-
+                Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+                 Permissions required: bb.users.update
             operationId: UserService_UpdateUser
             parameters:
                 - name: user
@@ -7344,7 +7533,9 @@ paths:
         post:
             tags:
                 - UserService
-            description: Only the user with bb.users.undelete permission on the workspace can undelete the user.
+            description: |-
+                Only the user with bb.users.undelete permission on the workspace can undelete the user.
+                 Permissions required: bb.users.undelete
             operationId: UserService_UndeleteUser
             parameters:
                 - name: user
@@ -7379,6 +7570,7 @@ paths:
             description: |-
                 Get the users in batch.
                  Any authenticated user can batch get users.
+                 Permissions required: bb.users.get
             operationId: UserService_BatchGetUsers
             parameters:
                 - name: names
@@ -7407,7 +7599,9 @@ paths:
         post:
             tags:
                 - WorksheetService
-            description: Create a personal worksheet used in SQL Editor.
+            description: |-
+                Create a personal worksheet used in SQL Editor.
+                 Permissions required: None
             operationId: WorksheetService_CreateWorksheet
             requestBody:
                 content:
@@ -7438,6 +7632,7 @@ paths:
                  - they are the creator of the worksheet;
                  - they have bb.worksheets.get permission on the workspace;
                  - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+                 Permissions required: None
             operationId: WorksheetService_GetWorksheet
             parameters:
                 - name: worksheet
@@ -7465,6 +7660,7 @@ paths:
             description: |-
                 Delete a worksheet.
                  The access is the same as UpdateWorksheet method.
+                 Permissions required: None
             operationId: WorksheetService_DeleteWorksheet
             parameters:
                 - name: worksheet
@@ -7492,6 +7688,7 @@ paths:
                  - they are the creator of the worksheet;
                  - they have bb.worksheets.manage permission on the workspace;
                  - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+                 Permissions required: None
             operationId: WorksheetService_UpdateWorksheet
             parameters:
                 - name: worksheet
@@ -7540,6 +7737,7 @@ paths:
             description: |-
                 Update the organizer of a worksheet.
                  The access is the same as UpdateWorksheet method.
+                 Permissions required: None
             operationId: WorksheetService_UpdateWorksheetOrganizer
             parameters:
                 - name: worksheet
@@ -7585,6 +7783,7 @@ paths:
                 Search for worksheets.
                  This is used for finding my worksheets or worksheets shared by other people.
                  The sheet accessibility is the same as GetWorksheet().
+                 Permissions required: None
             operationId: WorksheetService_SearchWorksheets
             requestBody:
                 content:
@@ -7609,6 +7808,7 @@ paths:
         get:
             tags:
                 - DatabaseService
+            description: 'Permissions required: bb.databases.list'
             operationId: DatabaseService_ListDatabases
             parameters:
                 - name: workspace
@@ -7692,6 +7892,7 @@ paths:
         get:
             tags:
                 - WorkspaceService
+            description: 'Permissions required: bb.workspaces.getIamPolicy'
             operationId: WorkspaceService_GetIamPolicy
             parameters:
                 - name: workspace
@@ -7717,6 +7918,7 @@ paths:
         post:
             tags:
                 - WorkspaceService
+            description: 'Permissions required: bb.workspaces.setIamPolicy'
             operationId: WorkspaceService_SetIamPolicy
             parameters:
                 - name: workspace
@@ -7748,6 +7950,7 @@ paths:
         get:
             tags:
                 - SQLService
+            description: 'Permissions required: bb.sql.admin'
             operationId: SQLService_AdminExecute
             parameters:
                 - name: name

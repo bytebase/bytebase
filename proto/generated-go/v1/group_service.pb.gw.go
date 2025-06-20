@@ -41,7 +41,9 @@ func request_GroupService_GetGroup_0(ctx context.Context, marshaler runtime.Mars
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	io.Copy(io.Discard, req.Body)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
@@ -79,7 +81,9 @@ func request_GroupService_ListGroups_0(ctx context.Context, marshaler runtime.Ma
 		protoReq ListGroupsRequest
 		metadata runtime.ServerMetadata
 	)
-	io.Copy(io.Discard, req.Body)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -114,6 +118,9 @@ func request_GroupService_CreateGroup_0(ctx context.Context, marshaler runtime.M
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Group); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -157,6 +164,9 @@ func request_GroupService_UpdateGroup_0(ctx context.Context, marshaler runtime.M
 	}
 	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Group); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
 		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Group); err != nil {
@@ -227,7 +237,9 @@ func request_GroupService_DeleteGroup_0(ctx context.Context, marshaler runtime.M
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	io.Copy(io.Discard, req.Body)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")

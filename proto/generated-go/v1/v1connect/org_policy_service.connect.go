@@ -53,10 +53,15 @@ const (
 
 // OrgPolicyServiceClient is a client for the bytebase.v1.OrgPolicyService service.
 type OrgPolicyServiceClient interface {
+	// Permissions required: bb.policies.get
 	GetPolicy(context.Context, *connect.Request[v1.GetPolicyRequest]) (*connect.Response[v1.Policy], error)
+	// Permissions required: bb.policies.list
 	ListPolicies(context.Context, *connect.Request[v1.ListPoliciesRequest]) (*connect.Response[v1.ListPoliciesResponse], error)
+	// Permissions required: bb.policies.create
 	CreatePolicy(context.Context, *connect.Request[v1.CreatePolicyRequest]) (*connect.Response[v1.Policy], error)
+	// Permissions required: bb.policies.update
 	UpdatePolicy(context.Context, *connect.Request[v1.UpdatePolicyRequest]) (*connect.Response[v1.Policy], error)
+	// Permissions required: bb.policies.delete
 	DeletePolicy(context.Context, *connect.Request[v1.DeletePolicyRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -140,10 +145,15 @@ func (c *orgPolicyServiceClient) DeletePolicy(ctx context.Context, req *connect.
 
 // OrgPolicyServiceHandler is an implementation of the bytebase.v1.OrgPolicyService service.
 type OrgPolicyServiceHandler interface {
+	// Permissions required: bb.policies.get
 	GetPolicy(context.Context, *connect.Request[v1.GetPolicyRequest]) (*connect.Response[v1.Policy], error)
+	// Permissions required: bb.policies.list
 	ListPolicies(context.Context, *connect.Request[v1.ListPoliciesRequest]) (*connect.Response[v1.ListPoliciesResponse], error)
+	// Permissions required: bb.policies.create
 	CreatePolicy(context.Context, *connect.Request[v1.CreatePolicyRequest]) (*connect.Response[v1.Policy], error)
+	// Permissions required: bb.policies.update
 	UpdatePolicy(context.Context, *connect.Request[v1.UpdatePolicyRequest]) (*connect.Response[v1.Policy], error)
+	// Permissions required: bb.policies.delete
 	DeletePolicy(context.Context, *connect.Request[v1.DeletePolicyRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

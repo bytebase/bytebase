@@ -37,26 +37,29 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RolloutServiceClient interface {
+	// Permissions required: bb.rollouts.get
 	GetRollout(ctx context.Context, in *GetRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
+	// Permissions required: bb.rollouts.list
 	ListRollouts(ctx context.Context, in *ListRolloutsRequest, opts ...grpc.CallOption) (*ListRolloutsResponse, error)
-	// CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
+	// Permissions required: bb.rollouts.create
 	CreateRollout(ctx context.Context, in *CreateRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
+	// Permissions required: bb.rollouts.preview
 	PreviewRollout(ctx context.Context, in *PreviewRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
+	// Permissions required: bb.taskRuns.list
 	ListTaskRuns(ctx context.Context, in *ListTaskRunsRequest, opts ...grpc.CallOption) (*ListTaskRunsResponse, error)
+	// Permissions required: bb.taskRuns.list
 	GetTaskRun(ctx context.Context, in *GetTaskRunRequest, opts ...grpc.CallOption) (*TaskRun, error)
+	// Permissions required: bb.taskRuns.list
 	GetTaskRunLog(ctx context.Context, in *GetTaskRunLogRequest, opts ...grpc.CallOption) (*TaskRunLog, error)
+	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(ctx context.Context, in *GetTaskRunSessionRequest, opts ...grpc.CallOption) (*TaskRunSession, error)
-	// BatchRunTasks creates task runs for the specified tasks.
-	// DataExport issue only allows the creator to run the task.
-	// Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
-	// Follow role-based rollout policy for the environment.
+	// Permissions required: None
 	BatchRunTasks(ctx context.Context, in *BatchRunTasksRequest, opts ...grpc.CallOption) (*BatchRunTasksResponse, error)
-	// BatchSkipTasks skips the specified tasks.
-	// The access is the same as BatchRunTasks().
+	// Permissions required: None
 	BatchSkipTasks(ctx context.Context, in *BatchSkipTasksRequest, opts ...grpc.CallOption) (*BatchSkipTasksResponse, error)
-	// BatchCancelTaskRuns cancels the specified task runs in batch.
-	// The access is the same as BatchRunTasks().
+	// Permissions required: None
 	BatchCancelTaskRuns(ctx context.Context, in *BatchCancelTaskRunsRequest, opts ...grpc.CallOption) (*BatchCancelTaskRunsResponse, error)
+	// Permissions required: bb.taskRuns.list
 	PreviewTaskRunRollback(ctx context.Context, in *PreviewTaskRunRollbackRequest, opts ...grpc.CallOption) (*PreviewTaskRunRollbackResponse, error)
 }
 
@@ -192,26 +195,29 @@ func (c *rolloutServiceClient) PreviewTaskRunRollback(ctx context.Context, in *P
 // All implementations must embed UnimplementedRolloutServiceServer
 // for forward compatibility.
 type RolloutServiceServer interface {
+	// Permissions required: bb.rollouts.get
 	GetRollout(context.Context, *GetRolloutRequest) (*Rollout, error)
+	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *ListRolloutsRequest) (*ListRolloutsResponse, error)
-	// CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
+	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *CreateRolloutRequest) (*Rollout, error)
+	// Permissions required: bb.rollouts.preview
 	PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error)
+	// Permissions required: bb.taskRuns.list
 	ListTaskRuns(context.Context, *ListTaskRunsRequest) (*ListTaskRunsResponse, error)
+	// Permissions required: bb.taskRuns.list
 	GetTaskRun(context.Context, *GetTaskRunRequest) (*TaskRun, error)
+	// Permissions required: bb.taskRuns.list
 	GetTaskRunLog(context.Context, *GetTaskRunLogRequest) (*TaskRunLog, error)
+	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(context.Context, *GetTaskRunSessionRequest) (*TaskRunSession, error)
-	// BatchRunTasks creates task runs for the specified tasks.
-	// DataExport issue only allows the creator to run the task.
-	// Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
-	// Follow role-based rollout policy for the environment.
+	// Permissions required: None
 	BatchRunTasks(context.Context, *BatchRunTasksRequest) (*BatchRunTasksResponse, error)
-	// BatchSkipTasks skips the specified tasks.
-	// The access is the same as BatchRunTasks().
+	// Permissions required: None
 	BatchSkipTasks(context.Context, *BatchSkipTasksRequest) (*BatchSkipTasksResponse, error)
-	// BatchCancelTaskRuns cancels the specified task runs in batch.
-	// The access is the same as BatchRunTasks().
+	// Permissions required: None
 	BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error)
+	// Permissions required: bb.taskRuns.list
 	PreviewTaskRunRollback(context.Context, *PreviewTaskRunRollbackRequest) (*PreviewTaskRunRollbackResponse, error)
 	mustEmbedUnimplementedRolloutServiceServer()
 }

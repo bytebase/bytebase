@@ -48,9 +48,13 @@ const (
 
 // SheetServiceClient is a client for the bytebase.v1.SheetService service.
 type SheetServiceClient interface {
+	// Permissions required: bb.sheets.create
 	CreateSheet(context.Context, *connect.Request[v1.CreateSheetRequest]) (*connect.Response[v1.Sheet], error)
+	// Permissions required: bb.sheets.create
 	BatchCreateSheets(context.Context, *connect.Request[v1.BatchCreateSheetsRequest]) (*connect.Response[v1.BatchCreateSheetsResponse], error)
+	// Permissions required: bb.sheets.get
 	GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error)
+	// Permissions required: bb.sheets.update
 	UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error)
 }
 
@@ -122,9 +126,13 @@ func (c *sheetServiceClient) UpdateSheet(ctx context.Context, req *connect.Reque
 
 // SheetServiceHandler is an implementation of the bytebase.v1.SheetService service.
 type SheetServiceHandler interface {
+	// Permissions required: bb.sheets.create
 	CreateSheet(context.Context, *connect.Request[v1.CreateSheetRequest]) (*connect.Response[v1.Sheet], error)
+	// Permissions required: bb.sheets.create
 	BatchCreateSheets(context.Context, *connect.Request[v1.BatchCreateSheetsRequest]) (*connect.Response[v1.BatchCreateSheetsResponse], error)
+	// Permissions required: bb.sheets.get
 	GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error)
+	// Permissions required: bb.sheets.update
 	UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error)
 }
 

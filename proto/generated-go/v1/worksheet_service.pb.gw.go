@@ -43,6 +43,9 @@ func request_WorksheetService_CreateWorksheet_0(ctx context.Context, marshaler r
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Worksheet); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.CreateWorksheet(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
@@ -65,7 +68,9 @@ func request_WorksheetService_GetWorksheet_0(ctx context.Context, marshaler runt
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	io.Copy(io.Discard, req.Body)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
@@ -104,6 +109,9 @@ func request_WorksheetService_SearchWorksheets_0(ctx context.Context, marshaler 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	msg, err := client.SearchWorksheets(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
@@ -134,6 +142,9 @@ func request_WorksheetService_UpdateWorksheet_0(ctx context.Context, marshaler r
 	}
 	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Worksheet); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
 		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Worksheet); err != nil {
@@ -213,6 +224,9 @@ func request_WorksheetService_UpdateWorksheetOrganizer_0(ctx context.Context, ma
 	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Organizer); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
 		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Organizer); err != nil {
 			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -282,7 +296,9 @@ func request_WorksheetService_DeleteWorksheet_0(ctx context.Context, marshaler r
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	io.Copy(io.Discard, req.Body)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")

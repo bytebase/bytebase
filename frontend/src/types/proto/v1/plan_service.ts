@@ -3396,6 +3396,7 @@ export const PlanServiceDefinition = {
   name: "PlanService",
   fullName: "bytebase.v1.PlanService",
   methods: {
+    /** Permissions required: bb.plans.get */
     getPlan: {
       name: "GetPlan",
       requestType: GetPlanRequest,
@@ -3446,6 +3447,7 @@ export const PlanServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.plans.list */
     listPlans: {
       name: "ListPlans",
       requestType: ListPlansRequest,
@@ -3496,7 +3498,10 @@ export const PlanServiceDefinition = {
         },
       },
     },
-    /** Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query. */
+    /**
+     * Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
+     * Permissions required: bb.plans.get
+     */
     searchPlans: {
       name: "SearchPlans",
       requestType: SearchPlansRequest,
@@ -3557,6 +3562,7 @@ export const PlanServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.plans.create */
     createPlan: {
       name: "CreatePlan",
       requestType: CreatePlanRequest,
@@ -3617,6 +3623,7 @@ export const PlanServiceDefinition = {
     /**
      * UpdatePlan updates the plan.
      * The plan creator and the user with bb.plans.update permission on the project can update the plan.
+     * Permissions required: bb.plans.update
      */
     updatePlan: {
       name: "UpdatePlan",
@@ -3680,6 +3687,7 @@ export const PlanServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.planCheckRuns.list */
     listPlanCheckRuns: {
       name: "ListPlanCheckRuns",
       requestType: ListPlanCheckRunsRequest,
@@ -3771,6 +3779,7 @@ export const PlanServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.planCheckRuns.run */
     runPlanChecks: {
       name: "RunPlanChecks",
       requestType: RunPlanChecksRequest,
@@ -3862,6 +3871,7 @@ export const PlanServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.planCheckRuns.run */
     batchCancelPlanCheckRuns: {
       name: "BatchCancelPlanCheckRuns",
       requestType: BatchCancelPlanCheckRunsRequest,

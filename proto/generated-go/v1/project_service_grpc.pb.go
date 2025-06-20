@@ -43,21 +43,36 @@ const (
 type ProjectServiceClient interface {
 	// GetProject retrieves a project by name.
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+	// Permissions required: bb.projects.get
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// Permissions required: bb.projects.list
 	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error)
+	// Permissions required: None
 	SearchProjects(ctx context.Context, in *SearchProjectsRequest, opts ...grpc.CallOption) (*SearchProjectsResponse, error)
+	// Permissions required: bb.projects.create
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// Permissions required: bb.projects.update
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// Permissions required: bb.projects.delete
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Permissions required: bb.projects.undelete
 	UndeleteProject(ctx context.Context, in *UndeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// Permissions required: bb.projects.delete
 	BatchDeleteProjects(ctx context.Context, in *BatchDeleteProjectsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	// Deprecated.
+	// Permissions required: bb.projects.getIamPolicy
 	BatchGetIamPolicy(ctx context.Context, in *BatchGetIamPolicyRequest, opts ...grpc.CallOption) (*BatchGetIamPolicyResponse, error)
+	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	// Permissions required: bb.projects.update
 	AddWebhook(ctx context.Context, in *AddWebhookRequest, opts ...grpc.CallOption) (*Project, error)
+	// Permissions required: bb.projects.update
 	UpdateWebhook(ctx context.Context, in *UpdateWebhookRequest, opts ...grpc.CallOption) (*Project, error)
+	// Permissions required: bb.projects.update
 	RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*Project, error)
+	// Permissions required: bb.projects.update
 	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
 }
 
@@ -225,21 +240,36 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, in *TestWebhookR
 type ProjectServiceServer interface {
 	// GetProject retrieves a project by name.
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+	// Permissions required: bb.projects.get
 	GetProject(context.Context, *GetProjectRequest) (*Project, error)
+	// Permissions required: bb.projects.list
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
+	// Permissions required: None
 	SearchProjects(context.Context, *SearchProjectsRequest) (*SearchProjectsResponse, error)
+	// Permissions required: bb.projects.create
 	CreateProject(context.Context, *CreateProjectRequest) (*Project, error)
+	// Permissions required: bb.projects.update
 	UpdateProject(context.Context, *UpdateProjectRequest) (*Project, error)
+	// Permissions required: bb.projects.delete
 	DeleteProject(context.Context, *DeleteProjectRequest) (*emptypb.Empty, error)
+	// Permissions required: bb.projects.undelete
 	UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error)
+	// Permissions required: bb.projects.delete
 	BatchDeleteProjects(context.Context, *BatchDeleteProjectsRequest) (*emptypb.Empty, error)
+	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
 	// Deprecated.
+	// Permissions required: bb.projects.getIamPolicy
 	BatchGetIamPolicy(context.Context, *BatchGetIamPolicyRequest) (*BatchGetIamPolicyResponse, error)
+	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
+	// Permissions required: bb.projects.update
 	AddWebhook(context.Context, *AddWebhookRequest) (*Project, error)
+	// Permissions required: bb.projects.update
 	UpdateWebhook(context.Context, *UpdateWebhookRequest) (*Project, error)
+	// Permissions required: bb.projects.update
 	RemoveWebhook(context.Context, *RemoveWebhookRequest) (*Project, error)
+	// Permissions required: bb.projects.update
 	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }

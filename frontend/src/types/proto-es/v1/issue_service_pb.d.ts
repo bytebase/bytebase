@@ -1324,6 +1324,8 @@ export declare const IssueStatusSchema: GenEnum<IssueStatus>;
  */
 export declare const IssueService: GenService<{
   /**
+   * Permissions required: bb.issues.get
+   *
    * @generated from rpc bytebase.v1.IssueService.GetIssue
    */
   getIssue: {
@@ -1332,6 +1334,8 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
+   * Permissions required: bb.issues.create
+   *
    * @generated from rpc bytebase.v1.IssueService.CreateIssue
    */
   createIssue: {
@@ -1340,6 +1344,8 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
+   * Permissions required: bb.issues.list
+   *
    * @generated from rpc bytebase.v1.IssueService.ListIssues
    */
   listIssues: {
@@ -1349,6 +1355,7 @@ export declare const IssueService: GenService<{
   },
   /**
    * Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
+   * Permissions required: bb.issues.get
    *
    * @generated from rpc bytebase.v1.IssueService.SearchIssues
    */
@@ -1358,6 +1365,8 @@ export declare const IssueService: GenService<{
     output: typeof SearchIssuesResponseSchema;
   },
   /**
+   * Permissions required: bb.issues.update
+   *
    * @generated from rpc bytebase.v1.IssueService.UpdateIssue
    */
   updateIssue: {
@@ -1366,6 +1375,8 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
+   * Permissions required: bb.issueComments.list
+   *
    * @generated from rpc bytebase.v1.IssueService.ListIssueComments
    */
   listIssueComments: {
@@ -1374,6 +1385,8 @@ export declare const IssueService: GenService<{
     output: typeof ListIssueCommentsResponseSchema;
   },
   /**
+   * Permissions required: bb.issueComments.create
+   *
    * @generated from rpc bytebase.v1.IssueService.CreateIssueComment
    */
   createIssueComment: {
@@ -1382,6 +1395,8 @@ export declare const IssueService: GenService<{
     output: typeof IssueCommentSchema;
   },
   /**
+   * Permissions required: bb.issueComments.update
+   *
    * @generated from rpc bytebase.v1.IssueService.UpdateIssueComment
    */
   updateIssueComment: {
@@ -1390,6 +1405,8 @@ export declare const IssueService: GenService<{
     output: typeof IssueCommentSchema;
   },
   /**
+   * Permissions required: bb.issues.update
+   *
    * @generated from rpc bytebase.v1.IssueService.BatchUpdateIssuesStatus
    */
   batchUpdateIssuesStatus: {
@@ -1400,6 +1417,7 @@ export declare const IssueService: GenService<{
   /**
    * ApproveIssue approves the issue.
    * The access is based on approval flow.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.IssueService.ApproveIssue
    */
@@ -1411,6 +1429,7 @@ export declare const IssueService: GenService<{
   /**
    * RejectIssue rejects the issue.
    * The access is based on approval flow.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.IssueService.RejectIssue
    */
@@ -1422,6 +1441,7 @@ export declare const IssueService: GenService<{
   /**
    * RequestIssue requests the issue.
    * The access is based on approval flow.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.IssueService.RequestIssue
    */

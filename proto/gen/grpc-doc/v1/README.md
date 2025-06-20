@@ -1106,8 +1106,8 @@ The catalog&#39;s `name` field is used to identify the database catalog to updat
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetDatabaseCatalog | [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |
-| UpdateDatabaseCatalog | [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |
+| GetDatabaseCatalog | [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) | Permissions required: bb.databaseCatalogs.get |
+| UpdateDatabaseCatalog | [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) | Permissions required: bb.databaseCatalogs.update |
 
  
 
@@ -1204,8 +1204,8 @@ When paginating, all other parameters provided to `ListInstanceRoles` must match
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetInstanceRole | [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
-| ListInstanceRoles | [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest) | [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse) |  |
+| GetInstanceRole | [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) | Permissions required: bb.instanceRoles.get |
+| ListInstanceRoles | [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest) | [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse) | Permissions required: bb.instanceRoles.get |
 
  
 
@@ -1828,19 +1828,19 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) |  |
-| CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) |  |
-| ListInstanceDatabase | [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest) | [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse) |  |
-| BatchSyncInstances | [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest) | [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse) |  |
-| BatchUpdateInstances | [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest) | [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse) |  |
-| AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) | Permissions required: bb.instances.get |
+| ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) | Permissions required: bb.instances.list |
+| CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Permissions required: bb.instances.create |
+| UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Permissions required: bb.instances.update |
+| DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.instances.delete |
+| UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) | Permissions required: bb.instances.undelete |
+| SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) | Permissions required: bb.instances.sync |
+| ListInstanceDatabase | [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest) | [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse) | Permissions required: bb.instances.get |
+| BatchSyncInstances | [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest) | [BatchSyncInstancesResponse](#bytebase-v1-BatchSyncInstancesResponse) | Permissions required: bb.instances.sync |
+| BatchUpdateInstances | [BatchUpdateInstancesRequest](#bytebase-v1-BatchUpdateInstancesRequest) | [BatchUpdateInstancesResponse](#bytebase-v1-BatchUpdateInstancesResponse) | Permissions required: bb.instances.update |
+| AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Permissions required: bb.instances.update |
+| RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Permissions required: bb.instances.update |
+| UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Permissions required: bb.instances.update |
 
  
 
@@ -3187,22 +3187,22 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetDatabase | [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest) | [Database](#bytebase-v1-Database) |  |
-| BatchGetDatabases | [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest) | [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse) |  |
-| ListDatabases | [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest) | [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse) |  |
-| UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) |  |
-| BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
-| SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
-| BatchSyncDatabases | [BatchSyncDatabasesRequest](#bytebase-v1-BatchSyncDatabasesRequest) | [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse) |  |
-| GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
-| GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
-| DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
-| ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
-| UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
-| DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) |  |
-| GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) |  |
-| GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) |  |
+| GetDatabase | [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest) | [Database](#bytebase-v1-Database) | Permissions required: bb.databases.get |
+| BatchGetDatabases | [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest) | [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse) | Permissions required: bb.databases.get |
+| ListDatabases | [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest) | [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse) | Permissions required: bb.databases.list |
+| UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) | Permissions required: bb.databases.update |
+| BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) | Permissions required: bb.databases.update |
+| SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) | Permissions required: bb.databases.sync |
+| BatchSyncDatabases | [BatchSyncDatabasesRequest](#bytebase-v1-BatchSyncDatabasesRequest) | [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse) | Permissions required: bb.databases.sync |
+| GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) | Permissions required: bb.databases.getSchema |
+| GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) | Permissions required: bb.databases.getSchema |
+| DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) | Permissions required: bb.databases.get |
+| ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) | Permissions required: bb.databaseSecrets.list |
+| UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) | Permissions required: bb.databaseSecrets.update |
+| DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.databaseSecrets.delete |
+| ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) | Permissions required: bb.changelogs.list |
+| GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) | Permissions required: changelogs.get |
+| GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) | Permissions required: databases.getSchema |
 
  
 
@@ -3895,18 +3895,18 @@ ANY means approving any node will proceed.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetIssue | [GetIssueRequest](#bytebase-v1-GetIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
-| CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
-| ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) |  |
-| SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) | Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter &amp; query. |
-| UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
-| ListIssueComments | [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest) | [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse) |  |
-| CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
-| UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
-| BatchUpdateIssuesStatus | [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest) | [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse) |  |
-| ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Issue](#bytebase-v1-Issue) | ApproveIssue approves the issue. The access is based on approval flow. |
-| RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | RejectIssue rejects the issue. The access is based on approval flow. |
-| RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | RequestIssue requests the issue. The access is based on approval flow. |
+| GetIssue | [GetIssueRequest](#bytebase-v1-GetIssueRequest) | [Issue](#bytebase-v1-Issue) | Permissions required: bb.issues.get |
+| CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Issue](#bytebase-v1-Issue) | Permissions required: bb.issues.create |
+| ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) | Permissions required: bb.issues.list |
+| SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) | Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter &amp; query. Permissions required: bb.issues.get |
+| UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Issue](#bytebase-v1-Issue) | Permissions required: bb.issues.update |
+| ListIssueComments | [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest) | [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse) | Permissions required: bb.issueComments.list |
+| CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) | Permissions required: bb.issueComments.create |
+| UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) | Permissions required: bb.issueComments.update |
+| BatchUpdateIssuesStatus | [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest) | [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse) | Permissions required: bb.issues.update |
+| ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Issue](#bytebase-v1-Issue) | ApproveIssue approves the issue. The access is based on approval flow. Permissions required: None |
+| RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | RejectIssue rejects the issue. The access is based on approval flow. Permissions required: None |
+| RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | RequestIssue requests the issue. The access is based on approval flow. Permissions required: None |
 
  
 
@@ -4731,9 +4731,9 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| ListSettings | [ListSettingsRequest](#bytebase-v1-ListSettingsRequest) | [ListSettingsResponse](#bytebase-v1-ListSettingsResponse) |  |
-| GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
-| UpdateSetting | [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
+| ListSettings | [ListSettingsRequest](#bytebase-v1-ListSettingsRequest) | [ListSettingsResponse](#bytebase-v1-ListSettingsResponse) | Permissions required: bb.settings.list |
+| GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) | Permissions required: bb.settings.get |
+| UpdateSetting | [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest) | [Setting](#bytebase-v1-Setting) | Permissions required: bb.settings.set |
 
  
 
@@ -4967,14 +4967,14 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. |
-| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. |
-| GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. |
-| ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. |
-| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Create a user. When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user. Otherwise, any unauthenticated user can create a user. |
-| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Only the user itself and the user with bb.users.update permission on the workspace can update the user. |
-| DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Only the user with bb.users.delete permission on the workspace can delete the user. The last remaining workspace admin cannot be deleted. |
-| UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Only the user with bb.users.undelete permission on the workspace can undelete the user. |
+| GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. Permissions required: bb.users.get |
+| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
+| GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
+| ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
+| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Create a user. When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user. Otherwise, any unauthenticated user can create a user. Permissions required: bb.users.create |
+| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Only the user itself and the user with bb.users.update permission on the workspace can update the user. Permissions required: bb.users.update |
+| DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Only the user with bb.users.delete permission on the workspace can delete the user. The last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
+| UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Only the user with bb.users.undelete permission on the workspace can undelete the user. Permissions required: bb.users.undelete |
 
  
 
@@ -5125,11 +5125,11 @@ The theme resources.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
-| UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
-| SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) |  |
+| GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Permissions required: None |
+| UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Permissions required: bb.settings.set |
+| SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.projects.create |
+| DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: None |
+| GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) | Permissions required: None |
 
  
 
@@ -5438,8 +5438,8 @@ For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) |  |
-| ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) |  |
+| SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) | Permissions required: None |
+| ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) | Permissions required: bb.auditLogs.export |
 
  
 
@@ -5556,8 +5556,8 @@ For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) |  |
-| Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Permissions required: None |
+| Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: None |
 
  
 
@@ -5643,8 +5643,8 @@ For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| BatchParse | [BatchParseRequest](#bytebase-v1-BatchParseRequest) | [BatchParseResponse](#bytebase-v1-BatchParseResponse) |  |
-| BatchDeparse | [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest) | [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse) |  |
+| BatchParse | [BatchParseRequest](#bytebase-v1-BatchParseRequest) | [BatchParseResponse](#bytebase-v1-BatchParseResponse) | Permissions required: None |
+| BatchDeparse | [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest) | [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse) | Permissions required: None |
 
  
 
@@ -5807,11 +5807,11 @@ The changelist&#39;s `name` field is used to identify the changelist to update. 
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CreateChangelist | [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
-| GetChangelist | [GetChangelistRequest](#bytebase-v1-GetChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
-| ListChangelists | [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest) | [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse) |  |
-| UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
-| DeleteChangelist | [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| CreateChangelist | [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) | Permissions required: bb.changelists.create |
+| GetChangelist | [GetChangelistRequest](#bytebase-v1-GetChangelistRequest) | [Changelist](#bytebase-v1-Changelist) | Permissions required: bb.changelists.get |
+| ListChangelists | [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest) | [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse) | Permissions required: bb.changelists.list |
+| UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) | Permissions required: bb.changelists.update |
+| DeleteChangelist | [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.changelists.delete |
 
  
 
@@ -5993,11 +5993,11 @@ The database group&#39;s `name` field is used to identify the database group to 
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) |  |
-| GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
-| CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
-| UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
-| DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) | Permissions required: bb.projects.get |
+| GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Permissions required: bb.projects.get |
+| CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Permissions required: bb.projects.update |
+| UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Permissions required: bb.projects.update |
+| DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.projects.update |
 
  
 
@@ -6172,11 +6172,11 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetGroup | [GetGroupRequest](#bytebase-v1-GetGroupRequest) | [Group](#bytebase-v1-Group) |  |
-| ListGroups | [ListGroupsRequest](#bytebase-v1-ListGroupsRequest) | [ListGroupsResponse](#bytebase-v1-ListGroupsResponse) |  |
-| CreateGroup | [CreateGroupRequest](#bytebase-v1-CreateGroupRequest) | [Group](#bytebase-v1-Group) |  |
-| UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | UpdateGroup updates the group. Users with &#34;bb.groups.update&#34; permission on the workspace or the group owner can access this method. |
-| DeleteGroup | [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| GetGroup | [GetGroupRequest](#bytebase-v1-GetGroupRequest) | [Group](#bytebase-v1-Group) | Permissions required: bb.groups.get |
+| ListGroups | [ListGroupsRequest](#bytebase-v1-ListGroupsRequest) | [ListGroupsResponse](#bytebase-v1-ListGroupsResponse) | Permissions required: bb.groups.list |
+| CreateGroup | [CreateGroupRequest](#bytebase-v1-CreateGroupRequest) | [Group](#bytebase-v1-Group) | Permissions required: bb.groups.create |
+| UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | UpdateGroup updates the group. Users with &#34;bb.groups.update&#34; permission on the workspace or the group owner can access this method. Permissions required: bb.groups.update |
+| DeleteGroup | [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.groups.delete |
 
  
 
@@ -6546,12 +6546,12 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetIdentityProvider | [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) |  |
-| ListIdentityProviders | [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest) | [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse) |  |
-| CreateIdentityProvider | [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) |  |
-| UpdateIdentityProvider | [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) |  |
-| DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) |  |
+| GetIdentityProvider | [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Permissions required: bb.identityProviders.get |
+| ListIdentityProviders | [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest) | [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse) | Permissions required: None |
+| CreateIdentityProvider | [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Permissions required: bb.identityProviders.create |
+| UpdateIdentityProvider | [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Permissions required: bb.identityProviders.update |
+| DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.identityProviders.delete |
+| TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) | Permissions required: bb.identityProviders.update |
 
  
 
@@ -7002,11 +7002,11 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetPolicy | [GetPolicyRequest](#bytebase-v1-GetPolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| ListPolicies | [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest) | [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse) |  |
-| CreatePolicy | [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| GetPolicy | [GetPolicyRequest](#bytebase-v1-GetPolicyRequest) | [Policy](#bytebase-v1-Policy) | Permissions required: bb.policies.get |
+| ListPolicies | [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest) | [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse) | Permissions required: bb.policies.list |
+| CreatePolicy | [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest) | [Policy](#bytebase-v1-Policy) | Permissions required: bb.policies.create |
+| UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) | Permissions required: bb.policies.update |
+| DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.policies.delete |
 
  
 
@@ -7553,14 +7553,14 @@ Type is the database change type.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetPlan | [GetPlanRequest](#bytebase-v1-GetPlanRequest) | [Plan](#bytebase-v1-Plan) |  |
-| ListPlans | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
-| SearchPlans | [SearchPlansRequest](#bytebase-v1-SearchPlansRequest) | [SearchPlansResponse](#bytebase-v1-SearchPlansResponse) | Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query. |
-| CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
-| UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) | UpdatePlan updates the plan. The plan creator and the user with bb.plans.update permission on the project can update the plan. |
-| ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
-| RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
-| BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) |  |
+| GetPlan | [GetPlanRequest](#bytebase-v1-GetPlanRequest) | [Plan](#bytebase-v1-Plan) | Permissions required: bb.plans.get |
+| ListPlans | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) | Permissions required: bb.plans.list |
+| SearchPlans | [SearchPlansRequest](#bytebase-v1-SearchPlansRequest) | [SearchPlansResponse](#bytebase-v1-SearchPlansResponse) | Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query. Permissions required: bb.plans.get |
+| CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) | Permissions required: bb.plans.create |
+| UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) | UpdatePlan updates the plan. The plan creator and the user with bb.plans.update permission on the project can update the plan. Permissions required: bb.plans.update |
+| ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) | Permissions required: bb.planCheckRuns.list |
+| RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) | Permissions required: bb.planCheckRuns.run |
+| BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) | Permissions required: bb.planCheckRuns.run |
 
  
 
@@ -8020,21 +8020,21 @@ TYPE_ISSUE_CREATE represents creating an issue. |
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) | GetProject retrieves a project by name. Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method. |
-| ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) |  |
-| SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) |  |
-| CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) |  |
-| UpdateProject | [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest) | [Project](#bytebase-v1-Project) |  |
-| DeleteProject | [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteProject | [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest) | [Project](#bytebase-v1-Project) |  |
-| BatchDeleteProjects | [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
-| BatchGetIamPolicy | [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest) | [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse) | Deprecated. |
-| SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
-| AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Project](#bytebase-v1-Project) |  |
-| UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
-| RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
-| TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
+| GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) | GetProject retrieves a project by name. Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method. Permissions required: bb.projects.get |
+| ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) | Permissions required: bb.projects.list |
+| SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) | Permissions required: None |
+| CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) | Permissions required: bb.projects.create |
+| UpdateProject | [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest) | [Project](#bytebase-v1-Project) | Permissions required: bb.projects.update |
+| DeleteProject | [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.projects.delete |
+| UndeleteProject | [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest) | [Project](#bytebase-v1-Project) | Permissions required: bb.projects.undelete |
+| BatchDeleteProjects | [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.projects.delete |
+| GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Permissions required: bb.projects.getIamPolicy |
+| BatchGetIamPolicy | [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest) | [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse) | Deprecated. Permissions required: bb.projects.getIamPolicy |
+| SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Permissions required: bb.projects.setIamPolicy |
+| AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Project](#bytebase-v1-Project) | Permissions required: bb.projects.update |
+| UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) | Permissions required: bb.projects.update |
+| RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) | Permissions required: bb.projects.update |
+| TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) | Permissions required: bb.projects.update |
 
  
 
@@ -8705,14 +8705,14 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
-| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
-| SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. |
-| Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
-| Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
-| Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
-| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
-| AICompletion | [AICompletionRequest](#bytebase-v1-AICompletionRequest) | [AICompletionResponse](#bytebase-v1-AICompletionResponse) |  |
+| Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) | Permissions required: bb.databases.get |
+| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream | Permissions required: bb.sql.admin |
+| SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. Permissions required: None |
+| Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) | Permissions required: bb.databases.get |
+| Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) | Permissions required: bb.databases.check |
+| Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) | Permissions required: None |
+| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) | Permissions required: None |
+| AICompletion | [AICompletionRequest](#bytebase-v1-AICompletionRequest) | [AICompletionResponse](#bytebase-v1-AICompletionResponse) | Permissions required: None |
 
  
 
@@ -9006,13 +9006,13 @@ The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetRelease | [GetReleaseRequest](#bytebase-v1-GetReleaseRequest) | [Release](#bytebase-v1-Release) |  |
-| ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) |  |
-| CreateRelease | [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
-| UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
-| DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteRelease | [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest) | [Release](#bytebase-v1-Release) |  |
-| CheckRelease | [CheckReleaseRequest](#bytebase-v1-CheckReleaseRequest) | [CheckReleaseResponse](#bytebase-v1-CheckReleaseResponse) |  |
+| GetRelease | [GetReleaseRequest](#bytebase-v1-GetReleaseRequest) | [Release](#bytebase-v1-Release) | Permissions required: bb.releases.get |
+| ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) | Permissions required: bb.releases.list |
+| CreateRelease | [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest) | [Release](#bytebase-v1-Release) | Permissions required: bb.releases.create |
+| UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) | Permissions required: bb.releases.update |
+| DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.releases.delete |
+| UndeleteRelease | [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest) | [Release](#bytebase-v1-Release) | Permissions required: bb.releases.undelete |
+| CheckRelease | [CheckReleaseRequest](#bytebase-v1-CheckReleaseRequest) | [CheckReleaseResponse](#bytebase-v1-CheckReleaseResponse) | Permissions required: bb.releases.check |
 
  
 
@@ -9155,11 +9155,11 @@ The name field is used to identify the sql review to update. |
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CreateReviewConfig | [CreateReviewConfigRequest](#bytebase-v1-CreateReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) |  |
-| ListReviewConfigs | [ListReviewConfigsRequest](#bytebase-v1-ListReviewConfigsRequest) | [ListReviewConfigsResponse](#bytebase-v1-ListReviewConfigsResponse) |  |
-| GetReviewConfig | [GetReviewConfigRequest](#bytebase-v1-GetReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) |  |
-| UpdateReviewConfig | [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) |  |
-| DeleteReviewConfig | [DeleteReviewConfigRequest](#bytebase-v1-DeleteReviewConfigRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| CreateReviewConfig | [CreateReviewConfigRequest](#bytebase-v1-CreateReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) | Permissions required: bb.reviewConfigs.create |
+| ListReviewConfigs | [ListReviewConfigsRequest](#bytebase-v1-ListReviewConfigsRequest) | [ListReviewConfigsResponse](#bytebase-v1-ListReviewConfigsResponse) | Permissions required: bb.reviewConfigs.list |
+| GetReviewConfig | [GetReviewConfigRequest](#bytebase-v1-GetReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) | Permissions required: bb.reviewConfigs.get |
+| UpdateReviewConfig | [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) | Permissions required: bb.reviewConfigs.update |
+| DeleteReviewConfig | [DeleteReviewConfigRequest](#bytebase-v1-DeleteReviewConfigRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.reviewConfigs.delete |
 
  
 
@@ -9325,11 +9325,11 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
-| GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
-| CreateRevision | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
-| BatchCreateRevisions | [BatchCreateRevisionsRequest](#bytebase-v1-BatchCreateRevisionsRequest) | [BatchCreateRevisionsResponse](#bytebase-v1-BatchCreateRevisionsResponse) |  |
-| DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) | Permissions required: bb.revisions.list |
+| GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) | Permissions required: bb.revisions.get |
+| CreateRevision | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | [Revision](#bytebase-v1-Revision) | Permissions required: bb.revisions.create |
+| BatchCreateRevisions | [BatchCreateRevisionsRequest](#bytebase-v1-BatchCreateRevisionsRequest) | [BatchCreateRevisionsResponse](#bytebase-v1-BatchCreateRevisionsResponse) | Permissions required: bb.revisions.create |
+| DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.revisions.delete |
 
  
 
@@ -9502,11 +9502,11 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) |  |
-| CreateRisk | [CreateRiskRequest](#bytebase-v1-CreateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
-| GetRisk | [GetRiskRequest](#bytebase-v1-GetRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
-| UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) |  |
-| DeleteRisk | [DeleteRiskRequest](#bytebase-v1-DeleteRiskRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) | Permissions required: bb.risks.list |
+| CreateRisk | [CreateRiskRequest](#bytebase-v1-CreateRiskRequest) | [Risk](#bytebase-v1-Risk) | Permissions required: bb.risks.create |
+| GetRisk | [GetRiskRequest](#bytebase-v1-GetRiskRequest) | [Risk](#bytebase-v1-Risk) | Permissions required: bb.risks.list |
+| UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) | Permissions required: bb.risks.update |
+| DeleteRisk | [DeleteRiskRequest](#bytebase-v1-DeleteRiskRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.risks.delete |
 
  
 
@@ -9663,11 +9663,11 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| ListRoles | [ListRolesRequest](#bytebase-v1-ListRolesRequest) | [ListRolesResponse](#bytebase-v1-ListRolesResponse) |  |
-| GetRole | [GetRoleRequest](#bytebase-v1-GetRoleRequest) | [Role](#bytebase-v1-Role) |  |
-| CreateRole | [CreateRoleRequest](#bytebase-v1-CreateRoleRequest) | [Role](#bytebase-v1-Role) |  |
-| UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) |  |
-| DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| ListRoles | [ListRolesRequest](#bytebase-v1-ListRolesRequest) | [ListRolesResponse](#bytebase-v1-ListRolesResponse) | Permissions required: bb.roles.list |
+| GetRole | [GetRoleRequest](#bytebase-v1-GetRoleRequest) | [Role](#bytebase-v1-Role) | Permissions required: bb.roles.get |
+| CreateRole | [CreateRoleRequest](#bytebase-v1-CreateRoleRequest) | [Role](#bytebase-v1-Role) | Permissions required: bb.roles.create |
+| UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) | Permissions required: bb.roles.update |
+| DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.roles.delete |
 
  
 
@@ -10576,18 +10576,18 @@ Read from `pg_stat_activity`
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
-| ListRollouts | [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest) | [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse) |  |
-| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages. |
-| PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
-| ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) |  |
-| GetTaskRun | [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest) | [TaskRun](#bytebase-v1-TaskRun) |  |
-| GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) |  |
-| GetTaskRunSession | [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest) | [TaskRunSession](#bytebase-v1-TaskRunSession) |  |
-| BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) | BatchRunTasks creates task runs for the specified tasks. DataExport issue only allows the creator to run the task. Users with &#34;bb.taskRuns.create&#34; permission can run the task, e.g. Workspace Admin and DBA. Follow role-based rollout policy for the environment. |
-| BatchSkipTasks | [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest) | [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse) | BatchSkipTasks skips the specified tasks. The access is the same as BatchRunTasks(). |
-| BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) | BatchCancelTaskRuns cancels the specified task runs in batch. The access is the same as BatchRunTasks(). |
-| PreviewTaskRunRollback | [PreviewTaskRunRollbackRequest](#bytebase-v1-PreviewTaskRunRollbackRequest) | [PreviewTaskRunRollbackResponse](#bytebase-v1-PreviewTaskRunRollbackResponse) |  |
+| GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Permissions required: bb.rollouts.get |
+| ListRollouts | [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest) | [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse) | Permissions required: bb.rollouts.list |
+| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Permissions required: bb.rollouts.create |
+| PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Permissions required: bb.rollouts.preview |
+| ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) | Permissions required: bb.taskRuns.list |
+| GetTaskRun | [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest) | [TaskRun](#bytebase-v1-TaskRun) | Permissions required: bb.taskRuns.list |
+| GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) | Permissions required: bb.taskRuns.list |
+| GetTaskRunSession | [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest) | [TaskRunSession](#bytebase-v1-TaskRunSession) | Permissions required: bb.taskRuns.list |
+| BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) | Permissions required: None |
+| BatchSkipTasks | [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest) | [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse) | Permissions required: None |
+| BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) | Permissions required: None |
+| PreviewTaskRunRollback | [PreviewTaskRunRollbackRequest](#bytebase-v1-PreviewTaskRunRollbackRequest) | [PreviewTaskRunRollbackResponse](#bytebase-v1-PreviewTaskRunRollbackResponse) | Permissions required: bb.taskRuns.list |
 
  
 
@@ -10760,10 +10760,10 @@ Type of the SheetPayload.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| BatchCreateSheets | [BatchCreateSheetsRequest](#bytebase-v1-BatchCreateSheetsRequest) | [BatchCreateSheetsResponse](#bytebase-v1-BatchCreateSheetsResponse) |  |
-| GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
+| CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) | Permissions required: bb.sheets.create |
+| BatchCreateSheets | [BatchCreateSheetsRequest](#bytebase-v1-BatchCreateSheetsRequest) | [BatchCreateSheetsResponse](#bytebase-v1-BatchCreateSheetsResponse) | Permissions required: bb.sheets.create |
+| GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) | Permissions required: bb.sheets.get |
+| UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) | Permissions required: bb.sheets.update |
 
  
 
@@ -10967,8 +10967,8 @@ PlanFeature represents the available features in Bytebase
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. |
-| UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
+| GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. Permissions required: None |
+| UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | Permissions required: bb.settings.set |
 
  
 
@@ -11169,12 +11169,12 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CreateWorksheet | [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Create a personal worksheet used in SQL Editor. |
-| GetWorksheet | [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Get a worksheet by name. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.get permission on the workspace; - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. |
-| SearchWorksheets | [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest) | [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse) | Search for worksheets. This is used for finding my worksheets or worksheets shared by other people. The sheet accessibility is the same as GetWorksheet(). |
-| UpdateWorksheet | [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Update a worksheet. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.manage permission on the workspace; - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. |
-| UpdateWorksheetOrganizer | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) | Update the organizer of a worksheet. The access is the same as UpdateWorksheet method. |
-| DeleteWorksheet | [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a worksheet. The access is the same as UpdateWorksheet method. |
+| CreateWorksheet | [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Create a personal worksheet used in SQL Editor. Permissions required: None |
+| GetWorksheet | [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Get a worksheet by name. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.get permission on the workspace; - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: None |
+| SearchWorksheets | [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest) | [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse) | Search for worksheets. This is used for finding my worksheets or worksheets shared by other people. The sheet accessibility is the same as GetWorksheet(). Permissions required: None |
+| UpdateWorksheet | [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) | Update a worksheet. The users can access this method if, - they are the creator of the worksheet; - they have bb.worksheets.manage permission on the workspace; - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project. Permissions required: None |
+| UpdateWorksheetOrganizer | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) | Update the organizer of a worksheet. The access is the same as UpdateWorksheet method. Permissions required: None |
+| DeleteWorksheet | [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a worksheet. The access is the same as UpdateWorksheet method. Permissions required: None |
 
  
 
@@ -11200,8 +11200,8 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
-| SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
+| GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Permissions required: bb.workspaces.getIamPolicy |
+| SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Permissions required: bb.workspaces.setIamPolicy |
 
  
 

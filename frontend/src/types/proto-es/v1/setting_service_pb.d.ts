@@ -1493,6 +1493,8 @@ export declare const DatabaseChangeModeSchema: GenEnum<DatabaseChangeMode>;
  */
 export declare const SettingService: GenService<{
   /**
+   * Permissions required: bb.settings.list
+   *
    * @generated from rpc bytebase.v1.SettingService.ListSettings
    */
   listSettings: {
@@ -1501,6 +1503,8 @@ export declare const SettingService: GenService<{
     output: typeof ListSettingsResponseSchema;
   },
   /**
+   * Permissions required: bb.settings.get
+   *
    * @generated from rpc bytebase.v1.SettingService.GetSetting
    */
   getSetting: {
@@ -1509,6 +1513,8 @@ export declare const SettingService: GenService<{
     output: typeof SettingSchema;
   },
   /**
+   * Permissions required: bb.settings.set
+   *
    * @generated from rpc bytebase.v1.SettingService.UpdateSetting
    */
   updateSetting: {

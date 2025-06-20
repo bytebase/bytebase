@@ -27,7 +27,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InstanceRoleServiceClient interface {
+	// Permissions required: bb.instanceRoles.get
 	GetInstanceRole(ctx context.Context, in *GetInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
+	// Permissions required: bb.instanceRoles.get
 	ListInstanceRoles(ctx context.Context, in *ListInstanceRolesRequest, opts ...grpc.CallOption) (*ListInstanceRolesResponse, error)
 }
 
@@ -63,7 +65,9 @@ func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, in *L
 // All implementations must embed UnimplementedInstanceRoleServiceServer
 // for forward compatibility.
 type InstanceRoleServiceServer interface {
+	// Permissions required: bb.instanceRoles.get
 	GetInstanceRole(context.Context, *GetInstanceRoleRequest) (*InstanceRole, error)
+	// Permissions required: bb.instanceRoles.get
 	ListInstanceRoles(context.Context, *ListInstanceRolesRequest) (*ListInstanceRolesResponse, error)
 	mustEmbedUnimplementedInstanceRoleServiceServer()
 }

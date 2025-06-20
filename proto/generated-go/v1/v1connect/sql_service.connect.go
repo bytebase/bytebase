@@ -54,14 +54,22 @@ const (
 
 // SQLServiceClient is a client for the bytebase.v1.SQLService service.
 type SQLServiceClient interface {
+	// Permissions required: bb.databases.get
 	Query(context.Context, *connect.Request[v1.QueryRequest]) (*connect.Response[v1.QueryResponse], error)
+	// Permissions required: bb.sql.admin
 	AdminExecute(context.Context) *connect.BidiStreamForClient[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
 	// SearchQueryHistories searches query histories for the caller.
+	// Permissions required: None
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
+	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
+	// Permissions required: bb.databases.check
 	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
+	// Permissions required: None
 	Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error)
+	// Permissions required: None
 	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
+	// Permissions required: None
 	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
 }
 
@@ -181,14 +189,22 @@ func (c *sQLServiceClient) AICompletion(ctx context.Context, req *connect.Reques
 
 // SQLServiceHandler is an implementation of the bytebase.v1.SQLService service.
 type SQLServiceHandler interface {
+	// Permissions required: bb.databases.get
 	Query(context.Context, *connect.Request[v1.QueryRequest]) (*connect.Response[v1.QueryResponse], error)
+	// Permissions required: bb.sql.admin
 	AdminExecute(context.Context, *connect.BidiStream[v1.AdminExecuteRequest, v1.AdminExecuteResponse]) error
 	// SearchQueryHistories searches query histories for the caller.
+	// Permissions required: None
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
+	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
+	// Permissions required: bb.databases.check
 	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
+	// Permissions required: None
 	Pretty(context.Context, *connect.Request[v1.PrettyRequest]) (*connect.Response[v1.PrettyResponse], error)
+	// Permissions required: None
 	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
+	// Permissions required: None
 	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
 }
 

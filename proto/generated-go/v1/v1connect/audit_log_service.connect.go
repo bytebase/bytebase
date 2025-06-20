@@ -43,7 +43,9 @@ const (
 
 // AuditLogServiceClient is a client for the bytebase.v1.AuditLogService service.
 type AuditLogServiceClient interface {
+	// Permissions required: None
 	SearchAuditLogs(context.Context, *connect.Request[v1.SearchAuditLogsRequest]) (*connect.Response[v1.SearchAuditLogsResponse], error)
+	// Permissions required: bb.auditLogs.export
 	ExportAuditLogs(context.Context, *connect.Request[v1.ExportAuditLogsRequest]) (*connect.Response[v1.ExportAuditLogsResponse], error)
 }
 
@@ -91,7 +93,9 @@ func (c *auditLogServiceClient) ExportAuditLogs(ctx context.Context, req *connec
 
 // AuditLogServiceHandler is an implementation of the bytebase.v1.AuditLogService service.
 type AuditLogServiceHandler interface {
+	// Permissions required: None
 	SearchAuditLogs(context.Context, *connect.Request[v1.SearchAuditLogsRequest]) (*connect.Response[v1.SearchAuditLogsResponse], error)
+	// Permissions required: bb.auditLogs.export
 	ExportAuditLogs(context.Context, *connect.Request[v1.ExportAuditLogsRequest]) (*connect.Response[v1.ExportAuditLogsResponse], error)
 }
 
