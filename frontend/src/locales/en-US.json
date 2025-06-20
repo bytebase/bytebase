@@ -1267,7 +1267,8 @@
       "credential-source": "Credential Source",
       "tenant-id": "Tenant ID",
       "client-id": "Client ID",
-      "client-secret": "Client Secret"
+      "client-secret": "Client Secret",
+      "specific-credential": "Specific Credential"
     },
     "database-region": "Database Region",
     "external-secret-gcp": {
@@ -2729,10 +2730,8 @@
     "vcs-type": {
       "unspecified": "Unspecified"
     },
-    "actions": {
-    },
-    "messages": {
-    },
+    "actions": {},
+    "messages": {},
     "usage-description": "The release is only used in custom GitOps with API integration."
   },
   "export-data": {

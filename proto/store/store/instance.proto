@@ -113,14 +113,28 @@ message DataSource {
   }
   AuthenticationType authentication_type = 22;
 
-  message ClientSecretCredential {
+  message AzureCredential {
     string tenant_id = 1;
     string client_id = 2;
     string client_secret = 3;
     string obfuscated_client_secret = 4;
   }
+  message AWSCredential {
+    string access_key_id = 1;
+    string obfuscated_access_key_id = 2;
+    string secret_access_key = 3;
+    string obfuscated_secret_access_key = 4;
+    string session_token = 5;
+    string obfuscated_session_token = 6;
+  }
+  message GCPCredential {
+    string content = 1;
+    string obfuscated_content = 2;
+  }
   oneof iam_extension {
-    ClientSecretCredential client_secret_credential = 23;
+    AzureCredential azure_credential = 23;
+    AWSCredential aws_credential = 45;
+    GCPCredential gcp_credential = 46;
   }
 
   SASLConfig sasl_config = 24;

@@ -941,10 +941,22 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
    */
   iamExtension: {
     /**
-     * @generated from field: bytebase.v1.DataSource.ClientSecretCredential client_secret_credential = 23;
+     * @generated from field: bytebase.v1.DataSource.AzureCredential azure_credential = 23;
      */
-    value: DataSource_ClientSecretCredential;
-    case: "clientSecretCredential";
+    value: DataSource_AzureCredential;
+    case: "azureCredential";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.DataSource.AWSCredential aws_credential = 37;
+     */
+    value: DataSource_AWSCredential;
+    case: "awsCredential";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.DataSource.GCPCredential gcp_credential = 38;
+     */
+    value: DataSource_GCPCredential;
+    case: "gcpCredential";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -1027,9 +1039,9 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
 export declare const DataSourceSchema: GenMessage<DataSource>;
 
 /**
- * @generated from message bytebase.v1.DataSource.ClientSecretCredential
+ * @generated from message bytebase.v1.DataSource.AzureCredential
  */
-export declare type DataSource_ClientSecretCredential = Message<"bytebase.v1.DataSource.ClientSecretCredential"> & {
+export declare type DataSource_AzureCredential = Message<"bytebase.v1.DataSource.AzureCredential"> & {
   /**
    * @generated from field: string tenant_id = 1;
    */
@@ -1047,10 +1059,52 @@ export declare type DataSource_ClientSecretCredential = Message<"bytebase.v1.Dat
 };
 
 /**
- * Describes the message bytebase.v1.DataSource.ClientSecretCredential.
- * Use `create(DataSource_ClientSecretCredentialSchema)` to create a new message.
+ * Describes the message bytebase.v1.DataSource.AzureCredential.
+ * Use `create(DataSource_AzureCredentialSchema)` to create a new message.
  */
-export declare const DataSource_ClientSecretCredentialSchema: GenMessage<DataSource_ClientSecretCredential>;
+export declare const DataSource_AzureCredentialSchema: GenMessage<DataSource_AzureCredential>;
+
+/**
+ * @generated from message bytebase.v1.DataSource.AWSCredential
+ */
+export declare type DataSource_AWSCredential = Message<"bytebase.v1.DataSource.AWSCredential"> & {
+  /**
+   * @generated from field: string access_key_id = 1;
+   */
+  accessKeyId: string;
+
+  /**
+   * @generated from field: string secret_access_key = 2;
+   */
+  secretAccessKey: string;
+
+  /**
+   * @generated from field: string session_token = 3;
+   */
+  sessionToken: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DataSource.AWSCredential.
+ * Use `create(DataSource_AWSCredentialSchema)` to create a new message.
+ */
+export declare const DataSource_AWSCredentialSchema: GenMessage<DataSource_AWSCredential>;
+
+/**
+ * @generated from message bytebase.v1.DataSource.GCPCredential
+ */
+export declare type DataSource_GCPCredential = Message<"bytebase.v1.DataSource.GCPCredential"> & {
+  /**
+   * @generated from field: string content = 1;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DataSource.GCPCredential.
+ * Use `create(DataSource_GCPCredentialSchema)` to create a new message.
+ */
+export declare const DataSource_GCPCredentialSchema: GenMessage<DataSource_GCPCredential>;
 
 /**
  * @generated from message bytebase.v1.DataSource.Address

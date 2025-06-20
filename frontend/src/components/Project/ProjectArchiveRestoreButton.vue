@@ -40,8 +40,10 @@
 <script setup lang="ts">
 import { NCheckbox } from "naive-ui";
 import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
+import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -52,6 +54,7 @@ const props = defineProps<{
 }>();
 
 const projectV1Store = useProjectV1Store();
+const router = useRouter();
 
 const force = ref(false);
 
@@ -70,5 +73,11 @@ const archiveOrRestoreProject = async (archive: boolean) => {
   }
 
   restartAppRoot();
+
+  if (archive) {
+    router.push({
+      name: PROJECT_V1_ROUTE_DASHBOARD,
+    });
+  }
 };
 </script>

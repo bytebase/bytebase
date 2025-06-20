@@ -13,8 +13,6 @@ import (
 	"time"
 	"unicode"
 
-	"cloud.google.com/go/cloudsqlconn"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -217,7 +215,7 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 }
 
 func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := util.GetAWSConnectionConfig(ctx, conf)
 	if err != nil {
 		return "", errors.Wrap(err, "load aws config failed")
 	}
@@ -252,9 +250,9 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 // https://cloud.google.com/sql/docs/postgres/connect-connectors
 // https://github.com/GoogleCloudPlatform/golang-samples/blob/main/cloudsql/postgres/database-sql/cloudsql.go
 func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
-	d, err := cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
+	d, err := util.GetGCPConnectionConfig(ctx, conf)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "load gcp config failed")
 	}
 
 	dsn := fmt.Sprintf("user=%s", conf.DataSource.Username)
