@@ -167,7 +167,7 @@ const handleExport = async ({
       const { content, nextPageToken } = await auditLogStore.exportAuditLogs({
         search: searchAuditLogs.value,
         format: options.format,
-        pageSize: 10000,
+        pageSize: 5000, // The maximum page size is 5000
         pageToken,
       });
       pageToken = nextPageToken;
