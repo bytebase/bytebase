@@ -40,7 +40,7 @@ func TestTiDBWalkThrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runWalkThroughTest(t, test, storepb.Engine_TIDB, originDatabase, false /* record */)
+		runWalkThroughTest(t, test, storepb.Engine_TIDB, originDatabase)
 	}
 }
 
@@ -54,7 +54,7 @@ func TestMySQLWalkThrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runWalkThroughTest(t, test, storepb.Engine_MYSQL, originDatabase, false /* record */)
+		runWalkThroughTest(t, test, storepb.Engine_MYSQL, originDatabase)
 	}
 }
 
@@ -64,7 +64,7 @@ func TestMySQLWalkThroughForIncomplete(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runWalkThroughTest(t, test, storepb.Engine_MYSQL, nil, false /* record */)
+		runWalkThroughTest(t, test, storepb.Engine_MYSQL, nil)
 	}
 }
 
@@ -118,7 +118,7 @@ func TestPostgreSQLWalkThrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runWalkThroughTest(t, test, storepb.Engine_POSTGRES, originDatabase, false /* record */)
+		runWalkThroughTest(t, test, storepb.Engine_POSTGRES, originDatabase)
 	}
 }
 
@@ -130,7 +130,7 @@ func convertInterfaceSliceToStringSlice(slice []any) []string {
 	return res
 }
 
-func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, originDatabase *storepb.DatabaseSchemaMetadata, record bool) {
+func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, originDatabase *storepb.DatabaseSchemaMetadata) {
 	tests := []testData{}
 	filepath := filepath.Join("test", file+".yaml")
 	yamlFile, err := os.Open(filepath)
@@ -155,41 +155,29 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
 		err := state.WalkThrough(asts)
 		if err != nil {
-			if record {
-				walkThroughError, ok := err.(*WalkThroughError)
-				require.True(t, ok)
-				tests[i].Err = walkThroughError
-				tests[i].Want = ""
-			} else {
-				err, yes := err.(*WalkThroughError)
+			err, yes := err.(*WalkThroughError)
+			require.True(t, yes)
+			if err.Payload != nil {
+				actualPayloadText, yes := err.Payload.([]string)
 				require.True(t, yes)
-				if err.Payload != nil {
-					actualPayloadText, yes := err.Payload.([]string)
-					require.True(t, yes)
-					expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]any))
-					err.Payload = nil
-					test.Err.Payload = nil
-					require.Equal(t, test.Err, err)
-					require.Equal(t, expectedPayloadText, actualPayloadText)
-				} else {
-					require.Equal(t, test.Err, err)
-				}
+				expectedPayloadText := convertInterfaceSliceToStringSlice(test.Err.Payload.([]any))
+				err.Payload = nil
+				test.Err.Payload = nil
+				require.Equal(t, test.Err, err)
+				require.Equal(t, expectedPayloadText, actualPayloadText)
+			} else {
+				require.Equal(t, test.Err, err)
 			}
 			continue
 		}
 		require.NoError(t, err, test.Statement)
 
-		if record {
-			tests[i].Want = protojson.Format(state.convertToDatabaseMetadata())
-			tests[i].Err = nil
-		} else {
-			want := &storepb.DatabaseSchemaMetadata{}
-			err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
-			require.NoError(t, err)
-			result := state.convertToDatabaseMetadata()
-			diff := cmp.Diff(want, result, protocmp.Transform())
-			require.Empty(t, diff)
-		}
+		want := &storepb.DatabaseSchemaMetadata{}
+		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
+		require.NoError(t, err)
+		result := state.convertToDatabaseMetadata()
+		diff := cmp.Diff(want, result, protocmp.Transform())
+		require.Empty(t, diff)
 	}
 
 	if record {

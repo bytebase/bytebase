@@ -43,10 +43,7 @@ func (s *IdentityProviderService) GetIdentityProvider(ctx context.Context, req *
 	if err != nil {
 		return nil, err
 	}
-	identityProvider, err := convertToIdentityProvider(identityProviderMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert identity provider"))
-	}
+	identityProvider := convertToIdentityProvider(identityProviderMessage)
 	return connect.NewResponse(identityProvider), nil
 }
 
@@ -58,10 +55,7 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, _ *
 	}
 	response := &v1pb.ListIdentityProvidersResponse{}
 	for _, identityProviderMessage := range identityProviders {
-		identityProvider, err := convertToIdentityProvider(identityProviderMessage)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert identity provider"))
-		}
+		identityProvider := convertToIdentityProvider(identityProviderMessage)
 		response.IdentityProviders = append(response.IdentityProviders, identityProvider)
 	}
 	return connect.NewResponse(response), nil
@@ -102,10 +96,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		Config:     convertIdentityProviderConfigToStore(req.Msg.IdentityProvider.GetConfig()),
 	}
 	if req.Msg.ValidateOnly {
-		identityProvider, err := convertToIdentityProvider(identityProviderMessage)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert identity provider"))
-		}
+		identityProvider := convertToIdentityProvider(identityProviderMessage)
 		return connect.NewResponse(identityProvider), nil
 	}
 
@@ -113,10 +104,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create identity provider"))
 	}
-	identityProvider, err := convertToIdentityProvider(identityProviderMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert identity provider"))
-	}
+	identityProvider := convertToIdentityProvider(identityProviderMessage)
 	return connect.NewResponse(identityProvider), nil
 }
 
@@ -178,10 +166,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	identityProvider, err := convertToIdentityProvider(identityProviderMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert identity provider"))
-	}
+	identityProvider := convertToIdentityProvider(identityProviderMessage)
 	return connect.NewResponse(identityProvider), nil
 }
 
@@ -393,22 +378,19 @@ func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context
 	return identityProvider, nil
 }
 
-func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) (*v1pb.IdentityProvider, error) {
+func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) *v1pb.IdentityProvider {
 	identityProviderType := v1pb.IdentityProviderType(identityProvider.Type)
-	config, err := convertIdentityProviderConfigFromStore(identityProvider.Config)
-	if err != nil {
-		return nil, err
-	}
+	config := convertIdentityProviderConfigFromStore(identityProvider.Config)
 	return &v1pb.IdentityProvider{
 		Name:   fmt.Sprintf("%s%s", common.IdentityProviderNamePrefix, identityProvider.ResourceID),
 		Title:  identityProvider.Title,
 		Domain: identityProvider.Domain,
 		Type:   identityProviderType,
 		Config: config,
-	}, nil
+	}
 }
 
-func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.IdentityProviderConfig) (*v1pb.IdentityProviderConfig, error) {
+func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.IdentityProviderConfig) *v1pb.IdentityProviderConfig {
 	if v := identityProviderConfig.GetOauth2Config(); v != nil {
 		fieldMapping := v1pb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
@@ -430,7 +412,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					AuthStyle:     v1pb.OAuth2AuthStyle(v.AuthStyle),
 				},
 			},
-		}, nil
+		}
 	} else if v := identityProviderConfig.GetOidcConfig(); v != nil {
 		fieldMapping := v1pb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
@@ -463,7 +445,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 			Config: &v1pb.IdentityProviderConfig_OidcConfig{
 				OidcConfig: oidcConfig,
 			},
-		}, nil
+		}
 	} else if v := identityProviderConfig.GetLdapConfig(); v != nil {
 		fieldMapping := v1pb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
@@ -485,9 +467,9 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					FieldMapping:     &fieldMapping,
 				},
 			},
-		}, nil
+		}
 	}
-	return nil, nil
+	return nil
 }
 
 func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityProviderConfig) *storepb.IdentityProviderConfig {

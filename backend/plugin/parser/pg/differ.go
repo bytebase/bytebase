@@ -1064,9 +1064,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			}
 			oldExtension.existsInNew = true
 			// Modify the extension.
-			if err := diff.modifyExtension(oldExtension.createExtension, stmt); err != nil {
-				return "", err
-			}
+			diff.modifyExtension(oldExtension.createExtension, stmt)
 		case *ast.CreateFunctionStmt:
 			if IsSystemSchema(stmt.Function.Schema) {
 				continue
@@ -1157,9 +1155,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	}
 
 	// Drop remaining old objects.
-	if err := diff.dropObject(); err != nil {
-		return "", err
-	}
+	diff.dropObject()
 
 	return diff.deparse()
 }
@@ -1222,7 +1218,7 @@ func (diff *diffNode) appendAddConstraint(table *ast.TableDef, constraintList []
 	}
 }
 
-func (diff *diffNode) dropObject() error {
+func (diff *diffNode) dropObject() {
 	// Drop the remaining old schema.
 	if dropSchemaStmt := dropSchema(diff.oldSchemaMap); dropSchemaStmt != nil {
 		diff.dropSchemaList = append(diff.dropSchemaList, dropSchemaStmt)
@@ -1277,8 +1273,6 @@ func (diff *diffNode) dropObject() error {
 
 	// Drop the remaining old comment.
 	diff.dropComment(diff.oldSchemaMap)
-
-	return nil
 }
 
 func (diff *diffNode) modifyTableByColumn(oldTableInfo *tableInfo, newTable *ast.CreateTableStmt) error {
@@ -1573,7 +1567,7 @@ func (diff *diffNode) modifyColumn(tableName *ast.TableDef, oldColumn *ast.Colum
 	return nil
 }
 
-func (diff *diffNode) modifyExtension(oldExtension *ast.CreateExtensionStmt, newExtension *ast.CreateExtensionStmt) error {
+func (diff *diffNode) modifyExtension(oldExtension *ast.CreateExtensionStmt, newExtension *ast.CreateExtensionStmt) {
 	// TODO(rebelice): not use Text(), it only works for pg_dump.
 	if oldExtension.Text() != newExtension.Text() {
 		diff.dropExtensionList = append(diff.dropExtensionList, &ast.DropExtensionStmt{
@@ -1581,7 +1575,6 @@ func (diff *diffNode) modifyExtension(oldExtension *ast.CreateExtensionStmt, new
 		})
 		diff.createExtensionList = append(diff.createExtensionList, newExtension)
 	}
-	return nil
 }
 
 func (diff *diffNode) modifyFunction(oldFunction *ast.CreateFunctionStmt, newFunction *ast.CreateFunctionStmt) error {

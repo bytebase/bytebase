@@ -410,10 +410,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RESTRICT_COPYING_DATA); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
-		payload, err := convertToDisableCopyDataPolicyPayload(policy.GetDisableCopyDataPolicy())
-		if err != nil {
-			return "", connect.NewError(connect.CodeInvalidArgument, err)
-		}
+		payload := convertToDisableCopyDataPolicyPayload(policy.GetDisableCopyDataPolicy())
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal policy")
@@ -423,10 +420,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
-		payload, err := convertToExportDataPolicyPayload(policy.GetExportDataPolicy())
-		if err != nil {
-			return "", connect.NewError(connect.CodeInvalidArgument, err)
-		}
+		payload := convertToExportDataPolicyPayload(policy.GetExportDataPolicy())
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal policy")
@@ -436,10 +430,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
-		payload, err := convertToQueryDataPolicyPayload(policy.GetQueryDataPolicy())
-		if err != nil {
-			return "", connect.NewError(connect.CodeInvalidArgument, err)
-		}
+		payload := convertToQueryDataPolicyPayload(policy.GetQueryDataPolicy())
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal policy")
@@ -449,10 +440,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_MASKING); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
-		payload, err := convertToStorePBMskingRulePolicy(policy.GetMaskingRulePolicy())
-		if err != nil {
-			return "", connect.NewError(connect.CodeInvalidArgument, err)
-		}
+		payload := convertToStorePBMskingRulePolicy(policy.GetMaskingRulePolicy())
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal masking rule policy")
@@ -472,20 +460,14 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
-		payload, err := convertToRestrictIssueCreationForSQLReviewPayload(policy.GetRestrictIssueCreationForSqlReviewPolicy())
-		if err != nil {
-			return "", connect.NewError(connect.CodeInvalidArgument, err)
-		}
+		payload := convertToRestrictIssueCreationForSQLReviewPayload(policy.GetRestrictIssueCreationForSqlReviewPolicy())
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal restrict issue creation for SQL review policy")
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_SOURCE_QUERY:
-		payload, err := convertToDataSourceQueryPayload(policy.GetDataSourceQueryPolicy())
-		if err != nil {
-			return "", connect.NewError(connect.CodeInvalidArgument, err)
-		}
+		payload := convertToDataSourceQueryPayload(policy.GetDataSourceQueryPolicy())
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal data source query policy")
@@ -551,10 +533,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal masking rule policy")
 		}
-		payload, err := convertToV1PBMaskingRulePolicy(maskingRulePolicy)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert masking rule policy")
-		}
+		payload := convertToV1PBMaskingRulePolicy(maskingRulePolicy)
 		policy.Policy = &v1pb.Policy_MaskingRulePolicy{
 			MaskingRulePolicy: payload,
 		}
@@ -563,10 +542,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal masking exception policy")
 		}
-		payload, err := s.convertToV1PBMaskingExceptionPolicyPayload(ctx, maskingRulePolicy)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert masking exception policy")
-		}
+		payload := s.convertToV1PBMaskingExceptionPolicyPayload(ctx, maskingRulePolicy)
 		policy.Policy = &v1pb.Policy_MaskingExceptionPolicy{
 			MaskingExceptionPolicy: payload,
 		}
@@ -721,25 +697,25 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 	}, nil
 }
 
-func convertToDisableCopyDataPolicyPayload(policy *v1pb.DisableCopyDataPolicy) (*storepb.DisableCopyDataPolicy, error) {
+func convertToDisableCopyDataPolicyPayload(policy *v1pb.DisableCopyDataPolicy) *storepb.DisableCopyDataPolicy {
 	return &storepb.DisableCopyDataPolicy{
 		Active: policy.Active,
-	}, nil
+	}
 }
 
-func convertToExportDataPolicyPayload(policy *v1pb.ExportDataPolicy) (*storepb.ExportDataPolicy, error) {
+func convertToExportDataPolicyPayload(policy *v1pb.ExportDataPolicy) *storepb.ExportDataPolicy {
 	return &storepb.ExportDataPolicy{
 		Disable: policy.Disable,
-	}, nil
+	}
 }
 
-func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) (*storepb.QueryDataPolicy, error) {
+func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.QueryDataPolicy {
 	return &storepb.QueryDataPolicy{
 		Timeout: policy.Timeout,
-	}, nil
+	}
 }
 
-func convertToStorePBMskingRulePolicy(policy *v1pb.MaskingRulePolicy) (*storepb.MaskingRulePolicy, error) {
+func convertToStorePBMskingRulePolicy(policy *v1pb.MaskingRulePolicy) *storepb.MaskingRulePolicy {
 	var rules []*storepb.MaskingRulePolicy_MaskingRule
 	for _, rule := range policy.Rules {
 		rules = append(rules, &storepb.MaskingRulePolicy_MaskingRule{
@@ -756,10 +732,10 @@ func convertToStorePBMskingRulePolicy(policy *v1pb.MaskingRulePolicy) (*storepb.
 
 	return &storepb.MaskingRulePolicy{
 		Rules: rules,
-	}, nil
+	}
 }
 
-func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) (*v1pb.MaskingRulePolicy, error) {
+func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) *v1pb.MaskingRulePolicy {
 	var rules []*v1pb.MaskingRulePolicy_MaskingRule
 	for _, rule := range policy.Rules {
 		rules = append(rules, &v1pb.MaskingRulePolicy_MaskingRule{
@@ -776,7 +752,7 @@ func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) (*v1pb.Ma
 
 	return &v1pb.MaskingRulePolicy{
 		Rules: rules,
-	}, nil
+	}
 }
 
 func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx context.Context, policy *v1pb.MaskingExceptionPolicy) (*storepb.MaskingExceptionPolicy, error) {
@@ -803,7 +779,7 @@ func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx con
 	}, nil
 }
 
-func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx context.Context, policy *storepb.MaskingExceptionPolicy) (*v1pb.MaskingExceptionPolicy, error) {
+func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx context.Context, policy *storepb.MaskingExceptionPolicy) *v1pb.MaskingExceptionPolicy {
 	var exceptions []*v1pb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
 		memberInBinding := convertToV1MemberInBinding(ctx, s.store, exception.Member)
@@ -825,7 +801,7 @@ func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx contex
 
 	return &v1pb.MaskingExceptionPolicy{
 		MaskingExceptions: exceptions,
-	}, nil
+	}
 }
 
 func convertToV1PBRestrictIssueCreationForSQLReviewPolicy(payloadStr string) (*v1pb.Policy_RestrictIssueCreationForSqlReviewPolicy, error) {
@@ -840,10 +816,10 @@ func convertToV1PBRestrictIssueCreationForSQLReviewPolicy(payloadStr string) (*v
 	}, nil
 }
 
-func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssueCreationForSQLReviewPolicy) (*storepb.RestrictIssueCreationForSQLReviewPolicy, error) {
+func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssueCreationForSQLReviewPolicy) *storepb.RestrictIssueCreationForSQLReviewPolicy {
 	return &storepb.RestrictIssueCreationForSQLReviewPolicy{
 		Disallow: policy.Disallow,
-	}, nil
+	}
 }
 
 func convertToV1PBDataSourceQueryPolicy(payloadStr string) (*v1pb.Policy_DataSourceQueryPolicy, error) {
@@ -861,12 +837,12 @@ func convertToV1PBDataSourceQueryPolicy(payloadStr string) (*v1pb.Policy_DataSou
 	}, nil
 }
 
-func convertToDataSourceQueryPayload(policy *v1pb.DataSourceQueryPolicy) (*storepb.DataSourceQueryPolicy, error) {
+func convertToDataSourceQueryPayload(policy *v1pb.DataSourceQueryPolicy) *storepb.DataSourceQueryPolicy {
 	return &storepb.DataSourceQueryPolicy{
 		AdminDataSourceRestriction: storepb.DataSourceQueryPolicy_Restriction(policy.AdminDataSourceRestriction),
 		DisallowDdl:                policy.DisallowDdl,
 		DisallowDml:                policy.DisallowDml,
-	}, nil
+	}
 }
 
 func convertV1PBToStorePBPolicyType(pType v1pb.PolicyType) (storepb.Policy_Type, error) {
