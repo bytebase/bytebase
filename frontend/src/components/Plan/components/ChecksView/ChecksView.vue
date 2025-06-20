@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col">
+  <div class="flex-1 flex flex-col pt-2 pb-4">
     <!-- Header with filters -->
     <div class="flex items-center justify-between px-4 py-2">
       <div class="flex items-center gap-4">

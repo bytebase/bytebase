@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full px-4 overflow-y-auto">
+  <div class="w-full pt-2 pb-4 px-4 overflow-y-auto">
     <div class="max-w-4xl mx-auto space-y-4 mt-4">
       <!-- Plan Header -->
       <div>
@@ -19,7 +19,7 @@
               <p class="text-sm text-control-light">
                 {{ $t("plan.overview.total-specs") }}
               </p>
-              <p class="text-2xl font-semibold mt-1">
+              <p class="text-xl font-semibold mt-1">
                 {{ statistics.totalSpecs }}
               </p>
             </div>
@@ -33,7 +33,7 @@
               <p class="text-sm text-control-light">
                 {{ $t("plan.overview.total-targets") }}
               </p>
-              <p class="text-2xl font-semibold mt-1">
+              <p class="text-xl font-semibold mt-1">
                 {{ statistics.totalTargets }}
               </p>
             </div>
@@ -52,8 +52,8 @@
                   v-if="statistics.checkStatus.error > 0"
                   class="flex items-center gap-1"
                 >
-                  <XCircleIcon class="w-5 h-5 text-error" />
-                  <span class="text-lg font-semibold text-error">{{
+                  <XCircleIcon class="w-6 h-6 text-error" />
+                  <span class="text-xl font-semibold text-error">{{
                     statistics.checkStatus.error
                   }}</span>
                 </div>
@@ -61,8 +61,8 @@
                   v-if="statistics.checkStatus.warning > 0"
                   class="flex items-center gap-1"
                 >
-                  <AlertCircleIcon class="w-5 h-5 text-warning" />
-                  <span class="text-lg font-semibold text-warning">{{
+                  <AlertCircleIcon class="w-6 h-6 text-warning" />
+                  <span class="text-xl font-semibold text-warning">{{
                     statistics.checkStatus.warning
                   }}</span>
                 </div>
@@ -70,14 +70,14 @@
                   v-if="statistics.checkStatus.success > 0"
                   class="flex items-center gap-1"
                 >
-                  <CheckCircleIcon class="w-5 h-5 text-success" />
-                  <span class="text-lg font-semibold text-success">{{
+                  <CheckCircleIcon class="w-6 h-6 text-success" />
+                  <span class="text-xl font-semibold text-success">{{
                     statistics.checkStatus.success
                   }}</span>
                 </div>
                 <span
                   v-if="statistics.checkStatus.total === 0"
-                  class="text-lg text-control"
+                  class="text-xl text-control"
                 >
                   {{ $t("plan.overview.no-checks") }}
                 </span>

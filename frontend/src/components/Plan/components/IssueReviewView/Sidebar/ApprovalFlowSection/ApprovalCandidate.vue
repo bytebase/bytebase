@@ -4,8 +4,11 @@
     class="flex items-center py-1 gap-x-1"
     :class="[candidateUser.name === currentUser.name && 'font-bold']"
   >
-    <PrincipalAvatar :user="candidateUser" size="SMALL" />
+    <UserAvatar :user="candidateUser" size="SMALL" />
     <span class="whitespace-nowrap">{{ candidateUser.title }}</span>
+    <span class="whitespace-nowrap opacity-80">
+      ({{ candidateUser.email }})
+    </span>
     <span
       v-if="currentUser.name === candidateUser.name"
       class="inline-flex items-center px-1 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
@@ -15,9 +18,9 @@
   </div>
 </template>
 
-<script lang="tsx" setup>
+<script setup lang="ts">
 import { computedAsync } from "@vueuse/core";
-import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useCurrentUserV1, useUserStore } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import { UserType } from "@/types/proto/v1/user_service";
