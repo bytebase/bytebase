@@ -43,7 +43,7 @@ const BACKGROUND_COLOR_LIST: string[] = [
 
 const sizeClassMap: Map<BBAvatarSizeType, string> = new Map([
   ["MINI", "w-[18px] h-[18px] font-medium"],
-  ["TINY", "w-5 h-5 font-medium"],
+  ["TINY", "w-4 h-4"],
   ["SMALL", "w-6 h-6 font-medium"],
   ["NORMAL", "w-8 h-8 font-medium"],
   ["LARGE", "w-24 h-24 font-medium"],

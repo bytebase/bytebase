@@ -915,7 +915,6 @@
     },
     "approval-flow": {
       "self": "承認の流れ",
-      "tooltip": "承認者は、承認フローで指定された順序でイシューを確認し、承認する必要があります。イシューは、承認フローのすべてのステップが承認された後にのみ実行できます。リスクレベルごとに承認をカスタマイズできます。",
       "pre-issue-created-tips": "イシューが作成されると、システムはイシューのタイプとリスク レベルに基づいて、対応するカスタム承認を自動的に照合します。"
     },
     "risk-level": {
@@ -1042,6 +1041,7 @@
     "navigator": {
       "specifications": "仕様",
       "checks": "小切手",
+      "review": "レビュー",
       "statement-empty": "ステートメントが空です"
     },
     "spec": {
@@ -2514,10 +2514,10 @@
       "re-request-review-issue": "イシューの承認を再度リクエストしますか?",
       "sent-back-issue": "イシューを却下する",
       "re-requested-review": "イシューの承認を再度リクエストします",
-      "no-one-matched": "このロールに一致するユーザーはいません。プロジェクト管理者に連絡してロールを割り当ててください。",
-      "any-n-role-can-approve": "任意の {role} を承認できます",
-      "approved-by-n": "{approver} によって承認されました",
-      "issue-creators-cannot-approve-their-own-issue": "イシュー作成者は自分の問題を承認できません"
+      "approved-by": "承認者",
+      "rejected-by": "拒否された",
+      "and-n-other-users": "{names} と他の {count} 人のユーザー",
+      "self-approval-not-allowed": "このプロジェクトでは自己承認は許可されていません。作成者として承認することはできません。"
     }
   },
   "schema-template": {

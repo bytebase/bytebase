@@ -915,7 +915,6 @@
     },
     "approval-flow": {
       "self": "Quy trình phê duyệt",
-      "tooltip": "Người phê duyệt sẽ xem xét và phê duyệt vấn đề theo thứ tự được chỉ định trong quy trình. Vấn đề chỉ có thể được áp dụng sau khi tất cả các bước trong quy trình đã được phê duyệt. Bạn có thể định cấu hình quy trình phê duyệt tùy chỉnh cho từng rủi ro.",
       "pre-issue-created-tips": "Sau khi một vấn đề được tạo, Bytebase sẽ tự động khớp với phê duyệt tùy chỉnh tương ứng dựa trên loại và mức độ rủi ro của vấn đề."
     },
     "risk-level": {
@@ -1042,6 +1041,7 @@
     "navigator": {
       "specifications": "Thông số kỹ thuật",
       "checks": "Kiểm tra",
+      "review": "Ôn tập",
       "statement-empty": "Câu lệnh trống rỗng"
     },
     "spec": {
@@ -2514,10 +2514,10 @@
       "re-request-review-issue": "Yêu cầu xem xét lại vấn đề?",
       "sent-back-issue": "Đã gửi lại vấn đề",
       "re-requested-review": "đã yêu cầu xem xét lại vấn đề",
-      "no-one-matched": "Không ai khớp",
-      "any-n-role-can-approve": "Bất kỳ {role} nào cũng có thể phê duyệt",
-      "approved-by-n": "Đã được phê duyệt bởi {approver}",
-      "issue-creators-cannot-approve-their-own-issue": "Người tạo vấn đề không thể phê duyệt vấn đề của chính họ"
+      "approved-by": "Được chấp thuận bởi",
+      "rejected-by": "Bị từ chối bởi",
+      "and-n-other-users": "{names} và {count} người dùng khác",
+      "self-approval-not-allowed": "Không được phép tự phê duyệt cho dự án này. Bạn không thể phê duyệt với tư cách là người sáng tạo."
     }
   },
   "schema-template": {

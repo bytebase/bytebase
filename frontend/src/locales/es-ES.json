@@ -915,7 +915,6 @@
     },
     "approval-flow": {
       "self": "Flujo de aprobación",
-      "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
       "pre-issue-created-tips": "Después de crear un problema, Bytebase coincidirá automáticamente con la aprobación personalizada correspondiente según el tipo y nivel de riesgo del problema."
     },
     "risk-level": {
@@ -1042,6 +1041,7 @@
     "navigator": {
       "specifications": "Presupuesto",
       "checks": "Cheques",
+      "review": "Revisar",
       "statement-empty": "La declaración está vacía"
     },
     "spec": {
@@ -2514,10 +2514,10 @@
       "re-request-review-issue": "¿Volver a solicitar revisión?",
       "sent-back-issue": "Problema devuelto",
       "re-requested-review": "revisión de problema nuevamente solicitada",
-      "no-one-matched": "Nadie igualó",
-      "any-n-role-can-approve": "Cualquier {role} puede aprobar",
-      "approved-by-n": "Aprobado por {approver}",
-      "issue-creators-cannot-approve-their-own-issue": "El creador del problema no puede aprobar su propio problema."
+      "approved-by": "Aprobado por",
+      "rejected-by": "Rechazado por",
+      "and-n-other-users": "{names} y {count} otros usuarios",
+      "self-approval-not-allowed": "No se permite la autoaprobación para este proyecto. No puedes aprobarlo como creador."
     }
   },
   "schema-template": {
