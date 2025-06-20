@@ -10,27 +10,30 @@ import {
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
 import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
+import { ChangelistService } from "@/types/proto-es/v1/changelist_service_pb";
 import { CelService } from "@/types/proto-es/v1/cel_service_pb";
 import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { DatabaseGroupService } from "@/types/proto-es/v1/database_group_service_pb";
 import { GroupService } from "@/types/proto-es/v1/group_service_pb";
 import { InstanceRoleService } from "@/types/proto-es/v1/instance_role_service_pb";
+import { OrgPolicyService } from "@/types/proto-es/v1/org_policy_service_pb";
+import { ReviewConfigService } from "@/types/proto-es/v1/review_config_service_pb";
+import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
 import { RiskService } from "@/types/proto-es/v1/risk_service_pb";
 import { RoleService } from "@/types/proto-es/v1/role_service_pb";
 import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
-import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
+
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
-import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
 import { PlanServiceDefinition } from "@/types/proto/v1/plan_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 import { ReleaseServiceDefinition } from "@/types/proto/v1/release_service";
-import { ReviewConfigServiceDefinition } from "@/types/proto/v1/review_config_service";
-import { RevisionServiceDefinition } from "@/types/proto/v1/revision_service";
+
+
 
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
@@ -87,11 +90,6 @@ export const instanceServiceClient = clientFactory.create(
   channel
 );
 
-export const policyServiceClient = clientFactory.create(
-  OrgPolicyServiceDefinition,
-  channel
-);
-
 export const projectServiceClient = clientFactory.create(
   ProjectServiceDefinition,
   channel
@@ -142,25 +140,16 @@ export const sqlStreamingServiceClient = clientFactory.create(
   websocketChannel
 );
 
-export const changelistServiceClient = clientFactory.create(
-  ChangelistServiceDefinition,
-  channel
-);
 
-export const reviewConfigServiceClient = clientFactory.create(
-  ReviewConfigServiceDefinition,
-  channel
-);
+
+
 
 export const releaseServiceClient = clientFactory.create(
   ReleaseServiceDefinition,
   channel
 );
 
-export const revisionServiceClient = clientFactory.create(
-  RevisionServiceDefinition,
-  channel
-);
+
 
 
 // e.g. How to use `authServiceClient`?
@@ -228,3 +217,23 @@ export const databaseGroupServiceClientConnect = createClient(
 );
 
 export const riskServiceClientConnect = createClient(RiskService, transport);
+
+export const orgPolicyServiceClientConnect = createClient(
+  OrgPolicyService,
+  transport
+);
+
+export const changelistServiceClientConnect = createClient(
+  ChangelistService,
+  transport
+);
+
+export const reviewConfigServiceClientConnect = createClient(
+  ReviewConfigService,
+  transport
+);
+
+export const revisionServiceClientConnect = createClient(
+  RevisionService,
+  transport
+);

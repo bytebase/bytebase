@@ -20,9 +20,12 @@
 <script lang="ts" setup>
 import { RevisionDataTable } from "@/components/Revision";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { revisionServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { revisionServiceClientConnect } from "@/grpcweb";
+import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
 import type { ComposedDatabase } from "@/types";
 import { useDatabaseDetailContext } from "./context";
+import { convertNewRevisionToOld } from "@/utils/v1/revision-conversions";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -37,15 +40,16 @@ const fetchRevisionList = async ({
   pageToken: string;
   pageSize: number;
 }) => {
+  const request = create(ListRevisionsRequestSchema, {
+    parent: props.database.name,
+    pageSize,
+    pageToken,
+  });
   const { nextPageToken, revisions } =
-    await revisionServiceClient.listRevisions({
-      parent: props.database.name,
-      pageSize,
-      pageToken,
-    });
+    await revisionServiceClientConnect.listRevisions(request);
   return {
     nextPageToken,
-    list: revisions,
+    list: revisions.map(convertNewRevisionToOld),
   };
 };
 </script>
