@@ -1007,7 +1007,6 @@
       }
     },
     "sql-review-only": "SQLレビューのみ",
-    "create-issue": "問題を作成",
     "this-plan-will-be-converted-to-a-new-issue": "この計画は新しい問題に変換されます",
     "title": {
       "edit-schema": "スキーマを編集",
@@ -1031,6 +1030,7 @@
     "data-change": "データの変更",
     "data-change-description": "挿入、更新、削除、データ変換を含むデータベースコンテンツの変更（DML）",
     "select-targets": "ターゲットを選択",
+    "ready-for-review": "レビュー準備完了",
     "overview": {
       "description": "このプランのすべての仕様を表示および管理します",
       "total-specs": "合計スペック",

@@ -9,7 +9,7 @@
         :loading="loading"
         @click="handleCreateIssue"
       >
-        {{ "Ready for review" }}
+        {{ $t("plan.ready-for-review") }}
       </NButton>
     </template>
 
