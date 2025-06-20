@@ -148,20 +148,29 @@ const columnList = computed((): AuditDataTableColumn[] => {
         minWidth: 256,
         width: 256,
         title: t("audit-log.table.service-data"),
-        render: (auditLog) =>
-          auditLog.serviceData && auditLog.serviceData.typeUrl ? (
+        render: (auditLog) => {
+          return auditLog.serviceData && auditLog.serviceData.typeUrl ? (
             <JSONStringView
-              jsonString={JSON.stringify({
-                "@type": auditLog.serviceData.typeUrl,
-                ...getServiceDataValue(
-                  auditLog.serviceData.typeUrl,
-                  auditLog.serviceData.value
-                ),
-              })}
+              jsonString={JSON.stringify(
+                {
+                  "@type": auditLog.serviceData.typeUrl,
+                  ...getServiceDataValue(
+                    auditLog.serviceData.typeUrl,
+                    auditLog.serviceData.value
+                  ),
+                },
+                (_, value) => {
+                  if (typeof value === "bigint") {
+                    return value.toString(); // Convert to string
+                  }
+                  return value;
+                }
+              )}
             />
           ) : (
             "-"
-          ),
+          );
+        },
       },
     ] as AuditDataTableColumn[]
   ).filter((column) => !column.hide);

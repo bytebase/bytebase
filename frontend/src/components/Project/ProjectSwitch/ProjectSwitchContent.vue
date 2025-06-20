@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full">
+  <div class="w-full max-h-[calc(100vh-10rem)]">
     <div v-if="isValidProjectName(project.name)">
       <NButton size="small" text @click="gotoWorkspace">
         <template #icon>
@@ -46,12 +46,23 @@
         "
       >
         <ProjectV1Table
+          v-if="tab.id === 'recent'"
           :project-list="tab.list"
           :current-project="
             isValidProjectName(project.name) ? project : undefined
           "
-          :loading="tab.id === 'all' && state.loading"
           :keyword="state.searchText"
+          @row-click="onProjectSelect"
+        />
+        <PagedProjectTable
+          v-else
+          class="mb-2"
+          session-key="bb.project-table"
+          :filter="{
+            query: state.searchText,
+            excludeDefault: true,
+          }"
+          :loading="state.loading"
           @row-click="onProjectSelect"
         />
       </NTabPane>
@@ -60,29 +71,23 @@
 </template>
 
 <script lang="ts" setup>
-import { useDebounceFn } from "@vueuse/core";
 import { ChevronLeftIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs, NTooltip } from "naive-ui";
 import { computed, reactive, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
-import { SearchBox, ProjectV1Table } from "@/components/v2";
+import { SearchBox, ProjectV1Table, PagedProjectTable } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useCurrentProjectV1, useProjectV1Store } from "@/store";
+import { useCurrentProjectV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import {
-  isValidProjectName,
-  DEFAULT_PROJECT_NAME,
-  DEBOUNCE_SEARCH_DELAY,
-} from "@/types";
+import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
 import {
   filterProjectV1ListByKeyword,
   hasWorkspacePermissionV2,
-  getDefaultPagination,
 } from "@/utils";
 
 type LocalTabType = "recent" | "all";
@@ -92,7 +97,6 @@ interface LocalState {
   searchText: string;
   loading: boolean;
   selectedTab: LocalTabType;
-  allProjects: ComposedProject[];
 }
 
 defineEmits<{
@@ -105,9 +109,8 @@ const state = reactive<LocalState>({
   searchText: "",
   selectedTab: "all",
   loading: true,
-  allProjects: [],
 });
-const projectStore = useProjectV1Store();
+
 const { recentViewProjects } = useRecentProjects();
 const router = useRouter();
 const { record } = useRecentVisit();
@@ -135,25 +138,6 @@ const allowToCreateProject = computed(() =>
   hasWorkspacePermissionV2("bb.projects.create")
 );
 
-watch(
-  () => state.searchText,
-  useDebounceFn(async () => {
-    state.loading = true;
-    try {
-      const { projects } = await projectStore.fetchProjectList({
-        filter: {
-          query: state.searchText,
-        },
-        pageSize: getDefaultPagination(),
-      });
-      state.allProjects = [...projects];
-    } finally {
-      state.loading = false;
-    }
-  }, DEBOUNCE_SEARCH_DELAY),
-  { immediate: true }
-);
-
 const tabList = computed(
   (): { title: string; id: LocalTabType; list: ComposedProject[] }[] => [
     {
@@ -164,9 +148,7 @@ const tabList = computed(
     {
       title: t("common.all"),
       id: "all",
-      list: state.allProjects.filter(
-        (project) => project.name !== DEFAULT_PROJECT_NAME
-      ),
+      list: [],
     },
   ]
 );
