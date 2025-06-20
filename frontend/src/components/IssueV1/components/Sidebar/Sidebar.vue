@@ -3,7 +3,12 @@
     <ReleaseInfo />
     <TaskCheckSummarySection />
     <ReviewSection />
-    <IssueLabels />
+    <IssueLabels
+      :project="project"
+      :value="issue.labels"
+      :disabled="!allowChange"
+      @update:value="onIssueLabelsUpdate"
+    />
 
     <div
       v-show="
@@ -39,10 +44,13 @@
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { targetsForSpec } from "@/components/Plan";
 import { GhostSection } from "@/components/Plan/components/Configuration";
 import { provideGhostSettingContext } from "@/components/Plan/components/Configuration/GhostSection/context";
-import { useCurrentProjectV1 } from "@/store";
+import { issueServiceClient } from "@/grpcweb";
+import { pushNotification, useCurrentProjectV1 } from "@/store";
+import { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { specForTask, useIssueContext } from "../../logic";
 import IssueLabels from "./IssueLabels.vue";
@@ -51,7 +59,9 @@ import ReleaseInfo from "./ReleaseInfo.vue";
 import ReviewSection from "./ReviewSection";
 import TaskCheckSummarySection from "./TaskCheckSummarySection";
 
-const { isCreating, selectedTask, issue, events } = useIssueContext();
+const { t } = useI18n();
+const { isCreating, selectedTask, issue, events, allowChange } =
+  useIssueContext();
 const { project } = useCurrentProjectV1();
 const preBackupSectionRef = ref<InstanceType<typeof PreBackupSection>>();
 
@@ -80,6 +90,27 @@ const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
 const shouldShowPreBackupSection = computed(() => {
   return preBackupSectionRef.value?.shouldShow ?? false;
 });
+
+const onIssueLabelsUpdate = async (labels: string[]) => {
+  if (isCreating.value) {
+    issue.value.labels = labels;
+  } else {
+    const issuePatch = Issue.fromPartial({
+      ...issue.value,
+      labels,
+    });
+    const updated = await issueServiceClient.updateIssue({
+      issue: issuePatch,
+      updateMask: ["labels"],
+    });
+    Object.assign(issue.value, updated);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  }
+};
 
 ghostEvents.on("update", () => {
   events.emit("status-changed", {

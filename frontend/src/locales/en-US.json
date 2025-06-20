@@ -1007,7 +1007,6 @@
       }
     },
     "sql-review-only": "SQL Review Only",
-    "create-issue": "Create issue",
     "this-plan-will-be-converted-to-a-new-issue": "This plan will be converted to a new issue",
     "title": {
       "edit-schema": "Edit schema",
@@ -1031,6 +1030,7 @@
     "data-change": "Data Change",
     "data-change-description": "Database content modifications (DML) including inserts, updates, deletes and data transformations",
     "select-targets": "Select Targets",
+    "ready-for-review": "Ready for Review",
     "overview": {
       "description": "View and manage all specifications in this plan",
       "total-specs": "Total Specs",

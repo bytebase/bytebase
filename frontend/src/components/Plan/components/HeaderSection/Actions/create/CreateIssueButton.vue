@@ -9,7 +9,7 @@
         :loading="loading"
         @click="handleCreateIssue"
       >
-        {{ loading ? $t("common.creating") : $t("issue.create-issue") }}
+        {{ $t("plan.ready-for-review") }}
       </NButton>
     </template>
 
@@ -40,21 +40,21 @@ import {
   usePlanContext,
 } from "@/components/Plan/logic";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
-import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { issueServiceClient } from "@/grpcweb";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import {
   useCurrentProjectV1,
   useCurrentUserV1,
   usePolicyV1Store,
 } from "@/store";
-import { emptyIssue, type ComposedIssue } from "@/types";
+import { emptyIssue } from "@/types";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import {
+  extractIssueUID,
   extractProjectResourceName,
   hasProjectPermissionV2,
-  issueV1Slug,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -154,33 +154,17 @@ const doCreateIssue = async () => {
         plan: plan.value.name,
       },
     });
-    const composedIssue: ComposedIssue = {
-      ...emptyIssue(),
-      ...createdIssue,
-      planEntity: plan.value,
-    };
-    const createdRollout = await rolloutServiceClient.createRollout({
-      parent: project.value.name,
-      rollout: {
-        plan: plan.value.name,
-      },
-    });
-
-    composedIssue.rollout = createdRollout.name;
-    composedIssue.rolloutEntity = createdRollout;
 
     nextTick(() => {
       router.push({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
         params: {
           projectId: extractProjectResourceName(plan.value.name),
-          issueSlug: issueV1Slug(composedIssue),
+          issueId: extractIssueUID(createdIssue.name),
         },
       });
     });
-
-    return composedIssue;
-  } catch {
+  } finally {
     loading.value = false;
   }
 };
