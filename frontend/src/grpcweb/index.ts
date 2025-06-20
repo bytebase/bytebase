@@ -25,6 +25,7 @@ import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 import { IdentityProviderService } from "@/types/proto-es/v1/idp_service_pb";
+import { SheetService } from "@/types/proto-es/v1/sheet_service_pb";
 
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 
@@ -37,7 +38,6 @@ import { ReleaseServiceDefinition } from "@/types/proto/v1/release_service";
 
 
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
-import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { UserServiceDefinition } from "@/types/proto/v1/user_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
@@ -103,10 +103,6 @@ export const databaseServiceClient = clientFactory.create(
 
 
 
-export const sheetServiceClient = clientFactory.create(
-  SheetServiceDefinition,
-  channel
-);
 
 export const worksheetServiceClient = clientFactory.create(
   WorksheetServiceDefinition,
@@ -240,3 +236,5 @@ export const identityProviderServiceClientConnect = createClient(
   IdentityProviderService,
   transport
 );
+
+export const sheetServiceClientConnect = createClient(SheetService, transport);
