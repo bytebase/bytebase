@@ -12,14 +12,15 @@ import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
 import { CelService } from "@/types/proto-es/v1/cel_service_pb";
 import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { DatabaseGroupService } from "@/types/proto-es/v1/database_group_service_pb";
 import { GroupService } from "@/types/proto-es/v1/group_service_pb";
 import { InstanceRoleService } from "@/types/proto-es/v1/instance_role_service_pb";
+import { RiskService } from "@/types/proto-es/v1/risk_service_pb";
 import { RoleService } from "@/types/proto-es/v1/role_service_pb";
 import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
-import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
@@ -30,7 +31,7 @@ import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 import { ReleaseServiceDefinition } from "@/types/proto/v1/release_service";
 import { ReviewConfigServiceDefinition } from "@/types/proto/v1/review_config_service";
 import { RevisionServiceDefinition } from "@/types/proto/v1/revision_service";
-import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
+
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
@@ -101,19 +102,8 @@ export const databaseServiceClient = clientFactory.create(
   channel
 );
 
-
-export const databaseGroupServiceClient = clientFactory.create(
-  DatabaseGroupServiceDefinition,
-  channel
-);
-
 export const identityProviderClient = clientFactory.create(
   IdentityProviderServiceDefinition,
-  channel
-);
-
-export const riskServiceClient = clientFactory.create(
-  RiskServiceDefinition,
   channel
 );
 
@@ -231,3 +221,10 @@ export const instanceRoleServiceClientConnect = createClient(
 export const roleServiceClientConnect = createClient(RoleService, transport);
 
 export const groupServiceClientConnect = createClient(GroupService, transport);
+
+export const databaseGroupServiceClientConnect = createClient(
+  DatabaseGroupService,
+  transport
+);
+
+export const riskServiceClientConnect = createClient(RiskService, transport);
