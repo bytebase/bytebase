@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"os"
 
 	"github.com/pkg/errors"
 )
@@ -84,7 +85,7 @@ func GetSchemaTableName(name string) (string, string, error) {
 	}
 	if tokens[0] == "-" {
 		// tokens[0] = ""
-		tokens[0] = config.emptyValue
+		tokens[0] = os.Getenv("INIT_NOTUSE_PASSWORD")
 	}
 	return tokens[0], tokens[1], nil
 }
