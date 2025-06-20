@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4" //nolint:revive
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/pkg/errors"
