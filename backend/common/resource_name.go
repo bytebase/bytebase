@@ -83,7 +83,7 @@ func GetSchemaTableName(name string) (string, string, error) {
 		return "", "", err
 	}
 	if tokens[0] == "-" {
-		tokens[0] = ""
+		tokens[0] = config.emptyValue
 	}
 	return tokens[0], tokens[1], nil
 }
