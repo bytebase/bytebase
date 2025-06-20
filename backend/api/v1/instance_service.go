@@ -847,18 +847,42 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			dataSource.MasterPassword = req.Msg.DataSource.MasterPassword
 		case "extra_connection_parameters":
 			dataSource.ExtraConnectionParameters = req.Msg.DataSource.ExtraConnectionParameters
-		case "iam_extension", "client_secret_credential":
-			// TODO(zp): Remove the hack while frontend use new oneof artifact.
-			if v := req.Msg.DataSource.IamExtension; v != nil {
-				switch v := v.(type) {
-				case *v1pb.DataSource_ClientSecretCredential_:
-					dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
-						ClientSecretCredential: convertV1ClientSecretCredential(v.ClientSecretCredential),
+		case "azure_credential", "aws_credential", "gcp_credential":
+			switch req.Msg.DataSource.AuthenticationType {
+			case v1pb.DataSource_AZURE_IAM:
+				if azureCredential := req.Msg.DataSource.GetAzureCredential(); azureCredential != nil {
+					dataSource.IamExtension = &storepb.DataSource_AzureCredential_{
+						AzureCredential: &storepb.DataSource_AzureCredential{
+							TenantId:     azureCredential.TenantId,
+							ClientId:     azureCredential.ClientId,
+							ClientSecret: azureCredential.ClientSecret,
+						},
 					}
-				default:
+				} else {
+					dataSource.IamExtension = nil
 				}
-			} else {
-				dataSource.IamExtension = nil
+			case v1pb.DataSource_AWS_RDS_IAM:
+				if awsCredential := req.Msg.DataSource.GetAwsCredential(); awsCredential != nil {
+					dataSource.IamExtension = &storepb.DataSource_AwsCredential{
+						AwsCredential: &storepb.DataSource_AWSCredential{
+							AccessKeyId:     awsCredential.AccessKeyId,
+							SecretAccessKey: awsCredential.SecretAccessKey,
+							SessionToken:    awsCredential.SessionToken,
+						},
+					}
+				} else {
+					dataSource.IamExtension = nil
+				}
+			case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
+				if gcpCredential := req.Msg.DataSource.GetGcpCredential(); gcpCredential != nil {
+					dataSource.IamExtension = &storepb.DataSource_GcpCredential{
+						GcpCredential: &storepb.DataSource_GCPCredential{
+							Content: gcpCredential.Content,
+						},
+					}
+				} else {
+					dataSource.IamExtension = nil
+				}
 			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
@@ -1202,10 +1226,28 @@ func convertDataSources(dataSources []*storepb.DataSource) ([]*v1pb.DataSource, 
 			MasterUsername:            ds.GetMasterUsername(),
 			ExtraConnectionParameters: ds.GetExtraConnectionParameters(),
 		}
-		if clientSecretCredential := convertClientSecretCredential(ds.GetClientSecretCredential()); clientSecretCredential != nil {
-			clientSecretCredential.ClientSecret = ""
-			dataSource.IamExtension = &v1pb.DataSource_ClientSecretCredential_{
-				ClientSecretCredential: clientSecretCredential,
+
+		switch dataSource.AuthenticationType {
+		case v1pb.DataSource_AZURE_IAM:
+			if azureCredential := ds.GetAzureCredential(); azureCredential != nil {
+				dataSource.IamExtension = &v1pb.DataSource_AzureCredential_{
+					AzureCredential: &v1pb.DataSource_AzureCredential{
+						TenantId: azureCredential.TenantId,
+						ClientId: azureCredential.ClientId,
+					},
+				}
+			}
+		case v1pb.DataSource_AWS_RDS_IAM:
+			if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
+				dataSource.IamExtension = &v1pb.DataSource_AwsCredential{
+					AwsCredential: &v1pb.DataSource_AWSCredential{},
+				}
+			}
+		case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
+			if gcpCredential := ds.GetGcpCredential(); gcpCredential != nil {
+				dataSource.IamExtension = &v1pb.DataSource_GcpCredential{
+					GcpCredential: &v1pb.DataSource_GCPCredential{},
+				}
 			}
 		}
 
@@ -1213,16 +1255,6 @@ func convertDataSources(dataSources []*storepb.DataSource) ([]*v1pb.DataSource, 
 	}
 
 	return v1DataSources, nil
-}
-
-func convertClientSecretCredential(clientSecretCredential *storepb.DataSource_ClientSecretCredential) *v1pb.DataSource_ClientSecretCredential {
-	if clientSecretCredential == nil {
-		return nil
-	}
-	return &v1pb.DataSource_ClientSecretCredential{
-		TenantId: clientSecretCredential.TenantId,
-		ClientId: clientSecretCredential.ClientId,
-	}
 }
 
 func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSecret) (*storepb.DataSourceExternalSecret, error) {
@@ -1426,24 +1458,39 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 		MasterPassword:            dataSource.MasterPassword,
 		ExtraConnectionParameters: dataSource.ExtraConnectionParameters,
 	}
-	if v := dataSource.IamExtension; v != nil {
-		if _, ok := v.(*v1pb.DataSource_ClientSecretCredential_); ok {
-			storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: convertV1ClientSecretCredential(dataSource.GetClientSecretCredential())}
+
+	switch dataSource.AuthenticationType {
+	case v1pb.DataSource_AZURE_IAM:
+		if azureCredential := dataSource.GetAzureCredential(); azureCredential != nil {
+			storeDataSource.IamExtension = &storepb.DataSource_AzureCredential_{
+				AzureCredential: &storepb.DataSource_AzureCredential{
+					TenantId:     azureCredential.TenantId,
+					ClientId:     azureCredential.ClientId,
+					ClientSecret: azureCredential.ClientSecret,
+				},
+			}
+		}
+	case v1pb.DataSource_AWS_RDS_IAM:
+		if awsCredential := dataSource.GetAwsCredential(); awsCredential != nil {
+			storeDataSource.IamExtension = &storepb.DataSource_AwsCredential{
+				AwsCredential: &storepb.DataSource_AWSCredential{
+					AccessKeyId:     awsCredential.AccessKeyId,
+					SecretAccessKey: awsCredential.SecretAccessKey,
+					SessionToken:    awsCredential.SessionToken,
+				},
+			}
+		}
+	case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
+		if gcpCredential := dataSource.GetGcpCredential(); gcpCredential != nil {
+			storeDataSource.IamExtension = &storepb.DataSource_GcpCredential{
+				GcpCredential: &storepb.DataSource_GCPCredential{
+					Content: gcpCredential.Content,
+				},
+			}
 		}
 	}
 
 	return storeDataSource, nil
-}
-
-func convertV1ClientSecretCredential(credential *v1pb.DataSource_ClientSecretCredential) *storepb.DataSource_ClientSecretCredential {
-	if credential == nil {
-		return nil
-	}
-	return &storepb.DataSource_ClientSecretCredential{
-		TenantId:     credential.TenantId,
-		ClientId:     credential.ClientId,
-		ClientSecret: credential.ClientSecret,
-	}
 }
 
 func convertV1DataSourceType(tp v1pb.DataSourceType) (storepb.DataSourceType, error) {

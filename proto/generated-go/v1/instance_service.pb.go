@@ -1674,7 +1674,9 @@ type DataSource struct {
 	AuthenticationType       DataSource_AuthenticationType `protobuf:"varint,22,opt,name=authentication_type,json=authenticationType,proto3,enum=bytebase.v1.DataSource_AuthenticationType" json:"authentication_type,omitempty"`
 	// Types that are valid to be assigned to IamExtension:
 	//
-	//	*DataSource_ClientSecretCredential_
+	//	*DataSource_AzureCredential_
+	//	*DataSource_AwsCredential
+	//	*DataSource_GcpCredential
 	IamExtension isDataSource_IamExtension `protobuf_oneof:"iam_extension"`
 	SaslConfig   *SASLConfig               `protobuf:"bytes,24,opt,name=sasl_config,json=saslConfig,proto3" json:"sasl_config,omitempty"`
 	// additional_addresses is used for MongoDB replica set.
@@ -1905,10 +1907,28 @@ func (x *DataSource) GetIamExtension() isDataSource_IamExtension {
 	return nil
 }
 
-func (x *DataSource) GetClientSecretCredential() *DataSource_ClientSecretCredential {
+func (x *DataSource) GetAzureCredential() *DataSource_AzureCredential {
 	if x != nil {
-		if x, ok := x.IamExtension.(*DataSource_ClientSecretCredential_); ok {
-			return x.ClientSecretCredential
+		if x, ok := x.IamExtension.(*DataSource_AzureCredential_); ok {
+			return x.AzureCredential
+		}
+	}
+	return nil
+}
+
+func (x *DataSource) GetAwsCredential() *DataSource_AWSCredential {
+	if x != nil {
+		if x, ok := x.IamExtension.(*DataSource_AwsCredential); ok {
+			return x.AwsCredential
+		}
+	}
+	return nil
+}
+
+func (x *DataSource) GetGcpCredential() *DataSource_GCPCredential {
+	if x != nil {
+		if x, ok := x.IamExtension.(*DataSource_GcpCredential); ok {
+			return x.GcpCredential
 		}
 	}
 	return nil
@@ -1995,11 +2015,23 @@ type isDataSource_IamExtension interface {
 	isDataSource_IamExtension()
 }
 
-type DataSource_ClientSecretCredential_ struct {
-	ClientSecretCredential *DataSource_ClientSecretCredential `protobuf:"bytes,23,opt,name=client_secret_credential,json=clientSecretCredential,proto3,oneof"`
+type DataSource_AzureCredential_ struct {
+	AzureCredential *DataSource_AzureCredential `protobuf:"bytes,23,opt,name=azure_credential,json=azureCredential,proto3,oneof"`
 }
 
-func (*DataSource_ClientSecretCredential_) isDataSource_IamExtension() {}
+type DataSource_AwsCredential struct {
+	AwsCredential *DataSource_AWSCredential `protobuf:"bytes,37,opt,name=aws_credential,json=awsCredential,proto3,oneof"`
+}
+
+type DataSource_GcpCredential struct {
+	GcpCredential *DataSource_GCPCredential `protobuf:"bytes,38,opt,name=gcp_credential,json=gcpCredential,proto3,oneof"`
+}
+
+func (*DataSource_AzureCredential_) isDataSource_IamExtension() {}
+
+func (*DataSource_AwsCredential) isDataSource_IamExtension() {}
+
+func (*DataSource_GcpCredential) isDataSource_IamExtension() {}
 
 type InstanceResource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -2325,7 +2357,7 @@ func (x *DataSourceExternalSecret_AppRoleAuthOption) GetMountPath() string {
 	return ""
 }
 
-type DataSource_ClientSecretCredential struct {
+type DataSource_AzureCredential struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	ClientId      string                 `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
@@ -2334,20 +2366,20 @@ type DataSource_ClientSecretCredential struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DataSource_ClientSecretCredential) Reset() {
-	*x = DataSource_ClientSecretCredential{}
+func (x *DataSource_AzureCredential) Reset() {
+	*x = DataSource_AzureCredential{}
 	mi := &file_v1_instance_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DataSource_ClientSecretCredential) String() string {
+func (x *DataSource_AzureCredential) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DataSource_ClientSecretCredential) ProtoMessage() {}
+func (*DataSource_AzureCredential) ProtoMessage() {}
 
-func (x *DataSource_ClientSecretCredential) ProtoReflect() protoreflect.Message {
+func (x *DataSource_AzureCredential) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_instance_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2359,28 +2391,132 @@ func (x *DataSource_ClientSecretCredential) ProtoReflect() protoreflect.Message 
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DataSource_ClientSecretCredential.ProtoReflect.Descriptor instead.
-func (*DataSource_ClientSecretCredential) Descriptor() ([]byte, []int) {
+// Deprecated: Use DataSource_AzureCredential.ProtoReflect.Descriptor instead.
+func (*DataSource_AzureCredential) Descriptor() ([]byte, []int) {
 	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 0}
 }
 
-func (x *DataSource_ClientSecretCredential) GetTenantId() string {
+func (x *DataSource_AzureCredential) GetTenantId() string {
 	if x != nil {
 		return x.TenantId
 	}
 	return ""
 }
 
-func (x *DataSource_ClientSecretCredential) GetClientId() string {
+func (x *DataSource_AzureCredential) GetClientId() string {
 	if x != nil {
 		return x.ClientId
 	}
 	return ""
 }
 
-func (x *DataSource_ClientSecretCredential) GetClientSecret() string {
+func (x *DataSource_AzureCredential) GetClientSecret() string {
 	if x != nil {
 		return x.ClientSecret
+	}
+	return ""
+}
+
+type DataSource_AWSCredential struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	AccessKeyId     string                 `protobuf:"bytes,1,opt,name=access_key_id,json=accessKeyId,proto3" json:"access_key_id,omitempty"`
+	SecretAccessKey string                 `protobuf:"bytes,2,opt,name=secret_access_key,json=secretAccessKey,proto3" json:"secret_access_key,omitempty"`
+	SessionToken    string                 `protobuf:"bytes,3,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *DataSource_AWSCredential) Reset() {
+	*x = DataSource_AWSCredential{}
+	mi := &file_v1_instance_service_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DataSource_AWSCredential) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DataSource_AWSCredential) ProtoMessage() {}
+
+func (x *DataSource_AWSCredential) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DataSource_AWSCredential.ProtoReflect.Descriptor instead.
+func (*DataSource_AWSCredential) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 1}
+}
+
+func (x *DataSource_AWSCredential) GetAccessKeyId() string {
+	if x != nil {
+		return x.AccessKeyId
+	}
+	return ""
+}
+
+func (x *DataSource_AWSCredential) GetSecretAccessKey() string {
+	if x != nil {
+		return x.SecretAccessKey
+	}
+	return ""
+}
+
+func (x *DataSource_AWSCredential) GetSessionToken() string {
+	if x != nil {
+		return x.SessionToken
+	}
+	return ""
+}
+
+type DataSource_GCPCredential struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DataSource_GCPCredential) Reset() {
+	*x = DataSource_GCPCredential{}
+	mi := &file_v1_instance_service_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DataSource_GCPCredential) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DataSource_GCPCredential) ProtoMessage() {}
+
+func (x *DataSource_GCPCredential) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DataSource_GCPCredential.ProtoReflect.Descriptor instead.
+func (*DataSource_GCPCredential) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 2}
+}
+
+func (x *DataSource_GCPCredential) GetContent() string {
+	if x != nil {
+		return x.Content
 	}
 	return ""
 }
@@ -2395,7 +2531,7 @@ type DataSource_Address struct {
 
 func (x *DataSource_Address) Reset() {
 	*x = DataSource_Address{}
-	mi := &file_v1_instance_service_proto_msgTypes[26]
+	mi := &file_v1_instance_service_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2407,7 +2543,7 @@ func (x *DataSource_Address) String() string {
 func (*DataSource_Address) ProtoMessage() {}
 
 func (x *DataSource_Address) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[26]
+	mi := &file_v1_instance_service_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2420,7 +2556,7 @@ func (x *DataSource_Address) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource_Address.ProtoReflect.Descriptor instead.
 func (*DataSource_Address) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 1}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 3}
 }
 
 func (x *DataSource_Address) GetHost() string {
@@ -2561,7 +2697,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05TOKEN\x10\x01\x12\x12\n" +
 	"\x0eVAULT_APP_ROLE\x10\x02B\r\n" +
-	"\vauth_option\"\x91\x10\n" +
+	"\vauth_option\"\xde\x12\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -2589,8 +2725,10 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x0fssh_private_key\x18\x13 \x01(\tB\x04\xe2A\x01\x04R\rsshPrivateKey\x12B\n" +
 	"\x1aauthentication_private_key\x18\x14 \x01(\tB\x04\xe2A\x01\x04R\x18authenticationPrivateKey\x12N\n" +
 	"\x0fexternal_secret\x18\x15 \x01(\v2%.bytebase.v1.DataSourceExternalSecretR\x0eexternalSecret\x12[\n" +
-	"\x13authentication_type\x18\x16 \x01(\x0e2*.bytebase.v1.DataSource.AuthenticationTypeR\x12authenticationType\x12j\n" +
-	"\x18client_secret_credential\x18\x17 \x01(\v2..bytebase.v1.DataSource.ClientSecretCredentialH\x00R\x16clientSecretCredential\x128\n" +
+	"\x13authentication_type\x18\x16 \x01(\x0e2*.bytebase.v1.DataSource.AuthenticationTypeR\x12authenticationType\x12T\n" +
+	"\x10azure_credential\x18\x17 \x01(\v2'.bytebase.v1.DataSource.AzureCredentialH\x00R\x0fazureCredential\x12N\n" +
+	"\x0eaws_credential\x18% \x01(\v2%.bytebase.v1.DataSource.AWSCredentialH\x00R\rawsCredential\x12N\n" +
+	"\x0egcp_credential\x18& \x01(\v2%.bytebase.v1.DataSource.GCPCredentialH\x00R\rgcpCredential\x128\n" +
 	"\vsasl_config\x18\x18 \x01(\v2\x17.bytebase.v1.SASLConfigR\n" +
 	"saslConfig\x12X\n" +
 	"\x14additional_addresses\x18\x1a \x03(\v2\x1f.bytebase.v1.DataSource.AddressB\x04\xe2A\x01\x01R\x13additionalAddresses\x12+\n" +
@@ -2604,11 +2742,17 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\n" +
 	"redis_type\x18\" \x01(\x0e2!.bytebase.v1.DataSource.RedisTypeR\tredisType\x12\x18\n" +
 	"\acluster\x18# \x01(\tR\acluster\x12v\n" +
-	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x1a}\n" +
-	"\x16ClientSecretCredential\x12\x1b\n" +
+	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x1av\n" +
+	"\x0fAzureCredential\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12)\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\fclientSecret\x1a1\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\fclientSecret\x1a\x96\x01\n" +
+	"\rAWSCredential\x12(\n" +
+	"\raccess_key_id\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\vaccessKeyId\x120\n" +
+	"\x11secret_access_key\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\x0fsecretAccessKey\x12)\n" +
+	"\rsession_token\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\fsessionToken\x1a/\n" +
+	"\rGCPCredential\x12\x1e\n" +
+	"\acontent\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\acontent\x1a1\n" +
 	"\aAddress\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\tR\x04port\x1aL\n" +
@@ -2683,7 +2827,7 @@ func file_v1_instance_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_v1_instance_service_proto_goTypes = []any{
 	(DataSourceType)(0),                                        // 0: bytebase.v1.DataSourceType
 	(DataSourceExternalSecret_SecretType)(0),                   // 1: bytebase.v1.DataSourceExternalSecret.SecretType
@@ -2716,22 +2860,24 @@ var file_v1_instance_service_proto_goTypes = []any{
 	(*SASLConfig)(nil),                                         // 28: bytebase.v1.SASLConfig
 	(*KerberosConfig)(nil),                                     // 29: bytebase.v1.KerberosConfig
 	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 30: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
-	(*DataSource_ClientSecretCredential)(nil),                  // 31: bytebase.v1.DataSource.ClientSecretCredential
-	(*DataSource_Address)(nil),                                 // 32: bytebase.v1.DataSource.Address
-	nil,                                                        // 33: bytebase.v1.DataSource.ExtraConnectionParametersEntry
-	(*fieldmaskpb.FieldMask)(nil),                              // 34: google.protobuf.FieldMask
-	(State)(0),                                                 // 35: bytebase.v1.State
-	(Engine)(0),                                                // 36: bytebase.v1.Engine
-	(*InstanceRole)(nil),                                       // 37: bytebase.v1.InstanceRole
-	(*durationpb.Duration)(nil),                                // 38: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                              // 39: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                                      // 40: google.protobuf.Empty
+	(*DataSource_AzureCredential)(nil),                         // 31: bytebase.v1.DataSource.AzureCredential
+	(*DataSource_AWSCredential)(nil),                           // 32: bytebase.v1.DataSource.AWSCredential
+	(*DataSource_GCPCredential)(nil),                           // 33: bytebase.v1.DataSource.GCPCredential
+	(*DataSource_Address)(nil),                                 // 34: bytebase.v1.DataSource.Address
+	nil,                                                        // 35: bytebase.v1.DataSource.ExtraConnectionParametersEntry
+	(*fieldmaskpb.FieldMask)(nil),                              // 36: google.protobuf.FieldMask
+	(State)(0),                                                 // 37: bytebase.v1.State
+	(Engine)(0),                                                // 38: bytebase.v1.Engine
+	(*InstanceRole)(nil),                                       // 39: bytebase.v1.InstanceRole
+	(*durationpb.Duration)(nil),                                // 40: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                              // 41: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                                      // 42: google.protobuf.Empty
 }
 var file_v1_instance_service_proto_depIdxs = []int32{
 	24, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
 	24, // 1: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
 	24, // 2: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	34, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	36, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
 	24, // 4: bytebase.v1.ListInstanceDatabaseRequest.instance:type_name -> bytebase.v1.Instance
 	13, // 5: bytebase.v1.BatchSyncInstancesRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
 	10, // 6: bytebase.v1.BatchUpdateInstancesRequest.requests:type_name -> bytebase.v1.UpdateInstanceRequest
@@ -2739,59 +2885,61 @@ var file_v1_instance_service_proto_depIdxs = []int32{
 	26, // 8: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
 	26, // 9: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
 	26, // 10: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	34, // 11: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	35, // 12: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
-	36, // 13: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
+	36, // 11: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	37, // 12: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
+	38, // 13: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
 	26, // 14: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
-	37, // 15: bytebase.v1.Instance.roles:type_name -> bytebase.v1.InstanceRole
-	38, // 16: bytebase.v1.Instance.sync_interval:type_name -> google.protobuf.Duration
-	39, // 17: bytebase.v1.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
+	39, // 15: bytebase.v1.Instance.roles:type_name -> bytebase.v1.InstanceRole
+	40, // 16: bytebase.v1.Instance.sync_interval:type_name -> google.protobuf.Duration
+	41, // 17: bytebase.v1.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
 	1,  // 18: bytebase.v1.DataSourceExternalSecret.secret_type:type_name -> bytebase.v1.DataSourceExternalSecret.SecretType
 	2,  // 19: bytebase.v1.DataSourceExternalSecret.auth_type:type_name -> bytebase.v1.DataSourceExternalSecret.AuthType
 	30, // 20: bytebase.v1.DataSourceExternalSecret.app_role:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
 	0,  // 21: bytebase.v1.DataSource.type:type_name -> bytebase.v1.DataSourceType
 	25, // 22: bytebase.v1.DataSource.external_secret:type_name -> bytebase.v1.DataSourceExternalSecret
 	4,  // 23: bytebase.v1.DataSource.authentication_type:type_name -> bytebase.v1.DataSource.AuthenticationType
-	31, // 24: bytebase.v1.DataSource.client_secret_credential:type_name -> bytebase.v1.DataSource.ClientSecretCredential
-	28, // 25: bytebase.v1.DataSource.sasl_config:type_name -> bytebase.v1.SASLConfig
-	32, // 26: bytebase.v1.DataSource.additional_addresses:type_name -> bytebase.v1.DataSource.Address
-	5,  // 27: bytebase.v1.DataSource.redis_type:type_name -> bytebase.v1.DataSource.RedisType
-	33, // 28: bytebase.v1.DataSource.extra_connection_parameters:type_name -> bytebase.v1.DataSource.ExtraConnectionParametersEntry
-	36, // 29: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
-	26, // 30: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
-	29, // 31: bytebase.v1.SASLConfig.krb_config:type_name -> bytebase.v1.KerberosConfig
-	3,  // 32: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	6,  // 33: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
-	7,  // 34: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
-	9,  // 35: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
-	10, // 36: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
-	11, // 37: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
-	12, // 38: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
-	13, // 39: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
-	14, // 40: bytebase.v1.InstanceService.ListInstanceDatabase:input_type -> bytebase.v1.ListInstanceDatabaseRequest
-	17, // 41: bytebase.v1.InstanceService.BatchSyncInstances:input_type -> bytebase.v1.BatchSyncInstancesRequest
-	19, // 42: bytebase.v1.InstanceService.BatchUpdateInstances:input_type -> bytebase.v1.BatchUpdateInstancesRequest
-	21, // 43: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
-	22, // 44: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
-	23, // 45: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
-	24, // 46: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
-	8,  // 47: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
-	24, // 48: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
-	24, // 49: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
-	40, // 50: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
-	24, // 51: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
-	16, // 52: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
-	15, // 53: bytebase.v1.InstanceService.ListInstanceDatabase:output_type -> bytebase.v1.ListInstanceDatabaseResponse
-	18, // 54: bytebase.v1.InstanceService.BatchSyncInstances:output_type -> bytebase.v1.BatchSyncInstancesResponse
-	20, // 55: bytebase.v1.InstanceService.BatchUpdateInstances:output_type -> bytebase.v1.BatchUpdateInstancesResponse
-	24, // 56: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
-	24, // 57: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
-	24, // 58: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
-	46, // [46:59] is the sub-list for method output_type
-	33, // [33:46] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	31, // 24: bytebase.v1.DataSource.azure_credential:type_name -> bytebase.v1.DataSource.AzureCredential
+	32, // 25: bytebase.v1.DataSource.aws_credential:type_name -> bytebase.v1.DataSource.AWSCredential
+	33, // 26: bytebase.v1.DataSource.gcp_credential:type_name -> bytebase.v1.DataSource.GCPCredential
+	28, // 27: bytebase.v1.DataSource.sasl_config:type_name -> bytebase.v1.SASLConfig
+	34, // 28: bytebase.v1.DataSource.additional_addresses:type_name -> bytebase.v1.DataSource.Address
+	5,  // 29: bytebase.v1.DataSource.redis_type:type_name -> bytebase.v1.DataSource.RedisType
+	35, // 30: bytebase.v1.DataSource.extra_connection_parameters:type_name -> bytebase.v1.DataSource.ExtraConnectionParametersEntry
+	38, // 31: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
+	26, // 32: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
+	29, // 33: bytebase.v1.SASLConfig.krb_config:type_name -> bytebase.v1.KerberosConfig
+	3,  // 34: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	6,  // 35: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
+	7,  // 36: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
+	9,  // 37: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
+	10, // 38: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
+	11, // 39: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
+	12, // 40: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
+	13, // 41: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
+	14, // 42: bytebase.v1.InstanceService.ListInstanceDatabase:input_type -> bytebase.v1.ListInstanceDatabaseRequest
+	17, // 43: bytebase.v1.InstanceService.BatchSyncInstances:input_type -> bytebase.v1.BatchSyncInstancesRequest
+	19, // 44: bytebase.v1.InstanceService.BatchUpdateInstances:input_type -> bytebase.v1.BatchUpdateInstancesRequest
+	21, // 45: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
+	22, // 46: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
+	23, // 47: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
+	24, // 48: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
+	8,  // 49: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
+	24, // 50: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
+	24, // 51: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
+	42, // 52: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
+	24, // 53: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
+	16, // 54: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
+	15, // 55: bytebase.v1.InstanceService.ListInstanceDatabase:output_type -> bytebase.v1.ListInstanceDatabaseResponse
+	18, // 56: bytebase.v1.InstanceService.BatchSyncInstances:output_type -> bytebase.v1.BatchSyncInstancesResponse
+	20, // 57: bytebase.v1.InstanceService.BatchUpdateInstances:output_type -> bytebase.v1.BatchUpdateInstancesResponse
+	24, // 58: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
+	24, // 59: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
+	24, // 60: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
+	48, // [48:61] is the sub-list for method output_type
+	35, // [35:48] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_v1_instance_service_proto_init() }
@@ -2808,7 +2956,9 @@ func file_v1_instance_service_proto_init() {
 		(*DataSourceExternalSecret_Token)(nil),
 	}
 	file_v1_instance_service_proto_msgTypes[20].OneofWrappers = []any{
-		(*DataSource_ClientSecretCredential_)(nil),
+		(*DataSource_AzureCredential_)(nil),
+		(*DataSource_AwsCredential)(nil),
+		(*DataSource_GcpCredential)(nil),
 	}
 	file_v1_instance_service_proto_msgTypes[22].OneofWrappers = []any{
 		(*SASLConfig_KrbConfig)(nil),
@@ -2819,7 +2969,7 @@ func file_v1_instance_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_instance_service_proto_rawDesc), len(file_v1_instance_service_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   28,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
