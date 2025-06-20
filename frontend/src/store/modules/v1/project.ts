@@ -165,16 +165,18 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       force,
     });
     // Update local cache - mark all projects as deleted
-    const projects = projectNames.map(name => {
-      const project = getProjectByName(name);
-      if (project && project.name !== UNKNOWN_PROJECT_NAME) {
-        // Extract Project properties (excluding iamPolicy)
-        const { iamPolicy: _iamPolicy, ...projectData } = project;
-        return { ...projectData, state: State.DELETED };
-      }
-      return null;
-    }).filter((p): p is Project => p !== null);
-    
+    const projects = projectNames
+      .map((name) => {
+        const project = getProjectByName(name);
+        if (project && project.name !== UNKNOWN_PROJECT_NAME) {
+          // Extract Project properties (excluding iamPolicy)
+          const { iamPolicy: _iamPolicy, ...projectData } = project;
+          return { ...projectData, state: State.DELETED };
+        }
+        return null;
+      })
+      .filter((p): p is Project => p !== null);
+
     if (projects.length > 0) {
       await upsertProjectMap(projects);
     }
@@ -220,8 +222,10 @@ export const useProjectByName = (name: MaybeRef<string>) => {
 
 export const useCurrentProjectV1 = () => {
   const route = useRoute();
-  const projectName = computed(
-    () => `${projectNamePrefix}${route.params.projectId}`
+  const projectName = computed(() =>
+    route.params.projectId
+      ? `${projectNamePrefix}${route.params.projectId}`
+      : unknownProject().name
   );
   return useProjectByName(projectName);
 };
