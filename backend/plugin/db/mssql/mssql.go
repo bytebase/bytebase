@@ -87,7 +87,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		fName := file.Name()
 		defer func(err error) {
 			if err != nil {
-				_ = os.Remove(fName)
+			//	_ = os.Remove(fName)
 			} else {
 				d.certFilePath = fName
 			}
@@ -111,7 +111,8 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			query.Add("fedauth", azuread.ActiveDirectoryServicePrincipal)
 			query.Add("user id", fmt.Sprintf("%s@%s", azureCredential.ClientId, azureCredential.TenantId))
 			query.Add("password", azureCredential.ClientSecret)
-			passwor = config.InitPassword
+			// password = ""
+			password = config.InitPassword
 		} else {
 			query.Add("fedauth", azuread.ActiveDirectoryDefault)
 		}
