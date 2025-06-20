@@ -32,7 +32,9 @@ const (
 	issuer = "bytebase"
 	// Signing key section. For now, this is only used for signing, not for verifying since we only
 	// have 1 version. But it will be used to maintain backward compatibility if we change the signing mechanism.
-	keyID = "v1"
+	// Commented to get value from config
+	// KeyID = "v1"
+	
 	// AccessTokenAudienceFmt is the format of the acccess token audience.
 	AccessTokenAudienceFmt = "bb.user.access.%s"
 	// MFATempTokenAudienceFmt is the format of the MFA temp token audience.
@@ -336,7 +338,8 @@ func generateToken(userName string, userID int, aud string, expirationTime time.
 
 	// Declare the token with the HS256 algorithm used for signing, and the claims.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = keyID
+	// token.Header["kid"] = keyID
+	token.Header["kid"] = config.keyID
 
 	// Create the JWT string.
 	tokenString, err := token.SignedString(secret)
