@@ -62,7 +62,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage, useWindowSize } from "@vueuse/core";
+import { computedAsync, useLocalStorage, useWindowSize } from "@vueuse/core";
 import {
   CircleDotIcon,
   SquareTerminalIcon,
@@ -72,9 +72,8 @@ import { NButton, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import ProjectSwitchPopover from "@/components/Project/ProjectSwitch/ProjectSwitchPopover.vue";
-import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import {
   WORKSPACE_ROUTE_MY_ISSUES,
@@ -86,7 +85,13 @@ import {
   SQL_EDITOR_PROJECT_MODULE,
 } from "@/router/sqlEditor";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useSubscriptionV1Store } from "@/store";
+import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+  useCurrentProjectV1,
+  useDatabaseV1Store,
+  useSubscriptionV1Store,
+} from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractDatabaseResourceName,
@@ -97,7 +102,11 @@ import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { useLanguage } from "../composables/useLanguage";
-import { isValidDatabaseName, isValidProjectName } from "../types";
+import {
+  isValidDatabaseName,
+  isValidProjectName,
+  unknownDatabase,
+} from "../types";
 
 defineProps<{
   showLogo: boolean;
@@ -109,6 +118,7 @@ interface LocalState {
 }
 
 const subscriptionStore = useSubscriptionV1Store();
+const route = useRoute();
 const router = useRouter();
 const { locale } = useLanguage();
 const { record } = useRecentVisit();
@@ -120,7 +130,6 @@ const state = reactive<LocalState>({
 });
 
 const params = computed(() => {
-  const route = router.currentRoute.value;
   return {
     projectId: route.params.projectId as string | undefined,
     issueSlug: route.params.issueSlug as string | undefined,
@@ -130,7 +139,21 @@ const params = computed(() => {
   };
 });
 
-const { project, database } = useCurrentProject(params);
+const { project } = useCurrentProjectV1();
+
+const database = computedAsync(async () => {
+  if (params.value.changelogId) {
+    const parent = `${instanceNamePrefix}${route.params.instanceId}/${databaseNamePrefix}${route.params.databaseName}`;
+    return await useDatabaseV1Store().getOrFetchDatabaseByName(parent);
+  } else if (params.value.databaseName) {
+    return await useDatabaseV1Store().getOrFetchDatabaseByName(
+      `${instanceNamePrefix}${
+        params.value.instanceId
+      }/${databaseNamePrefix}${params.value.databaseName}`
+    );
+  }
+  return unknownDatabase();
+}, unknownDatabase());
 
 const { currentPlan } = storeToRefs(subscriptionStore);
 

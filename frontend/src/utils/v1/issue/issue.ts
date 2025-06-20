@@ -1,13 +1,13 @@
-import { t } from "@/plugins/i18n";
-import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
-import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Rollout } from "@/types/proto/v1/rollout_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
 import dayjs from "dayjs";
 import slug from "slug";
+import { t } from "@/plugins/i18n";
+import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
+import { Issue_Type } from "@/types/proto/v1/issue_service";
+import type { Rollout } from "@/types/proto/v1/rollout_service";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
 
-export const issueV1Slug = (issue: Issue) => {
-  return [slug(issue.title), extractIssueUID(issue.name)].join("-");
+export const issueV1Slug = (name: string, title: string = "issue") => {
+  return [slug(title), extractIssueUID(name)].join("-");
 };
 
 export const extractIssueUID = (name: string) => {

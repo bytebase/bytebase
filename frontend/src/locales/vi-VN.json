@@ -1007,7 +1007,6 @@
       }
     },
     "sql-review-only": "Chỉ đánh giá SQL",
-    "create-issue": "Tạo vấn đề",
     "this-plan-will-be-converted-to-a-new-issue": "Kế hoạch này sẽ được chuyển đổi thành một vấn đề mới",
     "title": {
       "edit-schema": "Chỉnh sửa lược đồ",
@@ -1031,6 +1030,7 @@
     "data-change": "Thay đổi dữ liệu",
     "data-change-description": "Sửa đổi nội dung cơ sở dữ liệu (DML) bao gồm chèn, cập nhật, xóa và chuyển đổi dữ liệu",
     "select-targets": "Chọn mục tiêu",
+    "ready-for-review": "Sẵn sàng để xem xét",
     "overview": {
       "description": "Xem và quản lý tất cả các thông số kỹ thuật trong kế hoạch này",
       "total-specs": "Tổng số thông số kỹ thuật",

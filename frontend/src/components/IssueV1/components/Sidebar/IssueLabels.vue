@@ -4,9 +4,9 @@
       <span>{{ $t("common.labels") }}</span>
     </div>
     <IssueLabelSelector
-      :disabled="!allowEditIssue"
-      :selected="issue.labels"
-      :project="projectOfIssue(issue)"
+      :disabled="disabled"
+      :selected="value"
+      :project="project"
       :size="'medium'"
       @update:selected="onLablesUpdate"
     />
@@ -14,34 +14,25 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
 import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
-import { useIssueContext, projectOfIssue } from "@/components/IssueV1/logic";
-import { issueServiceClient } from "@/grpcweb";
-import { pushNotification } from "@/store";
-import { Issue } from "@/types/proto/v1/issue_service";
+import type { ComposedProject } from "@/types";
 
-const { isCreating, issue, allowChange: allowEditIssue } = useIssueContext();
-const { t } = useI18n();
+withDefaults(
+  defineProps<{
+    value: string[];
+    project: ComposedProject;
+    disabled?: boolean;
+  }>(),
+  {
+    disabled: false,
+  }
+);
+
+const emit = defineEmits<{
+  (e: "update:value", labels: string[]): void;
+}>();
 
 const onLablesUpdate = async (labels: string[]) => {
-  if (isCreating.value) {
-    issue.value.labels = labels;
-  } else {
-    const issuePatch = Issue.fromPartial({
-      ...issue.value,
-      labels,
-    });
-    const updated = await issueServiceClient.updateIssue({
-      issue: issuePatch,
-      updateMask: ["labels"],
-    });
-    Object.assign(issue.value, updated);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-  }
+  emit("update:value", labels);
 };
 </script>

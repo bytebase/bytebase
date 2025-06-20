@@ -145,7 +145,7 @@ const handleCreate = async () => {
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(release.value.project),
-      issueSlug: issueV1Slug(createdIssue),
+      issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
     },
   });
 };

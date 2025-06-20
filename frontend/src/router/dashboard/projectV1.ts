@@ -14,7 +14,8 @@ export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.d
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.create`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
-export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
+export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_ISSUES}.detail`;
+export const PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 = `${PROJECT_V1_ROUTE_ISSUES}.detail.v1`;
 export const PROJECT_V1_ROUTE_PLANS = `${PROJECT_V1_ROUTE_DASHBOARD}.plan`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.specs`;
@@ -143,6 +144,15 @@ const projectV1Routes: RouteRecordRaw[] = [
             },
             component: () =>
               import("@/views/project/ProjectIssueDashboard.vue"),
+            props: true,
+          },
+          {
+            path: ":issueId(\\d+)",
+            name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+            meta: {
+              requiredPermissionList: () => ["bb.issues.get"],
+            },
+            component: () => import("@/views/project/ProjectPlanDetail.vue"),
             props: true,
           },
           {

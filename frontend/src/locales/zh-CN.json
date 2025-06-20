@@ -1007,7 +1007,6 @@
       }
     },
     "sql-review-only": "仅 SQL 审核",
-    "create-issue": "创建工单",
     "this-plan-will-be-converted-to-a-new-issue": "该变更计划将转换为一个工单",
     "title": {
       "edit-schema": "变更 Schema",
@@ -1031,6 +1030,7 @@
     "data-change": "数据变更",
     "data-change-description": "数据库数据修改（DML），包括插入、更新、删除和数据迁移",
     "select-targets": "选择变更对象",
+    "ready-for-review": "提交审批",
     "overview": {
       "description": "查看和管理此变更计划中的所有变更项",
       "total-specs": "变更项",

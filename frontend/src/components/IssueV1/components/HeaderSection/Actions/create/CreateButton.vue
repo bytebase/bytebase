@@ -183,7 +183,7 @@ const doCreateIssue = async () => {
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(issue.value.project),
-        issueSlug: issueV1Slug(createdIssue),
+        issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
       },
     });
   } catch {
