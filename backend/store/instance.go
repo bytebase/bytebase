@@ -422,11 +422,11 @@ func (s *Store) unObfuscateInstance(ctx context.Context, instance *storepb.Insta
 		}
 
 		if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
-			accessKeyId, err := common.Unobfuscate(awsCredential.ObfuscatedAccessKeyId, secret)
+			accessKeyID, err := common.Unobfuscate(awsCredential.ObfuscatedAccessKeyId, secret)
 			if err != nil {
 				return err
 			}
-			awsCredential.AccessKeyId = accessKeyId
+			awsCredential.AccessKeyId = accessKeyID
 
 			secretAccessKey, err := common.Unobfuscate(awsCredential.ObfuscatedSecretAccessKey, secret)
 			if err != nil {
