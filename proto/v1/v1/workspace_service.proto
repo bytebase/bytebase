@@ -9,12 +9,14 @@ import "v1/iam_policy.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service WorkspaceService {
+  // Permissions required: bb.workspaces.getIamPolicy
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.workspaces.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.workspaces.setIamPolicy
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {
       post: "/v1/{resource=workspaces/*}:setIamPolicy"

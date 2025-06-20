@@ -3770,14 +3770,14 @@ Format: instances/{instance}/databases/{database}/catalog </p></td>
                 <td>GetDatabaseCatalog</td>
                 <td><a href="#bytebase.v1.GetDatabaseCatalogRequest">GetDatabaseCatalogRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseCatalogs.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateDatabaseCatalog</td>
                 <td><a href="#bytebase.v1.UpdateDatabaseCatalogRequest">UpdateDatabaseCatalogRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseCatalogs.update</p></td>
               </tr>
             
           </tbody>
@@ -4024,14 +4024,14 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 <td>GetInstanceRole</td>
                 <td><a href="#bytebase.v1.GetInstanceRoleRequest">GetInstanceRoleRequest</a></td>
                 <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instanceRoles.get</p></td>
               </tr>
             
               <tr>
                 <td>ListInstanceRoles</td>
                 <td><a href="#bytebase.v1.ListInstanceRolesRequest">ListInstanceRolesRequest</a></td>
                 <td><a href="#bytebase.v1.ListInstanceRolesResponse">ListInstanceRolesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instanceRoles.get</p></td>
               </tr>
             
           </tbody>
@@ -5655,91 +5655,91 @@ Format: instances/{instance} </p></td>
                 <td>GetInstance</td>
                 <td><a href="#bytebase.v1.GetInstanceRequest">GetInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.get</p></td>
               </tr>
             
               <tr>
                 <td>ListInstances</td>
                 <td><a href="#bytebase.v1.ListInstancesRequest">ListInstancesRequest</a></td>
                 <td><a href="#bytebase.v1.ListInstancesResponse">ListInstancesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateInstance</td>
                 <td><a href="#bytebase.v1.CreateInstanceRequest">CreateInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateInstance</td>
                 <td><a href="#bytebase.v1.UpdateInstanceRequest">UpdateInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteInstance</td>
                 <td><a href="#bytebase.v1.DeleteInstanceRequest">DeleteInstanceRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.delete</p></td>
               </tr>
             
               <tr>
                 <td>UndeleteInstance</td>
                 <td><a href="#bytebase.v1.UndeleteInstanceRequest">UndeleteInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.undelete</p></td>
               </tr>
             
               <tr>
                 <td>SyncInstance</td>
                 <td><a href="#bytebase.v1.SyncInstanceRequest">SyncInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.SyncInstanceResponse">SyncInstanceResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.sync</p></td>
               </tr>
             
               <tr>
                 <td>ListInstanceDatabase</td>
                 <td><a href="#bytebase.v1.ListInstanceDatabaseRequest">ListInstanceDatabaseRequest</a></td>
                 <td><a href="#bytebase.v1.ListInstanceDatabaseResponse">ListInstanceDatabaseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.get</p></td>
               </tr>
             
               <tr>
                 <td>BatchSyncInstances</td>
                 <td><a href="#bytebase.v1.BatchSyncInstancesRequest">BatchSyncInstancesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchSyncInstancesResponse">BatchSyncInstancesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.sync</p></td>
               </tr>
             
               <tr>
                 <td>BatchUpdateInstances</td>
                 <td><a href="#bytebase.v1.BatchUpdateInstancesRequest">BatchUpdateInstancesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchUpdateInstancesResponse">BatchUpdateInstancesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
               <tr>
                 <td>AddDataSource</td>
                 <td><a href="#bytebase.v1.AddDataSourceRequest">AddDataSourceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
               <tr>
                 <td>RemoveDataSource</td>
                 <td><a href="#bytebase.v1.RemoveDataSourceRequest">RemoveDataSourceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
               <tr>
                 <td>UpdateDataSource</td>
                 <td><a href="#bytebase.v1.UpdateDataSourceRequest">UpdateDataSourceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
           </tbody>
@@ -9588,112 +9588,112 @@ The API will default to the BASIC view.</p></td>
                 <td>GetDatabase</td>
                 <td><a href="#bytebase.v1.GetDatabaseRequest">GetDatabaseRequest</a></td>
                 <td><a href="#bytebase.v1.Database">Database</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>BatchGetDatabases</td>
                 <td><a href="#bytebase.v1.BatchGetDatabasesRequest">BatchGetDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetDatabasesResponse">BatchGetDatabasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>ListDatabases</td>
                 <td><a href="#bytebase.v1.ListDatabasesRequest">ListDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.list</p></td>
               </tr>
             
               <tr>
                 <td>UpdateDatabase</td>
                 <td><a href="#bytebase.v1.UpdateDatabaseRequest">UpdateDatabaseRequest</a></td>
                 <td><a href="#bytebase.v1.Database">Database</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.update</p></td>
               </tr>
             
               <tr>
                 <td>BatchUpdateDatabases</td>
                 <td><a href="#bytebase.v1.BatchUpdateDatabasesRequest">BatchUpdateDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchUpdateDatabasesResponse">BatchUpdateDatabasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.update</p></td>
               </tr>
             
               <tr>
                 <td>SyncDatabase</td>
                 <td><a href="#bytebase.v1.SyncDatabaseRequest">SyncDatabaseRequest</a></td>
                 <td><a href="#bytebase.v1.SyncDatabaseResponse">SyncDatabaseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.sync</p></td>
               </tr>
             
               <tr>
                 <td>BatchSyncDatabases</td>
                 <td><a href="#bytebase.v1.BatchSyncDatabasesRequest">BatchSyncDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchSyncDatabasesResponse">BatchSyncDatabasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.sync</p></td>
               </tr>
             
               <tr>
                 <td>GetDatabaseMetadata</td>
                 <td><a href="#bytebase.v1.GetDatabaseMetadataRequest">GetDatabaseMetadataRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.getSchema</p></td>
               </tr>
             
               <tr>
                 <td>GetDatabaseSchema</td>
                 <td><a href="#bytebase.v1.GetDatabaseSchemaRequest">GetDatabaseSchemaRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseSchema">DatabaseSchema</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.getSchema</p></td>
               </tr>
             
               <tr>
                 <td>DiffSchema</td>
                 <td><a href="#bytebase.v1.DiffSchemaRequest">DiffSchemaRequest</a></td>
                 <td><a href="#bytebase.v1.DiffSchemaResponse">DiffSchemaResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>ListSecrets</td>
                 <td><a href="#bytebase.v1.ListSecretsRequest">ListSecretsRequest</a></td>
                 <td><a href="#bytebase.v1.ListSecretsResponse">ListSecretsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseSecrets.list</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSecret</td>
                 <td><a href="#bytebase.v1.UpdateSecretRequest">UpdateSecretRequest</a></td>
                 <td><a href="#bytebase.v1.Secret">Secret</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseSecrets.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteSecret</td>
                 <td><a href="#bytebase.v1.DeleteSecretRequest">DeleteSecretRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseSecrets.delete</p></td>
               </tr>
             
               <tr>
                 <td>ListChangelogs</td>
                 <td><a href="#bytebase.v1.ListChangelogsRequest">ListChangelogsRequest</a></td>
                 <td><a href="#bytebase.v1.ListChangelogsResponse">ListChangelogsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelogs.list</p></td>
               </tr>
             
               <tr>
                 <td>GetChangelog</td>
                 <td><a href="#bytebase.v1.GetChangelogRequest">GetChangelogRequest</a></td>
                 <td><a href="#bytebase.v1.Changelog">Changelog</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: changelogs.get</p></td>
               </tr>
             
               <tr>
                 <td>GetSchemaString</td>
                 <td><a href="#bytebase.v1.GetSchemaStringRequest">GetSchemaStringRequest</a></td>
                 <td><a href="#bytebase.v1.GetSchemaStringResponse">GetSchemaStringResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: databases.getSchema</p></td>
               </tr>
             
           </tbody>
@@ -11570,63 +11570,64 @@ Format: projects/{project}/issues/{issue} </p></td>
                 <td>GetIssue</td>
                 <td><a href="#bytebase.v1.GetIssueRequest">GetIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.get</p></td>
               </tr>
             
               <tr>
                 <td>CreateIssue</td>
                 <td><a href="#bytebase.v1.CreateIssueRequest">CreateIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.create</p></td>
               </tr>
             
               <tr>
                 <td>ListIssues</td>
                 <td><a href="#bytebase.v1.ListIssuesRequest">ListIssuesRequest</a></td>
                 <td><a href="#bytebase.v1.ListIssuesResponse">ListIssuesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.list</p></td>
               </tr>
             
               <tr>
                 <td>SearchIssues</td>
                 <td><a href="#bytebase.v1.SearchIssuesRequest">SearchIssuesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchIssuesResponse">SearchIssuesResponse</a></td>
-                <td><p>Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter &amp; query.</p></td>
+                <td><p>Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter &amp; query.
+Permissions required: bb.issues.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateIssue</td>
                 <td><a href="#bytebase.v1.UpdateIssueRequest">UpdateIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.update</p></td>
               </tr>
             
               <tr>
                 <td>ListIssueComments</td>
                 <td><a href="#bytebase.v1.ListIssueCommentsRequest">ListIssueCommentsRequest</a></td>
                 <td><a href="#bytebase.v1.ListIssueCommentsResponse">ListIssueCommentsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issueComments.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateIssueComment</td>
                 <td><a href="#bytebase.v1.CreateIssueCommentRequest">CreateIssueCommentRequest</a></td>
                 <td><a href="#bytebase.v1.IssueComment">IssueComment</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issueComments.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateIssueComment</td>
                 <td><a href="#bytebase.v1.UpdateIssueCommentRequest">UpdateIssueCommentRequest</a></td>
                 <td><a href="#bytebase.v1.IssueComment">IssueComment</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issueComments.update</p></td>
               </tr>
             
               <tr>
                 <td>BatchUpdateIssuesStatus</td>
                 <td><a href="#bytebase.v1.BatchUpdateIssuesStatusRequest">BatchUpdateIssuesStatusRequest</a></td>
                 <td><a href="#bytebase.v1.BatchUpdateIssuesStatusResponse">BatchUpdateIssuesStatusResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.update</p></td>
               </tr>
             
               <tr>
@@ -11634,7 +11635,8 @@ Format: projects/{project}/issues/{issue} </p></td>
                 <td><a href="#bytebase.v1.ApproveIssueRequest">ApproveIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
                 <td><p>ApproveIssue approves the issue.
-The access is based on approval flow.</p></td>
+The access is based on approval flow.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -11642,7 +11644,8 @@ The access is based on approval flow.</p></td>
                 <td><a href="#bytebase.v1.RejectIssueRequest">RejectIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
                 <td><p>RejectIssue rejects the issue.
-The access is based on approval flow.</p></td>
+The access is based on approval flow.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -11650,7 +11653,8 @@ The access is based on approval flow.</p></td>
                 <td><a href="#bytebase.v1.RequestIssueRequest">RequestIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
                 <td><p>RequestIssue requests the issue.
-The access is based on approval flow.</p></td>
+The access is based on approval flow.
+Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -13743,21 +13747,21 @@ Default to this mode.</p></td>
                 <td>ListSettings</td>
                 <td><a href="#bytebase.v1.ListSettingsRequest">ListSettingsRequest</a></td>
                 <td><a href="#bytebase.v1.ListSettingsResponse">ListSettingsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.list</p></td>
               </tr>
             
               <tr>
                 <td>GetSetting</td>
                 <td><a href="#bytebase.v1.GetSettingRequest">GetSettingRequest</a></td>
                 <td><a href="#bytebase.v1.Setting">Setting</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSetting</td>
                 <td><a href="#bytebase.v1.UpdateSettingRequest">UpdateSettingRequest</a></td>
                 <td><a href="#bytebase.v1.Setting">Setting</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.set</p></td>
               </tr>
             
           </tbody>
@@ -14325,7 +14329,8 @@ Could be empty. </p></td>
                 <td><a href="#bytebase.v1.GetUserRequest">GetUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
                 <td><p>Get the user.
-Any authenticated user can get the user.</p></td>
+Any authenticated user can get the user.
+Permissions required: bb.users.get</p></td>
               </tr>
             
               <tr>
@@ -14333,14 +14338,16 @@ Any authenticated user can get the user.</p></td>
                 <td><a href="#bytebase.v1.BatchGetUsersRequest">BatchGetUsersRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetUsersResponse">BatchGetUsersResponse</a></td>
                 <td><p>Get the users in batch.
-Any authenticated user can batch get users.</p></td>
+Any authenticated user can batch get users.
+Permissions required: bb.users.get</p></td>
               </tr>
             
               <tr>
                 <td>GetCurrentUser</td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Get the current authenticated user.</p></td>
+                <td><p>Get the current authenticated user.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -14348,7 +14355,8 @@ Any authenticated user can batch get users.</p></td>
                 <td><a href="#bytebase.v1.ListUsersRequest">ListUsersRequest</a></td>
                 <td><a href="#bytebase.v1.ListUsersResponse">ListUsersResponse</a></td>
                 <td><p>List all users.
-Any authenticated user can list users.</p></td>
+Any authenticated user can list users.
+Permissions required: bb.users.list</p></td>
               </tr>
             
               <tr>
@@ -14357,14 +14365,16 @@ Any authenticated user can list users.</p></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
                 <td><p>Create a user.
 When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-Otherwise, any unauthenticated user can create a user.</p></td>
+Otherwise, any unauthenticated user can create a user.
+Permissions required: bb.users.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateUser</td>
                 <td><a href="#bytebase.v1.UpdateUserRequest">UpdateUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Only the user itself and the user with bb.users.update permission on the workspace can update the user.</p></td>
+                <td><p>Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+Permissions required: bb.users.update</p></td>
               </tr>
             
               <tr>
@@ -14372,14 +14382,16 @@ Otherwise, any unauthenticated user can create a user.</p></td>
                 <td><a href="#bytebase.v1.DeleteUserRequest">DeleteUserRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Only the user with bb.users.delete permission on the workspace can delete the user.
-The last remaining workspace admin cannot be deleted.</p></td>
+The last remaining workspace admin cannot be deleted.
+Permissions required: bb.users.delete</p></td>
               </tr>
             
               <tr>
                 <td>UndeleteUser</td>
                 <td><a href="#bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Only the user with bb.users.undelete permission on the workspace can undelete the user.</p></td>
+                <td><p>Only the user with bb.users.undelete permission on the workspace can undelete the user.
+Permissions required: bb.users.undelete</p></td>
               </tr>
             
           </tbody>
@@ -14802,35 +14814,35 @@ The last remaining workspace admin cannot be deleted.</p></td>
                 <td>GetActuatorInfo</td>
                 <td><a href="#bytebase.v1.GetActuatorInfoRequest">GetActuatorInfoRequest</a></td>
                 <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>UpdateActuatorInfo</td>
                 <td><a href="#bytebase.v1.UpdateActuatorInfoRequest">UpdateActuatorInfoRequest</a></td>
                 <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.set</p></td>
               </tr>
             
               <tr>
                 <td>SetupSample</td>
                 <td><a href="#bytebase.v1.SetupSampleRequest">SetupSampleRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.create</p></td>
               </tr>
             
               <tr>
                 <td>DeleteCache</td>
                 <td><a href="#bytebase.v1.DeleteCacheRequest">DeleteCacheRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>GetResourcePackage</td>
                 <td><a href="#bytebase.v1.GetResourcePackageRequest">GetResourcePackageRequest</a></td>
                 <td><a href="#bytebase.v1.ResourcePackage">ResourcePackage</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -15633,14 +15645,14 @@ to retrieve the next page of log entities. </p></td>
                 <td>SearchAuditLogs</td>
                 <td><a href="#bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</a></td>
                 <td><a href="#bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>ExportAuditLogs</td>
                 <td><a href="#bytebase.v1.ExportAuditLogsRequest">ExportAuditLogsRequest</a></td>
                 <td><a href="#bytebase.v1.ExportAuditLogsResponse">ExportAuditLogsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.auditLogs.export</p></td>
               </tr>
             
           </tbody>
@@ -15913,14 +15925,14 @@ Format: idps/{idp} </p></td>
                 <td>Login</td>
                 <td><a href="#bytebase.v1.LoginRequest">LoginRequest</a></td>
                 <td><a href="#bytebase.v1.LoginResponse">LoginResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>Logout</td>
                 <td><a href="#bytebase.v1.LogoutRequest">LogoutRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -16087,14 +16099,14 @@ Format: idps/{idp} </p></td>
                 <td>BatchParse</td>
                 <td><a href="#bytebase.v1.BatchParseRequest">BatchParseRequest</a></td>
                 <td><a href="#bytebase.v1.BatchParseResponse">BatchParseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>BatchDeparse</td>
                 <td><a href="#bytebase.v1.BatchDeparseRequest">BatchDeparseRequest</a></td>
                 <td><a href="#bytebase.v1.BatchDeparseResponse">BatchDeparseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -16460,35 +16472,35 @@ Format: projects/{project}/changelists/{changelist} </p></td>
                 <td>CreateChangelist</td>
                 <td><a href="#bytebase.v1.CreateChangelistRequest">CreateChangelistRequest</a></td>
                 <td><a href="#bytebase.v1.Changelist">Changelist</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.create</p></td>
               </tr>
             
               <tr>
                 <td>GetChangelist</td>
                 <td><a href="#bytebase.v1.GetChangelistRequest">GetChangelistRequest</a></td>
                 <td><a href="#bytebase.v1.Changelist">Changelist</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.get</p></td>
               </tr>
             
               <tr>
                 <td>ListChangelists</td>
                 <td><a href="#bytebase.v1.ListChangelistsRequest">ListChangelistsRequest</a></td>
                 <td><a href="#bytebase.v1.ListChangelistsResponse">ListChangelistsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.list</p></td>
               </tr>
             
               <tr>
                 <td>UpdateChangelist</td>
                 <td><a href="#bytebase.v1.UpdateChangelistRequest">UpdateChangelistRequest</a></td>
                 <td><a href="#bytebase.v1.Changelist">Changelist</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteChangelist</td>
                 <td><a href="#bytebase.v1.DeleteChangelistRequest">DeleteChangelistRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.delete</p></td>
               </tr>
             
           </tbody>
@@ -16935,35 +16947,35 @@ The API will default to the BASIC view.</p></td>
                 <td>ListDatabaseGroups</td>
                 <td><a href="#bytebase.v1.ListDatabaseGroupsRequest">ListDatabaseGroupsRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabaseGroupsResponse">ListDatabaseGroupsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.get</p></td>
               </tr>
             
               <tr>
                 <td>GetDatabaseGroup</td>
                 <td><a href="#bytebase.v1.GetDatabaseGroupRequest">GetDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.get</p></td>
               </tr>
             
               <tr>
                 <td>CreateDatabaseGroup</td>
                 <td><a href="#bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>UpdateDatabaseGroup</td>
                 <td><a href="#bytebase.v1.UpdateDatabaseGroupRequest">UpdateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteDatabaseGroup</td>
                 <td><a href="#bytebase.v1.DeleteDatabaseGroupRequest">DeleteDatabaseGroupRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
           </tbody>
@@ -17375,21 +17387,21 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>GetGroup</td>
                 <td><a href="#bytebase.v1.GetGroupRequest">GetGroupRequest</a></td>
                 <td><a href="#bytebase.v1.Group">Group</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.groups.get</p></td>
               </tr>
             
               <tr>
                 <td>ListGroups</td>
                 <td><a href="#bytebase.v1.ListGroupsRequest">ListGroupsRequest</a></td>
                 <td><a href="#bytebase.v1.ListGroupsResponse">ListGroupsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.groups.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateGroup</td>
                 <td><a href="#bytebase.v1.CreateGroupRequest">CreateGroupRequest</a></td>
                 <td><a href="#bytebase.v1.Group">Group</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.groups.create</p></td>
               </tr>
             
               <tr>
@@ -17397,14 +17409,15 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td><a href="#bytebase.v1.UpdateGroupRequest">UpdateGroupRequest</a></td>
                 <td><a href="#bytebase.v1.Group">Group</a></td>
                 <td><p>UpdateGroup updates the group.
-Users with &#34;bb.groups.update&#34; permission on the workspace or the group owner can access this method.</p></td>
+Users with &#34;bb.groups.update&#34; permission on the workspace or the group owner can access this method.
+Permissions required: bb.groups.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteGroup</td>
                 <td><a href="#bytebase.v1.DeleteGroupRequest">DeleteGroupRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.groups.delete</p></td>
               </tr>
             
           </tbody>
@@ -18323,42 +18336,42 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 <td>GetIdentityProvider</td>
                 <td><a href="#bytebase.v1.GetIdentityProviderRequest">GetIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.IdentityProvider">IdentityProvider</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.get</p></td>
               </tr>
             
               <tr>
                 <td>ListIdentityProviders</td>
                 <td><a href="#bytebase.v1.ListIdentityProvidersRequest">ListIdentityProvidersRequest</a></td>
                 <td><a href="#bytebase.v1.ListIdentityProvidersResponse">ListIdentityProvidersResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>CreateIdentityProvider</td>
                 <td><a href="#bytebase.v1.CreateIdentityProviderRequest">CreateIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.IdentityProvider">IdentityProvider</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateIdentityProvider</td>
                 <td><a href="#bytebase.v1.UpdateIdentityProviderRequest">UpdateIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.IdentityProvider">IdentityProvider</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteIdentityProvider</td>
                 <td><a href="#bytebase.v1.DeleteIdentityProviderRequest">DeleteIdentityProviderRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.delete</p></td>
               </tr>
             
               <tr>
                 <td>TestIdentityProvider</td>
                 <td><a href="#bytebase.v1.TestIdentityProviderRequest">TestIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.TestIdentityProviderResponse">TestIdentityProviderResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.update</p></td>
               </tr>
             
           </tbody>
@@ -19469,35 +19482,35 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>GetPolicy</td>
                 <td><a href="#bytebase.v1.GetPolicyRequest">GetPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.Policy">Policy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.get</p></td>
               </tr>
             
               <tr>
                 <td>ListPolicies</td>
                 <td><a href="#bytebase.v1.ListPoliciesRequest">ListPoliciesRequest</a></td>
                 <td><a href="#bytebase.v1.ListPoliciesResponse">ListPoliciesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.list</p></td>
               </tr>
             
               <tr>
                 <td>CreatePolicy</td>
                 <td><a href="#bytebase.v1.CreatePolicyRequest">CreatePolicyRequest</a></td>
                 <td><a href="#bytebase.v1.Policy">Policy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdatePolicy</td>
                 <td><a href="#bytebase.v1.UpdatePolicyRequest">UpdatePolicyRequest</a></td>
                 <td><a href="#bytebase.v1.Policy">Policy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.update</p></td>
               </tr>
             
               <tr>
                 <td>DeletePolicy</td>
                 <td><a href="#bytebase.v1.DeletePolicyRequest">DeletePolicyRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.delete</p></td>
               </tr>
             
           </tbody>
@@ -21033,28 +21046,29 @@ Format: projects/{project}/plans/{plan} </p></td>
                 <td>GetPlan</td>
                 <td><a href="#bytebase.v1.GetPlanRequest">GetPlanRequest</a></td>
                 <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.plans.get</p></td>
               </tr>
             
               <tr>
                 <td>ListPlans</td>
                 <td><a href="#bytebase.v1.ListPlansRequest">ListPlansRequest</a></td>
                 <td><a href="#bytebase.v1.ListPlansResponse">ListPlansResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.plans.list</p></td>
               </tr>
             
               <tr>
                 <td>SearchPlans</td>
                 <td><a href="#bytebase.v1.SearchPlansRequest">SearchPlansRequest</a></td>
                 <td><a href="#bytebase.v1.SearchPlansResponse">SearchPlansResponse</a></td>
-                <td><p>Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query.</p></td>
+                <td><p>Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query.
+Permissions required: bb.plans.get</p></td>
               </tr>
             
               <tr>
                 <td>CreatePlan</td>
                 <td><a href="#bytebase.v1.CreatePlanRequest">CreatePlanRequest</a></td>
                 <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.plans.create</p></td>
               </tr>
             
               <tr>
@@ -21062,28 +21076,29 @@ Format: projects/{project}/plans/{plan} </p></td>
                 <td><a href="#bytebase.v1.UpdatePlanRequest">UpdatePlanRequest</a></td>
                 <td><a href="#bytebase.v1.Plan">Plan</a></td>
                 <td><p>UpdatePlan updates the plan.
-The plan creator and the user with bb.plans.update permission on the project can update the plan.</p></td>
+The plan creator and the user with bb.plans.update permission on the project can update the plan.
+Permissions required: bb.plans.update</p></td>
               </tr>
             
               <tr>
                 <td>ListPlanCheckRuns</td>
                 <td><a href="#bytebase.v1.ListPlanCheckRunsRequest">ListPlanCheckRunsRequest</a></td>
                 <td><a href="#bytebase.v1.ListPlanCheckRunsResponse">ListPlanCheckRunsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.planCheckRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>RunPlanChecks</td>
                 <td><a href="#bytebase.v1.RunPlanChecksRequest">RunPlanChecksRequest</a></td>
                 <td><a href="#bytebase.v1.RunPlanChecksResponse">RunPlanChecksResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.planCheckRuns.run</p></td>
               </tr>
             
               <tr>
                 <td>BatchCancelPlanCheckRuns</td>
                 <td><a href="#bytebase.v1.BatchCancelPlanCheckRunsRequest">BatchCancelPlanCheckRunsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchCancelPlanCheckRunsResponse">BatchCancelPlanCheckRunsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.planCheckRuns.run</p></td>
               </tr>
             
           </tbody>
@@ -22232,105 +22247,107 @@ TYPE_ISSUE_CREATE represents creating an issue.</p></td>
                 <td><a href="#bytebase.v1.GetProjectRequest">GetProjectRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
                 <td><p>GetProject retrieves a project by name.
-Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method.</p></td>
+Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method.
+Permissions required: bb.projects.get</p></td>
               </tr>
             
               <tr>
                 <td>ListProjects</td>
                 <td><a href="#bytebase.v1.ListProjectsRequest">ListProjectsRequest</a></td>
                 <td><a href="#bytebase.v1.ListProjectsResponse">ListProjectsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.list</p></td>
               </tr>
             
               <tr>
                 <td>SearchProjects</td>
                 <td><a href="#bytebase.v1.SearchProjectsRequest">SearchProjectsRequest</a></td>
                 <td><a href="#bytebase.v1.SearchProjectsResponse">SearchProjectsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>CreateProject</td>
                 <td><a href="#bytebase.v1.CreateProjectRequest">CreateProjectRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateProject</td>
                 <td><a href="#bytebase.v1.UpdateProjectRequest">UpdateProjectRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteProject</td>
                 <td><a href="#bytebase.v1.DeleteProjectRequest">DeleteProjectRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.delete</p></td>
               </tr>
             
               <tr>
                 <td>UndeleteProject</td>
                 <td><a href="#bytebase.v1.UndeleteProjectRequest">UndeleteProjectRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.undelete</p></td>
               </tr>
             
               <tr>
                 <td>BatchDeleteProjects</td>
                 <td><a href="#bytebase.v1.BatchDeleteProjectsRequest">BatchDeleteProjectsRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.delete</p></td>
               </tr>
             
               <tr>
                 <td>GetIamPolicy</td>
                 <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.getIamPolicy</p></td>
               </tr>
             
               <tr>
                 <td>BatchGetIamPolicy</td>
                 <td><a href="#bytebase.v1.BatchGetIamPolicyRequest">BatchGetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetIamPolicyResponse">BatchGetIamPolicyResponse</a></td>
-                <td><p>Deprecated.</p></td>
+                <td><p>Deprecated.
+Permissions required: bb.projects.getIamPolicy</p></td>
               </tr>
             
               <tr>
                 <td>SetIamPolicy</td>
                 <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.setIamPolicy</p></td>
               </tr>
             
               <tr>
                 <td>AddWebhook</td>
                 <td><a href="#bytebase.v1.AddWebhookRequest">AddWebhookRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>UpdateWebhook</td>
                 <td><a href="#bytebase.v1.UpdateWebhookRequest">UpdateWebhookRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>RemoveWebhook</td>
                 <td><a href="#bytebase.v1.RemoveWebhookRequest">RemoveWebhookRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>TestWebhook</td>
                 <td><a href="#bytebase.v1.TestWebhookRequest">TestWebhookRequest</a></td>
                 <td><a href="#bytebase.v1.TestWebhookResponse">TestWebhookResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
           </tbody>
@@ -24160,56 +24177,57 @@ Pass this value in the page_token field in the subsequent call to
                 <td>Query</td>
                 <td><a href="#bytebase.v1.QueryRequest">QueryRequest</a></td>
                 <td><a href="#bytebase.v1.QueryResponse">QueryResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>AdminExecute</td>
                 <td><a href="#bytebase.v1.AdminExecuteRequest">AdminExecuteRequest</a> stream</td>
                 <td><a href="#bytebase.v1.AdminExecuteResponse">AdminExecuteResponse</a> stream</td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sql.admin</p></td>
               </tr>
             
               <tr>
                 <td>SearchQueryHistories</td>
                 <td><a href="#bytebase.v1.SearchQueryHistoriesRequest">SearchQueryHistoriesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchQueryHistoriesResponse">SearchQueryHistoriesResponse</a></td>
-                <td><p>SearchQueryHistories searches query histories for the caller.</p></td>
+                <td><p>SearchQueryHistories searches query histories for the caller.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>Export</td>
                 <td><a href="#bytebase.v1.ExportRequest">ExportRequest</a></td>
                 <td><a href="#bytebase.v1.ExportResponse">ExportResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>Check</td>
                 <td><a href="#bytebase.v1.CheckRequest">CheckRequest</a></td>
                 <td><a href="#bytebase.v1.CheckResponse">CheckResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.check</p></td>
               </tr>
             
               <tr>
                 <td>Pretty</td>
                 <td><a href="#bytebase.v1.PrettyRequest">PrettyRequest</a></td>
                 <td><a href="#bytebase.v1.PrettyResponse">PrettyResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>DiffMetadata</td>
                 <td><a href="#bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</a></td>
                 <td><a href="#bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>AICompletion</td>
                 <td><a href="#bytebase.v1.AICompletionRequest">AICompletionRequest</a></td>
                 <td><a href="#bytebase.v1.AICompletionResponse">AICompletionResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -24995,49 +25013,49 @@ Format: projects/{project}/releases/{release} </p></td>
                 <td>GetRelease</td>
                 <td><a href="#bytebase.v1.GetReleaseRequest">GetReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.get</p></td>
               </tr>
             
               <tr>
                 <td>ListReleases</td>
                 <td><a href="#bytebase.v1.ListReleasesRequest">ListReleasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListReleasesResponse">ListReleasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateRelease</td>
                 <td><a href="#bytebase.v1.CreateReleaseRequest">CreateReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateRelease</td>
                 <td><a href="#bytebase.v1.UpdateReleaseRequest">UpdateReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteRelease</td>
                 <td><a href="#bytebase.v1.DeleteReleaseRequest">DeleteReleaseRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.delete</p></td>
               </tr>
             
               <tr>
                 <td>UndeleteRelease</td>
                 <td><a href="#bytebase.v1.UndeleteReleaseRequest">UndeleteReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.undelete</p></td>
               </tr>
             
               <tr>
                 <td>CheckRelease</td>
                 <td><a href="#bytebase.v1.CheckReleaseRequest">CheckReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.CheckReleaseResponse">CheckReleaseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.check</p></td>
               </tr>
             
           </tbody>
@@ -25398,35 +25416,35 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>CreateReviewConfig</td>
                 <td><a href="#bytebase.v1.CreateReviewConfigRequest">CreateReviewConfigRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.create</p></td>
               </tr>
             
               <tr>
                 <td>ListReviewConfigs</td>
                 <td><a href="#bytebase.v1.ListReviewConfigsRequest">ListReviewConfigsRequest</a></td>
                 <td><a href="#bytebase.v1.ListReviewConfigsResponse">ListReviewConfigsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.list</p></td>
               </tr>
             
               <tr>
                 <td>GetReviewConfig</td>
                 <td><a href="#bytebase.v1.GetReviewConfigRequest">GetReviewConfigRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateReviewConfig</td>
                 <td><a href="#bytebase.v1.UpdateReviewConfigRequest">UpdateReviewConfigRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteReviewConfig</td>
                 <td><a href="#bytebase.v1.DeleteReviewConfigRequest">DeleteReviewConfigRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.delete</p></td>
               </tr>
             
           </tbody>
@@ -25866,35 +25884,35 @@ projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{task
                 <td>ListRevisions</td>
                 <td><a href="#bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</a></td>
                 <td><a href="#bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.list</p></td>
               </tr>
             
               <tr>
                 <td>GetRevision</td>
                 <td><a href="#bytebase.v1.GetRevisionRequest">GetRevisionRequest</a></td>
                 <td><a href="#bytebase.v1.Revision">Revision</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.get</p></td>
               </tr>
             
               <tr>
                 <td>CreateRevision</td>
                 <td><a href="#bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</a></td>
                 <td><a href="#bytebase.v1.Revision">Revision</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.create</p></td>
               </tr>
             
               <tr>
                 <td>BatchCreateRevisions</td>
                 <td><a href="#bytebase.v1.BatchCreateRevisionsRequest">BatchCreateRevisionsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchCreateRevisionsResponse">BatchCreateRevisionsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.create</p></td>
               </tr>
             
               <tr>
                 <td>DeleteRevision</td>
                 <td><a href="#bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.delete</p></td>
               </tr>
             
           </tbody>
@@ -26350,35 +26368,35 @@ Format: risks/{risk} </p></td>
                 <td>ListRisks</td>
                 <td><a href="#bytebase.v1.ListRisksRequest">ListRisksRequest</a></td>
                 <td><a href="#bytebase.v1.ListRisksResponse">ListRisksResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateRisk</td>
                 <td><a href="#bytebase.v1.CreateRiskRequest">CreateRiskRequest</a></td>
                 <td><a href="#bytebase.v1.Risk">Risk</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.create</p></td>
               </tr>
             
               <tr>
                 <td>GetRisk</td>
                 <td><a href="#bytebase.v1.GetRiskRequest">GetRiskRequest</a></td>
                 <td><a href="#bytebase.v1.Risk">Risk</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.list</p></td>
               </tr>
             
               <tr>
                 <td>UpdateRisk</td>
                 <td><a href="#bytebase.v1.UpdateRiskRequest">UpdateRiskRequest</a></td>
                 <td><a href="#bytebase.v1.Risk">Risk</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteRisk</td>
                 <td><a href="#bytebase.v1.DeleteRiskRequest">DeleteRiskRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.delete</p></td>
               </tr>
             
           </tbody>
@@ -26754,35 +26772,35 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 <td>ListRoles</td>
                 <td><a href="#bytebase.v1.ListRolesRequest">ListRolesRequest</a></td>
                 <td><a href="#bytebase.v1.ListRolesResponse">ListRolesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.list</p></td>
               </tr>
             
               <tr>
                 <td>GetRole</td>
                 <td><a href="#bytebase.v1.GetRoleRequest">GetRoleRequest</a></td>
                 <td><a href="#bytebase.v1.Role">Role</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.get</p></td>
               </tr>
             
               <tr>
                 <td>CreateRole</td>
                 <td><a href="#bytebase.v1.CreateRoleRequest">CreateRoleRequest</a></td>
                 <td><a href="#bytebase.v1.Role">Role</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateRole</td>
                 <td><a href="#bytebase.v1.UpdateRoleRequest">UpdateRoleRequest</a></td>
                 <td><a href="#bytebase.v1.Role">Role</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteRole</td>
                 <td><a href="#bytebase.v1.DeleteRoleRequest">DeleteRoleRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.delete</p></td>
               </tr>
             
           </tbody>
@@ -29044,89 +29062,84 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <td>GetRollout</td>
                 <td><a href="#bytebase.v1.GetRolloutRequest">GetRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.rollouts.get</p></td>
               </tr>
             
               <tr>
                 <td>ListRollouts</td>
                 <td><a href="#bytebase.v1.ListRolloutsRequest">ListRolloutsRequest</a></td>
                 <td><a href="#bytebase.v1.ListRolloutsResponse">ListRolloutsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.rollouts.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateRollout</td>
                 <td><a href="#bytebase.v1.CreateRolloutRequest">CreateRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p>CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.</p></td>
+                <td><p>Permissions required: bb.rollouts.create</p></td>
               </tr>
             
               <tr>
                 <td>PreviewRollout</td>
                 <td><a href="#bytebase.v1.PreviewRolloutRequest">PreviewRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.rollouts.preview</p></td>
               </tr>
             
               <tr>
                 <td>ListTaskRuns</td>
                 <td><a href="#bytebase.v1.ListTaskRunsRequest">ListTaskRunsRequest</a></td>
                 <td><a href="#bytebase.v1.ListTaskRunsResponse">ListTaskRunsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>GetTaskRun</td>
                 <td><a href="#bytebase.v1.GetTaskRunRequest">GetTaskRunRequest</a></td>
                 <td><a href="#bytebase.v1.TaskRun">TaskRun</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>GetTaskRunLog</td>
                 <td><a href="#bytebase.v1.GetTaskRunLogRequest">GetTaskRunLogRequest</a></td>
                 <td><a href="#bytebase.v1.TaskRunLog">TaskRunLog</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>GetTaskRunSession</td>
                 <td><a href="#bytebase.v1.GetTaskRunSessionRequest">GetTaskRunSessionRequest</a></td>
                 <td><a href="#bytebase.v1.TaskRunSession">TaskRunSession</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>BatchRunTasks</td>
                 <td><a href="#bytebase.v1.BatchRunTasksRequest">BatchRunTasksRequest</a></td>
                 <td><a href="#bytebase.v1.BatchRunTasksResponse">BatchRunTasksResponse</a></td>
-                <td><p>BatchRunTasks creates task runs for the specified tasks.
-DataExport issue only allows the creator to run the task.
-Users with &#34;bb.taskRuns.create&#34; permission can run the task, e.g. Workspace Admin and DBA.
-Follow role-based rollout policy for the environment.</p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>BatchSkipTasks</td>
                 <td><a href="#bytebase.v1.BatchSkipTasksRequest">BatchSkipTasksRequest</a></td>
                 <td><a href="#bytebase.v1.BatchSkipTasksResponse">BatchSkipTasksResponse</a></td>
-                <td><p>BatchSkipTasks skips the specified tasks.
-The access is the same as BatchRunTasks().</p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>BatchCancelTaskRuns</td>
                 <td><a href="#bytebase.v1.BatchCancelTaskRunsRequest">BatchCancelTaskRunsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchCancelTaskRunsResponse">BatchCancelTaskRunsResponse</a></td>
-                <td><p>BatchCancelTaskRuns cancels the specified task runs in batch.
-The access is the same as BatchRunTasks().</p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>PreviewTaskRunRollback</td>
                 <td><a href="#bytebase.v1.PreviewTaskRunRollbackRequest">PreviewTaskRunRollbackRequest</a></td>
                 <td><a href="#bytebase.v1.PreviewTaskRunRollbackResponse">PreviewTaskRunRollbackResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
           </tbody>
@@ -29619,28 +29632,28 @@ Only support update the following fields for now:
                 <td>CreateSheet</td>
                 <td><a href="#bytebase.v1.CreateSheetRequest">CreateSheetRequest</a></td>
                 <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sheets.create</p></td>
               </tr>
             
               <tr>
                 <td>BatchCreateSheets</td>
                 <td><a href="#bytebase.v1.BatchCreateSheetsRequest">BatchCreateSheetsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchCreateSheetsResponse">BatchCreateSheetsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sheets.create</p></td>
               </tr>
             
               <tr>
                 <td>GetSheet</td>
                 <td><a href="#bytebase.v1.GetSheetRequest">GetSheetRequest</a></td>
                 <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sheets.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSheet</td>
                 <td><a href="#bytebase.v1.UpdateSheetRequest">UpdateSheetRequest</a></td>
                 <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sheets.update</p></td>
               </tr>
             
           </tbody>
@@ -30396,14 +30409,15 @@ Only support update the following fields for now:
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
                 <td><p>GetSubscription returns the current subscription.
 If there is no license, we will return a free plan subscription without expiration time.
-If there is expired license, we will return a free plan subscription with the expiration time of the expired license.</p></td>
+If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSubscription</td>
                 <td><a href="#bytebase.v1.UpdateSubscriptionRequest">UpdateSubscriptionRequest</a></td>
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.set</p></td>
               </tr>
             
           </tbody>
@@ -30888,7 +30902,8 @@ Format: worksheets/{worksheet} </p></td>
                 <td>CreateWorksheet</td>
                 <td><a href="#bytebase.v1.CreateWorksheetRequest">CreateWorksheetRequest</a></td>
                 <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                <td><p>Create a personal worksheet used in SQL Editor.</p></td>
+                <td><p>Create a personal worksheet used in SQL Editor.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30899,7 +30914,8 @@ Format: worksheets/{worksheet} </p></td>
 The users can access this method if,
 - they are the creator of the worksheet;
 - they have bb.worksheets.get permission on the workspace;
-- the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.</p></td>
+- the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30908,7 +30924,8 @@ The users can access this method if,
                 <td><a href="#bytebase.v1.SearchWorksheetsResponse">SearchWorksheetsResponse</a></td>
                 <td><p>Search for worksheets.
 This is used for finding my worksheets or worksheets shared by other people.
-The sheet accessibility is the same as GetWorksheet().</p></td>
+The sheet accessibility is the same as GetWorksheet().
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30919,7 +30936,8 @@ The sheet accessibility is the same as GetWorksheet().</p></td>
 The users can access this method if,
 - they are the creator of the worksheet;
 - they have bb.worksheets.manage permission on the workspace;
-- the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.</p></td>
+- the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30927,7 +30945,8 @@ The users can access this method if,
                 <td><a href="#bytebase.v1.UpdateWorksheetOrganizerRequest">UpdateWorksheetOrganizerRequest</a></td>
                 <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
                 <td><p>Update the organizer of a worksheet.
-The access is the same as UpdateWorksheet method.</p></td>
+The access is the same as UpdateWorksheet method.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30935,7 +30954,8 @@ The access is the same as UpdateWorksheet method.</p></td>
                 <td><a href="#bytebase.v1.DeleteWorksheetRequest">DeleteWorksheetRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Delete a worksheet.
-The access is the same as UpdateWorksheet method.</p></td>
+The access is the same as UpdateWorksheet method.
+Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -31046,14 +31066,14 @@ The access is the same as UpdateWorksheet method.</p></td>
                 <td>GetIamPolicy</td>
                 <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.workspaces.getIamPolicy</p></td>
               </tr>
             
               <tr>
                 <td>SetIamPolicy</td>
                 <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.workspaces.setIamPolicy</p></td>
               </tr>
             
           </tbody>

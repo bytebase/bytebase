@@ -59,25 +59,33 @@ const (
 type UserServiceClient interface {
 	// Get the user.
 	// Any authenticated user can get the user.
+	// Permissions required: bb.users.get
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.User], error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
+	// Permissions required: bb.users.get
 	BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error)
 	// Get the current authenticated user.
+	// Permissions required: None
 	GetCurrentUser(context.Context, *connect.Request[emptypb.Empty]) (*connect.Response[v1.User], error)
 	// List all users.
 	// Any authenticated user can list users.
+	// Permissions required: bb.users.list
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	// Create a user.
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
+	// Permissions required: bb.users.create
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+	// Permissions required: bb.users.update
 	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
 	// Only the user with bb.users.delete permission on the workspace can delete the user.
 	// The last remaining workspace admin cannot be deleted.
+	// Permissions required: bb.users.delete
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error)
 	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
+	// Permissions required: bb.users.undelete
 	UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error)
 }
 
@@ -199,25 +207,33 @@ func (c *userServiceClient) UndeleteUser(ctx context.Context, req *connect.Reque
 type UserServiceHandler interface {
 	// Get the user.
 	// Any authenticated user can get the user.
+	// Permissions required: bb.users.get
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.User], error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
+	// Permissions required: bb.users.get
 	BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error)
 	// Get the current authenticated user.
+	// Permissions required: None
 	GetCurrentUser(context.Context, *connect.Request[emptypb.Empty]) (*connect.Response[v1.User], error)
 	// List all users.
 	// Any authenticated user can list users.
+	// Permissions required: bb.users.list
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
 	// Create a user.
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
+	// Permissions required: bb.users.create
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+	// Permissions required: bb.users.update
 	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
 	// Only the user with bb.users.delete permission on the workspace can delete the user.
 	// The last remaining workspace admin cannot be deleted.
+	// Permissions required: bb.users.delete
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error)
 	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
+	// Permissions required: bb.users.undelete
 	UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error)
 }
 

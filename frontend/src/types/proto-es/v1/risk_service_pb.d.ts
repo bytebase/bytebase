@@ -313,6 +313,8 @@ export declare const Risk_SourceSchema: GenEnum<Risk_Source>;
  */
 export declare const RiskService: GenService<{
   /**
+   * Permissions required: bb.risks.list
+   *
    * @generated from rpc bytebase.v1.RiskService.ListRisks
    */
   listRisks: {
@@ -321,6 +323,8 @@ export declare const RiskService: GenService<{
     output: typeof ListRisksResponseSchema;
   },
   /**
+   * Permissions required: bb.risks.create
+   *
    * @generated from rpc bytebase.v1.RiskService.CreateRisk
    */
   createRisk: {
@@ -329,6 +333,8 @@ export declare const RiskService: GenService<{
     output: typeof RiskSchema;
   },
   /**
+   * Permissions required: bb.risks.list
+   *
    * @generated from rpc bytebase.v1.RiskService.GetRisk
    */
   getRisk: {
@@ -337,6 +343,8 @@ export declare const RiskService: GenService<{
     output: typeof RiskSchema;
   },
   /**
+   * Permissions required: bb.risks.update
+   *
    * @generated from rpc bytebase.v1.RiskService.UpdateRisk
    */
   updateRisk: {
@@ -345,6 +353,8 @@ export declare const RiskService: GenService<{
     output: typeof RiskSchema;
   },
   /**
+   * Permissions required: bb.risks.delete
+   *
    * @generated from rpc bytebase.v1.RiskService.DeleteRisk
    */
   deleteRisk: {

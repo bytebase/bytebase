@@ -1261,6 +1261,7 @@ export const UserServiceDefinition = {
     /**
      * Get the user.
      * Any authenticated user can get the user.
+     * Permissions required: bb.users.get
      */
     getUser: {
       name: "GetUser",
@@ -1303,6 +1304,7 @@ export const UserServiceDefinition = {
     /**
      * Get the users in batch.
      * Any authenticated user can batch get users.
+     * Permissions required: bb.users.get
      */
     batchGetUsers: {
       name: "BatchGetUsers",
@@ -1341,7 +1343,10 @@ export const UserServiceDefinition = {
         },
       },
     },
-    /** Get the current authenticated user. */
+    /**
+     * Get the current authenticated user.
+     * Permissions required: None
+     */
     getCurrentUser: {
       name: "GetCurrentUser",
       requestType: Empty,
@@ -1359,6 +1364,7 @@ export const UserServiceDefinition = {
     /**
      * List all users.
      * Any authenticated user can list users.
+     * Permissions required: bb.users.list
      */
     listUsers: {
       name: "ListUsers",
@@ -1378,6 +1384,7 @@ export const UserServiceDefinition = {
      * Create a user.
      * When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
      * Otherwise, any unauthenticated user can create a user.
+     * Permissions required: bb.users.create
      */
     createUser: {
       name: "CreateUser",
@@ -1395,7 +1402,10 @@ export const UserServiceDefinition = {
         },
       },
     },
-    /** Only the user itself and the user with bb.users.update permission on the workspace can update the user. */
+    /**
+     * Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+     * Permissions required: bb.users.update
+     */
     updateUser: {
       name: "UpdateUser",
       requestType: UpdateUserRequest,
@@ -1449,6 +1459,7 @@ export const UserServiceDefinition = {
     /**
      * Only the user with bb.users.delete permission on the workspace can delete the user.
      * The last remaining workspace admin cannot be deleted.
+     * Permissions required: bb.users.delete
      */
     deleteUser: {
       name: "DeleteUser",
@@ -1489,7 +1500,10 @@ export const UserServiceDefinition = {
         },
       },
     },
-    /** Only the user with bb.users.undelete permission on the workspace can undelete the user. */
+    /**
+     * Only the user with bb.users.undelete permission on the workspace can undelete the user.
+     * Permissions required: bb.users.undelete
+     */
     undeleteUser: {
       name: "UndeleteUser",
       requestType: UndeleteUserRequest,

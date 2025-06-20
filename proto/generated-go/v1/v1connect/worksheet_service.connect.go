@@ -57,28 +57,34 @@ const (
 // WorksheetServiceClient is a client for the bytebase.v1.WorksheetService service.
 type WorksheetServiceClient interface {
 	// Create a personal worksheet used in SQL Editor.
+	// Permissions required: None
 	CreateWorksheet(context.Context, *connect.Request[v1.CreateWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Get a worksheet by name.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.get permission on the workspace;
 	// - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+	// Permissions required: None
 	GetWorksheet(context.Context, *connect.Request[v1.GetWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
+	// Permissions required: None
 	SearchWorksheets(context.Context, *connect.Request[v1.SearchWorksheetsRequest]) (*connect.Response[v1.SearchWorksheetsResponse], error)
 	// Update a worksheet.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.manage permission on the workspace;
 	// - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+	// Permissions required: None
 	UpdateWorksheet(context.Context, *connect.Request[v1.UpdateWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Update the organizer of a worksheet.
 	// The access is the same as UpdateWorksheet method.
+	// Permissions required: None
 	UpdateWorksheetOrganizer(context.Context, *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
+	// Permissions required: None
 	DeleteWorksheet(context.Context, *connect.Request[v1.DeleteWorksheetRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -175,28 +181,34 @@ func (c *worksheetServiceClient) DeleteWorksheet(ctx context.Context, req *conne
 // WorksheetServiceHandler is an implementation of the bytebase.v1.WorksheetService service.
 type WorksheetServiceHandler interface {
 	// Create a personal worksheet used in SQL Editor.
+	// Permissions required: None
 	CreateWorksheet(context.Context, *connect.Request[v1.CreateWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Get a worksheet by name.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.get permission on the workspace;
 	// - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+	// Permissions required: None
 	GetWorksheet(context.Context, *connect.Request[v1.GetWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
+	// Permissions required: None
 	SearchWorksheets(context.Context, *connect.Request[v1.SearchWorksheetsRequest]) (*connect.Response[v1.SearchWorksheetsResponse], error)
 	// Update a worksheet.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.manage permission on the workspace;
 	// - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+	// Permissions required: None
 	UpdateWorksheet(context.Context, *connect.Request[v1.UpdateWorksheetRequest]) (*connect.Response[v1.Worksheet], error)
 	// Update the organizer of a worksheet.
 	// The access is the same as UpdateWorksheet method.
+	// Permissions required: None
 	UpdateWorksheetOrganizer(context.Context, *connect.Request[v1.UpdateWorksheetOrganizerRequest]) (*connect.Response[v1.WorksheetOrganizer], error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
+	// Permissions required: None
 	DeleteWorksheet(context.Context, *connect.Request[v1.DeleteWorksheetRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

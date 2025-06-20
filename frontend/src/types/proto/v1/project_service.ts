@@ -2611,6 +2611,7 @@ export const ProjectServiceDefinition = {
     /**
      * GetProject retrieves a project by name.
      * Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+     * Permissions required: bb.projects.get
      */
     getProject: {
       name: "GetProject",
@@ -2654,6 +2655,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.list */
     listProjects: {
       name: "ListProjects",
       requestType: ListProjectsRequest,
@@ -2669,6 +2671,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: None */
     searchProjects: {
       name: "SearchProjects",
       requestType: SearchProjectsRequest,
@@ -2711,6 +2714,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.create */
     createProject: {
       name: "CreateProject",
       requestType: CreateProjectRequest,
@@ -2755,6 +2759,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.update */
     updateProject: {
       name: "UpdateProject",
       requestType: UpdateProjectRequest,
@@ -2839,6 +2844,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.delete */
     deleteProject: {
       name: "DeleteProject",
       requestType: DeleteProjectRequest,
@@ -2883,6 +2889,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.undelete */
     undeleteProject: {
       name: "UndeleteProject",
       requestType: UndeleteProjectRequest,
@@ -2960,6 +2967,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.delete */
     batchDeleteProjects: {
       name: "BatchDeleteProjects",
       requestType: BatchDeleteProjectsRequest,
@@ -3009,6 +3017,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.getIamPolicy */
     getIamPolicy: {
       name: "GetIamPolicy",
       requestType: GetIamPolicyRequest,
@@ -3095,7 +3104,10 @@ export const ProjectServiceDefinition = {
         },
       },
     },
-    /** Deprecated. */
+    /**
+     * Deprecated.
+     * Permissions required: bb.projects.getIamPolicy
+     */
     batchGetIamPolicy: {
       name: "BatchGetIamPolicy",
       requestType: BatchGetIamPolicyRequest,
@@ -3180,6 +3192,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.setIamPolicy */
     setIamPolicy: {
       name: "SetIamPolicy",
       requestType: SetIamPolicyRequest,
@@ -3270,6 +3283,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.update */
     addWebhook: {
       name: "AddWebhook",
       requestType: AddWebhookRequest,
@@ -3330,6 +3344,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.update */
     updateWebhook: {
       name: "UpdateWebhook",
       requestType: UpdateWebhookRequest,
@@ -3433,6 +3448,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.update */
     removeWebhook: {
       name: "RemoveWebhook",
       requestType: RemoveWebhookRequest,
@@ -3512,6 +3528,7 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.update */
     testWebhook: {
       name: "TestWebhook",
       requestType: TestWebhookRequest,

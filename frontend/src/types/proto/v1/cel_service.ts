@@ -280,6 +280,7 @@ export const CelServiceDefinition = {
   name: "CelService",
   fullName: "bytebase.v1.CelService",
   methods: {
+    /** Permissions required: None */
     batchParse: {
       name: "BatchParse",
       requestType: BatchParseRequest,
@@ -320,6 +321,7 @@ export const CelServiceDefinition = {
         },
       },
     },
+    /** Permissions required: None */
     batchDeparse: {
       name: "BatchDeparse",
       requestType: BatchDeparseRequest,

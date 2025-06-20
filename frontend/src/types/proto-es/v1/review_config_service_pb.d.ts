@@ -209,6 +209,8 @@ export declare const ReviewConfigSchema: GenMessage<ReviewConfig>;
  */
 export declare const ReviewConfigService: GenService<{
   /**
+   * Permissions required: bb.reviewConfigs.create
+   *
    * @generated from rpc bytebase.v1.ReviewConfigService.CreateReviewConfig
    */
   createReviewConfig: {
@@ -217,6 +219,8 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ReviewConfigSchema;
   },
   /**
+   * Permissions required: bb.reviewConfigs.list
+   *
    * @generated from rpc bytebase.v1.ReviewConfigService.ListReviewConfigs
    */
   listReviewConfigs: {
@@ -225,6 +229,8 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ListReviewConfigsResponseSchema;
   },
   /**
+   * Permissions required: bb.reviewConfigs.get
+   *
    * @generated from rpc bytebase.v1.ReviewConfigService.GetReviewConfig
    */
   getReviewConfig: {
@@ -233,6 +239,8 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ReviewConfigSchema;
   },
   /**
+   * Permissions required: bb.reviewConfigs.update
+   *
    * @generated from rpc bytebase.v1.ReviewConfigService.UpdateReviewConfig
    */
   updateReviewConfig: {
@@ -241,6 +249,8 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ReviewConfigSchema;
   },
   /**
+   * Permissions required: bb.reviewConfigs.delete
+   *
    * @generated from rpc bytebase.v1.ReviewConfigService.DeleteReviewConfig
    */
   deleteReviewConfig: {

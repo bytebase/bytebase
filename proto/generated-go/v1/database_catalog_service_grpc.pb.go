@@ -27,7 +27,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DatabaseCatalogServiceClient interface {
+	// Permissions required: bb.databaseCatalogs.get
 	GetDatabaseCatalog(ctx context.Context, in *GetDatabaseCatalogRequest, opts ...grpc.CallOption) (*DatabaseCatalog, error)
+	// Permissions required: bb.databaseCatalogs.update
 	UpdateDatabaseCatalog(ctx context.Context, in *UpdateDatabaseCatalogRequest, opts ...grpc.CallOption) (*DatabaseCatalog, error)
 }
 
@@ -63,7 +65,9 @@ func (c *databaseCatalogServiceClient) UpdateDatabaseCatalog(ctx context.Context
 // All implementations must embed UnimplementedDatabaseCatalogServiceServer
 // for forward compatibility.
 type DatabaseCatalogServiceServer interface {
+	// Permissions required: bb.databaseCatalogs.get
 	GetDatabaseCatalog(context.Context, *GetDatabaseCatalogRequest) (*DatabaseCatalog, error)
+	// Permissions required: bb.databaseCatalogs.update
 	UpdateDatabaseCatalog(context.Context, *UpdateDatabaseCatalogRequest) (*DatabaseCatalog, error)
 	mustEmbedUnimplementedDatabaseCatalogServiceServer()
 }

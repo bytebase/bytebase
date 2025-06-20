@@ -937,6 +937,7 @@ export const ActuatorServiceDefinition = {
   name: "ActuatorService",
   fullName: "bytebase.v1.ActuatorService",
   methods: {
+    /** Permissions required: None */
     getActuatorInfo: {
       name: "GetActuatorInfo",
       requestType: GetActuatorInfoRequest,
@@ -953,6 +954,7 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.settings.set */
     updateActuatorInfo: {
       name: "UpdateActuatorInfo",
       requestType: UpdateActuatorInfoRequest,
@@ -1025,6 +1027,7 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.projects.create */
     setupSample: {
       name: "SetupSample",
       requestType: SetupSampleRequest,
@@ -1071,6 +1074,7 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
+    /** Permissions required: None */
     deleteCache: {
       name: "DeleteCache",
       requestType: DeleteCacheRequest,
@@ -1108,6 +1112,7 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
+    /** Permissions required: None */
     getResourcePackage: {
       name: "GetResourcePackage",
       requestType: GetResourcePackageRequest,

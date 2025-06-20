@@ -379,6 +379,8 @@ export declare const RequestMetadataSchema: GenMessage<RequestMetadata>;
  */
 export declare const AuditLogService: GenService<{
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.AuditLogService.SearchAuditLogs
    */
   searchAuditLogs: {
@@ -387,6 +389,8 @@ export declare const AuditLogService: GenService<{
     output: typeof SearchAuditLogsResponseSchema;
   },
   /**
+   * Permissions required: bb.auditLogs.export
+   *
    * @generated from rpc bytebase.v1.AuditLogService.ExportAuditLogs
    */
   exportAuditLogs: {

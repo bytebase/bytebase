@@ -31,10 +31,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RevisionServiceClient interface {
+	// Permissions required: bb.revisions.list
 	ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error)
+	// Permissions required: bb.revisions.get
 	GetRevision(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
+	// Permissions required: bb.revisions.create
 	CreateRevision(ctx context.Context, in *CreateRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
+	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(ctx context.Context, in *BatchCreateRevisionsRequest, opts ...grpc.CallOption) (*BatchCreateRevisionsResponse, error)
+	// Permissions required: bb.revisions.delete
 	DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -100,10 +105,15 @@ func (c *revisionServiceClient) DeleteRevision(ctx context.Context, in *DeleteRe
 // All implementations must embed UnimplementedRevisionServiceServer
 // for forward compatibility.
 type RevisionServiceServer interface {
+	// Permissions required: bb.revisions.list
 	ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error)
+	// Permissions required: bb.revisions.get
 	GetRevision(context.Context, *GetRevisionRequest) (*Revision, error)
+	// Permissions required: bb.revisions.create
 	CreateRevision(context.Context, *CreateRevisionRequest) (*Revision, error)
+	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(context.Context, *BatchCreateRevisionsRequest) (*BatchCreateRevisionsResponse, error)
+	// Permissions required: bb.revisions.delete
 	DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedRevisionServiceServer()
 }

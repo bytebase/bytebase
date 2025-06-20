@@ -2189,6 +2189,7 @@ export const IdentityProviderServiceDefinition = {
   name: "IdentityProviderService",
   fullName: "bytebase.v1.IdentityProviderService",
   methods: {
+    /** Permissions required: bb.identityProviders.get */
     getIdentityProvider: {
       name: "GetIdentityProvider",
       requestType: GetIdentityProviderRequest,
@@ -2234,6 +2235,7 @@ export const IdentityProviderServiceDefinition = {
         },
       },
     },
+    /** Permissions required: None */
     listIdentityProviders: {
       name: "ListIdentityProviders",
       requestType: ListIdentityProvidersRequest,
@@ -2248,6 +2250,7 @@ export const IdentityProviderServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.identityProviders.create */
     createIdentityProvider: {
       name: "CreateIdentityProvider",
       requestType: CreateIdentityProviderRequest,
@@ -2328,6 +2331,7 @@ export const IdentityProviderServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.identityProviders.update */
     updateIdentityProvider: {
       name: "UpdateIdentityProvider",
       requestType: UpdateIdentityProviderRequest,
@@ -2468,6 +2472,7 @@ export const IdentityProviderServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.identityProviders.delete */
     deleteIdentityProvider: {
       name: "DeleteIdentityProvider",
       requestType: DeleteIdentityProviderRequest,
@@ -2517,6 +2522,7 @@ export const IdentityProviderServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.identityProviders.update */
     testIdentityProvider: {
       name: "TestIdentityProvider",
       requestType: TestIdentityProviderRequest,

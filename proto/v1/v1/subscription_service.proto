@@ -14,12 +14,14 @@ service SubscriptionService {
   // GetSubscription returns the current subscription.
   // If there is no license, we will return a free plan subscription without expiration time.
   // If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+  // Permissions required: None
   rpc GetSubscription(GetSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {get: "/v1/subscription"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Permissions required: bb.settings.set
   rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {
       patch: "/v1/subscription"

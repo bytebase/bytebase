@@ -36,25 +36,33 @@ const (
 type UserServiceClient interface {
 	// Get the user.
 	// Any authenticated user can get the user.
+	// Permissions required: bb.users.get
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
+	// Permissions required: bb.users.get
 	BatchGetUsers(ctx context.Context, in *BatchGetUsersRequest, opts ...grpc.CallOption) (*BatchGetUsersResponse, error)
 	// Get the current authenticated user.
+	// Permissions required: None
 	GetCurrentUser(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*User, error)
 	// List all users.
 	// Any authenticated user can list users.
+	// Permissions required: bb.users.list
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
 	// Create a user.
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
+	// Permissions required: bb.users.create
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
 	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+	// Permissions required: bb.users.update
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*User, error)
 	// Only the user with bb.users.delete permission on the workspace can delete the user.
 	// The last remaining workspace admin cannot be deleted.
+	// Permissions required: bb.users.delete
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
+	// Permissions required: bb.users.undelete
 	UndeleteUser(ctx context.Context, in *UndeleteUserRequest, opts ...grpc.CallOption) (*User, error)
 }
 
@@ -152,25 +160,33 @@ func (c *userServiceClient) UndeleteUser(ctx context.Context, in *UndeleteUserRe
 type UserServiceServer interface {
 	// Get the user.
 	// Any authenticated user can get the user.
+	// Permissions required: bb.users.get
 	GetUser(context.Context, *GetUserRequest) (*User, error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
+	// Permissions required: bb.users.get
 	BatchGetUsers(context.Context, *BatchGetUsersRequest) (*BatchGetUsersResponse, error)
 	// Get the current authenticated user.
+	// Permissions required: None
 	GetCurrentUser(context.Context, *emptypb.Empty) (*User, error)
 	// List all users.
 	// Any authenticated user can list users.
+	// Permissions required: bb.users.list
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
 	// Create a user.
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
+	// Permissions required: bb.users.create
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
 	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+	// Permissions required: bb.users.update
 	UpdateUser(context.Context, *UpdateUserRequest) (*User, error)
 	// Only the user with bb.users.delete permission on the workspace can delete the user.
 	// The last remaining workspace admin cannot be deleted.
+	// Permissions required: bb.users.delete
 	DeleteUser(context.Context, *DeleteUserRequest) (*emptypb.Empty, error)
 	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
+	// Permissions required: bb.users.undelete
 	UndeleteUser(context.Context, *UndeleteUserRequest) (*User, error)
 	mustEmbedUnimplementedUserServiceServer()
 }

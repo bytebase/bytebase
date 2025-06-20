@@ -31,10 +31,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ReviewConfigServiceClient interface {
+	// Permissions required: bb.reviewConfigs.create
 	CreateReviewConfig(ctx context.Context, in *CreateReviewConfigRequest, opts ...grpc.CallOption) (*ReviewConfig, error)
+	// Permissions required: bb.reviewConfigs.list
 	ListReviewConfigs(ctx context.Context, in *ListReviewConfigsRequest, opts ...grpc.CallOption) (*ListReviewConfigsResponse, error)
+	// Permissions required: bb.reviewConfigs.get
 	GetReviewConfig(ctx context.Context, in *GetReviewConfigRequest, opts ...grpc.CallOption) (*ReviewConfig, error)
+	// Permissions required: bb.reviewConfigs.update
 	UpdateReviewConfig(ctx context.Context, in *UpdateReviewConfigRequest, opts ...grpc.CallOption) (*ReviewConfig, error)
+	// Permissions required: bb.reviewConfigs.delete
 	DeleteReviewConfig(ctx context.Context, in *DeleteReviewConfigRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -100,10 +105,15 @@ func (c *reviewConfigServiceClient) DeleteReviewConfig(ctx context.Context, in *
 // All implementations must embed UnimplementedReviewConfigServiceServer
 // for forward compatibility.
 type ReviewConfigServiceServer interface {
+	// Permissions required: bb.reviewConfigs.create
 	CreateReviewConfig(context.Context, *CreateReviewConfigRequest) (*ReviewConfig, error)
+	// Permissions required: bb.reviewConfigs.list
 	ListReviewConfigs(context.Context, *ListReviewConfigsRequest) (*ListReviewConfigsResponse, error)
+	// Permissions required: bb.reviewConfigs.get
 	GetReviewConfig(context.Context, *GetReviewConfigRequest) (*ReviewConfig, error)
+	// Permissions required: bb.reviewConfigs.update
 	UpdateReviewConfig(context.Context, *UpdateReviewConfigRequest) (*ReviewConfig, error)
+	// Permissions required: bb.reviewConfigs.delete
 	DeleteReviewConfig(context.Context, *DeleteReviewConfigRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedReviewConfigServiceServer()
 }

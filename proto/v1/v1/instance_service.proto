@@ -17,6 +17,7 @@ import "v1/instance_role_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service InstanceService {
+  // Permissions required: bb.instances.get
   rpc GetInstance(GetInstanceRequest) returns (Instance) {
     option (google.api.http) = {get: "/v1/{name=instances/*}"};
     option (google.api.method_signature) = "name";
@@ -24,6 +25,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.instances.list
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
     option (google.api.http) = {get: "/v1/instances"};
     option (google.api.method_signature) = "";
@@ -31,6 +33,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.instances.create
   rpc CreateInstance(CreateInstanceRequest) returns (Instance) {
     option (google.api.http) = {
       post: "/v1/instances"
@@ -42,6 +45,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.instances.update
   rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
     option (google.api.http) = {
       patch: "/v1/{instance.name=instances/*}"
@@ -53,6 +57,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.instances.delete
   rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*}"};
     option (google.api.method_signature) = "name";
@@ -61,6 +66,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.instances.undelete
   rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:undelete"
@@ -71,6 +77,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.instances.sync
   rpc SyncInstance(SyncInstanceRequest) returns (SyncInstanceResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:sync"
@@ -80,6 +87,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.instances.get
   rpc ListInstanceDatabase(ListInstanceDatabaseRequest) returns (ListInstanceDatabaseResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:databases"
@@ -89,6 +97,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.instances.sync
   rpc BatchSyncInstances(BatchSyncInstancesRequest) returns (BatchSyncInstancesResponse) {
     option (google.api.http) = {
       post: "/v1/instances:batchSync"
@@ -98,6 +107,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.instances.update
   rpc BatchUpdateInstances(BatchUpdateInstancesRequest) returns (BatchUpdateInstancesResponse) {
     option (google.api.http) = {
       post: "/v1/instances:batchUpdate"
@@ -108,6 +118,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.instances.update
   rpc AddDataSource(AddDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:addDataSource"
@@ -118,6 +129,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.instances.update
   rpc RemoveDataSource(RemoveDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:removeDataSource"
@@ -128,6 +140,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.instances.update
   rpc UpdateDataSource(UpdateDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
       patch: "/v1/{name=instances/*}:updateDataSource"

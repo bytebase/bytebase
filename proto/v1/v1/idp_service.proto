@@ -13,6 +13,7 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service IdentityProviderService {
+  // Permissions required: bb.identityProviders.get
   rpc GetIdentityProvider(GetIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {get: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
@@ -20,6 +21,7 @@ service IdentityProviderService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: None
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
     option (google.api.http) = {get: "/v1/idps"};
     option (google.api.method_signature) = "";
@@ -27,6 +29,7 @@ service IdentityProviderService {
     // The method requires no authentication thus no authorization.
   }
 
+  // Permissions required: bb.identityProviders.create
   rpc CreateIdentityProvider(CreateIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {
       post: "/v1/idps"
@@ -38,6 +41,7 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.identityProviders.update
   rpc UpdateIdentityProvider(UpdateIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {
       patch: "/v1/{identity_provider.name=idps/*}"
@@ -49,6 +53,7 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.identityProviders.delete
   rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
@@ -57,6 +62,7 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.identityProviders.update
   rpc TestIdentityProvider(TestIdentityProviderRequest) returns (TestIdentityProviderResponse) {
     option (google.api.http) = {
       post: "/v1/idps/*:test"

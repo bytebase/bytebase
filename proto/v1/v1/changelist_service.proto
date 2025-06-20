@@ -14,6 +14,7 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service ChangelistService {
+  // Permissions required: bb.changelists.create
   rpc CreateChangelist(CreateChangelistRequest) returns (Changelist) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/changelists"
@@ -24,6 +25,7 @@ service ChangelistService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.changelists.get
   rpc GetChangelist(GetChangelistRequest) returns (Changelist) {
     option (google.api.http) = {get: "/v1/{name=projects/*/changelists/*}"};
     option (google.api.method_signature) = "name";
@@ -31,6 +33,7 @@ service ChangelistService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.changelists.list
   rpc ListChangelists(ListChangelistsRequest) returns (ListChangelistsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/changelists"};
     option (google.api.method_signature) = "parent";
@@ -38,6 +41,7 @@ service ChangelistService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.changelists.update
   rpc UpdateChangelist(UpdateChangelistRequest) returns (Changelist) {
     option (google.api.http) = {
       patch: "/v1/{changelist.name=projects/*/changelists/*}"
@@ -48,6 +52,7 @@ service ChangelistService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.changelists.delete
   rpc DeleteChangelist(DeleteChangelistRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/changelists/*}"};
     option (google.api.method_signature) = "name";
