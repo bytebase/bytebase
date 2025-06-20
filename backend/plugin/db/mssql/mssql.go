@@ -112,7 +112,8 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			query.Add("user id", fmt.Sprintf("%s@%s", azureCredential.ClientId, azureCredential.TenantId))
 			query.Add("password", azureCredential.ClientSecret)
 			// password = ""
-			password = config.InitPassword
+			// password here is actually not used
+			password = os.Getenv("INIT_NOTUSE_PASSWORD")
 		} else {
 			query.Add("fedauth", azuread.ActiveDirectoryDefault)
 		}
