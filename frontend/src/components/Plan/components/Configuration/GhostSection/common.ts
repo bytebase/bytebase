@@ -1,4 +1,4 @@
-import { isGroupingChangeSpec } from "@/components/Plan/logic";
+import { isDBGroupChangeSpec } from "@/components/Plan/logic";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -43,7 +43,7 @@ export const allowGhostForSpec = (spec: Plan_Spec | undefined) => {
 export const getGhostEnabledForSpec = (
   spec: Plan_Spec
 ): boolean | undefined => {
-  if (isGroupingChangeSpec(spec)) {
+  if (isDBGroupChangeSpec(spec)) {
     return undefined;
   }
   const config = spec?.changeDatabaseConfig;

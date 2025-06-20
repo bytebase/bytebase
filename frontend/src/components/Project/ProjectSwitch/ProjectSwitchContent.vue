@@ -66,13 +66,12 @@ import { NButton, NTabPane, NTabs, NTooltip } from "naive-ui";
 import { computed, reactive, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useProjectV1Store } from "@/store";
+import { useCurrentProjectV1, useProjectV1Store } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import {
@@ -113,18 +112,7 @@ const { recentViewProjects } = useRecentProjects();
 const router = useRouter();
 const { record } = useRecentVisit();
 
-const params = computed(() => {
-  const route = router.currentRoute.value;
-  return {
-    projectId: route.params.projectId as string | undefined,
-    issueSlug: route.params.issueSlug as string | undefined,
-    instanceId: route.params.instanceId as string | undefined,
-    databaseName: route.params.databaseName as string | undefined,
-    changelogId: route.params.changelogId as string | undefined,
-  };
-});
-
-const { project } = useCurrentProject(params);
+const { project } = useCurrentProjectV1();
 
 onMounted(() => {
   state.selectedTab = recentViewProjects.value.length < 1 ? "all" : "recent";

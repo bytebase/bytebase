@@ -20,10 +20,10 @@ import { useI18n } from "vue-i18n";
 import {
   DataExportIssueDetailPage,
   GrantRequestIssueDetailPage,
-  IssueDetailPage,
   provideIssueContext,
   useBaseIssueContext,
   useInitializeIssue,
+  IssueDetailPage,
 } from "@/components/IssueV1";
 import {
   providePlanCheckRunContext,

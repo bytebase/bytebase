@@ -79,7 +79,7 @@ export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
   return false;
 };
 
-export const isGroupingChangeSpec = (spec?: Plan_Spec) => {
+export const isDBGroupChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
   const config = spec.changeDatabaseConfig || spec.exportDataConfig;
   if (config) {
