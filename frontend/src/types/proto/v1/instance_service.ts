@@ -592,7 +592,9 @@ export interface DataSource {
   authenticationPrivateKey: string;
   externalSecret: DataSourceExternalSecret | undefined;
   authenticationType: DataSource_AuthenticationType;
-  clientSecretCredential?: DataSource_ClientSecretCredential | undefined;
+  azureCredential?: DataSource_AzureCredential | undefined;
+  awsCredential?: DataSource_AWSCredential | undefined;
+  gcpCredential?: DataSource_GCPCredential | undefined;
   saslConfig:
     | SASLConfig
     | undefined;
@@ -749,10 +751,20 @@ export function dataSource_RedisTypeToNumber(object: DataSource_RedisType): numb
   }
 }
 
-export interface DataSource_ClientSecretCredential {
+export interface DataSource_AzureCredential {
   tenantId: string;
   clientId: string;
   clientSecret: string;
+}
+
+export interface DataSource_AWSCredential {
+  accessKeyId: string;
+  secretAccessKey: string;
+  sessionToken: string;
+}
+
+export interface DataSource_GCPCredential {
+  content: string;
 }
 
 export interface DataSource_Address {
@@ -2757,7 +2769,9 @@ function createBaseDataSource(): DataSource {
     authenticationPrivateKey: "",
     externalSecret: undefined,
     authenticationType: DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
-    clientSecretCredential: undefined,
+    azureCredential: undefined,
+    awsCredential: undefined,
+    gcpCredential: undefined,
     saslConfig: undefined,
     additionalAddresses: [],
     directConnection: false,
@@ -2846,8 +2860,14 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.authenticationType !== DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       writer.uint32(176).int32(dataSource_AuthenticationTypeToNumber(message.authenticationType));
     }
-    if (message.clientSecretCredential !== undefined) {
-      DataSource_ClientSecretCredential.encode(message.clientSecretCredential, writer.uint32(186).fork()).join();
+    if (message.azureCredential !== undefined) {
+      DataSource_AzureCredential.encode(message.azureCredential, writer.uint32(186).fork()).join();
+    }
+    if (message.awsCredential !== undefined) {
+      DataSource_AWSCredential.encode(message.awsCredential, writer.uint32(298).fork()).join();
+    }
+    if (message.gcpCredential !== undefined) {
+      DataSource_GCPCredential.encode(message.gcpCredential, writer.uint32(306).fork()).join();
     }
     if (message.saslConfig !== undefined) {
       SASLConfig.encode(message.saslConfig, writer.uint32(194).fork()).join();
@@ -3089,7 +3109,23 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.clientSecretCredential = DataSource_ClientSecretCredential.decode(reader, reader.uint32());
+          message.azureCredential = DataSource_AzureCredential.decode(reader, reader.uint32());
+          continue;
+        }
+        case 37: {
+          if (tag !== 298) {
+            break;
+          }
+
+          message.awsCredential = DataSource_AWSCredential.decode(reader, reader.uint32());
+          continue;
+        }
+        case 38: {
+          if (tag !== 306) {
+            break;
+          }
+
+          message.gcpCredential = DataSource_GCPCredential.decode(reader, reader.uint32());
           continue;
         }
         case 24: {
@@ -3226,9 +3262,11 @@ export const DataSource: MessageFns<DataSource> = {
       authenticationType: isSet(object.authenticationType)
         ? dataSource_AuthenticationTypeFromJSON(object.authenticationType)
         : DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
-      clientSecretCredential: isSet(object.clientSecretCredential)
-        ? DataSource_ClientSecretCredential.fromJSON(object.clientSecretCredential)
+      azureCredential: isSet(object.azureCredential)
+        ? DataSource_AzureCredential.fromJSON(object.azureCredential)
         : undefined,
+      awsCredential: isSet(object.awsCredential) ? DataSource_AWSCredential.fromJSON(object.awsCredential) : undefined,
+      gcpCredential: isSet(object.gcpCredential) ? DataSource_GCPCredential.fromJSON(object.gcpCredential) : undefined,
       saslConfig: isSet(object.saslConfig) ? SASLConfig.fromJSON(object.saslConfig) : undefined,
       additionalAddresses: globalThis.Array.isArray(object?.additionalAddresses)
         ? object.additionalAddresses.map((e: any) => DataSource_Address.fromJSON(e))
@@ -3326,8 +3364,14 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.authenticationType !== DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       obj.authenticationType = dataSource_AuthenticationTypeToJSON(message.authenticationType);
     }
-    if (message.clientSecretCredential !== undefined) {
-      obj.clientSecretCredential = DataSource_ClientSecretCredential.toJSON(message.clientSecretCredential);
+    if (message.azureCredential !== undefined) {
+      obj.azureCredential = DataSource_AzureCredential.toJSON(message.azureCredential);
+    }
+    if (message.awsCredential !== undefined) {
+      obj.awsCredential = DataSource_AWSCredential.toJSON(message.awsCredential);
+    }
+    if (message.gcpCredential !== undefined) {
+      obj.gcpCredential = DataSource_GCPCredential.toJSON(message.gcpCredential);
     }
     if (message.saslConfig !== undefined) {
       obj.saslConfig = SASLConfig.toJSON(message.saslConfig);
@@ -3402,10 +3446,15 @@ export const DataSource: MessageFns<DataSource> = {
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
       : undefined;
     message.authenticationType = object.authenticationType ?? DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
-    message.clientSecretCredential =
-      (object.clientSecretCredential !== undefined && object.clientSecretCredential !== null)
-        ? DataSource_ClientSecretCredential.fromPartial(object.clientSecretCredential)
-        : undefined;
+    message.azureCredential = (object.azureCredential !== undefined && object.azureCredential !== null)
+      ? DataSource_AzureCredential.fromPartial(object.azureCredential)
+      : undefined;
+    message.awsCredential = (object.awsCredential !== undefined && object.awsCredential !== null)
+      ? DataSource_AWSCredential.fromPartial(object.awsCredential)
+      : undefined;
+    message.gcpCredential = (object.gcpCredential !== undefined && object.gcpCredential !== null)
+      ? DataSource_GCPCredential.fromPartial(object.gcpCredential)
+      : undefined;
     message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
       ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;
@@ -3430,12 +3479,12 @@ export const DataSource: MessageFns<DataSource> = {
   },
 };
 
-function createBaseDataSource_ClientSecretCredential(): DataSource_ClientSecretCredential {
+function createBaseDataSource_AzureCredential(): DataSource_AzureCredential {
   return { tenantId: "", clientId: "", clientSecret: "" };
 }
 
-export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecretCredential> = {
-  encode(message: DataSource_ClientSecretCredential, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const DataSource_AzureCredential: MessageFns<DataSource_AzureCredential> = {
+  encode(message: DataSource_AzureCredential, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.tenantId !== "") {
       writer.uint32(10).string(message.tenantId);
     }
@@ -3448,10 +3497,10 @@ export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecr
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DataSource_ClientSecretCredential {
+  decode(input: BinaryReader | Uint8Array, length?: number): DataSource_AzureCredential {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDataSource_ClientSecretCredential();
+    const message = createBaseDataSource_AzureCredential();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3488,7 +3537,7 @@ export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecr
     return message;
   },
 
-  fromJSON(object: any): DataSource_ClientSecretCredential {
+  fromJSON(object: any): DataSource_AzureCredential {
     return {
       tenantId: isSet(object.tenantId) ? globalThis.String(object.tenantId) : "",
       clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
@@ -3496,7 +3545,7 @@ export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecr
     };
   },
 
-  toJSON(message: DataSource_ClientSecretCredential): unknown {
+  toJSON(message: DataSource_AzureCredential): unknown {
     const obj: any = {};
     if (message.tenantId !== "") {
       obj.tenantId = message.tenantId;
@@ -3510,14 +3559,164 @@ export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecr
     return obj;
   },
 
-  create(base?: DeepPartial<DataSource_ClientSecretCredential>): DataSource_ClientSecretCredential {
-    return DataSource_ClientSecretCredential.fromPartial(base ?? {});
+  create(base?: DeepPartial<DataSource_AzureCredential>): DataSource_AzureCredential {
+    return DataSource_AzureCredential.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<DataSource_ClientSecretCredential>): DataSource_ClientSecretCredential {
-    const message = createBaseDataSource_ClientSecretCredential();
+  fromPartial(object: DeepPartial<DataSource_AzureCredential>): DataSource_AzureCredential {
+    const message = createBaseDataSource_AzureCredential();
     message.tenantId = object.tenantId ?? "";
     message.clientId = object.clientId ?? "";
     message.clientSecret = object.clientSecret ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSource_AWSCredential(): DataSource_AWSCredential {
+  return { accessKeyId: "", secretAccessKey: "", sessionToken: "" };
+}
+
+export const DataSource_AWSCredential: MessageFns<DataSource_AWSCredential> = {
+  encode(message: DataSource_AWSCredential, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.accessKeyId !== "") {
+      writer.uint32(10).string(message.accessKeyId);
+    }
+    if (message.secretAccessKey !== "") {
+      writer.uint32(18).string(message.secretAccessKey);
+    }
+    if (message.sessionToken !== "") {
+      writer.uint32(26).string(message.sessionToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DataSource_AWSCredential {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSource_AWSCredential();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.accessKeyId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.secretAccessKey = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sessionToken = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSource_AWSCredential {
+    return {
+      accessKeyId: isSet(object.accessKeyId) ? globalThis.String(object.accessKeyId) : "",
+      secretAccessKey: isSet(object.secretAccessKey) ? globalThis.String(object.secretAccessKey) : "",
+      sessionToken: isSet(object.sessionToken) ? globalThis.String(object.sessionToken) : "",
+    };
+  },
+
+  toJSON(message: DataSource_AWSCredential): unknown {
+    const obj: any = {};
+    if (message.accessKeyId !== "") {
+      obj.accessKeyId = message.accessKeyId;
+    }
+    if (message.secretAccessKey !== "") {
+      obj.secretAccessKey = message.secretAccessKey;
+    }
+    if (message.sessionToken !== "") {
+      obj.sessionToken = message.sessionToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSource_AWSCredential>): DataSource_AWSCredential {
+    return DataSource_AWSCredential.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DataSource_AWSCredential>): DataSource_AWSCredential {
+    const message = createBaseDataSource_AWSCredential();
+    message.accessKeyId = object.accessKeyId ?? "";
+    message.secretAccessKey = object.secretAccessKey ?? "";
+    message.sessionToken = object.sessionToken ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSource_GCPCredential(): DataSource_GCPCredential {
+  return { content: "" };
+}
+
+export const DataSource_GCPCredential: MessageFns<DataSource_GCPCredential> = {
+  encode(message: DataSource_GCPCredential, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.content !== "") {
+      writer.uint32(10).string(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DataSource_GCPCredential {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSource_GCPCredential();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.content = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSource_GCPCredential {
+    return { content: isSet(object.content) ? globalThis.String(object.content) : "" };
+  },
+
+  toJSON(message: DataSource_GCPCredential): unknown {
+    const obj: any = {};
+    if (message.content !== "") {
+      obj.content = message.content;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSource_GCPCredential>): DataSource_GCPCredential {
+    return DataSource_GCPCredential.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DataSource_GCPCredential>): DataSource_GCPCredential {
+    const message = createBaseDataSource_GCPCredential();
+    message.content = object.content ?? "";
     return message;
   },
 };

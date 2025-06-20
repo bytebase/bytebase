@@ -180,58 +180,159 @@
           "
         />
       </div>
-      <div v-else class="mt-4 sm:col-span-3 sm:col-start-1">
+      <div
+        v-if="
+          dataSource.authenticationType ===
+            DataSource_AuthenticationType.AZURE_IAM ||
+          dataSource.authenticationType ===
+            DataSource_AuthenticationType.AWS_RDS_IAM ||
+          dataSource.authenticationType ===
+            DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+        "
+        class="mt-4 sm:col-span-3 sm:col-start-1"
+      >
         <label for="credential-source" class="textlabel block">
           {{ $t("instance.iam-extension.credential-source") }}
         </label>
         <NRadioGroup
-          :value="state.credentialSource"
+          v-model:value="state.credentialSource"
           class="textlabel"
           :disabled="!allowEdit"
-          @update:value="onSelectIAMExtension"
         >
-          <template
+          <NRadio
             v-for="option in getIAMExtensionOptions(
               DataSource_AuthenticationType.AZURE_IAM
             )"
+            :value="option.value"
             :key="option.value"
-          >
-            <NRadio :value="option.value" :label="option.label" />
-          </template>
+            :label="option.label"
+          />
         </NRadioGroup>
+        <template v-if="state.credentialSource === 'specific-credential'">
+          <div
+            v-if="
+              dataSource.authenticationType ===
+              DataSource_AuthenticationType.AZURE_IAM
+            "
+            class="mt-4 sm:col-span-3 sm:col-start-1"
+          >
+            <label for="tenant-id" class="textlabel block mt-2">
+              {{ $t("instance.iam-extension.tenant-id") }}
+            </label>
+            <NInput
+              v-model:value="dataSource.azureCredential!.tenantId"
+              class="mt-2 w-full"
+              :disabled="!allowEdit"
+              :placeholder="''"
+            />
+            <label for="client-id" class="textlabel block mt-2">
+              {{ $t("instance.iam-extension.client-id") }}
+            </label>
+            <NInput
+              v-model:value="dataSource.azureCredential!.clientId"
+              class="mt-2 w-full"
+              :disabled="!allowEdit"
+              :placeholder="''"
+            />
+            <label for="client-secret" class="textlabel block mt-2">
+              {{ $t("instance.iam-extension.client-secret") }}
+            </label>
+            <NInput
+              type="password"
+              show-password-on="click"
+              v-model:value="dataSource.azureCredential!.clientSecret"
+              class="mt-2 w-full"
+              :disabled="!allowEdit"
+              :placeholder="$t('instance.type-or-paste-credentials-write-only')"
+            />
+          </div>
+          <div
+            v-else-if="
+              dataSource.authenticationType ===
+              DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+            "
+            class="mt-4 sm:col-span-3 sm:col-start-1"
+          >
+            <label class="textlabel block mt-2"> Credential File Content</label>
+            <NInput
+              v-model:value="dataSource.gcpCredential!.content"
+              type="textarea"
+              class="mt-2 w-full"
+              :disabled="!allowEdit"
+              :placeholder="$t('instance.type-or-paste-credentials-write-only')"
+            />
+          </div>
+          <div
+            v-else-if="
+              dataSource.authenticationType ===
+              DataSource_AuthenticationType.AWS_RDS_IAM
+            "
+            class="mt-4 sm:col-span-3 sm:col-start-1"
+          >
+            <label class="textlabel block mt-2"> Access Key ID </label>
+            <NInput
+              v-model:value="dataSource.awsCredential!.accessKeyId"
+              class="mt-2 w-full"
+              :disabled="!allowEdit"
+              :placeholder="$t('common.write-only')"
+            />
+            <label class="textlabel block mt-2"> Secret Access Key </label>
+            <NInput
+              v-model:value="dataSource.awsCredential!.secretAccessKey"
+              class="mt-2 w-full"
+              :disabled="!allowEdit"
+              :placeholder="$t('common.write-only')"
+            />
+            <label class="textlabel block mt-2"> Session Token </label>
+            <NInput
+              v-model:value="dataSource.awsCredential!.sessionToken"
+              class="mt-2 w-full"
+              :disabled="!allowEdit"
+              :placeholder="$t('common.write-only')"
+            />
+          </div>
+        </template>
         <div
-          v-if="state.credentialSource === 'client-secret-credential'"
-          class="mt-4 sm:col-span-3 sm:col-start-1"
+          v-else-if="state.credentialSource === 'default'"
+          class="mt-1 sm:col-span-3 sm:col-start-1 textinfolabel !leading-6 credential"
         >
-          <label for="tenant-id" class="textlabel block mt-2">
-            {{ $t("instance.iam-extension.tenant-id") }}
-          </label>
-          <NInput
-            v-model:value="dataSource.clientSecretCredential!.tenantId"
-            class="mt-2 w-full"
-            :disabled="!allowEdit"
-            :placeholder="''"
-          />
-          <label for="client-id" class="textlabel block mt-2">
-            {{ $t("instance.iam-extension.client-id") }}
-          </label>
-          <NInput
-            v-model:value="dataSource.clientSecretCredential!.clientId"
-            class="mt-2 w-full"
-            :disabled="!allowEdit"
-            :placeholder="''"
-          />
-          <label for="client-secret" class="textlabel block mt-2">
-            {{ $t("instance.iam-extension.client-secret") }}
-          </label>
-          <NInput
-            type="password"
-            show-password-on="click"
-            v-model:value="dataSource.clientSecretCredential!.clientSecret"
-            class="mt-2 w-full"
-            :disabled="!allowEdit"
-            :placeholder="$t('instance.type-or-paste-credentials-write-only')"
-          />
+          <span
+            v-if="
+              dataSource.authenticationType ===
+              DataSource_AuthenticationType.AZURE_IAM
+            "
+          >
+            Bytebase will read the credential from environment variables
+            <code class="code">AZURE_CLIENT_ID</code>/
+            <code class="code">AZURE_TENANT_ID</code>/
+            <code class="code">AZURE_CLIENT_SECRET</code>
+            or
+            <code class="code">AZURE_CLIENT_CERTIFICATE_PATH</code>, and
+            fallback to attached users in Azure VM
+          </span>
+          <span
+            v-else-if="
+              dataSource.authenticationType ===
+              DataSource_AuthenticationType.AWS_RDS_IAM
+            "
+          >
+            Bytebase will read the credential from environment variables
+            <code class="code">AWS_ACCESS_KEY_ID</code>/
+            <code class="code">AWS_SECRET_ACCESS_KEY</code>/
+            <code class="code">AWS_SESSION_TOKEN</code>, fallback to shared
+            credentials file <code class="code">~/.aws/credentials</code> or IAM
+            role in AWS ECS
+          </span>
+          <span
+            v-else-if="
+              dataSource.authenticationType ===
+              DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+            "
+          >
+            Bytebase will read the credential from environment variable
+            <code class="code">GOOGLE_APPLICATION_CREDENTIALS</code>, fallback
+            to the attached service account in GCP GCE
+          </span>
         </div>
       </div>
       <div
@@ -986,6 +1087,7 @@ MIIEvQ...
 </template>
 
 <script setup lang="ts">
+/* eslint-disable vue/no-mutating-props */
 import {
   NButton,
   NCheckbox,
@@ -1004,6 +1106,7 @@ import { FeatureBadge } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import type { DataSourceOptions } from "@/types/dataSource";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Engine } from "@/types/proto/v1/common";
 import type { DataSource } from "@/types/proto/v1/instance_service";
 import {
@@ -1014,12 +1117,13 @@ import {
   DataSourceExternalSecret_SecretType,
   DataSourceType,
   DataSource_AuthenticationType,
-  DataSource_ClientSecretCredential,
+  DataSource_AzureCredential,
+  DataSource_AWSCredential,
+  DataSource_GCPCredential,
   DataSource_RedisType,
   KerberosConfig,
   SASLConfig,
 } from "@/types/proto/v1/instance_service";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
@@ -1029,14 +1133,16 @@ import OracleSIDAndServiceNameInput from "./OracleSIDAndServiceNameInput.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
 import SslCertificateFormV1 from "./SslCertificateFormV1.vue";
 
+type credentialSource = "default" | "specific-credential";
+
 interface LocalState {
   passwordType: DataSourceExternalSecret_SecretType;
-  credentialSource: string;
+  credentialSource: credentialSource;
 }
 
 interface IAMExtensionOptions {
   label: string;
-  value: string;
+  value: credentialSource;
 }
 
 interface ExtraConnectionParam {
@@ -1073,7 +1179,7 @@ const {
 
 const state = reactive<LocalState>({
   passwordType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
-  credentialSource: "default-credential",
+  credentialSource: "default",
 });
 
 // Use a simpler approach to track new parameters
@@ -1103,15 +1209,61 @@ watch(
 );
 
 watch(
-  () => props.dataSource.clientSecretCredential,
-  (clientSecretCredential) => {
-    if (clientSecretCredential) {
-      state.credentialSource = "client-secret-credential";
+  [
+    () => props.dataSource.azureCredential,
+    () => props.dataSource.awsCredential,
+    () => props.dataSource.gcpCredential,
+  ],
+  (credentials) => {
+    if (credentials.some((c) => c !== undefined)) {
+      state.credentialSource = "specific-credential";
     } else {
-      state.credentialSource = "default-credential";
+      state.credentialSource = "default";
     }
   },
   { immediate: true, deep: true }
+);
+
+watch(
+  () => props.dataSource.authenticationType,
+  () => {
+    state.credentialSource = "default";
+  }
+);
+
+watch(
+  () => state.credentialSource,
+  (source) => {
+    switch (props.dataSource.authenticationType) {
+      case DataSource_AuthenticationType.AWS_RDS_IAM:
+        if (source === "default") {
+          props.dataSource.awsCredential = undefined;
+        } else {
+          props.dataSource.awsCredential = DataSource_AWSCredential.create(
+            props.dataSource.awsCredential
+          );
+        }
+        break;
+      case DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+        if (source === "default") {
+          props.dataSource.gcpCredential = undefined;
+        } else {
+          props.dataSource.gcpCredential = DataSource_GCPCredential.create(
+            props.dataSource.gcpCredential
+          );
+        }
+        break;
+      case DataSource_AuthenticationType.AZURE_IAM:
+        if (source === "default") {
+          props.dataSource.azureCredential = undefined;
+        } else {
+          props.dataSource.azureCredential = DataSource_AzureCredential.create(
+            props.dataSource.azureCredential
+          );
+        }
+        break;
+    }
+  }
 );
 
 const hiveAuthentication = computed(() => {
@@ -1340,33 +1492,22 @@ const handleKeytabUpload = (options: { file: UploadFileInfo }) => {
 const getIAMExtensionOptions = (
   authenticationType: DataSource_AuthenticationType
 ): IAMExtensionOptions[] => {
-  if (authenticationType == DataSource_AuthenticationType.AZURE_IAM) {
-    return [
-      {
-        label: "Default",
-        value: "default-credential",
-      },
-      {
-        label: "Client Secret Credential",
-        value: "client-secret-credential",
-      },
-    ];
+  switch (authenticationType) {
+    case DataSource_AuthenticationType.AWS_RDS_IAM:
+    case DataSource_AuthenticationType.AZURE_IAM:
+    case DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+      return [
+        {
+          label: t("common.default"),
+          value: "default",
+        },
+        {
+          label: t("instance.iam-extension.specific-credential"),
+          value: "specific-credential",
+        },
+      ];
   }
   return [];
-};
-
-const onSelectIAMExtension = (value: string) => {
-  state.credentialSource = value;
-  resetIAMExtension();
-  if (value === "client-secret-credential") {
-    const ds = props.dataSource;
-    ds.clientSecretCredential = DataSource_ClientSecretCredential.create();
-  }
-};
-
-const resetIAMExtension = () => {
-  const ds = props.dataSource;
-  ds.clientSecretCredential = undefined;
 };
 
 // Extra connection parameters management
@@ -1471,3 +1612,9 @@ const removeExtraConnectionParam = (index: number) => {
   ds.extraConnectionParameters = plainParams;
 };
 </script>
+
+<style lang="postcss" scoped>
+.credential :deep(.code) {
+  @apply bg-gray-100 p-1 rounded-sm mr-1;
+}
+</style>

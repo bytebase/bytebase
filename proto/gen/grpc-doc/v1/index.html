@@ -371,15 +371,23 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.AWSCredential"><span class="badge">M</span>DataSource.AWSCredential</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSource.Address"><span class="badge">M</span>DataSource.Address</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DataSource.ClientSecretCredential"><span class="badge">M</span>DataSource.ClientSecretCredential</a>
+                  <a href="#bytebase.v1.DataSource.AzureCredential"><span class="badge">M</span>DataSource.AzureCredential</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.DataSource.ExtraConnectionParametersEntry"><span class="badge">M</span>DataSource.ExtraConnectionParametersEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DataSource.GCPCredential"><span class="badge">M</span>DataSource.GCPCredential</a>
                 </li>
               
                 <li>
@@ -4431,8 +4439,22 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
-                  <td>client_secret_credential</td>
-                  <td><a href="#bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</a></td>
+                  <td>azure_credential</td>
+                  <td><a href="#bytebase.v1.DataSource.AzureCredential">DataSource.AzureCredential</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>aws_credential</td>
+                  <td><a href="#bytebase.v1.DataSource.AWSCredential">DataSource.AWSCredential</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>gcp_credential</td>
+                  <td><a href="#bytebase.v1.DataSource.GCPCredential">DataSource.GCPCredential</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -4522,6 +4544,44 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
 
         
       
+        <h3 id="bytebase.v1.DataSource.AWSCredential">DataSource.AWSCredential</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>access_key_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret_access_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>session_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.DataSource.Address">DataSource.Address</h3>
         <p></p>
 
@@ -4553,7 +4613,7 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
 
         
       
-        <h3 id="bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</h3>
+        <h3 id="bytebase.v1.DataSource.AzureCredential">DataSource.AzureCredential</h3>
         <p></p>
 
         
@@ -4610,6 +4670,30 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
               
                 <tr>
                   <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSource.GCPCredential">DataSource.GCPCredential</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>content</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>

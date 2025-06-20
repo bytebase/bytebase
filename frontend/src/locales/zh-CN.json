@@ -1264,10 +1264,11 @@
       "external-secret-gcp": "GCP Secret Manager"
     },
     "iam-extension": {
-      "credential-source": "Credential Source",
+      "credential-source": "凭证来源",
       "tenant-id": "Tenant ID",
       "client-id": "Client ID",
-      "client-secret": "Client Secret"
+      "client-secret": "Client Secret",
+      "specific-credential": "指定凭证"
     },
     "database-region": "数据库区域",
     "external-secret-gcp": {
@@ -2729,10 +2730,8 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "actions": {
-    },
-    "messages": {
-    },
+    "actions": {},
+    "messages": {},
     "usage-description": "发布包仅用于自定义的 GitOps 与 Bytebase API 集成。"
   },
   "export-data": {

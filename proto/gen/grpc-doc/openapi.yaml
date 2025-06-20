@@ -9282,6 +9282,10 @@ components:
                     format: enum
                 clientSecretCredential:
                     $ref: '#/components/schemas/DataSource_ClientSecretCredential'
+                awsCredential:
+                    $ref: '#/components/schemas/DataSource_AWSCredential'
+                gcpCredential:
+                    $ref: '#/components/schemas/DataSource_GCPCredential'
                 saslConfig:
                     $ref: '#/components/schemas/SASLConfig'
                 additionalAddresses:
@@ -9379,6 +9383,18 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
+        DataSource_AWSCredential:
+            type: object
+            properties:
+                accessKeyId:
+                    writeOnly: true
+                    type: string
+                secretAccessKey:
+                    writeOnly: true
+                    type: string
+                sessionToken:
+                    writeOnly: true
+                    type: string
         DataSource_Address:
             type: object
             properties:
@@ -9394,7 +9410,13 @@ components:
                 clientId:
                     type: string
                 clientSecret:
-                    readOnly: true
+                    type: string
+                obfuscatedClientSecret:
+                    type: string
+        DataSource_GCPCredential:
+            type: object
+            properties:
+                content:
                     type: string
         Database:
             type: object

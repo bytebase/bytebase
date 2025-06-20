@@ -128,9 +128,11 @@
   
 - [store/instance.proto](#store_instance-proto)
     - [DataSource](#bytebase-store-DataSource)
+    - [DataSource.AWSCredential](#bytebase-store-DataSource-AWSCredential)
     - [DataSource.Address](#bytebase-store-DataSource-Address)
     - [DataSource.ClientSecretCredential](#bytebase-store-DataSource-ClientSecretCredential)
     - [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry)
+    - [DataSource.GCPCredential](#bytebase-store-DataSource-GCPCredential)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [Instance](#bytebase-store-Instance)
@@ -2257,6 +2259,8 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType) |  |  |
 | client_secret_credential | [DataSource.ClientSecretCredential](#bytebase-store-DataSource-ClientSecretCredential) |  |  |
+| aws_credential | [DataSource.AWSCredential](#bytebase-store-DataSource-AWSCredential) |  |  |
+| gcp_credential | [DataSource.GCPCredential](#bytebase-store-DataSource-GCPCredential) |  |  |
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
 | additional_addresses | [DataSource.Address](#bytebase-store-DataSource-Address) | repeated | additional_addresses is used for MongoDB replica set. |
 | direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
@@ -2269,6 +2273,23 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | redis_type | [DataSource.RedisType](#bytebase-store-DataSource-RedisType) |  |  |
 | cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 | extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
+
+
+
+
+
+
+<a name="bytebase-store-DataSource-AWSCredential"></a>
+
+### DataSource.AWSCredential
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_key_id | [string](#string) |  |  |
+| secret_access_key | [string](#string) |  |  |
+| session_token | [string](#string) |  |  |
 
 
 
@@ -2319,6 +2340,21 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-DataSource-GCPCredential"></a>
+
+### DataSource.GCPCredential
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) |  |  |
 
 
 
