@@ -9620,6 +9620,7 @@ components:
             type: object
             properties:
                 content:
+                    writeOnly: true
                     type: string
         Database:
             type: object

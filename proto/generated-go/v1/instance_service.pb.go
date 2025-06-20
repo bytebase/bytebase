@@ -2697,7 +2697,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05TOKEN\x10\x01\x12\x12\n" +
 	"\x0eVAULT_APP_ROLE\x10\x02B\r\n" +
-	"\vauth_option\"\xd8\x12\n" +
+	"\vauth_option\"\xde\x12\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -2750,9 +2750,9 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\rAWSCredential\x12(\n" +
 	"\raccess_key_id\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\vaccessKeyId\x120\n" +
 	"\x11secret_access_key\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\x0fsecretAccessKey\x12)\n" +
-	"\rsession_token\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\fsessionToken\x1a)\n" +
-	"\rGCPCredential\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\tR\acontent\x1a1\n" +
+	"\rsession_token\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\fsessionToken\x1a/\n" +
+	"\rGCPCredential\x12\x1e\n" +
+	"\acontent\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\acontent\x1a1\n" +
 	"\aAddress\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\tR\x04port\x1aL\n" +
