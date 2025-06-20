@@ -24,9 +24,10 @@ import { RoleService } from "@/types/proto-es/v1/role_service_pb";
 import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
+import { IdentityProviderService } from "@/types/proto-es/v1/idp_service_pb";
 
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
-import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
+
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { PlanServiceDefinition } from "@/types/proto/v1/plan_service";
@@ -100,10 +101,7 @@ export const databaseServiceClient = clientFactory.create(
   channel
 );
 
-export const identityProviderClient = clientFactory.create(
-  IdentityProviderServiceDefinition,
-  channel
-);
+
 
 export const sheetServiceClient = clientFactory.create(
   SheetServiceDefinition,
@@ -235,5 +233,10 @@ export const reviewConfigServiceClientConnect = createClient(
 
 export const revisionServiceClientConnect = createClient(
   RevisionService,
+  transport
+);
+
+export const identityProviderServiceClientConnect = createClient(
+  IdentityProviderService,
   transport
 );
