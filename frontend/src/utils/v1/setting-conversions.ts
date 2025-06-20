@@ -18,8 +18,8 @@ export const convertNewSettingToOld = (newSetting: NewSetting): OldSetting => {
   return OldSettingProto.fromJSON(json);
 };
 
-// Convert old enum to new enum
-export const convertOldSettingNameToNew = (oldName: OldSettingName): NewSettingName => {
+// Convert old enum to new string format
+export const convertOldSettingNameToNew = (oldName: OldSettingName): string => {
   // Map string enum to numeric enum
   const mapping: Record<OldSettingName, NewSettingName> = {
     [OldSettingName.SETTING_NAME_UNSPECIFIED]: NewSettingName.SETTING_NAME_UNSPECIFIED,
@@ -42,11 +42,22 @@ export const convertOldSettingNameToNew = (oldName: OldSettingName): NewSettingN
     [OldSettingName.ENVIRONMENT]: NewSettingName.ENVIRONMENT,
     [OldSettingName.UNRECOGNIZED]: NewSettingName.SETTING_NAME_UNSPECIFIED,
   };
-  return mapping[oldName] ?? NewSettingName.SETTING_NAME_UNSPECIFIED;
+  const newEnumValue = mapping[oldName] ?? NewSettingName.SETTING_NAME_UNSPECIFIED;
+  return NewSettingName[newEnumValue];
 };
 
-// Convert new enum to old enum
-export const convertNewSettingNameToOld = (newName: NewSettingName): OldSettingName => {
+// Convert new string format to old enum
+export const convertNewSettingNameToOld = (newNameString: string): OldSettingName => {
+  // Find the numeric enum value from the string
+  const newEnumValue = Object.entries(NewSettingName).find(([key]) => key === newNameString)?.[1] as NewSettingName | undefined;
+  if (newEnumValue === undefined) {
+    return OldSettingName.UNRECOGNIZED;
+  }
+  return convertNewSettingNameEnumToOld(newEnumValue);
+};
+
+// Convert new enum to old enum (internal helper)
+const convertNewSettingNameEnumToOld = (newName: NewSettingName): OldSettingName => {
   // Map numeric enum to string enum
   const mapping: Record<NewSettingName, OldSettingName> = {
     [NewSettingName.SETTING_NAME_UNSPECIFIED]: OldSettingName.SETTING_NAME_UNSPECIFIED,
