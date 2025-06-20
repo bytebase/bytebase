@@ -90,7 +90,7 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
 
     if (!silent && error instanceof ConnectError) {
       const { code } = error;
-      if (ignoredCodes.includes(code)) {
+      if (ignoredCodes?.includes(code)) {
         // omit specified errors
       } else {
         if (code === Code.Unauthenticated) {
