@@ -9483,8 +9483,8 @@ components:
                         - AZURE_IAM
                     type: string
                     format: enum
-                clientSecretCredential:
-                    $ref: '#/components/schemas/DataSource_ClientSecretCredential'
+                azureCredential:
+                    $ref: '#/components/schemas/DataSource_AzureCredential'
                 awsCredential:
                     $ref: '#/components/schemas/DataSource_AWSCredential'
                 gcpCredential:
@@ -9605,7 +9605,7 @@ components:
                     type: string
                 port:
                     type: string
-        DataSource_ClientSecretCredential:
+        DataSource_AzureCredential:
             type: object
             properties:
                 tenantId:
@@ -9613,8 +9613,7 @@ components:
                 clientId:
                     type: string
                 clientSecret:
-                    type: string
-                obfuscatedClientSecret:
+                    writeOnly: true
                     type: string
         DataSource_GCPCredential:
             type: object

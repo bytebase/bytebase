@@ -851,8 +851,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			switch req.Msg.DataSource.AuthenticationType {
 			case v1pb.DataSource_AZURE_IAM:
 				if azureCredential := req.Msg.DataSource.GetAzureCredential(); azureCredential != nil {
-					dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
-						ClientSecretCredential: &storepb.DataSource_ClientSecretCredential{
+					dataSource.IamExtension = &storepb.DataSource_AzureCredential_{
+						AzureCredential: &storepb.DataSource_AzureCredential{
 							TenantId:     azureCredential.TenantId,
 							ClientId:     azureCredential.ClientId,
 							ClientSecret: azureCredential.ClientSecret,
@@ -1229,11 +1229,11 @@ func convertDataSources(dataSources []*storepb.DataSource) ([]*v1pb.DataSource, 
 
 		switch dataSource.AuthenticationType {
 		case v1pb.DataSource_AZURE_IAM:
-			if clientSecretCredential := ds.GetClientSecretCredential(); clientSecretCredential != nil {
+			if azureCredential := ds.GetAzureCredential(); azureCredential != nil {
 				dataSource.IamExtension = &v1pb.DataSource_AzureCredential_{
 					AzureCredential: &v1pb.DataSource_AzureCredential{
-						TenantId: clientSecretCredential.TenantId,
-						ClientId: clientSecretCredential.ClientId,
+						TenantId: azureCredential.TenantId,
+						ClientId: azureCredential.ClientId,
 					},
 				}
 			}
@@ -1462,8 +1462,8 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 	switch dataSource.AuthenticationType {
 	case v1pb.DataSource_AZURE_IAM:
 		if azureCredential := dataSource.GetAzureCredential(); azureCredential != nil {
-			storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
-				ClientSecretCredential: &storepb.DataSource_ClientSecretCredential{
+			storeDataSource.IamExtension = &storepb.DataSource_AzureCredential_{
+				AzureCredential: &storepb.DataSource_AzureCredential{
 					TenantId:     azureCredential.TenantId,
 					ClientId:     azureCredential.ClientId,
 					ClientSecret: azureCredential.ClientSecret,

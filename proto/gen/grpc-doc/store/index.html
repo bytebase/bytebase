@@ -691,7 +691,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.DataSource.ClientSecretCredential"><span class="badge">M</span>DataSource.ClientSecretCredential</a>
+                  <a href="#bytebase.store.DataSource.AzureCredential"><span class="badge">M</span>DataSource.AzureCredential</a>
                 </li>
               
                 <li>
@@ -6573,8 +6573,8 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
-                  <td>client_secret_credential</td>
-                  <td><a href="#bytebase.store.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</a></td>
+                  <td>azure_credential</td>
+                  <td><a href="#bytebase.store.DataSource.AzureCredential">DataSource.AzureCredential</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -6703,6 +6703,13 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
                 </tr>
               
                 <tr>
+                  <td>obfuscated_access_key_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>secret_access_key</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -6710,7 +6717,21 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
                 </tr>
               
                 <tr>
+                  <td>obfuscated_secret_access_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>session_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_session_token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -6754,7 +6775,7 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
 
         
       
-        <h3 id="bytebase.store.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</h3>
+        <h3 id="bytebase.store.DataSource.AzureCredential">DataSource.AzureCredential</h3>
         <p></p>
 
         
@@ -6842,6 +6863,13 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
               
                 <tr>
                   <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_content</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>

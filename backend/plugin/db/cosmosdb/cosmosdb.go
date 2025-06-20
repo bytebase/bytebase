@@ -10,12 +10,11 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -41,20 +40,11 @@ func newDriver() db.Driver {
 // Open opens a CosmosDB driver.
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	endpoint := connCfg.DataSource.Host
-	var credential azcore.TokenCredential
-	if clientSecretCredential := connCfg.DataSource.GetClientSecretCredential(); clientSecretCredential != nil {
-		c, err := azidentity.NewClientSecretCredential(clientSecretCredential.TenantId, clientSecretCredential.ClientId, clientSecretCredential.ClientSecret, nil)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create client secret credential")
-		}
-		credential = c
-	} else {
-		c, err := azidentity.NewDefaultAzureCredential(nil)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to found default Azure credential")
-		}
-		credential = c
+	credential, err := util.GetAzureConnectionConfig(connCfg)
+	if err != nil {
+		return nil, err
 	}
+
 	client, err := azcosmos.NewClient(endpoint, credential, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create CosmosDB client")

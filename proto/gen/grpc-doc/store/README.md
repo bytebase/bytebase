@@ -130,7 +130,7 @@
     - [DataSource](#bytebase-store-DataSource)
     - [DataSource.AWSCredential](#bytebase-store-DataSource-AWSCredential)
     - [DataSource.Address](#bytebase-store-DataSource-Address)
-    - [DataSource.ClientSecretCredential](#bytebase-store-DataSource-ClientSecretCredential)
+    - [DataSource.AzureCredential](#bytebase-store-DataSource-AzureCredential)
     - [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry)
     - [DataSource.GCPCredential](#bytebase-store-DataSource-GCPCredential)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
@@ -2258,7 +2258,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | obfuscated_authentication_private_key | [string](#string) |  |  |
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType) |  |  |
-| client_secret_credential | [DataSource.ClientSecretCredential](#bytebase-store-DataSource-ClientSecretCredential) |  |  |
+| azure_credential | [DataSource.AzureCredential](#bytebase-store-DataSource-AzureCredential) |  |  |
 | aws_credential | [DataSource.AWSCredential](#bytebase-store-DataSource-AWSCredential) |  |  |
 | gcp_credential | [DataSource.GCPCredential](#bytebase-store-DataSource-GCPCredential) |  |  |
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
@@ -2288,8 +2288,11 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | access_key_id | [string](#string) |  |  |
+| obfuscated_access_key_id | [string](#string) |  |  |
 | secret_access_key | [string](#string) |  |  |
+| obfuscated_secret_access_key | [string](#string) |  |  |
 | session_token | [string](#string) |  |  |
+| obfuscated_session_token | [string](#string) |  |  |
 
 
 
@@ -2312,9 +2315,9 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-DataSource-ClientSecretCredential"></a>
+<a name="bytebase-store-DataSource-AzureCredential"></a>
 
-### DataSource.ClientSecretCredential
+### DataSource.AzureCredential
 
 
 
@@ -2355,6 +2358,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | content | [string](#string) |  |  |
+| obfuscated_content | [string](#string) |  |  |
 
 
 
