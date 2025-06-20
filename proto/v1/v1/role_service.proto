@@ -13,17 +13,22 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service RoleService {
+  // Permissions required: bb.roles.list
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
     option (bytebase.v1.permission) = "bb.roles.list";
     option (bytebase.v1.auth_method) = IAM;
   }
+
+  // Permissions required: bb.roles.get
   rpc GetRole(GetRoleRequest) returns (Role) {
     option (google.api.http) = {get: "/v1/{name=roles/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.roles.get";
     option (bytebase.v1.auth_method) = IAM;
   }
+
+  // Permissions required: bb.roles.create
   rpc CreateRole(CreateRoleRequest) returns (Role) {
     option (google.api.http) = {
       post: "/v1/roles"
@@ -33,6 +38,8 @@ service RoleService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
+
+  // Permissions required: bb.roles.update
   rpc UpdateRole(UpdateRoleRequest) returns (Role) {
     option (google.api.http) = {
       patch: "/v1/{role.name=roles/*}"
@@ -43,6 +50,8 @@ service RoleService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
+
+  // Permissions required: bb.roles.delete
   rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=roles/*}"};
     option (google.api.method_signature) = "name";

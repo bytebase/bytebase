@@ -182,6 +182,8 @@ export declare const LogoutRequestSchema: GenMessage<LogoutRequest>;
  */
 export declare const AuthService: GenService<{
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.AuthService.Login
    */
   login: {
@@ -190,6 +192,8 @@ export declare const AuthService: GenService<{
     output: typeof LoginResponseSchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.AuthService.Logout
    */
   logout: {

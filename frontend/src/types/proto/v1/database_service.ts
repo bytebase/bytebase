@@ -9551,6 +9551,7 @@ export const DatabaseServiceDefinition = {
   name: "DatabaseService",
   fullName: "bytebase.v1.DatabaseService",
   methods: {
+    /** Permissions required: bb.databases.get */
     getDatabase: {
       name: "GetDatabase",
       requestType: GetDatabaseRequest,
@@ -9606,6 +9607,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.get */
     batchGetDatabases: {
       name: "BatchGetDatabases",
       requestType: BatchGetDatabasesRequest,
@@ -9715,6 +9717,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.list */
     listDatabases: {
       name: "ListDatabases",
       requestType: ListDatabasesRequest,
@@ -9846,6 +9849,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.update */
     updateDatabase: {
       name: "UpdateDatabase",
       requestType: UpdateDatabaseRequest,
@@ -9947,6 +9951,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.update */
     batchUpdateDatabases: {
       name: "BatchUpdateDatabases",
       requestType: BatchUpdateDatabasesRequest,
@@ -10019,6 +10024,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.sync */
     syncDatabase: {
       name: "SyncDatabase",
       requestType: SyncDatabaseRequest,
@@ -10081,6 +10087,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.sync */
     batchSyncDatabases: {
       name: "BatchSyncDatabases",
       requestType: BatchSyncDatabasesRequest,
@@ -10148,6 +10155,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.getSchema */
     getDatabaseMetadata: {
       name: "GetDatabaseMetadata",
       requestType: GetDatabaseMetadataRequest,
@@ -10237,6 +10245,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.getSchema */
     getDatabaseSchema: {
       name: "GetDatabaseSchema",
       requestType: GetDatabaseSchemaRequest,
@@ -10324,6 +10333,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.get */
     diffSchema: {
       name: "DiffSchema",
       requestType: DiffSchemaRequest,
@@ -10457,6 +10467,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databaseSecrets.list */
     listSecrets: {
       name: "ListSecrets",
       requestType: ListSecretsRequest,
@@ -10549,6 +10560,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databaseSecrets.update */
     updateSecret: {
       name: "UpdateSecret",
       requestType: UpdateSecretRequest,
@@ -10658,6 +10670,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databaseSecrets.delete */
     deleteSecret: {
       name: "DeleteSecret",
       requestType: DeleteSecretRequest,
@@ -10752,6 +10765,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.changelogs.list */
     listChangelogs: {
       name: "ListChangelogs",
       requestType: ListChangelogsRequest,
@@ -10822,6 +10836,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: changelogs.get */
     getChangelog: {
       name: "GetChangelog",
       requestType: GetChangelogRequest,
@@ -10890,6 +10905,7 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Permissions required: databases.getSchema */
     getSchemaString: {
       name: "GetSchemaString",
       requestType: GetSchemaStringRequest,

@@ -4274,6 +4274,7 @@ export const SQLServiceDefinition = {
   name: "SQLService",
   fullName: "bytebase.v1.SQLService",
   methods: {
+    /** Permissions required: bb.databases.get */
     query: {
       name: "Query",
       requestType: QueryRequest,
@@ -4373,6 +4374,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.sql.admin */
     adminExecute: {
       name: "AdminExecute",
       requestType: AdminExecuteRequest,
@@ -4390,7 +4392,10 @@ export const SQLServiceDefinition = {
         },
       },
     },
-    /** SearchQueryHistories searches query histories for the caller. */
+    /**
+     * SearchQueryHistories searches query histories for the caller.
+     * Permissions required: None
+     */
     searchQueryHistories: {
       name: "SearchQueryHistories",
       requestType: SearchQueryHistoriesRequest,
@@ -4438,6 +4443,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.get */
     export: {
       name: "Export",
       requestType: ExportRequest,
@@ -4641,6 +4647,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.databases.check */
     check: {
       name: "Check",
       requestType: CheckRequest,
@@ -4659,6 +4666,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    /** Permissions required: None */
     pretty: {
       name: "Pretty",
       requestType: PrettyRequest,
@@ -4674,6 +4682,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    /** Permissions required: None */
     diffMetadata: {
       name: "DiffMetadata",
       requestType: DiffMetadataRequest,
@@ -4725,6 +4734,7 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    /** Permissions required: None */
     aICompletion: {
       name: "AICompletion",
       requestType: AICompletionRequest,

@@ -933,6 +933,7 @@ export const RevisionServiceDefinition = {
   name: "RevisionService",
   fullName: "bytebase.v1.RevisionService",
   methods: {
+    /** Permissions required: bb.revisions.list */
     listRevisions: {
       name: "ListRevisions",
       requestType: ListRevisionsRequest,
@@ -1002,6 +1003,7 @@ export const RevisionServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.revisions.get */
     getRevision: {
       name: "GetRevision",
       requestType: GetRevisionRequest,
@@ -1069,6 +1071,7 @@ export const RevisionServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.revisions.create */
     createRevision: {
       name: "CreateRevision",
       requestType: CreateRevisionRequest,
@@ -1168,6 +1171,7 @@ export const RevisionServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.revisions.create */
     batchCreateRevisions: {
       name: "BatchCreateRevisions",
       requestType: BatchCreateRevisionsRequest,
@@ -1272,6 +1276,7 @@ export const RevisionServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.revisions.delete */
     deleteRevision: {
       name: "DeleteRevision",
       requestType: DeleteRevisionRequest,

@@ -17,6 +17,7 @@ option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 service UserService {
   // Get the user.
   // Any authenticated user can get the user.
+  // Permissions required: bb.users.get
   rpc GetUser(GetUserRequest) returns (User) {
     option (google.api.http) = {get: "/v1/{name=users/*}"};
     option (google.api.method_signature) = "name";
@@ -25,12 +26,14 @@ service UserService {
 
   // Get the users in batch.
   // Any authenticated user can batch get users.
+  // Permissions required: bb.users.get
   rpc BatchGetUsers(BatchGetUsersRequest) returns (BatchGetUsersResponse) {
     option (google.api.http) = {get: "/v1/users:batchGet"};
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   // Get the current authenticated user.
+  // Permissions required: None
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {
     option (google.api.http) = {get: "/v1/users/me"};
     option (bytebase.v1.allow_without_credential) = true;
@@ -39,6 +42,7 @@ service UserService {
 
   // List all users.
   // Any authenticated user can list users.
+  // Permissions required: bb.users.list
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
     option (google.api.http) = {get: "/v1/users"};
     option (google.api.method_signature) = "parent";
@@ -48,6 +52,7 @@ service UserService {
   // Create a user.
   // When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
   // Otherwise, any unauthenticated user can create a user.
+  // Permissions required: bb.users.create
   rpc CreateUser(CreateUserRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/users"
@@ -60,6 +65,7 @@ service UserService {
   }
 
   // Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+  // Permissions required: bb.users.update
   rpc UpdateUser(UpdateUserRequest) returns (User) {
     option (google.api.http) = {
       patch: "/v1/{user.name=users/*}"
@@ -72,6 +78,7 @@ service UserService {
 
   // Only the user with bb.users.delete permission on the workspace can delete the user.
   // The last remaining workspace admin cannot be deleted.
+  // Permissions required: bb.users.delete
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=users/*}"};
     option (google.api.method_signature) = "name";
@@ -80,6 +87,7 @@ service UserService {
   }
 
   // Only the user with bb.users.undelete permission on the workspace can undelete the user.
+  // Permissions required: bb.users.undelete
   rpc UndeleteUser(UndeleteUserRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:undelete"

@@ -9,6 +9,7 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service CelService {
+  // Permissions required: None
   rpc BatchParse(BatchParseRequest) returns (BatchParseResponse) {
     option (google.api.http) = {
       post: "/v1/cel/batchParse"
@@ -16,6 +17,8 @@ service CelService {
     };
     option (bytebase.v1.allow_without_credential) = true;
   }
+
+  // Permissions required: None
   rpc BatchDeparse(BatchDeparseRequest) returns (BatchDeparseResponse) {
     option (google.api.http) = {
       post: "/v1/cel/batchDeparse"

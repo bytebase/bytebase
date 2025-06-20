@@ -11,6 +11,7 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service InstanceRoleService {
+  // Permissions required: bb.instanceRoles.get
   rpc GetInstanceRole(GetInstanceRoleRequest) returns (InstanceRole) {
     option (google.api.http) = {get: "/v1/{name=instances/*/roles/*}"};
     option (google.api.method_signature) = "name";
@@ -18,6 +19,7 @@ service InstanceRoleService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.instanceRoles.get
   rpc ListInstanceRoles(ListInstanceRolesRequest) returns (ListInstanceRolesResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*}/roles"};
     option (google.api.method_signature) = "parent";

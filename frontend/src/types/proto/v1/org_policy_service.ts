@@ -2483,6 +2483,7 @@ export const OrgPolicyServiceDefinition = {
   name: "OrgPolicyService",
   fullName: "bytebase.v1.OrgPolicyService",
   methods: {
+    /** Permissions required: bb.policies.get */
     getPolicy: {
       name: "GetPolicy",
       requestType: GetPolicyRequest,
@@ -2688,6 +2689,7 @@ export const OrgPolicyServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.policies.list */
     listPolicies: {
       name: "ListPolicies",
       requestType: ListPoliciesRequest,
@@ -2884,6 +2886,7 @@ export const OrgPolicyServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.policies.create */
     createPolicy: {
       name: "CreatePolicy",
       requestType: CreatePolicyRequest,
@@ -3123,6 +3126,7 @@ export const OrgPolicyServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.policies.update */
     updatePolicy: {
       name: "UpdatePolicy",
       requestType: UpdatePolicyRequest,
@@ -3408,6 +3412,7 @@ export const OrgPolicyServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.policies.delete */
     deletePolicy: {
       name: "DeletePolicy",
       requestType: DeletePolicyRequest,

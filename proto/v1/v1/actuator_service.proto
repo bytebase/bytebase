@@ -16,12 +16,14 @@ import "v1/user_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service ActuatorService {
+  // Permissions required: None
   rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
     option (google.api.http) = {get: "/v1/actuator/info"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Permissions required: bb.settings.set
   rpc UpdateActuatorInfo(UpdateActuatorInfoRequest) returns (ActuatorInfo) {
     option (google.api.http) = {
       patch: "/v1/actuator/info"
@@ -32,6 +34,7 @@ service ActuatorService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.create
   rpc SetupSample(SetupSampleRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/actuator:setupSample"
@@ -41,11 +44,13 @@ service ActuatorService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: None
   rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/actuator/cache"};
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Permissions required: None
   rpc GetResourcePackage(GetResourcePackageRequest) returns (ResourcePackage) {
     option (google.api.http) = {get: "/v1/actuator/resources"};
     option (google.api.method_signature) = "";

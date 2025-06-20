@@ -5038,6 +5038,7 @@ export const SettingServiceDefinition = {
   name: "SettingService",
   fullName: "bytebase.v1.SettingService",
   methods: {
+    /** Permissions required: bb.settings.list */
     listSettings: {
       name: "ListSettings",
       requestType: ListSettingsRequest,
@@ -5053,6 +5054,7 @@ export const SettingServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.settings.get */
     getSetting: {
       name: "GetSetting",
       requestType: GetSettingRequest,
@@ -5095,6 +5097,7 @@ export const SettingServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.settings.set */
     updateSetting: {
       name: "UpdateSetting",
       requestType: UpdateSettingRequest,

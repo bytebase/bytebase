@@ -585,6 +585,7 @@ export const AuthServiceDefinition = {
   name: "AuthService",
   fullName: "bytebase.v1.AuthService",
   methods: {
+    /** Permissions required: None */
     login: {
       name: "Login",
       requestType: LoginRequest,
@@ -601,6 +602,7 @@ export const AuthServiceDefinition = {
         },
       },
     },
+    /** Permissions required: None */
     logout: {
       name: "Logout",
       requestType: LogoutRequest,

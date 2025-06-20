@@ -296,6 +296,8 @@ export declare const ActuatorInfo_StatUserSchema: GenMessage<ActuatorInfo_StatUs
  */
 export declare const ActuatorService: GenService<{
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.ActuatorService.GetActuatorInfo
    */
   getActuatorInfo: {
@@ -304,6 +306,8 @@ export declare const ActuatorService: GenService<{
     output: typeof ActuatorInfoSchema;
   },
   /**
+   * Permissions required: bb.settings.set
+   *
    * @generated from rpc bytebase.v1.ActuatorService.UpdateActuatorInfo
    */
   updateActuatorInfo: {
@@ -312,6 +316,8 @@ export declare const ActuatorService: GenService<{
     output: typeof ActuatorInfoSchema;
   },
   /**
+   * Permissions required: bb.projects.create
+   *
    * @generated from rpc bytebase.v1.ActuatorService.SetupSample
    */
   setupSample: {
@@ -320,6 +326,8 @@ export declare const ActuatorService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.ActuatorService.DeleteCache
    */
   deleteCache: {
@@ -328,6 +336,8 @@ export declare const ActuatorService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.ActuatorService.GetResourcePackage
    */
   getResourcePackage: {

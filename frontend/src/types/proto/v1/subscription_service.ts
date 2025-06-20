@@ -1217,6 +1217,7 @@ export const SubscriptionServiceDefinition = {
      * GetSubscription returns the current subscription.
      * If there is no license, we will return a free plan subscription without expiration time.
      * If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+     * Permissions required: None
      */
     getSubscription: {
       name: "GetSubscription",
@@ -1234,6 +1235,7 @@ export const SubscriptionServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.settings.set */
     updateSubscription: {
       name: "UpdateSubscription",
       requestType: UpdateSubscriptionRequest,

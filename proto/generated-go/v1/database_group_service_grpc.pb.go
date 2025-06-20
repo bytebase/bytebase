@@ -31,10 +31,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DatabaseGroupServiceClient interface {
+	// Permissions required: bb.projects.get
 	ListDatabaseGroups(ctx context.Context, in *ListDatabaseGroupsRequest, opts ...grpc.CallOption) (*ListDatabaseGroupsResponse, error)
+	// Permissions required: bb.projects.get
 	GetDatabaseGroup(ctx context.Context, in *GetDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
+	// Permissions required: bb.projects.update
 	CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
+	// Permissions required: bb.projects.update
 	UpdateDatabaseGroup(ctx context.Context, in *UpdateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
+	// Permissions required: bb.projects.update
 	DeleteDatabaseGroup(ctx context.Context, in *DeleteDatabaseGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -100,10 +105,15 @@ func (c *databaseGroupServiceClient) DeleteDatabaseGroup(ctx context.Context, in
 // All implementations must embed UnimplementedDatabaseGroupServiceServer
 // for forward compatibility.
 type DatabaseGroupServiceServer interface {
+	// Permissions required: bb.projects.get
 	ListDatabaseGroups(context.Context, *ListDatabaseGroupsRequest) (*ListDatabaseGroupsResponse, error)
+	// Permissions required: bb.projects.get
 	GetDatabaseGroup(context.Context, *GetDatabaseGroupRequest) (*DatabaseGroup, error)
+	// Permissions required: bb.projects.update
 	CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error)
+	// Permissions required: bb.projects.update
 	UpdateDatabaseGroup(context.Context, *UpdateDatabaseGroupRequest) (*DatabaseGroup, error)
+	// Permissions required: bb.projects.update
 	DeleteDatabaseGroup(context.Context, *DeleteDatabaseGroupRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedDatabaseGroupServiceServer()
 }

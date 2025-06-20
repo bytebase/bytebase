@@ -46,8 +46,11 @@ const (
 
 // SettingServiceClient is a client for the bytebase.v1.SettingService service.
 type SettingServiceClient interface {
+	// Permissions required: bb.settings.list
 	ListSettings(context.Context, *connect.Request[v1.ListSettingsRequest]) (*connect.Response[v1.ListSettingsResponse], error)
+	// Permissions required: bb.settings.get
 	GetSetting(context.Context, *connect.Request[v1.GetSettingRequest]) (*connect.Response[v1.Setting], error)
+	// Permissions required: bb.settings.set
 	UpdateSetting(context.Context, *connect.Request[v1.UpdateSettingRequest]) (*connect.Response[v1.Setting], error)
 }
 
@@ -107,8 +110,11 @@ func (c *settingServiceClient) UpdateSetting(ctx context.Context, req *connect.R
 
 // SettingServiceHandler is an implementation of the bytebase.v1.SettingService service.
 type SettingServiceHandler interface {
+	// Permissions required: bb.settings.list
 	ListSettings(context.Context, *connect.Request[v1.ListSettingsRequest]) (*connect.Response[v1.ListSettingsResponse], error)
+	// Permissions required: bb.settings.get
 	GetSetting(context.Context, *connect.Request[v1.GetSettingRequest]) (*connect.Response[v1.Setting], error)
+	// Permissions required: bb.settings.set
 	UpdateSetting(context.Context, *connect.Request[v1.UpdateSettingRequest]) (*connect.Response[v1.Setting], error)
 }
 
