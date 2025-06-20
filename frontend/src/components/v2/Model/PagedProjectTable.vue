@@ -11,6 +11,7 @@
         :project-list="list"
         :selected-project-names="selectedProjectNames"
         :show-selection="showSelection"
+        :keyword="filter.query"
         @update:selected-project-names="updateSelectedProjectNames"
       />
     </template>
