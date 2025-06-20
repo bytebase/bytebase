@@ -39,18 +39,31 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InstanceServiceClient interface {
+	// Permissions required: bb.instances.get
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Permissions required: bb.instances.list
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
+	// Permissions required: bb.instances.create
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Permissions required: bb.instances.update
 	UpdateInstance(ctx context.Context, in *UpdateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Permissions required: bb.instances.delete
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Permissions required: bb.instances.undelete
 	UndeleteInstance(ctx context.Context, in *UndeleteInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Permissions required: bb.instances.sync
 	SyncInstance(ctx context.Context, in *SyncInstanceRequest, opts ...grpc.CallOption) (*SyncInstanceResponse, error)
+	// Permissions required: bb.instances.get
 	ListInstanceDatabase(ctx context.Context, in *ListInstanceDatabaseRequest, opts ...grpc.CallOption) (*ListInstanceDatabaseResponse, error)
+	// Permissions required: bb.instances.sync
 	BatchSyncInstances(ctx context.Context, in *BatchSyncInstancesRequest, opts ...grpc.CallOption) (*BatchSyncInstancesResponse, error)
+	// Permissions required: bb.instances.update
 	BatchUpdateInstances(ctx context.Context, in *BatchUpdateInstancesRequest, opts ...grpc.CallOption) (*BatchUpdateInstancesResponse, error)
+	// Permissions required: bb.instances.update
 	AddDataSource(ctx context.Context, in *AddDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Permissions required: bb.instances.update
 	RemoveDataSource(ctx context.Context, in *RemoveDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Permissions required: bb.instances.update
 	UpdateDataSource(ctx context.Context, in *UpdateDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
 }
 
@@ -196,18 +209,31 @@ func (c *instanceServiceClient) UpdateDataSource(ctx context.Context, in *Update
 // All implementations must embed UnimplementedInstanceServiceServer
 // for forward compatibility.
 type InstanceServiceServer interface {
+	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *GetInstanceRequest) (*Instance, error)
+	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
+	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error)
+	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error)
+	// Permissions required: bb.instances.delete
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*emptypb.Empty, error)
+	// Permissions required: bb.instances.undelete
 	UndeleteInstance(context.Context, *UndeleteInstanceRequest) (*Instance, error)
+	// Permissions required: bb.instances.sync
 	SyncInstance(context.Context, *SyncInstanceRequest) (*SyncInstanceResponse, error)
+	// Permissions required: bb.instances.get
 	ListInstanceDatabase(context.Context, *ListInstanceDatabaseRequest) (*ListInstanceDatabaseResponse, error)
+	// Permissions required: bb.instances.sync
 	BatchSyncInstances(context.Context, *BatchSyncInstancesRequest) (*BatchSyncInstancesResponse, error)
+	// Permissions required: bb.instances.update
 	BatchUpdateInstances(context.Context, *BatchUpdateInstancesRequest) (*BatchUpdateInstancesResponse, error)
+	// Permissions required: bb.instances.update
 	AddDataSource(context.Context, *AddDataSourceRequest) (*Instance, error)
+	// Permissions required: bb.instances.update
 	RemoveDataSource(context.Context, *RemoveDataSourceRequest) (*Instance, error)
+	// Permissions required: bb.instances.update
 	UpdateDataSource(context.Context, *UpdateDataSourceRequest) (*Instance, error)
 	mustEmbedUnimplementedInstanceServiceServer()
 }

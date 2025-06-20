@@ -46,7 +46,9 @@ type SubscriptionServiceClient interface {
 	// GetSubscription returns the current subscription.
 	// If there is no license, we will return a free plan subscription without expiration time.
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+	// Permissions required: None
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	// Permissions required: bb.settings.set
 	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 }
 
@@ -97,7 +99,9 @@ type SubscriptionServiceHandler interface {
 	// GetSubscription returns the current subscription.
 	// If there is no license, we will return a free plan subscription without expiration time.
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+	// Permissions required: None
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	// Permissions required: bb.settings.set
 	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 }
 

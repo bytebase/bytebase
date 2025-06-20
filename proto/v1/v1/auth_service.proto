@@ -10,6 +10,7 @@ import "v1/user_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service AuthService {
+  // Permissions required: None
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
       post: "/v1/auth/login"
@@ -19,6 +20,7 @@ service AuthService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: None
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/auth/logout"

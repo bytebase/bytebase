@@ -42,21 +42,37 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DatabaseServiceClient interface {
+	// Permissions required: bb.databases.get
 	GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
+	// Permissions required: bb.databases.get
 	BatchGetDatabases(ctx context.Context, in *BatchGetDatabasesRequest, opts ...grpc.CallOption) (*BatchGetDatabasesResponse, error)
+	// Permissions required: bb.databases.list
 	ListDatabases(ctx context.Context, in *ListDatabasesRequest, opts ...grpc.CallOption) (*ListDatabasesResponse, error)
+	// Permissions required: bb.databases.update
 	UpdateDatabase(ctx context.Context, in *UpdateDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
+	// Permissions required: bb.databases.update
 	BatchUpdateDatabases(ctx context.Context, in *BatchUpdateDatabasesRequest, opts ...grpc.CallOption) (*BatchUpdateDatabasesResponse, error)
+	// Permissions required: bb.databases.sync
 	SyncDatabase(ctx context.Context, in *SyncDatabaseRequest, opts ...grpc.CallOption) (*SyncDatabaseResponse, error)
+	// Permissions required: bb.databases.sync
 	BatchSyncDatabases(ctx context.Context, in *BatchSyncDatabasesRequest, opts ...grpc.CallOption) (*BatchSyncDatabasesResponse, error)
+	// Permissions required: bb.databases.getSchema
 	GetDatabaseMetadata(ctx context.Context, in *GetDatabaseMetadataRequest, opts ...grpc.CallOption) (*DatabaseMetadata, error)
+	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
+	// Permissions required: bb.databases.get
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
+	// Permissions required: bb.databaseSecrets.list
 	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
+	// Permissions required: bb.databaseSecrets.update
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error)
+	// Permissions required: bb.databaseSecrets.delete
 	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Permissions required: bb.changelogs.list
 	ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error)
+	// Permissions required: changelogs.get
 	GetChangelog(ctx context.Context, in *GetChangelogRequest, opts ...grpc.CallOption) (*Changelog, error)
+	// Permissions required: databases.getSchema
 	GetSchemaString(ctx context.Context, in *GetSchemaStringRequest, opts ...grpc.CallOption) (*GetSchemaStringResponse, error)
 }
 
@@ -232,21 +248,37 @@ func (c *databaseServiceClient) GetSchemaString(ctx context.Context, in *GetSche
 // All implementations must embed UnimplementedDatabaseServiceServer
 // for forward compatibility.
 type DatabaseServiceServer interface {
+	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *GetDatabaseRequest) (*Database, error)
+	// Permissions required: bb.databases.get
 	BatchGetDatabases(context.Context, *BatchGetDatabasesRequest) (*BatchGetDatabasesResponse, error)
+	// Permissions required: bb.databases.list
 	ListDatabases(context.Context, *ListDatabasesRequest) (*ListDatabasesResponse, error)
+	// Permissions required: bb.databases.update
 	UpdateDatabase(context.Context, *UpdateDatabaseRequest) (*Database, error)
+	// Permissions required: bb.databases.update
 	BatchUpdateDatabases(context.Context, *BatchUpdateDatabasesRequest) (*BatchUpdateDatabasesResponse, error)
+	// Permissions required: bb.databases.sync
 	SyncDatabase(context.Context, *SyncDatabaseRequest) (*SyncDatabaseResponse, error)
+	// Permissions required: bb.databases.sync
 	BatchSyncDatabases(context.Context, *BatchSyncDatabasesRequest) (*BatchSyncDatabasesResponse, error)
+	// Permissions required: bb.databases.getSchema
 	GetDatabaseMetadata(context.Context, *GetDatabaseMetadataRequest) (*DatabaseMetadata, error)
+	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
+	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
+	// Permissions required: bb.databaseSecrets.list
 	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
+	// Permissions required: bb.databaseSecrets.update
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error)
+	// Permissions required: bb.databaseSecrets.delete
 	DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error)
+	// Permissions required: bb.changelogs.list
 	ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error)
+	// Permissions required: changelogs.get
 	GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error)
+	// Permissions required: databases.getSchema
 	GetSchemaString(context.Context, *GetSchemaStringRequest) (*GetSchemaStringResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }

@@ -33,16 +33,24 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PlanServiceClient interface {
+	// Permissions required: bb.plans.get
 	GetPlan(ctx context.Context, in *GetPlanRequest, opts ...grpc.CallOption) (*Plan, error)
+	// Permissions required: bb.plans.list
 	ListPlans(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
 	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
+	// Permissions required: bb.plans.get
 	SearchPlans(ctx context.Context, in *SearchPlansRequest, opts ...grpc.CallOption) (*SearchPlansResponse, error)
+	// Permissions required: bb.plans.create
 	CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
 	// UpdatePlan updates the plan.
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
+	// Permissions required: bb.plans.update
 	UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
+	// Permissions required: bb.planCheckRuns.list
 	ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error)
+	// Permissions required: bb.planCheckRuns.run
 	RunPlanChecks(ctx context.Context, in *RunPlanChecksRequest, opts ...grpc.CallOption) (*RunPlanChecksResponse, error)
+	// Permissions required: bb.planCheckRuns.run
 	BatchCancelPlanCheckRuns(ctx context.Context, in *BatchCancelPlanCheckRunsRequest, opts ...grpc.CallOption) (*BatchCancelPlanCheckRunsResponse, error)
 }
 
@@ -138,16 +146,24 @@ func (c *planServiceClient) BatchCancelPlanCheckRuns(ctx context.Context, in *Ba
 // All implementations must embed UnimplementedPlanServiceServer
 // for forward compatibility.
 type PlanServiceServer interface {
+	// Permissions required: bb.plans.get
 	GetPlan(context.Context, *GetPlanRequest) (*Plan, error)
+	// Permissions required: bb.plans.list
 	ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
 	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
+	// Permissions required: bb.plans.get
 	SearchPlans(context.Context, *SearchPlansRequest) (*SearchPlansResponse, error)
+	// Permissions required: bb.plans.create
 	CreatePlan(context.Context, *CreatePlanRequest) (*Plan, error)
 	// UpdatePlan updates the plan.
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
+	// Permissions required: bb.plans.update
 	UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error)
+	// Permissions required: bb.planCheckRuns.list
 	ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error)
+	// Permissions required: bb.planCheckRuns.run
 	RunPlanChecks(context.Context, *RunPlanChecksRequest) (*RunPlanChecksResponse, error)
+	// Permissions required: bb.planCheckRuns.run
 	BatchCancelPlanCheckRuns(context.Context, *BatchCancelPlanCheckRunsRequest) (*BatchCancelPlanCheckRunsResponse, error)
 	mustEmbedUnimplementedPlanServiceServer()
 }

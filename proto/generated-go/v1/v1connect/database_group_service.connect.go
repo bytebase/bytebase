@@ -53,10 +53,15 @@ const (
 
 // DatabaseGroupServiceClient is a client for the bytebase.v1.DatabaseGroupService service.
 type DatabaseGroupServiceClient interface {
+	// Permissions required: bb.projects.get
 	ListDatabaseGroups(context.Context, *connect.Request[v1.ListDatabaseGroupsRequest]) (*connect.Response[v1.ListDatabaseGroupsResponse], error)
+	// Permissions required: bb.projects.get
 	GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	// Permissions required: bb.projects.update
 	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	// Permissions required: bb.projects.update
 	UpdateDatabaseGroup(context.Context, *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	// Permissions required: bb.projects.update
 	DeleteDatabaseGroup(context.Context, *connect.Request[v1.DeleteDatabaseGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -140,10 +145,15 @@ func (c *databaseGroupServiceClient) DeleteDatabaseGroup(ctx context.Context, re
 
 // DatabaseGroupServiceHandler is an implementation of the bytebase.v1.DatabaseGroupService service.
 type DatabaseGroupServiceHandler interface {
+	// Permissions required: bb.projects.get
 	ListDatabaseGroups(context.Context, *connect.Request[v1.ListDatabaseGroupsRequest]) (*connect.Response[v1.ListDatabaseGroupsResponse], error)
+	// Permissions required: bb.projects.get
 	GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	// Permissions required: bb.projects.update
 	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	// Permissions required: bb.projects.update
 	UpdateDatabaseGroup(context.Context, *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	// Permissions required: bb.projects.update
 	DeleteDatabaseGroup(context.Context, *connect.Request[v1.DeleteDatabaseGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

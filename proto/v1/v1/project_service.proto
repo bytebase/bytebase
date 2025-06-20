@@ -17,6 +17,7 @@ option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 service ProjectService {
   // GetProject retrieves a project by name.
   // Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+  // Permissions required: bb.projects.get
   rpc GetProject(GetProjectRequest) returns (Project) {
     option (google.api.http) = {get: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
@@ -24,6 +25,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.list
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
     option (google.api.http) = {get: "/v1/projects"};
     option (google.api.method_signature) = "";
@@ -31,6 +33,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: None
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
     option (google.api.http) = {
       post: "/v1/projects:search"
@@ -41,6 +44,7 @@ service ProjectService {
     // TODO(d): secure it.
   }
 
+  // Permissions required: bb.projects.create
   rpc CreateProject(CreateProjectRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/projects"
@@ -51,6 +55,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.update
   rpc UpdateProject(UpdateProjectRequest) returns (Project) {
     option (google.api.http) = {
       patch: "/v1/{project.name=projects/*}"
@@ -61,6 +66,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.delete
   rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
@@ -68,6 +74,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.undelete
   rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*}:undelete"
@@ -77,6 +84,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.delete
   rpc BatchDeleteProjects(BatchDeleteProjectsRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/projects:batchDelete"
@@ -86,6 +94,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.getIamPolicy
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
@@ -93,12 +102,14 @@ service ProjectService {
   }
 
   // Deprecated.
+  // Permissions required: bb.projects.getIamPolicy
   rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
     option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Permissions required: bb.projects.setIamPolicy
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {
       post: "/v1/{resource=projects/*}:setIamPolicy"
@@ -109,6 +120,7 @@ service ProjectService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.projects.update
   rpc AddWebhook(AddWebhookRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:addWebhook"
@@ -118,6 +130,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.update
   rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook"
@@ -128,6 +141,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.update
   rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{webhook.name=projects/*/webhooks/*}:removeWebhook"
@@ -137,6 +151,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.update
   rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:testWebhook"

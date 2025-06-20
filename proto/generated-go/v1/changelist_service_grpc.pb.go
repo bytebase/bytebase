@@ -31,10 +31,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChangelistServiceClient interface {
+	// Permissions required: bb.changelists.create
 	CreateChangelist(ctx context.Context, in *CreateChangelistRequest, opts ...grpc.CallOption) (*Changelist, error)
+	// Permissions required: bb.changelists.get
 	GetChangelist(ctx context.Context, in *GetChangelistRequest, opts ...grpc.CallOption) (*Changelist, error)
+	// Permissions required: bb.changelists.list
 	ListChangelists(ctx context.Context, in *ListChangelistsRequest, opts ...grpc.CallOption) (*ListChangelistsResponse, error)
+	// Permissions required: bb.changelists.update
 	UpdateChangelist(ctx context.Context, in *UpdateChangelistRequest, opts ...grpc.CallOption) (*Changelist, error)
+	// Permissions required: bb.changelists.delete
 	DeleteChangelist(ctx context.Context, in *DeleteChangelistRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -100,10 +105,15 @@ func (c *changelistServiceClient) DeleteChangelist(ctx context.Context, in *Dele
 // All implementations must embed UnimplementedChangelistServiceServer
 // for forward compatibility.
 type ChangelistServiceServer interface {
+	// Permissions required: bb.changelists.create
 	CreateChangelist(context.Context, *CreateChangelistRequest) (*Changelist, error)
+	// Permissions required: bb.changelists.get
 	GetChangelist(context.Context, *GetChangelistRequest) (*Changelist, error)
+	// Permissions required: bb.changelists.list
 	ListChangelists(context.Context, *ListChangelistsRequest) (*ListChangelistsResponse, error)
+	// Permissions required: bb.changelists.update
 	UpdateChangelist(context.Context, *UpdateChangelistRequest) (*Changelist, error)
+	// Permissions required: bb.changelists.delete
 	DeleteChangelist(context.Context, *DeleteChangelistRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedChangelistServiceServer()
 }

@@ -1342,6 +1342,8 @@ export declare const DataSourceTypeSchema: GenEnum<DataSourceType>;
  */
 export declare const InstanceService: GenService<{
   /**
+   * Permissions required: bb.instances.get
+   *
    * @generated from rpc bytebase.v1.InstanceService.GetInstance
    */
   getInstance: {
@@ -1350,6 +1352,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.list
+   *
    * @generated from rpc bytebase.v1.InstanceService.ListInstances
    */
   listInstances: {
@@ -1358,6 +1362,8 @@ export declare const InstanceService: GenService<{
     output: typeof ListInstancesResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.create
+   *
    * @generated from rpc bytebase.v1.InstanceService.CreateInstance
    */
   createInstance: {
@@ -1366,6 +1372,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.UpdateInstance
    */
   updateInstance: {
@@ -1374,6 +1382,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.delete
+   *
    * @generated from rpc bytebase.v1.InstanceService.DeleteInstance
    */
   deleteInstance: {
@@ -1382,6 +1392,8 @@ export declare const InstanceService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: bb.instances.undelete
+   *
    * @generated from rpc bytebase.v1.InstanceService.UndeleteInstance
    */
   undeleteInstance: {
@@ -1390,6 +1402,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.sync
+   *
    * @generated from rpc bytebase.v1.InstanceService.SyncInstance
    */
   syncInstance: {
@@ -1398,6 +1412,8 @@ export declare const InstanceService: GenService<{
     output: typeof SyncInstanceResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.get
+   *
    * @generated from rpc bytebase.v1.InstanceService.ListInstanceDatabase
    */
   listInstanceDatabase: {
@@ -1406,6 +1422,8 @@ export declare const InstanceService: GenService<{
     output: typeof ListInstanceDatabaseResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.sync
+   *
    * @generated from rpc bytebase.v1.InstanceService.BatchSyncInstances
    */
   batchSyncInstances: {
@@ -1414,6 +1432,8 @@ export declare const InstanceService: GenService<{
     output: typeof BatchSyncInstancesResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.BatchUpdateInstances
    */
   batchUpdateInstances: {
@@ -1422,6 +1442,8 @@ export declare const InstanceService: GenService<{
     output: typeof BatchUpdateInstancesResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.AddDataSource
    */
   addDataSource: {
@@ -1430,6 +1452,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.RemoveDataSource
    */
   removeDataSource: {
@@ -1438,6 +1462,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.UpdateDataSource
    */
   updateDataSource: {

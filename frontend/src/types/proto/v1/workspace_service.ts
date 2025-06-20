@@ -14,6 +14,7 @@ export const WorkspaceServiceDefinition = {
   name: "WorkspaceService",
   fullName: "bytebase.v1.WorkspaceService",
   methods: {
+    /** Permissions required: bb.workspaces.getIamPolicy */
     getIamPolicy: {
       name: "GetIamPolicy",
       requestType: GetIamPolicyRequest,
@@ -104,6 +105,7 @@ export const WorkspaceServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.workspaces.setIamPolicy */
     setIamPolicy: {
       name: "SetIamPolicy",
       requestType: SetIamPolicyRequest,

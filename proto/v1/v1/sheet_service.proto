@@ -14,6 +14,7 @@ import "v1/common.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service SheetService {
+  // Permissions required: bb.sheets.create
   rpc CreateSheet(CreateSheetRequest) returns (Sheet) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/sheets"
@@ -24,6 +25,7 @@ service SheetService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.sheets.create
   rpc BatchCreateSheets(BatchCreateSheetsRequest) returns (BatchCreateSheetsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/sheets:batchCreate"
@@ -33,6 +35,7 @@ service SheetService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.sheets.get
   rpc GetSheet(GetSheetRequest) returns (Sheet) {
     option (google.api.http) = {get: "/v1/{name=projects/*/sheets/*}"};
     option (google.api.method_signature) = "name";
@@ -40,6 +43,7 @@ service SheetService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.sheets.update
   rpc UpdateSheet(UpdateSheetRequest) returns (Sheet) {
     option (google.api.http) = {
       patch: "/v1/{sheet.name=projects/*/sheets/*}"

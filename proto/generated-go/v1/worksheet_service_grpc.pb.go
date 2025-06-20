@@ -33,28 +33,34 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorksheetServiceClient interface {
 	// Create a personal worksheet used in SQL Editor.
+	// Permissions required: None
 	CreateWorksheet(ctx context.Context, in *CreateWorksheetRequest, opts ...grpc.CallOption) (*Worksheet, error)
 	// Get a worksheet by name.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.get permission on the workspace;
 	// - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+	// Permissions required: None
 	GetWorksheet(ctx context.Context, in *GetWorksheetRequest, opts ...grpc.CallOption) (*Worksheet, error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
+	// Permissions required: None
 	SearchWorksheets(ctx context.Context, in *SearchWorksheetsRequest, opts ...grpc.CallOption) (*SearchWorksheetsResponse, error)
 	// Update a worksheet.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.manage permission on the workspace;
 	// - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+	// Permissions required: None
 	UpdateWorksheet(ctx context.Context, in *UpdateWorksheetRequest, opts ...grpc.CallOption) (*Worksheet, error)
 	// Update the organizer of a worksheet.
 	// The access is the same as UpdateWorksheet method.
+	// Permissions required: None
 	UpdateWorksheetOrganizer(ctx context.Context, in *UpdateWorksheetOrganizerRequest, opts ...grpc.CallOption) (*WorksheetOrganizer, error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
+	// Permissions required: None
 	DeleteWorksheet(ctx context.Context, in *DeleteWorksheetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -131,28 +137,34 @@ func (c *worksheetServiceClient) DeleteWorksheet(ctx context.Context, in *Delete
 // for forward compatibility.
 type WorksheetServiceServer interface {
 	// Create a personal worksheet used in SQL Editor.
+	// Permissions required: None
 	CreateWorksheet(context.Context, *CreateWorksheetRequest) (*Worksheet, error)
 	// Get a worksheet by name.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.get permission on the workspace;
 	// - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+	// Permissions required: None
 	GetWorksheet(context.Context, *GetWorksheetRequest) (*Worksheet, error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
+	// Permissions required: None
 	SearchWorksheets(context.Context, *SearchWorksheetsRequest) (*SearchWorksheetsResponse, error)
 	// Update a worksheet.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.manage permission on the workspace;
 	// - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+	// Permissions required: None
 	UpdateWorksheet(context.Context, *UpdateWorksheetRequest) (*Worksheet, error)
 	// Update the organizer of a worksheet.
 	// The access is the same as UpdateWorksheet method.
+	// Permissions required: None
 	UpdateWorksheetOrganizer(context.Context, *UpdateWorksheetOrganizerRequest) (*WorksheetOrganizer, error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
+	// Permissions required: None
 	DeleteWorksheet(context.Context, *DeleteWorksheetRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedWorksheetServiceServer()
 }

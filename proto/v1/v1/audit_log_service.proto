@@ -15,6 +15,7 @@ import "v1/iam_policy.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service AuditLogService {
+  // Permissions required: None
   rpc SearchAuditLogs(SearchAuditLogsRequest) returns (SearchAuditLogsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/auditLogs:search"
@@ -27,6 +28,8 @@ service AuditLogService {
     option (bytebase.v1.permission) = "bb.auditLogs.search";
     option (bytebase.v1.auth_method) = IAM;
   }
+
+  // Permissions required: bb.auditLogs.export
   rpc ExportAuditLogs(ExportAuditLogsRequest) returns (ExportAuditLogsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/auditLogs:export"

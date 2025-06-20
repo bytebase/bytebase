@@ -51,12 +51,17 @@ const (
 
 // GroupServiceClient is a client for the bytebase.v1.GroupService service.
 type GroupServiceClient interface {
+	// Permissions required: bb.groups.get
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
+	// Permissions required: bb.groups.list
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
+	// Permissions required: bb.groups.create
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error)
 	// UpdateGroup updates the group.
 	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
+	// Permissions required: bb.groups.update
 	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error)
+	// Permissions required: bb.groups.delete
 	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -140,12 +145,17 @@ func (c *groupServiceClient) DeleteGroup(ctx context.Context, req *connect.Reque
 
 // GroupServiceHandler is an implementation of the bytebase.v1.GroupService service.
 type GroupServiceHandler interface {
+	// Permissions required: bb.groups.get
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
+	// Permissions required: bb.groups.list
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
+	// Permissions required: bb.groups.create
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error)
 	// UpdateGroup updates the group.
 	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
+	// Permissions required: bb.groups.update
 	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error)
+	// Permissions required: bb.groups.delete
 	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

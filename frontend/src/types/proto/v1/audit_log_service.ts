@@ -1060,6 +1060,7 @@ export const AuditLogServiceDefinition = {
   name: "AuditLogService",
   fullName: "bytebase.v1.AuditLogService",
   methods: {
+    /** Permissions required: None */
     searchAuditLogs: {
       name: "SearchAuditLogs",
       requestType: SearchAuditLogsRequest,
@@ -1152,6 +1153,7 @@ export const AuditLogServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.auditLogs.export */
     exportAuditLogs: {
       name: "ExportAuditLogs",
       requestType: ExportAuditLogsRequest,

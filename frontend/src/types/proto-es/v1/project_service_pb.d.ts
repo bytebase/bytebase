@@ -888,6 +888,7 @@ export declare const ProjectService: GenService<{
   /**
    * GetProject retrieves a project by name.
    * Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+   * Permissions required: bb.projects.get
    *
    * @generated from rpc bytebase.v1.ProjectService.GetProject
    */
@@ -897,6 +898,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.list
+   *
    * @generated from rpc bytebase.v1.ProjectService.ListProjects
    */
   listProjects: {
@@ -905,6 +908,8 @@ export declare const ProjectService: GenService<{
     output: typeof ListProjectsResponseSchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.ProjectService.SearchProjects
    */
   searchProjects: {
@@ -913,6 +918,8 @@ export declare const ProjectService: GenService<{
     output: typeof SearchProjectsResponseSchema;
   },
   /**
+   * Permissions required: bb.projects.create
+   *
    * @generated from rpc bytebase.v1.ProjectService.CreateProject
    */
   createProject: {
@@ -921,6 +928,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.UpdateProject
    */
   updateProject: {
@@ -929,6 +938,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.delete
+   *
    * @generated from rpc bytebase.v1.ProjectService.DeleteProject
    */
   deleteProject: {
@@ -937,6 +948,8 @@ export declare const ProjectService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: bb.projects.undelete
+   *
    * @generated from rpc bytebase.v1.ProjectService.UndeleteProject
    */
   undeleteProject: {
@@ -945,6 +958,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.delete
+   *
    * @generated from rpc bytebase.v1.ProjectService.BatchDeleteProjects
    */
   batchDeleteProjects: {
@@ -953,6 +968,8 @@ export declare const ProjectService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: bb.projects.getIamPolicy
+   *
    * @generated from rpc bytebase.v1.ProjectService.GetIamPolicy
    */
   getIamPolicy: {
@@ -962,6 +979,7 @@ export declare const ProjectService: GenService<{
   },
   /**
    * Deprecated.
+   * Permissions required: bb.projects.getIamPolicy
    *
    * @generated from rpc bytebase.v1.ProjectService.BatchGetIamPolicy
    */
@@ -971,6 +989,8 @@ export declare const ProjectService: GenService<{
     output: typeof BatchGetIamPolicyResponseSchema;
   },
   /**
+   * Permissions required: bb.projects.setIamPolicy
+   *
    * @generated from rpc bytebase.v1.ProjectService.SetIamPolicy
    */
   setIamPolicy: {
@@ -979,6 +999,8 @@ export declare const ProjectService: GenService<{
     output: typeof IamPolicySchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.AddWebhook
    */
   addWebhook: {
@@ -987,6 +1009,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.UpdateWebhook
    */
   updateWebhook: {
@@ -995,6 +1019,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.RemoveWebhook
    */
   removeWebhook: {
@@ -1003,6 +1029,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.TestWebhook
    */
   testWebhook: {

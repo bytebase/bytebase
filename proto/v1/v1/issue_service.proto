@@ -15,6 +15,7 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service IssueService {
+  // Permissions required: bb.issues.get
   rpc GetIssue(GetIssueRequest) returns (Issue) {
     option (google.api.http) = {get: "/v1/{name=projects/*/issues/*}"};
     option (google.api.method_signature) = "name";
@@ -22,6 +23,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.issues.create
   rpc CreateIssue(CreateIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/issues"
@@ -34,6 +36,7 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.issues.list
   rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/issues"};
     option (google.api.method_signature) = "parent";
@@ -42,6 +45,7 @@ service IssueService {
   }
 
   // Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
+  // Permissions required: bb.issues.get
   rpc SearchIssues(SearchIssuesRequest) returns (SearchIssuesResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/issues:search"
@@ -51,6 +55,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Permissions required: bb.issues.update
   rpc UpdateIssue(UpdateIssueRequest) returns (Issue) {
     option (google.api.http) = {
       patch: "/v1/{issue.name=projects/*/issues/*}"
@@ -62,6 +67,7 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.issueComments.list
   rpc ListIssueComments(ListIssueCommentsRequest) returns (ListIssueCommentsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/issues/*}/issueComments"};
     option (google.api.method_signature) = "parent";
@@ -69,6 +75,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.issueComments.create
   rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/issues/*}:comment"
@@ -80,6 +87,7 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.issueComments.update
   rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
       patch: "/v1/{parent=projects/*/issues/*}:comment"
@@ -91,6 +99,7 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.issues.update
   rpc BatchUpdateIssuesStatus(BatchUpdateIssuesStatusRequest) returns (BatchUpdateIssuesStatusResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/issues:batchUpdateStatus"
@@ -103,6 +112,7 @@ service IssueService {
 
   // ApproveIssue approves the issue.
   // The access is based on approval flow.
+  // Permissions required: None
   rpc ApproveIssue(ApproveIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/issues/*}:approve"
@@ -114,6 +124,7 @@ service IssueService {
 
   // RejectIssue rejects the issue.
   // The access is based on approval flow.
+  // Permissions required: None
   rpc RejectIssue(RejectIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/issues/*}:reject"
@@ -125,6 +136,7 @@ service IssueService {
 
   // RequestIssue requests the issue.
   // The access is based on approval flow.
+  // Permissions required: None
   rpc RequestIssue(RequestIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/issues/*}:request"

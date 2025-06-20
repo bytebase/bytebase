@@ -16,6 +16,7 @@ import "v1/database_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service SQLService {
+  // Permissions required: bb.databases.get
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:query"
@@ -31,6 +32,7 @@ service SQLService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.sql.admin
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     // GRPC streaming / websocket requires GET method instead of POST.
     option (google.api.http) = {get: "/v1:adminExecute"};
@@ -40,6 +42,7 @@ service SQLService {
   }
 
   // SearchQueryHistories searches query histories for the caller.
+  // Permissions required: None
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {
       post: "/v1/queryHistories:search"
@@ -48,6 +51,7 @@ service SQLService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Permissions required: bb.databases.get
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
@@ -71,6 +75,7 @@ service SQLService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.databases.check
   rpc Check(CheckRequest) returns (CheckResponse) {
     option (google.api.http) = {
       post: "/v1/sql/check"
@@ -80,6 +85,7 @@ service SQLService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: None
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
     option (google.api.http) = {
       post: "/v1/sql/pretty"
@@ -88,6 +94,7 @@ service SQLService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Permissions required: None
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
     option (google.api.http) = {
       post: "/v1/schemaDesign:diffMetadata"
@@ -97,6 +104,7 @@ service SQLService {
     // This is a util method requiring no authentication thus no authorization.
   }
 
+  // Permissions required: None
   rpc AICompletion(AICompletionRequest) returns (AICompletionResponse) {
     option (google.api.http) = {
       post: "/v1/sql/aiCompletion"

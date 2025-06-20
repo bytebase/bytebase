@@ -1350,6 +1350,8 @@ export declare const AICompletionResponse_Candidate_Content_PartSchema: GenMessa
  */
 export declare const SQLService: GenService<{
   /**
+   * Permissions required: bb.databases.get
+   *
    * @generated from rpc bytebase.v1.SQLService.Query
    */
   query: {
@@ -1358,6 +1360,8 @@ export declare const SQLService: GenService<{
     output: typeof QueryResponseSchema;
   },
   /**
+   * Permissions required: bb.sql.admin
+   *
    * @generated from rpc bytebase.v1.SQLService.AdminExecute
    */
   adminExecute: {
@@ -1367,6 +1371,7 @@ export declare const SQLService: GenService<{
   },
   /**
    * SearchQueryHistories searches query histories for the caller.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.SQLService.SearchQueryHistories
    */
@@ -1376,6 +1381,8 @@ export declare const SQLService: GenService<{
     output: typeof SearchQueryHistoriesResponseSchema;
   },
   /**
+   * Permissions required: bb.databases.get
+   *
    * @generated from rpc bytebase.v1.SQLService.Export
    */
   export: {
@@ -1384,6 +1391,8 @@ export declare const SQLService: GenService<{
     output: typeof ExportResponseSchema;
   },
   /**
+   * Permissions required: bb.databases.check
+   *
    * @generated from rpc bytebase.v1.SQLService.Check
    */
   check: {
@@ -1392,6 +1401,8 @@ export declare const SQLService: GenService<{
     output: typeof CheckResponseSchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.SQLService.Pretty
    */
   pretty: {
@@ -1400,6 +1411,8 @@ export declare const SQLService: GenService<{
     output: typeof PrettyResponseSchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.SQLService.DiffMetadata
    */
   diffMetadata: {
@@ -1408,6 +1421,8 @@ export declare const SQLService: GenService<{
     output: typeof DiffMetadataResponseSchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.SQLService.AICompletion
    */
   aICompletion: {

@@ -1,6 +1,9 @@
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { databaseCatalogServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { databaseCatalogServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
@@ -10,6 +13,14 @@ import {
   TableCatalog,
   TableCatalog_Columns,
 } from "@/types/proto/v1/database_catalog_service";
+import { 
+  GetDatabaseCatalogRequestSchema,
+  UpdateDatabaseCatalogRequestSchema
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import { 
+  convertNewDatabaseCatalogToOld,
+  convertOldDatabaseCatalogToNew 
+} from "@/utils/v1/database-catalog-conversions";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useDatabaseV1Store } from "./database";
 
@@ -62,25 +73,27 @@ export const useDatabaseCatalogV1Store = defineStore(
       console.debug("[getOrFetchDatabaseCatalog]", {
         name: catalogResourceName,
       });
-      const promise = databaseCatalogServiceClient.getDatabaseCatalog(
-        {
-          name: catalogResourceName,
-        },
-        {
-          silent,
-        }
-      );
-      promise.then((res) => {
-        setCache(res);
+      const request = create(GetDatabaseCatalogRequestSchema, {
+        name: catalogResourceName,
+      });
+      const promise = databaseCatalogServiceClientConnect.getDatabaseCatalog(request, {
+        contextValues: createContextValues().set(silentContextKey, silent),
+      }).then((res) => {
+        const oldCatalog = convertNewDatabaseCatalogToOld(res);
+        setCache(oldCatalog);
+        return oldCatalog;
       });
 
       return promise;
     };
 
     const updateDatabaseCatalog = async (catalog: DatabaseCatalog) => {
-      const updated = await databaseCatalogServiceClient.updateDatabaseCatalog({
-        catalog,
+      const newCatalog = convertOldDatabaseCatalogToNew(catalog);
+      const request = create(UpdateDatabaseCatalogRequestSchema, {
+        catalog: newCatalog,
       });
+      const response = await databaseCatalogServiceClientConnect.updateDatabaseCatalog(request);
+      const updated = convertNewDatabaseCatalogToOld(response);
       setCache(updated);
       return updated;
     };

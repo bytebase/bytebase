@@ -53,10 +53,15 @@ const (
 
 // ReviewConfigServiceClient is a client for the bytebase.v1.ReviewConfigService service.
 type ReviewConfigServiceClient interface {
+	// Permissions required: bb.reviewConfigs.create
 	CreateReviewConfig(context.Context, *connect.Request[v1.CreateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	// Permissions required: bb.reviewConfigs.list
 	ListReviewConfigs(context.Context, *connect.Request[v1.ListReviewConfigsRequest]) (*connect.Response[v1.ListReviewConfigsResponse], error)
+	// Permissions required: bb.reviewConfigs.get
 	GetReviewConfig(context.Context, *connect.Request[v1.GetReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	// Permissions required: bb.reviewConfigs.update
 	UpdateReviewConfig(context.Context, *connect.Request[v1.UpdateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	// Permissions required: bb.reviewConfigs.delete
 	DeleteReviewConfig(context.Context, *connect.Request[v1.DeleteReviewConfigRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -140,10 +145,15 @@ func (c *reviewConfigServiceClient) DeleteReviewConfig(ctx context.Context, req 
 
 // ReviewConfigServiceHandler is an implementation of the bytebase.v1.ReviewConfigService service.
 type ReviewConfigServiceHandler interface {
+	// Permissions required: bb.reviewConfigs.create
 	CreateReviewConfig(context.Context, *connect.Request[v1.CreateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	// Permissions required: bb.reviewConfigs.list
 	ListReviewConfigs(context.Context, *connect.Request[v1.ListReviewConfigsRequest]) (*connect.Response[v1.ListReviewConfigsResponse], error)
+	// Permissions required: bb.reviewConfigs.get
 	GetReviewConfig(context.Context, *connect.Request[v1.GetReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	// Permissions required: bb.reviewConfigs.update
 	UpdateReviewConfig(context.Context, *connect.Request[v1.UpdateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
+	// Permissions required: bb.reviewConfigs.delete
 	DeleteReviewConfig(context.Context, *connect.Request[v1.DeleteReviewConfigRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

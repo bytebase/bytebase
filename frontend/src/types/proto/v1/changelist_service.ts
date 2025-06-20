@@ -794,6 +794,7 @@ export const ChangelistServiceDefinition = {
   name: "ChangelistService",
   fullName: "bytebase.v1.ChangelistService",
   methods: {
+    /** Permissions required: bb.changelists.create */
     createChangelist: {
       name: "CreateChangelist",
       requestType: CreateChangelistRequest,
@@ -887,6 +888,7 @@ export const ChangelistServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.changelists.get */
     getChangelist: {
       name: "GetChangelist",
       requestType: GetChangelistRequest,
@@ -945,6 +947,7 @@ export const ChangelistServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.changelists.list */
     listChangelists: {
       name: "ListChangelists",
       requestType: ListChangelistsRequest,
@@ -1024,6 +1027,7 @@ export const ChangelistServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.changelists.update */
     updateChangelist: {
       name: "UpdateChangelist",
       requestType: UpdateChangelistRequest,
@@ -1154,6 +1158,7 @@ export const ChangelistServiceDefinition = {
         },
       },
     },
+    /** Permissions required: bb.changelists.delete */
     deleteChangelist: {
       name: "DeleteChangelist",
       requestType: DeleteChangelistRequest,

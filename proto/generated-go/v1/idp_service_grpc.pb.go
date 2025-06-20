@@ -32,11 +32,17 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IdentityProviderServiceClient interface {
+	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(ctx context.Context, in *GetIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
+	// Permissions required: None
 	ListIdentityProviders(ctx context.Context, in *ListIdentityProvidersRequest, opts ...grpc.CallOption) (*ListIdentityProvidersResponse, error)
+	// Permissions required: bb.identityProviders.create
 	CreateIdentityProvider(ctx context.Context, in *CreateIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
+	// Permissions required: bb.identityProviders.update
 	UpdateIdentityProvider(ctx context.Context, in *UpdateIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
+	// Permissions required: bb.identityProviders.delete
 	DeleteIdentityProvider(ctx context.Context, in *DeleteIdentityProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Permissions required: bb.identityProviders.update
 	TestIdentityProvider(ctx context.Context, in *TestIdentityProviderRequest, opts ...grpc.CallOption) (*TestIdentityProviderResponse, error)
 }
 
@@ -112,11 +118,17 @@ func (c *identityProviderServiceClient) TestIdentityProvider(ctx context.Context
 // All implementations must embed UnimplementedIdentityProviderServiceServer
 // for forward compatibility.
 type IdentityProviderServiceServer interface {
+	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(context.Context, *GetIdentityProviderRequest) (*IdentityProvider, error)
+	// Permissions required: None
 	ListIdentityProviders(context.Context, *ListIdentityProvidersRequest) (*ListIdentityProvidersResponse, error)
+	// Permissions required: bb.identityProviders.create
 	CreateIdentityProvider(context.Context, *CreateIdentityProviderRequest) (*IdentityProvider, error)
+	// Permissions required: bb.identityProviders.update
 	UpdateIdentityProvider(context.Context, *UpdateIdentityProviderRequest) (*IdentityProvider, error)
+	// Permissions required: bb.identityProviders.delete
 	DeleteIdentityProvider(context.Context, *DeleteIdentityProviderRequest) (*emptypb.Empty, error)
+	// Permissions required: bb.identityProviders.update
 	TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*TestIdentityProviderResponse, error)
 	mustEmbedUnimplementedIdentityProviderServiceServer()
 }

@@ -43,7 +43,9 @@ const (
 
 // InstanceRoleServiceClient is a client for the bytebase.v1.InstanceRoleService service.
 type InstanceRoleServiceClient interface {
+	// Permissions required: bb.instanceRoles.get
 	GetInstanceRole(context.Context, *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error)
+	// Permissions required: bb.instanceRoles.get
 	ListInstanceRoles(context.Context, *connect.Request[v1.ListInstanceRolesRequest]) (*connect.Response[v1.ListInstanceRolesResponse], error)
 }
 
@@ -91,7 +93,9 @@ func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, req *
 
 // InstanceRoleServiceHandler is an implementation of the bytebase.v1.InstanceRoleService service.
 type InstanceRoleServiceHandler interface {
+	// Permissions required: bb.instanceRoles.get
 	GetInstanceRole(context.Context, *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error)
+	// Permissions required: bb.instanceRoles.get
 	ListInstanceRoles(context.Context, *connect.Request[v1.ListInstanceRolesRequest]) (*connect.Response[v1.ListInstanceRolesResponse], error)
 }
 

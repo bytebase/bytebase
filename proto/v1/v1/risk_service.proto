@@ -14,6 +14,7 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service RiskService {
+  // Permissions required: bb.risks.list
   rpc ListRisks(ListRisksRequest) returns (ListRisksResponse) {
     option (google.api.http) = {get: "/v1/risks"};
     option (google.api.method_signature) = "";
@@ -21,6 +22,7 @@ service RiskService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.risks.create
   rpc CreateRisk(CreateRiskRequest) returns (Risk) {
     option (google.api.http) = {
       post: "/v1/risks"
@@ -32,6 +34,7 @@ service RiskService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.risks.list
   rpc GetRisk(GetRiskRequest) returns (Risk) {
     option (google.api.http) = {get: "/v1/{name=risks/*}"};
     option (google.api.method_signature) = "name";
@@ -39,6 +42,7 @@ service RiskService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.risks.update
   rpc UpdateRisk(UpdateRiskRequest) returns (Risk) {
     option (google.api.http) = {
       patch: "/v1/{risk.name=risks/*}"
@@ -50,6 +54,7 @@ service RiskService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.risks.delete
   rpc DeleteRisk(DeleteRiskRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=risks/*}"};
     option (bytebase.v1.permission) = "bb.risks.delete";

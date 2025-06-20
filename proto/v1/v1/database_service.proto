@@ -16,6 +16,7 @@ import "v1/instance_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service DatabaseService {
+  // Permissions required: bb.databases.get
   rpc GetDatabase(GetDatabaseRequest) returns (Database) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*}"};
     option (google.api.method_signature) = "name";
@@ -23,6 +24,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.databases.get
   rpc BatchGetDatabases(BatchGetDatabasesRequest) returns (BatchGetDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/databases:batchGet"
@@ -32,6 +34,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Permissions required: bb.databases.list
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/databases"
@@ -45,6 +48,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Permissions required: bb.databases.update
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
     option (google.api.http) = {
       patch: "/v1/{database.name=instances/*/databases/*}"
@@ -56,6 +60,7 @@ service DatabaseService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.databases.update
   rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*}/databases:batchUpdate"
@@ -66,6 +71,7 @@ service DatabaseService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.databases.sync
   rpc SyncDatabase(SyncDatabaseRequest) returns (SyncDatabaseResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:sync"
@@ -75,6 +81,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.databases.sync
   rpc BatchSyncDatabases(BatchSyncDatabasesRequest) returns (BatchSyncDatabasesResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*}/databases:batchSync"
@@ -84,18 +91,21 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.databases.getSchema
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.databases.getSchema
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.databases.get
   rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:diffSchema"
@@ -111,6 +121,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.databaseSecrets.list
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/secrets"};
     option (google.api.method_signature) = "parent";
@@ -118,6 +129,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.databaseSecrets.update
   rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
     option (google.api.http) = {
       patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}"
@@ -128,6 +140,7 @@ service DatabaseService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.databaseSecrets.delete
   rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/secrets/*}"};
     option (bytebase.v1.permission) = "bb.databaseSecrets.delete";
@@ -135,6 +148,7 @@ service DatabaseService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.changelogs.list
   rpc ListChangelogs(ListChangelogsRequest) returns (ListChangelogsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changelogs"};
     option (google.api.method_signature) = "parent";
@@ -142,6 +156,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: changelogs.get
   rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
     option (google.api.method_signature) = "name";
@@ -149,6 +164,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: databases.getSchema
   rpc GetSchemaString(GetSchemaStringRequest) returns (GetSchemaStringResponse) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schemaString}"};
     option (google.api.method_signature) = "name";
