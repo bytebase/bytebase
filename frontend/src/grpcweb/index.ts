@@ -157,12 +157,6 @@ export const changelistServiceClient = clientFactory.create(
   channel
 );
 
-
-export const groupServiceClient = clientFactory.create(
-  GroupServiceDefinition,
-  channel
-);
-
 export const reviewConfigServiceClient = clientFactory.create(
   ReviewConfigServiceDefinition,
   channel
