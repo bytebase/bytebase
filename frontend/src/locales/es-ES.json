@@ -1267,7 +1267,8 @@
       "credential-source": "Credential Source",
       "tenant-id": "Tenant ID",
       "client-id": "Client ID",
-      "client-secret": "Client Secret"
+      "client-secret": "Client Secret",
+      "specific-credential": "Credencial específica"
     },
     "database-region": "Región de la base de datos",
     "external-secret-gcp": {
@@ -2729,10 +2730,8 @@
     "vcs-type": {
       "unspecified": "No especificado"
     },
-    "actions": {
-    },
-    "messages": {
-    },
+    "actions": {},
+    "messages": {},
     "usage-description": "El lanzamiento solo se utiliza en GitOps personalizado con integración de API."
   },
   "export-data": {

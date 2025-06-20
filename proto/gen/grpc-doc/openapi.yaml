@@ -9483,8 +9483,12 @@ components:
                         - AZURE_IAM
                     type: string
                     format: enum
-                clientSecretCredential:
-                    $ref: '#/components/schemas/DataSource_ClientSecretCredential'
+                azureCredential:
+                    $ref: '#/components/schemas/DataSource_AzureCredential'
+                awsCredential:
+                    $ref: '#/components/schemas/DataSource_AWSCredential'
+                gcpCredential:
+                    $ref: '#/components/schemas/DataSource_GCPCredential'
                 saslConfig:
                     $ref: '#/components/schemas/SASLConfig'
                 additionalAddresses:
@@ -9582,6 +9586,18 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
+        DataSource_AWSCredential:
+            type: object
+            properties:
+                accessKeyId:
+                    writeOnly: true
+                    type: string
+                secretAccessKey:
+                    writeOnly: true
+                    type: string
+                sessionToken:
+                    writeOnly: true
+                    type: string
         DataSource_Address:
             type: object
             properties:
@@ -9589,7 +9605,7 @@ components:
                     type: string
                 port:
                     type: string
-        DataSource_ClientSecretCredential:
+        DataSource_AzureCredential:
             type: object
             properties:
                 tenantId:
@@ -9597,7 +9613,13 @@ components:
                 clientId:
                     type: string
                 clientSecret:
-                    readOnly: true
+                    writeOnly: true
+                    type: string
+        DataSource_GCPCredential:
+            type: object
+            properties:
+                content:
+                    writeOnly: true
                     type: string
         Database:
             type: object

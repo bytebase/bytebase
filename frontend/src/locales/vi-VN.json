@@ -1267,7 +1267,8 @@
       "credential-source": "Credential Source",
       "tenant-id": "Tenant ID",
       "client-id": "Client ID",
-      "client-secret": "Client Secret"
+      "client-secret": "Client Secret",
+      "specific-credential": "Chứng chỉ cụ thể"
     },
     "database-region": "Khu vực cơ sở dữ liệu",
     "external-secret-gcp": {
@@ -2729,10 +2730,8 @@
     "vcs-type": {
       "unspecified": "Không xác định"
     },
-    "actions": {
-    },
-    "messages": {
-    },
+    "actions": {},
+    "messages": {},
     "usage-description": "Bản phát hành chỉ được sử dụng trong GitOps tùy chỉnh với tích hợp API."
   },
   "export-data": {
