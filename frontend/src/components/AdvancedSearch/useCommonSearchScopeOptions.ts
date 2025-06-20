@@ -24,6 +24,7 @@ import {
   extractProjectResourceName,
   supportedEngineV1List,
   getDefaultPagination,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 import type { ScopeOption, ValueOption } from "./types";
 
@@ -192,12 +193,19 @@ export const useCommonSearchScopeOptions = (
     } as Record<SearchScopeId, () => ScopeOption>;
 
     const scopes: ScopeOption[] = [];
-    unref(supportOptionIdList).forEach((id) => {
+    for (const id of unref(supportOptionIdList)) {
+      // TODO(ed): optimize it.
+      if (id === "instance") {
+        if (!hasWorkspacePermissionV2("bb.instances.list")) {
+          continue;
+        }
+      }
       const create = scopeCreators[id];
       if (create) {
         scopes.push(create());
       }
-    });
+    }
+
     return scopes;
   });
 
