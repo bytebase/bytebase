@@ -2516,7 +2516,6 @@
       "re-requested-review": "revisión de problema nuevamente solicitada",
       "approved-by": "Aprobado por",
       "rejected-by": "Rechazado por",
-      "potential-approvers": "Aprobadores potenciales",
       "and-n-other-users": "{names} y {count} otros usuarios",
       "self-approval-not-allowed": "No se permite la autoaprobación para este proyecto. No puedes aprobarlo como creador."
     }

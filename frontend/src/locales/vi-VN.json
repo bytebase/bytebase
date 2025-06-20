@@ -2516,7 +2516,6 @@
       "re-requested-review": "đã yêu cầu xem xét lại vấn đề",
       "approved-by": "Được chấp thuận bởi",
       "rejected-by": "Bị từ chối bởi",
-      "potential-approvers": "Người phê duyệt tiềm năng",
       "and-n-other-users": "{names} và {count} người dùng khác",
       "self-approval-not-allowed": "Không được phép tự phê duyệt cho dự án này. Bạn không thể phê duyệt với tư cách là người sáng tạo."
     }

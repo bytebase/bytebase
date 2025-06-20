@@ -2516,7 +2516,6 @@
       "re-requested-review": "re-requested issue review",
       "approved-by": "Approved by",
       "rejected-by": "Rejected by",
-      "potential-approvers": "Potential Approvers",
       "and-n-other-users": "{names} and 1 other user | {names} and {count} other users",
       "self-approval-not-allowed": "Self-approval is not allowed in this project. So you cannot approve your own issue."
     }

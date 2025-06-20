@@ -2516,7 +2516,6 @@
       "re-requested-review": "イシューの承認を再度リクエストします",
       "approved-by": "承認者",
       "rejected-by": "拒否された",
-      "potential-approvers": "潜在的な承認者",
       "and-n-other-users": "{names} と他の {count} 人のユーザー",
       "self-approval-not-allowed": "このプロジェクトでは自己承認は許可されていません。作成者として承認することはできません。"
     }
