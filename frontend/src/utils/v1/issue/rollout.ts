@@ -65,7 +65,7 @@ export const stageV1Slug = (stage: Stage): string => {
 };
 
 export const taskV1Slug = (task: Task): string => {
-  return extractTaskUID(task.name)
+  return extractTaskUID(task.name);
 };
 
 export const activeTaskInTaskList = (tasks: Task[]): Task => {
@@ -183,7 +183,9 @@ export const buildIssueV1LinkWithTask = (
   );
 
   const projectId = extractProjectResourceName(issue.project);
-  const issueSlug = simple ? extractIssueUID(issue.name) : issueV1Slug(issue);
+  const issueSlug = simple
+    ? extractIssueUID(issue.name)
+    : issueV1Slug(issue.name, issue.title);
   const query: Record<string, string> = {};
   if (stage) {
     // Stage UID is now always the environment ID

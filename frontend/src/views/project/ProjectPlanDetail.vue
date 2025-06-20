@@ -1,7 +1,7 @@
 <template>
   <div class="relative overflow-x-hidden h-full">
     <template v-if="ready">
-      <PlanDetailPage />
+      <PlanDetailPage :key="plan.name" />
     </template>
     <div v-else class="w-full h-full flex flex-col items-center justify-center">
       <NSpin />
@@ -23,18 +23,19 @@ import PlanDetailPage from "@/components/Plan/PlanDetailPage.vue";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { isValidPlanName } from "@/utils";
 
-defineOptions({
-  inheritAttrs: false,
-});
-
 const props = defineProps<{
   projectId: string;
-  planId: string;
+  planId?: string;
+  issueId?: string;
 }>();
 
 const { t } = useI18n();
-const { isCreating, plan, planCheckRunList, isInitializing } =
-  useInitializePlan(toRef(props, "planId"), toRef(props, "projectId"));
+const { isCreating, plan, planCheckRunList, issue, isInitializing } =
+  useInitializePlan(
+    toRef(props, "projectId"),
+    toRef(props, "planId"),
+    toRef(props, "issueId")
+  );
 const planBaseContext = useBasePlanContext({
   isCreating,
   plan,
@@ -49,6 +50,7 @@ providePlanContext(
     isCreating,
     plan,
     planCheckRunList,
+    issue,
     ...planBaseContext,
   },
   true /* root */

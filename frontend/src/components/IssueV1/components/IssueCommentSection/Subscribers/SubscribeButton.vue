@@ -26,7 +26,6 @@ const isSubscribed = computed(() => {
 });
 
 const handleClick = async () => {
-  // TODO
   try {
     isLoading.value = true;
     await toggleSubscribeIssue(issue.value);

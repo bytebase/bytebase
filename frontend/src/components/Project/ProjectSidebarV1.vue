@@ -9,17 +9,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { useRouter } from "vue-router";
 import CommonSidebar from "@/components/v2/Sidebar/CommonSidebar.vue";
 import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { useRecentVisit } from "@/router/useRecentVisit";
+import { useCurrentProjectV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
-import { useCurrentProject } from "./useCurrentProject";
 import { useProjectSidebar } from "./useProjectSidebar";
 
-const props = defineProps<{
+defineProps<{
   projectId?: string;
   instanceId?: string;
   databaseName?: string;
@@ -30,17 +29,7 @@ const props = defineProps<{
 const router = useRouter();
 const { record } = useRecentVisit();
 
-const params = computed(() => {
-  return {
-    projectId: props.projectId,
-    instanceId: props.instanceId,
-    databaseName: props.databaseName,
-    changelogId: props.changelogId,
-    issueSlug: props.issueSlug,
-  };
-});
-
-const { project } = useCurrentProject(params);
+const { project } = useCurrentProjectV1();
 
 const { projectSidebarItemList, checkIsActive } = useProjectSidebar(project);
 

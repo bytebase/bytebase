@@ -161,7 +161,7 @@ const rowProps = (issue: ComposedIssue) => {
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
           projectId: extractProjectResourceName(issue.project),
-          issueSlug: issueV1Slug(issue),
+          issueSlug: issueV1Slug(issue.name, issue.title),
         },
       });
       const url = route.fullPath;

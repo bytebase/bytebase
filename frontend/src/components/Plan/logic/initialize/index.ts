@@ -1,7 +1,9 @@
 import { computed, ref, unref, watch, type MaybeRef } from "vue";
 import { useRoute, useRouter, type LocationQuery } from "vue-router";
+import { issueServiceClient } from "@/grpcweb";
 import { projectNamePrefix, usePlanStore } from "@/store";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
+import type { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { emptyPlan } from "@/types/v1/issue/plan";
 import { createPlanSkeleton } from "./create";
@@ -11,20 +13,34 @@ export * from "./create";
 export * from "./util";
 
 export function useInitializePlan(
-  planId: MaybeRef<string>,
   projectId: MaybeRef<string>,
-  redirectNotFound: boolean = true
+  planId: MaybeRef<string | undefined>,
+  issueId: MaybeRef<string | undefined>
 ) {
   const isCreating = computed(() => {
-    return unref(planId).toLowerCase() === "create";
+    const id = unref(planId) || unref(issueId);
+    return id?.toLowerCase() === "create";
   });
+
   const uid = computed(() => {
-    const id = unref(planId);
-    if (id.toLowerCase() === "create") return String(EMPTY_ID);
-    const uid = Number(id);
-    if (uid > 0) return String(uid);
+    // If planId is provided, use it directly
+    if (unref(planId)) {
+      const id = unref(planId)!;
+      if (id.toLowerCase() === "create") return String(EMPTY_ID);
+      const uid = Number(id);
+      if (uid > 0) return String(uid);
+      return String(UNKNOWN_ID);
+    }
+    // Otherwise, if issueId is provided, we'll fetch the plan from the issue
+    if (unref(issueId)) {
+      const id = unref(issueId)!;
+      if (id.toLowerCase() === "create") return String(EMPTY_ID);
+      // For issue-based initialization, return a special marker
+      return `issue:${id}`;
+    }
     return String(UNKNOWN_ID);
   });
+
   const route = useRoute();
   const router = useRouter();
   const planStore = usePlanStore();
@@ -32,19 +48,52 @@ export function useInitializePlan(
 
   const plan = ref<Plan>(emptyPlan());
   const planCheckRunList = ref<PlanCheckRun[]>([]);
+  const issue = ref<Issue | undefined>(undefined);
 
   const runner = async (uid: string, projectId: string, url: string) => {
-    const plan =
-      uid === String(EMPTY_ID)
-        ? await createPlanSkeleton(
-            route,
-            convertRouterQuery(router.resolve(url).query)
-          )
-        : await planStore.fetchPlanByName(
-            `${projectNamePrefix}${projectId}/plans/${uid}`
-          );
+    let planResult: Plan;
+    let issueResult: Issue | undefined = undefined;
+
+    if (uid === String(EMPTY_ID)) {
+      // Creating a new plan
+      planResult = await createPlanSkeleton(
+        route,
+        convertRouterQuery(router.resolve(url).query)
+      );
+    } else if (uid.startsWith("issue:")) {
+      // Fetch plan from issue
+      const issueUid = uid.substring(6);
+      issueResult = await issueServiceClient.getIssue({
+        name: `${projectNamePrefix}${projectId}/issues/${issueUid}`,
+      });
+
+      if (!issueResult.plan) {
+        throw new Error(`Issue ${issueUid} does not have an associated plan`);
+      }
+
+      // Fetch the plan using the issue's plan reference
+      planResult = await planStore.fetchPlanByName(issueResult.plan);
+    } else {
+      // Direct plan ID
+      planResult = await planStore.fetchPlanByName(
+        `${projectNamePrefix}${projectId}/plans/${uid}`
+      );
+
+      // If we have a plan, try to fetch the associated issue if it exists
+      if (planResult.issue) {
+        try {
+          issueResult = await issueServiceClient.getIssue({
+            name: planResult.issue,
+          });
+        } catch {
+          // Issue might not exist or we don't have permission, that's ok
+        }
+      }
+    }
+
     return {
-      plan,
+      plan: planResult,
+      issue: issueResult,
       url,
     };
   };
@@ -52,7 +101,7 @@ export function useInitializePlan(
   watch(
     [uid, () => unref(projectId)],
     ([uid, projectId]) => {
-      if (uid === String(UNKNOWN_ID) && redirectNotFound) {
+      if (uid === String(UNKNOWN_ID)) {
         router.push({ name: "error.404" });
         return;
       }
@@ -64,13 +113,14 @@ export function useInitializePlan(
           return;
         }
         plan.value = result.plan;
+        issue.value = result.issue;
         isInitializing.value = false;
       });
     },
     { immediate: true }
   );
 
-  return { isCreating, plan, planCheckRunList, isInitializing };
+  return { isCreating, plan, planCheckRunList, issue, isInitializing };
 }
 
 export const convertRouterQuery = (query: LocationQuery) => {
