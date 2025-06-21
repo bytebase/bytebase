@@ -283,7 +283,7 @@
       },
       "FEATURE_DATA_CLASSIFICATION": {
         "title": "データ分類",
-        "desc": "感度レベルに基づいてデータを分類およびラベル付けします。"
+        "desc": "機密性レベルに基づいてデータを分類およびラベル付けします。"
       },
       "FEATURE_SCIM": {
         "title": "SCIM",

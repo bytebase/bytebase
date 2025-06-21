@@ -34,7 +34,7 @@
     "help": "ヘルプ",
     "database": "データベース",
     "databases": "データベース",
-    "description": "説明する",
+    "description": "説明",
     "instance": "インスタンス",
     "instances": "インスタンス",
     "environment": "環境",
@@ -547,7 +547,7 @@
         "disallow-password-signin": {
           "enable": "メールアドレスとパスワードによるサインインを禁止する",
           "description": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。",
-          "require-sso-setup": "最初に機能的な SSO を作成する必要があります。そうしないと、ユーザーはログインできません。"
+          "require-sso-setup": "最初に機能する SSO を作成する必要があります。そうしないと、ユーザーはログインできません。"
         },
         "network": "ネットワーク",
         "external-url": {
@@ -661,7 +661,7 @@
       }
     },
     "sensitive-data": {
-      "remove-sensitive-column-tips": "このデータ列の感度を下げなくなりますか?",
+      "remove-sensitive-column-tips": "このデータ列を表示しますか？",
       "remove-semantic-type-tips": "この列のセマンティック タイプを削除しますか?",
       "remove-classification-tips": "この列の分類を削除しますか?",
       "grant-access": "許可されたアクセス",
@@ -679,7 +679,7 @@
         "add-from-template": "テンプレートから追加",
         "table": {
           "semantic-type": "セマンティックタイプ",
-          "description": "説明する",
+          "description": "説明",
           "masking-algorithm": "マスキングアルゴリズム",
           "delete": "このセマンティック タイプを削除しますか?"
         },
@@ -750,7 +750,7 @@
   },
   "remind": {
     "release": {
-      "new-version-available": "更新する新しいバージョンがあります",
+      "new-version-available": "新しいバージョンが利用可能です",
       "new-version-available-with-tag": "新しいバージョン {tag} が利用可能です",
       "new-version-content": "新しいバージョン {tag} が正式にリリースされました。新しいバージョンを入手するには、ドキュメントに従ってください。"
     },
@@ -1432,7 +1432,7 @@
       "info": "タスクは、「{permission}」許可または次の役割でユーザーが実行できます",
       "auto": "自動",
       "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。",
-      "last-issue-approver": "前号承認者"
+      "last-issue-approver": "イシューの最終承認者"
     },
     "environment-tier": {
       "name": "環境レベル",
@@ -1471,7 +1471,7 @@
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
     "edit-schema": "スキーマの変更",
     "edit-labels": "タグを編集する",
-    "edit-environment": "編集環境",
+    "edit-environment": "環境の編集",
     "mixed-values-for-label": "タグの値が異なります",
     "mixed-label-values-warning": "一部のタグには異なる値があり、タグの編集はバッチで適用されます",
     "change-data": "データ変更",
@@ -2113,8 +2113,8 @@
     "upload-license": "ライセンスのアップロード",
     "request-n-days-trial": "{days} 日間のトライアルをリクエストします (クレジット カードは必要ありません)",
     "request-with-qr": "QRコードを読み取ってトライアルを申し込みます",
-    "require-subscription": "この機能には、{requiredPlan} のサブスクリプションが必要です。この機能のロックを解除するには、Bytebase ライセンスを購入してください。",
-    "required-plan-with-trial": "この機能には、{requiredPlan} のサブスクリプション、{startTrial} が必要です",
+    "require-subscription": "この機能は、{requiredPlan} のサブスクリプションが必要です。この機能のロックを解除するには、Bytebase ライセンスを購入してください。",
+    "required-plan-with-trial": "この機能は、{requiredPlan} のサブスクリプションが必要です。{startTrial} ",
     "trial-for-plan": "{plan} の {days} 日間の無料トライアルを開始できます。クレジット カードや前払いは必要ありません。",
     "trial-for-days": "{days} 日間の無料トライアルを開始できます。クレジット カードや前払いは必要ありません。",
     "contact-to-upgrade": "試用版にアップグレードするには、ワークスペースの所有者に問い合わせてください。",
@@ -2434,13 +2434,13 @@
       "edit-rule": "ルールの編集",
       "delete": "セキュリティルールを削除する",
       "risk": {
-        "self": "危険",
+        "self": "リスク",
         "select": "リスクを選択する",
         "risk-level": {
           "default": "デフォルト",
-          "low": "低い",
-          "moderate": "真ん中",
-          "high": "高い"
+          "low": "低",
+          "moderate": "中",
+          "high": "高"
         },
         "namespace": {
           "dml": "DML",
@@ -2491,8 +2491,8 @@
       }
     },
     "risk": {
-      "self": "危険",
-      "risks": "危険",
+      "self": "リスク",
+      "risks": "リスク",
       "description": "リスク センターは、さまざまな条件下でのさまざまなデータベース操作のリスク レベルを定義します。リスク レベルによって、イシューのカスタム承認プロセスが決まります。"
     },
     "rule": {
@@ -2551,7 +2551,7 @@
       "column-name": "フィールド名",
       "column-type": "フィールドタイプ",
       "default-value": "デフォルト値",
-      "comment": "述べる",
+      "comment": "コメント",
       "nullable": "null も可能",
       "table-name": "テーブル名",
       "on-update": "アップデート時"
@@ -2781,8 +2781,8 @@
     "quick-link": {
       "self": "クイックリンク",
       "manage": "クイックリンクを管理する",
-      "visit-prjects": "プロジェクトを訪問",
-      "visit-issues": "訪問に関する問題"
+      "visit-prjects": "プロジェクトを開く",
+      "visit-issues": "イシューを開く"
     },
     "last-visit": "最終訪問",
     "changelog-for-version": "{version} の変更履歴"
