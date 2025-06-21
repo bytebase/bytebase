@@ -89,7 +89,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 		return v, nil
 	}
 
-	if _, err := s.listAndCacheAllUsers(ctx); err != nil {
+	if err := s.listAndCacheAllUsers(ctx); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 		return v, nil
 	}
 
-	if _, err := s.listAndCacheAllUsers(ctx); err != nil {
+	if err := s.listAndCacheAllUsers(ctx); err != nil {
 		return nil, err
 	}
 
@@ -175,27 +175,27 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 }
 
 // listAndCacheAllUsers is used for caching all users.
-func (s *Store) listAndCacheAllUsers(ctx context.Context) ([]*UserMessage, error) {
+func (s *Store) listAndCacheAllUsers(ctx context.Context) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer tx.Rollback()
 
 	users, err := listUserImpl(ctx, tx, &FindUserMessage{ShowDeleted: true})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, user := range users {
 		s.userIDCache.Add(user.ID, user)
 		s.userEmailCache.Add(user.Email, user)
 	}
-	return users, nil
+	return nil
 }
 
 func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*UserMessage, error) {

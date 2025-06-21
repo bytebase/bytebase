@@ -278,10 +278,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project ID %v", req.Msg.ProjectId))
 	}
 
-	projectMessage, err := convertToProjectMessage(req.Msg.ProjectId, req.Msg.Project)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
+	projectMessage := convertToProjectMessage(req.Msg.ProjectId, req.Msg.Project)
 
 	setting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
@@ -1410,7 +1407,7 @@ func convertToStoreExecutionRetryPolicy(policy *v1pb.Project_ExecutionRetryPolic
 	}
 }
 
-func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
+func convertToProjectMessage(resourceID string, project *v1pb.Project) *store.ProjectMessage {
 	setting := &storepb.Project{
 		AllowModifyStatement:       project.AllowModifyStatement,
 		AutoResolveIssue:           project.AutoResolveIssue,
@@ -1426,7 +1423,7 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		ResourceID: resourceID,
 		Title:      project.Title,
 		Setting:    setting,
-	}, nil
+	}
 }
 
 func getBindingIdentifier(role string, condition *expr.Expr) string {

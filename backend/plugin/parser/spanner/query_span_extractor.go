@@ -430,7 +430,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 		for _, columnResources := range possibleColumnResources {
 			l := len(columnResources)
 			if l == 1 {
-				sourceColumnSet, err := q.getFieldColumnSource("", "", columnResources[0])
+				sourceColumnSet, err := q.getFieldColumnSource("", columnResources[0])
 				if err != nil {
 					return "", nil, err
 				}
@@ -439,9 +439,9 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 			}
 			if l >= 2 {
 				// a.b, a can be the table name or the field name.
-				sourceColumnSet, err := q.getFieldColumnSource("", "", columnResources[0])
+				sourceColumnSet, err := q.getFieldColumnSource("", columnResources[0])
 				if err != nil {
-					sourceColumnSet, err = q.getFieldColumnSource("", columnResources[0], columnResources[1])
+					sourceColumnSet, err = q.getFieldColumnSource(columnResources[0], columnResources[1])
 					if err != nil {
 						return "", nil, err
 					}
@@ -596,7 +596,7 @@ func (q *querySpanExtractor) extractWildFromExpr(ctx antlr.ParserRuleContext) ([
 				// a.*, a can be the table name or the field name.
 				results, ok := q.getAllTableColumnSources("", columnResources[0])
 				if !ok {
-					results, err := q.getFieldColumnSource("", "", columnResources[0])
+					results, err := q.getFieldColumnSource("", columnResources[0])
 					if err != nil {
 						return nil, err
 					}
@@ -613,9 +613,9 @@ func (q *querySpanExtractor) extractWildFromExpr(ctx antlr.ParserRuleContext) ([
 				// a.b.*, can be resolved as
 				// 1. a is the table name, b is the field name.
 				// 2. a is the field name, b is the field name.
-				results, err := q.getFieldColumnSource("", columnResources[0], columnResources[1])
+				results, err := q.getFieldColumnSource(columnResources[0], columnResources[1])
 				if err != nil {
-					results, err := q.getFieldColumnSource("", "", columnResources[0])
+					results, err := q.getFieldColumnSource("", columnResources[0])
 					if err != nil {
 						return nil, err
 					}
@@ -683,11 +683,8 @@ func (q *querySpanExtractor) getAllTableColumnSources(datasetName, tableName str
 	return nil, false
 }
 
-func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldName string) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) getFieldColumnSource(tableName, fieldName string) (base.SourceColumnSet, error) {
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if schemaName != "" && !strings.EqualFold(schemaName, tableSource.GetSchemaName()) {
-			return nil, false
-		}
 		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
 			return nil, false
 		}
@@ -730,7 +727,7 @@ func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldNa
 	}
 
 	return nil, &parsererror.ResourceNotFoundError{
-		Schema: &schemaName,
+		Schema: nil,
 		Table:  &tableName,
 		Column: &fieldName,
 	}
@@ -870,16 +867,13 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 				}
 			}
 		}
-		anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
-		if err != nil {
-			return nil, err
-		}
+		anchor = joinTable(anchor, joinType, usingColumns, tableSource)
 	}
 	q.tableSourceFrom = append(q.tableSourceFrom, anchor)
 	return anchor, nil
 }
 
-func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) (base.TableSource, error) {
+func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) base.TableSource {
 	var resultField []base.QuerySpanResult
 	switch tp {
 	case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
@@ -918,7 +912,7 @@ func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tabl
 	return &base.PseudoTable{
 		Name:    "",
 		Columns: resultField,
-	}, nil
+	}
 }
 
 func getJoinTypeFromJoinType(joinType parser.IJoin_typeContext) joinType {
@@ -989,10 +983,7 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 					}
 				}
 			}
-			anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
-			if err != nil {
-				return nil, err
-			}
+			anchor = joinTable(anchor, joinType, usingColumns, tableSource)
 		}
 		return anchor, nil
 	}

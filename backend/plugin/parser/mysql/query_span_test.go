@@ -157,8 +157,7 @@ func TestExtractTableRefs(t *testing.T) {
 		tree, ok := parseResult[0].Tree.(antlr.ParserRuleContext)
 		require.True(t, ok, "expected parse tree to be of type antlr.RuleContext for statement: %s", test.statement)
 
-		resources, err := extractTableRefs("db", tree)
-		require.NoError(t, err)
+		resources := extractTableRefs("db", tree)
 		require.Equal(t, test.expected, resources, test.statement)
 	}
 }

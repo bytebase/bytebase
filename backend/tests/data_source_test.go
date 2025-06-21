@@ -28,7 +28,7 @@ func TestDataSource(t *testing.T) {
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "test",
 			Engine:      v1pb.Engine_SQLITE,
@@ -163,7 +163,7 @@ func TestExternalSecretManager(t *testing.T) {
 
 	secretURL := fmt.Sprintf("{{http://localhost:%d/secrets/hello-secret-id:access}}", smPort)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
 			Engine:      v1pb.Engine_POSTGRES,

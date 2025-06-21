@@ -402,7 +402,7 @@ CREATE TABLE PROJECT_MEMBERS (
 
 			portInt, err := strconv.Atoi(container.GetPort())
 			require.NoError(t, err)
-			metadataA, err := getSyncMetadataForGenerateMigration(ctx, container.GetHost(), portInt, "testuser", "testpass", "FREEPDB1")
+			metadataA, err := getSyncMetadataForGenerateMigration(ctx, container.GetHost(), portInt)
 			require.NoError(t, err, "Failed to get initial metadata")
 
 			// Step 2: Call GetDatabaseDefinition to generate the database definition X
@@ -422,7 +422,7 @@ CREATE TABLE PROJECT_MEMBERS (
 			require.NoError(t, err, "Failed to execute generated definition")
 
 			// Get metadata B after recreating from definition
-			metadataB, err := getSyncMetadataForGenerateMigration(ctx, container.GetHost(), portInt, "testuser", "testpass", "FREEPDB1")
+			metadataB, err := getSyncMetadataForGenerateMigration(ctx, container.GetHost(), portInt)
 			require.NoError(t, err, "Failed to get metadata after recreation")
 
 			// Step 4: Compare the database metadata A and B, should be the same

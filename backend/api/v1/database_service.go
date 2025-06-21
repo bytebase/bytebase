@@ -719,10 +719,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 	if err != nil {
 		return nil, err
 	}
-	v1pbMetadata, err := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), filter)
-	if err != nil {
-		return nil, err
-	}
+	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), filter)
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
 	return connect.NewResponse(v1pbMetadata), nil
@@ -1252,10 +1249,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if req.Msg.Metadata == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("metadata is required"))
 		}
-		storeSchema, err := convertV1DatabaseMetadata(req.Msg.Metadata)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert database metadata: %v", err))
-		}
+		storeSchema := convertV1DatabaseMetadata(req.Msg.Metadata)
 		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
 			SkipBackupSchema: false,
 			PrintHeader:      false,

@@ -147,7 +147,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,

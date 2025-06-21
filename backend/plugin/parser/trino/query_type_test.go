@@ -199,7 +199,7 @@ func TestGetStatementType(t *testing.T) {
 			assert.Equal(t, tt.wantType, stmtType, "Statement type mismatch")
 
 			// Test getQueryType
-			queryType, isAnalyze := getQueryType(result.Tree, false)
+			queryType, isAnalyze := getQueryType(result.Tree)
 			assert.Equal(t, tt.wantQueryType, queryType, "Query type mismatch")
 			assert.Equal(t, tt.wantIsAnalyze, isAnalyze, "isAnalyze mismatch")
 

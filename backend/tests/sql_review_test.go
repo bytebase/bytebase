@@ -127,7 +127,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NotNil(policy.Msg.Name)
 
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
 			Engine:      v1pb.Engine_POSTGRES,
@@ -297,7 +297,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NotNil(policy.Msg.Name)
 
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
@@ -527,7 +527,7 @@ func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckR
 
 func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 	config := &v1pb.ReviewConfig{
-		Name:    common.FormatReviewConfig(generateRandomString("review", 10)),
+		Name:    common.FormatReviewConfig(generateRandomString("review")),
 		Title:   "Prod",
 		Enabled: true,
 		Rules: []*v1pb.SQLReviewRule{
@@ -754,7 +754,7 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 
 func prodTemplateReviewConfigForMySQL() (*v1pb.ReviewConfig, error) {
 	config := &v1pb.ReviewConfig{
-		Name:    common.FormatReviewConfig(generateRandomString("review", 10)),
+		Name:    common.FormatReviewConfig(generateRandomString("review")),
 		Title:   "Prod",
 		Enabled: true,
 		Rules: []*v1pb.SQLReviewRule{

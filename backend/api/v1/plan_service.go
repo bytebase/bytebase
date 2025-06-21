@@ -489,13 +489,13 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 					}
 
 					// Prior Backup
-					if err := func() error {
+					func() {
 						if newTaskType != storepb.Task_DATABASE_DATA_UPDATE {
-							return nil
+							return
 						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
 						if !ok {
-							return nil
+							return
 						}
 
 						// Check if backup setting has changed.
@@ -505,10 +505,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							taskPatch.EnablePriorBackup = &planEnableBackup
 							doUpdate = true
 						}
-						return nil
-					}(); err != nil {
-						return nil, err
-					}
+					}()
 
 					// Sheet
 					if err := func() error {
@@ -571,13 +568,13 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 					}
 
 					// ExportDataConfig
-					if err := func() error {
+					func() {
 						if newTaskType != storepb.Task_DATABASE_EXPORT {
-							return nil
+							return
 						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
 						if !ok {
-							return nil
+							return
 						}
 						if config.ExportDataConfig.Format != convertExportFormat(task.Payload.GetFormat()) {
 							format := convertToExportFormat(config.ExportDataConfig.Format)
@@ -588,10 +585,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							taskPatch.ExportPassword = config.ExportDataConfig.Password
 							doUpdate = true
 						}
-						return nil
-					}(); err != nil {
-						return nil, err
-					}
+					}()
 
 					if !doUpdate {
 						continue

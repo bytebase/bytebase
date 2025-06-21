@@ -18,7 +18,7 @@ func (d *DatabaseState) mysqlWalkThrough(ast any) error {
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
 	if _, exists := d.schemaSet[""]; !exists {
-		d.createSchema("")
+		d.createSchema()
 	}
 
 	nodeList, ok := ast.([]*mysqlparser.ParseResult)
@@ -99,7 +99,7 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 
 	schema, exists := l.databaseState.schemaSet[""]
 	if !exists {
-		schema = l.databaseState.createSchema("")
+		schema = l.databaseState.createSchema()
 	}
 	if _, exists = schema.getTable(tableName); exists {
 		if ctx.IfNotExists() != nil {
@@ -194,7 +194,7 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 
 		schema, exists := l.databaseState.schemaSet[""]
 		if !exists {
-			schema = l.databaseState.createSchema("")
+			schema = l.databaseState.createSchema()
 		}
 
 		table, exists := schema.getTable(tableName)
@@ -224,7 +224,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	}
 
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	table, err := l.databaseState.mysqlFindTableState(databaseName, tableName, true /* createIncompleteTable */)
+	table, err := l.databaseState.mysqlFindTableState(databaseName, tableName)
 	if err != nil {
 		l.err = err
 		return
@@ -394,7 +394,7 @@ func (l *mysqlListener) EnterDropIndex(ctx *mysql.DropIndexContext) {
 		return
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	table, err := l.databaseState.mysqlFindTableState(databaseName, tableName, true /* createIncompleteTAble */)
+	table, err := l.databaseState.mysqlFindTableState(databaseName, tableName)
 	if err != nil {
 		l.err = err
 		return
@@ -418,7 +418,7 @@ func (l *mysqlListener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		return
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
-	table, err := l.databaseState.mysqlFindTableState(databaseName, tableName, true /* createIncompleteTable */)
+	table, err := l.databaseState.mysqlFindTableState(databaseName, tableName)
 	if err != nil {
 		l.err = err
 		return
@@ -533,7 +533,7 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 	for _, pair := range ctx.AllRenamePair() {
 		schema, exists := l.databaseState.schemaSet[""]
 		if !exists {
-			schema = l.databaseState.createSchema("")
+			schema = l.databaseState.createSchema()
 		}
 
 		_, oldTableName := mysqlparser.NormalizeMySQLTableRef(pair.TableRef())
@@ -585,7 +585,7 @@ func (l *mysqlListener) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
 		return
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	_, err := l.databaseState.mysqlFindTableState(databaseName, tableName, true /* createIncompleteTable */)
+	_, err := l.databaseState.mysqlFindTableState(databaseName, tableName)
 	if err != nil {
 		l.err = err
 		return
@@ -822,7 +822,7 @@ func positionFromPlaceContext(place mysql.IPlaceContext) *mysqlColumnPosition {
 }
 
 func (d *DatabaseState) mysqlCopyTable(databaseName, tableName, referTable string) *WalkThroughError {
-	targetTable, err := d.mysqlFindTableState(databaseName, referTable, true /* createIncompleteTable */)
+	targetTable, err := d.mysqlFindTableState(databaseName, referTable)
 	if err != nil {
 		return err
 	}
@@ -834,14 +834,14 @@ func (d *DatabaseState) mysqlCopyTable(databaseName, tableName, referTable strin
 	return nil
 }
 
-func (d *DatabaseState) mysqlFindTableState(databaseName, tableName string, createIncompleteTable bool) (*TableState, *WalkThroughError) {
+func (d *DatabaseState) mysqlFindTableState(databaseName, tableName string) (*TableState, *WalkThroughError) {
 	if databaseName != "" && !d.isCurrentDatabase(databaseName) {
 		return nil, NewAccessOtherDatabaseError(d.name, databaseName)
 	}
 
 	schema, exists := d.schemaSet[""]
 	if !exists {
-		schema = d.createSchema("")
+		schema = d.createSchema()
 	}
 
 	table, exists := schema.getTable(tableName)
@@ -849,11 +849,7 @@ func (d *DatabaseState) mysqlFindTableState(databaseName, tableName string, crea
 		if schema.ctx.CheckIntegrity {
 			return nil, NewTableNotExistsError(tableName)
 		}
-		if createIncompleteTable {
-			table = schema.createIncompleteTable(tableName)
-		} else {
-			return nil, nil
-		}
+		table = schema.createIncompleteTable(tableName)
 	}
 
 	return table, nil

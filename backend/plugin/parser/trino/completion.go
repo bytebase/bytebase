@@ -645,11 +645,11 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 		}
 	}
 
-	result, err := c.convertCandidates(candidates)
-	return result, err
+	result := c.convertCandidates(candidates)
+	return result, nil
 }
 
-func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
+func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) []base.Candidate {
 	keywordEntries := make(CompletionMap)
 	functionEntries := make(CompletionMap)
 	catalogEntries := make(CompletionMap)
@@ -855,7 +855,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	if result == nil {
 		result = []base.Candidate{}
 	}
-	return result, nil
+	return result
 }
 
 type objectFlag int

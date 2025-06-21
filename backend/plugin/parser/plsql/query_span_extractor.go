@@ -65,10 +65,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, nil
 	}
 
-	accessTables, err := getAccessTables(q.defaultDatabase, tree)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract resource list from statement: %s", statement)
-	}
+	accessTables := getAccessTables(q.defaultDatabase, tree)
 
 	allSystem, mixed := isMixedQuery(accessTables)
 	if mixed {
@@ -1669,7 +1666,7 @@ var systemSchemaMap = map[string]bool{
 	"OJVMSYS":                true,
 }
 
-func getAccessTables(currentDatabase string, tree antlr.Tree) ([]base.SchemaResource, error) {
+func getAccessTables(currentDatabase string, tree antlr.Tree) []base.SchemaResource {
 	l := &resourceExtractListener{
 		currentDatabase: currentDatabase,
 		resourceMap:     make(map[string]base.SchemaResource),
@@ -1691,7 +1688,7 @@ func getAccessTables(currentDatabase string, tree antlr.Tree) ([]base.SchemaReso
 		return 0
 	})
 
-	return result, nil
+	return result
 }
 
 type resourceExtractListener struct {

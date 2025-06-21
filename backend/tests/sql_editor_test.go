@@ -144,7 +144,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	a.NoError(err)
 
 	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
@@ -157,7 +157,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	mysqlInstance := mysqlInstanceResp.Msg
 
 	pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
 			Engine:      v1pb.Engine_POSTGRES,

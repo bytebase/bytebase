@@ -1545,8 +1545,8 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 		// The column ref in function call can be record type, such as row_to_json.
 		if !columnSourceOk {
 			if schema == "" {
-				tableSource, err := q.findTableInFrom(table, column)
-				if err != nil || tableSource == nil {
+				tableSource := q.findTableInFrom(table, column)
+				if tableSource == nil {
 					return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
 						Err:      errors.New("cannot find the column ref"),
 						Database: &q.defaultDatabase,
@@ -1781,7 +1781,7 @@ func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldNa
 	return base.SourceColumnSet{}, false
 }
 
-func (q *querySpanExtractor) findTableInFrom(schemaName string, tableName string) (base.TableSource, error) {
+func (q *querySpanExtractor) findTableInFrom(schemaName string, tableName string) base.TableSource {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -1795,7 +1795,7 @@ func (q *querySpanExtractor) findTableInFrom(schemaName string, tableName string
 		for i := len(q.ctes) - 1; i >= 0; i-- {
 			table := q.ctes[i]
 			if table.Name == tableName {
-				return table, nil
+				return table
 			}
 		}
 	}
@@ -1808,11 +1808,11 @@ func (q *querySpanExtractor) findTableInFrom(schemaName string, tableName string
 		emptySchemaNameMatch := schemaName == "" && (tableSource.GetSchemaName() == "" || slices.Contains(q.searchPath, tableSource.GetSchemaName())) && tableName == tableSource.GetTableName()
 		nonEmptySchemaNameMatch := schemaName != "" && tableSource.GetSchemaName() == schemaName && tableName == tableSource.GetTableName()
 		if emptySchemaNameMatch || nonEmptySchemaNameMatch {
-			return tableSource, nil
+			return tableSource
 		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string) (base.TableSource, error) {
