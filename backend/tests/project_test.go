@@ -26,7 +26,7 @@ func TestArchiveProject(t *testing.T) {
 
 	// Add an instance.
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "test",
 			Engine:      v1pb.Engine_SQLITE,

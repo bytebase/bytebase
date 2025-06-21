@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	// Import MySQL driver (TiDB is compatible with MySQL protocol)
 	_ "github.com/go-sql-driver/mysql"
@@ -207,11 +206,11 @@ CREATE TABLE nonclustered_pk (
 			require.NoError(t, err)
 
 			// Get the original database metadata using SyncDBSchema
-			originalMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), "root", "", tc.databaseName, "")
+			originalMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), tc.databaseName)
 			require.NoError(t, err)
 
 			// Generate the database definition
-			definition, err := generateDatabaseDefinition(ctx, container.GetHost(), container.GetPort(), "root", "", tc.databaseName)
+			definition, err := generateDatabaseDefinition(ctx, container.GetHost(), container.GetPort(), tc.databaseName)
 			require.NoError(t, err)
 			require.NotEmpty(t, definition)
 
@@ -230,7 +229,7 @@ CREATE TABLE nonclustered_pk (
 			require.NoError(t, err)
 
 			// Get the new database metadata
-			newMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), "root", "", newDatabaseName, "")
+			newMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), newDatabaseName)
 			require.NoError(t, err)
 
 			// Compare the metadata
@@ -312,11 +311,11 @@ CREATE TABLE project_members (
 	require.NoError(t, err)
 
 	// Get the original database metadata
-	originalMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), "root", "", databaseName, "")
+	originalMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), databaseName)
 	require.NoError(t, err)
 
 	// Generate the database definition
-	definition, err := generateDatabaseDefinition(ctx, container.GetHost(), container.GetPort(), "root", "", databaseName)
+	definition, err := generateDatabaseDefinition(ctx, container.GetHost(), container.GetPort(), databaseName)
 	require.NoError(t, err)
 	require.NotEmpty(t, definition)
 
@@ -335,7 +334,7 @@ CREATE TABLE project_members (
 	require.NoError(t, err)
 
 	// Get the new database metadata
-	newMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), "root", "", newDatabaseName, "")
+	newMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), newDatabaseName)
 	require.NoError(t, err)
 
 	// Compare the metadata
@@ -362,7 +361,7 @@ func executeMultiStatements(ctx context.Context, db *sql.DB, statements string) 
 }
 
 // getMetadata creates a database connection and retrieves metadata
-func getMetadata(ctx context.Context, host, port, username, password, database, ddl string) (*storepb.DatabaseSchemaMetadata, error) {
+func getMetadata(ctx context.Context, host, port, database string) (*storepb.DatabaseSchemaMetadata, error) {
 	// Create driver instance
 	driver := &tidbdb.Driver{}
 
@@ -370,12 +369,12 @@ func getMetadata(ctx context.Context, host, port, username, password, database, 
 	config := db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Type:     storepb.DataSourceType_ADMIN,
-			Username: username,
+			Username: "root",
 			Host:     host,
 			Port:     port,
 			Database: database,
 		},
-		Password: password,
+		Password: "",
 		ConnectionContext: db.ConnectionContext{
 			EngineVersion: "8.5.0",
 			DatabaseName:  database,
@@ -389,16 +388,7 @@ func getMetadata(ctx context.Context, host, port, username, password, database, 
 	}
 	defer openedDriver.Close(ctx)
 
-	// Execute DDL if provided
-	if ddl != "" {
-		_, err = openedDriver.Execute(ctx, ddl, db.ExecuteOptions{})
-		if err != nil {
-			return nil, err
-		}
-
-		// Wait for schema to be created
-		time.Sleep(500 * time.Millisecond)
-	}
+	// No DDL execution since it's not used
 
 	// Sync metadata
 	tidbDriver, ok := openedDriver.(*tidbdb.Driver)
@@ -410,7 +400,7 @@ func getMetadata(ctx context.Context, host, port, username, password, database, 
 }
 
 // generateDatabaseDefinition generates the database definition using schema.GetDatabaseDefinition
-func generateDatabaseDefinition(ctx context.Context, host, port, username, password, database string) (string, error) {
+func generateDatabaseDefinition(ctx context.Context, host, port, database string) (string, error) {
 	// Create driver instance
 	driver := &tidbdb.Driver{}
 
@@ -418,12 +408,12 @@ func generateDatabaseDefinition(ctx context.Context, host, port, username, passw
 	config := db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Type:     storepb.DataSourceType_ADMIN,
-			Username: username,
+			Username: "root",
 			Host:     host,
 			Port:     port,
 			Database: database,
 		},
-		Password: password,
+		Password: "",
 		ConnectionContext: db.ConnectionContext{
 			EngineVersion: "8.5.0",
 			DatabaseName:  database,

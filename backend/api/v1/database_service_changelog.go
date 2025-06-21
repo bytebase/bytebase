@@ -78,10 +78,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	}
 
 	// no subsequent pages
-	converted, err := s.convertToChangelogs(database, changelogs)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert changelogs"))
-	}
+	converted := s.convertToChangelogs(database, changelogs)
 	return connect.NewResponse(&v1pb.ListChangelogsResponse{
 		Changelogs:    converted,
 		NextPageToken: nextPageToken,
@@ -131,10 +128,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
 
-	converted, err := s.convertToChangelog(database, changelog)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert changelog"))
-	}
+	converted := s.convertToChangelog(database, changelog)
 	if req.Msg.SdlFormat {
 		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -155,19 +149,16 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 	return connect.NewResponse(converted), nil
 }
 
-func (s *DatabaseService) convertToChangelogs(d *store.DatabaseMessage, cs []*store.ChangelogMessage) ([]*v1pb.Changelog, error) {
+func (s *DatabaseService) convertToChangelogs(d *store.DatabaseMessage, cs []*store.ChangelogMessage) []*v1pb.Changelog {
 	var changelogs []*v1pb.Changelog
 	for _, c := range cs {
-		changelog, err := s.convertToChangelog(d, c)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert to changelog")
-		}
+		changelog := s.convertToChangelog(d, c)
 		changelogs = append(changelogs, changelog)
 	}
-	return changelogs, nil
+	return changelogs
 }
 
-func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) (*v1pb.Changelog, error) {
+func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) *v1pb.Changelog {
 	cl := &v1pb.Changelog{
 		Name:             common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
 		CreateTime:       timestamppb.New(c.CreatedAt),
@@ -207,7 +198,7 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 		cl.SchemaSize = int64(len(cl.Schema))
 	}
 
-	return cl, nil
+	return cl
 }
 
 func convertToChangelogStatus(s store.ChangelogStatus) v1pb.Changelog_Status {

@@ -43,7 +43,7 @@ func NewACLInterceptor(store *store.Store, secret string, iamManager *iam.Manage
 
 func (in *ACLInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		_, err := in.doACLCheck(ctx, req.Any(), req.Spec().Procedure)
+		err := in.doACLCheck(ctx, req.Any(), req.Spec().Procedure)
 		if err != nil {
 			return nil, err
 		}
@@ -77,14 +77,14 @@ type aclStreamingConn struct {
 }
 
 func (c *aclStreamingConn) Receive(msg any) error {
-	_, err := c.interceptor.doACLCheck(c.ctx, msg, c.fullMethod)
+	err := c.interceptor.doACLCheck(c.ctx, msg, c.fullMethod)
 	if err != nil {
 		return err
 	}
 	return c.StreamingHandlerConn.Receive(msg)
 }
 
-func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMethod string) (context.Context, error) {
+func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMethod string) error {
 	defer func() {
 		if r := recover(); r != nil {
 			perr, ok := r.(error)
@@ -98,34 +98,34 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return ctx, connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
+		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
 	if err := populateRawResources(ctx, in.store, authContext, request, fullMethod); err != nil {
-		return ctx, connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
 
 	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
-		return ctx, nil
+		return nil
 	}
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+		return connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
 	if user == nil {
-		return ctx, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("unauthenticated for method %q", fullMethod))
+		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("unauthenticated for method %q", fullMethod))
 	}
 
 	ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, fullMethod, user, authContext)
 	if err != nil {
-		return ctx, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err))
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err))
 	}
 	if !ok {
-		return ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra))
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra))
 	}
 
-	return ctx, nil
+	return nil
 }
 
 func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {

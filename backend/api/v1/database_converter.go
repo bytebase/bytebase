@@ -7,7 +7,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filter *metadataFilter) (*v1pb.DatabaseMetadata, error) {
+func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filter *metadataFilter) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
@@ -276,7 +276,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 			Description: extension.Description,
 		})
 	}
-	return m, nil
+	return m
 }
 
 func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata {
@@ -501,7 +501,7 @@ func convertStoreGenerationMetadata(generation *storepb.GenerationMetadata) *v1p
 	return meta
 }
 
-func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.DatabaseSchemaMetadata, error) {
+func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.DatabaseSchemaMetadata {
 	m := &storepb.DatabaseSchemaMetadata{
 		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
@@ -740,7 +740,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 			Description: extension.Description,
 		})
 	}
-	return m, nil
+	return m
 }
 
 func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {

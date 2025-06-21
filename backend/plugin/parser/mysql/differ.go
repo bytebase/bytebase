@@ -102,34 +102,24 @@ func (diff *diffNode) diffStatement(oldStatement string, newStatement string) er
 		return errors.Wrapf(err, "failed to parse new statement %q", sqlForComment)
 	}
 
-	if err := diff.diffTables(oldDatabaseDef, newDatabaseDef); err != nil {
-		return errors.Wrapf(err, "failed to diff view")
-	}
+	diff.diffTables(oldDatabaseDef, newDatabaseDef)
 
 	if err := diff.diffView(oldDatabaseDef, newDatabaseDef); err != nil {
 		return errors.Wrapf(err, "failed to diff view")
 	}
 
-	if err := diff.diffFunction(oldDatabaseDef, newDatabaseDef); err != nil {
-		return errors.Wrapf(err, "failed to diff function")
-	}
+	diff.diffFunction(oldDatabaseDef, newDatabaseDef)
 
-	if err := diff.diffProcedure(oldDatabaseDef, newDatabaseDef); err != nil {
-		return errors.Wrapf(err, "failed to diff procedure")
-	}
+	diff.diffProcedure(oldDatabaseDef, newDatabaseDef)
 
-	if err := diff.diffEvent(oldDatabaseDef.schemas[""], newDatabaseDef.schemas[""]); err != nil {
-		return errors.Wrapf(err, "failed to diff event")
-	}
+	diff.diffEvent(oldDatabaseDef.schemas[""], newDatabaseDef.schemas[""])
 
-	if err := diff.diffTrigger(oldDatabaseDef.schemas[""], newDatabaseDef.schemas[""]); err != nil {
-		return errors.Wrapf(err, "failed to diff trigger")
-	}
+	diff.diffTrigger(oldDatabaseDef.schemas[""], newDatabaseDef.schemas[""])
 
 	return nil
 }
 
-func (diff *diffNode) diffTables(oldDatabase, newDatabase *databaseDef) error {
+func (diff *diffNode) diffTables(oldDatabase, newDatabase *databaseDef) {
 	for newTableName, newTable := range newDatabase.schemas[""].tables {
 		oldTable, exists := oldDatabase.schemas[""].tables[newTableName]
 		if !exists {
@@ -147,8 +137,6 @@ func (diff *diffNode) diffTables(oldDatabase, newDatabase *databaseDef) error {
 	for _, oldTable := range oldDatabase.schemas[""].tables {
 		diff.dropTableList = append(diff.dropTableList, oldTable)
 	}
-
-	return nil
 }
 
 func (diff *diffNode) diffTable(oldTable, newTable *tableDef) {
@@ -465,7 +453,7 @@ func getTempView(view *viewDef) (*viewDef, error) {
 	return newView, nil
 }
 
-func (diff *diffNode) diffFunction(oldDatabase, newDatabase *databaseDef) error {
+func (diff *diffNode) diffFunction(oldDatabase, newDatabase *databaseDef) {
 	for _, function := range newDatabase.schemas[""].functions {
 		functionName := function.name
 
@@ -483,14 +471,13 @@ func (diff *diffNode) diffFunction(oldDatabase, newDatabase *databaseDef) error 
 	for _, function := range oldDatabase.schemas[""].functions {
 		diff.dropFunctionList = append(diff.dropFunctionList, function)
 	}
-	return nil
 }
 
 func isFunctionEqual(o, n *functionDef) bool {
 	return o.ctx.GetText() == n.ctx.GetText()
 }
 
-func (diff *diffNode) diffProcedure(oldDatabase, newDatabase *databaseDef) error {
+func (diff *diffNode) diffProcedure(oldDatabase, newDatabase *databaseDef) {
 	for _, procedure := range newDatabase.schemas[""].procedures {
 		procedureName := procedure.name
 
@@ -508,14 +495,13 @@ func (diff *diffNode) diffProcedure(oldDatabase, newDatabase *databaseDef) error
 	for _, procedure := range oldDatabase.schemas[""].procedures {
 		diff.dropProcedureList = append(diff.dropProcedureList, procedure)
 	}
-	return nil
 }
 
 func isProcedureEqual(o, n *procedureDef) bool {
 	return o.ctx.GetText() == n.ctx.GetText()
 }
 
-func (diff *diffNode) diffEvent(oldSchema, newSchema *schemaDef) error {
+func (diff *diffNode) diffEvent(oldSchema, newSchema *schemaDef) {
 	for _, event := range newSchema.events {
 		eventName := event.name
 
@@ -531,14 +517,13 @@ func (diff *diffNode) diffEvent(oldSchema, newSchema *schemaDef) error {
 	for _, event := range oldSchema.events {
 		diff.dropEventList = append(diff.dropEventList, event)
 	}
-	return nil
 }
 
 func isEventEqual(o, n *eventDef) bool {
 	return o.ctx.GetText() == n.ctx.GetText()
 }
 
-func (diff *diffNode) diffTrigger(oldSchema, newSchema *schemaDef) error {
+func (diff *diffNode) diffTrigger(oldSchema, newSchema *schemaDef) {
 	for _, trigger := range newSchema.triggers {
 		triggerName := trigger.name
 
@@ -556,7 +541,6 @@ func (diff *diffNode) diffTrigger(oldSchema, newSchema *schemaDef) error {
 	for _, trigger := range oldSchema.triggers {
 		diff.dropTriggerList = append(diff.dropTriggerList, trigger)
 	}
-	return nil
 }
 
 func isTriggerEqual(o, n *triggerDef) bool {

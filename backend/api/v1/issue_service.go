@@ -785,13 +785,13 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
-	if err := func() error {
+	func() {
 		if len(payload.Approval.ApprovalTemplates) != 1 {
-			return nil
+			return
 		}
 		approvalStep := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 		if approvalStep == nil {
-			return nil
+			return
 		}
 
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
@@ -804,11 +804,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 				ApprovalStep: approvalStep,
 			},
 		})
-
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create approval step pending activity after creating issue", log.BBError(err))
-	}
+	}()
 
 	func() {
 		if !approved {
@@ -1044,13 +1040,13 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update issue, error: %v", err))
 	}
 
-	if err := func() error {
+	func() {
 		if len(payload.Approval.ApprovalTemplates) != 1 {
-			return nil
+			return
 		}
 		approvalStep := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 		if approvalStep == nil {
-			return nil
+			return
 		}
 
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
@@ -1063,11 +1059,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 				ApprovalStep: approvalStep,
 			},
 		})
-
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create approval step pending activity after re-request issue review", log.BBError(err))
-	}
+	}()
 
 	if err := func() error {
 		p := &storepb.IssueCommentPayload{

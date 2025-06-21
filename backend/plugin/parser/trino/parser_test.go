@@ -95,7 +95,7 @@ func TestTrinoQueryType(t *testing.T) {
 			result, err := ParseTrino(tc.sql)
 			require.NoError(t, err)
 
-			queryType, _ := getQueryType(result.Tree, false)
+			queryType, _ := getQueryType(result.Tree)
 			assert.Equal(t, tc.expected, queryType)
 		})
 	}

@@ -30,7 +30,7 @@ func NewRiskService(store *store.Store, licenseService *enterprise.LicenseServic
 	}
 }
 
-func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
+func convertToRisk(risk *store.RiskMessage) *v1pb.Risk {
 	return &v1pb.Risk{
 		Name:      fmt.Sprintf("%s%v", common.RiskPrefix, risk.ID),
 		Source:    ConvertToV1Source(risk.Source),
@@ -38,7 +38,7 @@ func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
 		Level:     risk.Level,
 		Condition: risk.Expression,
 		Active:    risk.Active,
-	}, nil
+	}
 }
 
 // ListRisks lists risks.
@@ -49,10 +49,7 @@ func (s *RiskService) ListRisks(ctx context.Context, _ *connect.Request[v1pb.Lis
 	}
 	response := &v1pb.ListRisksResponse{}
 	for _, risk := range risks {
-		r, err := convertToRisk(risk)
-		if err != nil {
-			return nil, err
-		}
+		r := convertToRisk(risk)
 		response.Risks = append(response.Risks, r)
 	}
 	return connect.NewResponse(response), nil
@@ -64,10 +61,7 @@ func (s *RiskService) GetRisk(ctx context.Context, request *connect.Request[v1pb
 	if err != nil {
 		return nil, err
 	}
-	r, err := convertToRisk(risk)
-	if err != nil {
-		return nil, err
-	}
+	r := convertToRisk(risk)
 	return connect.NewResponse(r), nil
 }
 
@@ -91,10 +85,7 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	r, err := convertToRisk(risk)
-	if err != nil {
-		return nil, err
-	}
+	r := convertToRisk(risk)
 	return connect.NewResponse(r), nil
 }
 
@@ -138,10 +129,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	r, err := convertToRisk(risk)
-	if err != nil {
-		return nil, err
-	}
+	r := convertToRisk(risk)
 	return connect.NewResponse(r), nil
 }
 

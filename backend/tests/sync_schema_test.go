@@ -61,7 +61,7 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "pgTestSyncSchema",
 			Engine:      v1pb.Engine_POSTGRES,

@@ -684,12 +684,9 @@ func (q *querySpanExtractor) getAllTableColumnSources(datasetName, tableName str
 	return nil, false
 }
 
-func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) getFieldColumnSource(_, tableName, fieldName string) (base.SourceColumnSet, error) {
 	// Bigquery column name is case-insensitive.
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
-			return nil, false
-		}
 		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
 			return nil, false
 		}
@@ -731,7 +728,7 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 	}
 
 	return nil, &parsererror.ResourceNotFoundError{
-		Database: &databaseName,
+		Database: nil,
 		Table:    &tableName,
 		Column:   &fieldName,
 	}
@@ -871,16 +868,13 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 				}
 			}
 		}
-		anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
-		if err != nil {
-			return nil, err
-		}
+		anchor = joinTable(anchor, joinType, usingColumns, tableSource)
 	}
 	q.tableSourceFrom = append(q.tableSourceFrom, anchor)
 	return anchor, nil
 }
 
-func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) (base.TableSource, error) {
+func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) base.TableSource {
 	var resultField []base.QuerySpanResult
 	switch tp {
 	case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
@@ -919,7 +913,7 @@ func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tabl
 	return &base.PseudoTable{
 		Name:    "",
 		Columns: resultField,
-	}, nil
+	}
 }
 
 func getJoinTypeFromJoinType(joinType parser.IJoin_typeContext) joinType {
@@ -990,10 +984,7 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 					}
 				}
 			}
-			anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
-			if err != nil {
-				return nil, err
-			}
+			anchor = joinTable(anchor, joinType, usingColumns, tableSource)
 		}
 		return anchor, nil
 	}

@@ -50,10 +50,7 @@ func extractChangedResources(database string, _ string, dbSchema *model.Database
 		}
 
 		// schema is "public" by default.
-		err := getResourceChanges(database, searchPath, node, statement, changedResources, dbSchema.GetDatabaseMetadata())
-		if err != nil {
-			return nil, err
-		}
+		collectResourceChanges(database, searchPath, node, statement, changedResources, dbSchema.GetDatabaseMetadata())
 
 		switch node := node.(type) {
 		case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
@@ -76,7 +73,7 @@ func extractChangedResources(database string, _ string, dbSchema *model.Database
 	}, nil
 }
 
-func getResourceChanges(database string, searchPath []string, node ast.Node, statement string, changedResources *model.ChangedResources, databaseMetadata *model.DatabaseMetadata) error {
+func collectResourceChanges(database string, searchPath []string, node ast.Node, statement string, changedResources *model.ChangedResources, databaseMetadata *model.DatabaseMetadata) {
 	switch node := node.(type) {
 	case *ast.CreateTableStmt:
 		if node.Name.Type == ast.TableTypeBaseTable {
@@ -366,8 +363,6 @@ func getResourceChanges(database string, searchPath []string, node ast.Node, sta
 			false, // no need to add all table rows as affected rows for DML
 		)
 	}
-
-	return nil
 }
 
 func getSearchPathFromSQL(statement string) ([]string, error) {

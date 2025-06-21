@@ -32,7 +32,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,
@@ -376,7 +376,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Add an instance.
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,

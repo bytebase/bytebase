@@ -1725,18 +1725,12 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	if request.SourceMetadata == nil || request.TargetMetadata == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("source_metadata and target_metadata are required"))
 	}
-	storeSourceMetadata, err := convertV1DatabaseMetadata(request.SourceMetadata)
-	if err != nil {
-		return nil, err
-	}
+	storeSourceMetadata := convertV1DatabaseMetadata(request.SourceMetadata)
 
 	sourceConfig := convertDatabaseCatalog(request.GetSourceCatalog())
 	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig), request.ClassificationFromConfig)
 
-	storeTargetMetadata, err := convertV1DatabaseMetadata(request.TargetMetadata)
-	if err != nil {
-		return nil, err
-	}
+	storeTargetMetadata := convertV1DatabaseMetadata(request.TargetMetadata)
 
 	targetConfig := convertDatabaseCatalog(request.GetTargetCatalog())
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
