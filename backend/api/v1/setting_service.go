@@ -390,10 +390,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			return nil, err
 		}
 
-		payload, err := convertV1SchemaTemplateSetting(schemaTemplateSetting)
-		if err != nil {
-			return nil, err
-		}
+		payload := convertV1SchemaTemplateSetting(schemaTemplateSetting)
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal external approval setting, error: %v", err))
@@ -679,10 +676,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 
-		sts, err := convertSchemaTemplateSetting(value)
-		if err != nil {
-			return nil, err
-		}
+		sts := convertSchemaTemplateSetting(value)
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
@@ -813,10 +807,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(settingValue), value); err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %v with error: %v", storepb.SettingName_SCHEMA_TEMPLATE, err))
 	}
-	v1Value, err := convertSchemaTemplateSetting(value)
-	if err != nil {
-		return err
-	}
+	v1Value := convertSchemaTemplateSetting(value)
 
 	// validate the changed field(column) template.
 	oldFieldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
@@ -867,10 +858,7 @@ func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata
 		Name:    "temp_database",
 		Schemas: []*v1pb.SchemaMetadata{tempSchema},
 	}
-	tempStoreSchemaMetadata, err := convertV1DatabaseMetadata(tempMetadata)
-	if err != nil {
-		return err
-	}
+	tempStoreSchemaMetadata := convertV1DatabaseMetadata(tempMetadata)
 	if err := checkDatabaseMetadata(storepb.Engine(engine), tempStoreSchemaMetadata); err != nil {
 		return errors.Wrap(err, "failed to check database metadata")
 	}
@@ -1010,7 +998,7 @@ func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {
 	return nil
 }
 
-func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) (*v1pb.SchemaTemplateSetting, error) {
+func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
 	v1Setting := new(v1pb.SchemaTemplateSetting)
 	for _, v := range template.ColumnTypes {
 		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
@@ -1054,10 +1042,10 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) (*v1p
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
 
-	return v1Setting, nil
+	return v1Setting
 }
 
-func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) (*storepb.SchemaTemplateSetting, error) {
+func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *storepb.SchemaTemplateSetting {
 	v1Setting := new(storepb.SchemaTemplateSetting)
 	for _, v := range template.ColumnTypes {
 		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &storepb.SchemaTemplateSetting_ColumnType{
@@ -1101,7 +1089,7 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) (*stor
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
 
-	return v1Setting, nil
+	return v1Setting
 }
 
 var domainRegexp = regexp.MustCompile(`^(?i:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$`)

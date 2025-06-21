@@ -1017,9 +1017,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			}
 			oldIndex.existsInNew = true
 			// Modify the index.
-			if err := diff.modifyIndex(oldIndex.createIndex, stmt); err != nil {
-				return "", err
-			}
+			diff.modifyIndex(oldIndex.createIndex, stmt)
 		case *ast.CreateSequenceStmt:
 			if IsSystemSchema(stmt.SequenceDef.SequenceName.Schema) {
 				continue
@@ -1032,9 +1030,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			}
 			oldSequence.existsInNew = true
 			// Modify the sequence.
-			if err := diff.modifySequenceExceptOwnedBy(oldSequence.createSequence, stmt); err != nil {
-				return "", err
-			}
+			diff.modifySequenceExceptOwnedBy(oldSequence.createSequence, stmt)
 		case *ast.AlterSequenceStmt:
 			if !onlySetOwnedBy(stmt) {
 				return "", errors.Errorf("expect OwnedBy only, but found %v", stmt)
@@ -1049,9 +1045,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				continue
 			}
 			oldSequence.ownedByInfo.existsInNew = true
-			if err := diff.modifySequenceOwnedBy(oldSequence.ownedByInfo.ownedBy, stmt); err != nil {
-				return "", err
-			}
+			diff.modifySequenceOwnedBy(oldSequence.ownedByInfo.ownedBy, stmt)
 		case *ast.CreateExtensionStmt:
 			if IsSystemSchema(stmt.Schema) {
 				continue
@@ -1064,9 +1058,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			}
 			oldExtension.existsInNew = true
 			// Modify the extension.
-			if err := diff.modifyExtension(oldExtension.createExtension, stmt); err != nil {
-				return "", err
-			}
+			diff.modifyExtension(oldExtension.createExtension, stmt)
 		case *ast.CreateFunctionStmt:
 			if IsSystemSchema(stmt.Function.Schema) {
 				continue
@@ -1083,9 +1075,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			}
 			oldFunction.existsInNew = true
 			// Modify the function.
-			if err := diff.modifyFunction(oldFunction.createFunction, stmt); err != nil {
-				return "", err
-			}
+			diff.modifyFunction(oldFunction.createFunction, stmt)
 		case *ast.CreateTriggerStmt:
 			if IsSystemSchema(stmt.Trigger.Table.Schema) {
 				continue
@@ -1098,9 +1088,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			}
 			oldTrigger.existsInNew = true
 			// Modify the trigger.
-			if err := diff.modifyTrigger(oldTrigger.createTrigger, stmt); err != nil {
-				return "", err
-			}
+			diff.modifyTrigger(oldTrigger.createTrigger, stmt)
 		case *ast.CreateTypeStmt:
 			if IsSystemSchema(stmt.Type.TypeName().Schema) {
 				continue
@@ -1157,9 +1145,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	}
 
 	// Drop remaining old objects.
-	if err := diff.dropObject(); err != nil {
-		return "", err
-	}
+	diff.dropObject()
 
 	return diff.deparse()
 }
@@ -1222,7 +1208,7 @@ func (diff *diffNode) appendAddConstraint(table *ast.TableDef, constraintList []
 	}
 }
 
-func (diff *diffNode) dropObject() error {
+func (diff *diffNode) dropObject() {
 	// Drop the remaining old schema.
 	if dropSchemaStmt := dropSchema(diff.oldSchemaMap); dropSchemaStmt != nil {
 		diff.dropSchemaList = append(diff.dropSchemaList, dropSchemaStmt)
@@ -1277,8 +1263,6 @@ func (diff *diffNode) dropObject() error {
 
 	// Drop the remaining old comment.
 	diff.dropComment(diff.oldSchemaMap)
-
-	return nil
 }
 
 func (diff *diffNode) modifyTableByColumn(oldTableInfo *tableInfo, newTable *ast.CreateTableStmt) error {
@@ -1573,7 +1557,7 @@ func (diff *diffNode) modifyColumn(tableName *ast.TableDef, oldColumn *ast.Colum
 	return nil
 }
 
-func (diff *diffNode) modifyExtension(oldExtension *ast.CreateExtensionStmt, newExtension *ast.CreateExtensionStmt) error {
+func (diff *diffNode) modifyExtension(oldExtension *ast.CreateExtensionStmt, newExtension *ast.CreateExtensionStmt) {
 	// TODO(rebelice): not use Text(), it only works for pg_dump.
 	if oldExtension.Text() != newExtension.Text() {
 		diff.dropExtensionList = append(diff.dropExtensionList, &ast.DropExtensionStmt{
@@ -1581,16 +1565,14 @@ func (diff *diffNode) modifyExtension(oldExtension *ast.CreateExtensionStmt, new
 		})
 		diff.createExtensionList = append(diff.createExtensionList, newExtension)
 	}
-	return nil
 }
 
-func (diff *diffNode) modifyFunction(oldFunction *ast.CreateFunctionStmt, newFunction *ast.CreateFunctionStmt) error {
+func (diff *diffNode) modifyFunction(oldFunction *ast.CreateFunctionStmt, newFunction *ast.CreateFunctionStmt) {
 	// TODO(rebelice): not use Text(), it only works for pg_dump.
 	if oldFunction.Text() != newFunction.Text() {
 		diff.dropFunctionList = append(diff.dropFunctionList, oldFunction)
 		diff.createFunctionList = append(diff.createFunctionList, newFunction)
 	}
-	return nil
 }
 
 func isSubsequenceEnum(oldType ast.UserDefinedType, newType ast.UserDefinedType) bool {
@@ -1702,7 +1684,7 @@ func (diff *diffNode) modifyType(oldType *ast.CreateTypeStmt, newType *ast.Creat
 	return nil
 }
 
-func (diff *diffNode) modifyTrigger(oldTrigger *ast.CreateTriggerStmt, newTrigger *ast.CreateTriggerStmt) error {
+func (diff *diffNode) modifyTrigger(oldTrigger *ast.CreateTriggerStmt, newTrigger *ast.CreateTriggerStmt) {
 	// TODO(rebelice): not use Text(), it only works for pg_dump.
 	if oldTrigger.Text() != newTrigger.Text() {
 		diff.dropTriggerList = append(diff.dropTriggerList, &ast.DropTriggerStmt{
@@ -1710,10 +1692,9 @@ func (diff *diffNode) modifyTrigger(oldTrigger *ast.CreateTriggerStmt, newTrigge
 		})
 		diff.createTriggerList = append(diff.createTriggerList, newTrigger)
 	}
-	return nil
 }
 
-func (diff *diffNode) modifyIndex(oldIndex *ast.CreateIndexStmt, newIndex *ast.CreateIndexStmt) error {
+func (diff *diffNode) modifyIndex(oldIndex *ast.CreateIndexStmt, newIndex *ast.CreateIndexStmt) {
 	// TODO(rebelice): not use Text(), it only works for pg_dump.
 	if oldIndex.Text() != newIndex.Text() {
 		diff.dropIndexList = append(diff.dropIndexList, &ast.DropIndexStmt{
@@ -1726,17 +1707,15 @@ func (diff *diffNode) modifyIndex(oldIndex *ast.CreateIndexStmt, newIndex *ast.C
 		})
 		diff.createIndexList = append(diff.createIndexList, newIndex)
 	}
-	return nil
 }
 
-func (diff *diffNode) modifySequenceOwnedBy(oldSequenceOwnedBy *ast.AlterSequenceStmt, newSequenceOwnedBy *ast.AlterSequenceStmt) error {
+func (diff *diffNode) modifySequenceOwnedBy(oldSequenceOwnedBy *ast.AlterSequenceStmt, newSequenceOwnedBy *ast.AlterSequenceStmt) {
 	if !isEqualColumnNameDef(oldSequenceOwnedBy.OwnedBy, newSequenceOwnedBy.OwnedBy) {
 		diff.setDefaultList = append(diff.setDefaultList, newSequenceOwnedBy)
 	}
-	return nil
 }
 
-func (diff *diffNode) modifySequenceExceptOwnedBy(oldSequence *ast.CreateSequenceStmt, newSequence *ast.CreateSequenceStmt) error {
+func (diff *diffNode) modifySequenceExceptOwnedBy(oldSequence *ast.CreateSequenceStmt, newSequence *ast.CreateSequenceStmt) {
 	isEqual := true
 	alterSequence := &ast.AlterSequenceStmt{
 		Name: oldSequence.SequenceDef.SequenceName,
@@ -1799,7 +1778,6 @@ func (diff *diffNode) modifySequenceExceptOwnedBy(oldSequence *ast.CreateSequenc
 	if !isEqual {
 		diff.alterSequenceExceptOwnedByList = append(diff.alterSequenceExceptOwnedByList, alterSequence)
 	}
-	return nil
 }
 
 func isEqualTableDef(tableA *ast.TableDef, tableB *ast.TableDef) bool {

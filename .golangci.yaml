@@ -12,6 +12,8 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - tparallel
+    - unparam
+    - unused
   settings:
     exhaustive:
       explicit-exhaustive-switch: true

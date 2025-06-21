@@ -453,51 +453,49 @@ func (diff *diffNode) diffTableOption(oldTable, newTable *tableInfo) {
 
 func (diff *diffNode) deparse() (string, error) {
 	var buf bytes.Buffer
-	flag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat
-
-	if err := sortAndWriteNodeList(&buf, diff.dropForeignKeyList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.dropForeignKeyList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.dropConstraintExceptFkList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.dropConstraintExceptFkList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.dropIndexList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.dropIndexList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.dropViewList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.dropViewList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.dropTableList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.dropTableList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.createTableList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.createTableList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.alterTableOptionList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.alterTableOptionList); err != nil {
 		return "", err
 	}
-	if err := writeNodeList(&buf, diff.addAndModifyColumnList, flag); err != nil {
+	if err := writeNodeList(&buf, diff.addAndModifyColumnList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.dropColumnList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.dropColumnList); err != nil {
 		return "", err
 	}
 	if err := sortAndWriteAlterTablePartitionedByList(&buf, diff.alterTablePartitionedByList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.createTempViewList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.createTempViewList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.createIndexList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.createIndexList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.addConstraintExceptFkList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.addConstraintExceptFkList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.addForeignKeyList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.addForeignKeyList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.createViewList, flag); err != nil {
+	if err := sortAndWriteNodeList(&buf, diff.createViewList); err != nil {
 		return "", err
 	}
 
@@ -952,7 +950,8 @@ func getID(node ast.Node) string {
 	return ""
 }
 
-func writeNodeList(w format.RestoreWriter, ns []ast.Node, flags format.RestoreFlags) error {
+func writeNodeList(w format.RestoreWriter, ns []ast.Node) error {
+	flags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat
 	for _, n := range ns {
 		if err := writeNodeStatement(w, n, flags, "\n"); err != nil {
 			return err
@@ -961,7 +960,8 @@ func writeNodeList(w format.RestoreWriter, ns []ast.Node, flags format.RestoreFl
 	return nil
 }
 
-func sortAndWriteNodeList(w format.RestoreWriter, ns []ast.Node, flags format.RestoreFlags) error {
+func sortAndWriteNodeList(w format.RestoreWriter, ns []ast.Node) error {
+	flags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat
 	slices.SortFunc(ns, func(a, b ast.Node) int {
 		idA := getID(a)
 		idB := getID(b)

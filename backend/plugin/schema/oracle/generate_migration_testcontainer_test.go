@@ -732,7 +732,7 @@ ALTER TABLE TEST_COLUMNS ADD CONSTRAINT CHK_NUMBER_POSITIVE CHECK (COL_NUMBER > 
 				t.Fatalf("Failed to execute initial schema: %v", err)
 			}
 
-			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "testuser", "testpass", "FREEPDB1")
+			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt)
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
@@ -740,7 +740,7 @@ ALTER TABLE TEST_COLUMNS ADD CONSTRAINT CHK_NUMBER_POSITIVE CHECK (COL_NUMBER > 
 				t.Fatalf("Failed to execute migration DDL: %v", err)
 			}
 
-			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "testuser", "testpass", "FREEPDB1")
+			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt)
 			require.NoError(t, err)
 
 			// Step 3: Call generate migration to get the rollback DDL
@@ -761,7 +761,7 @@ ALTER TABLE TEST_COLUMNS ADD CONSTRAINT CHK_NUMBER_POSITIVE CHECK (COL_NUMBER > 
 				t.Fatalf("Failed to execute rollback DDL: %v", err)
 			}
 
-			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "testuser", "testpass", "FREEPDB1")
+			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt)
 			require.NoError(t, err)
 
 			// Step 5: Compare schema result A and C to ensure they are the same
@@ -843,7 +843,7 @@ func executeStatements(db *sql.DB, statements string) error {
 }
 
 // getSyncMetadataForGenerateMigration retrieves metadata from the live database using Driver.SyncDBSchema
-func getSyncMetadataForGenerateMigration(ctx context.Context, host string, port int, username, password, serviceName string) (*storepb.DatabaseSchemaMetadata, error) {
+func getSyncMetadataForGenerateMigration(ctx context.Context, host string, port int) (*storepb.DatabaseSchemaMetadata, error) {
 	// Create a driver instance using the oracle package
 	driver := &oracledb.Driver{}
 
@@ -851,16 +851,16 @@ func getSyncMetadataForGenerateMigration(ctx context.Context, host string, port 
 	config := db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Type:        storepb.DataSourceType_ADMIN,
-			Username:    username,
+			Username:    "testuser",
 			Host:        host,
 			Port:        fmt.Sprintf("%d", port),
 			Database:    "",
-			ServiceName: serviceName,
+			ServiceName: "FREEPDB1",
 		},
-		Password: password,
+		Password: "testpass",
 		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "23.0",                    // Oracle 23c Free
-			DatabaseName:  strings.ToUpper(username), // Oracle schema names are uppercase
+			EngineVersion: "23.0",     // Oracle 23c Free
+			DatabaseName:  "TESTUSER", // Oracle schema names are uppercase
 		},
 	}
 

@@ -67,10 +67,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	storeSheetCreate, err := convertToStoreSheetMessage(project.ResourceID, principalID, request.Msg.Sheet)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to convert sheet"))
-	}
+	storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, principalID, request.Msg.Sheet)
 	sheet, err := s.sheetManager.CreateSheet(ctx, storeSheetCreate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
@@ -114,10 +111,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("Sheet Parent %q does not match BatchCreateSheetsRequest.Parent %q", r.Parent, request.Msg.Parent))
 		}
 
-		storeSheetCreate, err := convertToStoreSheetMessage(project.ResourceID, user.ID, r.Sheet)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to convert sheet"))
-		}
+		storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.ID, r.Sheet)
 
 		sheetCreates = append(sheetCreates, storeSheetCreate)
 	}
@@ -298,7 +292,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}, nil
 }
 
-func convertToStoreSheetMessage(projectID string, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
+func convertToStoreSheetMessage(projectID string, creatorID int, sheet *v1pb.Sheet) *store.SheetMessage {
 	sheetMessage := &store.SheetMessage{
 		ProjectID: projectID,
 		CreatorID: creatorID,
@@ -308,7 +302,7 @@ func convertToStoreSheetMessage(projectID string, creatorID int, sheet *v1pb.She
 	}
 	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 
-	return sheetMessage, nil
+	return sheetMessage
 }
 
 func convertToSheetCommands(commands []*storepb.SheetCommand) []*v1pb.SheetCommand {

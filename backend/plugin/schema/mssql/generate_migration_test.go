@@ -22,7 +22,7 @@ type MigrationTestData struct {
 	Expected    string `yaml:"expected"`
 }
 
-func runMigrationTest(t *testing.T, file string, record bool) {
+func runMigrationTest(t *testing.T, file string) {
 	var tests []MigrationTestData
 	filepath := filepath.Join("test-data", file)
 	yamlFile, err := os.Open(filepath)
@@ -95,48 +95,35 @@ func runMigrationTest(t *testing.T, file string, record bool) {
 				require.NoErrorf(t, err, "Failed to parse generated SQL for test case [%02d]: %s\nSQL: %s", i+1, test.Description, migration)
 			}
 
-			if record {
-				tests[i].Expected = migration
-			} else {
-				require.Equalf(t, test.Expected, migration, "Test case [%02d] failed: %s", i+1, test.Description)
-			}
+			require.Equalf(t, test.Expected, migration, "Test case [%02d] failed: %s", i+1, test.Description)
 		})
-	}
-
-	if record {
-		err := yamlFile.Close()
-		require.NoError(t, err)
-		byteValue, err = yaml.Marshal(tests)
-		require.NoError(t, err)
-		err = os.WriteFile(filepath, byteValue, 0644)
-		require.NoError(t, err)
 	}
 }
 
 func TestGenerateMigration_Tables(t *testing.T) {
-	runMigrationTest(t, "test_migration_tables.yaml", false /* record */)
+	runMigrationTest(t, "test_migration_tables.yaml")
 }
 
 func TestGenerateMigration_Indexes(t *testing.T) {
-	runMigrationTest(t, "test_migration_indexes.yaml", false /* record */)
+	runMigrationTest(t, "test_migration_indexes.yaml")
 }
 
 func TestGenerateMigration_Constraints(t *testing.T) {
-	runMigrationTest(t, "test_migration_constraints.yaml", false /* record */)
+	runMigrationTest(t, "test_migration_constraints.yaml")
 }
 
 func TestGenerateMigration_Functions(t *testing.T) {
-	runMigrationTest(t, "test_migration_functions.yaml", false /* record */)
+	runMigrationTest(t, "test_migration_functions.yaml")
 }
 
 func TestGenerateMigration_Procedures(t *testing.T) {
-	runMigrationTest(t, "test_migration_procedures.yaml", false /* record */)
+	runMigrationTest(t, "test_migration_procedures.yaml")
 }
 
 func TestGenerateMigration_Views(t *testing.T) {
-	runMigrationTest(t, "test_migration_views.yaml", false /* record */)
+	runMigrationTest(t, "test_migration_views.yaml")
 }
 
 func TestGenerateMigration_SafeOrder(t *testing.T) {
-	runMigrationTest(t, "test_migration_safe_order.yaml", false /* record */)
+	runMigrationTest(t, "test_migration_safe_order.yaml")
 }

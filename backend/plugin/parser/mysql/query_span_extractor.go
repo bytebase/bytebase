@@ -627,10 +627,7 @@ func (q *querySpanExtractor) extractJoinedTable(l base.TableSource, r parser.IJo
 		usingIdentifiers = NormalizeMySQLIdentifierList(r.IdentifierListWithParentheses().IdentifierList())
 	}
 
-	joinedTableSource, err := joinTableSources(l, rightTableSource, tp, usingIdentifiers)
-	if err != nil {
-		return nil, err
-	}
+	joinedTableSource := joinTableSources(l, rightTableSource, tp, usingIdentifiers)
 
 	return joinedTableSource, nil
 }
@@ -650,7 +647,7 @@ const (
 )
 
 // joinTableSources joins the left and right table sources with the join type.
-func joinTableSources(l, r base.TableSource, tp joinType, using []string) (base.TableSource, error) {
+func joinTableSources(l, r base.TableSource, tp joinType, using []string) base.TableSource {
 	switch tp {
 	case Join, InnerJoin, CrossJoin, StraightJoin, LeftOuterJoin, RightOuterJoin:
 		var columns []base.QuerySpanResult
@@ -682,7 +679,7 @@ func joinTableSources(l, r base.TableSource, tp joinType, using []string) (base.
 		return &base.PseudoTable{
 			Name:    "",
 			Columns: columns,
-		}, nil
+		}
 	case NaturalInnerJoin, NaturalLeftOuterJoin, NaturalRightOuterJoin:
 		// Natural join will merge all the columns with the same name.
 		leftFieldsMap := make(map[string]bool)
@@ -708,10 +705,10 @@ func joinTableSources(l, r base.TableSource, tp joinType, using []string) (base.
 		return &base.PseudoTable{
 			Name:    "",
 			Columns: columns,
-		}, nil
+		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 func (q *querySpanExtractor) extractTableFactor(ctx parser.ITableFactorContext) (base.TableSource, error) {
@@ -739,10 +736,7 @@ func (q *querySpanExtractor) extractTableFactor(ctx parser.ITableFactorContext) 
 				result = tableSource
 				continue
 			}
-			result, err = joinTableSources(result, tableSource, CrossJoin, nil)
-			if err != nil {
-				return nil, err
-			}
+			result = joinTableSources(result, tableSource, CrossJoin, nil)
 		}
 		return result, nil
 	case ctx.TableFunction() != nil:
@@ -1007,11 +1001,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *parser.Query
 		switch child := child.(type) {
 		case *parser.QueryPrimaryContext:
 			if !findRecursivePart {
-				resource, err := extractTableRefs("", child)
-				if err != nil {
-					l.err = err
-					return
-				}
+				resource := extractTableRefs("", child)
 
 				for _, item := range resource {
 					if item.Database == "" && item.Table == l.selfName {
@@ -1050,11 +1040,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *parser.Query
 			}
 
 			if !findRecursivePart {
-				resource, err := extractTableRefs("", queryExpression)
-				if err != nil {
-					l.err = err
-					return
-				}
+				resource := extractTableRefs("", queryExpression)
 
 				for _, item := range resource {
 					if item.Database == "" && item.Table == l.selfName {
@@ -1611,7 +1597,7 @@ func mysqlExtractJtColumn(ctx parser.IJtColumnContext) []string {
 	return []string{}
 }
 
-func extractTableRefs(database string, ctx antlr.ParserRuleContext) ([]base.SchemaResource, error) {
+func extractTableRefs(database string, ctx antlr.ParserRuleContext) []base.SchemaResource {
 	l := &resourceExtractListener{
 		currentDatabase: database,
 		resourceMap:     make(map[string]base.SchemaResource),
@@ -1633,7 +1619,7 @@ func extractTableRefs(database string, ctx antlr.ParserRuleContext) ([]base.Sche
 		return 0
 	})
 
-	return result, nil
+	return result
 }
 
 type resourceExtractListener struct {

@@ -745,10 +745,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					return errors.Wrapf(err, "failed to list tasks")
 				}
 
-				skippedOrDone, err := tasksSkippedOrDone(environmentTasks)
-				if err != nil {
-					return errors.Wrapf(err, "failed to check if tasks are skipped or done")
-				}
+				skippedOrDone := tasksSkippedOrDone(environmentTasks)
 				if !skippedOrDone {
 					return nil
 				}
@@ -961,15 +958,15 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 	}
 }
 
-func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
+func tasksSkippedOrDone(tasks []*store.TaskMessage) bool {
 	for _, task := range tasks {
 		skipped := task.Payload.GetSkipped()
 		done := task.LatestTaskRunStatus == storepb.TaskRun_DONE
 		if !skipped && !done {
-			return false, nil
+			return false
 		}
 	}
-	return true, nil
+	return true
 }
 
 // isSequentialTask returns whether the task should be executed sequentially.

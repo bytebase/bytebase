@@ -32,7 +32,7 @@ func TestDatabaseGroup(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create a project.
-	projectID := generateRandomString("project", 10)
+	projectID := generateRandomString("project")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
@@ -64,7 +64,7 @@ func TestDatabaseGroup(t *testing.T) {
 	var prodInstances []*v1pb.Instance
 	for i, testInstanceDir := range testInstanceDirs {
 		instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-			InstanceId: generateRandomString("instance", 10),
+			InstanceId: generateRandomString("instance"),
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 				Engine:      v1pb.Engine_SQLITE,
@@ -78,7 +78,7 @@ func TestDatabaseGroup(t *testing.T) {
 	}
 	for i, prodInstanceDir := range prodInstanceDirs {
 		instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-			InstanceId: generateRandomString("instance", 10),
+			InstanceId: generateRandomString("instance"),
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 				Engine:      v1pb.Engine_SQLITE,

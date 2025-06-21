@@ -245,10 +245,7 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			Unique: in.IndexStmt.Unique,
 		}
 
-		method, err := convertMethodType(in.IndexStmt.AccessMethod)
-		if err != nil {
-			return nil, err
-		}
+		method := convertMethodType(in.IndexStmt.AccessMethod)
 		indexDef.Method = method
 
 		for _, key := range in.IndexStmt.IndexParams {
@@ -1145,25 +1142,25 @@ func convertSortOrder(order pgquery.SortByDir) (ast.SortOrderType, error) {
 	}
 }
 
-func convertMethodType(method string) (ast.IndexMethodType, error) {
+func convertMethodType(method string) ast.IndexMethodType {
 	switch method {
 	case "btree":
-		return ast.IndexMethodTypeBTree, nil
+		return ast.IndexMethodTypeBTree
 	case "hash":
-		return ast.IndexMethodTypeHash, nil
+		return ast.IndexMethodTypeHash
 	case "gist":
-		return ast.IndexMethodTypeGiST, nil
+		return ast.IndexMethodTypeGiST
 	case "spgist":
-		return ast.IndexMethodTypeSpGiST, nil
+		return ast.IndexMethodTypeSpGiST
 	case "gin":
-		return ast.IndexMethodTypeGin, nil
+		return ast.IndexMethodTypeGin
 	case "brin":
-		return ast.IndexMethodTypeBrin, nil
+		return ast.IndexMethodTypeBrin
 	case "ivfflat":
-		return ast.IndexMethodTypeIvfflat, nil
+		return ast.IndexMethodTypeIvfflat
 	default:
 		// Fallback to btree for index from plugins.
-		return ast.IndexMethodTypeBTree, nil
+		return ast.IndexMethodTypeBTree
 	}
 }
 
@@ -1613,10 +1610,7 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 			}
 			cons.Exclusions = exclusion
 		}
-		var err error
-		if cons.AccessMethod, err = convertMethodType(in.Constraint.AccessMethod); err != nil {
-			return nil, err
-		}
+		cons.AccessMethod = convertMethodType(in.Constraint.AccessMethod)
 		if in.Constraint.WhereClause != nil {
 			whereClause, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, in.Constraint.WhereClause)
 			if err != nil {

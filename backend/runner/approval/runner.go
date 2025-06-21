@@ -252,13 +252,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		slog.Error("failed to create rollout release notification activity", log.BBError(err))
 	}
 
-	if err := func() error {
+	func() {
 		if len(payload.Approval.ApprovalTemplates) != 1 {
-			return nil
+			return
 		}
 		approvalStep := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 		if approvalStep == nil {
-			return nil
+			return
 		}
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   r.store.GetSystemBotUser(ctx),
@@ -270,10 +270,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 				ApprovalStep: approvalStep,
 			},
 		})
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create approval step pending activity after creating review", log.BBError(err))
-	}
+	}()
 
 	return true, nil
 }

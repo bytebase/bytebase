@@ -230,7 +230,7 @@ func (d *DatabaseState) tidbWalkThrough(ast any) error {
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
 	if _, exists := d.schemaSet[""]; !exists {
-		d.createSchema("")
+		d.createSchema()
 	}
 
 	nodeList, ok := ast.([]tidbast.StmtNode)
@@ -316,7 +316,7 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 	for _, tableToTable := range node.TableToTables {
 		schema, exists := d.schemaSet[""]
 		if !exists {
-			schema = d.createSchema("")
+			schema = d.createSchema()
 		}
 		oldTableName := tableToTable.OldTable.Name.O
 		newTableName := tableToTable.NewTable.Name.O
@@ -399,14 +399,14 @@ func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThro
 	return nil
 }
 
-func (d *DatabaseState) findTableState(tableName *tidbast.TableName, createIncompleteTable bool) (*TableState, *WalkThroughError) {
+func (d *DatabaseState) findTableState(tableName *tidbast.TableName) (*TableState, *WalkThroughError) {
 	if tableName.Schema.O != "" && !d.isCurrentDatabase(tableName.Schema.O) {
 		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
 	}
 
 	schema, exists := d.schemaSet[""]
 	if !exists {
-		schema = d.createSchema("")
+		schema = d.createSchema()
 	}
 
 	table, exists := schema.getTable(tableName.Name.O)
@@ -414,18 +414,14 @@ func (d *DatabaseState) findTableState(tableName *tidbast.TableName, createIncom
 		if schema.ctx.CheckIntegrity {
 			return nil, NewTableNotExistsError(tableName.Name.O)
 		}
-		if createIncompleteTable {
-			table = schema.createIncompleteTable(tableName.Name.O)
-		} else {
-			return nil, nil
-		}
+		table = schema.createIncompleteTable(tableName.Name.O)
 	}
 
 	return table, nil
 }
 
 func (d *DatabaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError {
-	table, err := d.findTableState(node.Table, true /* createIncompleteTable */)
+	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
 	}
@@ -434,7 +430,7 @@ func (d *DatabaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError
 }
 
 func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughError {
-	table, err := d.findTableState(node.Table, true /* createIncompleteTable */)
+	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
 	}
@@ -463,7 +459,7 @@ func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughE
 }
 
 func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughError {
-	table, err := d.findTableState(node.Table, true /* createIncompleteTable */)
+	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
 	}
@@ -944,7 +940,7 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 
 			schema, exists := d.schemaSet[""]
 			if !exists {
-				schema = d.createSchema("")
+				schema = d.createSchema()
 			}
 
 			table, exists := schema.getTable(name.Name.O)
@@ -965,7 +961,7 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 }
 
 func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughError {
-	targetTable, err := d.findTableState(node.ReferTable, true /* createIncompleteTable */)
+	targetTable, err := d.findTableState(node.ReferTable)
 	if err != nil {
 		return err
 	}
@@ -987,7 +983,7 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 
 	schema, exists := d.schemaSet[""]
 	if !exists {
-		schema = d.createSchema("")
+		schema = d.createSchema()
 	}
 
 	if _, exists = schema.getTable(node.Table.Name.O); exists {
@@ -1328,15 +1324,15 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 	return nil
 }
 
-func (d *DatabaseState) createSchema(name string) *SchemaState {
+func (d *DatabaseState) createSchema() *SchemaState {
 	schema := &SchemaState{
 		ctx:      d.ctx.Copy(),
-		name:     name,
+		name:     "",
 		tableSet: make(tableStateMap),
 		viewSet:  make(viewStateMap),
 	}
 
-	d.schemaSet[name] = schema
+	d.schemaSet[""] = schema
 	return schema
 }
 

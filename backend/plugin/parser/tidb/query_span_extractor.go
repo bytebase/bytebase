@@ -696,10 +696,10 @@ func (q *querySpanExtractor) extractJoin(node *tidbast.Join) (base.TableSource, 
 	}
 	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
 	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
-	return q.mergeJoinTableSource(node, leftTableSource, rightTableSource)
+	return q.mergeJoinTableSource(node, leftTableSource, rightTableSource), nil
 }
 
-func (*querySpanExtractor) mergeJoinTableSource(node *tidbast.Join, leftTableSource, rightTableSource base.TableSource) (*base.PseudoTable, error) {
+func (*querySpanExtractor) mergeJoinTableSource(node *tidbast.Join, leftTableSource, rightTableSource base.TableSource) *base.PseudoTable {
 	leftSpanResult, rightSpanResult := leftTableSource.GetQuerySpanResult(), rightTableSource.GetQuerySpanResult()
 
 	result := new(base.PseudoTable)
@@ -760,7 +760,7 @@ func (*querySpanExtractor) mergeJoinTableSource(node *tidbast.Join, leftTableSou
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 func (q *querySpanExtractor) extractTableSource(node *tidbast.TableSource) (base.TableSource, error) {

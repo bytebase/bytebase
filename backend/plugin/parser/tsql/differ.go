@@ -273,9 +273,7 @@ func (d *diffNode) diffTable(schemaName string, oldTable, newTable *tableInfo) e
 			continue
 		}
 		oldIndex.existsInNew = true
-		if err := d.diffIndex(schemaName, oldTable.name, oldIndex, newIndex); err != nil {
-			return errors.Wrapf(err, "failed to diff index %q", newIndex.name)
-		}
+		d.diffIndex(schemaName, oldTable.name, oldIndex, newIndex)
 	}
 	var remainingIndexes []*indexInfo
 	for _, oldIndex := range oldTable.indexMap {
@@ -300,7 +298,7 @@ func (d *diffNode) diffTable(schemaName string, oldTable, newTable *tableInfo) e
 	return nil
 }
 
-func (d *diffNode) diffIndex(schemaName, tableName string, oldIndex, newIndex *indexInfo) error {
+func (d *diffNode) diffIndex(schemaName, tableName string, oldIndex, newIndex *indexInfo) {
 	oldString := oldIndex.node.GetParser().GetTokenStream().GetTextFromInterval(
 		antlr.NewInterval(
 			oldIndex.node.GetStart().GetTokenIndex(),
@@ -324,7 +322,6 @@ func (d *diffNode) diffIndex(schemaName, tableName string, oldIndex, newIndex *i
 		d.dropIndex = append(d.dropIndex, fmt.Sprintf("DROP INDEX [%s] ON [%s].[%s]", oldIndex.name, schemaName, tableName))
 		d.addIndex = append(d.addIndex, newIndex.node.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.node))
 	}
-	return nil
 }
 
 func (d *diffNode) diffConstraint(schemaName string, oldTable, newTable *tableInfo) error {

@@ -17,7 +17,7 @@ func validateQuery(statement string) (bool, bool, error) {
 		return false, false, err
 	}
 
-	queryType, isAnalyze := getQueryType(result.Tree, false)
+	queryType, isAnalyze := getQueryType(result.Tree)
 
 	// If it's an EXPLAIN ANALYZE, the query will be executed
 	if isAnalyze {

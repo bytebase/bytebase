@@ -38,13 +38,12 @@ const (
 type queryTypeListener struct {
 	parser.BaseTrinoParserListener
 
-	allSystems       bool
 	result           base.QueryType
 	isExplainAnalyze bool
 }
 
 // getQueryType returns the type of the statement.
-func getQueryType(node any, allSystems bool) (base.QueryType, bool) {
+func getQueryType(node any) (base.QueryType, bool) {
 	stmtCtx, ok := node.(*parser.SingleStatementContext)
 	if !ok {
 		return base.QueryTypeUnknown, false
@@ -62,8 +61,7 @@ func getQueryType(node any, allSystems bool) (base.QueryType, bool) {
 
 	// For other statement types, use the listener
 	listener := &queryTypeListener{
-		allSystems: allSystems,
-		result:     base.QueryTypeUnknown,
+		result: base.QueryTypeUnknown,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, stmtCtx)
@@ -74,7 +72,7 @@ func getQueryType(node any, allSystems bool) (base.QueryType, bool) {
 // EnterStatementDefault is called when entering a StatementDefaultContext rule.
 func (l *queryTypeListener) EnterStatementDefault(ctx *parser.StatementDefaultContext) {
 	// Regular SELECT query
-	if l.allSystems || containsSystemSchema(ctx.GetText()) {
+	if containsSystemSchema(ctx.GetText()) {
 		l.result = base.SelectInfoSchema
 	} else {
 		l.result = base.Select
@@ -93,7 +91,7 @@ func (l *queryTypeListener) EnterExplainAnalyze(ctx *parser.ExplainAnalyzeContex
 	l.isExplainAnalyze = true
 
 	// Check if this is an EXPLAIN ANALYZE of a query that accesses system tables
-	if l.allSystems || containsSystemSchema(ctx.GetText()) {
+	if containsSystemSchema(ctx.GetText()) {
 		l.result = base.SelectInfoSchema
 	}
 }
@@ -330,7 +328,7 @@ func GetStatementType(tree any) StatementType {
 
 // IsReadOnlyStatement returns whether the statement is read-only.
 func IsReadOnlyStatement(tree any) bool {
-	queryType, _ := getQueryType(tree, false)
+	queryType, _ := getQueryType(tree)
 	return queryType == base.Select ||
 		queryType == base.Explain ||
 		queryType == base.SelectInfoSchema
@@ -338,13 +336,13 @@ func IsReadOnlyStatement(tree any) bool {
 
 // IsDataChangingStatement returns whether the statement changes data.
 func IsDataChangingStatement(tree any) bool {
-	queryType, _ := getQueryType(tree, false)
+	queryType, _ := getQueryType(tree)
 	return queryType == base.DML
 }
 
 // IsSchemaChangingStatement returns whether the statement changes schema.
 func IsSchemaChangingStatement(tree any) bool {
-	queryType, _ := getQueryType(tree, false)
+	queryType, _ := getQueryType(tree)
 	return queryType == base.DDL
 }
 
