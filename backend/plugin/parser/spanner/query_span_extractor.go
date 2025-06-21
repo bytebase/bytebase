@@ -727,7 +727,7 @@ func (q *querySpanExtractor) getFieldColumnSource(tableName, fieldName string) (
 	}
 
 	return nil, &parsererror.ResourceNotFoundError{
-		Schema: &schemaName,
+		Schema: nil,
 		Table:  &tableName,
 		Column: &fieldName,
 	}
@@ -867,16 +867,13 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 				}
 			}
 		}
-		anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
-		if err != nil {
-			return nil, err
-		}
+		anchor = joinTable(anchor, joinType, usingColumns, tableSource)
 	}
 	q.tableSourceFrom = append(q.tableSourceFrom, anchor)
 	return anchor, nil
 }
 
-func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) (base.TableSource, error) {
+func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) base.TableSource {
 	var resultField []base.QuerySpanResult
 	switch tp {
 	case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
@@ -915,7 +912,7 @@ func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tabl
 	return &base.PseudoTable{
 		Name:    "",
 		Columns: resultField,
-	}, nil
+	}
 }
 
 func getJoinTypeFromJoinType(joinType parser.IJoin_typeContext) joinType {
@@ -986,10 +983,7 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 					}
 				}
 			}
-			anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
-			if err != nil {
-				return nil, err
-			}
+			anchor = joinTable(anchor, joinType, usingColumns, tableSource)
 		}
 		return anchor, nil
 	}

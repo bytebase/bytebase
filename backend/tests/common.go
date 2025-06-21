@@ -6,6 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func generateRandomString(prefix string, length int) string {
-	return fmt.Sprintf("%s-%s", prefix, uuid.New().String()[:length])
+func generateRandomString(prefix string) string {
+	return fmt.Sprintf("%s-%s", prefix, uuid.New().String()[:10])
 }

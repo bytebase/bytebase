@@ -215,7 +215,7 @@ func (f *FollowSetsByState) Set(state int, holder FollowSetsHolder) {
 }
 
 // CollectFollowSets collects the follow sets if needed.
-func (f *FollowSetsByState) CollectFollowSets(parser antlr.Parser, startState antlr.ATNState, ignoredTokens, preferredRules map[int]bool) {
+func (f *FollowSetsByState) CollectFollowSets(parser antlr.Parser, startState antlr.ATNState, ignoredTokens, _ map[int]bool) {
 	state := startState.GetStateNumber()
 	f.rw.Lock()
 	defer f.rw.Unlock()

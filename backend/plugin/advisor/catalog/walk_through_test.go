@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gopkg.in/yaml.v3"
@@ -143,7 +142,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 	require.NoError(t, err)
 	sm := sheet.NewManager(nil)
 
-	for i, test := range tests {
+	for _, test := range tests {
 		var state *DatabaseState
 		if originDatabase != nil {
 			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
@@ -178,13 +177,6 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		result := state.convertToDatabaseMetadata()
 		diff := cmp.Diff(want, result, protocmp.Transform())
 		require.Empty(t, diff)
-	}
-
-	if record {
-		byteValue, err := yaml.Marshal(tests)
-		require.NoError(t, err)
-		err = os.WriteFile(filepath, byteValue, 0644)
-		require.NoError(t, err)
 	}
 }
 

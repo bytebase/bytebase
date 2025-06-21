@@ -153,7 +153,7 @@ func (e *metadataExtractor) EnterCreate_table(ctx *parser.Create_tableContext) {
 		return
 	}
 
-	_, schema, table := e.normalizeTableNameSeparated(tableNameCtx, e.currentDatabase, e.currentSchema)
+	schema, table := e.normalizeTableNameSeparated(tableNameCtx, e.currentDatabase, e.currentSchema)
 
 	tableMetadata := e.getOrCreateTable(schema, table)
 
@@ -181,7 +181,7 @@ func (e *metadataExtractor) EnterCreate_index(ctx *parser.Create_indexContext) {
 		return
 	}
 
-	_, schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
+	schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
 
 	tableMetadata := e.getOrCreateTable(schema, table)
 
@@ -310,7 +310,7 @@ func (e *metadataExtractor) EnterCreate_columnstore_index(ctx *parser.Create_col
 		return
 	}
 
-	_, schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
+	schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
 
 	tableMetadata := e.getOrCreateTable(schema, table)
 
@@ -341,7 +341,7 @@ func (e *metadataExtractor) EnterCreate_nonclustered_columnstore_index(ctx *pars
 		return
 	}
 
-	_, schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
+	schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
 
 	tableMetadata := e.getOrCreateTable(schema, table)
 
@@ -658,7 +658,7 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITable_constraintC
 		// Extract referenced table and columns
 		if fkOptions := ctx.Foreign_key_options(); fkOptions != nil {
 			if fkOptions.Table_name() != nil {
-				_, refSchema, refTable := e.normalizeTableNameSeparated(fkOptions.Table_name(), e.currentDatabase, schemaName)
+				refSchema, refTable := e.normalizeTableNameSeparated(fkOptions.Table_name(), e.currentDatabase, schemaName)
 				fk.ReferencedSchema = refSchema
 				fk.ReferencedTable = refTable
 			}
@@ -840,16 +840,10 @@ func (*metadataExtractor) normalizeFuncProcNameSeparated(ctx parser.IFunc_proc_n
 	return schema, name
 }
 
-// normalizeTableNameSeparated extracts database, schema and table from table_name context
-func (*metadataExtractor) normalizeTableNameSeparated(ctx parser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string) (string, string, string) {
-	database := fallbackDatabaseName
+// normalizeTableNameSeparated extracts schema and table from table_name context
+func (*metadataExtractor) normalizeTableNameSeparated(ctx parser.ITable_nameContext, _, fallbackSchemaName string) (string, string) {
 	schema := fallbackSchemaName
 	table := ""
-	if d := ctx.GetDatabase(); d != nil {
-		if id, _ := tsql.NormalizeTSQLIdentifier(d); id != "" {
-			database = id
-		}
-	}
 	if s := ctx.GetSchema(); s != nil {
 		if id, _ := tsql.NormalizeTSQLIdentifier(s); id != "" {
 			schema = id
@@ -860,7 +854,7 @@ func (*metadataExtractor) normalizeTableNameSeparated(ctx parser.ITable_nameCont
 			table = id
 		}
 	}
-	return database, schema, table
+	return schema, table
 }
 
 // normalizeSimpleNameSeparated extracts schema and name from simple_name context

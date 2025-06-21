@@ -105,9 +105,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	}
 
 	// 1.4 Drop views in reverse topological order (dependent views first)
-	if err := dropViewsInOrder(diff, &buf); err != nil {
-		return "", err
-	}
+	dropViewsInOrder(diff, &buf)
 
 	// 1.5 Drop indexes and constraints from tables being altered
 	for _, tableDiff := range diff.TableChanges {
@@ -259,10 +257,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		return 0
 	})
 	for _, tableDiff := range tablesToCreate {
-		createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
-		if err != nil {
-			return "", err
-		}
+		createTableSQL := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
 		_, _ = buf.WriteString(createTableSQL)
 		_, _ = buf.WriteString("\n")
 	}
@@ -270,10 +265,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	// 2.3 Alter existing tables (add columns, alter columns)
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionAlter {
-			alterTableSQL, err := generateAlterTable(tableDiff)
-			if err != nil {
-				return "", err
-			}
+			alterTableSQL := generateAlterTable(tableDiff)
 			_, _ = buf.WriteString(alterTableSQL)
 			if alterTableSQL != "" {
 				_, _ = buf.WriteString("\n")
@@ -284,10 +276,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	// 2.4 Add foreign keys for newly created tables (after all tables exist)
 	for _, tableDiff := range tablesToCreate {
 		for _, fk := range tableDiff.NewTable.ForeignKeys {
-			fkSQL, err := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fk)
-			if err != nil {
-				return "", err
-			}
+			fkSQL := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fk)
 			_, _ = buf.WriteString(fkSQL)
 			_, _ = buf.WriteString(";\n")
 		}
@@ -300,9 +289,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	}
 
 	// 2.4 Create views in topological order (dependencies first)
-	if err := createViewsInOrder(diff, &buf); err != nil {
-		return "", err
-	}
+	createViewsInOrder(diff, &buf)
 
 	// 2.5 Create functions
 	for _, funcDiff := range diff.FunctionChanges {
@@ -342,7 +329,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	return buf.String(), nil
 }
 
-func generateCreateTable(schemaName, tableName string, table *storepb.TableMetadata) (string, error) {
+func generateCreateTable(schemaName, tableName string, table *storepb.TableMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("CREATE TABLE [")
@@ -353,10 +340,7 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 
 	// Add columns
 	for i, column := range table.Columns {
-		columnDef, err := generateColumnDefinition(column)
-		if err != nil {
-			return "", err
-		}
+		columnDef := generateColumnDefinition(column)
 		_, _ = buf.WriteString("  ")
 		_, _ = buf.WriteString(columnDef)
 
@@ -427,10 +411,7 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 	// Add non-primary indexes (after table creation)
 	for _, idx := range table.Indexes {
 		if !idx.IsConstraint {
-			indexSQL, err := generateCreateIndex(schemaName, tableName, idx)
-			if err != nil {
-				return "", err
-			}
+			indexSQL := generateCreateIndex(schemaName, tableName, idx)
 			_, _ = buf.WriteString("\n")
 			_, _ = buf.WriteString(indexSQL)
 			_, _ = buf.WriteString(";")
@@ -439,19 +420,16 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 
 	// Note: Foreign keys are now added in a separate phase after all tables are created
 
-	return buf.String(), nil
+	return buf.String()
 }
 
-func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
+func generateAlterTable(tableDiff *schema.TableDiff) string {
 	var buf strings.Builder
 
 	// Add columns first (other operations might depend on them)
 	for _, colDiff := range tableDiff.ColumnChanges {
 		if colDiff.Action == schema.MetadataDiffActionCreate {
-			columnDef, err := generateColumnDefinition(colDiff.NewColumn)
-			if err != nil {
-				return "", err
-			}
+			columnDef := generateColumnDefinition(colDiff.NewColumn)
 			_, _ = buf.WriteString("ALTER TABLE [")
 			_, _ = buf.WriteString(tableDiff.SchemaName)
 			_, _ = buf.WriteString("].[")
@@ -465,10 +443,7 @@ func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
 	// Alter columns
 	for _, colDiff := range tableDiff.ColumnChanges {
 		if colDiff.Action == schema.MetadataDiffActionAlter {
-			alterColSQL, err := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
-			if err != nil {
-				return "", err
-			}
+			alterColSQL := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
 			_, _ = buf.WriteString(alterColSQL)
 		}
 	}
@@ -508,10 +483,7 @@ func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
 				}
 				_, _ = buf.WriteString(");\n")
 			} else {
-				indexSQL, err := generateCreateIndex(tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
-				if err != nil {
-					return "", err
-				}
+				indexSQL := generateCreateIndex(tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
 				_, _ = buf.WriteString(indexSQL)
 				_, _ = buf.WriteString(";\n")
 			}
@@ -536,19 +508,16 @@ func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
 	// Add foreign keys last (they depend on other tables/columns)
 	for _, fkDiff := range tableDiff.ForeignKeyChanges {
 		if fkDiff.Action == schema.MetadataDiffActionCreate {
-			fkSQL, err := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey)
-			if err != nil {
-				return "", err
-			}
+			fkSQL := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey)
 			_, _ = buf.WriteString(fkSQL)
 			_, _ = buf.WriteString(";\n")
 		}
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }
 
-func generateColumnDefinition(column *storepb.ColumnMetadata) (string, error) {
+func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("[")
@@ -570,10 +539,10 @@ func generateColumnDefinition(column *storepb.ColumnMetadata) (string, error) {
 		_, _ = buf.WriteString(defaultExpr)
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }
 
-func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) (string, error) {
+func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
 	var buf strings.Builder
 
 	// In MSSQL, we need to handle different aspects of column changes separately
@@ -651,10 +620,10 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 		}
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }
 
-func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetadata) (string, error) {
+func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("CREATE")
@@ -671,7 +640,7 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 		_, _ = buf.WriteString(tableName)
 		_, _ = buf.WriteString("]")
 		// Clustered columnstore indexes don't specify columns
-		return buf.String(), nil
+		return buf.String()
 	case "NONCLUSTERED COLUMNSTORE":
 		_, _ = buf.WriteString(" NONCLUSTERED COLUMNSTORE INDEX [")
 		_, _ = buf.WriteString(index.Name)
@@ -693,7 +662,7 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 			}
 			_, _ = buf.WriteString(")")
 		}
-		return buf.String(), nil
+		return buf.String()
 	default:
 		// Regular indexes
 		if index.Unique {
@@ -726,11 +695,11 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 
 		_, _ = buf.WriteString(")")
 
-		return buf.String(), nil
+		return buf.String()
 	}
 }
 
-func generateAddForeignKey(schemaName, tableName string, fk *storepb.ForeignKeyMetadata) (string, error) {
+func generateAddForeignKey(schemaName, tableName string, fk *storepb.ForeignKeyMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("ALTER TABLE [")
@@ -785,7 +754,7 @@ func generateAddForeignKey(schemaName, tableName string, fk *storepb.ForeignKeyM
 		_, _ = buf.WriteString(fk.OnUpdate)
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }
 
 // hasConstraintsInTable checks if the table has any constraints (primary key or unique)
@@ -953,7 +922,7 @@ func getObjectID(schema, name string) string {
 }
 
 // dropViewsInOrder drops views in reverse topological order (dependent views first)
-func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
+func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	// Build dependency graph for views being dropped or altered
 	graph := base.NewGraph()
 	viewMap := make(map[string]*schema.ViewDiff)
@@ -1035,7 +1004,7 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			_, _ = buf.WriteString(viewDiff.ViewName)
 			_, _ = buf.WriteString("];\nGO\n")
 		}
-		return nil
+		return
 	}
 
 	// Drop views in order (most dependent first due to edge direction)
@@ -1048,12 +1017,10 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			_, _ = buf.WriteString("];\nGO\n")
 		}
 	}
-
-	return nil
 }
 
 // createViewsInOrder creates views in topological order (dependencies first)
-func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
+func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	// Build dependency graph for views being created or altered
 	graph := base.NewGraph()
 	viewMap := make(map[string]*schema.ViewDiff)
@@ -1136,7 +1103,7 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			}
 			_, _ = buf.WriteString("\nGO\n")
 		}
-		return nil
+		return
 	}
 
 	// Create views in order
@@ -1151,8 +1118,6 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			_, _ = buf.WriteString("\nGO\n")
 		}
 	}
-
-	return nil
 }
 
 // Helper functions to check if diff contains certain types of changes

@@ -22,7 +22,7 @@ func TestGitOpsCheck(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create a project for GitOps testing.
-	projectID := generateRandomString("gitops-check", 10)
+	projectID := generateRandomString("gitops-check")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
@@ -44,7 +44,7 @@ func TestGitOpsCheck(t *testing.T) {
 
 	// Add the provisioned instances.
 	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-test",
 			Engine:      v1pb.Engine_SQLITE,
@@ -57,7 +57,7 @@ func TestGitOpsCheck(t *testing.T) {
 	testInstance := testInstanceResp.Msg
 
 	prodInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-prod",
 			Engine:      v1pb.Engine_SQLITE,
@@ -159,7 +159,7 @@ func TestGitOpsRollout(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create a project for GitOps testing.
-	projectID := generateRandomString("gitops-rollout", 10)
+	projectID := generateRandomString("gitops-rollout")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
@@ -178,7 +178,7 @@ func TestGitOpsRollout(t *testing.T) {
 
 	// Add the provisioned instance.
 	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-rollout-test",
 			Engine:      v1pb.Engine_SQLITE,
@@ -322,7 +322,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create a project for GitOps testing.
-	projectID := generateRandomString("gitops-multi", 10)
+	projectID := generateRandomString("gitops-multi")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
@@ -344,7 +344,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 
 	// Add the provisioned instances.
 	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-test",
 			Engine:      v1pb.Engine_SQLITE,
@@ -357,7 +357,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	testInstance := testInstanceResp.Msg
 
 	prodInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-prod",
 			Engine:      v1pb.Engine_SQLITE,
@@ -571,7 +571,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create a project for GitOps testing.
-	projectID := generateRandomString("gitops-changed", 10)
+	projectID := generateRandomString("gitops-changed")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
@@ -589,7 +589,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 
 	// Add the provisioned instance.
 	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "gitops-changed-test",
 			Engine:      v1pb.Engine_SQLITE,

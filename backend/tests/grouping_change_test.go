@@ -138,7 +138,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 			for _, prepareInstance := range tc.prepareInstances {
 				instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), t.Name())
 				a.NoError(err)
-				instanceResourceID := generateRandomString("instance", 10)
+				instanceResourceID := generateRandomString("instance")
 				instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 					InstanceId: instanceResourceID,
 					Instance: &v1pb.Instance{

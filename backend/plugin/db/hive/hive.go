@@ -155,29 +155,29 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 }
 
 // This function converts basic types to types that have implemented isRowValue_Kind interface.
-func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
+func parseValueType(value any, gohiveType string) *v1pb.RowValue {
 	if value == nil {
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}}, nil
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}}
 	}
 	switch gohiveType {
 	case "BOOLEAN_TYPE":
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}}, nil
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}}
 	case "TINYINT_TYPE":
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}}, nil
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}}
 	case "SMALLINT_TYPE":
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}}, nil
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}}
 	case "INT_TYPE":
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}}, nil
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}}
 	case "BIGINT_TYPE":
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.(int64)}}, nil
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.(int64)}}
 	case "DOUBLE_TYPE", "FLOAT_TYPE":
 		// convert float64 to string to avoid truncation, because our v1pb.RowValue_FloatValue is float32.
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(value.(float64), 'f', 20, 64)}}, nil
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(value.(float64), 'f', 20, 64)}}
 	case "BINARY_TYPE":
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}}, nil
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}}
 	default:
 		// convert all remaining types to string.
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.(string)}}, nil
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.(string)}}
 	}
 }
 
@@ -215,10 +215,7 @@ func queryStatementWithLimit(ctx context.Context, conn *gohive.Connection, state
 		rowMap := cursor.RowMap(ctx)
 		for i, columnName := range result.ColumnNames {
 			columnType := result.ColumnTypeNames[i]
-			val, err := parseValueType(rowMap[columnName], columnType)
-			if err != nil {
-				return nil, err
-			}
+			val := parseValueType(rowMap[columnName], columnType)
 			queryRow.Values = append(queryRow.Values, val)
 		}
 
