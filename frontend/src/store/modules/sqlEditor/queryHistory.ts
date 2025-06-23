@@ -1,6 +1,11 @@
+import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { sqlServiceClient } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/grpcweb";
+import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  convertNewSearchQueryHistoriesResponseToOld,
+} from "@/utils/v1/sql-conversions";
 import { isValidProjectName, isValidDatabaseName } from "@/types";
 import type { QueryHistory } from "@/types/proto/v1/sql_service";
 
@@ -57,11 +62,13 @@ export const useSQLEditorQueryHistoryStore = defineStore(
       }
       const pageToken = queryHistoryMap.get(key)?.nextPageToken;
 
-      const resp = await sqlServiceClient.searchQueryHistories({
+      const request = create(SearchQueryHistoriesRequestSchema, {
         pageSize: 5,
         pageToken,
         filter: getListQueryHistoryFilter(filter),
       });
+      const newResp = await sqlServiceClientConnect.searchQueryHistories(request);
+      const resp = convertNewSearchQueryHistoriesResponseToOld(newResp);
 
       queryHistoryMap.get(key)!.nextPageToken = resp.nextPageToken;
       if (pageToken) {

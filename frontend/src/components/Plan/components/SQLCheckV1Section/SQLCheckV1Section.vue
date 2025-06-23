@@ -128,17 +128,19 @@ import {
 } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { getLocalSheetByName } from "@/components/Plan";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
-import { releaseServiceClient } from "@/grpcweb";
+import { releaseServiceClientConnect } from "@/grpcweb";
 import { getRuleLocalization, ruleTemplateMapV2 } from "@/types";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import {
-  ReleaseFileType,
   Release_File_ChangeType,
   type CheckReleaseResponse_CheckResult,
 } from "@/types/proto/v1/release_service";
+import { CheckReleaseRequestSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
+import { convertNewCheckReleaseResponseToOld, convertOldChangeTypeToNew } from "@/utils/v1/release-conversions";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
 import {
   getSheetStatement,
@@ -250,7 +252,7 @@ const runChecks = async () => {
     const projectName = `projects/${plan.value.name.split("/")[1]}`;
 
     // Run check for all targets
-    const response = await releaseServiceClient.checkRelease({
+    const request = create(CheckReleaseRequestSchema, {
       parent: projectName,
       release: {
         files: [
@@ -259,17 +261,19 @@ const runChecks = async () => {
             version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType:
+            changeType: convertOldChangeTypeToNew(
               config.type === Plan_ChangeDatabaseConfig_Type.DATA
                 ? Release_File_ChangeType.DML
-                : Release_File_ChangeType.DDL,
+                : Release_File_ChangeType.DDL),
           },
         ],
       },
       targets,
     });
+    const response = await releaseServiceClientConnect.checkRelease(request);
+    const result = convertNewCheckReleaseResponseToOld(response);
 
-    checkResults.value = response.results || [];
+    checkResults.value = result.results || [];
   } finally {
     isRunningChecks.value = false;
   }

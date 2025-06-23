@@ -190,7 +190,10 @@ import {
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { emitWindowEvent } from "@/plugins";
 import {
   pushNotification,
@@ -473,10 +476,13 @@ const updateStatement = async (statement: string) => {
     config.sheet = createdSheet.name;
   }
 
-  const updatedPlan = await planServiceClient.updatePlan({
-    plan: planPatch,
-    updateMask: ["specs"],
+  const newPlan = convertOldPlanToNew(planPatch);
+  const request = create(UpdatePlanRequestSchema, {
+    plan: newPlan,
+    updateMask: { paths: ["specs"] },
   });
+  const response = await planServiceClientConnect.updatePlan(request);
+  const updatedPlan = convertNewPlanToOld(response);
 
   issue.value.planEntity = updatedPlan;
 

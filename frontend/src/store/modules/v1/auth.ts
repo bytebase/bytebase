@@ -3,7 +3,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { authServiceClientConnect, userServiceClient } from "@/grpcweb";
+import { authServiceClientConnect, userServiceClientConnect } from "@/grpcweb";
 import { router } from "@/router";
 import {
   AUTH_SIGNIN_MODULE,
@@ -28,6 +28,8 @@ import {
   Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
 import { User, UserType } from "@/types/proto/v1/user_service";
+import { CreateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import { convertOldUserToNew } from "@/utils/v1/user-conversions";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
@@ -124,14 +126,17 @@ export const useAuthStore = defineStore("auth_v1", () => {
   };
 
   const signup = async (request: Partial<User>) => {
-    await userServiceClient.createUser({
-      user: {
-        email: request.email,
-        title: request.name,
-        password: request.password,
-        userType: UserType.USER,
-      },
+    const user = {
+      email: request.email,
+      title: request.name,
+      password: request.password,
+      userType: UserType.USER,
+    };
+    const newUser = convertOldUserToNew(user as User);
+    const createRequest = create(CreateUserRequestSchema, {
+      user: newUser,
     });
+    await userServiceClientConnect.createUser(createRequest);
     await login(
       create(LoginRequestSchema, {
         email: request.email,

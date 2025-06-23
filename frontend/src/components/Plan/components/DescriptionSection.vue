@@ -69,8 +69,11 @@
 import { NInput, NButton } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { create } from "@bufbuild/protobuf";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -139,10 +142,13 @@ const saveEdit = async () => {
       ...plan.value,
       description: state.description,
     });
-    const updated = await planServiceClient.updatePlan({
-      plan: planPatch,
-      updateMask: ["description"],
+    const newPlan = convertOldPlanToNew(planPatch);
+    const request = create(UpdatePlanRequestSchema, {
+      plan: newPlan,
+      updateMask: { paths: ["description"] },
     });
+    const response = await planServiceClientConnect.updatePlan(request);
+    const updated = convertNewPlanToOld(response);
     Object.assign(plan.value, updated);
     pushNotification({
       module: "bytebase",

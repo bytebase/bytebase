@@ -1,11 +1,23 @@
 import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
-import { releaseServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { releaseServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef, ComposedRelease, Pagination } from "@/types";
 import { isValidReleaseName, unknownRelease, unknownUser } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { DeepPartial, Release } from "@/types/proto/v1/release_service";
+import { Release as ReleaseProto } from "@/types/proto/v1/release_service";
+import { 
+  GetReleaseRequestSchema,
+  ListReleasesRequestSchema,
+  UpdateReleaseRequestSchema,
+  DeleteReleaseRequestSchema,
+  UndeleteReleaseRequestSchema
+} from "@/types/proto-es/v1/release_service_pb";
+import { convertNewReleaseToOld, convertOldReleaseToNew } from "@/utils/v1/release-conversions";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { useUserStore } from "./user";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";
@@ -23,13 +35,15 @@ export const useReleaseStore = defineStore("release", () => {
     pagination?: Pagination,
     showDeleted?: boolean
   ) => {
-    const resp = await releaseServiceClient.listReleases({
+    const request = create(ListReleasesRequestSchema, {
       parent: project,
       pageSize: pagination?.pageSize || DEFAULT_PAGE_SIZE,
-      pageToken: pagination?.pageToken,
+      pageToken: pagination?.pageToken || "",
       showDeleted: Boolean(showDeleted),
     });
-    const composedReleaseList = await batchComposeRelease(resp.releases);
+    const resp = await releaseServiceClientConnect.listReleases(request);
+    const oldReleases = resp.releases.map(convertNewReleaseToOld);
+    const composedReleaseList = await batchComposeRelease(oldReleases);
     composedReleaseList.forEach((release) => {
       releaseMapByName.set(release.name, release);
     });
@@ -40,7 +54,11 @@ export const useReleaseStore = defineStore("release", () => {
   };
 
   const fetchReleaseByName = async (name: string, silent = false) => {
-    const release = await releaseServiceClient.getRelease({ name }, { silent });
+    const request = create(GetReleaseRequestSchema, { name });
+    const response = await releaseServiceClientConnect.getRelease(request, {
+      contextValues: createContextValues().set(silentContextKey, silent),
+    });
+    const release = convertNewReleaseToOld(response);
     const [composedRelease] = await batchComposeRelease([release]);
     releaseMapByName.set(composedRelease.name, composedRelease);
     return composedRelease;
@@ -58,24 +76,33 @@ export const useReleaseStore = defineStore("release", () => {
     release: DeepPartial<Release>,
     updateMask: string[]
   ) => {
-    const resp = await releaseServiceClient.updateRelease({
-      release,
-      updateMask,
+    // Convert the partial release to the new format for the request
+    const fullRelease = ReleaseProto.fromPartial(release);
+    const newRelease = convertOldReleaseToNew(fullRelease);
+    
+    const request = create(UpdateReleaseRequestSchema, {
+      release: newRelease,
+      updateMask: { paths: updateMask },
     });
-    const composedRelease = await batchComposeRelease([resp]);
+    const resp = await releaseServiceClientConnect.updateRelease(request);
+    const oldRelease = convertNewReleaseToOld(resp);
+    const composedRelease = await batchComposeRelease([oldRelease]);
     releaseMapByName.set(composedRelease[0].name, composedRelease[0]);
     return composedRelease[0];
   };
 
   const deleteRelease = async (name: string) => {
-    await releaseServiceClient.deleteRelease({ name });
+    const request = create(DeleteReleaseRequestSchema, { name });
+    await releaseServiceClientConnect.deleteRelease(request);
     if (releaseMapByName.get(name)) {
       releaseMapByName.get(name)!.state = State.DELETED;
     }
   };
 
   const undeleteRelease = async (name: string) => {
-    const release = await releaseServiceClient.undeleteRelease({ name });
+    const request = create(UndeleteReleaseRequestSchema, { name });
+    const response = await releaseServiceClientConnect.undeleteRelease(request);
+    const release = convertNewReleaseToOld(response);
     const composedRelease = await batchComposeRelease([release]);
     releaseMapByName.set(composedRelease[0].name, composedRelease[0]);
   };

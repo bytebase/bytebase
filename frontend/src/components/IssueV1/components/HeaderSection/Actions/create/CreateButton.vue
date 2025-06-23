@@ -50,6 +50,7 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { create } from "@bufbuild/protobuf";
 import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -70,10 +71,12 @@ import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import {
   issueServiceClient,
-  planServiceClient,
-  releaseServiceClient,
+  planServiceClientConnect,
+  releaseServiceClientConnect,
   rolloutServiceClient,
 } from "@/grpcweb";
+import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
@@ -82,7 +85,8 @@ import type { Engine } from "@/types/proto/v1/common";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import { ReleaseFileType } from "@/types/proto/v1/release_service";
+import { CheckReleaseRequestSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
+import { convertNewCheckReleaseResponseToOld, convertOldChangeTypeToNew } from "@/utils/v1/release-conversions";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import {
@@ -237,11 +241,13 @@ const createSheets = async () => {
 const createPlan = async () => {
   const plan = issue.value.planEntity;
   if (!plan) return;
-  const createdPlan = await planServiceClient.createPlan({
+  const newPlan = convertOldPlanToNew(plan);
+  const request = create(CreatePlanRequestSchema, {
     parent: issue.value.project,
-    plan,
+    plan: newPlan,
   });
-  return createdPlan;
+  const response = await planServiceClientConnect.createPlan(request);
+  return convertNewPlanToOld(response);
 };
 
 const maybeFormatSQL = async (sheet: Sheet, engine: Engine) => {
@@ -312,7 +318,7 @@ const runSQLCheckForIssue = async () => {
     );
   }
   for (const [statement, targets] of statementTargetsMap.entries()) {
-    const result = await releaseServiceClient.checkRelease({
+    const request = create(CheckReleaseRequestSchema, {
       parent: issue.value.project,
       release: {
         files: [
@@ -321,14 +327,16 @@ const runSQLCheckForIssue = async () => {
             version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType: getSpecChangeType(
+            changeType: convertOldChangeTypeToNew(getSpecChangeType(
               specForTask(issue.value.planEntity, selectedTask.value)
-            ),
+            )),
           },
         ],
       },
       targets: targets,
     });
+    const response = await releaseServiceClientConnect.checkRelease(request);
+    const result = convertNewCheckReleaseResponseToOld(response);
     // Upsert check result for each target.
     for (const r of result?.results || []) {
       upsertCheckResult(r.target, r);
