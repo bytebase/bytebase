@@ -8,11 +8,14 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
@@ -34,7 +37,7 @@ import (
 
 func configureGrpcRouters(
 	ctx context.Context,
-	mux *grpcruntime.ServeMux,
+	e *echo.Echo,
 	stores *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
@@ -46,7 +49,31 @@ func configureGrpcRouters(
 	webhookManager *webhook.Manager,
 	iamManager *iam.Manager,
 	secret string,
-) (map[string]http.Handler, error) {
+) error {
+	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
+	// the user has to restart the server to take the latest value.
+	gatewayModifier := auth.GatewayResponseModifier{Store: stores, LicenseService: licenseService}
+	mux := grpcruntime.NewServeMux(
+		grpcruntime.WithMarshalerOption(grpcruntime.MIMEWildcard, &grpcruntime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{},
+			//nolint:forbidigo
+			UnmarshalOptions: protojson.UnmarshalOptions{},
+		}),
+		grpcruntime.WithForwardResponseOption(gatewayModifier.Modify),
+		grpcruntime.WithRoutingErrorHandler(func(ctx context.Context, sm *grpcruntime.ServeMux, m grpcruntime.Marshaler, w http.ResponseWriter, r *http.Request, httpStatus int) {
+			if httpStatus != http.StatusNotFound {
+				grpcruntime.DefaultRoutingErrorHandler(ctx, sm, m, w, r, httpStatus)
+				return
+			}
+
+			err := &grpcruntime.HTTPStatusError{
+				HTTPStatus: httpStatus,
+				Err:        connect.NewError(connect.CodeNotFound, errors.Errorf("Routing error. Please check the request URI %v", r.RequestURI)),
+			}
+
+			grpcruntime.DefaultHTTPErrorHandler(ctx, sm, m, w, r, err)
+		}),
+	)
 	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService)
 	auditLogService := apiv1.NewAuditLogService(stores, iamManager, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
@@ -231,95 +258,109 @@ func configureGrpcRouters(
 		),
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterAuditLogServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterCelServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterDatabaseGroupServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterDatabaseServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterGroupServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterInstanceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterPlanServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterReleaseServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterReviewConfigServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterRevisionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterRiskServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterSQLServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterUserServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterWorksheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
 	if err := v1pb.RegisterWorkspaceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
+		return err
 	}
-	return connectHandlers, nil
+	// Register echo routes for mux and connectHandlers
+	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(
+		mux,
+		wsproxy.WithTokenCookieName("access-token"),
+		// 100M.
+		wsproxy.WithMaxRespBodyBufferSize(100*1024*1024),
+	)))
+	e.Any("/v1/*", echo.WrapHandler(mux))
+
+	// Register Connect RPC handlers
+	for path, handler := range connectHandlers {
+		e.Any(path+"*", echo.WrapHandler(handler))
+	}
+
+	return nil
 }
