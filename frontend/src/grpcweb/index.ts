@@ -5,7 +5,6 @@ import {
   createChannel,
   createClientFactory,
   FetchTransport,
-  WebsocketTransport,
 } from "nice-grpc-web";
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
 import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
@@ -29,6 +28,7 @@ import { SheetService } from "@/types/proto-es/v1/sheet_service_pb";
 import { UserService } from "@/types/proto-es/v1/user_service_pb";
 import { ReleaseService } from "@/types/proto-es/v1/release_service_pb";
 import { WorksheetService } from "@/types/proto-es/v1/worksheet_service_pb";
+import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 
@@ -40,7 +40,7 @@ import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 
 
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
-import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
+
 import {
   authInterceptorMiddleware,
   authInterceptor,
@@ -60,10 +60,7 @@ const channel = createChannel(
     credentials: "include",
   })
 );
-const websocketChannel = createChannel(
-  window.location.origin,
-  WebsocketTransport()
-);
+
 
 const clientFactory = createClientFactory()
   // A middleware that is attached first, will be invoked last.
@@ -116,15 +113,7 @@ export const planServiceClient = clientFactory.create(
   channel
 );
 
-export const sqlServiceClient = clientFactory.create(
-  SQLServiceDefinition,
-  channel
-);
 
-export const sqlStreamingServiceClient = clientFactory.create(
-  SQLServiceDefinition,
-  websocketChannel
-);
 
 
 
@@ -235,3 +224,5 @@ export const worksheetServiceClientConnect = createClient(
   WorksheetService,
   transport
 );
+
+export const sqlServiceClientConnect = createClient(SQLService, transport);
