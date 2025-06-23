@@ -19,15 +19,16 @@
 <script setup lang="ts">
 import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClient, issueServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useCurrentUserV1,
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
+import { Issue } from "@/types/proto/v1/issue_service";
 import { Plan } from "@/types/proto/v1/plan_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
@@ -37,13 +38,22 @@ type ViewMode = "EDIT" | "VIEW";
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan } = usePlanContext();
+const { isCreating, plan, issue } = usePlanContext();
 
 const state = reactive({
   isEditing: false,
   isUpdating: false,
-  title: plan.value.title,
+  title: issue?.value ? issue?.value.title : plan.value.title,
 });
+
+// Watch for changes in issue/plan to update the title
+watch(
+  () => [issue?.value, plan.value],
+  () => {
+    state.title = issue?.value ? issue?.value.title : plan.value.title;
+  },
+  { immediate: true }
+);
 
 const viewMode = computed((): ViewMode => {
   if (isCreating.value) return "EDIT";
@@ -92,28 +102,58 @@ const onBlur = async () => {
     cleanup();
     return;
   }
-  if (state.title === plan.value.title) {
-    cleanup();
-    return;
-  }
-  try {
-    state.isUpdating = true;
-    const planPatch = Plan.fromPartial({
-      ...plan.value,
-      title: state.title,
-    });
-    const updated = await planServiceClient.updatePlan({
-      plan: planPatch,
-      updateMask: ["title"],
-    });
-    Object.assign(plan.value, updated);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-  } finally {
-    cleanup();
+
+  // Check if we're updating issue or plan
+  if (issue?.value) {
+    // Update issue title
+    if (state.title === issue.value.title) {
+      cleanup();
+      return;
+    }
+    try {
+      state.isUpdating = true;
+      const issuePatch = Issue.fromPartial({
+        ...issue.value,
+        title: state.title,
+      });
+      const updated = await issueServiceClient.updateIssue({
+        issue: issuePatch,
+        updateMask: ["title"],
+      });
+      Object.assign(issue.value, updated);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } finally {
+      cleanup();
+    }
+  } else {
+    // Update plan title
+    if (state.title === plan.value.title) {
+      cleanup();
+      return;
+    }
+    try {
+      state.isUpdating = true;
+      const planPatch = Plan.fromPartial({
+        ...plan.value,
+        title: state.title,
+      });
+      const updated = await planServiceClient.updatePlan({
+        plan: planPatch,
+        updateMask: ["title"],
+      });
+      Object.assign(plan.value, updated);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } finally {
+      cleanup();
+    }
   }
 };
 
@@ -126,6 +166,7 @@ const onUpdateValue = (value: string) => {
   if (!isCreating.value) {
     return;
   }
+  // When creating, we only update plan title
   plan.value.title = value;
 };
 </script>
