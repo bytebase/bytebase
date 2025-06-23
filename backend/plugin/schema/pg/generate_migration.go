@@ -620,6 +620,15 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 		}
 
+		// Set sequence ownership after all tables are created
+		for _, seqDiff := range diff.SequenceChanges {
+			if seqDiff.Action == schema.MetadataDiffActionCreate && seqDiff.NewSequence.OwnerTable != "" && seqDiff.NewSequence.OwnerColumn != "" {
+				if err := writeMigrationSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
+					return err
+				}
+			}
+		}
+
 		// Add foreign keys
 		for _, tableDiff := range tableMap {
 			if tableDiff.NewTable != nil {
@@ -653,6 +662,15 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				}
 			} else if funcDiff, ok := functionMap[objID]; ok {
 				if err := writeFunctionDiff(buf, funcDiff); err != nil {
+					return err
+				}
+			}
+		}
+
+		// Set sequence ownership after all tables are created
+		for _, seqDiff := range diff.SequenceChanges {
+			if seqDiff.Action == schema.MetadataDiffActionCreate && seqDiff.NewSequence.OwnerTable != "" && seqDiff.NewSequence.OwnerColumn != "" {
+				if err := writeMigrationSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
 					return err
 				}
 			}
@@ -1235,6 +1253,23 @@ func writeMigrationCreateSequence(out *strings.Builder, schema string, seq *stor
 	}
 
 	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+	return nil
+}
+
+// writeMigrationSequenceOwnership writes an ALTER SEQUENCE OWNED BY statement
+func writeMigrationSequenceOwnership(out *strings.Builder, schema string, seq *storepb.SequenceMetadata) error {
+	_, _ = out.WriteString(`ALTER SEQUENCE "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(seq.Name)
+	_, _ = out.WriteString(`" OWNED BY "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(seq.OwnerTable)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(seq.OwnerColumn)
+	_, _ = out.WriteString(`";`)
 	_, _ = out.WriteString("\n")
 	return nil
 }

@@ -512,6 +512,246 @@ $$ LANGUAGE plpgsql;
 `,
 			description: "Mixed operations: CREATE, ALTER, DROP with complex dependencies",
 		},
+		{
+			name: "create_tables_with_fk",
+			initialSchema: `
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX uk_email ON users(email);
+CREATE INDEX idx_username ON users(username);
+
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published_at TIMESTAMP,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_id ON posts(user_id);
+`,
+			migrationDDL: `
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS users;`,
+			description: "Create tables with foreign key constraints",
+		},
+		{
+			name: "multiple_foreign_keys",
+			initialSchema: `
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX uk_email ON users(email);
+CREATE INDEX idx_username ON users(username);
+
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published_at TIMESTAMP,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_id ON posts(user_id);
+`,
+			migrationDDL: `
+-- Add new column
+ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT true;
+
+-- Create new table with multiple foreign keys
+CREATE TABLE comments (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_post_user ON comments(post_id, user_id);
+
+-- Add new index
+CREATE INDEX idx_email_active ON users(email, is_active);
+
+-- Add check constraint
+ALTER TABLE posts ADD CONSTRAINT chk_title_length CHECK (LENGTH(title) > 0);
+`,
+			description: "Tables with multiple foreign key constraints",
+		},
+		{
+			name: "drop_and_recreate_fk_constraints",
+			initialSchema: `
+CREATE TABLE authors (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100)
+);
+
+CREATE UNIQUE INDEX uk_email ON authors(email);
+
+CREATE TABLE books (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    author_id INTEGER NOT NULL,
+    isbn VARCHAR(20),
+    published_year INTEGER,
+    price DECIMAL(8, 2),
+    CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors(id),
+    CONSTRAINT chk_year_valid CHECK (published_year >= 1000 AND published_year <= 2100),
+    CONSTRAINT chk_price_positive CHECK (price > 0)
+);
+
+CREATE UNIQUE INDEX uk_isbn ON books(isbn);
+CREATE INDEX idx_author ON books(author_id);
+CREATE INDEX idx_year ON books(published_year);
+`,
+			migrationDDL: `
+-- Drop and recreate foreign key with different options
+ALTER TABLE books DROP CONSTRAINT fk_author;
+ALTER TABLE books ADD CONSTRAINT fk_author_new FOREIGN KEY (author_id) REFERENCES authors(id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Drop and modify check constraints
+ALTER TABLE books DROP CONSTRAINT chk_year_valid;
+ALTER TABLE books ADD CONSTRAINT chk_year_extended CHECK (published_year >= 1000 AND published_year <= 2030);
+
+-- Add new constraints
+ALTER TABLE books ADD CONSTRAINT chk_title_length CHECK (LENGTH(title) >= 3);
+`,
+			description: "Drop and recreate foreign key constraints with different options",
+		},
+		{
+			name: "self_referencing_foreign_keys",
+			initialSchema: `
+CREATE TABLE departments (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    manager_id INTEGER
+);
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    department_id INTEGER,
+    salary DECIMAL(10, 2),
+    hire_date DATE,
+    CONSTRAINT fk_dept FOREIGN KEY (department_id) REFERENCES departments(id)
+);
+
+CREATE INDEX idx_dept ON employees(department_id);
+
+-- Add self-referencing foreign key
+ALTER TABLE departments ADD CONSTRAINT fk_manager FOREIGN KEY (manager_id) REFERENCES employees(id);
+`,
+			migrationDDL: `
+-- Create base view
+CREATE VIEW dept_employee_count AS
+SELECT d.id AS dept_id, d.name AS dept_name, COUNT(e.id) AS emp_count
+FROM departments d
+LEFT JOIN employees e ON d.id = e.department_id
+GROUP BY d.id, d.name;
+
+-- Create dependent view
+CREATE VIEW dept_summary AS
+SELECT 
+    dept_id,
+    dept_name,
+    emp_count,
+    0 AS avg_salary,
+    0 AS max_salary,
+    0 AS min_salary
+FROM dept_employee_count;
+
+-- Create highly dependent view
+CREATE VIEW dept_manager_summary AS
+SELECT 
+    ds.dept_id,
+    ds.dept_name,
+    ds.emp_count,
+    ds.avg_salary,
+    m.name AS manager_name
+FROM dept_summary ds 
+JOIN departments d ON ds.dept_id = d.id 
+LEFT JOIN employees m ON d.manager_id = m.id;
+
+-- Create function using views
+CREATE OR REPLACE FUNCTION get_department_report(dept_name_pattern VARCHAR)
+RETURNS TABLE(dept_id INTEGER, dept_name VARCHAR, emp_count BIGINT, avg_salary INTEGER, manager_name VARCHAR) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT * FROM dept_manager_summary
+    WHERE dept_name LIKE '%' || dept_name_pattern || '%';
+END;
+$$ LANGUAGE plpgsql;
+`,
+			description: "Self-referencing foreign keys and complex view dependencies",
+		},
+		{
+			name: "circular_foreign_key_dependencies",
+			initialSchema: `
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    preferred_order_id INTEGER
+);
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(10, 2)
+);
+`,
+			migrationDDL: `
+-- Create circular foreign key dependencies
+ALTER TABLE customers ADD CONSTRAINT fk_preferred_order FOREIGN KEY (preferred_order_id) REFERENCES orders(id) ON DELETE SET NULL;
+ALTER TABLE orders ADD CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;
+
+-- Add more tables with complex relationships
+CREATE TABLE order_items (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL,
+    product_name VARCHAR(100) NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    CONSTRAINT fk_order_item FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_order ON order_items(order_id);
+
+-- Create trigger to update order total
+CREATE OR REPLACE FUNCTION update_order_total()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE orders 
+    SET total_amount = (
+        SELECT SUM(quantity * unit_price) 
+        FROM order_items 
+        WHERE order_id = NEW.order_id
+    )
+    WHERE id = NEW.order_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_order_total
+AFTER INSERT OR UPDATE ON order_items
+FOR EACH ROW
+EXECUTE FUNCTION update_order_total();
+`,
+			description: "Circular foreign key dependencies and triggers",
+		},
 	}
 
 	for _, tc := range testCases {

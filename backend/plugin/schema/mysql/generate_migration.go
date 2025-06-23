@@ -167,11 +167,22 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 
 // createObjectsInOrder creates all objects in the correct order
 func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
-	// Create tables
+	// Create tables (without foreign keys first)
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionCreate {
-			if err := writeCreateTable(buf, tableDiff.TableName, tableDiff.NewTable); err != nil {
+			if err := writeCreateTableWithoutForeignKeys(buf, tableDiff.TableName, tableDiff.NewTable); err != nil {
 				return err
+			}
+		}
+	}
+
+	// Add foreign keys after all tables are created
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
+			for _, fk := range tableDiff.NewTable.ForeignKeys {
+				if err := writeAddForeignKey(buf, tableDiff.TableName, fk); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -378,7 +389,7 @@ func writeDropColumn(buf *strings.Builder, table, column string) error {
 	return nil
 }
 
-func writeCreateTable(buf *strings.Builder, tableName string, table *storepb.TableMetadata) error {
+func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, table *storepb.TableMetadata) error {
 	_, _ = buf.WriteString("CREATE TABLE IF NOT EXISTS `")
 	_, _ = buf.WriteString(tableName)
 	_, _ = buf.WriteString("` (\n")
@@ -503,12 +514,7 @@ func writeCreateTable(buf *strings.Builder, tableName string, table *storepb.Tab
 		}
 	}
 
-	// Create foreign keys separately
-	for _, fk := range table.ForeignKeys {
-		if err := writeAddForeignKey(buf, tableName, fk); err != nil {
-			return err
-		}
-	}
+	// Note: Foreign keys are NOT created here - they will be added separately
 
 	return nil
 }
