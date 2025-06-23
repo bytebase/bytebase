@@ -64,12 +64,14 @@
           @hover-item="menuIndex = $event"
         />
         <ValueMenu
-          v-if="visibleValueOptions.length > 0 || currentScopeOption?.search"
           :show="state.menuView === 'value'"
           :scope-option="currentScopeOption"
           :value-options="visibleValueOptions"
           :menu-index="menuIndex"
           :fetch-state="currentFetchState"
+          :show-empty-placeholder="
+            (currentScopeOption?.options ?? []).length > 0
+          "
           @select-value="selectValue"
           @hover-item="menuIndex = $event"
           @fetch-next-page="() => handleSearch(currentValueForScope)"
@@ -113,11 +115,13 @@ const props = withDefaults(
     scopeOptions?: ScopeOption[];
     placeholder?: string | undefined;
     autofocus?: boolean;
+    overrideRouteQuery?: boolean;
   }>(),
   {
     scopeOptions: () => [],
     autofocus: false,
     placeholder: undefined,
+    overrideRouteQuery: true,
   }
 );
 
@@ -481,7 +485,7 @@ const maybeDeselectMismatchedScope = () => {
 };
 
 const maybeEmitIncompleteValue = () => {
-  if (inputText.value !== `${state.currentScope}:`) {
+  if (!inputText.value.startsWith(`${state.currentScope}:`)) {
     const updated = cloneDeep(props.params);
     updated.query = inputText.value;
     updateParams(updated);
@@ -490,7 +494,7 @@ const maybeEmitIncompleteValue = () => {
 
 const updateParams = useDebounceFn((params: SearchParams) => {
   emit("update:params", params);
-}, DEBOUNCE_SEARCH_DELAY * 2);
+}, DEBOUNCE_SEARCH_DELAY);
 
 const handleInputClick = () => {
   maybeSelectMatchedScope();
@@ -675,13 +679,17 @@ watch(visibleValueOptions, (newOptions, oldOptions) => {
 watch(
   () => props.params,
   (params) => {
-    inputText.value = params.query || inputText.value;
-    router.replace({
-      query: {
-        ...route.query,
-        qs: buildSearchTextBySearchParams(params),
-      },
-    });
+    if (!inputText.value) {
+      inputText.value = params.query;
+    }
+    if (props.overrideRouteQuery) {
+      router.replace({
+        query: {
+          ...route.query,
+          qs: buildSearchTextBySearchParams(params),
+        },
+      });
+    }
   },
   { deep: true }
 );
