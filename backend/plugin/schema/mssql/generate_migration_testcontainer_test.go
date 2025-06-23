@@ -499,6 +499,211 @@ ALTER TABLE [tracking].[products] SET (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [
 `,
 			description: "Temporal tables with system versioning",
 		},
+		{
+			name: "create_tables_with_fk",
+			initialSchema: `
+CREATE SCHEMA [test];
+GO
+
+CREATE TABLE [test].[users] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [username] NVARCHAR(50) NOT NULL,
+    [email] NVARCHAR(100) NOT NULL,
+    [created_at] DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT [uk_email] UNIQUE ([email])
+);
+
+CREATE INDEX [idx_username] ON [test].[users] ([username]);
+
+CREATE TABLE [test].[posts] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [user_id] INT NOT NULL,
+    [title] NVARCHAR(200) NOT NULL,
+    [content] NVARCHAR(MAX),
+    [published_at] DATETIME2,
+    CONSTRAINT [fk_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users]([id]) ON DELETE CASCADE
+);
+
+CREATE INDEX [idx_user_id] ON [test].[posts] ([user_id]);
+`,
+			migrationDDL: `
+DROP TABLE [test].[posts];
+DROP TABLE [test].[users];
+DROP SCHEMA [test];`,
+			description: "Create tables with foreign key constraints",
+		},
+		{
+			name: "multiple_foreign_keys",
+			initialSchema: `
+CREATE SCHEMA [test];
+GO
+
+CREATE TABLE [test].[users] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [username] NVARCHAR(50) NOT NULL,
+    [email] NVARCHAR(100) NOT NULL,
+    [created_at] DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT [uk_email] UNIQUE ([email])
+);
+GO
+
+CREATE INDEX [idx_username] ON [test].[users] ([username]);
+GO
+
+CREATE TABLE [test].[posts] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [user_id] INT NOT NULL,
+    [title] NVARCHAR(200) NOT NULL,
+    [content] NVARCHAR(MAX),
+    [published_at] DATETIME2,
+    CONSTRAINT [fk_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users]([id]) ON DELETE CASCADE
+);
+GO
+
+CREATE INDEX [idx_user_id] ON [test].[posts] ([user_id]);
+GO
+`,
+			migrationDDL: `
+-- Add new column
+ALTER TABLE [test].[users] ADD [is_active] BIT;
+GO
+
+-- Create new table with multiple foreign keys
+CREATE TABLE [test].[comments] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [post_id] INT NOT NULL,
+    [user_id] INT NOT NULL,
+    [content] NVARCHAR(MAX) NOT NULL,
+    [created_at] DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT [fk_comment_post] FOREIGN KEY ([post_id]) REFERENCES [test].[posts]([id]) ON DELETE CASCADE,
+    CONSTRAINT [fk_comment_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users]([id]) ON DELETE NO ACTION
+);
+GO
+
+CREATE INDEX [idx_post_user] ON [test].[comments] ([post_id], [user_id]);
+
+-- Add new index
+CREATE INDEX [idx_email_active] ON [test].[users] ([email], [is_active]);
+
+-- Add check constraint
+ALTER TABLE [test].[posts] ADD CONSTRAINT [chk_title_length] CHECK (LEN([title]) > 0);
+`,
+			description: "Tables with multiple foreign key constraints",
+		},
+		{
+			name: "drop_and_recreate_fk_constraints",
+			initialSchema: `
+CREATE SCHEMA [library];
+GO
+
+CREATE TABLE [library].[authors] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [email] NVARCHAR(100),
+    CONSTRAINT [uk_email] UNIQUE ([email])
+);
+
+CREATE TABLE [library].[books] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [title] NVARCHAR(200) NOT NULL,
+    [author_id] INT NOT NULL,
+    [isbn] NVARCHAR(20),
+    [published_year] INT,
+    [price] DECIMAL(8, 2),
+    CONSTRAINT [fk_author] FOREIGN KEY ([author_id]) REFERENCES [library].[authors]([id]),
+    CONSTRAINT [chk_year_valid] CHECK ([published_year] >= 1000 AND [published_year] <= 2100),
+    CONSTRAINT [chk_price_positive] CHECK ([price] > 0),
+    CONSTRAINT [uk_isbn] UNIQUE ([isbn])
+);
+
+CREATE INDEX [idx_author] ON [library].[books] ([author_id]);
+CREATE INDEX [idx_year] ON [library].[books] ([published_year]);
+`,
+			migrationDDL: `
+-- Drop and recreate foreign key with different options
+ALTER TABLE [library].[books] DROP CONSTRAINT [fk_author];
+ALTER TABLE [library].[books] ADD CONSTRAINT [fk_author_new] FOREIGN KEY ([author_id]) REFERENCES [library].[authors]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Drop and modify check constraints
+ALTER TABLE [library].[books] DROP CONSTRAINT [chk_year_valid];
+ALTER TABLE [library].[books] ADD CONSTRAINT [chk_year_extended] CHECK ([published_year] >= 1000 AND [published_year] <= 2030);
+
+-- Add new constraints
+ALTER TABLE [library].[books] ADD CONSTRAINT [chk_title_length] CHECK (LEN([title]) >= 3);
+`,
+			description: "Drop and recreate foreign key constraints with different options",
+		},
+		{
+			name: "self_referencing_foreign_keys",
+			initialSchema: `
+CREATE SCHEMA [company];
+GO
+
+CREATE TABLE [company].[departments] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [manager_id] INT
+);
+
+CREATE TABLE [company].[employees] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [department_id] INT,
+    [salary] DECIMAL(10, 2),
+    [hire_date] DATE,
+    CONSTRAINT [fk_dept] FOREIGN KEY ([department_id]) REFERENCES [company].[departments]([id])
+);
+
+CREATE INDEX [idx_dept] ON [company].[employees] ([department_id]);
+
+-- Add self-referencing foreign key
+ALTER TABLE [company].[departments] ADD CONSTRAINT [fk_manager] FOREIGN KEY ([manager_id]) REFERENCES [company].[employees]([id]);
+`,
+			migrationDDL: `
+-- Create base view
+CREATE VIEW [company].[dept_employee_count] AS
+SELECT d.[id] AS dept_id, d.[name] AS dept_name, COUNT(e.[id]) AS emp_count
+FROM [company].[departments] d
+LEFT JOIN [company].[employees] e ON d.[id] = e.[department_id]
+GROUP BY d.[id], d.[name];
+GO
+
+-- Create dependent view
+CREATE VIEW [company].[dept_summary] AS
+SELECT 
+    dept_id,
+    dept_name,
+    emp_count,
+    0 AS avg_salary,
+    0 AS max_salary,
+    0 AS min_salary
+FROM [company].[dept_employee_count];
+GO
+
+-- Create highly dependent view
+CREATE VIEW [company].[dept_manager_summary] AS
+SELECT 
+    ds.dept_id,
+    ds.dept_name,
+    ds.emp_count,
+    ds.avg_salary,
+    m.[name] AS manager_name
+FROM [company].[dept_summary] ds 
+JOIN [company].[departments] d ON ds.dept_id = d.[id]
+LEFT JOIN [company].[employees] m ON d.[manager_id] = m.[id];
+GO
+
+-- Create stored procedure using views
+CREATE PROCEDURE [company].[GetDepartmentReport]
+    @dept_name_pattern NVARCHAR(100)
+AS
+BEGIN
+    SELECT * FROM [company].[dept_manager_summary]
+    WHERE dept_name LIKE '%' + @dept_name_pattern + '%';
+END;
+`,
+			description: "Self-referencing foreign keys and complex view dependencies",
+		},
 	}
 
 	for _, testCase := range testCases {

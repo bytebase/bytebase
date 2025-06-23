@@ -65,17 +65,17 @@
     END;
     GO
   expected: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      CONSTRAINT [PK_users_1] PRIMARY KEY ([id])
+    );
     CREATE TABLE [dbo].[orders] (
       [id] int NOT NULL,
       [user_id] int NOT NULL,
       CONSTRAINT [PK_orders_2] PRIMARY KEY ([id])
     );
     CREATE INDEX [IX_orders_user_id] ON [dbo].[orders] ([user_id]);
-    CREATE TABLE [dbo].[users] (
-      [id] int NOT NULL,
-      [name] nvarchar(100) NULL,
-      CONSTRAINT [PK_users_1] PRIMARY KEY ([id])
-    );
     ALTER TABLE [dbo].[orders] ADD CONSTRAINT [FK_orders_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[users] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
     GO
