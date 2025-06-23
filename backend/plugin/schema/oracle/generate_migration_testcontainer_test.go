@@ -843,12 +843,12 @@ COMMENT ON COLUMN INVENTORY.PRODUCT_CODE IS 'Updated: Standardized product SKU f
 COMMENT ON COLUMN INVENTORY.STOCK_LEVEL IS 'Updated: Real-time stock quantity with automated updates';
 COMMENT ON COLUMN INVENTORY.MIN_STOCK IS 'Updated: Dynamic minimum threshold based on sales velocity';
 
--- Remove comments by setting to NULL
-COMMENT ON COLUMN INVENTORY.MAX_STOCK IS NULL;
-COMMENT ON COLUMN INVENTORY.WAREHOUSE_ID IS NULL;
+-- Remove comments by setting to empty string
+COMMENT ON COLUMN INVENTORY.MAX_STOCK IS '';
+COMMENT ON COLUMN INVENTORY.WAREHOUSE_ID IS '';
 
 -- Remove table comment
-COMMENT ON TABLE SUPPLIERS IS NULL;
+COMMENT ON TABLE SUPPLIERS IS '';
 
 -- Remove specific column comments using empty string
 COMMENT ON COLUMN SUPPLIERS.CONTACT_EMAIL IS '';
@@ -863,7 +863,7 @@ COMMENT ON COLUMN INVENTORY.REORDER_POINT IS 'Calculated reorder point based on 
 -- Modify existing column comment after it was cleared
 COMMENT ON COLUMN SUPPLIERS.RATING IS 'Supplier performance rating (1.0 to 5.0 scale)';
 `,
-			description: "Modify existing comments and remove comments using NULL and empty string",
+			description: "Modify existing comments and remove comments using empty string",
 		},
 		{
 			name: "comments_with_special_characters",

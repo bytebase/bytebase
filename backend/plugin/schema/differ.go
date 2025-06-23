@@ -470,6 +470,11 @@ func compareTableDetails(schemaName, tableName string, oldTable, newTable *model
 		hasChanges = true
 	}
 
+	// Compare table comments
+	if oldTable.GetProto().Comment != newTable.GetProto().Comment {
+		hasChanges = true
+	}
+
 	if !hasChanges {
 		return nil
 	}

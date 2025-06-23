@@ -776,13 +776,12 @@ func (d *Driver) getSequenceList(ctx context.Context, databaseName string) ([]*s
 	query := `
 		SELECT
 			SEQUENCE_NAME,
-			DATA_TYPE,
-			START_VALUE,
+			START,
 			MIN_VALUE,
 			MAX_VALUE,
 			INCREMENT,
-			CYCLE_OPTION,
-			CACHE_SIZE,
+			CYCLE,
+			CACHE_VALUE,
 			IFNULL(COMMENT, '')
 		FROM information_schema.SEQUENCES
 		WHERE SEQUENCE_SCHEMA = ?
@@ -797,11 +796,10 @@ func (d *Driver) getSequenceList(ctx context.Context, databaseName string) ([]*s
 	var sequences []*storepb.SequenceMetadata
 	for rows.Next() {
 		sequence := &storepb.SequenceMetadata{}
-		var cycleOption string
+		var cycleOption int64
 
 		if err := rows.Scan(
 			&sequence.Name,
-			&sequence.DataType,
 			&sequence.Start,
 			&sequence.MinValue,
 			&sequence.MaxValue,
@@ -813,8 +811,11 @@ func (d *Driver) getSequenceList(ctx context.Context, databaseName string) ([]*s
 			return nil, err
 		}
 
-		// Convert cycle option to boolean
-		sequence.Cycle = cycleOption == "YES"
+		// TiDB sequences are always numeric, set default data type
+		sequence.DataType = "BIGINT"
+
+		// Convert cycle option to boolean (TiDB uses 0/1 instead of YES/NO)
+		sequence.Cycle = cycleOption != 0
 
 		sequences = append(sequences, sequence)
 	}

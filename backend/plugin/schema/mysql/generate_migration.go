@@ -306,6 +306,14 @@ func generateAlterTable(tableDiff *schema.TableDiff, buf *strings.Builder) error
 		}
 	}
 
+	// Handle table comment changes
+	if tableDiff.OldTable != nil && tableDiff.NewTable != nil &&
+		tableDiff.OldTable.Comment != tableDiff.NewTable.Comment {
+		if err := writeAlterTableComment(buf, tableDiff.TableName, tableDiff.NewTable.Comment); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -832,6 +840,15 @@ func writeEventDiff(buf *strings.Builder, eventDiff *schema.EventDiff) error {
 		// Event comments must be set during CREATE EVENT statement
 		// The definition should already include the comment if needed
 	}
+	return nil
+}
+
+func writeAlterTableComment(buf *strings.Builder, tableName, comment string) error {
+	_, _ = buf.WriteString("ALTER TABLE `")
+	_, _ = buf.WriteString(tableName)
+	_, _ = buf.WriteString("` COMMENT = '")
+	_, _ = buf.WriteString(escapeString(comment))
+	_, _ = buf.WriteString("';\n")
 	return nil
 }
 

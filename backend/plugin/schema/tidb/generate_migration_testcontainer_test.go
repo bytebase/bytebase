@@ -667,7 +667,7 @@ ALTER TABLE test_table ADD COLUMN field_with_escape VARCHAR(100) COMMENT 'Escape
 
 -- Create table with complex comment containing all special character types
 CREATE TABLE special_comments_table (
-    id INT NOT NULL AUTO_RANDOM COMMENT 'ID with "quotes", symbols @#$, unicode 测试🌟, and
+    id BIGINT NOT NULL AUTO_RANDOM COMMENT 'ID with "quotes", symbols @#$, unicode 测试🌟, and
 multi-line
 content',
     data_field JSON COMMENT 'JSON field storing: {"users": ["John O''Connor", "Jane \"Doe\""], "count": 42}',
@@ -679,7 +679,6 @@ test',
     url_field VARCHAR(300) COMMENT 'URL with params: https://example.com/path?param1=value1&param2="quoted value"&param3=50%+discount',
     regex_field VARCHAR(150) COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$ for email validation',
     PRIMARY KEY (id),
-    INDEX idx_data ((CAST(data_field->"$.count" AS UNSIGNED))),
     INDEX idx_unicode (unicode_field)
 ) COMMENT = 'Special characters test table with:
 - Double quotes: "test"

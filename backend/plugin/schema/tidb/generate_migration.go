@@ -259,6 +259,15 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 }
 
 func generateAlterTable(tableDiff *schema.TableDiff, buf *strings.Builder) error {
+	// Handle table comment changes first
+	if tableDiff.OldTable != nil && tableDiff.NewTable != nil {
+		if tableDiff.OldTable.Comment != tableDiff.NewTable.Comment {
+			if err := writeAlterTableComment(buf, tableDiff.TableName, tableDiff.NewTable.Comment); err != nil {
+				return err
+			}
+		}
+	}
+
 	// Add columns first
 	for _, colDiff := range tableDiff.ColumnChanges {
 		if colDiff.Action == schema.MetadataDiffActionCreate {
@@ -327,6 +336,15 @@ func generateAlterTable(tableDiff *schema.TableDiff, buf *strings.Builder) error
 }
 
 // Write functions for various DDL statements
+
+func writeAlterTableComment(buf *strings.Builder, tableName, comment string) error {
+	_, _ = buf.WriteString("ALTER TABLE `")
+	_, _ = buf.WriteString(tableName)
+	_, _ = buf.WriteString("` COMMENT = '")
+	_, _ = buf.WriteString(escapeString(comment))
+	_, _ = buf.WriteString("';\n\n")
+	return nil
+}
 
 func writeDropTrigger(buf *strings.Builder, trigger string) error {
 	_, _ = buf.WriteString("DROP TRIGGER IF EXISTS `")
