@@ -67,7 +67,10 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { pushNotification } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
@@ -136,10 +139,13 @@ const handleSaveEdit = async () => {
     config.password = state.config.password || undefined;
   }
 
-  const updatedPlan = await planServiceClient.updatePlan({
-    plan: planPatch,
-    updateMask: ["specs"],
+  const newPlan = convertOldPlanToNew(planPatch);
+  const request = create(UpdatePlanRequestSchema, {
+    plan: newPlan,
+    updateMask: { paths: ["specs"] },
   });
+  const response = await planServiceClientConnect.updatePlan(request);
+  const updatedPlan = convertNewPlanToOld(response);
   issue.value.planEntity = updatedPlan;
 
   events.emit("status-changed", { eager: true });

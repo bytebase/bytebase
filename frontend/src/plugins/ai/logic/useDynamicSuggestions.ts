@@ -1,7 +1,13 @@
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
+
 import { hashCode } from "@/bbkit/BBUtil";
-import { sqlServiceClient } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/grpcweb";
+
+import {
+  convertOldAICompletionRequestToNew,
+  convertNewAICompletionResponseToOld,
+} from "@/utils/v1/sql-conversions";
 import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
 import { WebStorageHelper } from "@/utils";
 import { useAIContext } from "./context";
@@ -43,7 +49,10 @@ export const useDynamicSuggestions = () => {
   const requestAI = async (messages: AICompletionRequest_Message[]) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     try {
-      const response = await sqlServiceClient.aICompletion({ messages });
+      const oldRequest = { messages };
+      const newRequest = convertOldAICompletionRequestToNew(oldRequest);
+      const newResponse = await sqlServiceClientConnect.aICompletion(newRequest);
+      const response = convertNewAICompletionResponseToOld(newResponse);
       const text =
         head(head(response.candidates)?.content?.parts)?.text?.trim() ?? "";
       const card = JSON.parse(text) as Record<string, string>;

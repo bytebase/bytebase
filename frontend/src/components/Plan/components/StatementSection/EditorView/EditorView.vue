@@ -184,7 +184,10 @@ import {
 } from "@/components/Plan/logic";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import {
   pushNotification,
   useCurrentProjectV1,
@@ -416,10 +419,13 @@ const updateStatement = async (statement: string) => {
     }
   }
 
-  const updatedPlan = await planServiceClient.updatePlan({
-    plan: planPatch,
-    updateMask: ["specs"],
+  const newPlan = convertOldPlanToNew(planPatch);
+  const request = create(UpdatePlanRequestSchema, {
+    plan: newPlan,
+    updateMask: { paths: ["specs"] },
   });
+  const response = await planServiceClientConnect.updatePlan(request);
+  const updatedPlan = convertNewPlanToOld(response);
 
   Object.assign(plan.value, updatedPlan);
   events.emit("status-changed", { eager: true });

@@ -90,9 +90,8 @@ export const errorNotificationInterceptor: Interceptor =
       const resp = await next(req);
       return resp;
     } catch (error) {
-      const silent = req.contextValues.get(silentContextKey);
-      const ignoredCodes = req.contextValues.get(ignoredCodesContextKey);
       const maybePushNotification = (title: string, description?: string) => {
+        const silent = req.contextValues.get(silentContextKey);
         if (silent) return;
         pushNotification({
           module: "bytebase",
@@ -102,6 +101,7 @@ export const errorNotificationInterceptor: Interceptor =
         });
       };
       if (error instanceof ConnectError) {
+        const ignoredCodes = req.contextValues.get(ignoredCodesContextKey);
         if (
           (ignoredCodes.length === 0
             ? [Code.NotFound, Code.Unauthenticated]

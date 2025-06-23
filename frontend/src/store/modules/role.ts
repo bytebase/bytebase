@@ -1,15 +1,23 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { roleServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { roleServiceClientConnect } from "@/grpcweb";
 import type { Role } from "@/types/proto/v1/role_service";
+import { 
+  ListRolesRequestSchema,
+  UpdateRoleRequestSchema,
+  DeleteRoleRequestSchema
+} from "@/types/proto-es/v1/role_service_pb";
+import { convertNewRoleToOld, convertOldRoleToNew } from "@/utils/v1/role-conversions";
 import { useGracefulRequest } from "./utils";
 
 export const useRoleStore = defineStore("role", () => {
   const roleList = ref<Role[]>([]);
 
   const fetchRoleList = async () => {
-    const { roles } = await roleServiceClient.listRoles({});
-    roleList.value = roles as Role[];
+    const request = create(ListRolesRequestSchema, {});
+    const response = await roleServiceClientConnect.listRoles(request);
+    roleList.value = response.roles.map(convertNewRoleToOld);
     return roleList.value;
   };
 
@@ -18,11 +26,16 @@ export const useRoleStore = defineStore("role", () => {
   };
 
   const upsertRole = async (role: Role) => {
-    const updated = await roleServiceClient.updateRole({
-      role,
-      updateMask: ["title", "description", "permissions"],
+    const newRole = convertOldRoleToNew(role);
+    const request = create(UpdateRoleRequestSchema, {
+      role: newRole,
+      updateMask: {
+        paths: ["title", "description", "permissions"],
+      },
       allowMissing: true,
     });
+    const response = await roleServiceClientConnect.updateRole(request);
+    const updated = convertNewRoleToOld(response);
     const index = roleList.value.findIndex((r) => r.name === role.name);
     if (index >= 0) {
       roleList.value.splice(index, 1, updated);
@@ -34,9 +47,10 @@ export const useRoleStore = defineStore("role", () => {
 
   const deleteRole = async (role: Role) => {
     await useGracefulRequest(async () => {
-      await roleServiceClient.deleteRole({
+      const request = create(DeleteRoleRequestSchema, {
         name: role.name,
       });
+      await roleServiceClientConnect.deleteRole(request);
       const index = roleList.value.findIndex((r) => r.name === role.name);
       if (index >= 0) {
         roleList.value.splice(index, 1);
