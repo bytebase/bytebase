@@ -287,10 +287,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 			for _, fk := range tableDiff.NewTable.ForeignKeys {
-				fkSQL, err := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fk)
-				if err != nil {
-					return "", err
-				}
+				fkSQL := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fk)
 				_, _ = buf.WriteString(fkSQL)
 				_, _ = buf.WriteString(";\n")
 			}
@@ -1099,10 +1096,7 @@ func createTablesInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error 
 	if err != nil {
 		// If there's a cycle or error, fall back to alphabetical order
 		for _, tableDiff := range tablesToCreate {
-			createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
-			if err != nil {
-				return err
-			}
+			createTableSQL := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
 			_, _ = buf.WriteString(createTableSQL)
 			_, _ = buf.WriteString("\n")
 		}
@@ -1112,10 +1106,7 @@ func createTablesInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error 
 	// Create tables in order
 	for _, tableID := range orderedList {
 		if tableDiff, ok := tableMap[tableID]; ok {
-			createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
-			if err != nil {
-				return err
-			}
+			createTableSQL := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
 			_, _ = buf.WriteString(createTableSQL)
 			_, _ = buf.WriteString("\n")
 		}
