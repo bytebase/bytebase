@@ -90,7 +90,8 @@
 <script lang="ts" setup>
 import { NButton, NModal } from "naive-ui";
 import { ref, onUnmounted, watch } from "vue";
-import { identityProviderClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { identityProviderServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { OAuthWindowEventPayload } from "@/types";
 import {
@@ -98,6 +99,14 @@ import {
   TestIdentityProviderResponse,
   type IdentityProvider,
 } from "@/types/proto/v1/idp_service";
+import {
+  TestIdentityProviderRequestSchema,
+  CreateIdentityProviderRequestSchema,
+} from "@/types/proto-es/v1/idp_service_pb";
+import {
+  convertOldIdentityProviderToNew,
+  convertNewIdentityProviderToOld,
+} from "@/utils/v1/idp-conversions";
 import { openWindowForSSO } from "@/utils";
 
 const props = defineProps<{
@@ -137,12 +146,16 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
   const code = payload.code;
   try {
     isTestingInProgress.value = true;
-    const response = await identityProviderClient.testIdentityProvider({
-      identityProvider: props.idp,
-      oauth2Context: {
-        code: code,
+    const request = create(TestIdentityProviderRequestSchema, {
+      identityProvider: convertOldIdentityProviderToNew(props.idp),
+      context: {
+        case: "oauth2Context",
+        value: {
+          code: code,
+        },
       },
     });
+    const response = await identityProviderServiceClientConnect.testIdentityProvider(request);
 
     testIdentityProviderResponse.value = response;
     showClaimsDialog.value = true;
@@ -172,11 +185,13 @@ const testConnection = async () => {
     let idpForTesting = idp;
     // For OIDC, we need to obtain the auth endpoint from the issuer in backend.
     if (isCreating && idp.type === IdentityProviderType.OIDC) {
-      idpForTesting = await identityProviderClient.createIdentityProvider({
+      const request = create(CreateIdentityProviderRequestSchema, {
         identityProviderId: idp.name,
-        identityProvider: idp,
+        identityProvider: convertOldIdentityProviderToNew(idp),
         validateOnly: true,
       });
+      const response = await identityProviderServiceClientConnect.createIdentityProvider(request);
+      idpForTesting = convertNewIdentityProviderToOld(response);
     }
 
     // Ensure event listener is set up for the correct IDP name
@@ -211,9 +226,10 @@ const testConnection = async () => {
   } else if (idp.type === IdentityProviderType.LDAP) {
     try {
       isTestingInProgress.value = true;
-      const response = await identityProviderClient.testIdentityProvider({
-        identityProvider: idp,
+      const request = create(TestIdentityProviderRequestSchema, {
+        identityProvider: convertOldIdentityProviderToNew(idp),
       });
+      const response = await identityProviderServiceClientConnect.testIdentityProvider(request);
 
       // Show claims in dialog (LDAP will have empty claims)
       testIdentityProviderResponse.value = response;

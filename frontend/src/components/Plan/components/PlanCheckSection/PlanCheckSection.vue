@@ -222,7 +222,9 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   useCurrentUserV1,
   useCurrentProjectV1,
@@ -417,7 +419,10 @@ const runChecks = async () => {
 
   isRunningChecks.value = true;
   try {
-    await planServiceClient.runPlanChecks({ name: plan.value.name });
+    const request = create(RunPlanChecksRequestSchema, {
+      name: plan.value.name,
+    });
+    await planServiceClientConnect.runPlanChecks(request);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

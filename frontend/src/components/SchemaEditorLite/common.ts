@@ -1,5 +1,13 @@
 import { isEqual } from "lodash-es";
-import { sqlServiceClient } from "@/grpcweb";
+
+import { createContextValues } from "@connectrpc/connect";
+import { sqlServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+
+import {
+  convertOldDiffMetadataRequestToNew,
+  convertNewDiffMetadataResponseToOld,
+} from "@/utils/v1/sql-conversions";
 import { t } from "@/plugins/i18n";
 import { useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -54,20 +62,20 @@ export const generateDiffDDL = async ({
       database.projectEntity.dataClassificationConfigId
     );
 
-    const diffResponse = await sqlServiceClient.diffMetadata(
-      {
-        sourceMetadata,
-        targetMetadata,
-        sourceCatalog,
-        targetCatalog,
-        engine: database.instanceResource.engine,
-        classificationFromConfig:
-          classificationConfig?.classificationFromConfig ?? false,
-      },
-      {
-        silent: true,
-      }
-    );
+    const oldRequest = {
+      sourceMetadata,
+      targetMetadata,
+      sourceCatalog,
+      targetCatalog,
+      engine: database.instanceResource.engine,
+      classificationFromConfig:
+        classificationConfig?.classificationFromConfig ?? false,
+    };
+    const newRequest = convertOldDiffMetadataRequestToNew(oldRequest);
+    const newResponse = await sqlServiceClientConnect.diffMetadata(newRequest, {
+      contextValues: createContextValues().set(silentContextKey, true),
+    });
+    const diffResponse = convertNewDiffMetadataResponseToOld(newResponse);
     const { diff } = diffResponse;
     if (diff.length === 0) {
       if (

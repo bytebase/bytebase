@@ -1,15 +1,32 @@
-import { policyServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { Code, ConnectError } from "@connectrpc/connect";
+import { orgPolicyServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
 import { Policy, PolicyResourceType, PolicyType, policyTypeToJSON } from "@/types/proto/v1/org_policy_service";
-import { Status, type ServerError } from "nice-grpc-common";
+import type { Policy as NewPolicy } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  GetPolicyRequestSchema,
+  ListPoliciesRequestSchema,
+  PolicySchema,
+  UpdatePolicyRequestSchema,
+  DeletePolicyRequestSchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  convertNewPolicyToOld,
+  convertOldPolicyToNew,
+  convertOldPolicyTypeToNew,
+  convertOldPolicyResourceTypeToNew,
+} from "@/utils/v1/org-policy-conversions";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watchEffect } from "vue";
 import { useCurrentUserV1 } from "./auth";
 
 interface PolicyState {
-  policyMapByName: Map<string, Policy>;
+  policyMapByName: Map<string, NewPolicy>;
 }
 
 const replacePolicyTypeNameToLowerCase = (name: string) => {
@@ -45,7 +62,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
   }),
   getters: {
     policyList(state) {
-      return Array.from(state.policyMapByName.values());
+      return Array.from(state.policyMapByName.values()).map(convertNewPolicyToOld);
     },
   },
   actions: {
@@ -60,15 +77,17 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       parent?: string;
       showDeleted?: boolean;
     }) {
-      const { policies } = await policyServiceClient.listPolicies({
+      const request = create(ListPoliciesRequestSchema, {
         parent: parent ?? getPolicyParentByResourceType(resourceType),
-        policyType,
+        policyType: policyType ? convertOldPolicyTypeToNew(policyType) : undefined,
         showDeleted,
       });
+      const response = await orgPolicyServiceClientConnect.listPolicies(request);
+      const policies = response.policies;
       for (const policy of policies) {
         this.policyMapByName.set(policy.name, policy);
       }
-      return policies;
+      return policies.map(convertNewPolicyToOld);
     },
     getPolicies({
       resourceType,
@@ -80,14 +99,16 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       showDeleted?: boolean;
     }) {
       const response: Policy[] = [];
+      const newResourceType = convertOldPolicyResourceTypeToNew(resourceType);
+      const newPolicyType = convertOldPolicyTypeToNew(policyType);
       for (const [_, policy] of this.policyMapByName) {
-        if (policy.resourceType != resourceType || policy.type != policyType) {
+        if (policy.resourceType != newResourceType || policy.type != newPolicyType) {
           continue;
         }
         if (!showDeleted && !policy.enforce) {
           continue;
         }
-        response.push(policy);
+        response.push(convertNewPolicyToOld(policy));
       }
       return response;
     },
@@ -113,17 +134,17 @@ export const usePolicyV1Store = defineStore("policy_v1", {
         return cachedData;
       }
       try {
-        const policy = await policyServiceClient.getPolicy(
-          { name },
-          { silent: true }
-        );
+        const request = create(GetPolicyRequestSchema, { name });
+        const policy = await orgPolicyServiceClientConnect.getPolicy(request, {
+          contextValues: createContextValues().set(silentContextKey, true)
+        });
         this.policyMapByName.set(policy.name, policy);
-        return policy;
+        return convertNewPolicyToOld(policy);
       } catch (error) {
-        const se = error as ServerError;
-        if (se.code === Status.NOT_FOUND) {
+        if (error instanceof ConnectError && error.code === Code.NotFound) {
           // To prevent unnecessary requests, cache empty policies if not found.
-          this.policyMapByName.set(name, Policy.fromPartial({ name }));
+          const emptyPolicy = create(PolicySchema, { name });
+          this.policyMapByName.set(name, emptyPolicy);
         }
       }
     },
@@ -140,7 +161,8 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       return this.getPolicyByName(name);
     },
     getPolicyByName(name: string) {
-      return this.policyMapByName.get(replacePolicyTypeNameToLowerCase(name));
+      const policy = this.policyMapByName.get(replacePolicyTypeNameToLowerCase(name));
+      return policy ? convertNewPolicyToOld(policy) : undefined;
     },
     async upsertPolicy({
       parentPath,
@@ -155,16 +177,21 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       policy.name = replacePolicyTypeNameToLowerCase(
         `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policy.type)}`
       );
-      const updatedPolicy = await policyServiceClient.updatePolicy({
-        policy,
-        updateMask: ["payload"],
+      const fullPolicy = Policy.fromPartial(policy);
+      const newPolicy = convertOldPolicyToNew(fullPolicy);
+      const request = create(UpdatePolicyRequestSchema, {
+        policy: newPolicy,
+        updateMask: { paths: ["payload"] },
         allowMissing: true,
       });
-      this.policyMapByName.set(updatedPolicy.name, updatedPolicy);
+      const response = await orgPolicyServiceClientConnect.updatePolicy(request);
+      const updatedPolicy = convertNewPolicyToOld(response);
+      this.policyMapByName.set(response.name, response);
       return updatedPolicy;
     },
     async deletePolicy(name: string) {
-      await policyServiceClient.deletePolicy({ name });
+      const request = create(DeletePolicyRequestSchema, { name });
+      await orgPolicyServiceClientConnect.deletePolicy(request);
       this.policyMapByName.delete(name);
     },
   },

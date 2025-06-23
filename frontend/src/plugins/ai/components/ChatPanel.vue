@@ -32,7 +32,11 @@ import { head } from "lodash-es";
 import { NSpin } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
-import { sqlServiceClient } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/grpcweb";
+import {
+  convertOldAICompletionRequestToNew,
+  convertNewAICompletionResponseToOld,
+} from "@/utils/v1/sql-conversions";
 import { useSQLEditorTabStore } from "@/store";
 import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame } from "@/utils";
@@ -120,7 +124,10 @@ const requestAI = async (query: string) => {
   });
   state.loading = true;
   try {
-    const response = await sqlServiceClient.aICompletion({ messages });
+    const oldRequest = { messages };
+    const newRequest = convertOldAICompletionRequestToNew(oldRequest);
+    const newResponse = await sqlServiceClientConnect.aICompletion(newRequest);
+    const response = convertNewAICompletionResponseToOld(newResponse);
     const text = head(head(response.candidates)?.content?.parts)?.text?.trim();
     console.debug("[AI Assistant] answer:", text);
     if (text) {

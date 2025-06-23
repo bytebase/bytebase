@@ -57,10 +57,14 @@ import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
 } from "@/components/DatabaseAndGroupSelector/";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { DatabaseGroup } from "@/types/proto/v1/database_group_service";
+import { Plan } from "@/types/proto/v1/plan_service";
 import {
   extractProjectResourceName,
   generateIssueTitle,
@@ -111,25 +115,29 @@ const handleCreate = async () => {
       state.targetSelectState.selectedDatabaseGroup || ""
     ),
   });
-  const createdPlan = await planServiceClient.createPlan({
-    parent: project.value.name,
-    plan: {
-      title: `Release "${release.value.title}"`,
-      description: `Apply release "${release.value.title}" to selected databases.`,
-      specs: [
-        {
-          id: crypto.randomUUID(),
-          changeDatabaseConfig: {
-            targets:
-              (state.targetSelectState.changeSource === "DATABASE"
-                ? state.targetSelectState.selectedDatabaseNameList
-                : [state.targetSelectState.selectedDatabaseGroup!]) || [],
-            release: release.value.name,
-          },
+  const planData = Plan.fromPartial({
+    title: `Release "${release.value.title}"`,
+    description: `Apply release "${release.value.title}" to selected databases.`,
+    specs: [
+      {
+        id: crypto.randomUUID(),
+        changeDatabaseConfig: {
+          targets:
+            (state.targetSelectState.changeSource === "DATABASE"
+              ? state.targetSelectState.selectedDatabaseNameList
+              : [state.targetSelectState.selectedDatabaseGroup!]) || [],
+          release: release.value.name,
         },
-      ],
-    },
+      },
+    ],
   });
+  const newPlan = convertOldPlanToNew(planData);
+  const request = create(CreatePlanRequestSchema, {
+    parent: project.value.name,
+    plan: newPlan,
+  });
+  const response = await planServiceClientConnect.createPlan(request);
+  const createdPlan = convertNewPlanToOld(response);
   const createdIssue = await createIssueFromPlan(project.value.name, {
     ...createdPlan,
     // Override title and description.

@@ -240,8 +240,10 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { create } from "@bufbuild/protobuf";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
+import { BatchCancelPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
 import {
@@ -527,10 +529,11 @@ const cancelPlanCheckRun = async () => {
   const planCheckRunName = props.planCheckRun.name;
   const [projectName, planId] =
     getProjectNamePlanIdPlanCheckRunId(planCheckRunName);
-  await planServiceClient.batchCancelPlanCheckRuns({
+  const request = create(BatchCancelPlanCheckRunsRequestSchema, {
     parent: `${projectNamePrefix}${projectName}/${planNamePrefix}${planId}`,
     planCheckRuns: [planCheckRunName],
   });
+  await planServiceClientConnect.batchCancelPlanCheckRuns(request);
   if (usePlanCheckRunContext()) {
     usePlanCheckRunContext().events.emit("status-changed");
   }

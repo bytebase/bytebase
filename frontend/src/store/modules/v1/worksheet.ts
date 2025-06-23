@@ -1,7 +1,10 @@
 import { uniqBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { worksheetServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { worksheetServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
 import type {
@@ -9,6 +12,19 @@ import type {
   WorksheetOrganizer,
 } from "@/types/proto/v1/worksheet_service";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import {
+  CreateWorksheetRequestSchema,
+  GetWorksheetRequestSchema,
+  UpdateWorksheetRequestSchema,
+  DeleteWorksheetRequestSchema,
+  SearchWorksheetsRequestSchema,
+  UpdateWorksheetOrganizerRequestSchema,
+} from "@/types/proto-es/v1/worksheet_service_pb";
+import {
+  convertOldWorksheetToNew,
+  convertNewWorksheetToOld,
+  convertOldWorksheetOrganizerToNew,
+} from "@/utils/v1/worksheet-conversions";
 import {
   extractWorksheetUID,
   getSheetStatement,
@@ -93,9 +109,13 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
 
   // CRUD
   const createWorksheet = async (worksheet: Partial<Worksheet>) => {
-    const created = await worksheetServiceClient.createWorksheet({
-      worksheet,
+    const fullWorksheet = worksheet.name ? worksheet : { ...worksheet, name: "" };
+    const newWorksheet = convertOldWorksheetToNew(fullWorksheet as Worksheet);
+    const request = create(CreateWorksheetRequestSchema, {
+      worksheet: newWorksheet,
     });
+    const response = await worksheetServiceClientConnect.createWorksheet(request);
+    const created = convertNewWorksheetToOld(response);
     await setCache(created, "FULL");
     return created;
   };
@@ -131,12 +151,16 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
       return undefined;
     }
     try {
-      const worksheet = await worksheetServiceClient.getWorksheet(
+      const request = create(GetWorksheetRequestSchema, {
+        name,
+      });
+      const response = await worksheetServiceClientConnect.getWorksheet(
+        request,
         {
-          name,
-        },
-        { silent }
+          contextValues: createContextValues().set(silentContextKey, silent),
+        }
       );
+      const worksheet = convertNewWorksheetToOld(response);
       return worksheet;
     } catch {
       return undefined;
@@ -175,25 +199,31 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
 
   const fetchMyWorksheetList = async () => {
     const me = useCurrentUserV1();
-    const { worksheets } = await worksheetServiceClient.searchWorksheets({
+    const request = create(SearchWorksheetsRequestSchema, {
       filter: `creator == "users/${me.value.email}"`,
     });
+    const response = await worksheetServiceClientConnect.searchWorksheets(request);
+    const worksheets = response.worksheets.map(convertNewWorksheetToOld);
     await setListCache(worksheets);
     return worksheets;
   };
   const fetchSharedWorksheetList = async () => {
     const me = useCurrentUserV1();
-    const { worksheets } = await worksheetServiceClient.searchWorksheets({
+    const request = create(SearchWorksheetsRequestSchema, {
       filter: `creator != "users/${me.value.email}" && visibility in ["${Worksheet_Visibility.VISIBILITY_PROJECT_READ}","${Worksheet_Visibility.VISIBILITY_PROJECT_WRITE}"]`,
     });
+    const response = await worksheetServiceClientConnect.searchWorksheets(request);
+    const worksheets = response.worksheets.map(convertNewWorksheetToOld);
     await setListCache(worksheets);
     return worksheets;
   };
 
   const fetchStarredWorksheetList = async () => {
-    const { worksheets } = await worksheetServiceClient.searchWorksheets({
+    const request = create(SearchWorksheetsRequestSchema, {
       filter: `starred == true`,
     });
+    const response = await worksheetServiceClientConnect.searchWorksheets(request);
+    const worksheets = response.worksheets.map(convertNewWorksheetToOld);
     await setListCache(worksheets);
     return worksheets;
   };
@@ -203,16 +233,21 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     updateMask: string[]
   ) => {
     if (!worksheet.name) return;
-    const updated = await worksheetServiceClient.updateWorksheet({
-      worksheet,
-      updateMask,
+    const fullWorksheet = { ...worksheet, name: worksheet.name };
+    const newWorksheet = convertOldWorksheetToNew(fullWorksheet as Worksheet);
+    const request = create(UpdateWorksheetRequestSchema, {
+      worksheet: newWorksheet,
+      updateMask: { paths: updateMask },
     });
+    const response = await worksheetServiceClientConnect.updateWorksheet(request);
+    const updated = convertNewWorksheetToOld(response);
     await setCache(updated, "FULL");
     return updated;
   };
 
   const deleteWorksheetByName = async (name: string) => {
-    await worksheetServiceClient.deleteWorksheet({ name });
+    const request = create(DeleteWorksheetRequestSchema, { name });
+    await worksheetServiceClientConnect.deleteWorksheet(request);
     const uid = extractWorksheetUID(name);
     cacheByUID.invalidateEntity([uid, "FULL"]);
     cacheByUID.invalidateEntity([uid, "BASIC"]);
@@ -221,11 +256,14 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   const upsertWorksheetOrganizer = async (
     organizer: Pick<WorksheetOrganizer, "worksheet" | "starred">
   ) => {
-    await worksheetServiceClient.updateWorksheetOrganizer({
-      organizer,
+    const fullOrganizer = { ...organizer } as WorksheetOrganizer;
+    const newOrganizer = convertOldWorksheetOrganizerToNew(fullOrganizer);
+    const request = create(UpdateWorksheetOrganizerRequestSchema, {
+      organizer: newOrganizer,
       // for now we only support change the `starred` field.
-      updateMask: ["starred"],
+      updateMask: { paths: ["starred"] },
     });
+    await worksheetServiceClientConnect.updateWorksheetOrganizer(request);
 
     // Update local sheet values
     const fullViewWorksheet = getWorksheetByName(organizer.worksheet, "FULL");

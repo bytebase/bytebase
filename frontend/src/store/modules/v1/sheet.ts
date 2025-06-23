@@ -1,11 +1,18 @@
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { sheetServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { sheetServiceClientConnect } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { Engine, engineToJSON } from "@/types/proto/v1/common";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto/v1/sheet_service";
+import { 
+  CreateSheetRequestSchema,
+  GetSheetRequestSchema,
+  UpdateSheetRequestSchema
+} from "@/types/proto-es/v1/sheet_service_pb";
+import { convertNewSheetToOld, convertOldSheetToNew } from "@/utils/v1/sheet-conversions";
 import { extractSheetUID, getSheetStatement } from "@/utils";
 
 export type SheetView = "FULL" | "BASIC";
@@ -45,10 +52,13 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
 
       sheet.engine = Engine.ENGINE_UNSPECIFIED;
     }
-    const created = await sheetServiceClient.createSheet({
+    const fullSheet = Sheet.fromPartial(sheet);
+    const request = create(CreateSheetRequestSchema, {
       parent,
-      sheet,
+      sheet: convertOldSheetToNew(fullSheet),
     });
+    const response = await sheetServiceClientConnect.createSheet(request);
+    const created = convertNewSheetToOld(response);
     setCache(created, "FULL");
     if (sheet.name) {
       removeLocalSheet(sheet.name);
@@ -100,10 +110,12 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     }
     try {
       console.debug("[fetchSheetByName]", name, view);
-      const sheet = await sheetServiceClient.getSheet({
+      const request = create(GetSheetRequestSchema, {
         name,
         raw: view === "FULL",
       });
+      const response = await sheetServiceClientConnect.getSheet(request);
+      const sheet = convertNewSheetToOld(response);
       return sheet;
     } catch {
       return undefined;
@@ -141,10 +153,13 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
 
   const patchSheetContent = async (sheet: Partial<Sheet>) => {
     if (!sheet.name) return;
-    const updated = await sheetServiceClient.updateSheet({
-      sheet,
-      updateMask: ["content"],
+    const fullSheet = Sheet.fromPartial(sheet);
+    const request = create(UpdateSheetRequestSchema, {
+      sheet: convertOldSheetToNew(fullSheet),
+      updateMask: { paths: ["content"] },
     });
+    const response = await sheetServiceClientConnect.updateSheet(request);
+    const updated = convertNewSheetToOld(response);
     setCache(updated, "FULL");
     return updated;
   };

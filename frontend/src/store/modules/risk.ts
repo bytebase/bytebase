@@ -1,45 +1,67 @@
+import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
-import { ref } from "vue";
-import { riskServiceClient } from "@/grpcweb";
-import type { Risk } from "@/types/proto/v1/risk_service";
+import { ref, computed } from "vue";
+import { riskServiceClientConnect } from "@/grpcweb";
+import type { Risk as OldRisk } from "@/types/proto/v1/risk_service";
+import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
+import {
+  CreateRiskRequestSchema,
+  DeleteRiskRequestSchema,
+  ListRisksRequestSchema,
+  UpdateRiskRequestSchema,
+} from "@/types/proto-es/v1/risk_service_pb";
+import {
+  convertOldRiskToNew,
+  convertNewRiskToOld,
+} from "@/utils/v1/risk-conversions";
 
 export const useRiskStore = defineStore("risk", () => {
-  const riskList = ref<Risk[]>([]);
+  // Internal state uses proto-es types
+  const _riskList = ref<Risk[]>([]);
+  
+  // Computed property provides old proto type for compatibility
+  const riskList = computed(() => {
+    return _riskList.value.map(convertNewRiskToOld);
+  });
 
   const fetchRiskList = async () => {
-    const response = await riskServiceClient.listRisks({
+    const request = create(ListRisksRequestSchema, {
       pageSize: 100,
     });
-    riskList.value = response.risks;
+    const response = await riskServiceClientConnect.listRisks(request);
+    _riskList.value = response.risks;
     return riskList.value;
   };
 
-  const upsertRisk = async (risk: Risk) => {
-    const existedRisk = riskList.value.find((r) => r.name === risk.name);
+  const upsertRisk = async (risk: OldRisk) => {
+    const newRisk = convertOldRiskToNew(risk);
+    const existedRisk = _riskList.value.find((r) => r.name === newRisk.name);
     if (existedRisk) {
       // update
-      const updated = await riskServiceClient.updateRisk({
-        risk,
-        updateMask: ["title", "level", "active", "condition", "source"],
+      const request = create(UpdateRiskRequestSchema, {
+        risk: newRisk,
+        updateMask: { paths: ["title", "level", "active", "condition", "source"] },
       });
+      const updated = await riskServiceClientConnect.updateRisk(request);
       Object.assign(existedRisk, updated);
     } else {
       // create
-      const created = await riskServiceClient.createRisk({
-        risk,
+      const request = create(CreateRiskRequestSchema, {
+        risk: newRisk,
       });
-      Object.assign(risk, created);
-      riskList.value.push(risk);
+      const created = await riskServiceClientConnect.createRisk(request);
+      _riskList.value.push(created);
     }
   };
 
-  const deleteRisk = async (risk: Risk) => {
-    await riskServiceClient.deleteRisk({
+  const deleteRisk = async (risk: OldRisk) => {
+    const request = create(DeleteRiskRequestSchema, {
       name: risk.name,
     });
-    const index = riskList.value.findIndex((r) => r.name === risk.name);
+    await riskServiceClientConnect.deleteRisk(request);
+    const index = _riskList.value.findIndex((r) => r.name === risk.name);
     if (index >= 0) {
-      riskList.value.splice(index, 1);
+      _riskList.value.splice(index, 1);
     }
   };
 

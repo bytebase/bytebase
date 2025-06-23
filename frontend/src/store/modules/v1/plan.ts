@@ -1,8 +1,14 @@
 import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import {
+  SearchPlansRequestSchema,
+  GetPlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { Plan } from "@/types/proto/v1/plan_service";
+import { convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import {
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
@@ -70,26 +76,31 @@ export type ListPlanParams = {
 
 export const usePlanStore = defineStore("plan", () => {
   const searchPlans = async ({ find, pageSize, pageToken }: ListPlanParams) => {
-    const resp = await planServiceClient.searchPlans({
+    const request = create(SearchPlansRequestSchema, {
       parent: find.project,
       filter: buildPlanFilter(find),
       pageSize,
       pageToken,
     });
+    const resp = await planServiceClientConnect.searchPlans(request);
+    // Convert response to old proto format
+    const plans = resp.plans.map((plan) => convertNewPlanToOld(plan));
     // Prepare creator for the plans.
-    const users = uniq(resp.plans.map((plan) => plan.creator));
+    const users = uniq(plans.map((plan) => plan.creator));
     await useUserStore().batchGetUsers(users);
     return {
       nextPageToken: resp.nextPageToken,
-      plans: resp.plans,
+      plans,
     };
   };
 
   const fetchPlanByName = async (name: string): Promise<Plan> => {
-    const plan = await planServiceClient.getPlan({
+    const request = create(GetPlanRequestSchema, {
       name,
     });
-    return plan;
+    const response = await planServiceClientConnect.getPlan(request);
+    // Convert response to old proto format
+    return convertNewPlanToOld(response);
   };
 
   return {
