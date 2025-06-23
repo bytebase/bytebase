@@ -238,7 +238,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		if connectErr, ok := queryErr.(*connect.Error); ok {
 			code = connectErr.Code()
 		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
-			err := connect.NewError(connect.CodeInvalidArgument, errors.Errorf("syntax error: %s", syntaxErr.Message))
+			err := connect.NewError(connect.CodeInvalidArgument, syntaxErr)
 			if detail, detailErr := connect.NewErrorDetail(&v1pb.PlanCheckRun_Result{
 				Code:    int32(advisor.StatementSyntaxError),
 				Content: syntaxErr.Message,
@@ -1472,7 +1472,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	ok, _, err := parserbase.ValidateSQLForEditor(instance.Metadata.GetEngine(), statement)
 	if err != nil {
 		if syntaxErr, ok := err.(*parserbase.SyntaxError); ok {
-			err := connect.NewError(connect.CodeInvalidArgument, errors.Errorf("syntax error: %s", syntaxErr.Message))
+			err := connect.NewError(connect.CodeInvalidArgument, syntaxErr)
 			if detail, detailErr := connect.NewErrorDetail(&v1pb.PlanCheckRun_Result{
 				Code:    int32(advisor.StatementSyntaxError),
 				Content: syntaxErr.Message,
