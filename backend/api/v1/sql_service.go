@@ -1494,9 +1494,9 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	if !ok {
 		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_REDIS, storepb.Engine_MONGODB:
-			return nonReadOnlyCommandError.Err()
+			return nonReadOnlyCommandError
 		default:
-			return nonSelectSQLError.Err()
+			return nonSelectSQLError
 		}
 	}
 	return nil
