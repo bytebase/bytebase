@@ -1,9 +1,20 @@
 import { orderBy } from "lodash-es";
+import { create } from "@bufbuild/protobuf";
 import {
   issueServiceClient,
-  planServiceClient,
+  planServiceClientConnect,
   rolloutServiceClient,
 } from "@/grpcweb";
+import {
+  GetPlanRequestSchema,
+  ListPlanCheckRunsRequestSchema,
+  CreatePlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
+import {
+  convertNewPlanToOld,
+  convertNewPlanCheckRunToOld,
+  convertOldPlanToNew,
+} from "@/utils/v1/plan-conversions";
 import { useProjectV1Store } from "@/store";
 import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
 import {
@@ -43,18 +54,21 @@ export const composeIssue = async (
 
   if (config.withPlan && issue.plan) {
     if (hasProjectPermissionV2(projectEntity, "bb.plans.get")) {
-      const plan = await planServiceClient.getPlan({
+      const request = create(GetPlanRequestSchema, {
         name: issue.plan,
       });
-      issue.planEntity = plan;
+      const response = await planServiceClientConnect.getPlan(request);
+      issue.planEntity = convertNewPlanToOld(response);
     }
 
     if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
       // Only show the latest plan check runs.
-      const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
+      const request = create(ListPlanCheckRunsRequestSchema, {
         parent: issue.plan,
         latestOnly: true,
       });
+      const response = await planServiceClientConnect.listPlanCheckRuns(request);
+      const planCheckRuns = response.planCheckRuns.map(convertNewPlanCheckRunToOld);
       issue.planCheckRunList = orderBy(planCheckRuns, "name", "desc");
     }
   }
@@ -125,10 +139,13 @@ export const experimentalCreateIssueByPlan = async (
   planCreate: Plan,
   hooks?: Partial<CreateIssueHooks>
 ) => {
-  const createdPlan = await planServiceClient.createPlan({
+  const newPlan = convertOldPlanToNew(planCreate);
+  const request = create(CreatePlanRequestSchema, {
     parent: project.name,
-    plan: planCreate,
+    plan: newPlan,
   });
+  const response = await planServiceClientConnect.createPlan(request);
+  const createdPlan = convertNewPlanToOld(response);
   issueCreate.plan = createdPlan.name;
   await hooks?.planCreated?.(planCreate);
 

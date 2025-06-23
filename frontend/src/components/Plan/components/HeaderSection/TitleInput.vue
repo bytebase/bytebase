@@ -21,7 +21,10 @@ import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { planServiceClient, issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect, issueServiceClient } from "@/grpcweb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -141,10 +144,13 @@ const onBlur = async () => {
         ...plan.value,
         title: state.title,
       });
-      const updated = await planServiceClient.updatePlan({
-        plan: planPatch,
-        updateMask: ["title"],
+      const newPlan = convertOldPlanToNew(planPatch);
+      const request = create(UpdatePlanRequestSchema, {
+        plan: newPlan,
+        updateMask: { paths: ["title"] },
       });
+      const response = await planServiceClientConnect.updatePlan(request);
+      const updated = convertNewPlanToOld(response);
       Object.assign(plan.value, updated);
       pushNotification({
         module: "bytebase",

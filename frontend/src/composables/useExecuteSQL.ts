@@ -46,7 +46,6 @@ import {
   Advice,
   Advice_Status,
   advice_StatusToJSON,
-  CheckRequest_ChangeType,
 } from "@/types/proto/v1/sql_service";
 import {
   getValidDataSourceByPolicy,

@@ -71,10 +71,12 @@ import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import {
   issueServiceClient,
-  planServiceClient,
+  planServiceClientConnect,
   releaseServiceClientConnect,
   rolloutServiceClient,
 } from "@/grpcweb";
+import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
@@ -239,11 +241,13 @@ const createSheets = async () => {
 const createPlan = async () => {
   const plan = issue.value.planEntity;
   if (!plan) return;
-  const createdPlan = await planServiceClient.createPlan({
+  const newPlan = convertOldPlanToNew(plan);
+  const request = create(CreatePlanRequestSchema, {
     parent: issue.value.project,
-    plan,
+    plan: newPlan,
   });
-  return createdPlan;
+  const response = await planServiceClientConnect.createPlan(request);
+  return convertNewPlanToOld(response);
 };
 
 const maybeFormatSQL = async (sheet: Sheet, engine: Engine) => {

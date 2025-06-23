@@ -23,7 +23,10 @@ import { useI18n } from "vue-i18n";
 import { targetsForSpec } from "@/components/Plan/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { pushNotification } from "@/store";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import { allowGhostForDatabase } from "./common";
@@ -145,10 +148,14 @@ const toggleChecked = async (on: boolean) => {
     spec.changeDatabaseConfig.type = on
       ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;
-    await planServiceClient.updatePlan({
-      plan: planPatch,
-      updateMask: ["specs"],
+    const newPlan = convertOldPlanToNew(planPatch);
+    const request = create(UpdatePlanRequestSchema, {
+      plan: newPlan,
+      updateMask: { paths: ["specs"] },
     });
+    const response = await planServiceClientConnect.updatePlan(request);
+    const updated = convertNewPlanToOld(response);
+    Object.assign(plan.value, updated);
 
     pushNotification({
       module: "bytebase",
