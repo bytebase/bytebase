@@ -6,19 +6,14 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"net/http"
 	"path"
 	"sync"
 	"time"
 
-	"connectrpc.com/connect"
-	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"golang.org/x/net/http2"
-	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/api/auth"
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/common"
@@ -186,31 +181,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Configure echo server.
 	s.echoServer = echo.New()
 
-	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
-	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{Store: s.store, LicenseService: s.licenseService}
-	mux := grpcruntime.NewServeMux(
-		grpcruntime.WithMarshalerOption(grpcruntime.MIMEWildcard, &grpcruntime.JSONPb{
-			MarshalOptions: protojson.MarshalOptions{},
-			//nolint:forbidigo
-			UnmarshalOptions: protojson.UnmarshalOptions{},
-		}),
-		grpcruntime.WithForwardResponseOption(gatewayModifier.Modify),
-		grpcruntime.WithRoutingErrorHandler(func(ctx context.Context, sm *grpcruntime.ServeMux, m grpcruntime.Marshaler, w http.ResponseWriter, r *http.Request, httpStatus int) {
-			if httpStatus != http.StatusNotFound {
-				grpcruntime.DefaultRoutingErrorHandler(ctx, sm, m, w, r, httpStatus)
-				return
-			}
-
-			err := &grpcruntime.HTTPStatusError{
-				HTTPStatus: httpStatus,
-				Err:        connect.NewError(connect.CodeNotFound, errors.Errorf("Routing error. Please check the request URI %v", r.RequestURI)),
-			}
-
-			grpcruntime.DefaultHTTPErrorHandler(ctx, sm, m, w, r, err)
-		}),
-	)
-
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile)
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.profile, s.stateCfg, s.licenseService)
 	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
@@ -238,14 +208,12 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile)
 
-	connectHandlers, err := configureGrpcRouters(ctx, mux, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
-	}
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
-	// Configure echo server routes.
-	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, mux, profile, connectHandlers)
+	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret); err != nil {
+		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
+	}
+	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, profile)
 
 	serverStarted = true
 	return s, nil

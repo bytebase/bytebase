@@ -4,12 +4,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
-	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 
 	connectcors "connectrpc.com/cors"
 
@@ -23,9 +21,7 @@ func configureEchoRouters(
 	e *echo.Echo,
 	lspServer *lsp.Server,
 	directorySyncServer *directorysync.Service,
-	mux *grpcruntime.ServeMux,
 	profile *config.Profile,
-	connectHandlers map[string]http.Handler,
 ) {
 	e.Use(recoverMiddleware)
 
@@ -66,18 +62,6 @@ func configureEchoRouters(
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	})
-	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(
-		mux,
-		wsproxy.WithTokenCookieName("access-token"),
-		// 100M.
-		wsproxy.WithMaxRespBodyBufferSize(100*1024*1024),
-	)))
-	e.Any("/v1/*", echo.WrapHandler(mux))
-
-	// Register Connect RPC handlers
-	for path, handler := range connectHandlers {
-		e.Any(path+"*", echo.WrapHandler(handler))
-	}
 
 	// LSP server.
 	e.GET(lspAPI, lspServer.Router)
