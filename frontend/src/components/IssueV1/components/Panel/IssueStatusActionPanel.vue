@@ -99,10 +99,12 @@ import {
   issueStatusActionDisplayName,
   IssueStatusActionToIssueStatusMap,
 } from "@/components/IssueV1/logic";
+import { create } from "@bufbuild/protobuf";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { issueServiceClient } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { flattenTaskV1List } from "@/utils";
 import CommonDrawer from "./CommonDrawer.vue";
 
@@ -174,12 +176,13 @@ const handleConfirm = async (
 ) => {
   state.loading = true;
   try {
-    await issueServiceClient.batchUpdateIssuesStatus({
+    const request = create(BatchUpdateIssuesStatusRequestSchema, {
       parent: issue.value.project,
       issues: [issue.value.name],
-      status: IssueStatusActionToIssueStatusMap[action],
+      status: IssueStatusActionToIssueStatusMap[action] as any,
       reason: comment ?? "",
     });
+    await issueServiceClientConnect.batchUpdateIssuesStatus(request);
 
     // notify the issue logic to update issue status
     events.emit("status-changed", { eager: true });

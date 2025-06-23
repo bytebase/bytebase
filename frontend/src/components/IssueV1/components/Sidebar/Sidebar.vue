@@ -84,7 +84,10 @@ import { targetsForSpec } from "@/components/Plan";
 import { GhostSection } from "@/components/Plan/components/Configuration";
 import { provideGhostSettingContext } from "@/components/Plan/components/Configuration/GhostSection/context";
 import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection";
-import { issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { issueServiceClientConnect } from "@/grpcweb";
+import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { convertNewIssueToOld, convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -145,10 +148,13 @@ const onIssueLabelsUpdate = async (labels: string[]) => {
       ...issue.value,
       labels,
     });
-    const updated = await issueServiceClient.updateIssue({
-      issue: issuePatch,
-      updateMask: ["labels"],
+    const newIssuePatch = convertOldIssueToNew(issuePatch);
+    const request = create(UpdateIssueRequestSchema, {
+      issue: newIssuePatch,
+      updateMask: { paths: ["labels"] },
     });
+    const newUpdated = await issueServiceClientConnect.updateIssue(request);
+    const updated = convertNewIssueToOld(newUpdated);
     Object.assign(issue.value, updated);
     pushNotification({
       module: "bytebase",

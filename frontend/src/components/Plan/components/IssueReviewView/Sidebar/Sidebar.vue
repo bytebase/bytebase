@@ -33,7 +33,10 @@ import { NInput } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
-import { issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { issueServiceClientConnect } from "@/grpcweb";
+import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import {
   extractUserId,
   pushNotification,
@@ -72,10 +75,12 @@ const onIssueLabelsUpdate = async (labels: string[]) => {
     ...issue.value,
     labels,
   });
-  await issueServiceClient.updateIssue({
-    issue: issuePatch,
-    updateMask: ["labels"],
+  const newIssuePatch = convertOldIssueToNew(issuePatch);
+  const request = create(UpdateIssueRequestSchema, {
+    issue: newIssuePatch,
+    updateMask: { paths: ["labels"] },
   });
+  await issueServiceClientConnect.updateIssue(request);
   // TODO(claude): trigger re-fetch of issue if needed.
   pushNotification({
     module: "bytebase",
@@ -93,10 +98,12 @@ const onIssueDescriptionUpdate = async (description: string) => {
     ...issue.value,
     description,
   });
-  await issueServiceClient.updateIssue({
-    issue: issuePatch,
-    updateMask: ["description"],
+  const newIssuePatch = convertOldIssueToNew(issuePatch);
+  const request = create(UpdateIssueRequestSchema, {
+    issue: newIssuePatch,
+    updateMask: { paths: ["description"] },
   });
+  await issueServiceClientConnect.updateIssue(request);
   // TODO(claude): trigger re-fetch of issue if needed.
   pushNotification({
     module: "bytebase",

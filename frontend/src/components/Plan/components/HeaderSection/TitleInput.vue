@@ -22,16 +22,17 @@ import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { create } from "@bufbuild/protobuf";
-import { planServiceClientConnect, issueServiceClient } from "@/grpcweb";
+import { planServiceClientConnect, issueServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { IssueSchema, UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
+import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";
 import {
   pushNotification,
   useCurrentUserV1,
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
-import { Issue } from "@/types/proto/v1/issue_service";
 import { Plan } from "@/types/proto/v1/plan_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
@@ -115,14 +116,15 @@ const onBlur = async () => {
     }
     try {
       state.isUpdating = true;
-      const issuePatch = Issue.fromPartial({
-        ...issue.value,
-        title: state.title,
+      const request = create(UpdateIssueRequestSchema, {
+        issue: create(IssueSchema, {
+          name: issue.value.name,
+          title: state.title,
+        }),
+        updateMask: { paths: ["title"] },
       });
-      const updated = await issueServiceClient.updateIssue({
-        issue: issuePatch,
-        updateMask: ["title"],
-      });
+      const response = await issueServiceClientConnect.updateIssue(request);
+      const updated = convertNewIssueToOld(response);
       Object.assign(issue.value, updated);
       pushNotification({
         module: "bytebase",

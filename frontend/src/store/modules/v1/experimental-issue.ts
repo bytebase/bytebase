@@ -1,7 +1,7 @@
 import { orderBy } from "lodash-es";
 import { create } from "@bufbuild/protobuf";
 import {
-  issueServiceClient,
+  issueServiceClientConnect,
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/grpcweb";
@@ -16,10 +16,18 @@ import {
   CreateRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  CreateIssueRequestSchema,
+  GetIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
+import {
   convertNewPlanToOld,
   convertNewPlanCheckRunToOld,
   convertOldPlanToNew,
 } from "@/utils/v1/plan-conversions";
+import {
+  convertNewIssueToOld,
+  convertOldIssueToNew,
+} from "@/utils/v1/issue-conversions";
 import {
   convertNewRolloutToOld,
   convertNewTaskRunToOld,
@@ -134,9 +142,11 @@ export const experimentalFetchIssueByUID = async (
   if (uid === String(EMPTY_ID)) return emptyIssue();
   if (uid === String(UNKNOWN_ID)) return unknownIssue();
 
-  const rawIssue = await issueServiceClient.getIssue({
+  const request = create(GetIssueRequestSchema, {
     name: `${project}/issues/${uid}`,
   });
+  const newIssue = await issueServiceClientConnect.getIssue(request);
+  const rawIssue = convertNewIssueToOld(newIssue);
 
   return composeIssue(rawIssue);
 };
@@ -162,10 +172,12 @@ export const experimentalCreateIssueByPlan = async (
   issueCreate.plan = createdPlan.name;
   await hooks?.planCreated?.(planCreate);
 
-  const createdIssue = await issueServiceClient.createIssue({
+  const issueRequest = create(CreateIssueRequestSchema, {
     parent: project.name,
-    issue: issueCreate,
+    issue: convertOldIssueToNew(issueCreate),
   });
+  const newCreatedIssue = await issueServiceClientConnect.createIssue(issueRequest);
+  const createdIssue = convertNewIssueToOld(newCreatedIssue);
   await hooks?.issueCreated?.(createdIssue, createdPlan);
   const rolloutRequest = create(CreateRolloutRequestSchema, {
     parent: project.name,
