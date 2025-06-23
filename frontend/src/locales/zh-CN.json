@@ -867,8 +867,12 @@
           "title": "标签",
           "description": "按工单标签过滤"
         },
+        "table": {
+          "title": "表",
+          "description": "输入值然后按 Enter"
+        },
         "database-label": {
-          "title": "标签",
+          "title": "数据库标签",
           "description": "输入 \"key:value\" 后按下回车"
         },
         "engine": {

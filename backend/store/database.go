@@ -347,9 +347,14 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 
 func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	joinQuery := ""
 	if filter := find.Filter; filter != nil {
 		where = append(where, filter.Where)
 		args = append(args, filter.Args...)
+
+		if strings.Contains(filter.Where, "ds.metadata->'schemas'") {
+			joinQuery = "INNER JOIN db_schema ds ON db.instance = ds.instance AND db.name = ds.db_name"
+		}
 	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("db.project = $%d", len(args)+1)), append(args, *v)
@@ -393,9 +398,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 			db.deleted,
 			db.metadata
 		FROM db
+		%s
 		LEFT JOIN instance ON db.instance = instance.resource_id
 		WHERE %s
-		ORDER BY db.project, db.instance, db.name`, strings.Join(where, " AND "))
+		ORDER BY db.project, db.instance, db.name`, joinQuery, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}

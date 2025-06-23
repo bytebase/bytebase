@@ -41,6 +41,7 @@ export interface DatabaseFilter {
   engines?: Engine[];
   excludeEngines?: Engine[];
   drifted?: boolean;
+  table?: string;
 }
 
 const isValidParentName = (parent: string): boolean => {
@@ -107,6 +108,9 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
     for (const [labelKey, labelValues] of labelMap.entries()) {
       params.push(`label == "${labelKey}:${[...labelValues].join(",")}"`);
     }
+  }
+  if (filter.table) {
+    params.push(`table.matches("${filter.table}")`);
   }
 
   return params.join(" && ");
