@@ -610,6 +610,16 @@ func checkVersionCompatibility(client *Client, cliVersion string) {
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("%v", r)
+			}
+			slog.Error("bytebase-action main PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+		}
+	}()
+
 	slog.Info("bytebase-action version " + args.Version + " built at commit " + args.Gitcommit)
 	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)
