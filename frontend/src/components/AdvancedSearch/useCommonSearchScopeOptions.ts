@@ -161,7 +161,7 @@ export const useCommonSearchScopeOptions = (
       }),
       table: () => ({
         id: "table",
-        title: t("common.table"),
+        title: t("issue.advanced-search.scope.table.title"),
         description: t("issue.advanced-search.scope.table.description"),
         allowMultiple: false,
       }),
