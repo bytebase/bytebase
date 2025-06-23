@@ -10,7 +10,7 @@
     />
 
     <!-- Description Section -->
-    <div class="flex-1 overflow-hidden">
+    <div class="w-full flex flex-col">
       <h3 class="textlabel mb-1">
         {{ $t("common.description") }}
       </h3>
@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { isEqual } from "lodash-es";
 import { NInput } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -63,6 +64,10 @@ const allowChange = computed(() => {
 });
 
 const onIssueLabelsUpdate = async (labels: string[]) => {
+  if (isEqual(labels, issue.value.labels)) {
+    return; // No change, do nothing.
+  }
+
   const issuePatch = Issue.fromPartial({
     ...issue.value,
     labels,
@@ -80,6 +85,10 @@ const onIssueLabelsUpdate = async (labels: string[]) => {
 };
 
 const onIssueDescriptionUpdate = async (description: string) => {
+  if (issue.value.description === description) {
+    return; // No change, do nothing.
+  }
+
   const issuePatch = Issue.fromPartial({
     ...issue.value,
     description,
