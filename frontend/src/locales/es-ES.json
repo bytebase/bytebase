@@ -1962,7 +1962,6 @@
       "rows": "filas"
     },
     "n-per-page": "{n} / página",
-    "customize-tree-structure": "Personalizar la estructura del árbol",
     "add-a-new-instance": "Agregar una nueva instancia",
     "web-socket": {
       "errors": {

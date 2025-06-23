@@ -1962,7 +1962,6 @@
       "rows": "行"
     },
     "n-per-page": "{n} / 页",
-    "customize-tree-structure": "自定义树结构",
     "add-a-new-instance": "添加实例",
     "web-socket": {
       "errors": {

@@ -14,14 +14,10 @@
 import { computed } from "vue";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import type {
-  SQLEditorTreeNode as TreeNode,
-  SQLEditorTreeFactor as Factor,
-} from "@/types";
+import type { SQLEditorTreeNode as TreeNode } from "@/types";
 
 const props = defineProps<{
   node: TreeNode;
-  factors: Factor[];
   keyword: string;
 }>();
 
@@ -34,6 +30,6 @@ const environment = computed(() =>
 );
 
 const hasEnvironmentContext = computed(() => {
-  return props.factors.includes("environment");
+  return true;
 });
 </script>

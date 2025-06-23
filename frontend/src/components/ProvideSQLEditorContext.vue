@@ -7,9 +7,6 @@
       {{ editorStore.projectContextReady }}
     </li>
     <li>
-      [ProvideContext]databaseCount: {{ editorStore.databaseList.length }}
-    </li>
-    <li>
       [ProvideContext]allowViewALLProjects:
       {{ editorStore.allowViewALLProjects }}
     </li>

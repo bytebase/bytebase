@@ -1962,7 +1962,6 @@
       "rows": "rows"
     },
     "n-per-page": "{n} / page",
-    "customize-tree-structure": "Customize tree structure",
     "add-a-new-instance": "Add a new instance",
     "web-socket": {
       "errors": {
