@@ -1253,18 +1253,19 @@ func getFunctionComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string
 }
 
 // getIndexComments gets comments for indexes from Oracle system views
-func getIndexComments(txn *sql.Tx, schemaName string) (map[db.IndexKey]string, error) {
+func getIndexComments(_ *sql.Tx, schemaName string) (map[db.IndexKey]string, error) {
 	indexCommentMap := make(map[db.IndexKey]string)
 
 	// Oracle doesn't have a dedicated index comments view in all versions
 	// We need to join ALL_INDEXES with ALL_TAB_COMMENTS to get index comments
 	// However, Oracle stores index comments differently depending on the version
 	// For now, return empty map since Oracle index comments are not consistently available
-	slog.Debug("Oracle index comments not implemented - returning empty map")
+	slog.Debug("Oracle index comments not implemented - returning empty map", "schema", schemaName)
 	return indexCommentMap, nil
 }
 
 // getMaterializedViewComments gets comments for materialized views from Oracle system views
+// nolint:unused
 func getMaterializedViewComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, error) {
 	materializedViewCommentMap := make(map[db.TableKey]string)
 
