@@ -6,6 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - The database schema is defined in `./backend/migrator/migration/LATEST.sql`
 - The database migration files are in `./backend/migrator/<<version>>/`. `TestLatestVersion` in `./backend/migrator/migrator_test.go` needs update after new migration files are added. `./backend/migrator/migration/LATEST.sql` should updated for DDL migrations.
 - Files in `./backend/store` are mappings to the database tables.
+- PostgreSQL parser functions are located in `./backend/plugin/parser/pg/`
+- PostgreSQL schema-related functions are located in `./backend/plugin/schema/pg/`
+- PostgreSQL parser project (github.com/bytebase/postgresql-parser) is located at `~/Github/postgresql-parser`
 
 ## Development Workflow
 **ALWAYS follow these steps after making code changes:**

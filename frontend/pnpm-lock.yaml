@@ -227,6 +227,9 @@ importers:
       '@intlify/unplugin-vue-i18n':
         specifier: 6.0.8
         version: 6.0.8(@vue/compiler-dom@3.5.16)(eslint@9.28.0(jiti@1.21.7))(rollup@4.41.1)(typescript@5.8.3)(vue-i18n@11.1.5(vue@3.5.16(typescript@5.8.3)))(vue@3.5.16(typescript@5.8.3))
+      '@playwright/test':
+        specifier: ^1.53.1
+        version: 1.53.1
       '@rollup/plugin-yaml':
         specifier: 4.1.2
         version: 4.1.2(rollup@4.41.1)
@@ -359,6 +362,9 @@ importers:
       micromark-util-sanitize-uri:
         specifier: ^2.0.1
         version: 2.0.1
+      playwright:
+        specifier: ^1.53.1
+        version: 1.53.1
       postcss:
         specifier: 8.5.4
         version: 8.5.4
@@ -1889,6 +1895,11 @@ packages:
     resolution: {integrity: sha512-YLT9Zo3oNPJoBjBc4q8G2mjU4tqIbf5CEOORbUUr48dCD9q3umJ3IPlVqOqDakPfd2HuwccBaqlGhN4Gmr5OWg==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
+  '@playwright/test@1.53.1':
+    resolution: {integrity: sha512-Z4c23LHV0muZ8hfv4jw6HngPJkbbtZxTkxPNIg7cJcTc9C28N/p2q7g3JZS2SiKBBHJ3uM1dgDye66bB7LEk5w==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   '@popperjs/core@2.11.8':
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
 
@@ -3324,6 +3335,11 @@ packages:
   fraction.js@4.3.7:
     resolution: {integrity: sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -4173,6 +4189,16 @@ packages:
 
   pkg-types@2.1.0:
     resolution: {integrity: sha512-wmJwA+8ihJixSoHKxZJRBQG1oY8Yr9pGLzRmSsNms0iNWyHHAlZCa7mmKiFR10YPZuz/2k169JiS/inOjBCZ2A==}
+
+  playwright-core@1.53.1:
+    resolution: {integrity: sha512-Z46Oq7tLAyT0lGoFx4DOuB1IA9D1TPj0QkYxpPVUnGDqHHvDpCftu1J2hM2PiWsNMoZh8+LQaarAWcDfPBc6zg==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.53.1:
+    resolution: {integrity: sha512-LJ13YLr/ocweuwxyGf1XNFWIU4M2zUSo149Qbp+A4cpwDjsxRPj7k6H25LBrEHiEwxvRbD8HdwvQmRMSvquhYw==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   pngjs@5.0.0:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
@@ -7382,6 +7408,10 @@ snapshots:
 
   '@pkgr/core@0.2.7': {}
 
+  '@playwright/test@1.53.1':
+    dependencies:
+      playwright: 1.53.1
+
   '@popperjs/core@2.11.8': {}
 
   '@protobufjs/aspromise@1.1.2': {}
@@ -8950,6 +8980,9 @@ snapshots:
 
   fraction.js@4.3.7: {}
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -9962,6 +9995,14 @@ snapshots:
       confbox: 0.2.2
       exsolve: 1.0.5
       pathe: 2.0.3
+
+  playwright-core@1.53.1: {}
+
+  playwright@1.53.1:
+    dependencies:
+      playwright-core: 1.53.1
+    optionalDependencies:
+      fsevents: 2.3.2
 
   pngjs@5.0.0: {}
 
