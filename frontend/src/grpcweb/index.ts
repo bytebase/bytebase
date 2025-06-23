@@ -28,6 +28,7 @@ import { IdentityProviderService } from "@/types/proto-es/v1/idp_service_pb";
 import { SheetService } from "@/types/proto-es/v1/sheet_service_pb";
 import { UserService } from "@/types/proto-es/v1/user_service_pb";
 import { ReleaseService } from "@/types/proto-es/v1/release_service_pb";
+import { WorksheetService } from "@/types/proto-es/v1/worksheet_service_pb";
 
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 
@@ -40,7 +41,6 @@ import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
-import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
 import {
   authInterceptorMiddleware,
   authInterceptor,
@@ -100,10 +100,6 @@ export const databaseServiceClient = clientFactory.create(
 
 
 
-export const worksheetServiceClient = clientFactory.create(
-  WorksheetServiceDefinition,
-  channel
-);
 
 export const issueServiceClient = clientFactory.create(
   IssueServiceDefinition,
@@ -234,3 +230,8 @@ export const sheetServiceClientConnect = createClient(SheetService, transport);
 export const userServiceClientConnect = createClient(UserService, transport);
 
 export const releaseServiceClientConnect = createClient(ReleaseService, transport);
+
+export const worksheetServiceClientConnect = createClient(
+  WorksheetService,
+  transport
+);

@@ -83,7 +83,7 @@ import type { Engine } from "@/types/proto/v1/common";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import { CheckReleaseRequestSchema, ReleaseFileType, Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
+import { CheckReleaseRequestSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
 import { convertNewCheckReleaseResponseToOld, convertOldChangeTypeToNew } from "@/utils/v1/release-conversions";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
