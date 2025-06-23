@@ -125,6 +125,7 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
    * - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
    * - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
+   * - table: filter by the database table, support "==" and ".matches()" operator.
    *
    * For example:
    * environment == "environments/{environment resource id}"
@@ -139,6 +140,9 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * label == "region:asia" && label == "tenant:bytebase"
    * exclude_unassigned == true
    * drifted == true
+   * table == "sample"
+   * table.matches("sam")
+   *
    * You can combine filter conditions like:
    * environment == "environments/prod" && name.matches("employee")
    *

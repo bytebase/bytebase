@@ -867,8 +867,12 @@
           "title": "Etiqueta",
           "description": "Filtrar por etiqueta de problema"
         },
+        "table": {
+          "title": "Mesa",
+          "description": "Ingrese el valor y luego presione Enter"
+        },
         "database-label": {
-          "title": "Etiqueta",
+          "title": "Etiqueta de base de datos",
           "description": "Ingrese la \"key:value\" y luego presione Enter"
         },
         "engine": {
