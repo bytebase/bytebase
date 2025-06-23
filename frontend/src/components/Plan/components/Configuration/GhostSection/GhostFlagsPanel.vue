@@ -43,7 +43,10 @@ import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { pushNotification } from "@/store";
 import FlagsForm from "./FlagsForm";
 import { useGhostSettingContext } from "./context";
@@ -110,10 +113,14 @@ const trySave = async () => {
     }
 
     spec.changeDatabaseConfig.ghostFlags = cloneDeep(flags.value);
-    await planServiceClient.updatePlan({
-      plan: planPatch,
-      updateMask: ["specs"],
+    const newPlan = convertOldPlanToNew(planPatch);
+    const request = create(UpdatePlanRequestSchema, {
+      plan: newPlan,
+      updateMask: { paths: ["specs"] },
     });
+    const response = await planServiceClientConnect.updatePlan(request);
+    const updated = convertNewPlanToOld(response);
+    Object.assign(plan.value, updated);
 
     pushNotification({
       module: "bytebase",

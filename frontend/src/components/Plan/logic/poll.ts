@@ -1,6 +1,9 @@
 import { computed, watch } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
+import { ListPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertNewPlanCheckRunToOld } from "@/utils/v1/plan-conversions";
 import { useCurrentProjectV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -25,11 +28,12 @@ export const usePollPlan = () => {
       !isCreating.value &&
       hasProjectPermissionV2(project.value, "bb.planCheckRuns.list")
     ) {
-      const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
+      const request = create(ListPlanCheckRunsRequestSchema, {
         parent: updatedPlan.name,
         latestOnly: true,
       });
-      planCheckRunList.value = planCheckRuns;
+      const response = await planServiceClientConnect.listPlanCheckRuns(request);
+      planCheckRunList.value = response.planCheckRuns.map(convertNewPlanCheckRunToOld);
     }
   };
 

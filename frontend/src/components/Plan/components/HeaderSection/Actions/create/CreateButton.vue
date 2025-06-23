@@ -33,6 +33,7 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { create } from "@bufbuild/protobuf";
 import {
   ErrorList,
   useSpecsValidation,
@@ -42,7 +43,9 @@ import {
   getLocalSheetByName,
 } from "@/components/Plan/logic";
 import { usePlanContext } from "@/components/Plan/logic";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
+import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
@@ -83,10 +86,13 @@ const doCreatePlan = async () => {
 
   try {
     await createSheets();
-    const createdPlan = await planServiceClient.createPlan({
+    const newPlan = convertOldPlanToNew(plan.value);
+    const request = create(CreatePlanRequestSchema, {
       parent: project.value.name,
-      plan: plan.value,
+      plan: newPlan,
     });
+    const response = await planServiceClientConnect.createPlan(request);
+    const createdPlan = convertNewPlanToOld(response);
     if (!createdPlan) return;
 
     nextTick(() => {

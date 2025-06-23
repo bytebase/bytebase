@@ -52,15 +52,15 @@ import { asyncComputed } from "@vueuse/core";
 import { NButton, NPopover } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { create } from "@bufbuild/protobuf";
 import { BBSpin } from "@/bbkit";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { releaseServiceClient } from "@/grpcweb";
-import {
-  CheckReleaseResponse,
-  ReleaseFileType,
-} from "@/types/proto/v1/release_service";
+import { releaseServiceClientConnect } from "@/grpcweb";
+import { CheckReleaseResponse } from "@/types/proto/v1/release_service";
+import { CheckReleaseRequestSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
+import { convertNewCheckReleaseResponseToOld, convertOldChangeTypeToNew } from "@/utils/v1/release-conversions";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
@@ -107,7 +107,7 @@ const statementErrors = asyncComputed(async () => {
 }, []);
 
 const runCheckInternal = async (statement: string) => {
-  const result = await releaseServiceClient.checkRelease({
+  const request = create(CheckReleaseRequestSchema, {
     parent: project.value.name,
     release: {
       files: [
@@ -116,12 +116,14 @@ const runCheckInternal = async (statement: string) => {
           version: "0",
           type: ReleaseFileType.VERSIONED,
           statement: new TextEncoder().encode(statement),
-          changeType: changeType.value,
+          changeType: convertOldChangeTypeToNew(changeType.value),
         },
       ],
     },
     targets: [database.value.name],
   });
+  const response = await releaseServiceClientConnect.checkRelease(request);
+  const result = convertNewCheckReleaseResponseToOld(response);
   return result;
 };
 

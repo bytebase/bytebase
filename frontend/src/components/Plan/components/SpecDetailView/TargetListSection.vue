@@ -111,7 +111,10 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import EngineIcon from "@/components/Icon/EngineIcon.vue";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useInstanceV1Store,
@@ -276,10 +279,14 @@ const handleUpdateTargets = async (targets: string[]) => {
   }
 
   if (!isCreating.value) {
-    await planServiceClient.updatePlan({
-      plan: plan.value,
-      updateMask: ["specs"],
+    const newPlan = convertOldPlanToNew(plan.value);
+    const request = create(UpdatePlanRequestSchema, {
+      plan: newPlan,
+      updateMask: { paths: ["specs"] },
     });
+    const response = await planServiceClientConnect.updatePlan(request);
+    const updated = convertNewPlanToOld(response);
+    Object.assign(plan.value, updated);
     events.emit("status-changed", {
       eager: true,
     });

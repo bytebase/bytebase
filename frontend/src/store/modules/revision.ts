@@ -1,8 +1,15 @@
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
-import { revisionServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { revisionServiceClientConnect } from "@/grpcweb";
 import type { Pagination } from "@/types";
 import { Revision } from "@/types/proto/v1/revision_service";
+import { convertNewRevisionToOld } from "@/utils/v1/revision-conversions";
+import {
+  ListRevisionsRequestSchema,
+  GetRevisionRequestSchema,
+  DeleteRevisionRequestSchema,
+} from "@/types/proto-es/v1/revision_service_pb";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { revisionNamePrefix } from "./v1/common";
 
@@ -17,15 +24,20 @@ export const useRevisionStore = defineStore("revision", () => {
     database: string,
     pagination?: Pagination
   ) => {
-    const resp = await revisionServiceClient.listRevisions({
+    const request = create(ListRevisionsRequestSchema, {
       parent: database,
       pageSize: pagination?.pageSize || DEFAULT_PAGE_SIZE,
       pageToken: pagination?.pageToken,
     });
+    const resp = await revisionServiceClientConnect.listRevisions(request);
     resp.revisions.forEach((revision) => {
-      revisionMapByName.set(revision.name, revision);
+      const oldRevision = convertNewRevisionToOld(revision);
+      revisionMapByName.set(oldRevision.name, oldRevision);
     });
-    return resp;
+    return {
+      ...resp,
+      revisions: resp.revisions.map(convertNewRevisionToOld),
+    };
   };
 
   const getRevisionsByDatabase = (database: string) => {
@@ -39,9 +51,11 @@ export const useRevisionStore = defineStore("revision", () => {
       return revisionMapByName.get(name);
     }
 
-    const revision = await revisionServiceClient.getRevision({ name });
-    revisionMapByName.set(revision.name, revision);
-    return revision;
+    const request = create(GetRevisionRequestSchema, { name });
+    const revision = await revisionServiceClientConnect.getRevision(request);
+    const oldRevision = convertNewRevisionToOld(revision);
+    revisionMapByName.set(oldRevision.name, oldRevision);
+    return oldRevision;
   };
 
   const getRevisionByName = (name: string) => {
@@ -49,7 +63,8 @@ export const useRevisionStore = defineStore("revision", () => {
   };
 
   const deleteRevision = async (name: string) => {
-    await revisionServiceClient.deleteRevision({ name });
+    const request = create(DeleteRevisionRequestSchema, { name });
+    await revisionServiceClientConnect.deleteRevision(request);
     revisionMapByName.delete(name);
   };
 

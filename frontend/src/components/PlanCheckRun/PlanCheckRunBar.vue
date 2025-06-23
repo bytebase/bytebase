@@ -34,7 +34,9 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import { planServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { planServiceClientConnect } from "@/grpcweb";
+import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { ComposedDatabase } from "@/types";
 import type {
   PlanCheckRun,
@@ -66,9 +68,10 @@ const { events } = usePlanCheckRunContext();
 const selectedType = ref<PlanCheckRun_Type>();
 
 const runChecks = async () => {
-  await planServiceClient.runPlanChecks({
+  const request = create(RunPlanChecksRequestSchema, {
     name: props.planName,
   });
+  await planServiceClientConnect.runPlanChecks(request);
   events.emit("status-changed");
 };
 </script>

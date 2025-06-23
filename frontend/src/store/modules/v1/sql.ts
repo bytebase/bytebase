@@ -1,38 +1,66 @@
-import { ClientError, Status } from "nice-grpc-common";
-import { RichClientError } from "nice-grpc-error-details";
+import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
+import { Status } from "nice-grpc-common";
 import { defineStore } from "pinia";
-import { sqlServiceClient } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/grpcweb";
+import {
+  silentContextKey,
+  ignoredCodesContextKey,
+} from "@/grpcweb/context-key";
 import type { SQLResultSetV1 } from "@/types";
-import { PlanCheckRun_Result } from "@/types/proto/v1/plan_service";
+import { PlanCheckRun_ResultSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { ExportRequest, QueryRequest } from "@/types/proto/v1/sql_service";
-import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+import { Advice } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import {
+  convertOldQueryRequestToNew,
+  convertNewQueryResponseToOld,
+  convertOldExportRequestToNew,
+  convertNewExportResponseToOld,
+} from "@/utils/v1/sql-conversions";
+
+const convertCodeToStatus = (code: Code): Status => {
+  // Map Connect Code to nice-grpc Status
+  const codeToStatusMap: Record<Code, Status> = {
+    [Code.Canceled]: Status.CANCELLED,
+    [Code.Unknown]: Status.UNKNOWN,
+    [Code.InvalidArgument]: Status.INVALID_ARGUMENT,
+    [Code.DeadlineExceeded]: Status.DEADLINE_EXCEEDED,
+    [Code.NotFound]: Status.NOT_FOUND,
+    [Code.AlreadyExists]: Status.ALREADY_EXISTS,
+    [Code.PermissionDenied]: Status.PERMISSION_DENIED,
+    [Code.ResourceExhausted]: Status.RESOURCE_EXHAUSTED,
+    [Code.FailedPrecondition]: Status.FAILED_PRECONDITION,
+    [Code.Aborted]: Status.ABORTED,
+    [Code.OutOfRange]: Status.OUT_OF_RANGE,
+    [Code.Unimplemented]: Status.UNIMPLEMENTED,
+    [Code.Internal]: Status.INTERNAL,
+    [Code.Unavailable]: Status.UNAVAILABLE,
+    [Code.DataLoss]: Status.DATA_LOSS,
+    [Code.Unauthenticated]: Status.UNAUTHENTICATED,
+  };
+  return codeToStatusMap[code] ?? Status.UNKNOWN;
+};
 
 export const getSqlReviewReports = (err: unknown): Advice[] => {
   const advices: Advice[] = [];
-  if (err instanceof RichClientError) {
-    for (const extra of err.extra) {
-      if (
-        extra.$type === "google.protobuf.Any" &&
-        extra.typeUrl.endsWith("PlanCheckRun.Result")
-      ) {
-        const sqlReviewReport = PlanCheckRun_Result.decode(extra.value);
-        advices.push(
-          Advice.fromPartial({
-            status: Advice_Status.ERROR,
-            code: sqlReviewReport.code,
-            title: sqlReviewReport.title || "SQL Review Failed",
-            content: sqlReviewReport.content,
-            startPosition: {
-              line: sqlReviewReport.sqlReviewReport?.line,
-              column: sqlReviewReport.sqlReviewReport?.column,
-            },
-          })
-        );
-      }
+  if (err instanceof ConnectError) {
+    for (const report of err.findDetails(PlanCheckRun_ResultSchema)) {
+      const startPosition = report.report.case === 'sqlReviewReport' ? {
+        line: report.report.value.line,
+        column: report.report.value.column,
+      }: undefined
+      advices.push(
+        Advice.fromPartial({
+          status: Advice_Status.ERROR,
+          code: report.code,
+          title: report.title || "SQL Review Failed",
+          content: report.content,
+          startPosition: startPosition,
+        })
+      );
     }
   }
-
   return advices;
 };
 
@@ -42,13 +70,16 @@ export const useSQLStore = defineStore("sql", () => {
     signal: AbortSignal
   ): Promise<SQLResultSetV1> => {
     try {
-      const response = await sqlServiceClient.query(params, {
+      const newRequest = convertOldQueryRequestToNew(params);
+      const newResponse = await sqlServiceClientConnect.query(newRequest, {
         // Skip global error handling since we will handle and display
         // errors manually.
-        ignoredCodes: [Status.PERMISSION_DENIED],
-        silent: true,
+        contextValues: createContextValues()
+          .set(ignoredCodesContextKey, [Code.PermissionDenied])
+          .set(silentContextKey, true),
         signal,
       });
+      const response = convertNewQueryResponseToOld(newResponse);
 
       return {
         error: "",
@@ -60,17 +91,24 @@ export const useSQLStore = defineStore("sql", () => {
         error: extractGrpcErrorMessage(err),
         results: [],
         advices: getSqlReviewReports(err),
-        status: err instanceof ClientError ? err.code : Status.UNKNOWN,
+        status:
+          err instanceof ConnectError
+            ? convertCodeToStatus(err.code)
+            : Status.UNKNOWN,
       };
     }
   };
 
   const exportData = async (params: ExportRequest) => {
-    const { content } = await sqlServiceClient.export(params, {
+    const newRequest = convertOldExportRequestToNew(params);
+    const newResponse = await sqlServiceClientConnect.export(newRequest, {
       // Won't jump to 403 page when permission denied.
-      ignoredCodes: [Status.PERMISSION_DENIED],
+      contextValues: createContextValues().set(ignoredCodesContextKey, [
+        Code.PermissionDenied,
+      ]),
     });
-    return content;
+    const response = convertNewExportResponseToOld(newResponse);
+    return response.content;
   };
 
   return {
