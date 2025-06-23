@@ -752,6 +752,133 @@ EXECUTE FUNCTION update_order_total();
 `,
 			description: "Circular foreign key dependencies and triggers",
 		},
+		{
+			name: "table_and_column_comments",
+			initialSchema: `
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    category VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    phone VARCHAR(20)
+);`,
+			migrationDDL: `
+-- Add comments to tables
+COMMENT ON TABLE products IS 'Product catalog with pricing information';
+COMMENT ON TABLE customers IS 'Customer master data';
+
+-- Add comments to columns
+COMMENT ON COLUMN products.id IS 'Unique product identifier';
+COMMENT ON COLUMN products.name IS 'Product display name';
+COMMENT ON COLUMN products.price IS 'Product price in USD';
+COMMENT ON COLUMN products.category IS 'Product category classification';
+COMMENT ON COLUMN products.created_at IS 'Record creation timestamp';
+
+COMMENT ON COLUMN customers.id IS 'Unique customer identifier';
+COMMENT ON COLUMN customers.first_name IS 'Customer first name';
+COMMENT ON COLUMN customers.last_name IS 'Customer last name';
+COMMENT ON COLUMN customers.email IS 'Customer email address';
+COMMENT ON COLUMN customers.phone IS 'Customer contact phone number';
+
+-- Create table with comments from the start
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER DEFAULT 1,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_order_customer FOREIGN KEY (customer_id) REFERENCES customers(id),
+    CONSTRAINT fk_order_product FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+COMMENT ON TABLE orders IS 'Customer purchase orders';
+COMMENT ON COLUMN orders.id IS 'Unique order identifier';
+COMMENT ON COLUMN orders.customer_id IS 'Reference to customer who placed the order';
+COMMENT ON COLUMN orders.product_id IS 'Reference to ordered product';
+COMMENT ON COLUMN orders.quantity IS 'Number of items ordered';
+COMMENT ON COLUMN orders.order_date IS 'Date and time when order was placed';`,
+			description: "Adding comments to tables and columns",
+		},
+		{
+			name: "modify_and_drop_comments",
+			initialSchema: `
+CREATE TABLE inventory (
+    id SERIAL PRIMARY KEY,
+    product_code VARCHAR(20) NOT NULL UNIQUE,
+    stock_level INTEGER DEFAULT 0,
+    warehouse_location VARCHAR(100),
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add initial comments
+COMMENT ON TABLE inventory IS 'Initial inventory tracking table';
+COMMENT ON COLUMN inventory.id IS 'Primary key for inventory records';
+COMMENT ON COLUMN inventory.product_code IS 'Unique product identifier code';
+COMMENT ON COLUMN inventory.stock_level IS 'Current stock quantity';
+COMMENT ON COLUMN inventory.warehouse_location IS 'Physical location in warehouse';
+COMMENT ON COLUMN inventory.last_updated IS 'Last modification timestamp';`,
+			migrationDDL: `
+-- Modify existing comments
+COMMENT ON TABLE inventory IS 'Comprehensive inventory management system';
+COMMENT ON COLUMN inventory.product_code IS 'SKU - Stock Keeping Unit identifier';
+COMMENT ON COLUMN inventory.stock_level IS 'Available quantity for sale';
+
+-- Remove some comments
+COMMENT ON COLUMN inventory.warehouse_location IS NULL;
+COMMENT ON COLUMN inventory.last_updated IS NULL;
+
+-- Add new column with comment
+ALTER TABLE inventory ADD COLUMN reorder_point INTEGER DEFAULT 10;
+COMMENT ON COLUMN inventory.reorder_point IS 'Minimum stock level before reordering';
+
+-- Create view with comment
+CREATE VIEW low_stock_items AS
+SELECT product_code, stock_level, reorder_point
+FROM inventory
+WHERE stock_level <= reorder_point;
+
+COMMENT ON VIEW low_stock_items IS 'Products that need to be restocked';`,
+			description: "Modifying and dropping comments on existing objects",
+		},
+		{
+			name: "comments_with_special_characters",
+			initialSchema: `
+CREATE TABLE test_table (
+    id SERIAL PRIMARY KEY,
+    data VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'active'
+);`,
+			migrationDDL: `
+-- Test comments with special characters and escaping
+COMMENT ON TABLE test_table IS 'Test table with "quotes" and ''apostrophes'' and $special$ characters';
+COMMENT ON COLUMN test_table.id IS 'ID with symbols: @#$%^&*()_+-={}|[]\\:";''<>?,./';
+COMMENT ON COLUMN test_table.data IS 'Data field containing 
+multiline
+text with various symbols: ñáéíóú àèìòù äëïöü';
+COMMENT ON COLUMN test_table.status IS 'Status: active/inactive (default: active)';
+
+-- Create function with comment
+CREATE OR REPLACE FUNCTION get_active_records()
+RETURNS TABLE(id INTEGER, data VARCHAR) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT t.id, t.data
+    FROM test_table t
+    WHERE t.status = 'active';
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION get_active_records() IS 'Returns all active records from test_table';`,
+			description: "Comments with special characters, quotes, and multiline text",
+		},
 	}
 
 	for _, tc := range testCases {

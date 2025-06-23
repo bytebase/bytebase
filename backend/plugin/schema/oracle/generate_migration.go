@@ -1098,7 +1098,13 @@ func writeFunctionDiff(out *strings.Builder, funcDiff *schema.FunctionDiff) {
 		if !strings.HasSuffix(strings.TrimSpace(definition), ";") {
 			_, _ = out.WriteString(";")
 		}
-		_, _ = out.WriteString("\n\n")
+		_, _ = out.WriteString("\n")
+
+		// Add comment if present
+		if funcDiff.NewFunction.Comment != "" {
+			writeFunctionComment(out, funcDiff.SchemaName, funcDiff.FunctionName, funcDiff.NewFunction.Comment)
+		}
+		_, _ = out.WriteString("\n")
 	case schema.MetadataDiffActionAlter:
 		// Oracle requires CREATE OR REPLACE for functions
 		definition := funcDiff.NewFunction.Definition
@@ -1110,7 +1116,13 @@ func writeFunctionDiff(out *strings.Builder, funcDiff *schema.FunctionDiff) {
 		if !strings.HasSuffix(strings.TrimSpace(definition), ";") {
 			_, _ = out.WriteString(";")
 		}
-		_, _ = out.WriteString("\n\n")
+		_, _ = out.WriteString("\n")
+
+		// Add comment if present
+		if funcDiff.NewFunction.Comment != "" {
+			writeFunctionComment(out, funcDiff.SchemaName, funcDiff.FunctionName, funcDiff.NewFunction.Comment)
+		}
+		_, _ = out.WriteString("\n")
 	}
 }
 
@@ -1209,6 +1221,11 @@ func writeMigrationCreateSequence(out *strings.Builder, schema string, seq *stor
 
 	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
+
+	// Add comment if present
+	if seq.Comment != "" {
+		writeSequenceComment(out, schema, seq.Name, seq.Comment)
+	}
 }
 
 func writeProcedureDiff(out *strings.Builder, procDiff *schema.ProcedureDiff) {
@@ -1223,7 +1240,10 @@ func writeProcedureDiff(out *strings.Builder, procDiff *schema.ProcedureDiff) {
 		if !strings.HasSuffix(strings.TrimSpace(definition), ";") {
 			_, _ = out.WriteString(";")
 		}
-		_, _ = out.WriteString("\n\n")
+		_, _ = out.WriteString("\n")
+		// Note: ProcedureMetadata doesn't have a comment field in the protobuf,
+		// so we don't add procedure comments here
+		_, _ = out.WriteString("\n")
 	case schema.MetadataDiffActionAlter:
 		// Oracle requires CREATE OR REPLACE for procedures
 		definition := procDiff.NewProcedure.Definition
@@ -1235,7 +1255,10 @@ func writeProcedureDiff(out *strings.Builder, procDiff *schema.ProcedureDiff) {
 		if !strings.HasSuffix(strings.TrimSpace(definition), ";") {
 			_, _ = out.WriteString(";")
 		}
-		_, _ = out.WriteString("\n\n")
+		_, _ = out.WriteString("\n")
+		// Note: ProcedureMetadata doesn't have a comment field in the protobuf,
+		// so we don't add procedure comments here
+		_, _ = out.WriteString("\n")
 	}
 }
 
@@ -1255,6 +1278,11 @@ func writeMigrationView(out *strings.Builder, schema string, view *storepb.ViewM
 		_, _ = out.WriteString(`;`)
 	}
 	_, _ = out.WriteString("\n")
+
+	// Add comment if present
+	if view.Comment != "" {
+		writeViewComment(out, schema, view.Name, view.Comment)
+	}
 }
 
 // writeMaterializedView writes a CREATE MATERIALIZED VIEW statement
@@ -1273,6 +1301,11 @@ func writeMigrationMaterializedView(out *strings.Builder, schema string, view *s
 		_, _ = out.WriteString(`;`)
 	}
 	_, _ = out.WriteString("\n")
+
+	// Add comment if present
+	if view.Comment != "" {
+		writeMaterializedViewComment(out, schema, view.Name, view.Comment)
+	}
 }
 
 // writeForeignKey writes an ALTER TABLE ADD CONSTRAINT statement for a foreign key
@@ -1463,5 +1496,92 @@ func writeMigrationIndex(out *strings.Builder, schema, table string, index *stor
 	_, _ = out.WriteString(`)`)
 
 	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+
+	// Add comment if present
+	if index.Comment != "" {
+		writeIndexComment(out, schema, index.Name, index.Comment)
+	}
+}
+
+// Comment writing helper functions
+
+// writeViewComment writes a COMMENT ON VIEW statement
+func writeViewComment(out *strings.Builder, schema, viewName, comment string) {
+	_, _ = out.WriteString(`COMMENT ON VIEW `)
+	if schema != "" {
+		_, _ = out.WriteString(`"`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`".`)
+	}
+	_, _ = out.WriteString(`"`)
+	_, _ = out.WriteString(viewName)
+	_, _ = out.WriteString(`" IS '`)
+	_, _ = out.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+	_, _ = out.WriteString(`';`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeMaterializedViewComment writes a COMMENT ON MATERIALIZED VIEW statement
+func writeMaterializedViewComment(out *strings.Builder, schema, viewName, comment string) {
+	_, _ = out.WriteString(`COMMENT ON MATERIALIZED VIEW `)
+	if schema != "" {
+		_, _ = out.WriteString(`"`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`".`)
+	}
+	_, _ = out.WriteString(`"`)
+	_, _ = out.WriteString(viewName)
+	_, _ = out.WriteString(`" IS '`)
+	_, _ = out.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+	_, _ = out.WriteString(`';`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeFunctionComment writes a COMMENT ON FUNCTION statement
+func writeFunctionComment(out *strings.Builder, schema, functionName, comment string) {
+	_, _ = out.WriteString(`COMMENT ON FUNCTION `)
+	if schema != "" {
+		_, _ = out.WriteString(`"`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`".`)
+	}
+	_, _ = out.WriteString(`"`)
+	_, _ = out.WriteString(functionName)
+	_, _ = out.WriteString(`" IS '`)
+	_, _ = out.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+	_, _ = out.WriteString(`';`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeSequenceComment writes a COMMENT ON SEQUENCE statement
+func writeSequenceComment(out *strings.Builder, schema, sequenceName, comment string) {
+	_, _ = out.WriteString(`COMMENT ON SEQUENCE `)
+	if schema != "" {
+		_, _ = out.WriteString(`"`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`".`)
+	}
+	_, _ = out.WriteString(`"`)
+	_, _ = out.WriteString(sequenceName)
+	_, _ = out.WriteString(`" IS '`)
+	_, _ = out.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+	_, _ = out.WriteString(`';`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeIndexComment writes a COMMENT ON INDEX statement
+func writeIndexComment(out *strings.Builder, schema, indexName, comment string) {
+	_, _ = out.WriteString(`COMMENT ON INDEX `)
+	if schema != "" {
+		_, _ = out.WriteString(`"`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`".`)
+	}
+	_, _ = out.WriteString(`"`)
+	_, _ = out.WriteString(indexName)
+	_, _ = out.WriteString(`" IS '`)
+	_, _ = out.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+	_, _ = out.WriteString(`';`)
 	_, _ = out.WriteString("\n")
 }

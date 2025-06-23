@@ -829,6 +829,172 @@ END;
 `,
 			description: "Events and advanced stored routines",
 		},
+		{
+			name: "table_and_column_comments",
+			initialSchema: `
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    description TEXT,
+    category_id INT,
+    PRIMARY KEY (id),
+    INDEX idx_category (category_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE categories (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+`,
+			migrationDDL: `
+-- Add table comments
+ALTER TABLE products COMMENT = 'Product catalog table containing all product information';
+ALTER TABLE categories COMMENT = 'Product categories for organization';
+
+-- Add column comments to existing table
+ALTER TABLE products MODIFY COLUMN name VARCHAR(100) NOT NULL COMMENT 'Product display name';
+ALTER TABLE products MODIFY COLUMN price DECIMAL(10, 2) NOT NULL COMMENT 'Product price in USD';
+ALTER TABLE products MODIFY COLUMN description TEXT COMMENT 'Detailed product description';
+ALTER TABLE products MODIFY COLUMN category_id INT COMMENT 'Foreign key reference to categories table';
+
+-- Add column comments to categories table
+ALTER TABLE categories MODIFY COLUMN name VARCHAR(50) NOT NULL COMMENT 'Category display name';
+
+-- Create new table with comments from the start
+CREATE TABLE suppliers (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Unique supplier identifier',
+    company_name VARCHAR(100) NOT NULL COMMENT 'Legal company name',
+    contact_email VARCHAR(100) COMMENT 'Primary contact email address',
+    phone VARCHAR(20) COMMENT 'Business phone number',
+    address TEXT COMMENT 'Full business address',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (contact_email)
+) ENGINE=InnoDB COMMENT = 'Supplier information and contact details';
+
+-- Add new column with comment
+ALTER TABLE products ADD COLUMN supplier_id INT COMMENT 'Reference to supplier providing this product';
+`,
+			description: "Add comments to tables and columns using MySQL COMMENT syntax",
+		},
+		{
+			name: "modify_and_drop_comments",
+			initialSchema: `
+CREATE TABLE orders (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Order unique identifier',
+    customer_name VARCHAR(100) NOT NULL COMMENT 'Customer full name',
+    order_date DATE NOT NULL COMMENT 'Date when order was placed',
+    total_amount DECIMAL(10, 2) COMMENT 'Total order amount in USD',
+    status VARCHAR(20) DEFAULT 'pending' COMMENT 'Current order status',
+    notes TEXT COMMENT 'Additional order notes or special instructions',
+    PRIMARY KEY (id),
+    INDEX idx_date (order_date),
+    INDEX idx_status (status)
+) ENGINE=InnoDB COMMENT = 'Customer orders and order details';
+
+CREATE TABLE order_items (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Line item identifier',
+    order_id INT NOT NULL COMMENT 'Reference to parent order',
+    product_name VARCHAR(100) NOT NULL COMMENT 'Name of ordered product',
+    quantity INT NOT NULL COMMENT 'Number of items ordered',
+    unit_price DECIMAL(10, 2) NOT NULL COMMENT 'Price per individual item',
+    PRIMARY KEY (id),
+    INDEX idx_order (order_id)
+) ENGINE=InnoDB COMMENT = 'Individual line items for each order';
+`,
+			migrationDDL: `
+-- Modify existing table comment
+ALTER TABLE orders COMMENT = 'Customer purchase orders with tracking information';
+
+-- Modify existing column comments
+ALTER TABLE orders MODIFY COLUMN customer_name VARCHAR(100) NOT NULL COMMENT 'Full name of the purchasing customer';
+ALTER TABLE orders MODIFY COLUMN status VARCHAR(20) DEFAULT 'pending' COMMENT 'Order processing status (pending, processing, shipped, delivered, cancelled)';
+ALTER TABLE orders MODIFY COLUMN notes TEXT COMMENT 'Special delivery instructions and customer notes';
+
+-- Remove comments by setting them to empty string
+ALTER TABLE orders MODIFY COLUMN total_amount DECIMAL(10, 2) COMMENT '';
+ALTER TABLE orders MODIFY COLUMN order_date DATE NOT NULL COMMENT '';
+
+-- Modify column type and comment simultaneously  
+ALTER TABLE order_items MODIFY COLUMN product_name VARCHAR(150) NOT NULL COMMENT 'Full product name including variant details';
+ALTER TABLE order_items MODIFY COLUMN quantity INT NOT NULL COMMENT 'Quantity ordered (must be positive)';
+
+-- Remove table comment
+ALTER TABLE order_items COMMENT = '';
+
+-- Remove column comment
+ALTER TABLE order_items MODIFY COLUMN unit_price DECIMAL(10, 2) NOT NULL COMMENT '';
+`,
+			description: "Modify existing comments and remove comments by setting to empty string",
+		},
+		{
+			name: "comments_with_special_characters",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    bio TEXT,
+    preferences JSON,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email)
+) ENGINE=InnoDB;
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content LONGTEXT,
+    metadata JSON,
+    PRIMARY KEY (id),
+    INDEX idx_user (user_id)
+) ENGINE=InnoDB;
+`,
+			migrationDDL: `
+-- Comments with single quotes - need proper escaping
+ALTER TABLE users COMMENT = 'User accounts - stores user''s personal information and preferences';
+
+-- Comments with double quotes and mixed quotes
+ALTER TABLE users MODIFY COLUMN username VARCHAR(50) NOT NULL COMMENT 'User''s chosen "display name" for the platform';
+ALTER TABLE users MODIFY COLUMN email VARCHAR(100) NOT NULL COMMENT 'Primary email address - must be "unique" across all users';
+
+-- Multi-line comment using literal newlines
+ALTER TABLE users MODIFY COLUMN bio TEXT COMMENT 'User biography text
+Can contain multiple lines
+and various formatting';
+
+-- Comment with special characters and symbols
+ALTER TABLE users MODIFY COLUMN preferences JSON COMMENT 'User settings: theme, notifications, privacy & security options (@, #, $, %, ^, &, *, +, =, |, \\, /, ?, <, >)';
+
+-- Comments with Unicode characters
+ALTER TABLE posts COMMENT = 'Blog posts and articles - supports international content (中文, العربية, Русский, 日本語, 한국어, Français, Español, Deutsch)';
+ALTER TABLE posts MODIFY COLUMN title VARCHAR(200) NOT NULL COMMENT 'Post title - supports emojis 📝✨🔥💡🎉 and Unicode characters';
+
+-- Comment with HTML/XML-like content
+ALTER TABLE posts MODIFY COLUMN content LONGTEXT COMMENT 'Post content in HTML format: <p>, <strong>, <em>, <a href="...">, <img src="..."/>';
+
+-- Comment with JSON-like structure
+ALTER TABLE posts MODIFY COLUMN metadata JSON COMMENT 'Post metadata: {"tags": ["tag1", "tag2"], "category": "tech", "featured": true, "views": 0}';
+
+-- Create table with complex comments
+CREATE TABLE analytics (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Primary key (auto-increment)',
+    event_name VARCHAR(100) NOT NULL COMMENT 'Event identifier - format: "page_view", "button_click", etc.',
+    event_data JSON COMMENT 'Event payload: {"user_id": 123, "timestamp": "2023-12-01T10:30:00Z", "properties": {...}}',
+    ip_address VARCHAR(45) COMMENT 'Client IP address (IPv4: xxx.xxx.xxx.xxx or IPv6: xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx)',
+    user_agent TEXT COMMENT 'Browser user agent string - may contain "Mozilla/5.0", various browser/OS info',
+    referrer VARCHAR(500) COMMENT 'HTTP referrer URL - where user came from (can be NULL)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Event timestamp - UTC timezone',
+    processed BOOLEAN DEFAULT FALSE COMMENT 'Processing status: TRUE = processed, FALSE = pending',
+    PRIMARY KEY (id),
+    INDEX idx_event_date (event_name, created_at),
+    INDEX idx_processed (processed)
+) ENGINE=InnoDB COMMENT = 'Analytics events tracking - stores user interactions & system events. Data retention: 2 years. Access level: "admin" & "analyst" roles only.';
+`,
+			description: "Test comments with special characters, quotes, multiline text, and Unicode",
+		},
 	}
 
 	for _, tc := range testCases {

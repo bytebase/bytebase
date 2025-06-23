@@ -25,6 +25,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 		s := &v1pb.SchemaMetadata{
 			Name:     schema.Name,
 			Owner:    schema.Owner,
+			Comment:  schema.Comment,
 			SkipDump: schema.SkipDump,
 		}
 		for _, table := range schema.Tables {
@@ -124,6 +125,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				CollationConnection: procedure.CollationConnection,
 				DatabaseCollation:   procedure.DatabaseCollation,
 				SqlMode:             procedure.SqlMode,
+				Comment:             procedure.Comment,
 				SkipDump:            procedure.SkipDump,
 			}
 			s.Procedures = append(s.Procedures, v1Procedure)
@@ -206,6 +208,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				SqlMode:             event.SqlMode,
 				CharacterSetClient:  event.CharacterSetClient,
 				CollationConnection: event.CollationConnection,
+				Comment:             event.Comment,
 			}
 			s.Events = append(s.Events, v1Event)
 		}
@@ -515,6 +518,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 		s := &storepb.SchemaMetadata{
 			Name:     schema.Name,
 			Owner:    schema.Owner,
+			Comment:  schema.Comment,
 			SkipDump: schema.SkipDump,
 		}
 		for _, table := range schema.Tables {
@@ -632,6 +636,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 				CollationConnection: procedure.CollationConnection,
 				DatabaseCollation:   procedure.DatabaseCollation,
 				SqlMode:             procedure.SqlMode,
+				Comment:             procedure.Comment,
 				SkipDump:            procedure.SkipDump,
 			}
 			s.Procedures = append(s.Procedures, storeProcedure)
@@ -691,6 +696,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 				SqlMode:             event.SqlMode,
 				CharacterSetClient:  event.CharacterSetClient,
 				CollationConnection: event.CollationConnection,
+				Comment:             event.Comment,
 			}
 			s.Events = append(s.Events, storeEvent)
 		}

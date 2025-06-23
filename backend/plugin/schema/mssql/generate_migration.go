@@ -309,6 +309,13 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 				_, _ = buf.WriteString(";")
 			}
 			_, _ = buf.WriteString("\nGO\n")
+
+			// Add function comment if present
+			if funcDiff.NewFunction.Comment != "" {
+				commentSQL := generateFunctionCommentSQL("ADD", funcDiff.SchemaName, funcDiff.FunctionName, funcDiff.NewFunction.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\nGO\n")
+			}
 		}
 	}
 
@@ -333,6 +340,32 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 				_, _ = buf.WriteString(";")
 			}
 			_, _ = buf.WriteString("\nGO\n")
+		}
+	}
+
+	// 2.7 Create sequences
+	for _, sequenceDiff := range diff.SequenceChanges {
+		if sequenceDiff.Action == schema.MetadataDiffActionCreate {
+			// Generate CREATE SEQUENCE statement
+			_, _ = buf.WriteString("CREATE SEQUENCE [")
+			_, _ = buf.WriteString(sequenceDiff.SchemaName)
+			_, _ = buf.WriteString("].[")
+			_, _ = buf.WriteString(sequenceDiff.SequenceName)
+			_, _ = buf.WriteString("]")
+
+			if sequenceDiff.NewSequence.DataType != "" {
+				_, _ = buf.WriteString(" AS ")
+				_, _ = buf.WriteString(sequenceDiff.NewSequence.DataType)
+			}
+
+			_, _ = buf.WriteString(";\nGO\n")
+
+			// Add sequence comment if present
+			if sequenceDiff.NewSequence.Comment != "" {
+				commentSQL := generateSequenceCommentSQL("ADD", sequenceDiff.SchemaName, sequenceDiff.SequenceName, sequenceDiff.NewSequence.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\nGO\n")
+			}
 		}
 	}
 
@@ -847,6 +880,76 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 	return ""
 }
 
+// generateExtendedPropertySQL generates SQL for adding, updating, or dropping extended properties (comments)
+func generateExtendedPropertySQL(action, objectType, schemaName, objectName, comment string) string {
+	var buf strings.Builder
+
+	switch action {
+	case "ADD":
+		_, _ = buf.WriteString("EXEC sp_addextendedproperty")
+		_, _ = buf.WriteString(" @name = N'MS_Description'")
+		_, _ = buf.WriteString(", @value = N'")
+		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+		_, _ = buf.WriteString("'")
+		_, _ = buf.WriteString(", @level0type = N'SCHEMA'")
+		_, _ = buf.WriteString(", @level0name = N'")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("'")
+		_, _ = buf.WriteString(", @level1type = N'")
+		_, _ = buf.WriteString(objectType)
+		_, _ = buf.WriteString("'")
+		_, _ = buf.WriteString(", @level1name = N'")
+		_, _ = buf.WriteString(objectName)
+		_, _ = buf.WriteString("'")
+	case "UPDATE":
+		_, _ = buf.WriteString("EXEC sp_updateextendedproperty")
+		_, _ = buf.WriteString(" @name = N'MS_Description'")
+		_, _ = buf.WriteString(", @value = N'")
+		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+		_, _ = buf.WriteString("'")
+		_, _ = buf.WriteString(", @level0type = N'SCHEMA'")
+		_, _ = buf.WriteString(", @level0name = N'")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("'")
+		_, _ = buf.WriteString(", @level1type = N'")
+		_, _ = buf.WriteString(objectType)
+		_, _ = buf.WriteString("'")
+		_, _ = buf.WriteString(", @level1name = N'")
+		_, _ = buf.WriteString(objectName)
+		_, _ = buf.WriteString("'")
+	case "DROP":
+		_, _ = buf.WriteString("EXEC sp_dropextendedproperty")
+		_, _ = buf.WriteString(" @name = N'MS_Description'")
+		_, _ = buf.WriteString(", @level0type = N'SCHEMA'")
+		_, _ = buf.WriteString(", @level0name = N'")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("'")
+		_, _ = buf.WriteString(", @level1type = N'")
+		_, _ = buf.WriteString(objectType)
+		_, _ = buf.WriteString("'")
+		_, _ = buf.WriteString(", @level1name = N'")
+		_, _ = buf.WriteString(objectName)
+		_, _ = buf.WriteString("'")
+	}
+
+	return buf.String()
+}
+
+// generateViewCommentSQL generates SQL for view comment changes
+func generateViewCommentSQL(action, schemaName, viewName, comment string) string {
+	return generateExtendedPropertySQL(action, "VIEW", schemaName, viewName, comment)
+}
+
+// generateFunctionCommentSQL generates SQL for function comment changes
+func generateFunctionCommentSQL(action, schemaName, functionName, comment string) string {
+	return generateExtendedPropertySQL(action, "FUNCTION", schemaName, functionName, comment)
+}
+
+// generateSequenceCommentSQL generates SQL for sequence comment changes
+func generateSequenceCommentSQL(action, schemaName, sequenceName, comment string) string {
+	return generateExtendedPropertySQL(action, "SEQUENCE", schemaName, sequenceName, comment)
+}
+
 type queryClauseListener struct {
 	*parser.BaseTSqlParserListener
 
@@ -1194,6 +1297,13 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				_, _ = buf.WriteString(";")
 			}
 			_, _ = buf.WriteString("\nGO\n")
+
+			// Add view comment if present
+			if viewDiff.NewView.Comment != "" {
+				commentSQL := generateViewCommentSQL("ADD", viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\nGO\n")
+			}
 		}
 		return
 	}
@@ -1208,6 +1318,13 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				_, _ = buf.WriteString(";")
 			}
 			_, _ = buf.WriteString("\nGO\n")
+
+			// Add view comment if present
+			if viewDiff.NewView.Comment != "" {
+				commentSQL := generateViewCommentSQL("ADD", viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\nGO\n")
+			}
 		}
 	}
 }

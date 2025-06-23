@@ -2362,6 +2362,7 @@ DependencyColumn is the metadata for dependency columns.
 | sql_mode | [string](#string) |  |  |
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
+| comment | [string](#string) |  | The comment is the comment of an event. |
 
 
 
@@ -2769,6 +2770,7 @@ ProcedureMetadata is the metadata for procedures.
 | collation_connection | [string](#string) |  |  |
 | database_collation | [string](#string) |  |  |
 | sql_mode | [string](#string) |  |  |
+| comment | [string](#string) |  | The comment is the comment of a procedure. |
 | skip_dump | [bool](#bool) |  |  |
 
 
@@ -2800,6 +2802,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | events | [EventMetadata](#bytebase-v1-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
+| comment | [string](#string) |  | The comment is the comment of a schema. |
 
 
 
