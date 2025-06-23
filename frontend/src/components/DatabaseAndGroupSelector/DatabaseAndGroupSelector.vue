@@ -11,6 +11,7 @@
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
+        :override-route-query="false"
       />
       <PagedDatabaseTable
         mode="PROJECT_SHORT"

@@ -3,6 +3,7 @@
     class="flex-1"
     :params="params"
     :scope-options="scopeOptions"
+    :override-route-query="false"
     @update:params="$emit('update:params', $event)"
   />
 </template>
@@ -13,11 +14,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
+import { formatEnvironmentName } from "@/types";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { type SearchParams } from "@/utils";
 import { useRolloutDetailContext } from "../../context";
 import { databaseForTask } from "../../utils";
-import { formatEnvironmentName } from "@/types";
 
 defineProps<{
   params: SearchParams;
