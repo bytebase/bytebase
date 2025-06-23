@@ -23,7 +23,6 @@ import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { useSQLEditorTreeStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import type { VueClass } from "@/utils";
@@ -89,14 +88,6 @@ const gotoSQLEditor = () => {
       emit("failed", database);
       return;
     }
-    // Set the default sidebar view of SQL Editor to "INSTANCE"
-    // since unassigned databases won't be listed in "PROJECT" view.
-    useSQLEditorTreeStore().factorList = [
-      {
-        factor: "instance",
-        disabled: false,
-      },
-    ];
   }
 
   const route = router.resolve({

@@ -13,9 +13,9 @@
 
     <RichDatabaseName
       :database="database"
-      :show-instance="!hasInstanceContext"
-      :show-engine-icon="!hasInstanceContext"
-      :show-environment="showEnvironment"
+      :show-instance="true"
+      :show-engine-icon="true"
+      :show-environment="false"
       :show-arrow="true"
       :keyword="keyword"
     />
@@ -39,16 +39,12 @@ import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useAppFeature, useSQLEditorTabStore } from "@/store";
-import type {
-  SQLEditorTreeNode as TreeNode,
-  SQLEditorTreeFactor as Factor,
-} from "@/types";
+import type { SQLEditorTreeNode as TreeNode } from "@/types";
 import { isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
 
 const props = defineProps<{
   node: TreeNode;
-  factors: Factor[];
   keyword: string;
   connected?: boolean;
   checked?: boolean;
@@ -72,28 +68,5 @@ const canQuery = computed(() => isDatabaseV1Queryable(database.value));
 
 const showRequestQueryButton = computed(() => {
   return !disallowRequestQuery.value && !canQuery.value;
-});
-
-const hasInstanceContext = computed(() => {
-  return props.factors.includes("instance");
-});
-
-const hasEnvironmentContext = computed(() => {
-  return props.factors.includes("environment");
-});
-
-const showEnvironment = computed(() => {
-  // If we don't have "environment" factor in the custom tree structure
-  // we should indicate the database's environment
-  if (!hasEnvironmentContext.value) {
-    return true;
-  }
-  // If we have "environment" factor in the custom tree structure
-  // only show the environment tag when a database's effectiveEnvironment is
-  // not equal to it's physical instance's environment
-  return (
-    database.value.effectiveEnvironment !==
-    database.value.instanceResource.environment
-  );
 });
 </script>
