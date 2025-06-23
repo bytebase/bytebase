@@ -243,6 +243,16 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 				return fmt.Sprintf("db.project != $%d", len(positionalArgs)), nil
 			}
 			return "TRUE", nil
+		case "table":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf(`
+				EXISTS (
+					SELECT 1
+					FROM json_array_elements(ds.metadata->'schemas') AS s,
+						 json_array_elements(s->'tables') AS t
+					WHERE t->>'name' = $%d
+				)
+			`, len(positionalArgs)), nil
 		default:
 			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 		}

@@ -159,6 +159,12 @@ export const useCommonSearchScopeOptions = (
         ),
         allowMultiple: true,
       }),
+      table: () => ({
+        id: "table",
+        title: t("common.table"),
+        description: t("issue.advanced-search.scope.table.description"),
+        allowMultiple: false,
+      }),
       engine: () => ({
         id: "engine",
         title: t("issue.advanced-search.scope.engine.title"),

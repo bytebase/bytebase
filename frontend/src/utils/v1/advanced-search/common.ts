@@ -28,6 +28,7 @@ export const AllSearchScopeIdList = [
   "engine",
   "database-label",
   "drifted",
+  "table",
   // issue related search scopes.
   "subscriber",
   "issue-label",
