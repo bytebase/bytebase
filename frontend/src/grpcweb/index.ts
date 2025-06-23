@@ -15,6 +15,7 @@ import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_ser
 import { DatabaseGroupService } from "@/types/proto-es/v1/database_group_service_pb";
 import { GroupService } from "@/types/proto-es/v1/group_service_pb";
 import { InstanceRoleService } from "@/types/proto-es/v1/instance_role_service_pb";
+import { InstanceService } from "@/types/proto-es/v1/instance_service_pb";
 import { OrgPolicyService } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ReviewConfigService } from "@/types/proto-es/v1/review_config_service_pb";
 import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
@@ -34,7 +35,7 @@ import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 
-import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
+
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 
@@ -79,10 +80,7 @@ const clientFactory = createClientFactory()
 
 
 
-export const instanceServiceClient = clientFactory.create(
-  InstanceServiceDefinition,
-  channel
-);
+
 
 export const projectServiceClient = clientFactory.create(
   ProjectServiceDefinition,
@@ -166,6 +164,11 @@ export const databaseCatalogServiceClientConnect = createClient(
 
 export const instanceRoleServiceClientConnect = createClient(
   InstanceRoleService,
+  transport
+);
+
+export const instanceServiceClientConnect = createClient(
+  InstanceService,
   transport
 );
 
