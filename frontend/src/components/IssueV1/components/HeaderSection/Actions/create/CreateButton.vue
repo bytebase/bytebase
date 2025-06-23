@@ -50,6 +50,7 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { create } from "@bufbuild/protobuf";
 import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -71,7 +72,7 @@ import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import {
   issueServiceClient,
   planServiceClient,
-  releaseServiceClient,
+  releaseServiceClientConnect,
   rolloutServiceClient,
 } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
@@ -82,7 +83,8 @@ import type { Engine } from "@/types/proto/v1/common";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import { ReleaseFileType } from "@/types/proto/v1/release_service";
+import { CheckReleaseRequestSchema, ReleaseFileType, Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
+import { convertNewCheckReleaseResponseToOld, convertOldChangeTypeToNew } from "@/utils/v1/release-conversions";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import {
@@ -312,7 +314,7 @@ const runSQLCheckForIssue = async () => {
     );
   }
   for (const [statement, targets] of statementTargetsMap.entries()) {
-    const result = await releaseServiceClient.checkRelease({
+    const request = create(CheckReleaseRequestSchema, {
       parent: issue.value.project,
       release: {
         files: [
@@ -321,14 +323,16 @@ const runSQLCheckForIssue = async () => {
             version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType: getSpecChangeType(
+            changeType: convertOldChangeTypeToNew(getSpecChangeType(
               specForTask(issue.value.planEntity, selectedTask.value)
-            ),
+            )),
           },
         ],
       },
       targets: targets,
     });
+    const response = await releaseServiceClientConnect.checkRelease(request);
+    const result = convertNewCheckReleaseResponseToOld(response);
     // Upsert check result for each target.
     for (const r of result?.results || []) {
       upsertCheckResult(r.target, r);

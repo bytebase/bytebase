@@ -27,6 +27,7 @@ import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 import { IdentityProviderService } from "@/types/proto-es/v1/idp_service_pb";
 import { SheetService } from "@/types/proto-es/v1/sheet_service_pb";
 import { UserService } from "@/types/proto-es/v1/user_service_pb";
+import { ReleaseService } from "@/types/proto-es/v1/release_service_pb";
 
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 
@@ -34,7 +35,6 @@ import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { PlanServiceDefinition } from "@/types/proto/v1/plan_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
-import { ReleaseServiceDefinition } from "@/types/proto/v1/release_service";
 
 
 
@@ -134,10 +134,6 @@ export const sqlStreamingServiceClient = clientFactory.create(
 
 
 
-export const releaseServiceClient = clientFactory.create(
-  ReleaseServiceDefinition,
-  channel
-);
 
 
 
@@ -236,3 +232,5 @@ export const identityProviderServiceClientConnect = createClient(
 export const sheetServiceClientConnect = createClient(SheetService, transport);
 
 export const userServiceClientConnect = createClient(UserService, transport);
+
+export const releaseServiceClientConnect = createClient(ReleaseService, transport);
