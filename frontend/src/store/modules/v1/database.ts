@@ -110,7 +110,7 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
     }
   }
   if (filter.table) {
-    params.push(`table == "${filter.table}"`);
+    params.push(`table.matches("${filter.table}")`);
   }
 
   return params.join(" && ");
