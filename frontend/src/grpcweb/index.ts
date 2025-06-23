@@ -30,6 +30,7 @@ import { ReleaseService } from "@/types/proto-es/v1/release_service_pb";
 import { WorksheetService } from "@/types/proto-es/v1/worksheet_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanService } from "@/types/proto-es/v1/plan_service_pb";
+import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 
@@ -39,7 +40,6 @@ import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 
 
 
-import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
 
 import {
   authInterceptorMiddleware,
@@ -103,10 +103,6 @@ export const issueServiceClient = clientFactory.create(
   channel
 );
 
-export const rolloutServiceClient = clientFactory.create(
-  RolloutServiceDefinition,
-  channel
-);
 
 
 
@@ -223,3 +219,5 @@ export const worksheetServiceClientConnect = createClient(
 export const sqlServiceClientConnect = createClient(SQLService, transport);
 
 export const planServiceClientConnect = createClient(PlanService, transport);
+
+export const rolloutServiceClientConnect = createClient(RolloutService, transport);

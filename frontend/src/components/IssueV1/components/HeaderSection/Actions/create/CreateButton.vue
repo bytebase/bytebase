@@ -73,8 +73,11 @@ import {
   issueServiceClient,
   planServiceClientConnect,
   releaseServiceClientConnect,
-  rolloutServiceClient,
+  rolloutServiceClientConnect,
 } from "@/grpcweb";
+import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
@@ -188,12 +191,13 @@ const doCreateIssue = async () => {
       issue: issueCreate,
     });
 
-    await rolloutServiceClient.createRollout({
+    const rolloutRequest = create(CreateRolloutRequestSchema, {
       parent: issue.value.project,
       rollout: {
         plan: createdPlan.name,
       },
     });
+    await rolloutServiceClientConnect.createRollout(rolloutRequest);
 
     emitIssueCreateWindowEvent(createdIssue);
     router.replace({

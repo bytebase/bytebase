@@ -14,8 +14,11 @@ import { last } from "lodash-es";
 import { CircleAlertIcon } from "lucide-vue-next";
 import { NTooltip, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
+import { create } from "@bufbuild/protobuf";
+import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { convertNewTaskRunLogToOld } from "@/utils/v1/rollout-conversions";
 import { useI18n } from "vue-i18n";
-import { rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   type TaskRun,
   TaskRunLogEntry_Type,
@@ -40,10 +43,12 @@ const { t } = useI18n();
 const isLoading = ref(false);
 
 const taskRunLog = computedAsync(
-  () => {
-    return rolloutServiceClient.getTaskRunLog({
+  async () => {
+    const request = create(GetTaskRunLogRequestSchema, {
       parent: props.taskRun.name,
     });
+    const response = await rolloutServiceClientConnect.getTaskRunLog(request);
+    return convertNewTaskRunLogToOld(response);
   },
   undefined,
   {

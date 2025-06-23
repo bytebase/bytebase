@@ -3,8 +3,9 @@ import Emittery from "emittery";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { useRoute } from "vue-router";
+import { create } from "@bufbuild/protobuf";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
-import { rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useIssueV1Store, useProjectV1Store, useRolloutStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedIssue, ComposedProject, ComposedRollout } from "@/types";
@@ -14,6 +15,8 @@ import {
   type Task,
   type Stage,
 } from "@/types/proto/v1/rollout_service";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { convertNewRolloutToOld } from "@/utils/v1/rollout-conversions";
 import { flattenTaskV1List } from "@/utils";
 
 type Events = {
@@ -103,13 +106,15 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
         withRollout: false,
       });
     }
-    rolloutPreview.value = await rolloutServiceClient.createRollout({
+    const request = create(CreateRolloutRequestSchema, {
       parent: project.value.name,
       rollout: {
         plan: rollout.value.plan,
       },
       validateOnly: true,
     });
+    const rolloutPreviewNew = await rolloutServiceClientConnect.createRollout(request);
+    rolloutPreview.value = convertNewRolloutToOld(rolloutPreviewNew);
   };
 
   refreshRolloutContext();

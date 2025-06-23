@@ -3,7 +3,7 @@ import { create } from "@bufbuild/protobuf";
 import {
   issueServiceClient,
   planServiceClientConnect,
-  rolloutServiceClient,
+  rolloutServiceClientConnect,
 } from "@/grpcweb";
 import {
   GetPlanRequestSchema,
@@ -11,10 +11,19 @@ import {
   CreatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
+  GetRolloutRequestSchema,
+  ListTaskRunsRequestSchema,
+  CreateRolloutRequestSchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import {
   convertNewPlanToOld,
   convertNewPlanCheckRunToOld,
   convertOldPlanToNew,
 } from "@/utils/v1/plan-conversions";
+import {
+  convertNewRolloutToOld,
+  convertNewTaskRunToOld,
+} from "@/utils/v1/rollout-conversions";
 import { useProjectV1Store } from "@/store";
 import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
 import {
@@ -74,16 +83,20 @@ export const composeIssue = async (
   }
   if (config.withRollout && issue.rollout) {
     if (hasProjectPermissionV2(projectEntity, "bb.rollouts.get")) {
-      issue.rolloutEntity = await rolloutServiceClient.getRollout({
+      const request = create(GetRolloutRequestSchema, {
         name: issue.rollout,
       });
+      const response = await rolloutServiceClientConnect.getRollout(request);
+      issue.rolloutEntity = convertNewRolloutToOld(response);
     }
 
     if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {
-      const { taskRuns } = await rolloutServiceClient.listTaskRuns({
+      const request = create(ListTaskRunsRequestSchema, {
         parent: `${issue.rollout}/stages/-/tasks/-`,
         pageSize: DEFAULT_PAGE_SIZE,
       });
+      const response = await rolloutServiceClientConnect.listTaskRuns(request);
+      const taskRuns = response.taskRuns.map(convertNewTaskRunToOld);
       const composedTaskRuns: ComposedTaskRun[] = [];
       for (const taskRun of taskRuns) {
         const composed: ComposedTaskRun = {
@@ -154,12 +167,14 @@ export const experimentalCreateIssueByPlan = async (
     issue: issueCreate,
   });
   await hooks?.issueCreated?.(createdIssue, createdPlan);
-  const createdRollout = await rolloutServiceClient.createRollout({
+  const rolloutRequest = create(CreateRolloutRequestSchema, {
     parent: project.name,
     rollout: {
       plan: createdPlan.name,
     },
   });
+  const rolloutResponse = await rolloutServiceClientConnect.createRollout(rolloutRequest);
+  const createdRollout = convertNewRolloutToOld(rolloutResponse);
   createdIssue.rollout = createdRollout.name;
   await hooks?.rolloutCreated?.(createdIssue, createdPlan, createdRollout);
 

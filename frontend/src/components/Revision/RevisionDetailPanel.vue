@@ -50,9 +50,12 @@
 <script lang="ts" setup>
 import { NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
+import { create } from "@bufbuild/protobuf";
+import { GetTaskRunRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { convertNewTaskRunToOld } from "@/utils/v1/rollout-conversions";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
-import { rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useRevisionStore, useSheetV1Store } from "@/store";
 import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
 import type { TaskRun } from "@/types/proto/v1/rollout_service";
@@ -87,9 +90,11 @@ watch(
     state.loading = true;
     const revision = await revisionStore.getOrFetchRevisionByName(revisionName);
     if (revision) {
-      const taskRunData = await rolloutServiceClient.getTaskRun({
+      const request = create(GetTaskRunRequestSchema, {
         name: revision.taskRun,
       });
+      const response = await rolloutServiceClientConnect.getTaskRun(request);
+      const taskRunData = convertNewTaskRunToOld(response);
       taskRun.value = taskRunData;
       // Prepare the sheet data from task run.
       if (taskRunData.sheet) {
