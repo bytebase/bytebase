@@ -17,6 +17,7 @@
       <div v-if="scopeOption.search" class="textinfolabel">
         {{ $t("issue.advanced-search.search") }}
       </div>
+      <div v-else class="textinfolabel">{{ scopeOption.description }}</div>
     </div>
     <div v-if="valueOptions.length > 0">
       <NVirtualList
@@ -74,7 +75,7 @@
         </template>
       </NVirtualList>
     </div>
-    <div v-if="valueOptions.length === 0" class="pb-2">
+    <div v-else-if="showEmptyPlaceholder" class="pb-2">
       <NEmpty />
     </div>
   </div>
@@ -95,6 +96,7 @@ const props = defineProps<{
   scopeOption?: ScopeOption;
   valueOptions: ValueOption[];
   menuIndex: number;
+  showEmptyPlaceholder?: boolean;
   fetchState?: {
     loading: boolean;
     nextPageToken?: string;
