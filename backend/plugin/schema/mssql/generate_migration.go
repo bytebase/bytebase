@@ -1041,7 +1041,7 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 }
 
 // createTablesInOrder creates tables in topological order (dependencies first based on foreign keys)
-func createTablesInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
+func createTablesInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	// Build dependency graph for tables being created
 	graph := base.NewGraph()
 	tableMap := make(map[string]*schema.TableDiff)
@@ -1100,7 +1100,7 @@ func createTablesInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error 
 			_, _ = buf.WriteString(createTableSQL)
 			_, _ = buf.WriteString("\n")
 		}
-		return nil
+		return
 	}
 
 	// Create tables in order
@@ -1111,8 +1111,6 @@ func createTablesInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error 
 			_, _ = buf.WriteString("\n")
 		}
 	}
-
-	return nil
 }
 
 // createViewsInOrder creates views in topological order (dependencies first)
