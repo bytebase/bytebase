@@ -105,14 +105,27 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     const request = hasWorkspacePermissionV2("bb.projects.list")
       ? projectServiceClient.listProjects
       : projectServiceClient.searchProjects;
-    const response = await request(
-      {
-        ...params,
-        filter: getListProjectFilter(params.filter ?? {}),
-        showDeleted: params.filter?.state === State.DELETED ? true : false,
-      },
-      { silent: params.silent ?? true }
-    );
+
+    let response: ListProjectsResponse | undefined = undefined;
+    let pageToken = params.pageToken;
+    while (true) {
+      const resp = await request(
+        {
+          ...params,
+          pageToken,
+          filter: getListProjectFilter(params.filter ?? {}),
+          showDeleted: params.filter?.state === State.DELETED ? true : false,
+        },
+        { silent: params.silent ?? true }
+      );
+      if (resp.nextPageToken !== "" && resp.projects.length === 0) {
+        pageToken = resp.nextPageToken;
+        continue;
+      }
+      response = resp;
+      break;
+    }
+
     const composedProjects = await upsertProjectMap(response.projects);
 
     return {

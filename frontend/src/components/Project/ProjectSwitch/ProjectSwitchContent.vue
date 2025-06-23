@@ -58,10 +58,7 @@
           v-else
           class="mb-2"
           session-key="bb.project-table"
-          :filter="{
-            query: state.searchText,
-            excludeDefault: true,
-          }"
+          :filter="filter"
           :loading="state.loading"
           @row-click="onProjectSelect"
         />
@@ -116,6 +113,11 @@ const router = useRouter();
 const { record } = useRecentVisit();
 
 const { project } = useCurrentProjectV1();
+
+const filter = computed(() => ({
+  query: state.searchText,
+  excludeDefault: true,
+}));
 
 onMounted(() => {
   state.selectedTab = recentViewProjects.value.length < 1 ? "all" : "recent";
