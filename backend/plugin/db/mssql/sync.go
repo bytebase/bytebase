@@ -540,7 +540,7 @@ func getColumnType(definition, typeName sql.NullString, isComputed, isPersisted 
 				// Each Unicode character takes 2 bytes, so we need to divide by 2
 				length := maxLength.Int64
 				if typeName.String == "nchar" || typeName.String == "nvarchar" {
-					length = length / 2
+					length /= 2
 				}
 				if _, err := fmt.Fprintf(&buf, "(%d)", length); err != nil {
 					return "", err

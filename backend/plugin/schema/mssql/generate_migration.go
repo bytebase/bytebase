@@ -268,9 +268,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	}
 
 	// 2.2 Create new tables WITHOUT foreign keys (in topological order based on FK dependencies)
-	if err := createTablesInOrder(diff, &buf); err != nil {
-		return "", err
-	}
+	createTablesInOrder(diff, &buf)
 
 	// 2.3 Alter existing tables (add columns, alter columns)
 	for _, tableDiff := range diff.TableChanges {
