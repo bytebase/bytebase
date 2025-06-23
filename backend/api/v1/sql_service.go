@@ -238,7 +238,22 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		if connectErr, ok := queryErr.(*connect.Error); ok {
 			code = connectErr.Code()
 		} else if syntaxErr, ok := queryErr.(*parserbase.SyntaxError); ok {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("syntax error: %s", syntaxErr.Message))
+			err := connect.NewError(connect.CodeInvalidArgument, syntaxErr)
+			if detail, detailErr := connect.NewErrorDetail(&v1pb.PlanCheckRun_Result{
+				Code:    int32(advisor.StatementSyntaxError),
+				Content: syntaxErr.Message,
+				Title:   "Syntax error",
+				Status:  v1pb.PlanCheckRun_Result_ERROR,
+				Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+					SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+						Line:   int32(syntaxErr.Position.GetLine()),
+						Column: int32(syntaxErr.Position.GetColumn()),
+					},
+				},
+			}); detailErr == nil {
+				err.AddDetail(detail)
+			}
+			return nil, err
 		}
 		return nil, connect.NewError(code, errors.New(queryErr.Error()))
 	}
@@ -1456,9 +1471,23 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 func validateQueryRequest(instance *store.InstanceMessage, statement string) error {
 	ok, _, err := parserbase.ValidateSQLForEditor(instance.Metadata.GetEngine(), statement)
 	if err != nil {
-		syntaxErr, ok := err.(*parserbase.SyntaxError)
-		if ok {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("syntax error: %s", syntaxErr.Message))
+		if syntaxErr, ok := err.(*parserbase.SyntaxError); ok {
+			err := connect.NewError(connect.CodeInvalidArgument, syntaxErr)
+			if detail, detailErr := connect.NewErrorDetail(&v1pb.PlanCheckRun_Result{
+				Code:    int32(advisor.StatementSyntaxError),
+				Content: syntaxErr.Message,
+				Title:   "Syntax error",
+				Status:  v1pb.PlanCheckRun_Result_ERROR,
+				Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+					SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+						Line:   int32(syntaxErr.Position.GetLine()),
+						Column: int32(syntaxErr.Position.GetColumn()),
+					},
+				},
+			}); detailErr == nil {
+				err.AddDetail(detail)
+			}
+			return err
 		}
 		return err
 	}
