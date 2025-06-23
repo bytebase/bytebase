@@ -1747,7 +1747,7 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
 func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.DiffMetadataRequest]) (*connect.Response[v1pb.DiffMetadataResponse], error) {
 	request := req.Msg
 	switch request.Engine {
-	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
+	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE, v1pb.Engine_MSSQL:
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported engine: %v", request.Engine))
 	}
@@ -1771,27 +1771,21 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid target metadata"))
 	}
 
-	sourceSchema, err := schema.GetDatabaseDefinition(storepb.Engine(request.Engine), schema.GetDefinitionContext{
-		SkipBackupSchema: false,
-		PrintHeader:      true,
-	}, storeSourceMetadata)
-	if err != nil {
-		return nil, err
-	}
-	targetSchema, err := schema.GetDatabaseDefinition(storepb.Engine(request.Engine), schema.GetDefinitionContext{
-		SkipBackupSchema: false,
-		PrintHeader:      true,
-	}, storeTargetMetadata)
-	if err != nil {
-		return nil, err
-	}
+	// Convert metadata to model.DatabaseSchema for diffing
+	isObjectCaseSensitive := true
+	sourceDBSchema := model.NewDatabaseSchema(storeSourceMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
+	targetDBSchema := model.NewDatabaseSchema(storeTargetMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
 
-	diff, err := parserbase.SchemaDiff(convertEngine(request.Engine), parserbase.DiffContext{
-		IgnoreCaseSensitive: false,
-		StrictMode:          true,
-	}, sourceSchema, targetSchema)
+	// Get the metadata diff between source and target
+	metadataDiff, err := schema.GetDatabaseSchemaDiff(sourceDBSchema, targetDBSchema)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute diff between source and target schemas, error: %v", err))
+	}
+
+	// Generate migration SQL from the diff
+	diff, err := schema.GenerateMigration(storepb.Engine(request.Engine), metadataDiff)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
 	}
 
 	return connect.NewResponse(&v1pb.DiffMetadataResponse{

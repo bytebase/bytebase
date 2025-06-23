@@ -351,6 +351,165 @@ ALTER TABLE sales_data ADD CONSTRAINT chk_amount_positive CHECK (amount > 0);
 `,
 			description: "Operations on partitioned tables",
 		},
+		// Note: TiDB added foreign key support in v6.6.0 (experimental) and v7.5.0 (GA)
+		// These tests verify that our migration generation handles foreign keys correctly
+		{
+			name: "create_tables_with_fk",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email),
+    INDEX idx_username (username)
+);
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published_at DATETIME,
+    PRIMARY KEY (id),
+    INDEX idx_user_id (user_id),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+`,
+			migrationDDL: `
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS users;`,
+			description: "Create tables with foreign key constraints",
+		},
+		{
+			name: "multiple_foreign_keys",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email),
+    INDEX idx_username (username)
+);
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published_at DATETIME,
+    PRIMARY KEY (id),
+    INDEX idx_user_id (user_id),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+`,
+			migrationDDL: `
+-- Add new column
+ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT true;
+
+-- Create new table with multiple foreign keys
+CREATE TABLE comments (
+    id INT NOT NULL AUTO_INCREMENT,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_post_user (post_id, user_id),
+    CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Add new index
+CREATE INDEX idx_email_active ON users(email, is_active);
+
+-- Add check constraint (TiDB supports check constraints)
+ALTER TABLE posts ADD CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0);
+`,
+			description: "Tables with multiple foreign key constraints",
+		},
+		{
+			name: "drop_and_recreate_fk_constraints",
+			initialSchema: `
+CREATE TABLE authors (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email)
+);
+
+CREATE TABLE books (
+    id INT NOT NULL AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL,
+    author_id INT NOT NULL,
+    isbn VARCHAR(20),
+    published_year INT,
+    price DECIMAL(8, 2),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_isbn (isbn),
+    INDEX idx_author (author_id),
+    INDEX idx_year (published_year),
+    CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors(id),
+    CONSTRAINT chk_year_valid CHECK (published_year >= 1000 AND published_year <= 2100),
+    CONSTRAINT chk_price_positive CHECK (price > 0)
+);
+`,
+			migrationDDL: `
+-- Drop and recreate foreign key with different options
+ALTER TABLE books DROP FOREIGN KEY fk_author;
+ALTER TABLE books ADD CONSTRAINT fk_author_new FOREIGN KEY (author_id) REFERENCES authors(id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Drop and modify check constraints
+ALTER TABLE books DROP CHECK chk_year_valid;
+ALTER TABLE books ADD CONSTRAINT chk_year_extended CHECK (published_year >= 1000 AND published_year <= 2030);
+
+-- Add new constraints
+ALTER TABLE books ADD CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) >= 3);
+`,
+			description: "Drop and recreate foreign key constraints with different options",
+		},
+		{
+			name: "circular_foreign_key_dependencies",
+			initialSchema: `
+CREATE TABLE customers (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    preferred_order_id INT,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE orders (
+    id INT NOT NULL AUTO_INCREMENT,
+    customer_id INT NOT NULL,
+    order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(10, 2),
+    PRIMARY KEY (id)
+);
+`,
+			migrationDDL: `
+-- Create circular foreign key dependencies
+-- Note: Circular FKs might have limitations in TiDB
+ALTER TABLE customers ADD CONSTRAINT fk_preferred_order FOREIGN KEY (preferred_order_id) REFERENCES orders(id) ON DELETE SET NULL;
+ALTER TABLE orders ADD CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;
+
+-- Add more tables with complex relationships
+CREATE TABLE order_items (
+    id INT NOT NULL AUTO_INCREMENT,
+    order_id INT NOT NULL,
+    product_name VARCHAR(100) NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_order (order_id),
+    CONSTRAINT fk_order_item FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
+`,
+			description: "Circular foreign key dependencies",
+		},
 	}
 
 	for _, tc := range testCases {

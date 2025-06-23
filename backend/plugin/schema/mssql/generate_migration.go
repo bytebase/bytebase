@@ -147,8 +147,20 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 			}
 
 			// Drop columns
-			for _, colDiff := range tableDiff.ColumnChanges {
+			hasDroppedIndex := false
+			for _, indexDiff := range tableDiff.IndexChanges {
+				if indexDiff.Action == schema.MetadataDiffActionDrop {
+					hasDroppedIndex = true
+					break
+				}
+			}
+
+			for i, colDiff := range tableDiff.ColumnChanges {
 				if colDiff.Action == schema.MetadataDiffActionDrop {
+					// Add GO before first column drop if we dropped indexes
+					if i == 0 && hasDroppedIndex {
+						_, _ = buf.WriteString("GO\n")
+					}
 					_, _ = buf.WriteString("ALTER TABLE [")
 					_, _ = buf.WriteString(tableDiff.SchemaName)
 					_, _ = buf.WriteString("].[")
@@ -161,9 +173,27 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 
+	// Add GO after table alterations if we had any and we're about to drop tables
+	hasTableAlterations := false
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			for _, colDiff := range tableDiff.ColumnChanges {
+				if colDiff.Action == schema.MetadataDiffActionDrop {
+					hasTableAlterations = true
+					break
+				}
+			}
+		}
+	}
+
 	// 1.6 Drop tables
+	hasTableDrops := false
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionDrop {
+			if !hasTableDrops && hasTableAlterations {
+				_, _ = buf.WriteString("GO\n")
+			}
+			hasTableDrops = true
 			_, _ = buf.WriteString("DROP TABLE [")
 			_, _ = buf.WriteString(tableDiff.SchemaName)
 			_, _ = buf.WriteString("].[")
@@ -237,30 +267,8 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		_, _ = buf.WriteString("\n")
 	}
 
-	// 2.2 Create new tables WITHOUT foreign keys (sorted for consistent output)
-	var tablesToCreate []*schema.TableDiff
-	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.Action == schema.MetadataDiffActionCreate {
-			tablesToCreate = append(tablesToCreate, tableDiff)
-		}
-	}
-	// Sort by schema.table name for consistent output
-	slices.SortFunc(tablesToCreate, func(i, j *schema.TableDiff) int {
-		iFullName := getObjectID(i.SchemaName, i.TableName)
-		jFullName := getObjectID(j.SchemaName, j.TableName)
-		if iFullName < jFullName {
-			return -1
-		}
-		if iFullName > jFullName {
-			return 1
-		}
-		return 0
-	})
-	for _, tableDiff := range tablesToCreate {
-		createTableSQL := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
-		_, _ = buf.WriteString(createTableSQL)
-		_, _ = buf.WriteString("\n")
-	}
+	// 2.2 Create new tables WITHOUT foreign keys (in topological order based on FK dependencies)
+	createTablesInOrder(diff, &buf)
 
 	// 2.3 Alter existing tables (add columns, alter columns)
 	for _, tableDiff := range diff.TableChanges {
@@ -274,11 +282,13 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	}
 
 	// 2.4 Add foreign keys for newly created tables (after all tables exist)
-	for _, tableDiff := range tablesToCreate {
-		for _, fk := range tableDiff.NewTable.ForeignKeys {
-			fkSQL := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fk)
-			_, _ = buf.WriteString(fkSQL)
-			_, _ = buf.WriteString(";\n")
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
+			for _, fk := range tableDiff.NewTable.ForeignKeys {
+				fkSQL := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fk)
+				_, _ = buf.WriteString(fkSQL)
+				_, _ = buf.WriteString(";\n")
+			}
 		}
 	}
 
@@ -525,6 +535,13 @@ func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 	_, _ = buf.WriteString("] ")
 	_, _ = buf.WriteString(column.Type)
 
+	// Add IDENTITY if applicable
+	if column.IsIdentity {
+		_, _ = buf.WriteString(" IDENTITY(")
+		_, _ = buf.WriteString(fmt.Sprintf("%d,%d", column.IdentitySeed, column.IdentityIncrement))
+		_, _ = buf.WriteString(")")
+	}
+
 	// Add nullability
 	if column.Nullable {
 		_, _ = buf.WriteString(" NULL")
@@ -532,11 +549,13 @@ func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 		_, _ = buf.WriteString(" NOT NULL")
 	}
 
-	// Add default value
-	defaultExpr := getDefaultExpression(column)
-	if defaultExpr != "" {
-		_, _ = buf.WriteString(" DEFAULT ")
-		_, _ = buf.WriteString(defaultExpr)
+	// Add default value (but not for IDENTITY columns)
+	if !column.IsIdentity {
+		defaultExpr := getDefaultExpression(column)
+		if defaultExpr != "" {
+			_, _ = buf.WriteString(" DEFAULT ")
+			_, _ = buf.WriteString(defaultExpr)
+		}
 	}
 
 	return buf.String()
@@ -1015,6 +1034,79 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			_, _ = buf.WriteString("].[")
 			_, _ = buf.WriteString(viewDiff.ViewName)
 			_, _ = buf.WriteString("];\nGO\n")
+		}
+	}
+}
+
+// createTablesInOrder creates tables in topological order (dependencies first based on foreign keys)
+func createTablesInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
+	// Build dependency graph for tables being created
+	graph := base.NewGraph()
+	tableMap := make(map[string]*schema.TableDiff)
+
+	// First pass: Add all tables to be created to the graph and tableMap
+	// Sort for deterministic processing order
+	var tablesToCreate []*schema.TableDiff
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate {
+			tablesToCreate = append(tablesToCreate, tableDiff)
+		}
+	}
+	slices.SortFunc(tablesToCreate, func(i, j *schema.TableDiff) int {
+		iFullName := getObjectID(i.SchemaName, i.TableName)
+		jFullName := getObjectID(j.SchemaName, j.TableName)
+		if iFullName < jFullName {
+			return -1
+		}
+		if iFullName > jFullName {
+			return 1
+		}
+		return 0
+	})
+
+	for _, tableDiff := range tablesToCreate {
+		tableID := getObjectID(tableDiff.SchemaName, tableDiff.TableName)
+		graph.AddNode(tableID)
+		tableMap[tableID] = tableDiff
+	}
+
+	// Second pass: Add dependency edges based on foreign keys
+	for _, tableDiff := range tablesToCreate {
+		tableID := getObjectID(tableDiff.SchemaName, tableDiff.TableName)
+
+		// Add edges based on foreign key dependencies
+		if tableDiff.NewTable != nil {
+			for _, fk := range tableDiff.NewTable.ForeignKeys {
+				// Create dependency ID for the referenced table
+				refTableID := getObjectID(fk.ReferencedSchema, fk.ReferencedTable)
+
+				// Only add edge if the referenced table is also being created
+				if _, exists := tableMap[refTableID]; exists {
+					// Edge from referenced table to this table (referenced must be created first)
+					graph.AddEdge(refTableID, tableID)
+				}
+			}
+		}
+	}
+
+	// Get topological order
+	orderedList, err := graph.TopologicalSort()
+	if err != nil {
+		// If there's a cycle or error, fall back to alphabetical order
+		for _, tableDiff := range tablesToCreate {
+			createTableSQL := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
+			_, _ = buf.WriteString(createTableSQL)
+			_, _ = buf.WriteString("\n")
+		}
+		return
+	}
+
+	// Create tables in order
+	for _, tableID := range orderedList {
+		if tableDiff, ok := tableMap[tableID]; ok {
+			createTableSQL := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
+			_, _ = buf.WriteString(createTableSQL)
+			_, _ = buf.WriteString("\n")
 		}
 	}
 }
