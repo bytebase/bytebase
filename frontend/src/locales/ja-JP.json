@@ -1962,7 +1962,6 @@
       "rows": "行"
     },
     "n-per-page": "{n} / ページ",
-    "customize-tree-structure": "ツリー構造をカスタマイズする",
     "add-a-new-instance": "新しいインスタンスを追加する",
     "web-socket": {
       "errors": {
