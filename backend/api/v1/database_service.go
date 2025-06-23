@@ -243,6 +243,16 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 				return fmt.Sprintf("db.project != $%d", len(positionalArgs)), nil
 			}
 			return "TRUE", nil
+		case "table":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf(`
+				EXISTS (
+					SELECT 1
+					FROM json_array_elements(ds.metadata->'schemas') AS s,
+						 json_array_elements(s->'tables') AS t
+					WHERE t->>'name' = $%d
+				)
+			`, len(positionalArgs)), nil
 		default:
 			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 		}
@@ -267,14 +277,24 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
 				}
 				value := args[0].AsLiteral().Value()
-				if variable != "name" {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "name" support %q operator, but found %q`, celoverloads.Matches, variable))
-				}
 				strValue, ok := value.(string)
 				if !ok {
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
 				}
-				return "LOWER(db.name) LIKE '%" + strings.ToLower(strValue) + "%'", nil
+				strValue = strings.ToLower(strValue)
+
+				switch variable {
+				case "name":
+					return "LOWER(db.name) LIKE '%" + strValue + "%'", nil
+				case "table":
+					return `EXISTS (
+						SELECT 1
+						FROM json_array_elements(ds.metadata->'schemas') AS s,
+						 	 json_array_elements(s->'tables') AS t
+						WHERE t->>'name' LIKE '%` + strValue + `%')`, nil
+				default:
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "name" or "table" support %q operator, but found %q`, celoverloads.Matches, variable))
+				}
 			case celoperators.In:
 				return parseToEngineSQL(expr, "IN")
 			case celoperators.LogicalNot:

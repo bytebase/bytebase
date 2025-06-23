@@ -867,8 +867,12 @@
           "title": "ラベル",
           "description": "イシュータグで絞り込む"
         },
+        "table": {
+          "title": "テーブル",
+          "description": "値を入力してEnterを押します"
+        },
         "database-label": {
-          "title": "ラベル",
+          "title": "データベースラベル",
           "description": "\"key:value\"を入力し、Enterを押します。"
         },
         "engine": {

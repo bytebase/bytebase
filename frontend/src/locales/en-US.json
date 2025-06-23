@@ -867,8 +867,12 @@
           "title": "Label",
           "description": "Filter by issue label"
         },
+        "table": {
+          "title": "Table",
+          "description": "Input the value then press Enter"
+        },
         "database-label": {
-          "title": "Label",
+          "title": "Database Label",
           "description": "Input the \"key:value\" pair then press Enter"
         },
         "engine": {

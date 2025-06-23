@@ -867,8 +867,12 @@
           "title": "Nhãn",
           "description": "Lọc theo nhãn vấn đề"
         },
+        "table": {
+          "title": "bề mặt",
+          "description": "Nhập giá trị sau đó nhấn Enter"
+        },
         "database-label": {
-          "title": "Nhãn",
+          "title": "Nhãn cơ sở dữ liệu",
           "description": "Nhập \"key:value\" rồi nhấn Enter"
         },
         "engine": {

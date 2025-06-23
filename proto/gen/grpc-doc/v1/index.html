@@ -7986,6 +7986,7 @@ Supported filter:
 - label: the database label in &#34;{key}:{value1},{value2}&#34; format. Support &#34;==&#34; operator.
 - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator.
 - drifted: should be &#34;true&#34; or &#34;false&#34;, show drifted databases if it&#39;s true, support &#34;==&#34; operator.
+- table: filter by the database table, support &#34;==&#34; and &#34;.matches()&#34; operator.
 
 For example:
 environment == &#34;environments/{environment resource id}&#34;
@@ -8000,6 +8001,9 @@ label == &#34;tenant:asia,europe&#34;
 label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34;
 exclude_unassigned == true
 drifted == true
+table == &#34;sample&#34;
+table.matches(&#34;sam&#34;)
+
 You can combine filter conditions like:
 environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) </p></td>
                 </tr>
