@@ -60,6 +60,7 @@ import {
   unknownUser,
   type ComposedIssue,
 } from "@/types";
+import { Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   getHighlightHTMLByRegExp,
   extractProjectResourceName,
@@ -255,7 +256,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
 const issueUrl = (issue: ComposedIssue) => {
   const route =
     // TODO(steven): Remove this when we fully migrate to v1 issue detail page.
-    isDev() && !issue.rollout
+    isDev() && issue.type === Issue_Type.DATABASE_CHANGE && !issue.rollout
       ? router.resolve({
           name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
           params: {
