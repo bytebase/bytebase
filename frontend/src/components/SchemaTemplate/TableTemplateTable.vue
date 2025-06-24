@@ -20,7 +20,10 @@ import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import type { Engine } from "@/types/proto/v1/common";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
-import { SchemaTemplateSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import {
+  SchemaTemplateSetting,
+  Setting_SettingName,
+} from "@/types/proto/v1/setting_service";
 import { EngineIcon } from "../Icon";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import { classificationConfig } from "./utils";
@@ -72,13 +75,14 @@ const columns = computed(
       });
     }
 
-    cols.push(
-      {
-        title: t("schema-template.form.comment"),
-        key: "comment",
-        render: (item) => item.table?.userComment ?? "",
-      },
-      {
+    cols.push({
+      title: t("schema-template.form.comment"),
+      key: "comment",
+      render: (item) => item.table?.userComment ?? "",
+    });
+
+    if (!props.readonly) {
+      cols.push({
         title: t("common.operations"),
         key: "operations",
         width: 160,
@@ -92,35 +96,33 @@ const columns = computed(
             >
               <PencilIcon class="w-4 h-4" />
             </MiniActionButton>
-            {!props.readonly && (
-              <NPopconfirm onPositiveClick={() => deleteTemplate(item.id)}>
-                {{
-                  trigger: () => (
-                    <MiniActionButton
-                      onClick={(e: MouseEvent) => e.stopPropagation()}
-                    >
-                      <TrashIcon class="w-4 h-4" />
-                    </MiniActionButton>
-                  ),
-                  default: () => (
-                    <div class="whitespace-nowrap">
-                      {t("common.delete")} '{item.table?.name}'?
-                    </div>
-                  ),
-                }}
-              </NPopconfirm>
-            )}
+            <NPopconfirm onPositiveClick={() => deleteTemplate(item.id)}>
+              {{
+                trigger: () => (
+                  <MiniActionButton
+                    onClick={(e: MouseEvent) => e.stopPropagation()}
+                  >
+                    <TrashIcon class="w-4 h-4" />
+                  </MiniActionButton>
+                ),
+                default: () => (
+                  <div class="whitespace-nowrap">
+                    {t("common.delete")} '{item.table?.name}'?
+                  </div>
+                ),
+              }}
+            </NPopconfirm>
           </div>
         ),
-      }
-    );
+      });
+    }
 
     return cols;
   }
 );
 
 const rowProps = (row: SchemaTemplateSetting_TableTemplate) => {
-  if (!props.readonly && row.engine === props.engine) {
+  if (row.engine === props.engine) {
     return {
       style: "cursor: pointer;",
       onClick: () => {
