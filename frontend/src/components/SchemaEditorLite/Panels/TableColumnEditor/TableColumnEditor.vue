@@ -698,8 +698,8 @@ const handleSelectColumnDefaultValueExpression = (expression: string) => {
     return;
   }
   column.hasDefault = true;
-  column.defaultNull = undefined;
-  column.defaultString = undefined;
+  column.defaultNull = false;
+  column.defaultString = "";
   column.defaultExpression = expression;
 
   markColumnStatus(column, "updated");

@@ -1,6 +1,7 @@
 package oracle
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -539,10 +540,20 @@ func writeColumn(buf *strings.Builder, column *storepb.ColumnMetadata) error {
 	//		return err
 	//	}
 	// }
-	if column.DefaultValue != nil {
-		defaultExpr := column.GetDefaultExpression()
+	// Handle default values
+	hasDefault := column.DefaultNull || column.DefaultExpression != "" || column.Default != ""
+	if hasDefault {
+		defaultExpr := ""
+		if column.DefaultExpression != "" {
+			defaultExpr = column.DefaultExpression
+		} else if column.Default != "" {
+			defaultExpr = fmt.Sprintf("'%s'", column.Default)
+		} else if column.DefaultNull {
+			defaultExpr = "NULL"
+		}
+
 		// Skip system-generated sequence references as they can't be manually created
-		if !strings.Contains(defaultExpr, "ISEQ$$_") {
+		if defaultExpr != "" && !strings.Contains(defaultExpr, "ISEQ$$_") {
 			if _, err := buf.WriteString(` DEFAULT `); err != nil {
 				return err
 			}

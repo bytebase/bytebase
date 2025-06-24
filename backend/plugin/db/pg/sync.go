@@ -728,9 +728,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			return nil, err
 		}
 		if defaultStr.Valid {
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{
-				DefaultExpression: defaultStr.String,
-			}
+			column.DefaultExpression = defaultStr.String
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {

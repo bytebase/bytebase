@@ -10,7 +10,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -2018,14 +2017,10 @@ type ColumnMetadata struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The position is the position in columns.
 	Position int32 `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
-	// The default_value is the default value of a column.
-	//
-	// Types that are valid to be assigned to DefaultValue:
-	//
-	//	*ColumnMetadata_Default
-	//	*ColumnMetadata_DefaultNull
-	//	*ColumnMetadata_DefaultExpression
-	DefaultValue isColumnMetadata_DefaultValue `protobuf_oneof:"default_value"`
+	// The default value of column.
+	Default           string `protobuf:"bytes,3,opt,name=default,proto3" json:"default,omitempty"`
+	DefaultNull       bool   `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3" json:"default_null,omitempty"`
+	DefaultExpression string `protobuf:"bytes,5,opt,name=default_expression,json=defaultExpression,proto3" json:"default_expression,omitempty"`
 	// Oracle specific metadata.
 	// The default_on_null is the default on null of a column.
 	DefaultOnNull bool `protobuf:"varint,16,opt,name=default_on_null,json=defaultOnNull,proto3" json:"default_on_null,omitempty"`
@@ -2127,36 +2122,23 @@ func (x *ColumnMetadata) GetPosition() int32 {
 	return 0
 }
 
-func (x *ColumnMetadata) GetDefaultValue() isColumnMetadata_DefaultValue {
+func (x *ColumnMetadata) GetDefault() string {
 	if x != nil {
-		return x.DefaultValue
+		return x.Default
 	}
-	return nil
-}
-
-func (x *ColumnMetadata) GetDefault() *wrapperspb.StringValue {
-	if x != nil {
-		if x, ok := x.DefaultValue.(*ColumnMetadata_Default); ok {
-			return x.Default
-		}
-	}
-	return nil
+	return ""
 }
 
 func (x *ColumnMetadata) GetDefaultNull() bool {
 	if x != nil {
-		if x, ok := x.DefaultValue.(*ColumnMetadata_DefaultNull); ok {
-			return x.DefaultNull
-		}
+		return x.DefaultNull
 	}
 	return false
 }
 
 func (x *ColumnMetadata) GetDefaultExpression() string {
 	if x != nil {
-		if x, ok := x.DefaultValue.(*ColumnMetadata_DefaultExpression); ok {
-			return x.DefaultExpression
-		}
+		return x.DefaultExpression
 	}
 	return ""
 }
@@ -2258,30 +2240,6 @@ func (x *ColumnMetadata) GetDefaultConstraintName() string {
 	}
 	return ""
 }
-
-type isColumnMetadata_DefaultValue interface {
-	isColumnMetadata_DefaultValue()
-}
-
-type ColumnMetadata_Default struct {
-	// The default is the default of a column. Use google.protobuf.StringValue
-	// to distinguish between an empty string default value or no default.
-	Default *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=default,proto3,oneof"`
-}
-
-type ColumnMetadata_DefaultNull struct {
-	DefaultNull bool `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3,oneof"`
-}
-
-type ColumnMetadata_DefaultExpression struct {
-	DefaultExpression string `protobuf:"bytes,5,opt,name=default_expression,json=defaultExpression,proto3,oneof"`
-}
-
-func (*ColumnMetadata_Default) isColumnMetadata_DefaultValue() {}
-
-func (*ColumnMetadata_DefaultNull) isColumnMetadata_DefaultValue() {}
-
-func (*ColumnMetadata_DefaultExpression) isColumnMetadata_DefaultValue() {}
 
 type GenerationMetadata struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
@@ -3888,7 +3846,7 @@ var File_store_database_proto protoreflect.FileDescriptor
 
 const file_store_database_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x12store/common.proto\"\x84\x03\n" +
+	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\x84\x03\n" +
 	"\x10DatabaseMetadata\x12D\n" +
 	"\x06labels\x18\x01 \x03(\v2,.bytebase.store.DatabaseMetadata.LabelsEntryR\x06labels\x12@\n" +
 	"\x0elast_sync_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x12)\n" +
@@ -4082,13 +4040,13 @@ const file_store_database_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\x82\a\n" +
+	"LINEAR_KEY\x10\b\"\xcd\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
-	"\bposition\x18\x02 \x01(\x05R\bposition\x128\n" +
-	"\adefault\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueH\x00R\adefault\x12#\n" +
-	"\fdefault_null\x18\x04 \x01(\bH\x00R\vdefaultNull\x12/\n" +
-	"\x12default_expression\x18\x05 \x01(\tH\x00R\x11defaultExpression\x12&\n" +
+	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x18\n" +
+	"\adefault\x18\x03 \x01(\tR\adefault\x12!\n" +
+	"\fdefault_null\x18\x04 \x01(\bR\vdefaultNull\x12-\n" +
+	"\x12default_expression\x18\x05 \x01(\tR\x11defaultExpression\x12&\n" +
 	"\x0fdefault_on_null\x18\x10 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
 	"\ton_update\x18\r \x01(\tR\bonUpdate\x12\x1a\n" +
 	"\bnullable\x18\x06 \x01(\bR\bnullable\x12\x12\n" +
@@ -4112,8 +4070,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\n" +
 	"\x06ALWAYS\x10\x01\x12\x0e\n" +
 	"\n" +
-	"BY_DEFAULT\x10\x02B\x0f\n" +
-	"\rdefault_value\"\xb2\x01\n" +
+	"BY_DEFAULT\x10\x02\"\xb2\x01\n" +
 	"\x12GenerationMetadata\x12;\n" +
 	"\x04type\x18\x01 \x01(\x0e2'.bytebase.store.GenerationMetadata.TypeR\x04type\x12\x1e\n" +
 	"\n" +
@@ -4339,8 +4296,7 @@ var file_store_database_proto_goTypes = []any{
 	(*ObjectSchema_ArrayKind)(nil),         // 43: bytebase.store.ObjectSchema.ArrayKind
 	nil,                                    // 44: bytebase.store.ObjectSchema.StructKind.PropertiesEntry
 	(*timestamppb.Timestamp)(nil),          // 45: google.protobuf.Timestamp
-	(*wrapperspb.StringValue)(nil),         // 46: google.protobuf.StringValue
-	(MaskingLevel)(0),                      // 47: bytebase.store.MaskingLevel
+	(MaskingLevel)(0),                      // 46: bytebase.store.MaskingLevel
 }
 var file_store_database_proto_depIdxs = []int32{
 	40, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
@@ -4375,35 +4331,34 @@ var file_store_database_proto_depIdxs = []int32{
 	20, // 29: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
 	30, // 30: bytebase.store.TablePartitionMetadata.indexes:type_name -> bytebase.store.IndexMetadata
 	18, // 31: bytebase.store.TablePartitionMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
-	46, // 32: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
-	22, // 33: bytebase.store.ColumnMetadata.generation:type_name -> bytebase.store.GenerationMetadata
-	4,  // 34: bytebase.store.ColumnMetadata.identity_generation:type_name -> bytebase.store.ColumnMetadata.IdentityGeneration
-	5,  // 35: bytebase.store.GenerationMetadata.type:type_name -> bytebase.store.GenerationMetadata.Type
-	24, // 36: bytebase.store.ViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
-	21, // 37: bytebase.store.ViewMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	14, // 38: bytebase.store.ViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	24, // 39: bytebase.store.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
-	14, // 40: bytebase.store.MaterializedViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	30, // 41: bytebase.store.MaterializedViewMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	26, // 42: bytebase.store.FunctionMetadata.dependency_tables:type_name -> bytebase.store.DependencyTable
-	36, // 43: bytebase.store.DatabaseConfig.schemas:type_name -> bytebase.store.SchemaCatalog
-	37, // 44: bytebase.store.SchemaCatalog.tables:type_name -> bytebase.store.TableCatalog
-	38, // 45: bytebase.store.TableCatalog.columns:type_name -> bytebase.store.ColumnCatalog
-	39, // 46: bytebase.store.TableCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
-	41, // 47: bytebase.store.ColumnCatalog.labels:type_name -> bytebase.store.ColumnCatalog.LabelsEntry
-	39, // 48: bytebase.store.ColumnCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
-	47, // 49: bytebase.store.ColumnCatalog.masking_level:type_name -> bytebase.store.MaskingLevel
-	6,  // 50: bytebase.store.ObjectSchema.type:type_name -> bytebase.store.ObjectSchema.Type
-	42, // 51: bytebase.store.ObjectSchema.struct_kind:type_name -> bytebase.store.ObjectSchema.StructKind
-	43, // 52: bytebase.store.ObjectSchema.array_kind:type_name -> bytebase.store.ObjectSchema.ArrayKind
-	44, // 53: bytebase.store.ObjectSchema.StructKind.properties:type_name -> bytebase.store.ObjectSchema.StructKind.PropertiesEntry
-	39, // 54: bytebase.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.store.ObjectSchema
-	39, // 55: bytebase.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.store.ObjectSchema
-	56, // [56:56] is the sub-list for method output_type
-	56, // [56:56] is the sub-list for method input_type
-	56, // [56:56] is the sub-list for extension type_name
-	56, // [56:56] is the sub-list for extension extendee
-	0,  // [0:56] is the sub-list for field type_name
+	22, // 32: bytebase.store.ColumnMetadata.generation:type_name -> bytebase.store.GenerationMetadata
+	4,  // 33: bytebase.store.ColumnMetadata.identity_generation:type_name -> bytebase.store.ColumnMetadata.IdentityGeneration
+	5,  // 34: bytebase.store.GenerationMetadata.type:type_name -> bytebase.store.GenerationMetadata.Type
+	24, // 35: bytebase.store.ViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
+	21, // 36: bytebase.store.ViewMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	14, // 37: bytebase.store.ViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
+	24, // 38: bytebase.store.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
+	14, // 39: bytebase.store.MaterializedViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
+	30, // 40: bytebase.store.MaterializedViewMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	26, // 41: bytebase.store.FunctionMetadata.dependency_tables:type_name -> bytebase.store.DependencyTable
+	36, // 42: bytebase.store.DatabaseConfig.schemas:type_name -> bytebase.store.SchemaCatalog
+	37, // 43: bytebase.store.SchemaCatalog.tables:type_name -> bytebase.store.TableCatalog
+	38, // 44: bytebase.store.TableCatalog.columns:type_name -> bytebase.store.ColumnCatalog
+	39, // 45: bytebase.store.TableCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
+	41, // 46: bytebase.store.ColumnCatalog.labels:type_name -> bytebase.store.ColumnCatalog.LabelsEntry
+	39, // 47: bytebase.store.ColumnCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
+	46, // 48: bytebase.store.ColumnCatalog.masking_level:type_name -> bytebase.store.MaskingLevel
+	6,  // 49: bytebase.store.ObjectSchema.type:type_name -> bytebase.store.ObjectSchema.Type
+	42, // 50: bytebase.store.ObjectSchema.struct_kind:type_name -> bytebase.store.ObjectSchema.StructKind
+	43, // 51: bytebase.store.ObjectSchema.array_kind:type_name -> bytebase.store.ObjectSchema.ArrayKind
+	44, // 52: bytebase.store.ObjectSchema.StructKind.properties:type_name -> bytebase.store.ObjectSchema.StructKind.PropertiesEntry
+	39, // 53: bytebase.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.store.ObjectSchema
+	39, // 54: bytebase.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.store.ObjectSchema
+	55, // [55:55] is the sub-list for method output_type
+	55, // [55:55] is the sub-list for method input_type
+	55, // [55:55] is the sub-list for extension type_name
+	55, // [55:55] is the sub-list for extension extendee
+	0,  // [0:55] is the sub-list for field type_name
 }
 
 func init() { file_store_database_proto_init() }
@@ -4412,11 +4367,6 @@ func file_store_database_proto_init() {
 		return
 	}
 	file_store_common_proto_init()
-	file_store_database_proto_msgTypes[14].OneofWrappers = []any{
-		(*ColumnMetadata_Default)(nil),
-		(*ColumnMetadata_DefaultNull)(nil),
-		(*ColumnMetadata_DefaultExpression)(nil),
-	}
 	file_store_database_proto_msgTypes[30].OneofWrappers = []any{}
 	file_store_database_proto_msgTypes[31].OneofWrappers = []any{}
 	file_store_database_proto_msgTypes[32].OneofWrappers = []any{

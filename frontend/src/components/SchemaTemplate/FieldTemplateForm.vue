@@ -478,14 +478,14 @@ const handleColumnDefaultInput = (value: string) => {
   if (!column) return;
 
   column.hasDefault = true;
-  column.defaultNull = undefined;
+  column.defaultNull = false;
   // If column is text type or has default string, we will treat user's input as string.
   if (
     isTextOfColumnType(state.engine, column.type) ||
     column.defaultString !== undefined
   ) {
     column.defaultString = value;
-    column.defaultExpression = undefined;
+    column.defaultExpression = "";
     return;
   }
   // Otherwise we will treat user's input as expression.
@@ -521,8 +521,8 @@ const handleSelectedColumnDefaultValueExpressionChange = (
     return;
   }
   state.column.hasDefault = true;
-  state.column.defaultNull = undefined;
-  state.column.defaultString = undefined;
+  state.column.defaultNull = false;
+  state.column.defaultString = "";
   state.column.defaultExpression = expression;
   state.showColumnDefaultValueExpressionModal = false;
 };

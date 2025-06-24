@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -164,15 +162,15 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		if defaultStr.Valid {
 			if strings.Contains(extra, "DEFAULT_GENERATED") {
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+				column.DefaultExpression = fmt.Sprintf("(%s)", defaultStr.String)
 			} else {
-				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+				column.Default = defaultStr.String
 			}
 		} else {
 			// TODO(zp): refactor column default value.
 			if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 				// Use the upper case to consistent with MySQL Dump.
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
+				column.DefaultExpression = autoIncrementSymbol
 			}
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)

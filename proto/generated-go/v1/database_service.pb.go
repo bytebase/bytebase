@@ -2854,14 +2854,10 @@ type ColumnMetadata struct {
 	// The position is the position in columns.
 	Position   int32 `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
 	HasDefault bool  `protobuf:"varint,3,opt,name=has_default,json=hasDefault,proto3" json:"has_default,omitempty"`
-	// The default is the default value of a column.
-	//
-	// Types that are valid to be assigned to Default:
-	//
-	//	*ColumnMetadata_DefaultNull
-	//	*ColumnMetadata_DefaultString
-	//	*ColumnMetadata_DefaultExpression
-	Default isColumnMetadata_Default `protobuf_oneof:"default"`
+	// The default value of column.
+	DefaultNull       bool   `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3" json:"default_null,omitempty"`
+	DefaultString     string `protobuf:"bytes,5,opt,name=default_string,json=defaultString,proto3" json:"default_string,omitempty"`
+	DefaultExpression string `protobuf:"bytes,6,opt,name=default_expression,json=defaultExpression,proto3" json:"default_expression,omitempty"`
 	// Oracle specific metadata.
 	// The default_on_null is the default on null of a column.
 	DefaultOnNull bool `protobuf:"varint,18,opt,name=default_on_null,json=defaultOnNull,proto3" json:"default_on_null,omitempty"`
@@ -2970,36 +2966,23 @@ func (x *ColumnMetadata) GetHasDefault() bool {
 	return false
 }
 
-func (x *ColumnMetadata) GetDefault() isColumnMetadata_Default {
-	if x != nil {
-		return x.Default
-	}
-	return nil
-}
-
 func (x *ColumnMetadata) GetDefaultNull() bool {
 	if x != nil {
-		if x, ok := x.Default.(*ColumnMetadata_DefaultNull); ok {
-			return x.DefaultNull
-		}
+		return x.DefaultNull
 	}
 	return false
 }
 
 func (x *ColumnMetadata) GetDefaultString() string {
 	if x != nil {
-		if x, ok := x.Default.(*ColumnMetadata_DefaultString); ok {
-			return x.DefaultString
-		}
+		return x.DefaultString
 	}
 	return ""
 }
 
 func (x *ColumnMetadata) GetDefaultExpression() string {
 	if x != nil {
-		if x, ok := x.Default.(*ColumnMetadata_DefaultExpression); ok {
-			return x.DefaultExpression
-		}
+		return x.DefaultExpression
 	}
 	return ""
 }
@@ -3101,28 +3084,6 @@ func (x *ColumnMetadata) GetDefaultConstraintName() string {
 	}
 	return ""
 }
-
-type isColumnMetadata_Default interface {
-	isColumnMetadata_Default()
-}
-
-type ColumnMetadata_DefaultNull struct {
-	DefaultNull bool `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3,oneof"`
-}
-
-type ColumnMetadata_DefaultString struct {
-	DefaultString string `protobuf:"bytes,5,opt,name=default_string,json=defaultString,proto3,oneof"`
-}
-
-type ColumnMetadata_DefaultExpression struct {
-	DefaultExpression string `protobuf:"bytes,6,opt,name=default_expression,json=defaultExpression,proto3,oneof"`
-}
-
-func (*ColumnMetadata_DefaultNull) isColumnMetadata_Default() {}
-
-func (*ColumnMetadata_DefaultString) isColumnMetadata_Default() {}
-
-func (*ColumnMetadata_DefaultExpression) isColumnMetadata_Default() {}
 
 type GenerationMetadata struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
@@ -5879,15 +5840,15 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\x86\a\n" +
+	"LINEAR_KEY\x10\b\"\xf5\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x1f\n" +
 	"\vhas_default\x18\x03 \x01(\bR\n" +
-	"hasDefault\x12#\n" +
-	"\fdefault_null\x18\x04 \x01(\bH\x00R\vdefaultNull\x12'\n" +
-	"\x0edefault_string\x18\x05 \x01(\tH\x00R\rdefaultString\x12/\n" +
-	"\x12default_expression\x18\x06 \x01(\tH\x00R\x11defaultExpression\x12&\n" +
+	"hasDefault\x12!\n" +
+	"\fdefault_null\x18\x04 \x01(\bR\vdefaultNull\x12%\n" +
+	"\x0edefault_string\x18\x05 \x01(\tR\rdefaultString\x12-\n" +
+	"\x12default_expression\x18\x06 \x01(\tR\x11defaultExpression\x12&\n" +
 	"\x0fdefault_on_null\x18\x12 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
 	"\ton_update\x18\x0f \x01(\tR\bonUpdate\x12\x1a\n" +
 	"\bnullable\x18\a \x01(\bR\bnullable\x12\x12\n" +
@@ -5911,8 +5872,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06ALWAYS\x10\x01\x12\x0e\n" +
 	"\n" +
-	"BY_DEFAULT\x10\x02B\t\n" +
-	"\adefault\"\xaf\x01\n" +
+	"BY_DEFAULT\x10\x02\"\xaf\x01\n" +
 	"\x12GenerationMetadata\x128\n" +
 	"\x04type\x18\x01 \x01(\x0e2$.bytebase.v1.GenerationMetadata.TypeR\x04type\x12\x1e\n" +
 	"\n" +
@@ -6420,11 +6380,6 @@ func file_v1_database_service_proto_init() {
 	file_v1_database_service_proto_msgTypes[14].OneofWrappers = []any{
 		(*DiffSchemaRequest_Schema)(nil),
 		(*DiffSchemaRequest_Changelog)(nil),
-	}
-	file_v1_database_service_proto_msgTypes[27].OneofWrappers = []any{
-		(*ColumnMetadata_DefaultNull)(nil),
-		(*ColumnMetadata_DefaultString)(nil),
-		(*ColumnMetadata_DefaultExpression)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -1109,11 +1109,13 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 }
 
 func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) error {
-	if column.DefaultValue == nil {
+	// Check if column has any default value
+	hasDefault := column.DefaultNull || column.DefaultExpression != "" || (column.Default != "")
+	if !hasDefault {
 		return nil
 	}
 
-	if column.GetDefaultNull() {
+	if column.DefaultNull {
 		if !column.Nullable || !typeSupportsDefaultValue(column.Type) {
 			// If the column is not nullable, then the default value should not be null.
 			// For this case, we should not print the default clause.
@@ -1128,20 +1130,20 @@ func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) er
 		return nil
 	}
 
-	if column.GetDefaultExpression() != "" {
+	if column.DefaultExpression != "" {
 		if isAutoIncrement(column) {
 			// If the default value is auto_increment, then we should not print the default clause.
 			// We'll handle this in the following AUTO_INCREMENT clause.
 			return nil
 		}
-		if _, err := fmt.Fprintf(buf, " DEFAULT %s", column.GetDefaultExpression()); err != nil {
+		if _, err := fmt.Fprintf(buf, " DEFAULT %s", column.DefaultExpression); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	if column.GetDefault() != nil {
-		if _, err := fmt.Fprintf(buf, " DEFAULT '%s'", column.GetDefault().GetValue()); err != nil {
+	if column.Default != "" {
+		if _, err := fmt.Fprintf(buf, " DEFAULT '%s'", column.Default); err != nil {
 			return err
 		}
 	}
