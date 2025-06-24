@@ -12,7 +12,6 @@
         <DataExportSection />
         <TaskRunSection v-if="!isCreating" />
         <SQLCheckSection v-if="isCreating" />
-        <PlanCheckSection v-if="!isCreating" />
         <StatementSection />
         <DescriptionSection />
         <IssueCommentSection v-if="!isCreating" />
@@ -75,7 +74,6 @@ import { Drawer } from "../v2";
 import {
   BannerSection,
   HeaderSection,
-  PlanCheckSection,
   StatementSection,
   DescriptionSection,
   IssueCommentSection,
