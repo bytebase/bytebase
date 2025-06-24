@@ -182,7 +182,7 @@ export const buildIssueV1LinkWithTask = (
     (s) => s.tasks.findIndex((t) => t.name === task.name) >= 0
   );
 
-  const projectId = extractProjectResourceName(issue.project);
+  const projectId = extractProjectResourceName(issue.name);
   const issueSlug = simple
     ? extractIssueUID(issue.name)
     : issueV1Slug(issue.name, issue.title);

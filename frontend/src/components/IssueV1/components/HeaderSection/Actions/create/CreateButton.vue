@@ -45,12 +45,12 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { create } from "@bufbuild/protobuf";
 import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -75,18 +75,19 @@ import {
   releaseServiceClientConnect,
   rolloutServiceClient,
 } from "@/grpcweb";
-import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
+import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  CheckReleaseRequestSchema,
+  ReleaseFileType,
+} from "@/types/proto-es/v1/release_service_pb";
 import type { Engine } from "@/types/proto/v1/common";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import { CheckReleaseRequestSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
-import { convertNewCheckReleaseResponseToOld, convertOldChangeTypeToNew } from "@/utils/v1/release-conversions";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import {
@@ -102,6 +103,14 @@ import {
   sheetNameOfTaskV1,
   type Defer,
 } from "@/utils";
+import {
+  convertOldPlanToNew,
+  convertNewPlanToOld,
+} from "@/utils/v1/plan-conversions";
+import {
+  convertNewCheckReleaseResponseToOld,
+  convertOldChangeTypeToNew,
+} from "@/utils/v1/release-conversions";
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
@@ -152,8 +161,12 @@ const issueCreateErrorList = computed(() => {
 
 const doCreateIssue = async () => {
   loading.value = true;
-  // Run SQL check for issue creation.
-  if (!(await runSQLCheckForIssue())) {
+
+  // Run SQL check for database change issues.
+  if (
+    issue.value.type === Issue_Type.DATABASE_CHANGE &&
+    !(await runSQLCheckForIssue())
+  ) {
     loading.value = false;
     return;
   }
@@ -327,9 +340,11 @@ const runSQLCheckForIssue = async () => {
             version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType: convertOldChangeTypeToNew(getSpecChangeType(
-              specForTask(issue.value.planEntity, selectedTask.value)
-            )),
+            changeType: convertOldChangeTypeToNew(
+              getSpecChangeType(
+                specForTask(issue.value.planEntity, selectedTask.value)
+              )
+            ),
           },
         ],
       },
