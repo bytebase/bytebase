@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -489,6 +490,31 @@ func waitForRollout(ctx context.Context, client *Client, pendingStages []string,
 			slog.Error("failed to cancel rollout", "error", err)
 		}
 	}()
+
+	rollout, err := client.getRollout(rolloutName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get rollout")
+	}
+	// To make it more robust,
+	// - remove pending stage that already in the rollout stage and call CreateRollout with latest rollout stage once so no new tasks will be missed
+	if len(rollout.Stages) > 0 {
+		latestStage := rollout.Stages[len(rollout.Stages)-1].Environment
+		index := slices.Index(pendingStages, latestStage)
+		if index != -1 {
+			pendingStages = pendingStages[index+1:]
+			_, err := client.createRollout(&v1pb.CreateRolloutRequest{
+				Parent: Config.Project,
+				Rollout: &v1pb.Rollout{
+					Plan: rollout.GetPlan(),
+				},
+				Target: &latestStage,
+			})
+			if err != nil {
+				return errors.Wrapf(err, "failed to create rollout")
+			}
+		}
+	}
+
 	i := 0
 	for {
 		if ctx.Err() != nil {
