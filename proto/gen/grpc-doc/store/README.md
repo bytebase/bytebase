@@ -1106,6 +1106,15 @@ ColumnMetadata is the metadata for columns.
 | identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-store-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
 | identity_seed | [int64](#int64) |  | The identity_seed is for identity columns, MSSQL only. |
 | identity_increment | [int64](#int64) |  | The identity_increment is for identity columns, MSSQL only. |
+| default_constraint_name | [string](#string) |  | The default_constraint_name is the name of the default constraint, MSSQL only. In MSSQL, default values are implemented as named constraints. When modifying or dropping a column&#39;s default value, you must reference the constraint by name. This field stores the actual constraint name from the database.
+
+Example: A column definition like: CREATE TABLE employees ( status NVARCHAR(20) DEFAULT &#39;active&#39; )
+
+Will create a constraint with an auto-generated name like &#39;DF__employees__statu__3B75D760&#39; or a user-defined name if specified: ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;active&#39; FOR status
+
+To modify the default, you must first drop the existing constraint by name: ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760 ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;inactive&#39; FOR status
+
+This field is populated when syncing from the database. When empty (e.g., when parsing from SQL files), the system cannot automatically drop the constraint. |
 
 
 

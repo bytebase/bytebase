@@ -923,6 +923,185 @@ EXEC sp_addextendedproperty 'MS_Description',
 `,
 			description: "Comments with special characters, quotes, multiline text, and Unicode",
 		},
+		{
+			name: "default_constraint_operations",
+			initialSchema: `
+CREATE SCHEMA [defaults];
+GO
+
+CREATE TABLE [defaults].[employees] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [email] NVARCHAR(100) NOT NULL,
+    [hire_date] DATE NOT NULL DEFAULT GETDATE(),
+    [status] NVARCHAR(20) NOT NULL DEFAULT 'active',
+    [is_active] BIT NOT NULL DEFAULT 1,
+    [salary] DECIMAL(10,2) DEFAULT 50000.00,
+    [department_id] INT DEFAULT 1,
+    [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+    [updated_at] DATETIME2
+);
+
+CREATE TABLE [defaults].[products] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [price] DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    [stock] INT NOT NULL DEFAULT 0,
+    [is_available] BIT DEFAULT 1
+);
+`,
+			migrationDDL: `
+-- Add column with default
+ALTER TABLE [defaults].[employees] ADD [vacation_days] INT NOT NULL DEFAULT 15;
+
+-- Remove default constraint (by adding new column without default)
+ALTER TABLE [defaults].[products] ADD [cost] DECIMAL(10,2) NOT NULL;
+
+-- Modify existing default value
+-- First drop the existing constraint
+DECLARE @constraint_name NVARCHAR(256);
+SELECT @constraint_name = dc.name 
+FROM sys.default_constraints dc 
+JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id 
+WHERE OBJECT_NAME(dc.parent_object_id) = 'employees' 
+AND c.name = 'status' 
+AND OBJECT_SCHEMA_NAME(dc.parent_object_id) = 'defaults';
+IF @constraint_name IS NOT NULL
+    EXEC('ALTER TABLE [defaults].[employees] DROP CONSTRAINT [' + @constraint_name + ']');
+GO
+
+-- Add new default
+ALTER TABLE [defaults].[employees] ADD CONSTRAINT [DF_employees_status_new] DEFAULT 'pending' FOR [status];
+
+-- Add default with expression
+ALTER TABLE [defaults].[employees] ADD [bonus_percentage] DECIMAL(5,2) DEFAULT (CASE WHEN MONTH(GETDATE()) = 12 THEN 10.0 ELSE 5.0 END);
+
+-- Create new table with various defaults
+CREATE TABLE [defaults].[orders] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [order_number] NVARCHAR(50) NOT NULL DEFAULT CONCAT('ORD-', YEAR(GETDATE()), '-', FORMAT(GETDATE(), 'MMdd')),
+    [order_date] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    [status] NVARCHAR(20) NOT NULL DEFAULT 'pending',
+    [total] DECIMAL(10,2) NOT NULL DEFAULT 0,
+    [discount] DECIMAL(5,2) DEFAULT NULL,
+    [is_paid] BIT NOT NULL DEFAULT 0,
+    [notes] NVARCHAR(MAX) DEFAULT 'No notes'
+);
+`,
+			description: "Default constraint operations including add, remove, modify with various data types and expressions",
+		},
+		{
+			name: "complex_default_expressions",
+			initialSchema: `
+CREATE SCHEMA [complex];
+GO
+
+CREATE TABLE [complex].[audit_log] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [event_type] NVARCHAR(50) NOT NULL,
+    [user_name] NVARCHAR(100) NOT NULL DEFAULT SYSTEM_USER,
+    [event_time] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    [ip_address] NVARCHAR(45),
+    [session_id] UNIQUEIDENTIFIER DEFAULT NEWID()
+);
+
+CREATE TABLE [complex].[documents] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [title] NVARCHAR(200) NOT NULL,
+    [content] NVARCHAR(MAX),
+    [version] INT NOT NULL DEFAULT 1,
+    [created_date] DATE DEFAULT CAST(GETDATE() AS DATE),
+    [expiry_date] DATE DEFAULT DATEADD(YEAR, 1, CAST(GETDATE() AS DATE))
+);
+`,
+			migrationDDL: `
+-- Add columns with complex default expressions
+ALTER TABLE [complex].[audit_log] ADD [server_name] NVARCHAR(100) DEFAULT @@SERVERNAME;
+ALTER TABLE [complex].[audit_log] ADD [database_name] NVARCHAR(100) DEFAULT DB_NAME();
+ALTER TABLE [complex].[audit_log] ADD [schema_name] NVARCHAR(100) DEFAULT SCHEMA_NAME();
+
+-- Add computed default based on other columns
+ALTER TABLE [complex].[documents] ADD [document_code] NVARCHAR(50) DEFAULT CONCAT('DOC-', FORMAT(GETDATE(), 'yyyyMMdd'), '-', NEWID());
+
+-- Create table with function-based defaults
+CREATE TABLE [complex].[calculations] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [value1] DECIMAL(10,2) NOT NULL,
+    [value2] DECIMAL(10,2) NOT NULL,
+    [pi_value] DECIMAL(10,8) DEFAULT PI(),
+    [random_value] FLOAT DEFAULT RAND(),
+    [checksum_value] INT DEFAULT CHECKSUM(NEWID()),
+    [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+    [created_offset] DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+);
+
+-- Add default with CASE expression
+ALTER TABLE [complex].[documents] ADD [priority] INT DEFAULT 
+    CASE 
+        WHEN DATEPART(HOUR, GETDATE()) < 12 THEN 1 
+        WHEN DATEPART(HOUR, GETDATE()) < 18 THEN 2 
+        ELSE 3 
+    END;
+`,
+			description: "Complex default expressions using system functions, variables, and conditional logic",
+		},
+		{
+			name: "default_constraint_edge_cases",
+			initialSchema: `
+CREATE SCHEMA [edge];
+GO
+
+CREATE TABLE [edge].[test_defaults] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [nullable_with_default] INT DEFAULT 42,
+    [string_default] NVARCHAR(50) DEFAULT N'Default''s value',
+    [empty_string] NVARCHAR(50) DEFAULT '',
+    [zero_default] INT DEFAULT 0,
+    [negative_default] INT DEFAULT -1,
+    [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789
+);
+`,
+			migrationDDL: `
+-- Test dropping and re-adding defaults with different names
+DECLARE @constraint_name NVARCHAR(256);
+-- Drop nullable_with_default's constraint
+SELECT @constraint_name = dc.name 
+FROM sys.default_constraints dc 
+JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id 
+WHERE OBJECT_NAME(dc.parent_object_id) = 'test_defaults' 
+AND c.name = 'nullable_with_default' 
+AND OBJECT_SCHEMA_NAME(dc.parent_object_id) = 'edge';
+IF @constraint_name IS NOT NULL
+    EXEC('ALTER TABLE [edge].[test_defaults] DROP CONSTRAINT [' + @constraint_name + ']');
+GO
+
+-- Add it back with a new value
+ALTER TABLE [edge].[test_defaults] ADD CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84 FOR [nullable_with_default];
+
+-- Add column with special characters in default
+ALTER TABLE [edge].[test_defaults] ADD [special_chars] NVARCHAR(100) DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2';
+
+-- Add column with unicode default
+ALTER TABLE [edge].[test_defaults] ADD [unicode_default] NVARCHAR(100) DEFAULT N'你好世界 🌍';
+
+-- Add column with max value defaults
+ALTER TABLE [edge].[test_defaults] ADD [max_int] BIGINT DEFAULT 9223372036854775807;
+ALTER TABLE [edge].[test_defaults] ADD [min_int] BIGINT DEFAULT -9223372036854775808;
+
+-- Create table with bit field defaults
+CREATE TABLE [edge].[flags] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [is_enabled] BIT NOT NULL DEFAULT 1,
+    [is_deleted] BIT NOT NULL DEFAULT 0,
+    [is_visible] BIT DEFAULT 1,
+    [is_archived] BIT DEFAULT 0
+);
+
+-- Add JSON default (for NVARCHAR storing JSON)
+ALTER TABLE [edge].[test_defaults] ADD [json_config] NVARCHAR(MAX) DEFAULT N'{"enabled": true, "count": 0}';
+`,
+			description: "Edge cases for default constraints including special characters, unicode, extreme values",
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -1181,8 +1360,13 @@ func compareSchemas(schemaA, schemaC *storepb.DatabaseSchemaMetadata) error {
 	normalizeSchema(schemaA)
 	normalizeSchema(schemaC)
 
-	// Use protocmp for detailed comparison
-	if diff := cmp.Diff(schemaA, schemaC, protocmp.Transform()); diff != "" {
+	// Use protocmp for detailed comparison, ignoring DefaultConstraintName field
+	// DefaultConstraintName is only populated when syncing from database, not when parsing SQL
+	opts := cmp.Options{
+		protocmp.Transform(),
+		protocmp.IgnoreFields(&storepb.ColumnMetadata{}, "default_constraint_name"),
+	}
+	if diff := cmp.Diff(schemaA, schemaC, opts); diff != "" {
 		return errors.Errorf("schemas differ:\n%s", diff)
 	}
 
