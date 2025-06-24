@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -397,7 +396,7 @@ func runAndWaitForPlanChecks(ctx context.Context, client *Client, planName strin
 }
 
 func runAndWaitForRollout(ctx context.Context, client *Client, planName string) error {
-	// preview rollout with all stages
+	// preview rollout with all pending stages
 	rolloutPreview, err := client.createRollout(&v1pb.CreateRolloutRequest{
 		Parent: Config.Project,
 		Rollout: &v1pb.Rollout{
@@ -408,6 +407,11 @@ func runAndWaitForRollout(ctx context.Context, client *Client, planName string) 
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create rollout")
+	}
+
+	pendingStages := []string{}
+	for _, stage := range rolloutPreview.Stages {
+		pendingStages = append(pendingStages, stage.Environment)
 	}
 
 	var stages []string
@@ -441,22 +445,15 @@ func runAndWaitForRollout(ctx context.Context, client *Client, planName string) 
 
 	slog.Info("rollout created", "url", fmt.Sprintf("%s/%s", client.url, rolloutEmpty.Name))
 
-	return waitForRollout(ctx, client, rolloutPreview, rolloutEmpty.Name)
+	return waitForRollout(ctx, client, pendingStages, rolloutEmpty.Name)
 }
 
-func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Rollout, rolloutName string) error {
-	if len(rolloutPreview.Stages) == 0 {
+func waitForRollout(ctx context.Context, client *Client, pendingStages []string, rolloutName string) error {
+	if len(pendingStages) == 0 {
 		return nil
 	}
 	slog.Info("exit after the target stage is completed", "targetStage", Config.TargetStage)
-	slog.Info("the rollout has the following stages", "stageCount", len(rolloutPreview.Stages), "stages",
-		slices.Collect(func(yield func(string) bool) {
-			for _, stage := range rolloutPreview.Stages {
-				if !yield(stage.Environment) {
-					return
-				}
-			}
-		}))
+	slog.Info("the rollout has the following pending stages", "stageCount", len(pendingStages), "stages", pendingStages)
 
 	defer func() {
 		if ctx.Err() == nil {
@@ -503,8 +500,13 @@ func waitForRollout(ctx context.Context, client *Client, rolloutPreview *v1pb.Ro
 			return errors.Wrapf(err, "failed to get rollout")
 		}
 		if i >= len(rollout.GetStages()) {
+			if len(pendingStages) == 0 {
+				return errors.Errorf("rollout has no more stages")
+			}
 			// create a new target
-			target := rolloutPreview.Stages[i].Environment
+			target := pendingStages[0]
+			pendingStages = pendingStages[1:]
+
 			rolloutAdvanced, err := client.createRollout(&v1pb.CreateRolloutRequest{
 				Parent: Config.Project,
 				Rollout: &v1pb.Rollout{
