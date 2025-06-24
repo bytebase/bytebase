@@ -8,17 +8,15 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	// Import MySQL driver
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -35,35 +33,14 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Start MySQL container
-	req := testcontainers.ContainerRequest{
-		Image: "mysql:8.0",
-		Env: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "test123",
-			"MYSQL_DATABASE":      "testdb",
-		},
-		ExposedPorts: []string{"3306/tcp"},
-		WaitingFor: wait.ForLog("ready for connections").
-			WithOccurrence(2).
-			WithStartupTimeout(5 * time.Minute),
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	// Start MySQL container using common testcontainer interface
+	container, err := testcontainer.GetMySQLContainer(ctx)
 	require.NoError(t, err)
-	defer func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}()
+	defer container.Close(ctx)
 
 	// Get connection details
-	host, err := container.Host(ctx)
-	require.NoError(t, err)
-	port, err := container.MappedPort(ctx, "3306")
-	require.NoError(t, err)
+	host := container.GetHost()
+	port := container.GetPort()
 
 	// Test cases with various schema changes
 	testCases := []struct {
@@ -1000,36 +977,42 @@ CREATE TABLE analytics (
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Step 1: Initialize the database schema and get schema result A
-			portInt, err := strconv.Atoi(port.Port())
+			portInt, err := strconv.Atoi(port)
 			require.NoError(t, err)
 
-			// Add a small delay to ensure MySQL is fully ready
-			time.Sleep(2 * time.Second)
+			// Get the database connection from container
+			db := container.GetDB()
 
-			t.Logf("Connecting to MySQL at %s:%d", host, portInt)
-			testDB, err := openTestDatabase(host, portInt, "root", "test123", "testdb")
-			require.NoError(t, err, "Failed to connect to MySQL database")
-			defer testDB.Close()
+			// Create a test database
+			testDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
+			_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
+			require.NoError(t, err)
+			_, err = db.Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
+			require.NoError(t, err)
+			defer func() {
+				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
+			}()
 
-			// Clean up any existing objects
-			cleanupDatabase(t, testDB)
+			// Use the test database
+			_, err = db.Exec(fmt.Sprintf("USE `%s`", testDBName))
+			require.NoError(t, err)
 
 			// Execute initial schema
 			if strings.TrimSpace(tc.initialSchema) != "" {
-				if err := executeStatements(testDB, tc.initialSchema); err != nil {
+				if err := executeStatements(db, tc.initialSchema); err != nil {
 					t.Fatalf("Failed to execute initial schema: %v", err)
 				}
 			}
 
-			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "test123", "testdb")
+			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "root-password", testDBName)
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
-			if err := executeStatements(testDB, tc.migrationDDL); err != nil {
+			if err := executeStatements(db, tc.migrationDDL); err != nil {
 				t.Fatalf("Failed to execute migration DDL: %v", err)
 			}
 
-			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "test123", "testdb")
+			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "root-password", testDBName)
 			require.NoError(t, err)
 
 			// Step 3: Call generate migration to get the rollback DDL
@@ -1063,11 +1046,11 @@ CREATE TABLE analytics (
 			t.Logf("Rollback DDL:\n%s", rollbackDDL)
 
 			// Step 4: Run rollback DDL and get schema result C
-			if err := executeStatements(testDB, rollbackDDL); err != nil {
+			if err := executeStatements(db, rollbackDDL); err != nil {
 				t.Fatalf("Failed to execute rollback DDL: %v", err)
 			}
 
-			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "test123", "testdb")
+			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "root-password", testDBName)
 			require.NoError(t, err)
 
 			// Step 5: Compare schema result A and C to ensure they are the same
@@ -1079,149 +1062,6 @@ CREATE TABLE analytics (
 				t.Errorf("Schema mismatch after rollback (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-
-// openTestDatabase opens a connection to the test MySQL database
-func openTestDatabase(host string, port int, username, password, database string) (*sql.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&multiStatements=true",
-		username, password, host, port, database)
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open connection to MySQL")
-	}
-
-	// Set connection pool settings
-	db.SetMaxOpenConns(5)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(5 * time.Minute)
-
-	// Try to ping with retries
-	var pingErr error
-	for i := 0; i < 5; i++ {
-		if pingErr = db.Ping(); pingErr == nil {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	if pingErr != nil {
-		return nil, errors.Wrapf(pingErr, "failed to ping MySQL database after retries")
-	}
-
-	return db, nil
-}
-
-// cleanupDatabase removes all objects from the database
-func cleanupDatabase(_ *testing.T, db *sql.DB) {
-	// Disable foreign key checks
-	_, _ = db.Exec("SET FOREIGN_KEY_CHECKS = 0")
-	defer func() {
-		_, _ = db.Exec("SET FOREIGN_KEY_CHECKS = 1")
-	}()
-
-	// Drop all tables
-	rows, err := db.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var tables []string
-		for rows.Next() {
-			var table string
-			if err := rows.Scan(&table); err == nil {
-				tables = append(tables, table)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, table := range tables {
-			_, _ = db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS `%s`", table))
-		}
-	}
-
-	// Drop all views
-	rows, err = db.Query("SELECT table_name FROM information_schema.views WHERE table_schema = DATABASE()")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var views []string
-		for rows.Next() {
-			var view string
-			if err := rows.Scan(&view); err == nil {
-				views = append(views, view)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, view := range views {
-			_, _ = db.Exec(fmt.Sprintf("DROP VIEW IF EXISTS `%s`", view))
-		}
-	}
-
-	// Drop all procedures
-	rows, err = db.Query("SELECT routine_name FROM information_schema.routines WHERE routine_schema = DATABASE() AND routine_type = 'PROCEDURE'")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var procedures []string
-		for rows.Next() {
-			var proc string
-			if err := rows.Scan(&proc); err == nil {
-				procedures = append(procedures, proc)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, proc := range procedures {
-			_, _ = db.Exec(fmt.Sprintf("DROP PROCEDURE IF EXISTS `%s`", proc))
-		}
-	}
-
-	// Drop all functions
-	rows, err = db.Query("SELECT routine_name FROM information_schema.routines WHERE routine_schema = DATABASE() AND routine_type = 'FUNCTION'")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var functions []string
-		for rows.Next() {
-			var fn string
-			if err := rows.Scan(&fn); err == nil {
-				functions = append(functions, fn)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, fn := range functions {
-			_, _ = db.Exec(fmt.Sprintf("DROP FUNCTION IF EXISTS `%s`", fn))
-		}
-	}
-
-	// Drop all events
-	rows, err = db.Query("SELECT event_name FROM information_schema.events WHERE event_schema = DATABASE()")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var events []string
-		for rows.Next() {
-			var event string
-			if err := rows.Scan(&event); err == nil {
-				events = append(events, event)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, event := range events {
-			_, _ = db.Exec(fmt.Sprintf("DROP EVENT IF EXISTS `%s`", event))
-		}
 	}
 }
 
