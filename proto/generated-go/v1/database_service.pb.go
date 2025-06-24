@@ -2862,6 +2862,8 @@ type ColumnMetadata struct {
 	//	*ColumnMetadata_DefaultString
 	//	*ColumnMetadata_DefaultExpression
 	Default isColumnMetadata_Default `protobuf_oneof:"default"`
+	// The default value of a column.
+	DefaultText string `protobuf:"bytes,22,opt,name=default_text,json=defaultText,proto3" json:"default_text,omitempty"`
 	// Oracle specific metadata.
 	// The default_on_null is the default on null of a column.
 	DefaultOnNull bool `protobuf:"varint,18,opt,name=default_on_null,json=defaultOnNull,proto3" json:"default_on_null,omitempty"`
@@ -2976,6 +2978,13 @@ func (x *ColumnMetadata) GetDefaultExpression() string {
 		if x, ok := x.Default.(*ColumnMetadata_DefaultExpression); ok {
 			return x.DefaultExpression
 		}
+	}
+	return ""
+}
+
+func (x *ColumnMetadata) GetDefaultText() string {
+	if x != nil {
+		return x.DefaultText
 	}
 	return ""
 }
@@ -5848,7 +5857,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xce\x06\n" +
+	"LINEAR_KEY\x10\b\"\xf1\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x1f\n" +
@@ -5856,7 +5865,8 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"hasDefault\x12#\n" +
 	"\fdefault_null\x18\x04 \x01(\bH\x00R\vdefaultNull\x12'\n" +
 	"\x0edefault_string\x18\x05 \x01(\tH\x00R\rdefaultString\x12/\n" +
-	"\x12default_expression\x18\x06 \x01(\tH\x00R\x11defaultExpression\x12&\n" +
+	"\x12default_expression\x18\x06 \x01(\tH\x00R\x11defaultExpression\x12!\n" +
+	"\fdefault_text\x18\x16 \x01(\tR\vdefaultText\x12&\n" +
 	"\x0fdefault_on_null\x18\x12 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
 	"\ton_update\x18\x0f \x01(\tR\bonUpdate\x12\x1a\n" +
 	"\bnullable\x18\a \x01(\bR\bnullable\x12\x12\n" +

@@ -9172,6 +9172,9 @@ components:
                     type: string
                 defaultExpression:
                     type: string
+                defaultText:
+                    type: string
+                    description: The default value of a column.
                 defaultOnNull:
                     type: boolean
                     description: |-

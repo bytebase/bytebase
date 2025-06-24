@@ -452,6 +452,9 @@ message ColumnMetadata {
     string default_expression = 5;
   }
 
+  // The default value of a column.
+  string default_text = 20;
+
   // Oracle specific metadata.
   // The default_on_null is the default on null of a column.
   bool default_on_null = 16;
