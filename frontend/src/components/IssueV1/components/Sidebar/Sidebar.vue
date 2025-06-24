@@ -58,6 +58,20 @@
       <PreBackupSection ref="preBackupSectionRef" />
       <GhostSection v-if="shouldShowGhostSection" />
     </div>
+
+    <router-link
+      v-if="shouldShowExperimentalIssuePageLink"
+      :to="{
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+        params: {
+          projectId: extractProjectResourceName(project.name),
+          issueId: extractIssueUID(issue.name),
+        },
+      }"
+      class="text-sm font-normal text-blue-700 hover:underline"
+    >
+      {{ "Experimental issue page" }}
+    </router-link>
   </div>
 </template>
 
@@ -71,10 +85,12 @@ import { GhostSection } from "@/components/Plan/components/Configuration";
 import { provideGhostSettingContext } from "@/components/Plan/components/Configuration/GhostSection/context";
 import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection";
 import { issueServiceClient } from "@/grpcweb";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { Issue } from "@/types/proto/v1/issue_service";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
+import { extractIssueUID, extractProjectResourceName, isDev } from "@/utils";
 import { specForTask, useIssueContext } from "../../logic";
 import IssueLabels from "./IssueLabels.vue";
 import PreBackupSection from "./PreBackupSection";
@@ -111,6 +127,14 @@ const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
 
 const shouldShowPreBackupSection = computed(() => {
   return preBackupSectionRef.value?.shouldShow ?? false;
+});
+
+const shouldShowExperimentalIssuePageLink = computed(() => {
+  return (
+    !isCreating.value &&
+    isDev() &&
+    issue.value.type === Issue_Type.DATABASE_CHANGE
+  );
 });
 
 const onIssueLabelsUpdate = async (labels: string[]) => {

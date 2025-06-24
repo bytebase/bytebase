@@ -1,18 +1,22 @@
-import { computed, watch } from "vue";
 import { create } from "@bufbuild/protobuf";
+import { computed, watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
-import { planServiceClientConnect } from "@/grpcweb";
-import { ListPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertNewPlanCheckRunToOld } from "@/utils/v1/plan-conversions";
+import { issueServiceClient, planServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
+import { useIssueCommentStore } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
+import { ListPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
 import { hasProjectPermissionV2 } from "@/utils";
+import { convertNewPlanCheckRunToOld } from "@/utils/v1/plan-conversions";
 import { usePlanContext } from "./context";
 
 export const usePollPlan = () => {
   const { project } = useCurrentProjectV1();
-  const { isCreating, plan, planCheckRunList, events } = usePlanContext();
+  const { isCreating, plan, planCheckRunList, issue, events } =
+    usePlanContext();
   const planStore = usePlanStore();
+  const issueCommentStore = useIssueCommentStore();
 
   const shouldPollPlan = computed(() => {
     return !isCreating.value;
@@ -32,9 +36,35 @@ export const usePollPlan = () => {
         parent: updatedPlan.name,
         latestOnly: true,
       });
-      const response = await planServiceClientConnect.listPlanCheckRuns(request);
-      planCheckRunList.value = response.planCheckRuns.map(convertNewPlanCheckRunToOld);
+      const response =
+        await planServiceClientConnect.listPlanCheckRuns(request);
+      planCheckRunList.value = response.planCheckRuns.map(
+        convertNewPlanCheckRunToOld
+      );
     }
+  };
+
+  const refreshIssue = async () => {
+    if (!issue?.value || isCreating.value) return;
+
+    const updatedIssue = await issueServiceClient.getIssue({
+      name: issue.value.name,
+    });
+
+    if (issue.value !== updatedIssue) {
+      issue.value = updatedIssue;
+    }
+  };
+
+  const refreshIssueComments = async () => {
+    if (!issue?.value) return;
+
+    await issueCommentStore.listIssueComments(
+      ListIssueCommentsRequest.fromPartial({
+        parent: issue.value.name,
+        pageSize: 100,
+      })
+    );
   };
 
   const poller = useProgressivePoll(refreshPlan, {
@@ -46,11 +76,24 @@ export const usePollPlan = () => {
     },
   });
 
-  events.on("status-changed", ({ eager }) => {
+  // Register event handlers
+  events.on("status-changed", async ({ eager }) => {
     if (eager) {
-      refreshPlan();
+      await Promise.all([refreshPlan(), refreshIssue()]);
       poller.restart();
     }
+  });
+
+  events.on("perform-issue-review-action", async () => {
+    // After review action, refresh both issue and comments
+    await Promise.all([refreshIssue(), refreshIssueComments()]);
+    events.emit("status-changed", { eager: true });
+  });
+
+  events.on("perform-issue-status-action", async () => {
+    // After status action, refresh issue
+    await refreshIssue();
+    events.emit("status-changed", { eager: true });
   });
 
   watch(

@@ -3,8 +3,8 @@
     <div v-if="mode === 'editor'" class="flex gap-x-2 mb-2 text-sm">
       <div
         :class="[
-          'p-2 rounded cursor-pointer',
-          state.showPreview ? '' : 'bg-gray-100 text-gray-800',
+          'px-2 py-1 rounded cursor-pointer text-gray-700',
+          state.showPreview ? 'opacity-80' : 'bg-gray-100',
         ]"
         @click="state.showPreview = false"
       >
@@ -12,8 +12,8 @@
       </div>
       <div
         :class="[
-          'p-2 rounded cursor-pointer',
-          state.showPreview ? 'bg-gray-100 text-gray-800' : '',
+          'px-2 py-1 rounded cursor-pointer text-gray-700',
+          state.showPreview ? 'bg-gray-100' : 'opacity-80',
         ]"
         @click="state.showPreview = true"
       >
@@ -27,23 +27,7 @@
           <NTooltip :show-arrow="true">
             <template #trigger>
               <NButton quaternary size="small" @click="toolbar.action">
-                <template v-if="toolbar.text">
-                  <span class="font-bold">{{ toolbar.text }}</span>
-                </template>
-                <template v-else-if="toolbar.icon">
-                  <heroicons-outline:code
-                    v-if="toolbar.icon === 'code'"
-                    class="w-4 h-4"
-                  />
-                  <heroicons-outline:link
-                    v-else-if="toolbar.icon === 'link'"
-                    class="w-4 h-4"
-                  />
-                  <heroicons-outline:hashtag
-                    v-else-if="toolbar.icon === 'hashtag'"
-                    class="w-4 h-4"
-                  />
-                </template>
+                <component :is="toolbar.icon" class="w-4 h-4" />
               </NButton>
             </template>
             <span class="w-56 text-sm">
@@ -64,7 +48,7 @@
         ref="contentTextArea"
         v-model="state.content"
         rows="3"
-        class="textarea block w-full resize-none whitespace-pre-wrap bg-gray-100"
+        class="textarea block w-full resize-none whitespace-pre-wrap bg-gray-100 rounded"
         :placeholder="$t('issue.leave-a-comment')"
         @mousedown="clearIssuePanel"
         @input="(e: any) => sizeToFit(e.target)"
@@ -104,8 +88,16 @@
 </template>
 
 <script lang="ts" setup>
+import {
+  CodeIcon,
+  LinkIcon,
+  HashIcon,
+  BoldIcon,
+  HeadingIcon,
+} from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { nextTick, ref, reactive, watch, toRef } from "vue";
+import type { Component } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedIssue, ComposedProject } from "@/types";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
@@ -124,8 +116,7 @@ interface LocalState {
 }
 
 interface Toolbar {
-  icon?: string;
-  text?: string;
+  icon: Component;
   tooltip: string;
   action: () => void;
 }
@@ -318,35 +309,35 @@ const getCursorPosition = (lines: string[]): number => {
 
 const toolbarItems: Toolbar[] = [
   {
-    text: "H",
+    icon: HeadingIcon,
     tooltip: t("issue.comment-editor.toolbar.header"),
     action: () => {
       insertWithCursorPosition("### ", 4);
     },
   },
   {
-    text: "B",
+    icon: BoldIcon,
     tooltip: t("issue.comment-editor.toolbar.bold"),
     action: () => {
       insertWithCursorPosition("****", 2);
     },
   },
   {
-    icon: "code",
+    icon: CodeIcon,
     tooltip: t("issue.comment-editor.toolbar.code"),
     action: () => {
       insertWithCursorPosition("```sql\n\n```", 7);
     },
   },
   {
-    icon: "link",
+    icon: LinkIcon,
     tooltip: t("issue.comment-editor.toolbar.link"),
     action: () => {
       insertWithCursorPosition("[](url)", 1);
     },
   },
   {
-    icon: "hashtag",
+    icon: HashIcon,
     tooltip: t("issue.comment-editor.toolbar.hashtag"),
     action: () => {
       insertWithCursorPosition("#", 1);

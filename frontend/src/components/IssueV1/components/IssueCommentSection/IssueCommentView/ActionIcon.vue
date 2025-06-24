@@ -22,14 +22,14 @@
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-solid:plus-sm class="w-5 h-5 text-control" />
+        <PlusIcon class="w-5 h-5 text-control" />
       </div>
     </div>
     <div v-else-if="icon === 'update'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-solid:pencil class="w-4 h-4 text-control" />
+        <PencilIcon class="w-4 h-4 text-control" />
       </div>
     </div>
     <div
@@ -39,49 +39,49 @@
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:play class="w-6 h-6 text-control" />
+        <PlayCircleIcon class="w-5 h-5 text-control" />
       </div>
     </div>
     <div v-else-if="icon === 'approve-review'" class="relative pl-0.5">
       <div
-        class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
+        class="w-7 h-7 bg-success rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:thumb-up class="w-5 h-5 text-control" />
+        <ThumbsUpIcon class="w-4 h-4 text-white" />
       </div>
     </div>
     <div v-else-if="icon === 'reject-review'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-warning rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons:pause-solid class="w-5 h-5 text-white" />
+        <PencilIcon class="w-4 h-4 text-white" />
       </div>
     </div>
     <div v-else-if="icon === 're-request-review'" class="relative pl-0.5">
       <div
-        class="w-7 h-7 bg-success rounded-full ring-4 ring-white flex items-center justify-center icon-re-request-review"
+        class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center icon-re-request-review"
       >
-        <heroicons:play class="w-4 h-4 text-white ml-px" />
+        <PlayIcon class="w-4 h-4 text-control ml-px" />
       </div>
     </div>
     <div v-else-if="icon === 'cancel'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:minus class="w-5 h-5 text-control" />
+        <MinusIcon class="w-5 h-5 text-control" />
       </div>
     </div>
     <div v-else-if="icon === 'fail'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:exclamation-circle class="w-6 h-6 text-error" />
+        <CircleAlertIcon class="w-5 h-5 text-error" />
       </div>
     </div>
     <div v-else-if="icon === 'complete'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:check-circle class="w-6 h-6 text-success" />
+        <CheckCircle2Icon class="w-6 h-6 text-success" />
       </div>
     </div>
     <div v-else-if="icon === 'skip'" class="relative pl-1">
@@ -95,7 +95,7 @@
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:code class="w-5 h-5 text-control" />
+        <CodeIcon class="w-5 h-5 text-control" />
       </div>
     </div>
   </div>
@@ -103,6 +103,17 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
+import {
+  ThumbsUpIcon,
+  PlayIcon,
+  CheckCircle2Icon,
+  PlusIcon,
+  PencilIcon,
+  PlayCircleIcon,
+  MinusIcon,
+  CodeIcon,
+  CircleAlertIcon,
+} from "lucide-vue-next";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
