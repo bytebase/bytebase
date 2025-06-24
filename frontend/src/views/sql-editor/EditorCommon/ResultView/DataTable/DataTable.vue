@@ -25,7 +25,7 @@
               '!bg-accent/10 dark:!bg-accent/40':
                 selectionState.rows.length === 0 &&
                 selectionState.columns.includes(header.index),
-              'pl-3': header.index === 0,
+              'pl-6': header.index === 0 && !selectionDisabled,
             }"
             v-bind="tableResize.getColumnProps(header.index)"
             @click.stop="selectColumn(header.index)"
@@ -110,12 +110,15 @@
               :col-index="columnIndex"
               :allow-select="true"
               :column-type="getColumnTypeByIndex(columnIndex)"
+              :class="{
+                'ml-3': columnIndex === 0 && !selectionDisabled,
+              }"
             />
             <div
               v-if="columnIndex === 0 && !selectionDisabled"
-              class="absolute inset-y-0 left-0 w-3 cursor-pointer hover:bg-accent/10 dark:hover:bg-accent/40"
+              class="absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 hover:bg-accent/10 dark:hover:bg-accent/40"
               :class="{
-                'bg-accent/10 dark:bg-accent/40':
+                '!bg-accent/10 dark:!bg-accent/40':
                   selectionState.columns.length === 0 &&
                   selectionState.rows.includes(offset + rowIndex),
               }"
@@ -140,8 +143,8 @@ import { NEmpty } from "naive-ui";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
-import { type QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { type QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
 import {
