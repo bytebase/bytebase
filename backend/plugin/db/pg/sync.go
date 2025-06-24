@@ -99,7 +99,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get extension dependencies from database %q", d.databaseName)
 	}
-	schemas, schemaOwners, skipDumps, err := getSchemas(txn, extensionDepend)
+	schemas, schemaOwners, schemaComments, skipDumps, err := getSchemas(txn, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
@@ -188,6 +188,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			Sequences:         sequenceMap[schemaName],
 			MaterializedViews: materializedViewMap[schemaName],
 			Owner:             schemaOwners[i],
+			Comment:           schemaComments[i],
 			EnumTypes:         enumTypes[schemaName],
 			SkipDump:          skipDumps[i],
 		})
@@ -410,26 +411,28 @@ func formatTableNameFromRegclass(name string) string {
 }
 
 var listSchemaQuery = fmt.Sprintf(`
-SELECT oid, nspname, pg_catalog.pg_get_userbyid(nspowner) as schema_owner
+SELECT oid, nspname, pg_catalog.pg_get_userbyid(nspowner) as schema_owner, 
+       obj_description(oid, 'pg_namespace') as schema_comment
 FROM pg_catalog.pg_namespace
 WHERE nspname NOT IN (%s)
 ORDER BY nspname;
 `, pgparser.SystemSchemaWhereClause)
 
-func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, []bool, error) {
+func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, []string, []bool, error) {
 	rows, err := txn.Query(listSchemaQuery)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	defer rows.Close()
 
-	var schemaNames, schemaOwners []string
+	var schemaNames, schemaOwners, schemaComments []string
 	var skipDump []bool
 	for rows.Next() {
 		var oid int
 		var schemaName, schemaOwner string
-		if err := rows.Scan(&oid, &schemaName, &schemaOwner); err != nil {
-			return nil, nil, nil, err
+		var comment sql.NullString
+		if err := rows.Scan(&oid, &schemaName, &schemaOwner, &comment); err != nil {
+			return nil, nil, nil, nil, err
 		}
 		if pgparser.IsSystemSchema(schemaName) {
 			continue
@@ -437,11 +440,16 @@ func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, 
 		skipDump = append(skipDump, extensionDepend[oid])
 		schemaNames = append(schemaNames, schemaName)
 		schemaOwners = append(schemaOwners, schemaOwner)
+		if comment.Valid {
+			schemaComments = append(schemaComments, comment.String)
+		} else {
+			schemaComments = append(schemaComments, "")
+		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-	return schemaNames, schemaOwners, skipDump, nil
+	return schemaNames, schemaOwners, schemaComments, skipDump, nil
 }
 
 func getListForeignTableQuery() string {

@@ -306,6 +306,14 @@ func generateAlterTable(tableDiff *schema.TableDiff, buf *strings.Builder) error
 		}
 	}
 
+	// Handle table comment changes
+	if tableDiff.OldTable != nil && tableDiff.NewTable != nil &&
+		tableDiff.OldTable.Comment != tableDiff.NewTable.Comment {
+		if err := writeAlterTableComment(buf, tableDiff.TableName, tableDiff.NewTable.Comment); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -763,6 +771,10 @@ func writeCreateView(buf *strings.Builder, viewName string, view *storepb.ViewMe
 		_, _ = buf.WriteString(";")
 	}
 	_, _ = buf.WriteString("\n")
+
+	// Note: MySQL doesn't support adding comments directly to views via DDL
+	// View comments are stored in information_schema.VIEWS but cannot be set via CREATE VIEW
+	// The comment field is read-only
 	return nil
 }
 
@@ -776,29 +788,41 @@ func writeCreateOrReplaceView(buf *strings.Builder, viewName string, view *store
 		_, _ = buf.WriteString(";")
 	}
 	_, _ = buf.WriteString("\n")
+
+	// Note: MySQL doesn't support adding comments directly to views via DDL
+	// View comments are stored in information_schema.VIEWS but cannot be set via CREATE VIEW
+	// The comment field is read-only
 	return nil
 }
 
 func writeFunctionDiff(buf *strings.Builder, funcDiff *schema.FunctionDiff) error {
-	if funcDiff.Action == schema.MetadataDiffActionCreate {
+	if funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter {
 		// Don't add DELIMITER statements - the definition should already be complete
 		_, _ = buf.WriteString(funcDiff.NewFunction.Definition)
 		if !strings.HasSuffix(strings.TrimSpace(funcDiff.NewFunction.Definition), ";") {
 			_, _ = buf.WriteString(";")
 		}
 		_, _ = buf.WriteString("\n")
+
+		// Note: MySQL doesn't support ALTER FUNCTION ... COMMENT syntax
+		// Function comments must be set during CREATE FUNCTION statement
+		// The definition should already include the comment if needed
 	}
 	return nil
 }
 
 func writeProcedureDiff(buf *strings.Builder, procDiff *schema.ProcedureDiff) error {
-	if procDiff.Action == schema.MetadataDiffActionCreate {
+	if procDiff.Action == schema.MetadataDiffActionCreate || procDiff.Action == schema.MetadataDiffActionAlter {
 		// Don't add DELIMITER statements - the definition should already be complete
 		_, _ = buf.WriteString(procDiff.NewProcedure.Definition)
 		if !strings.HasSuffix(strings.TrimSpace(procDiff.NewProcedure.Definition), ";") {
 			_, _ = buf.WriteString(";")
 		}
 		_, _ = buf.WriteString("\n")
+
+		// Note: MySQL doesn't support ALTER PROCEDURE ... COMMENT syntax
+		// Procedure comments must be set during CREATE PROCEDURE statement
+		// The definition should already include the comment if needed
 	}
 	return nil
 }
@@ -811,7 +835,20 @@ func writeEventDiff(buf *strings.Builder, eventDiff *schema.EventDiff) error {
 			_, _ = buf.WriteString(";")
 		}
 		_, _ = buf.WriteString("\n")
+
+		// Note: MySQL doesn't support ALTER EVENT ... COMMENT syntax
+		// Event comments must be set during CREATE EVENT statement
+		// The definition should already include the comment if needed
 	}
+	return nil
+}
+
+func writeAlterTableComment(buf *strings.Builder, tableName, comment string) error {
+	_, _ = buf.WriteString("ALTER TABLE `")
+	_, _ = buf.WriteString(tableName)
+	_, _ = buf.WriteString("` COMMENT = '")
+	_, _ = buf.WriteString(escapeString(comment))
+	_, _ = buf.WriteString("';\n")
 	return nil
 }
 
@@ -938,5 +975,9 @@ func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *storepb
 		_, _ = buf.WriteString(";")
 	}
 	_, _ = buf.WriteString("\n")
+
+	// Note: MySQL doesn't support specifying comments in CREATE TRIGGER syntax
+	// Trigger comments are retrieved from INFORMATION_SCHEMA.TRIGGERS but cannot be set via DDL
+	// The comment field is read-only and set by MySQL itself
 	return nil
 }

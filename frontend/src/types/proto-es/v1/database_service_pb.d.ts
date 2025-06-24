@@ -729,6 +729,13 @@ export declare type SchemaMetadata = Message<"bytebase.v1.SchemaMetadata"> & {
    * @generated from field: bool skip_dump = 16;
    */
   skipDump: boolean;
+
+  /**
+   * The comment is the comment of a schema.
+   *
+   * @generated from field: string comment = 17;
+   */
+  comment: string;
 };
 
 /**
@@ -811,6 +818,13 @@ export declare type EventMetadata = Message<"bytebase.v1.EventMetadata"> & {
    * @generated from field: string collation_connection = 6;
    */
   collationConnection: string;
+
+  /**
+   * The comment is the comment of an event.
+   *
+   * @generated from field: string comment = 7;
+   */
+  comment: string;
 };
 
 /**
@@ -1884,6 +1898,13 @@ export declare type ProcedureMetadata = Message<"bytebase.v1.ProcedureMetadata">
    * @generated from field: string sql_mode = 7;
    */
   sqlMode: string;
+
+  /**
+   * The comment is the comment of a procedure.
+   *
+   * @generated from field: string comment = 9;
+   */
+  comment: string;
 
   /**
    * @generated from field: bool skip_dump = 8;

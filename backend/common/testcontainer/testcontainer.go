@@ -108,6 +108,7 @@ func GetPgContainer(ctx context.Context) (retC *Container, retErr error) {
 			"POSTGRES_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"5432/tcp"},
+		WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
