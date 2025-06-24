@@ -1,17 +1,12 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { uniqBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import { worksheetServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
-import type {
-  Worksheet,
-  WorksheetOrganizer,
-} from "@/types/proto/v1/worksheet_service";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 import {
   CreateWorksheetRequestSchema,
   GetWorksheetRequestSchema,
@@ -20,20 +15,25 @@ import {
   SearchWorksheetsRequestSchema,
   UpdateWorksheetOrganizerRequestSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
+import type { WorksheetOrganizer } from "@/types/proto/v1/worksheet_service";
 import {
-  convertOldWorksheetToNew,
-  convertNewWorksheetToOld,
-  convertOldWorksheetOrganizerToNew,
-} from "@/utils/v1/worksheet-conversions";
+  Worksheet_Visibility,
+  Worksheet,
+} from "@/types/proto/v1/worksheet_service";
 import {
   extractWorksheetUID,
   getSheetStatement,
   isWorksheetWritableV1,
   getStatementSize,
 } from "@/utils";
-import { useCurrentUserV1 } from "./auth";
+import {
+  convertOldWorksheetToNew,
+  convertNewWorksheetToOld,
+  convertOldWorksheetOrganizerToNew,
+} from "@/utils/v1/worksheet-conversions";
 import { useSQLEditorTabStore } from "../sqlEditor";
 import { useUserStore } from "../user";
+import { useCurrentUserV1 } from "./auth";
 import { extractUserId } from "./common";
 import { useDatabaseV1Store, batchGetOrFetchDatabases } from "./database";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./project";
@@ -109,12 +109,17 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
 
   // CRUD
   const createWorksheet = async (worksheet: Partial<Worksheet>) => {
-    const fullWorksheet = worksheet.name ? worksheet : { ...worksheet, name: "" };
-    const newWorksheet = convertOldWorksheetToNew(fullWorksheet as Worksheet);
+    const fullWorksheet = worksheet.name
+      ? worksheet
+      : { ...worksheet, name: "" };
+    const newWorksheet = convertOldWorksheetToNew(
+      Worksheet.create(fullWorksheet)
+    );
     const request = create(CreateWorksheetRequestSchema, {
       worksheet: newWorksheet,
     });
-    const response = await worksheetServiceClientConnect.createWorksheet(request);
+    const response =
+      await worksheetServiceClientConnect.createWorksheet(request);
     const created = convertNewWorksheetToOld(response);
     await setCache(created, "FULL");
     return created;
@@ -202,7 +207,8 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const request = create(SearchWorksheetsRequestSchema, {
       filter: `creator == "users/${me.value.email}"`,
     });
-    const response = await worksheetServiceClientConnect.searchWorksheets(request);
+    const response =
+      await worksheetServiceClientConnect.searchWorksheets(request);
     const worksheets = response.worksheets.map(convertNewWorksheetToOld);
     await setListCache(worksheets);
     return worksheets;
@@ -212,7 +218,8 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const request = create(SearchWorksheetsRequestSchema, {
       filter: `creator != "users/${me.value.email}" && visibility in ["${Worksheet_Visibility.VISIBILITY_PROJECT_READ}","${Worksheet_Visibility.VISIBILITY_PROJECT_WRITE}"]`,
     });
-    const response = await worksheetServiceClientConnect.searchWorksheets(request);
+    const response =
+      await worksheetServiceClientConnect.searchWorksheets(request);
     const worksheets = response.worksheets.map(convertNewWorksheetToOld);
     await setListCache(worksheets);
     return worksheets;
@@ -222,7 +229,8 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const request = create(SearchWorksheetsRequestSchema, {
       filter: `starred == true`,
     });
-    const response = await worksheetServiceClientConnect.searchWorksheets(request);
+    const response =
+      await worksheetServiceClientConnect.searchWorksheets(request);
     const worksheets = response.worksheets.map(convertNewWorksheetToOld);
     await setListCache(worksheets);
     return worksheets;
@@ -233,13 +241,17 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     updateMask: string[]
   ) => {
     if (!worksheet.name) return;
-    const fullWorksheet = { ...worksheet, name: worksheet.name };
-    const newWorksheet = convertOldWorksheetToNew(fullWorksheet as Worksheet);
+    const fullWorksheet = Worksheet.create({
+      ...worksheet,
+      name: worksheet.name,
+    });
+    const newWorksheet = convertOldWorksheetToNew(fullWorksheet);
     const request = create(UpdateWorksheetRequestSchema, {
       worksheet: newWorksheet,
       updateMask: { paths: updateMask },
     });
-    const response = await worksheetServiceClientConnect.updateWorksheet(request);
+    const response =
+      await worksheetServiceClientConnect.updateWorksheet(request);
     const updated = convertNewWorksheetToOld(response);
     await setCache(updated, "FULL");
     return updated;
