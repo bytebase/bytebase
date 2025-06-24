@@ -399,6 +399,8 @@ export interface SchemaMetadata {
   events: EventMetadata[];
   enumTypes: EnumTypeMetadata[];
   skipDump: boolean;
+  /** The comment is the comment of a schema. */
+  comment: string;
 }
 
 export interface EnumTypeMetadata {
@@ -420,6 +422,8 @@ export interface EventMetadata {
   sqlMode: string;
   characterSetClient: string;
   collationConnection: string;
+  /** The comment is the comment of an event. */
+  comment: string;
 }
 
 export interface SequenceMetadata {
@@ -741,6 +745,29 @@ export interface ColumnMetadata {
   identitySeed: Long;
   /** The identity_increment is for identity columns, MSSQL only. */
   identityIncrement: Long;
+  /**
+   * The default_constraint_name is the name of the default constraint, MSSQL only.
+   * In MSSQL, default values are implemented as named constraints. When modifying or
+   * dropping a column's default value, you must reference the constraint by name.
+   * This field stores the actual constraint name from the database.
+   *
+   * Example: A column definition like:
+   *   CREATE TABLE employees (
+   *     status NVARCHAR(20) DEFAULT 'active'
+   *   )
+   *
+   * Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+   * or a user-defined name if specified:
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+   *
+   * To modify the default, you must first drop the existing constraint by name:
+   *   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+   *
+   * This field is populated when syncing from the database. When empty (e.g., when parsing
+   * from SQL files), the system cannot automatically drop the constraint.
+   */
+  defaultConstraintName: string;
 }
 
 export enum ColumnMetadata_IdentityGeneration {
@@ -949,6 +976,8 @@ export interface ProcedureMetadata {
   collationConnection: string;
   databaseCollation: string;
   sqlMode: string;
+  /** The comment is the comment of a procedure. */
+  comment: string;
   skipDump: boolean;
 }
 
@@ -3405,6 +3434,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     events: [],
     enumTypes: [],
     skipDump: false,
+    comment: "",
   };
 }
 
@@ -3454,6 +3484,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     if (message.skipDump !== false) {
       writer.uint32(128).bool(message.skipDump);
+    }
+    if (message.comment !== "") {
+      writer.uint32(138).string(message.comment);
     }
     return writer;
   },
@@ -3585,6 +3618,14 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
           message.skipDump = reader.bool();
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3627,6 +3668,7 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
         ? object.enumTypes.map((e: any) => EnumTypeMetadata.fromJSON(e))
         : [],
       skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
@@ -3677,6 +3719,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.skipDump !== false) {
       obj.skipDump = message.skipDump;
     }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
@@ -3700,6 +3745,7 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.events = object.events?.map((e) => EventMetadata.fromPartial(e)) || [];
     message.enumTypes = object.enumTypes?.map((e) => EnumTypeMetadata.fromPartial(e)) || [];
     message.skipDump = object.skipDump ?? false;
+    message.comment = object.comment ?? "";
     return message;
   },
 };
@@ -3813,7 +3859,15 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
 };
 
 function createBaseEventMetadata(): EventMetadata {
-  return { name: "", definition: "", timeZone: "", sqlMode: "", characterSetClient: "", collationConnection: "" };
+  return {
+    name: "",
+    definition: "",
+    timeZone: "",
+    sqlMode: "",
+    characterSetClient: "",
+    collationConnection: "",
+    comment: "",
+  };
 }
 
 export const EventMetadata: MessageFns<EventMetadata> = {
@@ -3835,6 +3889,9 @@ export const EventMetadata: MessageFns<EventMetadata> = {
     }
     if (message.collationConnection !== "") {
       writer.uint32(50).string(message.collationConnection);
+    }
+    if (message.comment !== "") {
+      writer.uint32(58).string(message.comment);
     }
     return writer;
   },
@@ -3894,6 +3951,14 @@ export const EventMetadata: MessageFns<EventMetadata> = {
           message.collationConnection = reader.string();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3911,6 +3976,7 @@ export const EventMetadata: MessageFns<EventMetadata> = {
       sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
       characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
       collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
@@ -3934,6 +4000,9 @@ export const EventMetadata: MessageFns<EventMetadata> = {
     if (message.collationConnection !== "") {
       obj.collationConnection = message.collationConnection;
     }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
@@ -3948,6 +4017,7 @@ export const EventMetadata: MessageFns<EventMetadata> = {
     message.sqlMode = object.sqlMode ?? "";
     message.characterSetClient = object.characterSetClient ?? "";
     message.collationConnection = object.collationConnection ?? "";
+    message.comment = object.comment ?? "";
     return message;
   },
 };
@@ -5253,6 +5323,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     identityGeneration: ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
     identitySeed: Long.ZERO,
     identityIncrement: Long.ZERO,
+    defaultConstraintName: "",
   };
 }
 
@@ -5314,6 +5385,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     }
     if (!message.identityIncrement.equals(Long.ZERO)) {
       writer.uint32(168).int64(message.identityIncrement.toString());
+    }
+    if (message.defaultConstraintName !== "") {
+      writer.uint32(178).string(message.defaultConstraintName);
     }
     return writer;
   },
@@ -5477,6 +5551,14 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
           message.identityIncrement = Long.fromString(reader.int64().toString());
           continue;
         }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.defaultConstraintName = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5509,6 +5591,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
         : ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
       identitySeed: isSet(object.identitySeed) ? Long.fromValue(object.identitySeed) : Long.ZERO,
       identityIncrement: isSet(object.identityIncrement) ? Long.fromValue(object.identityIncrement) : Long.ZERO,
+      defaultConstraintName: isSet(object.defaultConstraintName) ? globalThis.String(object.defaultConstraintName) : "",
     };
   },
 
@@ -5571,6 +5654,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (!message.identityIncrement.equals(Long.ZERO)) {
       obj.identityIncrement = (message.identityIncrement || Long.ZERO).toString();
     }
+    if (message.defaultConstraintName !== "") {
+      obj.defaultConstraintName = message.defaultConstraintName;
+    }
     return obj;
   },
 
@@ -5605,6 +5691,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     message.identityIncrement = (object.identityIncrement !== undefined && object.identityIncrement !== null)
       ? Long.fromValue(object.identityIncrement)
       : Long.ZERO;
+    message.defaultConstraintName = object.defaultConstraintName ?? "";
     return message;
   },
 };
@@ -6405,6 +6492,7 @@ function createBaseProcedureMetadata(): ProcedureMetadata {
     collationConnection: "",
     databaseCollation: "",
     sqlMode: "",
+    comment: "",
     skipDump: false,
   };
 }
@@ -6431,6 +6519,9 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     }
     if (message.sqlMode !== "") {
       writer.uint32(58).string(message.sqlMode);
+    }
+    if (message.comment !== "") {
+      writer.uint32(74).string(message.comment);
     }
     if (message.skipDump !== false) {
       writer.uint32(64).bool(message.skipDump);
@@ -6501,6 +6592,14 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
           message.sqlMode = reader.string();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        }
         case 8: {
           if (tag !== 64) {
             break;
@@ -6527,6 +6626,7 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
       collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
       databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
       sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
       skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
@@ -6554,6 +6654,9 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     if (message.sqlMode !== "") {
       obj.sqlMode = message.sqlMode;
     }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     if (message.skipDump !== false) {
       obj.skipDump = message.skipDump;
     }
@@ -6572,6 +6675,7 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     message.collationConnection = object.collationConnection ?? "";
     message.databaseCollation = object.databaseCollation ?? "";
     message.sqlMode = object.sqlMode ?? "";
+    message.comment = object.comment ?? "";
     message.skipDump = object.skipDump ?? false;
     return message;
   },

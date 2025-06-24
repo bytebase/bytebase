@@ -25,6 +25,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 		s := &v1pb.SchemaMetadata{
 			Name:     schema.Name,
 			Owner:    schema.Owner,
+			Comment:  schema.Comment,
 			SkipDump: schema.SkipDump,
 		}
 		for _, table := range schema.Tables {
@@ -124,6 +125,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				CollationConnection: procedure.CollationConnection,
 				DatabaseCollation:   procedure.DatabaseCollation,
 				SqlMode:             procedure.SqlMode,
+				Comment:             procedure.Comment,
 				SkipDump:            procedure.SkipDump,
 			}
 			s.Procedures = append(s.Procedures, v1Procedure)
@@ -206,6 +208,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				SqlMode:             event.SqlMode,
 				CharacterSetClient:  event.CharacterSetClient,
 				CollationConnection: event.CollationConnection,
+				Comment:             event.Comment,
 			}
 			s.Events = append(s.Events, v1Event)
 		}
@@ -441,22 +444,23 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 
 func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMetadata {
 	metadata := &v1pb.ColumnMetadata{
-		Name:               column.Name,
-		Position:           column.Position,
-		HasDefault:         column.DefaultValue != nil,
-		DefaultOnNull:      column.DefaultOnNull,
-		OnUpdate:           column.OnUpdate,
-		Nullable:           column.Nullable,
-		Type:               column.Type,
-		CharacterSet:       column.CharacterSet,
-		Collation:          column.Collation,
-		Comment:            column.Comment,
-		UserComment:        column.UserComment,
-		Generation:         convertStoreGenerationMetadata(column.Generation),
-		IdentityGeneration: v1pb.ColumnMetadata_IdentityGeneration(column.IdentityGeneration),
-		IsIdentity:         column.IsIdentity,
-		IdentitySeed:       column.IdentitySeed,
-		IdentityIncrement:  column.IdentityIncrement,
+		Name:                  column.Name,
+		Position:              column.Position,
+		HasDefault:            column.DefaultValue != nil,
+		DefaultOnNull:         column.DefaultOnNull,
+		OnUpdate:              column.OnUpdate,
+		Nullable:              column.Nullable,
+		Type:                  column.Type,
+		CharacterSet:          column.CharacterSet,
+		Collation:             column.Collation,
+		Comment:               column.Comment,
+		UserComment:           column.UserComment,
+		Generation:            convertStoreGenerationMetadata(column.Generation),
+		IdentityGeneration:    v1pb.ColumnMetadata_IdentityGeneration(column.IdentityGeneration),
+		IsIdentity:            column.IsIdentity,
+		IdentitySeed:          column.IdentitySeed,
+		IdentityIncrement:     column.IdentityIncrement,
+		DefaultConstraintName: column.DefaultConstraintName,
 	}
 	if metadata.HasDefault {
 		switch value := column.DefaultValue.(type) {
@@ -515,6 +519,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 		s := &storepb.SchemaMetadata{
 			Name:     schema.Name,
 			Owner:    schema.Owner,
+			Comment:  schema.Comment,
 			SkipDump: schema.SkipDump,
 		}
 		for _, table := range schema.Tables {
@@ -632,6 +637,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 				CollationConnection: procedure.CollationConnection,
 				DatabaseCollation:   procedure.DatabaseCollation,
 				SqlMode:             procedure.SqlMode,
+				Comment:             procedure.Comment,
 				SkipDump:            procedure.SkipDump,
 			}
 			s.Procedures = append(s.Procedures, storeProcedure)
@@ -691,6 +697,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 				SqlMode:             event.SqlMode,
 				CharacterSetClient:  event.CharacterSetClient,
 				CollationConnection: event.CollationConnection,
+				Comment:             event.Comment,
 			}
 			s.Events = append(s.Events, storeEvent)
 		}
@@ -888,21 +895,22 @@ func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata
 
 func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadata {
 	metadata := &storepb.ColumnMetadata{
-		Name:               column.Name,
-		Position:           column.Position,
-		Nullable:           column.Nullable,
-		DefaultOnNull:      column.DefaultOnNull,
-		Type:               column.Type,
-		CharacterSet:       column.CharacterSet,
-		Collation:          column.Collation,
-		Comment:            column.Comment,
-		UserComment:        column.UserComment,
-		OnUpdate:           column.OnUpdate,
-		Generation:         convertV1GenerationMetadata(column.Generation),
-		IdentityGeneration: storepb.ColumnMetadata_IdentityGeneration(column.IdentityGeneration),
-		IsIdentity:         column.IsIdentity,
-		IdentitySeed:       column.IdentitySeed,
-		IdentityIncrement:  column.IdentityIncrement,
+		Name:                  column.Name,
+		Position:              column.Position,
+		Nullable:              column.Nullable,
+		DefaultOnNull:         column.DefaultOnNull,
+		Type:                  column.Type,
+		CharacterSet:          column.CharacterSet,
+		Collation:             column.Collation,
+		Comment:               column.Comment,
+		UserComment:           column.UserComment,
+		OnUpdate:              column.OnUpdate,
+		Generation:            convertV1GenerationMetadata(column.Generation),
+		IdentityGeneration:    storepb.ColumnMetadata_IdentityGeneration(column.IdentityGeneration),
+		IsIdentity:            column.IsIdentity,
+		IdentitySeed:          column.IdentitySeed,
+		IdentityIncrement:     column.IdentityIncrement,
+		DefaultConstraintName: column.DefaultConstraintName,
 	}
 
 	if column.HasDefault {

@@ -8,17 +8,15 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	// Import MySQL driver
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -35,35 +33,14 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Start MySQL container
-	req := testcontainers.ContainerRequest{
-		Image: "mysql:8.0",
-		Env: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "test123",
-			"MYSQL_DATABASE":      "testdb",
-		},
-		ExposedPorts: []string{"3306/tcp"},
-		WaitingFor: wait.ForLog("ready for connections").
-			WithOccurrence(2).
-			WithStartupTimeout(5 * time.Minute),
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	// Start MySQL container using common testcontainer interface
+	container, err := testcontainer.GetMySQLContainer(ctx)
 	require.NoError(t, err)
-	defer func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}()
+	defer container.Close(ctx)
 
 	// Get connection details
-	host, err := container.Host(ctx)
-	require.NoError(t, err)
-	port, err := container.MappedPort(ctx, "3306")
-	require.NoError(t, err)
+	host := container.GetHost()
+	port := container.GetPort()
 
 	// Test cases with various schema changes
 	testCases := []struct {
@@ -829,41 +806,213 @@ END;
 `,
 			description: "Events and advanced stored routines",
 		},
+		{
+			name: "table_and_column_comments",
+			initialSchema: `
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    description TEXT,
+    category_id INT,
+    PRIMARY KEY (id),
+    INDEX idx_category (category_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE categories (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+`,
+			migrationDDL: `
+-- Add table comments
+ALTER TABLE products COMMENT = 'Product catalog table containing all product information';
+ALTER TABLE categories COMMENT = 'Product categories for organization';
+
+-- Add column comments to existing table
+ALTER TABLE products MODIFY COLUMN name VARCHAR(100) NOT NULL COMMENT 'Product display name';
+ALTER TABLE products MODIFY COLUMN price DECIMAL(10, 2) NOT NULL COMMENT 'Product price in USD';
+ALTER TABLE products MODIFY COLUMN description TEXT COMMENT 'Detailed product description';
+ALTER TABLE products MODIFY COLUMN category_id INT COMMENT 'Foreign key reference to categories table';
+
+-- Add column comments to categories table
+ALTER TABLE categories MODIFY COLUMN name VARCHAR(50) NOT NULL COMMENT 'Category display name';
+
+-- Create new table with comments from the start
+CREATE TABLE suppliers (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Unique supplier identifier',
+    company_name VARCHAR(100) NOT NULL COMMENT 'Legal company name',
+    contact_email VARCHAR(100) COMMENT 'Primary contact email address',
+    phone VARCHAR(20) COMMENT 'Business phone number',
+    address TEXT COMMENT 'Full business address',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (contact_email)
+) ENGINE=InnoDB COMMENT = 'Supplier information and contact details';
+
+-- Add new column with comment
+ALTER TABLE products ADD COLUMN supplier_id INT COMMENT 'Reference to supplier providing this product';
+`,
+			description: "Add comments to tables and columns using MySQL COMMENT syntax",
+		},
+		{
+			name: "modify_and_drop_comments",
+			initialSchema: `
+CREATE TABLE orders (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Order unique identifier',
+    customer_name VARCHAR(100) NOT NULL COMMENT 'Customer full name',
+    order_date DATE NOT NULL COMMENT 'Date when order was placed',
+    total_amount DECIMAL(10, 2) COMMENT 'Total order amount in USD',
+    status VARCHAR(20) DEFAULT 'pending' COMMENT 'Current order status',
+    notes TEXT COMMENT 'Additional order notes or special instructions',
+    PRIMARY KEY (id),
+    INDEX idx_date (order_date),
+    INDEX idx_status (status)
+) ENGINE=InnoDB COMMENT = 'Customer orders and order details';
+
+CREATE TABLE order_items (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Line item identifier',
+    order_id INT NOT NULL COMMENT 'Reference to parent order',
+    product_name VARCHAR(100) NOT NULL COMMENT 'Name of ordered product',
+    quantity INT NOT NULL COMMENT 'Number of items ordered',
+    unit_price DECIMAL(10, 2) NOT NULL COMMENT 'Price per individual item',
+    PRIMARY KEY (id),
+    INDEX idx_order (order_id)
+) ENGINE=InnoDB COMMENT = 'Individual line items for each order';
+`,
+			migrationDDL: `
+-- Modify existing table comment
+ALTER TABLE orders COMMENT = 'Customer purchase orders with tracking information';
+
+-- Modify existing column comments
+ALTER TABLE orders MODIFY COLUMN customer_name VARCHAR(100) NOT NULL COMMENT 'Full name of the purchasing customer';
+ALTER TABLE orders MODIFY COLUMN status VARCHAR(20) DEFAULT 'pending' COMMENT 'Order processing status (pending, processing, shipped, delivered, cancelled)';
+ALTER TABLE orders MODIFY COLUMN notes TEXT COMMENT 'Special delivery instructions and customer notes';
+
+-- Remove comments by setting them to empty string
+ALTER TABLE orders MODIFY COLUMN total_amount DECIMAL(10, 2) COMMENT '';
+ALTER TABLE orders MODIFY COLUMN order_date DATE NOT NULL COMMENT '';
+
+-- Modify column type and comment simultaneously  
+ALTER TABLE order_items MODIFY COLUMN product_name VARCHAR(150) NOT NULL COMMENT 'Full product name including variant details';
+ALTER TABLE order_items MODIFY COLUMN quantity INT NOT NULL COMMENT 'Quantity ordered (must be positive)';
+
+-- Remove table comment
+ALTER TABLE order_items COMMENT = '';
+
+-- Remove column comment
+ALTER TABLE order_items MODIFY COLUMN unit_price DECIMAL(10, 2) NOT NULL COMMENT '';
+`,
+			description: "Modify existing comments and remove comments by setting to empty string",
+		},
+		{
+			name: "comments_with_special_characters",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    bio TEXT,
+    preferences JSON,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email)
+) ENGINE=InnoDB;
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content LONGTEXT,
+    metadata JSON,
+    PRIMARY KEY (id),
+    INDEX idx_user (user_id)
+) ENGINE=InnoDB;
+`,
+			migrationDDL: `
+-- Comments with single quotes - need proper escaping
+ALTER TABLE users COMMENT = 'User accounts - stores user''s personal information and preferences';
+
+-- Comments with double quotes and mixed quotes
+ALTER TABLE users MODIFY COLUMN username VARCHAR(50) NOT NULL COMMENT 'User''s chosen "display name" for the platform';
+ALTER TABLE users MODIFY COLUMN email VARCHAR(100) NOT NULL COMMENT 'Primary email address - must be "unique" across all users';
+
+-- Multi-line comment using literal newlines
+ALTER TABLE users MODIFY COLUMN bio TEXT COMMENT 'User biography text
+Can contain multiple lines
+and various formatting';
+
+-- Comment with special characters and symbols
+ALTER TABLE users MODIFY COLUMN preferences JSON COMMENT 'User settings: theme, notifications, privacy & security options (@, #, $, %, ^, &, *, +, =, |, \\, /, ?, <, >)';
+
+-- Comments with Unicode characters
+ALTER TABLE posts COMMENT = 'Blog posts and articles - supports international content (中文, العربية, Русский, 日本語, 한국어, Français, Español, Deutsch)';
+ALTER TABLE posts MODIFY COLUMN title VARCHAR(200) NOT NULL COMMENT 'Post title - supports emojis 📝✨🔥💡🎉 and Unicode characters';
+
+-- Comment with HTML/XML-like content
+ALTER TABLE posts MODIFY COLUMN content LONGTEXT COMMENT 'Post content in HTML format: <p>, <strong>, <em>, <a href="...">, <img src="..."/>';
+
+-- Comment with JSON-like structure
+ALTER TABLE posts MODIFY COLUMN metadata JSON COMMENT 'Post metadata: {"tags": ["tag1", "tag2"], "category": "tech", "featured": true, "views": 0}';
+
+-- Create table with complex comments
+CREATE TABLE analytics (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Primary key (auto-increment)',
+    event_name VARCHAR(100) NOT NULL COMMENT 'Event identifier - format: "page_view", "button_click", etc.',
+    event_data JSON COMMENT 'Event payload: {"user_id": 123, "timestamp": "2023-12-01T10:30:00Z", "properties": {...}}',
+    ip_address VARCHAR(45) COMMENT 'Client IP address (IPv4: xxx.xxx.xxx.xxx or IPv6: xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx)',
+    user_agent TEXT COMMENT 'Browser user agent string - may contain "Mozilla/5.0", various browser/OS info',
+    referrer VARCHAR(500) COMMENT 'HTTP referrer URL - where user came from (can be NULL)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Event timestamp - UTC timezone',
+    processed BOOLEAN DEFAULT FALSE COMMENT 'Processing status: TRUE = processed, FALSE = pending',
+    PRIMARY KEY (id),
+    INDEX idx_event_date (event_name, created_at),
+    INDEX idx_processed (processed)
+) ENGINE=InnoDB COMMENT = 'Analytics events tracking - stores user interactions & system events. Data retention: 2 years. Access level: "admin" & "analyst" roles only.';
+`,
+			description: "Test comments with special characters, quotes, multiline text, and Unicode",
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Step 1: Initialize the database schema and get schema result A
-			portInt, err := strconv.Atoi(port.Port())
+			portInt, err := strconv.Atoi(port)
 			require.NoError(t, err)
 
-			// Add a small delay to ensure MySQL is fully ready
-			time.Sleep(2 * time.Second)
+			// Get the database connection from container
+			db := container.GetDB()
 
-			t.Logf("Connecting to MySQL at %s:%d", host, portInt)
-			testDB, err := openTestDatabase(host, portInt, "root", "test123", "testdb")
-			require.NoError(t, err, "Failed to connect to MySQL database")
-			defer testDB.Close()
+			// Create a test database
+			testDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
+			_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
+			require.NoError(t, err)
+			_, err = db.Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
+			require.NoError(t, err)
+			defer func() {
+				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
+			}()
 
-			// Clean up any existing objects
-			cleanupDatabase(t, testDB)
+			// Use the test database
+			_, err = db.Exec(fmt.Sprintf("USE `%s`", testDBName))
+			require.NoError(t, err)
 
 			// Execute initial schema
 			if strings.TrimSpace(tc.initialSchema) != "" {
-				if err := executeStatements(testDB, tc.initialSchema); err != nil {
+				if err := executeStatements(db, tc.initialSchema); err != nil {
 					t.Fatalf("Failed to execute initial schema: %v", err)
 				}
 			}
 
-			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "test123", "testdb")
+			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "root-password", testDBName)
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
-			if err := executeStatements(testDB, tc.migrationDDL); err != nil {
+			if err := executeStatements(db, tc.migrationDDL); err != nil {
 				t.Fatalf("Failed to execute migration DDL: %v", err)
 			}
 
-			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "test123", "testdb")
+			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "root-password", testDBName)
 			require.NoError(t, err)
 
 			// Step 3: Call generate migration to get the rollback DDL
@@ -897,11 +1046,11 @@ END;
 			t.Logf("Rollback DDL:\n%s", rollbackDDL)
 
 			// Step 4: Run rollback DDL and get schema result C
-			if err := executeStatements(testDB, rollbackDDL); err != nil {
+			if err := executeStatements(db, rollbackDDL); err != nil {
 				t.Fatalf("Failed to execute rollback DDL: %v", err)
 			}
 
-			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "test123", "testdb")
+			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "root-password", testDBName)
 			require.NoError(t, err)
 
 			// Step 5: Compare schema result A and C to ensure they are the same
@@ -913,149 +1062,6 @@ END;
 				t.Errorf("Schema mismatch after rollback (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-
-// openTestDatabase opens a connection to the test MySQL database
-func openTestDatabase(host string, port int, username, password, database string) (*sql.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&multiStatements=true",
-		username, password, host, port, database)
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open connection to MySQL")
-	}
-
-	// Set connection pool settings
-	db.SetMaxOpenConns(5)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(5 * time.Minute)
-
-	// Try to ping with retries
-	var pingErr error
-	for i := 0; i < 5; i++ {
-		if pingErr = db.Ping(); pingErr == nil {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	if pingErr != nil {
-		return nil, errors.Wrapf(pingErr, "failed to ping MySQL database after retries")
-	}
-
-	return db, nil
-}
-
-// cleanupDatabase removes all objects from the database
-func cleanupDatabase(_ *testing.T, db *sql.DB) {
-	// Disable foreign key checks
-	_, _ = db.Exec("SET FOREIGN_KEY_CHECKS = 0")
-	defer func() {
-		_, _ = db.Exec("SET FOREIGN_KEY_CHECKS = 1")
-	}()
-
-	// Drop all tables
-	rows, err := db.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var tables []string
-		for rows.Next() {
-			var table string
-			if err := rows.Scan(&table); err == nil {
-				tables = append(tables, table)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, table := range tables {
-			_, _ = db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS `%s`", table))
-		}
-	}
-
-	// Drop all views
-	rows, err = db.Query("SELECT table_name FROM information_schema.views WHERE table_schema = DATABASE()")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var views []string
-		for rows.Next() {
-			var view string
-			if err := rows.Scan(&view); err == nil {
-				views = append(views, view)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, view := range views {
-			_, _ = db.Exec(fmt.Sprintf("DROP VIEW IF EXISTS `%s`", view))
-		}
-	}
-
-	// Drop all procedures
-	rows, err = db.Query("SELECT routine_name FROM information_schema.routines WHERE routine_schema = DATABASE() AND routine_type = 'PROCEDURE'")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var procedures []string
-		for rows.Next() {
-			var proc string
-			if err := rows.Scan(&proc); err == nil {
-				procedures = append(procedures, proc)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, proc := range procedures {
-			_, _ = db.Exec(fmt.Sprintf("DROP PROCEDURE IF EXISTS `%s`", proc))
-		}
-	}
-
-	// Drop all functions
-	rows, err = db.Query("SELECT routine_name FROM information_schema.routines WHERE routine_schema = DATABASE() AND routine_type = 'FUNCTION'")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var functions []string
-		for rows.Next() {
-			var fn string
-			if err := rows.Scan(&fn); err == nil {
-				functions = append(functions, fn)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, fn := range functions {
-			_, _ = db.Exec(fmt.Sprintf("DROP FUNCTION IF EXISTS `%s`", fn))
-		}
-	}
-
-	// Drop all events
-	rows, err = db.Query("SELECT event_name FROM information_schema.events WHERE event_schema = DATABASE()")
-	if err == nil {
-		defer func() {
-			rows.Close()
-		}()
-		var events []string
-		for rows.Next() {
-			var event string
-			if err := rows.Scan(&event); err == nil {
-				events = append(events, event)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return
-		}
-		for _, event := range events {
-			_, _ = db.Exec(fmt.Sprintf("DROP EVENT IF EXISTS `%s`", event))
-		}
 	}
 }
 

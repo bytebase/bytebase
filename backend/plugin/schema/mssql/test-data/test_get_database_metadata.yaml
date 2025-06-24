@@ -2050,3 +2050,86 @@
         }
       ]
     }
+- input: |
+    CREATE TABLE dbo.products (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(255) NOT NULL,
+        price DECIMAL(10,2)
+    );
+    
+    -- Add table comment
+    EXEC sp_addextendedproperty 
+        'MS_Description', 'Table storing product information',
+        'SCHEMA', 'dbo',
+        'TABLE', 'products';
+    
+    -- Add column comments
+    EXEC sp_addextendedproperty 
+        'MS_Description', 'Unique product identifier',
+        'SCHEMA', 'dbo',
+        'TABLE', 'products',
+        'COLUMN', 'id';
+    
+    EXEC sp_addextendedproperty 
+        'MS_Description', 'Product display name',
+        'SCHEMA', 'dbo',
+        'TABLE', 'products',
+        'COLUMN', 'name';
+    
+    EXEC sp_addextendedproperty 
+        'MS_Description', 'Product price in USD',
+        'SCHEMA', 'dbo',
+        'TABLE', 'products',
+        'COLUMN', 'price';
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "DefaultValue": null,
+                  "type": "INT",
+                  "comment": "Unique product identifier",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "name",
+                  "DefaultValue": null,
+                  "type": "NVARCHAR(255)",
+                  "comment": "Product display name"
+                },
+                {
+                  "name": "price",
+                  "DefaultValue": null,
+                  "nullable": true,
+                  "type": "DECIMAL(10,2)",
+                  "comment": "Product price in USD"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_products_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "comment": "Table storing product information"
+            }
+          ]
+        }
+      ]
+    }

@@ -100,6 +100,8 @@ message SchemaMetadata {
 
   string owner = 12;
 
+  string comment = 13;
+
   repeated EventMetadata events = 14;
 
   repeated EnumTypeMetadata enum_types = 15;
@@ -134,6 +136,8 @@ message EventMetadata {
   string character_set_client = 5;
 
   string collation_connection = 6;
+
+  string comment = 7;
 }
 
 message SequenceMetadata {
@@ -495,6 +499,28 @@ message ColumnMetadata {
 
   // The identity_increment is for identity columns, MSSQL only.
   int64 identity_increment = 19;
+
+  // The default_constraint_name is the name of the default constraint, MSSQL only.
+  // In MSSQL, default values are implemented as named constraints. When modifying or
+  // dropping a column's default value, you must reference the constraint by name.
+  // This field stores the actual constraint name from the database.
+  //
+  // Example: A column definition like:
+  //   CREATE TABLE employees (
+  //     status NVARCHAR(20) DEFAULT 'active'
+  //   )
+  //
+  // Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+  // or a user-defined name if specified:
+  //   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+  //
+  // To modify the default, you must first drop the existing constraint by name:
+  //   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+  //   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+  //
+  // This field is populated when syncing from the database. When empty (e.g., when parsing
+  // from SQL files), the system cannot automatically drop the constraint.
+  string default_constraint_name = 20;
 }
 
 message GenerationMetadata {
@@ -624,6 +650,8 @@ message ProcedureMetadata {
   string database_collation = 6;
 
   string sql_mode = 7;
+
+  string comment = 9;
 
   bool skip_dump = 8;
 }

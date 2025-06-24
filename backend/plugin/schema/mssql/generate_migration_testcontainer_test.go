@@ -81,7 +81,7 @@ CREATE TABLE [app].[users] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [username] NVARCHAR(50) NOT NULL,
     [email] NVARCHAR(100) NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [uk_users_email] UNIQUE ([email])
 );
 
@@ -100,7 +100,7 @@ CREATE INDEX [idx_posts_user_id] ON [app].[posts] ([user_id]);
 `,
 			migrationDDL: `
 -- Add new column
-ALTER TABLE [app].[users] ADD [status] NVARCHAR(20) DEFAULT 'active';
+ALTER TABLE [app].[users] ADD [status] NVARCHAR(20);
 
 -- Add new table
 CREATE TABLE [app].[comments] (
@@ -108,7 +108,7 @@ CREATE TABLE [app].[comments] (
     [post_id] INT NOT NULL,
     [user_id] INT NOT NULL,
     [content] NTEXT NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [fk_comments_post] FOREIGN KEY ([post_id]) REFERENCES [app].[posts]([id]) ON DELETE CASCADE,
     CONSTRAINT [fk_comments_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id])
 );
@@ -136,7 +136,7 @@ CREATE TABLE [sales].[customers] (
 CREATE TABLE [sales].[orders] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [customer_id] INT NOT NULL,
-    [order_date] DATE DEFAULT GETDATE(),
+    [order_date] DATE,
     [total] DECIMAL(10,2),
     CONSTRAINT [fk_orders_customer] FOREIGN KEY ([customer_id]) REFERENCES [sales].[customers]([id])
 );
@@ -172,7 +172,7 @@ CREATE TABLE [reporting].[sales_data] (
     [product_name] NVARCHAR(100) NOT NULL,
     [quantity] INT NOT NULL,
     [price] DECIMAL(10,2) NOT NULL,
-    [sale_date] DATE DEFAULT GETDATE()
+    [sale_date] DATE
 );
 
 CREATE TABLE [reporting].[customers] (
@@ -261,7 +261,7 @@ CREATE TABLE [perf].[events] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [event_name] NVARCHAR(100) NOT NULL,
     [event_data] NVARCHAR(MAX),
-    [timestamp] DATETIME2 DEFAULT GETDATE(),
+    [timestamp] DATETIME2,
     [user_id] INT,
     [category] NVARCHAR(50)
 );
@@ -293,7 +293,7 @@ GO
 CREATE TABLE [finance].[accounts] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [account_number] NVARCHAR(20) NOT NULL,
-    [balance] DECIMAL(15,2) DEFAULT 0,
+    [balance] DECIMAL(15,2),
     [account_type] NVARCHAR(20) NOT NULL,
     [created_at] DATETIME2 DEFAULT GETDATE()
 );
@@ -312,7 +312,7 @@ CREATE TABLE [finance].[transactions] (
     [account_id] INT NOT NULL,
     [amount] DECIMAL(15,2) NOT NULL,
     [transaction_type] NVARCHAR(20) NOT NULL,
-    [transaction_date] DATETIME2 DEFAULT GETDATE(),
+    [transaction_date] DATETIME2,
     CONSTRAINT [fk_transactions_account] FOREIGN KEY ([account_id]) REFERENCES [finance].[accounts]([id]),
     CONSTRAINT [ck_transactions_amount] CHECK ([amount] != 0),
     CONSTRAINT [ck_transactions_type] CHECK ([transaction_type] IN ('DEBIT', 'CREDIT'))
@@ -341,9 +341,6 @@ CREATE TABLE [hr].[employees] (
 ALTER TABLE [hr].[employees] ADD [department_id] INT;
 ALTER TABLE [hr].[employees] ADD [manager_id] INT;
 ALTER TABLE [hr].[employees] ADD [status] NVARCHAR(20);
-
--- Add named default constraint for status
-ALTER TABLE [hr].[employees] ADD CONSTRAINT [df_employees_status] DEFAULT 'ACTIVE' FOR [status];
 
 -- Create department table
 CREATE TABLE [hr].[departments] (
@@ -386,7 +383,7 @@ CREATE TABLE [core].[roles] (
 CREATE TABLE [core].[user_roles] (
     [user_id] INT NOT NULL,
     [role_id] INT NOT NULL,
-    [assigned_at] DATETIME2 DEFAULT GETDATE(),
+    [assigned_at] DATETIME2,
     CONSTRAINT [pk_user_roles] PRIMARY KEY ([user_id], [role_id]),
     CONSTRAINT [fk_user_roles_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id]) ON DELETE CASCADE,
     CONSTRAINT [fk_user_roles_role] FOREIGN KEY ([role_id]) REFERENCES [core].[roles]([id]) ON DELETE CASCADE
@@ -405,7 +402,7 @@ CREATE TABLE [app].[audit_log] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [user_id] INT,
     [action] NVARCHAR(100) NOT NULL,
-    [timestamp] DATETIME2 DEFAULT GETDATE(),
+    [timestamp] DATETIME2,
     [details] NVARCHAR(MAX),
     CONSTRAINT [fk_audit_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id])
 );
@@ -422,7 +419,7 @@ CREATE TABLE [ecommerce].[products] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [name] NVARCHAR(100) NOT NULL,
     [price] DECIMAL(10,2) NOT NULL,
-    [tax_rate] DECIMAL(5,4) DEFAULT 0.08
+    [tax_rate] DECIMAL(5,4)
 );
 `,
 			migrationDDL: `
@@ -446,7 +443,7 @@ CREATE TABLE [ecommerce].[orders] (
     [quantity] INT NOT NULL,
     [unit_price] DECIMAL(10,2) NOT NULL,
     [total] DECIMAL(15,2),
-    [order_date] DATETIME2 DEFAULT GETDATE(),
+    [order_date] DATETIME2,
     CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [ecommerce].[products]([id])
 );
 GO
@@ -471,7 +468,7 @@ CREATE TABLE [tracking].[products] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [name] NVARCHAR(100) NOT NULL,
     [price] DECIMAL(10,2) NOT NULL,
-    [last_modified] DATETIME2 DEFAULT GETDATE()
+    [last_modified] DATETIME2
 );
 `,
 			migrationDDL: `
@@ -509,7 +506,7 @@ CREATE TABLE [test].[users] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [username] NVARCHAR(50) NOT NULL,
     [email] NVARCHAR(100) NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [uk_email] UNIQUE ([email])
 );
 
@@ -542,7 +539,7 @@ CREATE TABLE [test].[users] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [username] NVARCHAR(50) NOT NULL,
     [email] NVARCHAR(100) NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [uk_email] UNIQUE ([email])
 );
 GO
@@ -574,7 +571,7 @@ CREATE TABLE [test].[comments] (
     [post_id] INT NOT NULL,
     [user_id] INT NOT NULL,
     [content] NVARCHAR(MAX) NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [fk_comment_post] FOREIGN KEY ([post_id]) REFERENCES [test].[posts]([id]) ON DELETE CASCADE,
     CONSTRAINT [fk_comment_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users]([id]) ON DELETE NO ACTION
 );
@@ -703,6 +700,407 @@ BEGIN
 END;
 `,
 			description: "Self-referencing foreign keys and complex view dependencies",
+		},
+		{
+			name: "table_and_column_comments",
+			initialSchema: `
+CREATE SCHEMA [app];
+GO
+
+CREATE TABLE [app].[users] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [username] NVARCHAR(50) NOT NULL,
+    [email] NVARCHAR(100) NOT NULL,
+    [created_at] DATETIME2,
+    [status] NVARCHAR(20)
+);
+
+CREATE TABLE [app].[products] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [price] DECIMAL(10,2) NOT NULL,
+    [category] NVARCHAR(50)
+);
+
+CREATE INDEX [idx_users_email] ON [app].[users] ([email]);
+CREATE INDEX [idx_products_category] ON [app].[products] ([category]);
+`,
+			migrationDDL: `
+-- Add table comments using extended properties
+EXEC sp_addextendedproperty 'MS_Description', 'User accounts and profile information', 'SCHEMA', 'app', 'TABLE', 'users';
+EXEC sp_addextendedproperty 'MS_Description', 'Product catalog with pricing information', 'SCHEMA', 'app', 'TABLE', 'products';
+GO
+
+-- Add column comments for users table
+EXEC sp_addextendedproperty 'MS_Description', 'Unique identifier for each user', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'id';
+EXEC sp_addextendedproperty 'MS_Description', 'Unique username for login authentication', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'username';
+EXEC sp_addextendedproperty 'MS_Description', 'User email address for notifications', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'email';
+EXEC sp_addextendedproperty 'MS_Description', 'Timestamp when the user account was created', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'created_at';
+EXEC sp_addextendedproperty 'MS_Description', 'Current status: active, inactive, or suspended', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'status';
+GO
+
+-- Add column comments for products table
+EXEC sp_addextendedproperty 'MS_Description', 'Unique product identifier', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'id';
+EXEC sp_addextendedproperty 'MS_Description', 'Product display name', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'name';
+EXEC sp_addextendedproperty 'MS_Description', 'Product price in USD', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'price';
+EXEC sp_addextendedproperty 'MS_Description', 'Product category classification', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'category';
+GO
+
+-- Create new table and add comments immediately
+CREATE TABLE [app].[orders] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [user_id] INT NOT NULL,
+    [product_id] INT NOT NULL,
+    [quantity] INT NOT NULL,
+    [order_date] DATETIME2,
+    CONSTRAINT [fk_orders_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id]),
+    CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [app].[products]([id])
+);
+GO
+
+-- Add comments to the new table
+EXEC sp_addextendedproperty 'MS_Description', 'Customer orders tracking system', 'SCHEMA', 'app', 'TABLE', 'orders';
+EXEC sp_addextendedproperty 'MS_Description', 'Unique order identifier', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'id';
+EXEC sp_addextendedproperty 'MS_Description', 'Reference to the user who placed the order', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'user_id';
+EXEC sp_addextendedproperty 'MS_Description', 'Reference to the ordered product', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'product_id';
+EXEC sp_addextendedproperty 'MS_Description', 'Number of items ordered', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'quantity';
+EXEC sp_addextendedproperty 'MS_Description', 'When the order was placed', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'order_date';
+`,
+			description: "Adding comments to tables and columns using SQL Server extended properties",
+		},
+		{
+			name: "modify_and_drop_comments",
+			initialSchema: `
+CREATE SCHEMA [test];
+GO
+
+CREATE TABLE [test].[customers] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [email] NVARCHAR(100),
+    [phone] NVARCHAR(20),
+    [created_at] DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+-- Add initial comments
+EXEC sp_addextendedproperty 'MS_Description', 'Customer information database', 'SCHEMA', 'test', 'TABLE', 'customers';
+EXEC sp_addextendedproperty 'MS_Description', 'Customer unique ID', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'id';
+EXEC sp_addextendedproperty 'MS_Description', 'Customer full name', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'name';
+EXEC sp_addextendedproperty 'MS_Description', 'Customer email for marketing', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'email';
+EXEC sp_addextendedproperty 'MS_Description', 'Customer contact number', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'phone';
+GO
+
+CREATE TABLE [test].[invoices] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [customer_id] INT NOT NULL,
+    [amount] DECIMAL(10,2) NOT NULL,
+    [invoice_date] DATE,
+    CONSTRAINT [fk_invoices_customer] FOREIGN KEY ([customer_id]) REFERENCES [test].[customers]([id])
+);
+GO
+
+-- Add comments to invoices table
+EXEC sp_addextendedproperty 'MS_Description', 'Invoice records for billing', 'SCHEMA', 'test', 'TABLE', 'invoices';
+EXEC sp_addextendedproperty 'MS_Description', 'Invoice number', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'id';
+EXEC sp_addextendedproperty 'MS_Description', 'Link to customer', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'customer_id';
+`,
+			migrationDDL: `
+-- Update existing table comment
+EXEC sp_updateextendedproperty 'MS_Description', 'Complete customer database with contact details and preferences', 'SCHEMA', 'test', 'TABLE', 'customers';
+GO
+
+-- Update existing column comments
+EXEC sp_updateextendedproperty 'MS_Description', 'Primary key - auto-generated customer identifier', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'id';
+EXEC sp_updateextendedproperty 'MS_Description', 'Customer business or personal name', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'name';
+EXEC sp_updateextendedproperty 'MS_Description', 'Primary email address for communications and billing', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'email';
+GO
+
+-- Drop specific column comment
+EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'phone';
+GO
+
+-- Add new comment to column that didn't have one
+EXEC sp_addextendedproperty 'MS_Description', 'Account creation timestamp for auditing', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'created_at';
+GO
+
+-- Update invoice table comment
+EXEC sp_updateextendedproperty 'MS_Description', 'Financial invoice tracking and billing system', 'SCHEMA', 'test', 'TABLE', 'invoices';
+GO
+
+-- Drop invoice column comments
+EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'id';
+EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'customer_id';
+GO
+
+-- Add new column with comment
+ALTER TABLE [test].[invoices] ADD [payment_status] NVARCHAR(20);
+GO
+
+EXEC sp_addextendedproperty 'MS_Description', 'Current payment status: pending, paid, overdue, cancelled', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'payment_status';
+`,
+			description: "Modifying existing comments and removing comments using extended properties",
+		},
+		{
+			name: "comments_with_special_characters",
+			initialSchema: `
+CREATE SCHEMA [special];
+GO
+
+CREATE TABLE [special].[documents] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [title] NVARCHAR(200) NOT NULL,
+    [content] NVARCHAR(MAX),
+    [author] NVARCHAR(100),
+    [created_date] DATETIME2,
+    [metadata] NVARCHAR(500)
+);
+
+CREATE TABLE [special].[translations] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [document_id] INT NOT NULL,
+    [lang_code] NVARCHAR(10) NOT NULL,
+    [translated_title] NVARCHAR(200),
+    [translated_content] NVARCHAR(MAX),
+    CONSTRAINT [fk_translations_doc] FOREIGN KEY ([document_id]) REFERENCES [special].[documents]([id])
+);
+`,
+			migrationDDL: `
+-- Add table comments with special characters and quotes
+EXEC sp_addextendedproperty 'MS_Description', 'Document storage system - handles files, "metadata", & special chars: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'documents';
+GO
+
+-- Add multiline comment with special formatting
+EXEC sp_addextendedproperty 'MS_Description', 
+'Translation table for international support:
+- Supports Unicode characters: αβγδε, 中文, العربية, русский
+- Handles quotes: "double quotes" and ''single quotes''
+- Special symbols: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'translations';
+GO
+
+-- Column comments with various special cases
+EXEC sp_addextendedproperty 'MS_Description', 'Primary key (auto-increment) - unique ID for each document', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'id';
+EXEC sp_addextendedproperty 'MS_Description', 'Document title - may contain "quotes", ''apostrophes'', and symbols: @#$%', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'title';
+GO
+
+-- Multiline comment with technical details
+EXEC sp_addextendedproperty 'MS_Description', 
+'Document content field:
+  • Supports rich text formatting
+  • HTML tags like <p>, <div>, <span>
+  • Special characters: © ® ™ § ¶ † ‡ • ‰ ′ ″
+  • Mathematical: ± × ÷ ≠ ≤ ≥ ∞ ∑ ∏ ∫
+  • Currency: $ € £ ¥ ₹ ₽
+  • Arrows: ← → ↑ ↓ ↔ ⇐ ⇒ ⇔', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'content';
+GO
+
+-- Comment with SQL injection attempt (should be safely handled)
+EXEC sp_addextendedproperty 'MS_Description', 'Author name field - prevents SQL injection like ''; DROP TABLE users; --', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'author';
+GO
+
+-- Comment with JSON-like structure
+EXEC sp_addextendedproperty 'MS_Description', 'Metadata JSON: {"version": "1.0", "tags": ["important", "draft"], "settings": {"public": false}}', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'metadata';
+GO
+
+-- Unicode characters in comments
+EXEC sp_addextendedproperty 'MS_Description', 'Language code: en-US, fr-FR, de-DE, ja-JP, zh-CN, ar-SA, ru-RU, hi-IN, 한국어, ไทย', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'lang_code';
+GO
+
+-- Comment with URLs and file paths
+EXEC sp_addextendedproperty 'MS_Description', 'Translated content - may reference URLs like https://example.com/path?param=value&other=123 or file paths C:\Users\Name\Documents\file.txt', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'translated_content';
+GO
+
+-- Create new table with extreme comment case
+CREATE TABLE [special].[test_extreme] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [data] NVARCHAR(MAX)
+);
+GO
+
+-- Extremely long comment to test limits
+EXEC sp_addextendedproperty 'MS_Description', 
+'This is an extremely long comment designed to test the limits of extended property storage in SQL Server. It contains multiple lines of text with various formatting, special characters, and technical information. The purpose is to verify that the migration system can properly handle, store, and retrieve complex comment data without truncation or corruption. This comment includes: numbers (123456789), symbols (!@#$%^&*()_+-={}[]|\:";''<>?,./ ), Unicode characters (αβγδε中文العربيةрусский한국어), and structured data like JSON {"key": "value", "array": [1, 2, 3], "nested": {"deep": true}}. Additionally, it tests SQL-like syntax: SELECT * FROM table WHERE column = ''value'' AND other_column IN (1, 2, 3); as well as HTML markup: <html><body><p class="test">Content</p></body></html> and XML: <?xml version="1.0"?><root><item id="1">Test</item></root>. The comment system should preserve all these characters and structures exactly as written, demonstrating robust handling of complex metadata in database schema documentation.', 'SCHEMA', 'special', 'TABLE', 'test_extreme';
+`,
+			description: "Comments with special characters, quotes, multiline text, and Unicode",
+		},
+		{
+			name: "default_constraint_operations",
+			initialSchema: `
+CREATE SCHEMA [defaults];
+GO
+
+CREATE TABLE [defaults].[employees] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [email] NVARCHAR(100) NOT NULL,
+    [hire_date] DATE NOT NULL DEFAULT GETDATE(),
+    [status] NVARCHAR(20) NOT NULL DEFAULT 'active',
+    [is_active] BIT NOT NULL DEFAULT 1,
+    [salary] DECIMAL(10,2) DEFAULT 50000.00,
+    [department_id] INT DEFAULT 1,
+    [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+    [updated_at] DATETIME2
+);
+
+CREATE TABLE [defaults].[products] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [price] DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    [stock] INT NOT NULL DEFAULT 0,
+    [is_available] BIT DEFAULT 1
+);
+`,
+			migrationDDL: `
+-- Add column with default
+ALTER TABLE [defaults].[employees] ADD [vacation_days] INT NOT NULL DEFAULT 15;
+
+-- Remove default constraint (by adding new column without default)
+ALTER TABLE [defaults].[products] ADD [cost] DECIMAL(10,2) NOT NULL;
+
+-- Modify existing default value
+-- First drop the existing constraint
+DECLARE @constraint_name NVARCHAR(256);
+SELECT @constraint_name = dc.name 
+FROM sys.default_constraints dc 
+JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id 
+WHERE OBJECT_NAME(dc.parent_object_id) = 'employees' 
+AND c.name = 'status' 
+AND OBJECT_SCHEMA_NAME(dc.parent_object_id) = 'defaults';
+IF @constraint_name IS NOT NULL
+    EXEC('ALTER TABLE [defaults].[employees] DROP CONSTRAINT [' + @constraint_name + ']');
+GO
+
+-- Add new default
+ALTER TABLE [defaults].[employees] ADD CONSTRAINT [DF_employees_status_new] DEFAULT 'pending' FOR [status];
+
+-- Add default with expression
+ALTER TABLE [defaults].[employees] ADD [bonus_percentage] DECIMAL(5,2) DEFAULT (CASE WHEN MONTH(GETDATE()) = 12 THEN 10.0 ELSE 5.0 END);
+
+-- Create new table with various defaults
+CREATE TABLE [defaults].[orders] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [order_number] NVARCHAR(50) NOT NULL DEFAULT CONCAT('ORD-', YEAR(GETDATE()), '-', FORMAT(GETDATE(), 'MMdd')),
+    [order_date] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    [status] NVARCHAR(20) NOT NULL DEFAULT 'pending',
+    [total] DECIMAL(10,2) NOT NULL DEFAULT 0,
+    [discount] DECIMAL(5,2) DEFAULT NULL,
+    [is_paid] BIT NOT NULL DEFAULT 0,
+    [notes] NVARCHAR(MAX) DEFAULT 'No notes'
+);
+`,
+			description: "Default constraint operations including add, remove, modify with various data types and expressions",
+		},
+		{
+			name: "complex_default_expressions",
+			initialSchema: `
+CREATE SCHEMA [complex];
+GO
+
+CREATE TABLE [complex].[audit_log] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [event_type] NVARCHAR(50) NOT NULL,
+    [user_name] NVARCHAR(100) NOT NULL DEFAULT SYSTEM_USER,
+    [event_time] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    [ip_address] NVARCHAR(45),
+    [session_id] UNIQUEIDENTIFIER DEFAULT NEWID()
+);
+
+CREATE TABLE [complex].[documents] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [title] NVARCHAR(200) NOT NULL,
+    [content] NVARCHAR(MAX),
+    [version] INT NOT NULL DEFAULT 1,
+    [created_date] DATE DEFAULT CAST(GETDATE() AS DATE),
+    [expiry_date] DATE DEFAULT DATEADD(YEAR, 1, CAST(GETDATE() AS DATE))
+);
+`,
+			migrationDDL: `
+-- Add columns with complex default expressions
+ALTER TABLE [complex].[audit_log] ADD [server_name] NVARCHAR(100) DEFAULT @@SERVERNAME;
+ALTER TABLE [complex].[audit_log] ADD [database_name] NVARCHAR(100) DEFAULT DB_NAME();
+ALTER TABLE [complex].[audit_log] ADD [schema_name] NVARCHAR(100) DEFAULT SCHEMA_NAME();
+
+-- Add computed default based on other columns
+ALTER TABLE [complex].[documents] ADD [document_code] NVARCHAR(50) DEFAULT CONCAT('DOC-', FORMAT(GETDATE(), 'yyyyMMdd'), '-', NEWID());
+
+-- Create table with function-based defaults
+CREATE TABLE [complex].[calculations] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [value1] DECIMAL(10,2) NOT NULL,
+    [value2] DECIMAL(10,2) NOT NULL,
+    [pi_value] DECIMAL(10,8) DEFAULT PI(),
+    [random_value] FLOAT DEFAULT RAND(),
+    [checksum_value] INT DEFAULT CHECKSUM(NEWID()),
+    [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+    [created_offset] DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+);
+
+-- Add default with CASE expression
+ALTER TABLE [complex].[documents] ADD [priority] INT DEFAULT 
+    CASE 
+        WHEN DATEPART(HOUR, GETDATE()) < 12 THEN 1 
+        WHEN DATEPART(HOUR, GETDATE()) < 18 THEN 2 
+        ELSE 3 
+    END;
+`,
+			description: "Complex default expressions using system functions, variables, and conditional logic",
+		},
+		{
+			name: "default_constraint_edge_cases",
+			initialSchema: `
+CREATE SCHEMA [edge];
+GO
+
+CREATE TABLE [edge].[test_defaults] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [nullable_with_default] INT DEFAULT 42,
+    [string_default] NVARCHAR(50) DEFAULT N'Default''s value',
+    [empty_string] NVARCHAR(50) DEFAULT '',
+    [zero_default] INT DEFAULT 0,
+    [negative_default] INT DEFAULT -1,
+    [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789
+);
+`,
+			migrationDDL: `
+-- Test dropping and re-adding defaults with different names
+DECLARE @constraint_name NVARCHAR(256);
+-- Drop nullable_with_default's constraint
+SELECT @constraint_name = dc.name 
+FROM sys.default_constraints dc 
+JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id 
+WHERE OBJECT_NAME(dc.parent_object_id) = 'test_defaults' 
+AND c.name = 'nullable_with_default' 
+AND OBJECT_SCHEMA_NAME(dc.parent_object_id) = 'edge';
+IF @constraint_name IS NOT NULL
+    EXEC('ALTER TABLE [edge].[test_defaults] DROP CONSTRAINT [' + @constraint_name + ']');
+GO
+
+-- Add it back with a new value
+ALTER TABLE [edge].[test_defaults] ADD CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84 FOR [nullable_with_default];
+
+-- Add column with special characters in default
+ALTER TABLE [edge].[test_defaults] ADD [special_chars] NVARCHAR(100) DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2';
+
+-- Add column with unicode default
+ALTER TABLE [edge].[test_defaults] ADD [unicode_default] NVARCHAR(100) DEFAULT N'你好世界 🌍';
+
+-- Add column with max value defaults
+ALTER TABLE [edge].[test_defaults] ADD [max_int] BIGINT DEFAULT 9223372036854775807;
+ALTER TABLE [edge].[test_defaults] ADD [min_int] BIGINT DEFAULT -9223372036854775808;
+
+-- Create table with bit field defaults
+CREATE TABLE [edge].[flags] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [is_enabled] BIT NOT NULL DEFAULT 1,
+    [is_deleted] BIT NOT NULL DEFAULT 0,
+    [is_visible] BIT DEFAULT 1,
+    [is_archived] BIT DEFAULT 0
+);
+
+-- Add JSON default (for NVARCHAR storing JSON)
+ALTER TABLE [edge].[test_defaults] ADD [json_config] NVARCHAR(MAX) DEFAULT N'{"enabled": true, "count": 0}';
+`,
+			description: "Edge cases for default constraints including special characters, unicode, extreme values",
 		},
 	}
 
@@ -962,8 +1360,13 @@ func compareSchemas(schemaA, schemaC *storepb.DatabaseSchemaMetadata) error {
 	normalizeSchema(schemaA)
 	normalizeSchema(schemaC)
 
-	// Use protocmp for detailed comparison
-	if diff := cmp.Diff(schemaA, schemaC, protocmp.Transform()); diff != "" {
+	// Use protocmp for detailed comparison, ignoring DefaultConstraintName field
+	// DefaultConstraintName is only populated when syncing from database, not when parsing SQL
+	opts := cmp.Options{
+		protocmp.Transform(),
+		protocmp.IgnoreFields(&storepb.ColumnMetadata{}, "default_constraint_name"),
+	}
+	if diff := cmp.Diff(schemaA, schemaC, opts); diff != "" {
 		return errors.Errorf("schemas differ:\n%s", diff)
 	}
 

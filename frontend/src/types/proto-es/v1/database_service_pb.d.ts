@@ -729,6 +729,13 @@ export declare type SchemaMetadata = Message<"bytebase.v1.SchemaMetadata"> & {
    * @generated from field: bool skip_dump = 16;
    */
   skipDump: boolean;
+
+  /**
+   * The comment is the comment of a schema.
+   *
+   * @generated from field: string comment = 17;
+   */
+  comment: string;
 };
 
 /**
@@ -811,6 +818,13 @@ export declare type EventMetadata = Message<"bytebase.v1.EventMetadata"> & {
    * @generated from field: string collation_connection = 6;
    */
   collationConnection: string;
+
+  /**
+   * The comment is the comment of an event.
+   *
+   * @generated from field: string comment = 7;
+   */
+  comment: string;
 };
 
 /**
@@ -1501,6 +1515,32 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
    * @generated from field: int64 identity_increment = 21;
    */
   identityIncrement: bigint;
+
+  /**
+   * The default_constraint_name is the name of the default constraint, MSSQL only.
+   * In MSSQL, default values are implemented as named constraints. When modifying or
+   * dropping a column's default value, you must reference the constraint by name.
+   * This field stores the actual constraint name from the database.
+   *
+   * Example: A column definition like:
+   *   CREATE TABLE employees (
+   *     status NVARCHAR(20) DEFAULT 'active'
+   *   )
+   *
+   * Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+   * or a user-defined name if specified:
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+   *
+   * To modify the default, you must first drop the existing constraint by name:
+   *   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+   *
+   * This field is populated when syncing from the database. When empty (e.g., when parsing
+   * from SQL files), the system cannot automatically drop the constraint.
+   *
+   * @generated from field: string default_constraint_name = 22;
+   */
+  defaultConstraintName: string;
 };
 
 /**
@@ -1884,6 +1924,13 @@ export declare type ProcedureMetadata = Message<"bytebase.v1.ProcedureMetadata">
    * @generated from field: string sql_mode = 7;
    */
   sqlMode: string;
+
+  /**
+   * The comment is the comment of a procedure.
+   *
+   * @generated from field: string comment = 9;
+   */
+  comment: string;
 
   /**
    * @generated from field: bool skip_dump = 8;

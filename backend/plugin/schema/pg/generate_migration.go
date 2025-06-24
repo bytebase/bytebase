@@ -699,10 +699,51 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			if alterTableSQL != "" {
 				_, _ = buf.WriteString("\n")
 			}
+
+			// Handle table comment changes
+			if err := generateTableCommentChanges(buf, tableDiff); err != nil {
+				return err
+			}
+
+			// Handle column comment changes
+			if err := generateColumnCommentChanges(buf, tableDiff); err != nil {
+				return err
+			}
+
+			// Handle index comment changes
+			if err := generateIndexCommentChanges(buf, tableDiff); err != nil {
+				return err
+			}
 		}
 	}
 
-	return nil
+	// Handle schema comment changes
+	if err := generateSchemaCommentChanges(buf, diff); err != nil {
+		return err
+	}
+
+	// Handle view comment changes
+	if err := generateViewCommentChanges(buf, diff); err != nil {
+		return err
+	}
+
+	// Handle materialized view comment changes
+	if err := generateMaterializedViewCommentChanges(buf, diff); err != nil {
+		return err
+	}
+
+	// Handle function comment changes
+	if err := generateFunctionCommentChanges(buf, diff); err != nil {
+		return err
+	}
+
+	// Handle sequence comment changes
+	if err := generateSequenceCommentChanges(buf, diff); err != nil {
+		return err
+	}
+
+	// Handle enum type comment changes
+	return generateEnumTypeCommentChanges(buf, diff)
 }
 
 func generateCreateTable(schemaName, tableName string, table *storepb.TableMetadata, includeForeignKeys bool) (string, error) {
@@ -1481,6 +1522,382 @@ func writeMigrationIndex(out *strings.Builder, schema, table string, index *stor
 	// Note: IndexMetadata doesn't have a Where field in the current protobuf definition
 	// This would need to be added if partial indexes need to be supported
 
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// generateTableCommentChanges generates COMMENT ON TABLE statements for table comment changes
+func generateTableCommentChanges(buf *strings.Builder, tableDiff *schema.TableDiff) error {
+	if tableDiff.OldTable == nil || tableDiff.NewTable == nil {
+		return nil
+	}
+
+	oldComment := tableDiff.OldTable.Comment
+	newComment := tableDiff.NewTable.Comment
+
+	// If comments are different, generate COMMENT ON TABLE statement
+	if oldComment != newComment {
+		writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, newComment)
+	}
+
+	return nil
+}
+
+// generateColumnCommentChanges generates COMMENT ON COLUMN statements for column comment changes
+func generateColumnCommentChanges(buf *strings.Builder, tableDiff *schema.TableDiff) error {
+	if tableDiff.OldTable == nil || tableDiff.NewTable == nil {
+		return nil
+	}
+
+	// Build maps for efficient lookup
+	oldColumnMap := make(map[string]*storepb.ColumnMetadata)
+	for _, col := range tableDiff.OldTable.Columns {
+		oldColumnMap[col.Name] = col
+	}
+
+	newColumnMap := make(map[string]*storepb.ColumnMetadata)
+	for _, col := range tableDiff.NewTable.Columns {
+		newColumnMap[col.Name] = col
+	}
+
+	// Check for comment changes in existing columns
+	for _, newCol := range tableDiff.NewTable.Columns {
+		if oldCol, exists := oldColumnMap[newCol.Name]; exists {
+			// Column exists in both old and new - check if comment changed
+			if oldCol.Comment != newCol.Comment {
+				writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, newCol.Name, newCol.Comment)
+			}
+		} else {
+			// New column - if it has a comment, add it
+			if newCol.Comment != "" {
+				writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, newCol.Name, newCol.Comment)
+			}
+		}
+	}
+
+	// Check for columns that were removed (comments need to be handled by column drop which is handled elsewhere)
+
+	return nil
+}
+
+// writeCommentOnTable writes a COMMENT ON TABLE statement
+func writeCommentOnTable(out *strings.Builder, schema, table, comment string) {
+	_, _ = out.WriteString(`COMMENT ON TABLE "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(table)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeCommentOnColumn writes a COMMENT ON COLUMN statement
+func writeCommentOnColumn(out *strings.Builder, schema, table, column, comment string) {
+	_, _ = out.WriteString(`COMMENT ON COLUMN "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(table)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(column)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// generateSchemaCommentChanges generates COMMENT ON SCHEMA statements for schema comment changes
+func generateSchemaCommentChanges(buf *strings.Builder, diff *schema.MetadataDiff) error {
+	for _, schemaDiff := range diff.SchemaChanges {
+		if schemaDiff.Action == schema.MetadataDiffActionAlter {
+			if schemaDiff.OldSchema == nil || schemaDiff.NewSchema == nil {
+				continue
+			}
+
+			oldComment := schemaDiff.OldSchema.Comment
+			newComment := schemaDiff.NewSchema.Comment
+
+			// If comments are different, generate COMMENT ON SCHEMA statement
+			if oldComment != newComment {
+				writeCommentOnSchema(buf, schemaDiff.SchemaName, newComment)
+			}
+		}
+	}
+	return nil
+}
+
+// generateViewCommentChanges generates COMMENT ON VIEW statements for view comment changes
+func generateViewCommentChanges(buf *strings.Builder, diff *schema.MetadataDiff) error {
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionAlter {
+			if viewDiff.OldView == nil || viewDiff.NewView == nil {
+				continue
+			}
+
+			oldComment := viewDiff.OldView.Comment
+			newComment := viewDiff.NewView.Comment
+
+			// If comments are different, generate COMMENT ON VIEW statement
+			if oldComment != newComment {
+				writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, newComment)
+			}
+		}
+	}
+	return nil
+}
+
+// generateMaterializedViewCommentChanges generates COMMENT ON MATERIALIZED VIEW statements
+func generateMaterializedViewCommentChanges(buf *strings.Builder, diff *schema.MetadataDiff) error {
+	for _, mvDiff := range diff.MaterializedViewChanges {
+		if mvDiff.Action == schema.MetadataDiffActionAlter {
+			if mvDiff.OldMaterializedView == nil || mvDiff.NewMaterializedView == nil {
+				continue
+			}
+
+			oldComment := mvDiff.OldMaterializedView.Comment
+			newComment := mvDiff.NewMaterializedView.Comment
+
+			// If comments are different, generate COMMENT ON MATERIALIZED VIEW statement
+			if oldComment != newComment {
+				writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, newComment)
+			}
+		}
+	}
+	return nil
+}
+
+// generateFunctionCommentChanges generates COMMENT ON FUNCTION statements for function comment changes
+func generateFunctionCommentChanges(buf *strings.Builder, diff *schema.MetadataDiff) error {
+	for _, funcDiff := range diff.FunctionChanges {
+		if funcDiff.Action == schema.MetadataDiffActionAlter {
+			if funcDiff.OldFunction == nil || funcDiff.NewFunction == nil {
+				continue
+			}
+
+			oldComment := funcDiff.OldFunction.Comment
+			newComment := funcDiff.NewFunction.Comment
+
+			// If comments are different, generate COMMENT ON FUNCTION statement
+			if oldComment != newComment {
+				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, newComment)
+			}
+		}
+	}
+	return nil
+}
+
+// generateSequenceCommentChanges generates COMMENT ON SEQUENCE statements for sequence comment changes
+func generateSequenceCommentChanges(buf *strings.Builder, diff *schema.MetadataDiff) error {
+	for _, seqDiff := range diff.SequenceChanges {
+		if seqDiff.Action == schema.MetadataDiffActionAlter {
+			if seqDiff.OldSequence == nil || seqDiff.NewSequence == nil {
+				continue
+			}
+
+			oldComment := seqDiff.OldSequence.Comment
+			newComment := seqDiff.NewSequence.Comment
+
+			// If comments are different, generate COMMENT ON SEQUENCE statement
+			if oldComment != newComment {
+				writeCommentOnSequence(buf, seqDiff.SchemaName, seqDiff.SequenceName, newComment)
+			}
+		}
+	}
+	return nil
+}
+
+// generateIndexCommentChanges generates COMMENT ON INDEX statements for index comment changes within table diffs
+func generateIndexCommentChanges(buf *strings.Builder, tableDiff *schema.TableDiff) error {
+	for _, indexDiff := range tableDiff.IndexChanges {
+		if indexDiff.Action == schema.MetadataDiffActionAlter {
+			if indexDiff.OldIndex == nil || indexDiff.NewIndex == nil {
+				continue
+			}
+
+			oldComment := indexDiff.OldIndex.Comment
+			newComment := indexDiff.NewIndex.Comment
+
+			// If comments are different, generate COMMENT ON INDEX statement
+			if oldComment != newComment {
+				writeCommentOnIndex(buf, tableDiff.SchemaName, indexDiff.NewIndex.Name, newComment)
+			}
+		}
+	}
+	return nil
+}
+
+// Helper functions to write comment statements for different object types
+
+// writeCommentOnSchema writes a COMMENT ON SCHEMA statement
+func writeCommentOnSchema(out *strings.Builder, schema, comment string) {
+	_, _ = out.WriteString(`COMMENT ON SCHEMA "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeCommentOnView writes a COMMENT ON VIEW statement
+func writeCommentOnView(out *strings.Builder, schema, view, comment string) {
+	_, _ = out.WriteString(`COMMENT ON VIEW "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(view)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeCommentOnMaterializedView writes a COMMENT ON MATERIALIZED VIEW statement
+func writeCommentOnMaterializedView(out *strings.Builder, schema, view, comment string) {
+	_, _ = out.WriteString(`COMMENT ON MATERIALIZED VIEW "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(view)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeCommentOnFunction writes a COMMENT ON FUNCTION statement
+func writeCommentOnFunction(out *strings.Builder, schema, signature, comment string) {
+	_, _ = out.WriteString(`COMMENT ON FUNCTION "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`".`)
+	_, _ = out.WriteString(signature)
+	_, _ = out.WriteString(` IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeCommentOnSequence writes a COMMENT ON SEQUENCE statement
+func writeCommentOnSequence(out *strings.Builder, schema, sequence, comment string) {
+	_, _ = out.WriteString(`COMMENT ON SEQUENCE "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(sequence)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeCommentOnIndex writes a COMMENT ON INDEX statement
+func writeCommentOnIndex(out *strings.Builder, schema, index, comment string) {
+	_, _ = out.WriteString(`COMMENT ON INDEX "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(index)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// generateEnumTypeCommentChanges generates COMMENT ON TYPE statements for enum type comment changes
+func generateEnumTypeCommentChanges(buf *strings.Builder, diff *schema.MetadataDiff) error {
+	for _, enumDiff := range diff.EnumTypeChanges {
+		if enumDiff.Action == schema.MetadataDiffActionAlter {
+			if enumDiff.OldEnumType == nil || enumDiff.NewEnumType == nil {
+				continue
+			}
+
+			oldComment := enumDiff.OldEnumType.Comment
+			newComment := enumDiff.NewEnumType.Comment
+
+			// If comments are different, generate COMMENT ON TYPE statement
+			if oldComment != newComment {
+				writeCommentOnType(buf, enumDiff.SchemaName, enumDiff.EnumTypeName, newComment)
+			}
+		}
+	}
+	return nil
+}
+
+// writeCommentOnType writes a COMMENT ON TYPE statement
+func writeCommentOnType(out *strings.Builder, schema, typeName, comment string) {
+	_, _ = out.WriteString(`COMMENT ON TYPE "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(typeName)
+	_, _ = out.WriteString(`" IS `)
+	if comment == "" {
+		_, _ = out.WriteString(`NULL`)
+	} else {
+		_, _ = out.WriteString(`'`)
+		// Escape single quotes in the comment
+		escapedComment := strings.ReplaceAll(comment, "'", "''")
+		_, _ = out.WriteString(escapedComment)
+		_, _ = out.WriteString(`'`)
+	}
 	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
 }
