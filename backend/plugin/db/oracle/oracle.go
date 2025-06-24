@@ -292,7 +292,7 @@ func (d *Driver) getStatementWithResultLimit(stmt string, queryContext db.QueryC
 	if err != nil {
 		return "", err
 	}
-	if ok, err := skipAddLimit(stmt); err != nil && ok {
+	if ok, err := skipAddLimit(stmt); err == nil && ok {
 		return stmt, nil
 	}
 	switch {
