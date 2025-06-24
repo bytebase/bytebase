@@ -3340,6 +3340,32 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><p>The identity_increment is for identity columns, MSSQL only. </p></td>
                 </tr>
               
+                <tr>
+                  <td>default_constraint_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The default_constraint_name is the name of the default constraint, MSSQL only.
+In MSSQL, default values are implemented as named constraints. When modifying or
+dropping a column&#39;s default value, you must reference the constraint by name.
+This field stores the actual constraint name from the database.
+
+Example: A column definition like:
+  CREATE TABLE employees (
+    status NVARCHAR(20) DEFAULT &#39;active&#39;
+  )
+
+Will create a constraint with an auto-generated name like &#39;DF__employees__statu__3B75D760&#39;
+or a user-defined name if specified:
+  ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;active&#39; FOR status
+
+To modify the default, you must first drop the existing constraint by name:
+  ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+  ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;inactive&#39; FOR status
+
+This field is populated when syncing from the database. When empty (e.g., when parsing
+from SQL files), the system cannot automatically drop the constraint. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

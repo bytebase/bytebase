@@ -401,6 +401,7 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 		c.is_nullable,
 		c.is_identity,
 		d.definition AS default_value,
+		d.default_name AS default_name,
 		CAST(p.[value] AS nvarchar(4000)) AS comment,
 		id.seed_value AS seed_value,
 		id.increment_value AS increment_value
@@ -422,7 +423,7 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var schemaName, tableName, columnName, typeName, definition, collationName, defaultValue, comment sql.NullString
+		var schemaName, tableName, columnName, typeName, definition, collationName, defaultValue, defaultName, comment sql.NullString
 		var isComputed, isPersisted, isNullable, isIdentity sql.NullBool
 		var maxLength, precision, scale, seedValue, incrementValue sql.NullInt64
 		if err := rows.Scan(
@@ -440,6 +441,7 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 			&isNullable,
 			&isIdentity,
 			&defaultValue,
+			&defaultName,
 			&comment,
 			&seedValue,
 			&incrementValue,
@@ -466,6 +468,9 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 		}
 		if defaultValue.Valid {
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultValue.String}
+		}
+		if defaultName.Valid {
+			column.DefaultConstraintName = defaultName.String
 		}
 		column.Nullable = true
 		if isNullable.Valid && !isNullable.Bool {
