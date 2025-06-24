@@ -66,8 +66,8 @@ export function useInitializePlan(
       issueResult = await issueServiceClient.getIssue({
         name: `${projectNamePrefix}${projectId}/issues/${issueUid}`,
       });
-
       if (!issueResult.plan) {
+        // Should not happen, but handle gracefully
         throw new Error(`Issue ${issueUid} does not have an associated plan`);
       }
 

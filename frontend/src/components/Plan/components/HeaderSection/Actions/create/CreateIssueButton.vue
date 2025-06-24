@@ -173,7 +173,6 @@ const buildIssue = () => {
   const issue = emptyIssue();
   const me = useCurrentUserV1();
   issue.creator = `users/${me.value.email}`;
-  issue.project = project.value.name;
   issue.title = plan.value.title;
   issue.description = plan.value.description;
   issue.status = IssueStatus.OPEN;

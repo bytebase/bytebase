@@ -50,24 +50,19 @@ import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActio
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { emitWindowEvent } from "@/plugins";
-import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
-} from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import {
   getTimeForPbTimestamp,
   unknownUser,
   type ComposedIssue,
 } from "@/types";
-import { Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   getHighlightHTMLByRegExp,
   extractProjectResourceName,
   humanizeTs,
   issueV1Slug,
   extractIssueUID,
-  isDev,
 } from "@/utils";
 import { projectOfIssue } from "../logic";
 import IssueLabelSelector, {
@@ -254,23 +249,13 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
 });
 
 const issueUrl = (issue: ComposedIssue) => {
-  const route =
-    // TODO(steven): Remove this when we fully migrate to v1 issue detail page.
-    isDev() && issue.type === Issue_Type.DATABASE_CHANGE && !issue.rollout
-      ? router.resolve({
-          name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
-          params: {
-            projectId: extractProjectResourceName(issue.project),
-            issueId: extractIssueUID(issue.name),
-          },
-        })
-      : router.resolve({
-          name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-          params: {
-            projectId: extractProjectResourceName(issue.project),
-            issueSlug: issueV1Slug(issue.name, issue.title),
-          },
-        });
+  const route = router.resolve({
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(issue.name),
+      issueSlug: issueV1Slug(issue.name, issue.title),
+    },
+  });
   return route.fullPath;
 };
 
