@@ -683,6 +683,15 @@ func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 		_, _ = buf.WriteString(" NOT NULL")
 	}
 
+	// Add default value if present
+	if column.GetDefaultExpression() != "" {
+		_, _ = buf.WriteString(" DEFAULT ")
+		_, _ = buf.WriteString(column.GetDefaultExpression())
+	} else if column.GetDefault() != nil {
+		_, _ = buf.WriteString(" DEFAULT ")
+		_, _ = buf.WriteString(column.GetDefault().Value)
+	}
+
 	return buf.String()
 }
 
@@ -725,7 +734,44 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 		_, _ = buf.WriteString(";\n")
 	}
 
+	// Handle default value changes
+	oldDefault := getColumnDefaultValue(colDiff.OldColumn)
+	newDefault := getColumnDefaultValue(colDiff.NewColumn)
+
+	if oldDefault != newDefault {
+		if newDefault != "" {
+			// Add or modify default constraint
+			_, _ = buf.WriteString("ALTER TABLE [")
+			_, _ = buf.WriteString(schemaName)
+			_, _ = buf.WriteString("].[")
+			_, _ = buf.WriteString(tableName)
+			_, _ = buf.WriteString("] ADD CONSTRAINT [DF_")
+			_, _ = buf.WriteString(tableName)
+			_, _ = buf.WriteString("_")
+			_, _ = buf.WriteString(colDiff.NewColumn.Name)
+			_, _ = buf.WriteString("] DEFAULT ")
+			_, _ = buf.WriteString(newDefault)
+			_, _ = buf.WriteString(" FOR [")
+			_, _ = buf.WriteString(colDiff.NewColumn.Name)
+			_, _ = buf.WriteString("];\n")
+		}
+	}
+
 	return buf.String()
+}
+
+// getColumnDefaultValue extracts the default value from a column
+func getColumnDefaultValue(column *storepb.ColumnMetadata) string {
+	if column == nil {
+		return ""
+	}
+	if column.GetDefaultExpression() != "" {
+		return column.GetDefaultExpression()
+	}
+	if column.GetDefault() != nil {
+		return column.GetDefault().Value
+	}
+	return ""
 }
 
 func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetadata) string {

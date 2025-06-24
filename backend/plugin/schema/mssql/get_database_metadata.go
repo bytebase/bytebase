@@ -808,19 +808,30 @@ func extractDataType(ctx parser.IData_typeContext) string {
 		return ""
 	}
 
-	// Use the parser context to get the text, avoiding manual string manipulation
-	text := ctx.GetText()
-
-	// The context should contain just the data type, but if IDENTITY is included,
-	// we can use the parser's token stream to get a cleaner result
-	if parser := ctx.GetParser(); parser != nil {
-		if tokens := parser.GetTokenStream(); tokens != nil {
-			// Get text from rule context which should be more accurate than GetText()
-			return tokens.GetTextFromRuleContext(ctx)
-		}
+	// Get the parser and token stream
+	parser := ctx.GetParser()
+	if parser == nil {
+		return ctx.GetText()
 	}
 
-	return text
+	tokens := parser.GetTokenStream()
+	if tokens == nil {
+		return ctx.GetText()
+	}
+
+	// Get the full text from the context
+	fullText := tokens.GetTextFromRuleContext(ctx)
+
+	// Remove IDENTITY specification if present
+	// IDENTITY columns should have their type without the IDENTITY part
+	// The IDENTITY info is stored in separate fields
+	if idx := strings.Index(strings.ToUpper(fullText), "IDENTITY"); idx != -1 {
+		// Extract just the data type part before IDENTITY
+		dataType := strings.TrimSpace(fullText[:idx])
+		return dataType
+	}
+
+	return fullText
 }
 
 // normalizeFuncProcNameSeparated extracts schema and name from func_proc_name_schema context

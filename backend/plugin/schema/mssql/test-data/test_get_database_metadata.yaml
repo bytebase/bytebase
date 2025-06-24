@@ -2093,7 +2093,7 @@
                 {
                   "name": "id",
                   "DefaultValue": null,
-                  "type": "INT IDENTITY(1,1)",
+                  "type": "INT",
                   "comment": "Unique product identifier",
                   "is_identity": true,
                   "identity_seed": 1,
