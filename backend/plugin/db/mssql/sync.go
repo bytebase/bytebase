@@ -470,7 +470,7 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultValue.String}
 		}
 		if defaultName.Valid {
-			column.DefaultName = defaultName.String
+			column.DefaultConstraintName = defaultName.String
 		}
 		column.Nullable = true
 		if isNullable.Valid && !isNullable.Bool {

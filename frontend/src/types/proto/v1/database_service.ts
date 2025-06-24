@@ -745,8 +745,29 @@ export interface ColumnMetadata {
   identitySeed: Long;
   /** The identity_increment is for identity columns, MSSQL only. */
   identityIncrement: Long;
-  /** The default_name is the name of the default constraint, MSSQL only. */
-  defaultName: string;
+  /**
+   * The default_constraint_name is the name of the default constraint, MSSQL only.
+   * In MSSQL, default values are implemented as named constraints. When modifying or
+   * dropping a column's default value, you must reference the constraint by name.
+   * This field stores the actual constraint name from the database.
+   *
+   * Example: A column definition like:
+   *   CREATE TABLE employees (
+   *     status NVARCHAR(20) DEFAULT 'active'
+   *   )
+   *
+   * Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+   * or a user-defined name if specified:
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+   *
+   * To modify the default, you must first drop the existing constraint by name:
+   *   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+   *
+   * This field is populated when syncing from the database. When empty (e.g., when parsing
+   * from SQL files), the system cannot automatically drop the constraint.
+   */
+  defaultConstraintName: string;
 }
 
 export enum ColumnMetadata_IdentityGeneration {
@@ -5302,7 +5323,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     identityGeneration: ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
     identitySeed: Long.ZERO,
     identityIncrement: Long.ZERO,
-    defaultName: "",
+    defaultConstraintName: "",
   };
 }
 
@@ -5365,8 +5386,8 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (!message.identityIncrement.equals(Long.ZERO)) {
       writer.uint32(168).int64(message.identityIncrement.toString());
     }
-    if (message.defaultName !== "") {
-      writer.uint32(178).string(message.defaultName);
+    if (message.defaultConstraintName !== "") {
+      writer.uint32(178).string(message.defaultConstraintName);
     }
     return writer;
   },
@@ -5535,7 +5556,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
             break;
           }
 
-          message.defaultName = reader.string();
+          message.defaultConstraintName = reader.string();
           continue;
         }
       }
@@ -5570,7 +5591,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
         : ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
       identitySeed: isSet(object.identitySeed) ? Long.fromValue(object.identitySeed) : Long.ZERO,
       identityIncrement: isSet(object.identityIncrement) ? Long.fromValue(object.identityIncrement) : Long.ZERO,
-      defaultName: isSet(object.defaultName) ? globalThis.String(object.defaultName) : "",
+      defaultConstraintName: isSet(object.defaultConstraintName) ? globalThis.String(object.defaultConstraintName) : "",
     };
   },
 
@@ -5633,8 +5654,8 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (!message.identityIncrement.equals(Long.ZERO)) {
       obj.identityIncrement = (message.identityIncrement || Long.ZERO).toString();
     }
-    if (message.defaultName !== "") {
-      obj.defaultName = message.defaultName;
+    if (message.defaultConstraintName !== "") {
+      obj.defaultConstraintName = message.defaultConstraintName;
     }
     return obj;
   },
@@ -5670,7 +5691,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     message.identityIncrement = (object.identityIncrement !== undefined && object.identityIncrement !== null)
       ? Long.fromValue(object.identityIncrement)
       : Long.ZERO;
-    message.defaultName = object.defaultName ?? "";
+    message.defaultConstraintName = object.defaultConstraintName ?? "";
     return message;
   },
 };

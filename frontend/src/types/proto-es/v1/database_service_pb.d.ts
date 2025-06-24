@@ -1517,11 +1517,30 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
   identityIncrement: bigint;
 
   /**
-   * The default_name is the name of the default constraint, MSSQL only.
+   * The default_constraint_name is the name of the default constraint, MSSQL only.
+   * In MSSQL, default values are implemented as named constraints. When modifying or
+   * dropping a column's default value, you must reference the constraint by name.
+   * This field stores the actual constraint name from the database.
    *
-   * @generated from field: string default_name = 22;
+   * Example: A column definition like:
+   *   CREATE TABLE employees (
+   *     status NVARCHAR(20) DEFAULT 'active'
+   *   )
+   *
+   * Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+   * or a user-defined name if specified:
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+   *
+   * To modify the default, you must first drop the existing constraint by name:
+   *   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+   *
+   * This field is populated when syncing from the database. When empty (e.g., when parsing
+   * from SQL files), the system cannot automatically drop the constraint.
+   *
+   * @generated from field: string default_constraint_name = 22;
    */
-  defaultName: string;
+  defaultConstraintName: string;
 };
 
 /**

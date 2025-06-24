@@ -1360,11 +1360,11 @@ func compareSchemas(schemaA, schemaC *storepb.DatabaseSchemaMetadata) error {
 	normalizeSchema(schemaA)
 	normalizeSchema(schemaC)
 
-	// Use protocmp for detailed comparison, ignoring DefaultName field
-	// DefaultName is only populated when syncing from database, not when parsing SQL
+	// Use protocmp for detailed comparison, ignoring DefaultConstraintName field
+	// DefaultConstraintName is only populated when syncing from database, not when parsing SQL
 	opts := cmp.Options{
 		protocmp.Transform(),
-		protocmp.IgnoreFields(&storepb.ColumnMetadata{}, "default_name"),
+		protocmp.IgnoreFields(&storepb.ColumnMetadata{}, "default_constraint_name"),
 	}
 	if diff := cmp.Diff(schemaA, schemaC, opts); diff != "" {
 		return errors.Errorf("schemas differ:\n%s", diff)

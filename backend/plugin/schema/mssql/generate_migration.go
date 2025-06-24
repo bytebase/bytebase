@@ -164,17 +164,17 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 
 					// If the column has a default constraint, drop it first
 					if getColumnDefaultValue(colDiff.OldColumn) != "" {
-						if colDiff.OldColumn.DefaultName != "" {
+						if colDiff.OldColumn.DefaultConstraintName != "" {
 							// Use the known constraint name directly
 							_, _ = buf.WriteString("ALTER TABLE [")
 							_, _ = buf.WriteString(tableDiff.SchemaName)
 							_, _ = buf.WriteString("].[")
 							_, _ = buf.WriteString(tableDiff.TableName)
 							_, _ = buf.WriteString("] DROP CONSTRAINT [")
-							_, _ = buf.WriteString(colDiff.OldColumn.DefaultName)
+							_, _ = buf.WriteString(colDiff.OldColumn.DefaultConstraintName)
 							_, _ = buf.WriteString("];\n")
 						}
-						// Note: If DefaultName is empty, we cannot drop the constraint automatically
+						// Note: If DefaultConstraintName is empty, we cannot drop the constraint automatically
 					}
 
 					_, _ = buf.WriteString("ALTER TABLE [")
@@ -756,17 +756,17 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 	if oldDefault != newDefault {
 		// First, drop the existing default constraint if it exists
 		if oldDefault != "" {
-			if colDiff.OldColumn.DefaultName != "" {
+			if colDiff.OldColumn.DefaultConstraintName != "" {
 				// Use the known constraint name directly (when synced from database)
 				_, _ = buf.WriteString("ALTER TABLE [")
 				_, _ = buf.WriteString(schemaName)
 				_, _ = buf.WriteString("].[")
 				_, _ = buf.WriteString(tableName)
 				_, _ = buf.WriteString("] DROP CONSTRAINT [")
-				_, _ = buf.WriteString(colDiff.OldColumn.DefaultName)
+				_, _ = buf.WriteString(colDiff.OldColumn.DefaultConstraintName)
 				_, _ = buf.WriteString("];\n")
 			}
-			// Note: If DefaultName is empty (e.g., when parsed from SQL), we cannot drop the constraint
+			// Note: If DefaultConstraintName is empty (e.g., when parsed from SQL), we cannot drop the constraint
 			// as we don't know its name. The user needs to drop it manually or sync from the database first.
 		}
 		// Then, add the new default constraint if specified

@@ -460,7 +460,7 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		IsIdentity:         column.IsIdentity,
 		IdentitySeed:       column.IdentitySeed,
 		IdentityIncrement:  column.IdentityIncrement,
-		DefaultName:        column.DefaultName,
+		DefaultConstraintName: column.DefaultConstraintName,
 	}
 	if metadata.HasDefault {
 		switch value := column.DefaultValue.(type) {
@@ -910,7 +910,7 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 		IsIdentity:         column.IsIdentity,
 		IdentitySeed:       column.IdentitySeed,
 		IdentityIncrement:  column.IdentityIncrement,
-		DefaultName:        column.DefaultName,
+		DefaultConstraintName: column.DefaultConstraintName,
 	}
 
 	if column.HasDefault {
