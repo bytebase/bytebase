@@ -705,11 +705,10 @@ export interface ColumnMetadata {
   /** The position is the position in columns. */
   position: number;
   hasDefault: boolean;
-  defaultNull?: boolean | undefined;
-  defaultString?: string | undefined;
-  defaultExpression?:
-    | string
-    | undefined;
+  /** The default value of column. */
+  defaultNull: boolean;
+  defaultString: string;
+  defaultExpression: string;
   /**
    * Oracle specific metadata.
    * The default_on_null is the default on null of a column.
@@ -5307,9 +5306,9 @@ function createBaseColumnMetadata(): ColumnMetadata {
     name: "",
     position: 0,
     hasDefault: false,
-    defaultNull: undefined,
-    defaultString: undefined,
-    defaultExpression: undefined,
+    defaultNull: false,
+    defaultString: "",
+    defaultExpression: "",
     defaultOnNull: false,
     onUpdate: "",
     nullable: false,
@@ -5338,13 +5337,13 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.hasDefault !== false) {
       writer.uint32(24).bool(message.hasDefault);
     }
-    if (message.defaultNull !== undefined) {
+    if (message.defaultNull !== false) {
       writer.uint32(32).bool(message.defaultNull);
     }
-    if (message.defaultString !== undefined) {
+    if (message.defaultString !== "") {
       writer.uint32(42).string(message.defaultString);
     }
-    if (message.defaultExpression !== undefined) {
+    if (message.defaultExpression !== "") {
       writer.uint32(50).string(message.defaultExpression);
     }
     if (message.defaultOnNull !== false) {
@@ -5573,9 +5572,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       position: isSet(object.position) ? globalThis.Number(object.position) : 0,
       hasDefault: isSet(object.hasDefault) ? globalThis.Boolean(object.hasDefault) : false,
-      defaultNull: isSet(object.defaultNull) ? globalThis.Boolean(object.defaultNull) : undefined,
-      defaultString: isSet(object.defaultString) ? globalThis.String(object.defaultString) : undefined,
-      defaultExpression: isSet(object.defaultExpression) ? globalThis.String(object.defaultExpression) : undefined,
+      defaultNull: isSet(object.defaultNull) ? globalThis.Boolean(object.defaultNull) : false,
+      defaultString: isSet(object.defaultString) ? globalThis.String(object.defaultString) : "",
+      defaultExpression: isSet(object.defaultExpression) ? globalThis.String(object.defaultExpression) : "",
       defaultOnNull: isSet(object.defaultOnNull) ? globalThis.Boolean(object.defaultOnNull) : false,
       onUpdate: isSet(object.onUpdate) ? globalThis.String(object.onUpdate) : "",
       nullable: isSet(object.nullable) ? globalThis.Boolean(object.nullable) : false,
@@ -5606,13 +5605,13 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.hasDefault !== false) {
       obj.hasDefault = message.hasDefault;
     }
-    if (message.defaultNull !== undefined) {
+    if (message.defaultNull !== false) {
       obj.defaultNull = message.defaultNull;
     }
-    if (message.defaultString !== undefined) {
+    if (message.defaultString !== "") {
       obj.defaultString = message.defaultString;
     }
-    if (message.defaultExpression !== undefined) {
+    if (message.defaultExpression !== "") {
       obj.defaultExpression = message.defaultExpression;
     }
     if (message.defaultOnNull !== false) {
@@ -5668,9 +5667,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     message.name = object.name ?? "";
     message.position = object.position ?? 0;
     message.hasDefault = object.hasDefault ?? false;
-    message.defaultNull = object.defaultNull ?? undefined;
-    message.defaultString = object.defaultString ?? undefined;
-    message.defaultExpression = object.defaultExpression ?? undefined;
+    message.defaultNull = object.defaultNull ?? false;
+    message.defaultString = object.defaultString ?? "";
+    message.defaultExpression = object.defaultExpression ?? "";
     message.defaultOnNull = object.defaultOnNull ?? false;
     message.onUpdate = object.onUpdate ?? "";
     message.nullable = object.nullable ?? false;

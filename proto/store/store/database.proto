@@ -3,7 +3,6 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/wrappers.proto";
 import "store/common.proto";
 
 option go_package = "generated-go/store";
@@ -443,14 +442,10 @@ message ColumnMetadata {
   // The position is the position in columns.
   int32 position = 2;
 
-  // The default_value is the default value of a column.
-  oneof default_value {
-    // The default is the default of a column. Use google.protobuf.StringValue
-    // to distinguish between an empty string default value or no default.
-    google.protobuf.StringValue default = 3;
-    bool default_null = 4;
-    string default_expression = 5;
-  }
+  // The default value of column.
+  string default = 3;
+  bool default_null = 4;
+  string default_expression = 5;
 
   // Oracle specific metadata.
   // The default_on_null is the default on null of a column.

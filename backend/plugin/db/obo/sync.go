@@ -174,7 +174,7 @@ func getTableColumns(ctx context.Context, txn *sql.Tx, schemaName string) (map[d
 		}
 		if defaultStr.Valid {
 			// TODO: use correct default type
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+			column.DefaultExpression = defaultStr.String
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {

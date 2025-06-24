@@ -452,7 +452,7 @@ func (d *Driver) getTableSchema(ctx context.Context, database string) (map[strin
 		}
 		if defaultStr.Valid {
 			// TODO: use correct default type
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+			column.DefaultExpression = defaultStr.String
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {

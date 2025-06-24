@@ -702,9 +702,9 @@ func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 	if column.GetDefaultExpression() != "" {
 		_, _ = buf.WriteString(" DEFAULT ")
 		_, _ = buf.WriteString(column.GetDefaultExpression())
-	} else if column.GetDefault() != nil {
+	} else if column.GetDefault() != "" {
 		_, _ = buf.WriteString(" DEFAULT ")
-		_, _ = buf.WriteString(column.GetDefault().Value)
+		_, _ = buf.WriteString(column.GetDefault())
 	}
 
 	return buf.String()
@@ -797,8 +797,8 @@ func getColumnDefaultValue(column *storepb.ColumnMetadata) string {
 	if column.GetDefaultExpression() != "" {
 		return column.GetDefaultExpression()
 	}
-	if column.GetDefault() != nil {
-		return column.GetDefault().Value
+	if column.GetDefault() != "" {
+		return column.GetDefault()
 	}
 	return ""
 }

@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -392,7 +390,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 								for i, column := range columns {
 									if column.Name == columnName {
 										newColumn := columns[i]
-										newColumn.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoRandText}
+										newColumn.DefaultExpression = autoRandText
 										break
 									}
 								}
@@ -491,7 +489,7 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 		// In TiDB 7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
 		switch {
 		case isCurrentTimestampLike(defaultStr.String):
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+			column.DefaultExpression = defaultStr.String
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
 			// for case:
 			//  CREATE TABLE t1(
@@ -500,25 +498,23 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 			// In this case, the extra value is "DEFAULT_GENERATED on update CURRENT_TIMESTAMP".
 			// But the default value is a constant.
 			if isTimeConstant(defaultStr.String) {
-				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+				column.Default = defaultStr.String
 			} else {
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+				column.DefaultExpression = fmt.Sprintf("(%s)", defaultStr.String)
 			}
 		default:
 			// For non-generated and non CURRENT_XXX default value, use string.
-			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+			column.Default = defaultStr.String
 		}
 	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 		// TODO(zp): refactor column default value.
 		// Use the upper case to consistent with MySQL Dump.
-		column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
+		column.DefaultExpression = autoIncrementSymbol
 	} else if nullableBool {
 		// This is NULL if the column has an explicit default of NULL,
 		// or if the column definition includes no DEFAULT clause.
 		// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
-		column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
-			DefaultNull: true,
-		}
+		column.DefaultNull = true
 	}
 
 	if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {

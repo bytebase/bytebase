@@ -1133,9 +1133,7 @@ func normalizeMetadataForComparison(metadata *storepb.DatabaseSchemaMetadata) {
 			for _, col := range table.Columns {
 				if col.GetDefaultExpression() == "AUTO_INCREMENT" {
 					// Keep the AUTO_INCREMENT marker but clear any current value
-					col.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{
-						DefaultExpression: "AUTO_INCREMENT",
-					}
+					col.DefaultExpression = "AUTO_INCREMENT"
 				}
 			}
 

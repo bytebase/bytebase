@@ -2148,7 +2148,7 @@ ColumnMetadata is the metadata for columns.
 | name | [string](#string) |  | The name is the name of a column. |
 | position | [int32](#int32) |  | The position is the position in columns. |
 | has_default | [bool](#bool) |  |  |
-| default_null | [bool](#bool) |  |  |
+| default_null | [bool](#bool) |  | The default value of column. |
 | default_string | [string](#string) |  |  |
 | default_expression | [string](#string) |  |  |
 | default_on_null | [bool](#bool) |  | Oracle specific metadata. The default_on_null is the default on null of a column. |

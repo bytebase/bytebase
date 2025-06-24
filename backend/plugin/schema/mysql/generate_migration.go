@@ -428,7 +428,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 		// Handle AUTO_INCREMENT before default value
 		if hasAutoIncrement(col) {
 			_, _ = buf.WriteString(" AUTO_INCREMENT")
-		} else if col.DefaultValue != nil && !hasAutoIncrement(col) {
+		} else if hasDefaultValue(col) && !hasAutoIncrement(col) {
 			_, _ = buf.WriteString(" DEFAULT ")
 			_, _ = buf.WriteString(getDefaultExpression(col))
 		}
@@ -551,7 +551,7 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 	// Handle AUTO_INCREMENT before default value
 	if hasAutoIncrement(column) {
 		_, _ = buf.WriteString(" AUTO_INCREMENT")
-	} else if column.DefaultValue != nil && !hasAutoIncrement(column) {
+	} else if hasDefaultValue(column) && !hasAutoIncrement(column) {
 		_, _ = buf.WriteString(" DEFAULT ")
 		_, _ = buf.WriteString(getDefaultExpression(column))
 	}
@@ -598,7 +598,7 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 	// Handle AUTO_INCREMENT before default value
 	if hasAutoIncrement(column) {
 		_, _ = buf.WriteString(" AUTO_INCREMENT")
-	} else if column.DefaultValue != nil && !hasAutoIncrement(column) {
+	} else if hasDefaultValue(column) && !hasAutoIncrement(column) {
 		_, _ = buf.WriteString(" DEFAULT ")
 		_, _ = buf.WriteString(getDefaultExpression(column))
 	}
@@ -884,27 +884,37 @@ func hasCreateOrAlterObjects(diff *schema.MetadataDiff) bool {
 }
 
 func getDefaultExpression(column *storepb.ColumnMetadata) string {
-	if column == nil || column.DefaultValue == nil {
+	if column == nil {
 		return ""
 	}
 
-	if expr := column.GetDefaultExpression(); expr != "" {
-		return expr
+	// Check for expression-based default first
+	if column.DefaultExpression != "" {
+		return column.DefaultExpression
 	}
 
-	if def := column.GetDefault(); def != nil && def.Value != "" {
+	// Check for string default value
+	if column.Default != "" {
 		// Check if it's a numeric value or needs quotes
-		if isNumeric(def.Value) || isKeyword(def.Value) {
-			return def.Value
+		if isNumeric(column.Default) || isKeyword(column.Default) {
+			return column.Default
 		}
-		return fmt.Sprintf("'%s'", escapeString(def.Value))
+		return fmt.Sprintf("'%s'", escapeString(column.Default))
 	}
 
-	if column.GetDefaultNull() {
+	// Check for NULL default
+	if column.DefaultNull {
 		return "NULL"
 	}
 
 	return ""
+}
+
+func hasDefaultValue(column *storepb.ColumnMetadata) bool {
+	if column == nil {
+		return false
+	}
+	return column.DefaultNull || column.DefaultExpression != "" || (column.Default != "")
 }
 
 func hasAutoIncrement(column *storepb.ColumnMetadata) bool {

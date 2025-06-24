@@ -18,9 +18,9 @@ export const NO_DEFAULT_OPTION: DefaultValueOption = {
   key: "no-default",
   value: {
     hasDefault: false,
-    defaultNull: undefined,
-    defaultString: undefined,
-    defaultExpression: undefined,
+    defaultNull: false,
+    defaultString: "",
+    defaultExpression: "",
   },
 };
 
@@ -29,8 +29,8 @@ export const DEFAULT_NULL_OPTION: DefaultValueOption = {
   value: {
     hasDefault: true,
     defaultNull: true,
-    defaultString: undefined,
-    defaultExpression: undefined,
+    defaultString: "",
+    defaultExpression: "",
   },
 };
 
@@ -38,7 +38,9 @@ export const EMPTY_STRING_OPTION: DefaultValueOption = {
   key: "empty-string",
   value: {
     hasDefault: true,
+    defaultNull: false,
     defaultString: "",
+    defaultExpression: "",
   },
 };
 
@@ -46,9 +48,9 @@ export const DEFAULT_STRING_OPTION: DefaultValueOption = {
   key: "string",
   value: {
     hasDefault: true,
-    defaultNull: undefined,
+    defaultNull: false,
     defaultString: "",
-    defaultExpression: undefined,
+    defaultExpression: "",
   },
 };
 
@@ -56,8 +58,8 @@ export const DEFAULT_EXPRESSION_OPTION: DefaultValueOption = {
   key: "expression",
   value: {
     hasDefault: true,
-    defaultNull: undefined,
-    defaultString: undefined,
+    defaultNull: false,
+    defaultString: "",
     defaultExpression: "",
   },
 };
@@ -66,6 +68,8 @@ const INT_ZERO_OPTION: DefaultValueOption = {
   key: "zero",
   value: {
     hasDefault: true,
+    defaultNull: false,
+    defaultString: "",
     defaultExpression: "0",
   },
 };
@@ -74,6 +78,8 @@ const BOOLEAN_TRUE_OPTION: DefaultValueOption = {
   key: "true",
   value: {
     hasDefault: true,
+    defaultNull: false,
+    defaultString: "",
     defaultExpression: "true",
   },
 };
@@ -82,6 +88,8 @@ const BOOLEAN_FALSE_OPTION: DefaultValueOption = {
   key: "false",
   value: {
     hasDefault: true,
+    defaultNull: false,
+    defaultString: "",
     defaultExpression: "false",
   },
 };

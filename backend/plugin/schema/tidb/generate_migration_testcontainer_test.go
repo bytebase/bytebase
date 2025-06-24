@@ -979,14 +979,10 @@ func normalizeMetadataForComparison(metadata *storepb.DatabaseSchemaMetadata) {
 			// Clear auto-increment and auto-random values as they might differ
 			for _, col := range table.Columns {
 				if col.GetDefaultExpression() == "AUTO_INCREMENT" {
-					col.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{
-						DefaultExpression: "AUTO_INCREMENT",
-					}
+					col.DefaultExpression = "AUTO_INCREMENT"
 				} else if strings.HasPrefix(col.GetDefaultExpression(), "AUTO_RANDOM") {
 					// Keep the AUTO_RANDOM marker but normalize the value
-					col.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{
-						DefaultExpression: "AUTO_RANDOM",
-					}
+					col.DefaultExpression = "AUTO_RANDOM"
 				}
 				// Clear column position as it might change during DDL operations
 				col.Position = 0
