@@ -100,6 +100,8 @@ message SchemaMetadata {
 
   string owner = 12;
 
+  string comment = 13;
+
   repeated EventMetadata events = 14;
 
   repeated EnumTypeMetadata enum_types = 15;
@@ -134,6 +136,8 @@ message EventMetadata {
   string character_set_client = 5;
 
   string collation_connection = 6;
+
+  string comment = 7;
 }
 
 message SequenceMetadata {
@@ -624,6 +628,8 @@ message ProcedureMetadata {
   string database_collation = 6;
 
   string sql_mode = 7;
+
+  string comment = 9;
 
   bool skip_dump = 8;
 }

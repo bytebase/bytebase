@@ -516,6 +516,9 @@ message SchemaMetadata {
   repeated EnumTypeMetadata enum_types = 15;
 
   bool skip_dump = 16;
+
+  // The comment is the comment of a schema.
+  string comment = 17;
 }
 
 message EnumTypeMetadata {
@@ -545,6 +548,9 @@ message EventMetadata {
   string character_set_client = 5;
 
   string collation_connection = 6;
+
+  // The comment is the comment of an event.
+  string comment = 7;
 }
 
 message SequenceMetadata {
@@ -960,6 +966,9 @@ message ProcedureMetadata {
   string database_collation = 6;
 
   string sql_mode = 7;
+
+  // The comment is the comment of a procedure.
+  string comment = 9;
 
   bool skip_dump = 8;
 }

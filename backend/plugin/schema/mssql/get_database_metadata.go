@@ -33,7 +33,7 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 
 	extractor := &metadataExtractor{
 		currentDatabase: "",
-		currentSchema:   defaultSchema,
+		currentSchema:   "dbo", // Default schema for MSSQL
 		schemas:         make(map[string]*storepb.SchemaMetadata),
 		tables:          make(map[tableKey]*storepb.TableMetadata),
 	}
@@ -83,7 +83,7 @@ type metadataExtractor struct {
 // Helper function to get or create schema
 func (e *metadataExtractor) getOrCreateSchema(schemaName string) *storepb.SchemaMetadata {
 	if schemaName == "" {
-		schemaName = defaultSchema
+		schemaName = "dbo" // Default schema for MSSQL
 	}
 
 	if schema, exists := e.schemas[schemaName]; exists {
@@ -808,14 +808,27 @@ func extractDataType(ctx parser.IData_typeContext) string {
 		return ""
 	}
 
-	// The parser sometimes includes IDENTITY in the data type context
-	// We need to extract just the actual data type
-	fullText := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	// Get the parser and token stream
+	parser := ctx.GetParser()
+	if parser == nil {
+		return ctx.GetText()
+	}
 
-	// Check if IDENTITY is included
-	if identityIdx := strings.Index(strings.ToUpper(fullText), "IDENTITY"); identityIdx > 0 {
-		// Return just the data type part before IDENTITY
-		return strings.TrimSpace(fullText[:identityIdx])
+	tokens := parser.GetTokenStream()
+	if tokens == nil {
+		return ctx.GetText()
+	}
+
+	// Get the full text from the context
+	fullText := tokens.GetTextFromRuleContext(ctx)
+
+	// Remove IDENTITY specification if present
+	// IDENTITY columns should have their type without the IDENTITY part
+	// The IDENTITY info is stored in separate fields
+	if idx := strings.Index(strings.ToUpper(fullText), "IDENTITY"); idx != -1 {
+		// Extract just the data type part before IDENTITY
+		dataType := strings.TrimSpace(fullText[:idx])
+		return dataType
 	}
 
 	return fullText
@@ -872,4 +885,204 @@ func (*metadataExtractor) normalizeSimpleNameSeparated(ctx parser.ISimple_nameCo
 		}
 	}
 	return schema, name
+}
+
+// EnterExecute_statement is called when entering an execute statement (like EXEC sp_addextendedproperty)
+func (e *metadataExtractor) EnterExecute_statement(ctx *parser.Execute_statementContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Check if this is an extended property statement
+	e.handleExtendedProperty(ctx)
+}
+
+// handleExtendedProperty parses extended property statements and applies comments to tables/columns
+func (e *metadataExtractor) handleExtendedProperty(ctx *parser.Execute_statementContext) {
+	// Use parser AST instead of string manipulation
+	e.parseExtendedPropertyFromAST(ctx)
+}
+
+// parseExtendedPropertyFromAST parses the extended property statement using the AST
+func (e *metadataExtractor) parseExtendedPropertyFromAST(ctx *parser.Execute_statementContext) {
+	// Check if this is sp_addextendedproperty by examining the procedure name
+	if ctx.Execute_body() == nil {
+		return
+	}
+
+	executeBody := ctx.Execute_body()
+	if executeBody.Func_proc_name_server_database_schema() == nil {
+		return
+	}
+
+	// Get procedure name
+	procName := executeBody.Func_proc_name_server_database_schema()
+	if procName.GetProcedure() == nil {
+		return
+	}
+
+	procedureName, _ := tsql.NormalizeTSQLIdentifier(procName.GetProcedure())
+	if !strings.EqualFold(procedureName, "sp_addextendedproperty") {
+		return
+	}
+
+	// Parse the arguments using the AST
+	e.parseExtendedPropertyFromExecuteBody(executeBody)
+}
+
+// EnterExecute_body is called when entering an execute_body parse tree node
+func (e *metadataExtractor) EnterExecute_body(ctx *parser.Execute_bodyContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Parse extended property statements
+	e.parseExtendedPropertyFromExecuteBody(ctx)
+}
+
+// parseExtendedPropertyFromExecuteBody extracts extended property information from the execute body AST
+func (e *metadataExtractor) parseExtendedPropertyFromExecuteBody(executeBody parser.IExecute_bodyContext) {
+	// Use parser-based approach to extract procedure name and parameters
+	if executeBody == nil {
+		return
+	}
+
+	// Get the procedure name
+	procNameCtx := executeBody.Func_proc_name_server_database_schema()
+	if procNameCtx == nil {
+		return
+	}
+
+	// Extract the procedure name and check if it's sp_addextendedproperty
+	procName := e.extractProcedureName(procNameCtx)
+	if !strings.EqualFold(procName, "sp_addextendedproperty") {
+		return
+	}
+
+	// Extract parameters using the existing flatten function
+	var args []string
+	if argCtx := executeBody.Execute_statement_arg(); argCtx != nil {
+		unnamedArgs := tsql.FlattenExecuteStatementArgExecuteStatementArgUnnamed(argCtx)
+		for _, unnamed := range unnamedArgs {
+			if value := e.extractUnnamedArgumentValue(unnamed); value != "" {
+				args = append(args, value)
+			}
+		}
+	}
+
+	if len(args) < 6 {
+		return
+	}
+
+	// Parse extended property parameters
+	e.parseExtendedPropertyFromStringArgs(args)
+}
+
+// parseExtendedPropertyFromStringArgs parses extended property information from string arguments
+func (e *metadataExtractor) parseExtendedPropertyFromStringArgs(args []string) {
+	if len(args) < 6 {
+		return
+	}
+
+	// Validate first argument is MS_Description
+	if !strings.EqualFold(args[0], "MS_Description") {
+		return
+	}
+
+	comment := args[1]
+
+	// Parse level information
+	var schemaName, tableName, columnName string
+	for i := 2; i < len(args)-1; i += 2 {
+		if i+1 >= len(args) {
+			break
+		}
+
+		levelType := strings.ToUpper(args[i])
+		levelName := args[i+1]
+
+		switch levelType {
+		case "SCHEMA":
+			schemaName = levelName
+		case "TABLE":
+			tableName = levelName
+		case "COLUMN":
+			columnName = levelName
+		}
+	}
+
+	if schemaName != "" && tableName != "" {
+		e.applyComment(schemaName, tableName, columnName, comment)
+	}
+}
+
+// extractProcedureName extracts the procedure name from the parser context
+func (*metadataExtractor) extractProcedureName(ctx parser.IFunc_proc_name_server_database_schemaContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	// Try to get the procedure name at different levels
+	if dbSchemaCtx := ctx.Func_proc_name_database_schema(); dbSchemaCtx != nil {
+		if schemaCtx := dbSchemaCtx.Func_proc_name_schema(); schemaCtx != nil {
+			if procName := schemaCtx.GetProcedure(); procName != nil {
+				return procName.GetText()
+			}
+		}
+	}
+
+	// Fallback to getting the full text if structure is not as expected
+	return ctx.GetText()
+}
+
+// extractUnnamedArgumentValue extracts the value from an unnamed execute statement argument
+func (e *metadataExtractor) extractUnnamedArgumentValue(unnamed parser.IExecute_statement_arg_unnamedContext) string {
+	if unnamed == nil {
+		return ""
+	}
+
+	// Get the text directly from the context
+	text := unnamed.GetText()
+	return e.cleanArgumentValue(text)
+}
+
+// cleanArgumentValue cleans up an argument value by removing quotes and handling escapes
+func (*metadataExtractor) cleanArgumentValue(value string) string {
+	value = strings.TrimSpace(value)
+
+	// Remove surrounding quotes if present
+	if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
+		// Remove quotes and handle escaped quotes
+		return strings.ReplaceAll(value[1:len(value)-1], "''", "'")
+	}
+
+	// Handle N'string' format
+	if len(value) >= 3 && strings.HasPrefix(strings.ToUpper(value), "N'") && value[len(value)-1] == '\'' {
+		return strings.ReplaceAll(value[2:len(value)-1], "''", "'")
+	}
+
+	return value
+}
+
+// applyComment applies a comment to the appropriate table or column metadata
+func (e *metadataExtractor) applyComment(schemaName, tableName, columnName, comment string) {
+	tableKey := tableKey{schema: schemaName, table: tableName}
+	tableMetadata := e.tables[tableKey]
+	if tableMetadata == nil {
+		// Table doesn't exist yet, create it
+		tableMetadata = e.getOrCreateTable(schemaName, tableName)
+	}
+
+	if columnName != "" {
+		// Column comment
+		for _, col := range tableMetadata.Columns {
+			if col.Name == columnName {
+				col.Comment = comment
+				break
+			}
+		}
+	} else {
+		// Table comment
+		tableMetadata.Comment = comment
+	}
 }

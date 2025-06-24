@@ -510,6 +510,194 @@ CREATE TABLE order_items (
 `,
 			description: "Circular foreign key dependencies",
 		},
+		{
+			name: "table_and_column_comments",
+			initialSchema: `
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    description TEXT,
+    category_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_category (category_id)
+);
+
+CREATE TABLE categories (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
+);
+`,
+			migrationDDL: `
+-- Add comments to existing table and columns
+ALTER TABLE products COMMENT = 'Product catalog table storing all available products';
+ALTER TABLE products MODIFY COLUMN name VARCHAR(100) NOT NULL COMMENT 'Product display name';
+ALTER TABLE products MODIFY COLUMN price DECIMAL(10, 2) NOT NULL COMMENT 'Product price in USD';
+ALTER TABLE products MODIFY COLUMN description TEXT COMMENT 'Detailed product description';
+
+-- Add comment to existing table
+ALTER TABLE categories COMMENT = 'Product categories for organization';
+ALTER TABLE categories MODIFY COLUMN name VARCHAR(50) NOT NULL COMMENT 'Category name';
+
+-- Create new table with comments
+CREATE TABLE suppliers (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Unique supplier identifier',
+    company_name VARCHAR(100) NOT NULL COMMENT 'Official company name',
+    contact_email VARCHAR(150) COMMENT 'Primary contact email address',
+    phone VARCHAR(20) COMMENT 'Contact phone number',
+    address TEXT COMMENT 'Full business address',
+    is_active BOOLEAN DEFAULT true COMMENT 'Supplier active status',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (contact_email),
+    INDEX idx_active (is_active)
+) COMMENT = 'Supplier information and contact details';
+
+-- Add new columns with comments
+ALTER TABLE products ADD COLUMN supplier_id INT COMMENT 'Reference to supplier table';
+ALTER TABLE products ADD COLUMN weight DECIMAL(8, 3) COMMENT 'Product weight in kilograms';
+ALTER TABLE products ADD COLUMN in_stock BOOLEAN DEFAULT true COMMENT 'Current stock availability';
+
+-- Add foreign key with comment
+ALTER TABLE products ADD CONSTRAINT fk_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL;
+`,
+			description: "Adding comments to tables and columns using TiDB COMMENT syntax",
+		},
+		{
+			name: "modify_and_drop_comments",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Primary key identifier',
+    username VARCHAR(50) NOT NULL COMMENT 'Unique username for login',
+    email VARCHAR(100) NOT NULL COMMENT 'User email address',
+    full_name VARCHAR(100) COMMENT 'User full display name',
+    bio TEXT COMMENT 'User biography or description',
+    status ENUM('active', 'inactive', 'suspended') DEFAULT 'active' COMMENT 'Account status',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Account creation date',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_username (username),
+    UNIQUE KEY uk_email (email),
+    INDEX idx_status (status)
+) COMMENT = 'User account information and profile data';
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Post unique identifier',
+    user_id INT NOT NULL COMMENT 'Author user ID reference',
+    title VARCHAR(200) NOT NULL COMMENT 'Post title',
+    content TEXT COMMENT 'Post content body',
+    status ENUM('draft', 'published', 'archived') DEFAULT 'draft' COMMENT 'Post publication status',
+    published_at DATETIME COMMENT 'Publication timestamp',
+    view_count INT DEFAULT 0 COMMENT 'Number of views',
+    PRIMARY KEY (id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    CONSTRAINT fk_post_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) COMMENT = 'Blog posts and articles';
+`,
+			migrationDDL: `
+-- Modify existing table comments
+ALTER TABLE users COMMENT = 'Updated user account information with enhanced profile features';
+ALTER TABLE posts COMMENT = 'Blog posts with analytics and engagement tracking';
+
+-- Modify existing column comments
+ALTER TABLE users MODIFY COLUMN username VARCHAR(50) NOT NULL COMMENT 'Updated: Unique username for authentication and display';
+ALTER TABLE users MODIFY COLUMN bio TEXT COMMENT 'Updated: Extended user biography with rich text support';
+ALTER TABLE users MODIFY COLUMN status ENUM('active', 'inactive', 'suspended', 'pending') DEFAULT 'active' COMMENT 'Updated: Account status with pending verification';
+
+-- Remove comments from columns (set to empty string)
+ALTER TABLE users MODIFY COLUMN full_name VARCHAR(100) COMMENT '';
+ALTER TABLE posts MODIFY COLUMN view_count INT DEFAULT 0 COMMENT '';
+
+-- Add new columns with comments
+ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) COMMENT 'Profile picture URL';
+ALTER TABLE users ADD COLUMN last_login DATETIME COMMENT 'Last successful login timestamp';
+ALTER TABLE users ADD COLUMN login_count INT DEFAULT 0 COMMENT 'Total number of logins';
+
+-- Modify existing column comments with new information
+ALTER TABLE posts MODIFY COLUMN title VARCHAR(200) NOT NULL COMMENT 'Post title with SEO optimization';
+ALTER TABLE posts MODIFY COLUMN content TEXT COMMENT 'Rich text post content with markdown support';
+
+-- Add new table with comprehensive comments
+CREATE TABLE user_preferences (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Preference record identifier',
+    user_id INT NOT NULL COMMENT 'User ID foreign key reference',
+    preference_key VARCHAR(100) NOT NULL COMMENT 'Configuration key name',
+    preference_value TEXT COMMENT 'Configuration value in JSON format',
+    is_public BOOLEAN DEFAULT false COMMENT 'Whether preference is publicly visible',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Preference creation time',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last modification time',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_user_key (user_id, preference_key),
+    INDEX idx_key (preference_key),
+    INDEX idx_public (is_public),
+    CONSTRAINT fk_pref_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) COMMENT = 'User-specific configuration and preference settings';
+`,
+			description: "Modifying existing comments and removing comments from tables and columns",
+		},
+		{
+			name: "comments_with_special_characters",
+			initialSchema: `
+CREATE TABLE test_table (
+    id INT NOT NULL AUTO_INCREMENT,
+    simple_field VARCHAR(100),
+    PRIMARY KEY (id)
+);
+`,
+			migrationDDL: `
+-- Test comments with various special characters and scenarios
+ALTER TABLE test_table COMMENT = 'Table with "double quotes" and ''single quotes'' in comment';
+
+-- Add columns with special characters in comments
+ALTER TABLE test_table ADD COLUMN field_with_quotes VARCHAR(100) COMMENT 'Field with "double" and ''single'' quotes';
+ALTER TABLE test_table ADD COLUMN field_with_symbols VARCHAR(100) COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|\\:";''<>?,./ and more!';
+ALTER TABLE test_table ADD COLUMN field_with_unicode VARCHAR(100) COMMENT 'Unicode test: 你好世界 🌍 café naïve résumé Москва العالم 한국어';
+ALTER TABLE test_table ADD COLUMN field_multiline TEXT COMMENT 'Multi-line comment:
+Line 1 with regular text
+Line 2 with "quotes" and symbols @#$
+Line 3 with unicode: 测试 🚀 café
+Final line with mixed content';
+ALTER TABLE test_table ADD COLUMN field_with_sql VARCHAR(100) COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = ''123'' AND name LIKE "%test%"';
+ALTER TABLE test_table ADD COLUMN field_with_html VARCHAR(100) COMMENT 'HTML content: <div class="test">Hello & "World"</div> <!-- comment -->';
+ALTER TABLE test_table ADD COLUMN field_with_json VARCHAR(100) COMMENT 'JSON example: {"name": "test", "value": 123, "nested": {"key": "value with spaces"}}';
+ALTER TABLE test_table ADD COLUMN field_with_escape VARCHAR(100) COMMENT 'Escape sequences: \\n \\t \\r \\" \\'' \\\\';
+
+-- Create table with complex comment containing all special character types
+CREATE TABLE special_comments_table (
+    id BIGINT NOT NULL AUTO_RANDOM COMMENT 'ID with "quotes", symbols @#$, unicode 测试🌟, and
+multi-line
+content',
+    data_field JSON COMMENT 'JSON field storing: {"users": ["John O''Connor", "Jane \"Doe\""], "count": 42}',
+    html_field TEXT COMMENT 'HTML content field: <script>alert("XSS test & more");</script>',
+    sql_field VARCHAR(255) COMMENT 'SQL patterns: SELECT * FROM users WHERE name = ''O''Brien'' AND age > 21',
+    unicode_field VARCHAR(200) COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',
+    symbols_field VARCHAR(100) COMMENT 'All symbols: !@#$%^&*()_+-={}[]|\\:";''<>?,./ plus tab	and newline
+test',
+    url_field VARCHAR(300) COMMENT 'URL with params: https://example.com/path?param1=value1&param2="quoted value"&param3=50%+discount',
+    regex_field VARCHAR(150) COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$ for email validation',
+    PRIMARY KEY (id),
+    INDEX idx_unicode (unicode_field)
+) COMMENT = 'Special characters test table with:
+- Double quotes: "test"
+- Single quotes: ''test''
+- Unicode: 特殊字符测试表 🎯
+- Symbols: @#$%^&*()
+- HTML: <div>content</div>
+- JSON: {"key": "value"}
+- URLs: https://example.com
+- Multi-line content with various encodings';
+
+-- Test modifying comments with special characters
+ALTER TABLE special_comments_table MODIFY COLUMN data_field JSON COMMENT 'Updated JSON field: {"new": "structure", "with": ["array", "of", "strings"], "escapes": "\\n\\t\\r"}';
+
+-- Test removing comments that had special characters
+ALTER TABLE special_comments_table MODIFY COLUMN html_field TEXT COMMENT '';
+`,
+			description: "Testing comments with special characters, quotes, Unicode, multi-line text, and edge cases",
+		},
 	}
 
 	for _, tc := range testCases {

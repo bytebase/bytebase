@@ -449,6 +449,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, err
 		}
+		// Note: MySQL's information_schema.VIEWS doesn't have a comment column
+		// View comments are not supported in MySQL
+		view.Comment = ""
 		key := db.TableKey{Schema: "", Table: view.Name}
 		view.Columns = columnMap[key]
 		viewMap[key] = view
@@ -664,6 +667,7 @@ func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*stor
 			SqlMode:             sqlMode,
 			CharacterSetClient:  charsetClient,
 			CollationConnection: collationConnection,
+			Comment:             "", // EVENT_COMMENT may not be available in all MySQL versions
 		}
 		events = append(events, event)
 	}
@@ -767,6 +771,7 @@ func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[d
 			SqlMode:             sqlMode,
 			CharacterSetClient:  charsetClient,
 			CollationConnection: collationConnection,
+			Comment:             "", // MySQL doesn't support trigger comments via information_schema
 		}
 		tableKey := db.TableKey{Schema: "", Table: table}
 		triggerMap[tableKey] = append(triggerMap[tableKey], trigger)
@@ -786,7 +791,8 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 			SQL_MODE,
 			CHARACTER_SET_CLIENT,
 			COLLATION_CONNECTION,
-			DATABASE_COLLATION
+			DATABASE_COLLATION,
+			IFNULL(ROUTINE_COMMENT, '')
 		FROM
 			INFORMATION_SCHEMA.ROUTINES
 		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
@@ -800,7 +806,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 	var functions []*storepb.FunctionMetadata
 	var procedures []*storepb.ProcedureMetadata
 	for routineRows.Next() {
-		var name, routineType string
+		var name, routineType, routineComment string
 		var sqlMode, charsetClient, collationConnection, databaseCollation sql.NullString
 		if err := routineRows.Scan(
 			&name,
@@ -809,6 +815,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 			&charsetClient,
 			&collationConnection,
 			&databaseCollation,
+			&routineComment,
 		); err != nil {
 			return nil, nil, err
 		}
@@ -824,6 +831,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 				CharacterSetClient:  charsetClient.String,
 				CollationConnection: collationConnection.String,
 				DatabaseCollation:   databaseCollation.String,
+				Comment:             routineComment,
 			})
 		} else {
 			functionDef, err := d.getCreateFunctionStmt(ctx, databaseName, name)
@@ -837,6 +845,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 				CharacterSetClient:  charsetClient.String,
 				CollationConnection: collationConnection.String,
 				DatabaseCollation:   databaseCollation.String,
+				Comment:             routineComment,
 			})
 		}
 	}
