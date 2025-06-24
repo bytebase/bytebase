@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -446,7 +444,7 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 	metadata := &v1pb.ColumnMetadata{
 		Name:                  column.Name,
 		Position:              column.Position,
-		HasDefault:            column.DefaultValue != nil,
+		HasDefault:            column.DefaultNull || column.DefaultExpression != "" || (column.Default != ""),
 		DefaultOnNull:         column.DefaultOnNull,
 		OnUpdate:              column.OnUpdate,
 		Nullable:              column.Nullable,
@@ -463,17 +461,12 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		DefaultConstraintName: column.DefaultConstraintName,
 	}
 	if metadata.HasDefault {
-		switch value := column.DefaultValue.(type) {
-		case *storepb.ColumnMetadata_Default:
-			if value.Default == nil {
-				metadata.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
-			} else {
-				metadata.Default = &v1pb.ColumnMetadata_DefaultString{DefaultString: value.Default.Value}
-			}
-		case *storepb.ColumnMetadata_DefaultNull:
-			metadata.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
-		case *storepb.ColumnMetadata_DefaultExpression:
-			metadata.Default = &v1pb.ColumnMetadata_DefaultExpression{DefaultExpression: value.DefaultExpression}
+		metadata.DefaultNull = column.DefaultNull
+		if column.Default != "" {
+			metadata.DefaultString = column.Default
+		}
+		if column.DefaultExpression != "" {
+			metadata.DefaultExpression = column.DefaultExpression
 		}
 	}
 	switch column.IdentityGeneration {
@@ -914,13 +907,12 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 	}
 
 	if column.HasDefault {
-		switch value := column.Default.(type) {
-		case *v1pb.ColumnMetadata_DefaultString:
-			metadata.DefaultValue = &storepb.ColumnMetadata_Default{Default: wrapperspb.String(value.DefaultString)}
-		case *v1pb.ColumnMetadata_DefaultNull:
-			metadata.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
-		case *v1pb.ColumnMetadata_DefaultExpression:
-			metadata.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.DefaultExpression}
+		metadata.DefaultNull = column.DefaultNull
+		if column.DefaultString != "" {
+			metadata.Default = column.DefaultString
+		}
+		if column.DefaultExpression != "" {
+			metadata.DefaultExpression = column.DefaultExpression
 		}
 	}
 

@@ -10,7 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gopkg.in/yaml.v3"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -314,7 +313,7 @@ func (t *TableState) convertToColumnMetadataList() []*storepb.ColumnMetadata {
 		}
 
 		if column.defaultValue != nil {
-			columnMeta.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: *column.defaultValue}}
+			columnMeta.Default = *column.defaultValue
 		}
 
 		if column.characterSet != nil {

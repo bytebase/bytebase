@@ -111,14 +111,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		column.Nullable = nullableBool
 		if defaultValueExpression == "" {
 			if nullableBool {
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
-					DefaultNull: true,
-				}
+				column.DefaultNull = true
 			}
 		} else {
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{
-				DefaultExpression: defaultValueExpression,
-			}
+			column.DefaultExpression = defaultValueExpression
 		}
 		columnMap[tableName] = append(columnMap[tableName], column)
 	}

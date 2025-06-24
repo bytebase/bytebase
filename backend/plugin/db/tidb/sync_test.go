@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -74,7 +73,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "auto_increment",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "AUTO_INCREMENT"},
+				DefaultExpression: "AUTO_INCREMENT",
 			},
 		},
 		{
@@ -83,7 +82,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_DefaultNull{DefaultNull: true},
+				DefaultNull: true,
 			},
 		},
 		{
@@ -92,7 +91,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+				Default: "0",
 			},
 		},
 		{
@@ -101,7 +100,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "hello"}},
+				Default: "hello",
 			},
 		},
 		{
@@ -109,9 +108,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
-				DefaultValue: nil,
-			},
+			want:         &storepb.ColumnMetadata{},
 		},
 		{
 			name:         "age1",
@@ -119,7 +116,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+				Default: "0",
 			},
 		},
 		{
@@ -128,7 +125,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+				Default: "0",
 			},
 		},
 		{
@@ -137,7 +134,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+				Default: "0",
 			},
 		},
 		{
@@ -146,7 +143,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+				Default: "0",
 			},
 		},
 		{
@@ -156,7 +153,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+				Default: "0",
 			},
 		},
 		{
@@ -165,7 +162,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_DefaultNull{DefaultNull: true},
+				DefaultNull: true,
 			},
 		},
 		{
@@ -173,9 +170,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
-				DefaultValue: nil,
-			},
+			want:         &storepb.ColumnMetadata{},
 		},
 		{
 			name:         "time2",
@@ -183,7 +178,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP"},
+				DefaultExpression: "CURRENT_TIMESTAMP",
 			},
 		},
 		{
@@ -192,8 +187,8 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP"},
-				OnUpdate:     "CURRENT_TIMESTAMP",
+				DefaultExpression: "CURRENT_TIMESTAMP",
+				OnUpdate:          "CURRENT_TIMESTAMP",
 			},
 		},
 		{
@@ -202,8 +197,8 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP"},
-				OnUpdate:     "CURRENT_TIMESTAMP",
+				DefaultExpression: "CURRENT_TIMESTAMP",
+				OnUpdate:          "CURRENT_TIMESTAMP",
 			},
 		},
 		{
@@ -212,7 +207,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP(6)"},
+				DefaultExpression: "CURRENT_TIMESTAMP(6)",
 			},
 		},
 		{
@@ -221,7 +216,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP(6)"},
+				DefaultExpression: "CURRENT_TIMESTAMP(6)",
 			},
 		},
 		{
@@ -230,7 +225,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP"},
+				DefaultExpression: "CURRENT_TIMESTAMP",
 			},
 		},
 	}

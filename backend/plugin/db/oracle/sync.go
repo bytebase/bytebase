@@ -508,7 +508,7 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 		if defaultStr.Valid {
 			// Clean up the default expression to remove current schema name and fix NEXTVAL syntax
 			cleanedDefault := cleanDefaultExpression(defaultStr.String, schemaName)
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: cleanedDefault}
+			column.DefaultExpression = cleanedDefault
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {

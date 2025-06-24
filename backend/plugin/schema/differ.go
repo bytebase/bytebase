@@ -527,8 +527,8 @@ func columnsEqual(col1, col2 *storepb.ColumnMetadata) bool {
 	if col1.Nullable != col2.Nullable {
 		return false
 	}
-	// Compare default values (oneof field)
-	if !defaultValuesEqual(col1.GetDefaultValue(), col2.GetDefaultValue()) {
+	// Compare default values
+	if !defaultValuesEqual(col1, col2) {
 		return false
 	}
 	if col1.Comment != col2.Comment {
@@ -570,44 +570,35 @@ func columnsEqual(col1, col2 *storepb.ColumnMetadata) bool {
 	return true
 }
 
-// defaultValuesEqual compares two default value oneof fields.
-func defaultValuesEqual(dv1, dv2 any) bool {
-	if dv1 == nil && dv2 == nil {
+// defaultValuesEqual compares default values.
+func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
+	// Check if both have no default
+	hasDefault1 := col1.DefaultNull || col1.Default != "" || col1.DefaultExpression != ""
+	hasDefault2 := col2.DefaultNull || col2.Default != "" || col2.DefaultExpression != ""
+
+	if !hasDefault1 && !hasDefault2 {
 		return true
 	}
-	if dv1 == nil || dv2 == nil {
+	if hasDefault1 != hasDefault2 {
 		return false
 	}
 
-	switch v1 := dv1.(type) {
-	case *storepb.ColumnMetadata_Default:
-		v2, ok := dv2.(*storepb.ColumnMetadata_Default)
-		if !ok {
-			return false
-		}
-		// Compare wrapped string values
-		if v1.Default == nil && v2.Default == nil {
-			return true
-		}
-		if v1.Default == nil || v2.Default == nil {
-			return false
-		}
-		return v1.Default.Value == v2.Default.Value
-	case *storepb.ColumnMetadata_DefaultNull:
-		v2, ok := dv2.(*storepb.ColumnMetadata_DefaultNull)
-		if !ok {
-			return false
-		}
-		return v1.DefaultNull == v2.DefaultNull
-	case *storepb.ColumnMetadata_DefaultExpression:
-		v2, ok := dv2.(*storepb.ColumnMetadata_DefaultExpression)
-		if !ok {
-			return false
-		}
-		return v1.DefaultExpression == v2.DefaultExpression
-	default:
+	// Check default null
+	if col1.DefaultNull != col2.DefaultNull {
 		return false
 	}
+
+	// Check default string value
+	if col1.Default != col2.Default {
+		return false
+	}
+
+	// Check default expression
+	if col1.DefaultExpression != col2.DefaultExpression {
+		return false
+	}
+
+	return true
 }
 
 // generationMetadataEqual compares two generation metadata structs.

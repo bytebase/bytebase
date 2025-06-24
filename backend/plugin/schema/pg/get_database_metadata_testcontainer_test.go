@@ -488,7 +488,9 @@ func compareColumns(t *testing.T, tableName string, syncCols, parseCols []*store
 		require.Equal(t, syncCol.Nullable, parseCol.Nullable, "table %s, column %s: nullable should match", tableName, parseCol.Name)
 
 		// Compare default values if both exist
-		if syncCol.DefaultValue != nil && parseCol.DefaultValue != nil {
+		hasDefaultSync := syncCol.DefaultNull || syncCol.DefaultExpression != "" || syncCol.Default != ""
+		hasDefaultParse := parseCol.DefaultNull || parseCol.DefaultExpression != "" || parseCol.Default != ""
+		if hasDefaultSync && hasDefaultParse {
 			// Default values might be represented differently, so we just check they exist
 			t.Logf("table %s, column %s: default values exist in both", tableName, parseCol.Name)
 		}
