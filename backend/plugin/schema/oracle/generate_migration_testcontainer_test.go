@@ -972,11 +972,24 @@ Range: +/-999999999 days, precision up to nanoseconds';
 			require.NoError(t, err)
 
 			// Clean up any existing objects
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT table_name FROM user_tables) LOOP EXECUTE IMMEDIATE 'DROP TABLE ' || c.table_name || ' CASCADE CONSTRAINTS'; END LOOP; END;")
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT view_name FROM user_views) LOOP EXECUTE IMMEDIATE 'DROP VIEW ' || c.view_name; END LOOP; END;")
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT mview_name FROM user_mviews) LOOP EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW ' || c.mview_name; END LOOP; END;")
+			// Drop procedures
+			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT object_name FROM user_objects WHERE object_type = 'PROCEDURE') LOOP EXECUTE IMMEDIATE 'DROP PROCEDURE ' || c.object_name; END LOOP; END;")
+			// Drop packages (must be before functions/procedures that might be in packages)
+			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT object_name FROM user_objects WHERE object_type = 'PACKAGE') LOOP EXECUTE IMMEDIATE 'DROP PACKAGE ' || c.object_name; END LOOP; END;")
+			// Drop functions
 			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT object_name FROM user_objects WHERE object_type = 'FUNCTION') LOOP EXECUTE IMMEDIATE 'DROP FUNCTION ' || c.object_name; END LOOP; END;")
+			// Drop types
+			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT type_name FROM user_types) LOOP EXECUTE IMMEDIATE 'DROP TYPE ' || c.type_name || ' FORCE'; END LOOP; END;")
+			// Drop materialized views
+			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT mview_name FROM user_mviews) LOOP EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW ' || c.mview_name; END LOOP; END;")
+			// Drop views
+			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT view_name FROM user_views) LOOP EXECUTE IMMEDIATE 'DROP VIEW ' || c.view_name; END LOOP; END;")
+			// Drop tables (with CASCADE CONSTRAINTS to handle foreign keys)
+			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT table_name FROM user_tables) LOOP EXECUTE IMMEDIATE 'DROP TABLE ' || c.table_name || ' CASCADE CONSTRAINTS'; END LOOP; END;")
+			// Drop sequences
 			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT sequence_name FROM user_sequences) LOOP EXECUTE IMMEDIATE 'DROP SEQUENCE ' || c.sequence_name; END LOOP; END;")
+			// Drop synonyms last since they can reference other objects
+			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT synonym_name FROM user_synonyms) LOOP EXECUTE IMMEDIATE 'DROP SYNONYM ' || c.synonym_name; END LOOP; END;")
 
 			// Execute initial schema
 			if err := executeStatements(testDB, tc.initialSchema); err != nil {

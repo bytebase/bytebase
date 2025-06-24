@@ -234,8 +234,9 @@ CREATE TABLE "public"."book" (
 				Collation:    "en_US.UTF-8",
 				Schemas: []*v1pb.SchemaMetadata{
 					{
-						Name:  "public",
-						Owner: "pg_database_owner",
+						Name:    "public",
+						Owner:   "pg_database_owner",
+						Comment: "standard public schema",
 						Tables: []*v1pb.TableMetadata{
 							{
 								Name:     "book",
