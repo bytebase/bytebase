@@ -129,7 +129,8 @@ const onUpdate = async () => {
       totalCount++;
       try {
         await settingRef.value.update();
-      } catch {
+      } catch (e) {
+        console.error(e); // for debug.
         failedCount++;
         pushNotification({
           module: "bytebase",

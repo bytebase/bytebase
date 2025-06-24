@@ -532,7 +532,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	// Worksheet creator and workspace bb.worksheets.manage can always write.
+	// Worksheet creator and workspace "bb.worksheets.manage" can always write.
 	if worksheet.CreatorID == user.ID {
 		return true, nil
 	}
@@ -545,22 +545,14 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 	}
 
 	switch worksheet.Visibility {
-	case store.PrivateWorkSheet, store.ProjectReadWorkSheet:
+	case store.PrivateWorkSheet:
 		return false, nil
+	case store.ProjectReadWorkSheet:
+		// For READ visibility, check the "bb.worksheets.manage" permission in the project.
+		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, iam.PermissionWorksheetsManage)
 	case store.ProjectWriteWorkSheet:
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &worksheet.ProjectID,
-		})
-		if err != nil {
-			return false, err
-		}
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsGet, user, project.ResourceID)
-		if err != nil {
-			return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
-		}
-		if ok {
-			return true, nil
-		}
+		// For READ visibility, needs "bb.worksheets.get" permission in the project.
+		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, iam.PermissionWorksheetsGet)
 	}
 
 	return false, nil
@@ -593,22 +585,30 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	case store.PrivateWorkSheet:
 		return false, nil
 	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &worksheet.ProjectID,
-		})
-		if err != nil {
-			return false, err
-		}
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsGet, user, project.ResourceID)
-		if err != nil {
-			return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
-		}
-		if ok {
-			return true, nil
-		}
+		// Check the "bb.worksheets.get" permission in the project.
+		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, iam.PermissionWorksheetsGet)
 	}
 
 	return false, nil
+}
+
+func (s *WorksheetService) checkWorksheetPermission(
+	ctx context.Context,
+	projectID string,
+	user *store.UserMessage,
+	permission iam.Permission,
+) (bool, error) {
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return false, err
+	}
+	ok, err := s.iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
+	if err != nil {
+		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+	}
+	return ok, nil
 }
 
 func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, worksheet *store.WorkSheetMessage) (*v1pb.Worksheet, error) {
