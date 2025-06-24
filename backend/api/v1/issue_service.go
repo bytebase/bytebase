@@ -1129,7 +1129,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 				ApprovalFindingDone: false,
 			}
 
-			if issue.PlanUID != nil {
+			if issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
 				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
