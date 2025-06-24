@@ -191,11 +191,17 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	joinQuery := false
+	joinDSQuery := ""
+	joinDBQuery := ""
 	if filter := find.Filter; filter != nil {
 		where = append(where, filter.Where)
 		args = append(args, filter.Args...)
-		joinQuery = hasHostPortFilter(filter.Where)
+		if hasHostPortFilter(filter.Where) {
+			joinDSQuery = "CROSS JOIN jsonb_array_elements(instance.metadata -> 'dataSources') AS ds"
+		}
+		if strings.Contains(filter.Where, "db.project") {
+			joinDBQuery = "LEFT JOIN db ON db.instance = instance.resource_id"
+		}
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -208,25 +214,16 @@ func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindI
 	}
 
 	query := fmt.Sprintf(`
-		SELECT
-			resource_id,
-			environment,
-			deleted,
-			metadata
+		SELECT DISTINCT ON (resource_id)
+			instance.resource_id,
+			instance.environment,
+			instance.deleted,
+			instance.metadata
 		FROM instance
+		%s
+		%s
 		WHERE %s
-		ORDER BY resource_id`, strings.Join(where, " AND "))
-	if joinQuery {
-		query = fmt.Sprintf(`
-			SELECT
-				instance.resource_id,
-				instance.environment,
-				instance.deleted,
-				instance.metadata
-			FROM instance, jsonb_array_elements(instance.metadata->'dataSources') ds
-			WHERE %s
-			ORDER BY instance.resource_id`, strings.Join(where, " AND "))
-	}
+		ORDER BY resource_id`, joinDSQuery, joinDBQuery, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
