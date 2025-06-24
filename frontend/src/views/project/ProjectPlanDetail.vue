@@ -20,6 +20,7 @@ import {
   useInitializePlan,
 } from "@/components/Plan";
 import PlanDetailPage from "@/components/Plan/PlanDetailPage.vue";
+import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { isValidPlanName } from "@/utils";
 
@@ -55,6 +56,8 @@ providePlanContext(
   },
   true /* root */
 );
+
+provideIssueReviewContext(issue);
 
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
