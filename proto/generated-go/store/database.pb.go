@@ -2055,8 +2055,32 @@ type ColumnMetadata struct {
 	IdentitySeed int64 `protobuf:"varint,18,opt,name=identity_seed,json=identitySeed,proto3" json:"identity_seed,omitempty"`
 	// The identity_increment is for identity columns, MSSQL only.
 	IdentityIncrement int64 `protobuf:"varint,19,opt,name=identity_increment,json=identityIncrement,proto3" json:"identity_increment,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// The default_constraint_name is the name of the default constraint, MSSQL only.
+	// In MSSQL, default values are implemented as named constraints. When modifying or
+	// dropping a column's default value, you must reference the constraint by name.
+	// This field stores the actual constraint name from the database.
+	//
+	// Example: A column definition like:
+	//
+	//	CREATE TABLE employees (
+	//	  status NVARCHAR(20) DEFAULT 'active'
+	//	)
+	//
+	// Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+	// or a user-defined name if specified:
+	//
+	//	ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+	//
+	// To modify the default, you must first drop the existing constraint by name:
+	//
+	//	ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+	//	ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+	//
+	// This field is populated when syncing from the database. When empty (e.g., when parsing
+	// from SQL files), the system cannot automatically drop the constraint.
+	DefaultConstraintName string `protobuf:"bytes,20,opt,name=default_constraint_name,json=defaultConstraintName,proto3" json:"default_constraint_name,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *ColumnMetadata) Reset() {
@@ -2226,6 +2250,13 @@ func (x *ColumnMetadata) GetIdentityIncrement() int64 {
 		return x.IdentityIncrement
 	}
 	return 0
+}
+
+func (x *ColumnMetadata) GetDefaultConstraintName() string {
+	if x != nil {
+		return x.DefaultConstraintName
+	}
+	return ""
 }
 
 type isColumnMetadata_DefaultValue interface {
@@ -4051,7 +4082,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xca\x06\n" +
+	"LINEAR_KEY\x10\b\"\x82\a\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x128\n" +
@@ -4074,7 +4105,8 @@ const file_store_database_proto_rawDesc = "" +
 	"isIdentity\x12b\n" +
 	"\x13identity_generation\x18\x0f \x01(\x0e21.bytebase.store.ColumnMetadata.IdentityGenerationR\x12identityGeneration\x12#\n" +
 	"\ridentity_seed\x18\x12 \x01(\x03R\fidentitySeed\x12-\n" +
-	"\x12identity_increment\x18\x13 \x01(\x03R\x11identityIncrement\"U\n" +
+	"\x12identity_increment\x18\x13 \x01(\x03R\x11identityIncrement\x126\n" +
+	"\x17default_constraint_name\x18\x14 \x01(\tR\x15defaultConstraintName\"U\n" +
 	"\x12IdentityGeneration\x12#\n" +
 	"\x1fIDENTITY_GENERATION_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +

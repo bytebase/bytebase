@@ -162,6 +162,21 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 						_, _ = buf.WriteString("GO\n")
 					}
 
+					// If the column has a default constraint, drop it first
+					if getColumnDefaultValue(colDiff.OldColumn) != "" {
+						if colDiff.OldColumn.DefaultConstraintName != "" {
+							// Use the known constraint name directly
+							_, _ = buf.WriteString("ALTER TABLE [")
+							_, _ = buf.WriteString(tableDiff.SchemaName)
+							_, _ = buf.WriteString("].[")
+							_, _ = buf.WriteString(tableDiff.TableName)
+							_, _ = buf.WriteString("] DROP CONSTRAINT [")
+							_, _ = buf.WriteString(colDiff.OldColumn.DefaultConstraintName)
+							_, _ = buf.WriteString("];\n")
+						}
+						// Note: If DefaultConstraintName is empty, we cannot drop the constraint automatically
+					}
+
 					_, _ = buf.WriteString("ALTER TABLE [")
 					_, _ = buf.WriteString(tableDiff.SchemaName)
 					_, _ = buf.WriteString("].[")
@@ -739,8 +754,23 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 	newDefault := getColumnDefaultValue(colDiff.NewColumn)
 
 	if oldDefault != newDefault {
+		// First, drop the existing default constraint if it exists
+		if oldDefault != "" {
+			if colDiff.OldColumn.DefaultConstraintName != "" {
+				// Use the known constraint name directly (when synced from database)
+				_, _ = buf.WriteString("ALTER TABLE [")
+				_, _ = buf.WriteString(schemaName)
+				_, _ = buf.WriteString("].[")
+				_, _ = buf.WriteString(tableName)
+				_, _ = buf.WriteString("] DROP CONSTRAINT [")
+				_, _ = buf.WriteString(colDiff.OldColumn.DefaultConstraintName)
+				_, _ = buf.WriteString("];\n")
+			}
+			// Note: If DefaultConstraintName is empty (e.g., when parsed from SQL), we cannot drop the constraint
+			// as we don't know its name. The user needs to drop it manually or sync from the database first.
+		}
+		// Then, add the new default constraint if specified
 		if newDefault != "" {
-			// Add or modify default constraint
 			_, _ = buf.WriteString("ALTER TABLE [")
 			_, _ = buf.WriteString(schemaName)
 			_, _ = buf.WriteString("].[")
@@ -756,7 +786,6 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 			_, _ = buf.WriteString("];\n")
 		}
 	}
-
 	return buf.String()
 }
 
