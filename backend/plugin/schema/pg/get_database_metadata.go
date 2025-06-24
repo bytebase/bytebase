@@ -470,9 +470,7 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 		column.Nullable = true
 	case ctx.DEFAULT() != nil:
 		if expr := ctx.B_expr(); expr != nil {
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{
-				DefaultExpression: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr),
-			}
+			column.DefaultExpression = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
 		}
 	case ctx.PRIMARY() != nil && ctx.KEY() != nil:
 		column.Nullable = false

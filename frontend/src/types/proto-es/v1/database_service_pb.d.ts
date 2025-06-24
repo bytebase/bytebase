@@ -1399,29 +1399,21 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
   hasDefault: boolean;
 
   /**
-   * The default is the default value of a column.
+   * The default value of column.
    *
-   * @generated from oneof bytebase.v1.ColumnMetadata.default
+   * @generated from field: bool default_null = 4;
    */
-  default: {
-    /**
-     * @generated from field: bool default_null = 4;
-     */
-    value: boolean;
-    case: "defaultNull";
-  } | {
-    /**
-     * @generated from field: string default_string = 5;
-     */
-    value: string;
-    case: "defaultString";
-  } | {
-    /**
-     * @generated from field: string default_expression = 6;
-     */
-    value: string;
-    case: "defaultExpression";
-  } | { case: undefined; value?: undefined };
+  defaultNull: boolean;
+
+  /**
+   * @generated from field: string default_string = 5;
+   */
+  defaultString: string;
+
+  /**
+   * @generated from field: string default_expression = 6;
+   */
+  defaultExpression: string;
 
   /**
    * Oracle specific metadata.

@@ -15,7 +15,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -23,12 +22,10 @@
                 },
                 {
                   "name": "name",
-                  "DefaultValue": null,
                   "type": "NVARCHAR(255)"
                 },
                 {
                   "name": "email",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 }
@@ -87,12 +84,10 @@
               "columns": [
                 {
                   "name": "dept_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "dept_name",
-                  "DefaultValue": null,
                   "type": "NVARCHAR(100)"
                 }
               ],
@@ -116,17 +111,14 @@
               "columns": [
                 {
                   "name": "emp_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "emp_name",
-                  "DefaultValue": null,
                   "type": "NVARCHAR(100)"
                 },
                 {
                   "name": "dept_id",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "INT"
                 }
@@ -182,12 +174,10 @@
               "columns": [
                 {
                   "name": "product_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "price",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DECIMAL(10,2)"
                 }
@@ -237,18 +227,15 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "name",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 },
                 {
                   "name": "category",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 }
@@ -311,19 +298,16 @@
               "columns": [
                 {
                   "name": "order_id",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "customer_id",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "order_date",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DATETIME"
                 }
@@ -466,12 +450,10 @@
               "columns": [
                 {
                   "name": "emp_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "name",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(100)"
                 }
@@ -501,12 +483,10 @@
               "columns": [
                 {
                   "name": "order_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "amount",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DECIMAL(10,2)"
                 }
@@ -548,30 +528,23 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "created_at",
-                  "DefaultValue": {
-                    "DefaultExpression": "GETDATE()"
-                  },
+                  "default_expression": "GETDATE()",
                   "nullable": true,
                   "type": "DATETIME"
                 },
                 {
                   "name": "is_active",
-                  "DefaultValue": {
-                    "DefaultExpression": "1"
-                  },
+                  "default_expression": "1",
                   "nullable": true,
                   "type": "BIT"
                 },
                 {
                   "name": "status",
-                  "DefaultValue": {
-                    "DefaultExpression": "N'pending'"
-                  },
+                  "default_expression": "N'pending'",
                   "nullable": true,
                   "type": "NVARCHAR(20)"
                 }
@@ -615,24 +588,20 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "user_id",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "action",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "timestamp",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DATETIME"
                 }
@@ -685,12 +654,10 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "email",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 }
@@ -743,12 +710,10 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "email",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 }
@@ -817,7 +782,6 @@
               "columns": [
                 {
                   "name": "customer_id",
-                  "DefaultValue": null,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -825,85 +789,68 @@
                 },
                 {
                   "name": "first_name",
-                  "DefaultValue": null,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "last_name",
-                  "DefaultValue": null,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "email",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(100)"
                 },
                 {
                   "name": "phone",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(20)"
                 },
                 {
                   "name": "address",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(200)"
                 },
                 {
                   "name": "city",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "state",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "CHAR(2)"
                 },
                 {
                   "name": "zip_code",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(10)"
                 },
                 {
                   "name": "country",
-                  "DefaultValue": {
-                    "DefaultExpression": "'USA'"
-                  },
+                  "default_expression": "'USA'",
                   "nullable": true,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "created_date",
-                  "DefaultValue": {
-                    "DefaultExpression": "GETDATE()"
-                  },
+                  "default_expression": "GETDATE()",
                   "nullable": true,
                   "type": "DATETIME"
                 },
                 {
                   "name": "modified_date",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DATETIME"
                 },
                 {
                   "name": "is_active",
-                  "DefaultValue": {
-                    "DefaultExpression": "1"
-                  },
+                  "default_expression": "1",
                   "nullable": true,
                   "type": "BIT"
                 },
                 {
                   "name": "credit_limit",
-                  "DefaultValue": {
-                    "DefaultExpression": "0.00"
-                  },
+                  "default_expression": "0.00",
                   "nullable": true,
                   "type": "DECIMAL(10,2)"
                 }
@@ -987,26 +934,20 @@
               "columns": [
                 {
                   "name": "product_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "warehouse_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "quantity",
-                  "DefaultValue": {
-                    "DefaultExpression": "0"
-                  },
+                  "default_expression": "0",
                   "type": "INT"
                 },
                 {
                   "name": "last_updated",
-                  "DefaultValue": {
-                    "DefaultExpression": "SYSDATETIME()"
-                  },
+                  "default_expression": "SYSDATETIME()",
                   "nullable": true,
                   "type": "DATETIME2"
                 }
@@ -1060,7 +1001,6 @@
               "columns": [
                 {
                   "name": "log_id",
-                  "DefaultValue": null,
                   "type": "BIGINT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -1068,39 +1008,31 @@
                 },
                 {
                   "name": "table_name",
-                  "DefaultValue": null,
                   "type": "SYSNAME"
                 },
                 {
                   "name": "operation",
-                  "DefaultValue": null,
                   "type": "CHAR(1)"
                 },
                 {
                   "name": "user_name",
-                  "DefaultValue": {
-                    "DefaultExpression": "SUSER_SNAME()"
-                  },
+                  "default_expression": "SUSER_SNAME()",
                   "nullable": true,
                   "type": "NVARCHAR(128)"
                 },
                 {
                   "name": "timestamp",
-                  "DefaultValue": {
-                    "DefaultExpression": "SYSDATETIME()"
-                  },
+                  "default_expression": "SYSDATETIME()",
                   "nullable": true,
                   "type": "DATETIME2"
                 },
                 {
                   "name": "old_values",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(MAX)"
                 },
                 {
                   "name": "new_values",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(MAX)"
                 }
@@ -1155,72 +1087,57 @@
               "columns": [
                 {
                   "name": "doc_id",
-                  "DefaultValue": {
-                    "DefaultExpression": "NEWID()"
-                  },
+                  "default_expression": "NEWID()",
                   "type": "UNIQUEIDENTIFIER"
                 },
                 {
                   "name": "title",
-                  "DefaultValue": null,
                   "type": "NVARCHAR(200)"
                 },
                 {
                   "name": "content",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(MAX)"
                 },
                 {
                   "name": "file_data",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARBINARY(MAX)"
                 },
                 {
                   "name": "file_name",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(255)"
                 },
                 {
                   "name": "file_size",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "BIGINT"
                 },
                 {
                   "name": "mime_type",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(100)"
                 },
                 {
                   "name": "created_by",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "created_date",
-                  "DefaultValue": {
-                    "DefaultExpression": "SYSDATETIMEOFFSET()"
-                  },
+                  "default_expression": "SYSDATETIMEOFFSET()",
                   "nullable": true,
                   "type": "DATETIMEOFFSET"
                 },
                 {
                   "name": "version",
-                  "DefaultValue": {
-                    "DefaultExpression": "1"
-                  },
+                  "default_expression": "1",
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "is_published",
-                  "DefaultValue": {
-                    "DefaultExpression": "0"
-                  },
+                  "default_expression": "0",
                   "nullable": true,
                   "type": "BIT"
                 }
@@ -1267,7 +1184,6 @@
               "columns": [
                 {
                   "name": "node_id",
-                  "DefaultValue": null,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -1275,24 +1191,20 @@
                 },
                 {
                   "name": "parent_id",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "node_name",
-                  "DefaultValue": null,
                   "type": "NVARCHAR(100)"
                 },
                 {
                   "name": "node_path",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "HIERARCHYID"
                 },
                 {
                   "name": "level",
-                  "DefaultValue": null,
                   "nullable": true
                 }
               ],
@@ -1360,43 +1272,36 @@
               "columns": [
                 {
                   "name": "Column With Spaces",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "Column-With-Dashes",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "Column.With.Dots",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(100)"
                 },
                 {
                   "name": "列名",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "SELECT",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "FROM",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "WHERE",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "BIT"
                 }
@@ -1469,217 +1374,181 @@
               "columns": [
                 {
                   "name": "col_bit",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "BIT"
                 },
                 {
                   "name": "col_tinyint",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "TINYINT"
                 },
                 {
                   "name": "col_smallint",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "SMALLINT"
                 },
                 {
                   "name": "col_int",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "col_bigint",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "BIGINT"
                 },
                 {
                   "name": "col_decimal",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DECIMAL(18,4)"
                 },
                 {
                   "name": "col_numeric",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NUMERIC(15,2)"
                 },
                 {
                   "name": "col_smallmoney",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "SMALLMONEY"
                 },
                 {
                   "name": "col_money",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "MONEY"
                 },
                 {
                   "name": "col_float",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "FLOAT"
                 },
                 {
                   "name": "col_real",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "REAL"
                 },
                 {
                   "name": "col_date",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DATE"
                 },
                 {
                   "name": "col_time",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "TIME"
                 },
                 {
                   "name": "col_datetime",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DATETIME"
                 },
                 {
                   "name": "col_datetime2",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DATETIME2"
                 },
                 {
                   "name": "col_smalldatetime",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "SMALLDATETIME"
                 },
                 {
                   "name": "col_datetimeoffset",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DATETIMEOFFSET"
                 },
                 {
                   "name": "col_char",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "CHAR(10)"
                 },
                 {
                   "name": "col_varchar",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "col_varchar_max",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(MAX)"
                 },
                 {
                   "name": "col_text",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "TEXT"
                 },
                 {
                   "name": "col_nchar",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NCHAR(10)"
                 },
                 {
                   "name": "col_nvarchar",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(50)"
                 },
                 {
                   "name": "col_nvarchar_max",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(MAX)"
                 },
                 {
                   "name": "col_ntext",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NTEXT"
                 },
                 {
                   "name": "col_binary",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "BINARY(10)"
                 },
                 {
                   "name": "col_varbinary",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARBINARY(50)"
                 },
                 {
                   "name": "col_varbinary_max",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARBINARY(MAX)"
                 },
                 {
                   "name": "col_image",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "IMAGE"
                 },
                 {
                   "name": "col_uniqueidentifier",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "UNIQUEIDENTIFIER"
                 },
                 {
                   "name": "col_xml",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "XML"
                 },
                 {
                   "name": "col_timestamp",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "TIMESTAMP"
                 },
                 {
                   "name": "col_hierarchyid",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "HIERARCHYID"
                 },
                 {
                   "name": "col_geography",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "GEOGRAPHY"
                 },
                 {
                   "name": "col_geometry",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "GEOMETRY"
                 },
                 {
                   "name": "col_sql_variant",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "SQL_VARIANT"
                 }
@@ -1709,40 +1578,34 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "case_sensitive",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(50)",
                   "collation": "Latin1_General_CS_AS"
                 },
                 {
                   "name": "case_insensitive",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(50)",
                   "collation": "Latin1_General_CI_AS"
                 },
                 {
                   "name": "accent_sensitive",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(50)",
                   "collation": "Latin1_General_CI_AS"
                 },
                 {
                   "name": "accent_insensitive",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "NVARCHAR(50)",
                   "collation": "Latin1_General_CI_AI"
                 },
                 {
                   "name": "binary_sort",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "VARCHAR(50)",
                   "collation": "Latin1_General_BIN2"
@@ -1788,7 +1651,6 @@
               "columns": [
                 {
                   "name": "sale_id",
-                  "DefaultValue": null,
                   "type": "INT",
                   "is_identity": true,
                   "identity_seed": 1,
@@ -1796,22 +1658,18 @@
                 },
                 {
                   "name": "product_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "sale_date",
-                  "DefaultValue": null,
                   "type": "DATE"
                 },
                 {
                   "name": "quantity",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "amount",
-                  "DefaultValue": null,
                   "type": "DECIMAL(10,2)"
                 }
               ],
@@ -1859,28 +1717,23 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "year",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "month",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "revenue",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DECIMAL(15,2)"
                 },
                 {
                   "name": "expenses",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DECIMAL(15,2)"
                 }
@@ -1928,27 +1781,22 @@
               "columns": [
                 {
                   "name": "sale_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "product_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "customer_id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "sale_date",
-                  "DefaultValue": null,
                   "type": "DATE"
                 },
                 {
                   "name": "amount",
-                  "DefaultValue": null,
                   "type": "DECIMAL(10,2)"
                 }
               ],
@@ -1983,23 +1831,19 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT"
                 },
                 {
                   "name": "category",
-                  "DefaultValue": null,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "value",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DECIMAL(10,2)"
                 },
                 {
                   "name": "created_date",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DATETIME"
                 }
@@ -2050,37 +1894,7 @@
         }
       ]
     }
-- input: |
-    CREATE TABLE dbo.products (
-        id INT IDENTITY(1,1) PRIMARY KEY,
-        name NVARCHAR(255) NOT NULL,
-        price DECIMAL(10,2)
-    );
-    
-    -- Add table comment
-    EXEC sp_addextendedproperty 
-        'MS_Description', 'Table storing product information',
-        'SCHEMA', 'dbo',
-        'TABLE', 'products';
-    
-    -- Add column comments
-    EXEC sp_addextendedproperty 
-        'MS_Description', 'Unique product identifier',
-        'SCHEMA', 'dbo',
-        'TABLE', 'products',
-        'COLUMN', 'id';
-    
-    EXEC sp_addextendedproperty 
-        'MS_Description', 'Product display name',
-        'SCHEMA', 'dbo',
-        'TABLE', 'products',
-        'COLUMN', 'name';
-    
-    EXEC sp_addextendedproperty 
-        'MS_Description', 'Product price in USD',
-        'SCHEMA', 'dbo',
-        'TABLE', 'products',
-        'COLUMN', 'price';
+- input: "CREATE TABLE dbo.products (\n    id INT IDENTITY(1,1) PRIMARY KEY,\n    name NVARCHAR(255) NOT NULL,\n    price DECIMAL(10,2)\n);\n\n-- Add table comment\nEXEC sp_addextendedproperty \n    'MS_Description', 'Table storing product information',\n    'SCHEMA', 'dbo',\n    'TABLE', 'products';\n\n-- Add column comments\nEXEC sp_addextendedproperty \n    'MS_Description', 'Unique product identifier',\n    'SCHEMA', 'dbo',\n    'TABLE', 'products',\n    'COLUMN', 'id';\n\nEXEC sp_addextendedproperty \n    'MS_Description', 'Product display name',\n    'SCHEMA', 'dbo',\n    'TABLE', 'products',\n    'COLUMN', 'name';\n\nEXEC sp_addextendedproperty \n    'MS_Description', 'Product price in USD',\n    'SCHEMA', 'dbo',\n    'TABLE', 'products',\n    'COLUMN', 'price';\n"
   result: |-
     {
       "schemas": [
@@ -2092,7 +1906,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "DefaultValue": null,
                   "type": "INT",
                   "comment": "Unique product identifier",
                   "is_identity": true,
@@ -2101,13 +1914,11 @@
                 },
                 {
                   "name": "name",
-                  "DefaultValue": null,
                   "type": "NVARCHAR(255)",
                   "comment": "Product display name"
                 },
                 {
                   "name": "price",
-                  "DefaultValue": null,
                   "nullable": true,
                   "type": "DECIMAL(10,2)",
                   "comment": "Product price in USD"

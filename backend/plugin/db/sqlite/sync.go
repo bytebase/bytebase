@@ -149,7 +149,7 @@ func getTables(txn *sql.Tx) ([]*storepb.TableMetadata, error) {
 				column.Nullable = !notNull
 				if defaultStr.Valid {
 					// TODO: use correct default type
-					column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+					column.DefaultExpression = defaultStr.String
 				}
 
 				table.Columns = append(table.Columns, column)

@@ -317,12 +317,12 @@ func normalizeMetadata(metadata *storepb.DatabaseSchemaMetadata) {
 			// Normalize column defaults
 			for _, column := range table.Columns {
 				// MySQL might represent defaults differently
-				if def := column.GetDefault(); def != nil && def.Value != "" {
+				if def := column.GetDefault(); def != "" {
 					// Normalize CURRENT_TIMESTAMP variations
-					if def.Value == "CURRENT_TIMESTAMP" ||
-						def.Value == "current_timestamp()" ||
-						def.Value == "now()" {
-						def.Value = "CURRENT_TIMESTAMP"
+					if def == "CURRENT_TIMESTAMP" ||
+						def == "current_timestamp()" ||
+						def == "now()" {
+						column.Default = "CURRENT_TIMESTAMP"
 					}
 				}
 			}

@@ -485,12 +485,13 @@ func normalizeOracleMetadata(metadata *storepb.DatabaseSchemaMetadata) {
 		for _, table := range schema.Tables {
 			for _, column := range table.Columns {
 				// Normalize system-generated sequence references in default expressions
-				if column.DefaultValue != nil {
-					defaultExpr := column.GetDefaultExpression()
+				if column.DefaultExpression != "" {
 					// If it's a system-generated sequence, remove the default expression
 					// since these sequences can't be manually recreated with the same name
-					if strings.Contains(defaultExpr, "ISEQ$$_") {
-						column.DefaultValue = nil
+					if strings.Contains(column.DefaultExpression, "ISEQ$$_") {
+						column.DefaultExpression = ""
+						column.DefaultNull = false
+						column.Default = ""
 					}
 				}
 

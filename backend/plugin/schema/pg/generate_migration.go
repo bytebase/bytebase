@@ -887,7 +887,7 @@ func hasDefaultValue(column *storepb.ColumnMetadata) bool {
 		return false
 	}
 	return column.GetDefaultExpression() != "" ||
-		(column.GetDefault() != nil && column.GetDefault().Value != "") ||
+		column.GetDefault() != "" ||
 		column.GetDefaultNull()
 }
 
@@ -905,10 +905,10 @@ func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
 	// Check default value
 	def1 := col1.GetDefault()
 	def2 := col2.GetDefault()
-	if (def1 == nil) != (def2 == nil) {
+	if (def1 == "") != (def2 == "") {
 		return false
 	}
-	if def1 != nil && def1.Value != def2.Value {
+	if def1 != "" && def1 != def2 {
 		return false
 	}
 
@@ -926,16 +926,16 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 		return ""
 	}
 
-	if expr := column.GetDefaultExpression(); expr != "" {
-		return expr
+	if column.DefaultExpression != "" {
+		return column.DefaultExpression
 	}
 
-	if def := column.GetDefault(); def != nil && def.Value != "" {
+	if column.Default != "" {
 		// Quote string literals
-		return fmt.Sprintf("'%s'", def.Value)
+		return fmt.Sprintf("'%s'", column.Default)
 	}
 
-	if column.GetDefaultNull() {
+	if column.DefaultNull {
 		return "NULL"
 	}
 
@@ -1108,11 +1108,11 @@ func writeAddColumn(out *strings.Builder, schema, table string, column *storepb.
 	_, _ = out.WriteString(`" `)
 	_, _ = out.WriteString(column.Type)
 
-	if column.DefaultValue != nil {
-		if defaultValue, ok := column.DefaultValue.(*storepb.ColumnMetadata_DefaultExpression); ok {
-			_, _ = out.WriteString(` DEFAULT `)
-			_, _ = out.WriteString(defaultValue.DefaultExpression)
-		}
+	// Handle default values
+	defaultExpr := getDefaultExpression(column)
+	if defaultExpr != "" {
+		_, _ = out.WriteString(` DEFAULT `)
+		_, _ = out.WriteString(defaultExpr)
 	}
 
 	if !column.Nullable {
@@ -1418,9 +1418,10 @@ func writeMigrationCreateTable(out *strings.Builder, schema, table string, colum
 			_, _ = out.WriteString(" NOT NULL")
 		}
 
-		if col.DefaultValue != nil {
+		defaultExpr := getDefaultExpression(col)
+		if defaultExpr != "" {
 			_, _ = out.WriteString(" DEFAULT ")
-			_, _ = out.WriteString(getDefaultExpression(col))
+			_, _ = out.WriteString(defaultExpr)
 		}
 	}
 
