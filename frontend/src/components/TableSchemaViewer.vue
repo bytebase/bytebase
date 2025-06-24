@@ -30,7 +30,6 @@ import type { ComposedDatabase } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
 import { 
   GetSchemaStringRequestSchema,
-  GetSchemaStringRequest_ObjectType as NewObjectType,
 } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
 import { convertOldObjectTypeToNew } from "@/utils/v1/database-conversions";

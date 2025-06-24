@@ -25,7 +25,8 @@ import {
   RemoveDataSourceRequestSchema,
   ListInstancesRequestSchema
 } from "@/types/proto-es/v1/instance_service_pb";
-import type { ComposedInstance } from "@/types";
+import { adaptComposedInstance, type ComposedInstance, type ComposedInstanceV2 } from "@/types";
+import type { Instance as NewInstance } from "@/types/proto-es/v1/instance_service_pb";
 import {
   unknownEnvironment,
   unknownInstance,
@@ -87,22 +88,26 @@ const getListInstanceFilter = (params: InstanceFilter) => {
 };
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
-  const instanceMapByName = reactive(new Map<string, ComposedInstance>());
+  // New: Map stores proto-es types internally
+  const instanceMapByName = reactive(new Map<string, ComposedInstanceV2>());
   const instanceRequestCache = new Map<string, Promise<ComposedInstance>>();
+  
+
 
   const reset = () => {
     instanceMapByName.clear();
   };
 
   // Actions
-  const upsertInstances = async (list: Instance[]) => {
+  const upsertInstances = async (list: Instance[]): Promise<ComposedInstance[]> => {
+    const newInstances = list.map(convertOldInstanceToNew);
     const composedInstances = await Promise.all(
-      list.map((instance) => composeInstance(instance))
+      newInstances.map((instance) => composeInstanceNew(instance))
     );
     composedInstances.forEach((composed) => {
       instanceMapByName.set(composed.name, composed);
     });
-    return composedInstances;
+    return composedInstances.map(adaptComposedInstance.toLegacy);
   };
   const createInstance = async (instance: Instance) => {
     const newInstance = convertOldInstanceToNew(instance);
@@ -181,7 +186,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     return composed;
   };
 
-  const fetchInstanceByName = async (name: string, silent = false) => {
+  const fetchInstanceByName = async (name: string, silent = false): Promise<ComposedInstance> => {
     const request = create(GetInstanceRequestSchema, {
       name,
     });
@@ -192,13 +197,14 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const composed = await upsertInstances([instance]);
     return composed[0];
   };
-  const getInstanceByName = (name: string) => {
-    return instanceMapByName.get(name) ?? unknownInstance();
+  const getInstanceByName = (name: string): ComposedInstance => {
+    const instance = instanceMapByName.get(name);
+    return instance ? adaptComposedInstance.toLegacy(instance) : unknownInstance();
   };
-  const getOrFetchInstanceByName = async (name: string, silent = false) => {
+  const getOrFetchInstanceByName = async (name: string, silent = false): Promise<ComposedInstance> => {
     const cachedData = instanceMapByName.get(name);
     if (cachedData) {
-      return cachedData;
+      return adaptComposedInstance.toLegacy(cachedData);
     }
     if (
       !isValidInstanceName(name) ||
@@ -285,6 +291,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     };
   };
 
+
+
   return {
     reset,
     upsertInstances,
@@ -305,8 +313,9 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   };
 });
 
-const composeInstance = async (instance: Instance) => {
-  const composed = instance as ComposedInstance;
+// New: Compose function for proto-es types
+const composeInstanceNew = async (instance: NewInstance): Promise<ComposedInstanceV2> => {
+  const composed = instance as ComposedInstanceV2;
   const environmentEntity =
     (await useEnvironmentV1Store().getOrFetchEnvironmentByName(
       instance.environment
@@ -314,3 +323,5 @@ const composeInstance = async (instance: Instance) => {
   composed.environmentEntity = environmentEntity;
   return composed;
 };
+
+
