@@ -1,7 +1,27 @@
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch, markRaw } from "vue";
-import { databaseServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { databaseServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import {
+  GetDatabaseRequestSchema,
+  ListDatabasesRequestSchema,
+  BatchGetDatabasesRequestSchema,
+  BatchUpdateDatabasesRequestSchema,
+  UpdateDatabaseRequestSchema,
+  BatchSyncDatabasesRequestSchema,
+  SyncDatabaseRequestSchema,
+  GetDatabaseSchemaRequestSchema,
+  DiffSchemaRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  convertNewDatabaseToOld,
+  convertOldDatabaseToNew,
+  convertNewDatabaseSchemaToOld,
+  convertNewDiffSchemaResponseToOld,
+} from "@/utils/v1/database-conversions";
 import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
   isValidEnvironmentName,
@@ -156,14 +176,16 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       };
     }
 
-    const { databases, nextPageToken } =
-      await databaseServiceClient.listDatabases({
-        parent: params.parent,
-        pageSize: params.pageSize,
-        pageToken: params.pageToken,
-        showDeleted: params.filter?.showDeleted,
-        filter: getListDatabaseFilter(params.filter ?? {}),
-      });
+    const request = create(ListDatabasesRequestSchema, {
+      parent: params.parent,
+      pageSize: params.pageSize,
+      pageToken: params.pageToken,
+      showDeleted: params.filter?.showDeleted,
+      filter: getListDatabaseFilter(params.filter ?? {}),
+    });
+    const response = await databaseServiceClientConnect.listDatabases(request);
+    const databases = response.databases.map((db) => convertNewDatabaseToOld(db));
+    const { nextPageToken } = response;
     if (params.parent.startsWith(instanceNamePrefix)) {
       removeCacheByInstance(params.parent);
     }
@@ -191,15 +213,17 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     }
   };
   const batchSyncDatabases = async (databases: string[]) => {
-    await databaseServiceClient.batchSyncDatabases({
+    const request = create(BatchSyncDatabasesRequestSchema, {
       parent: `${instanceNamePrefix}-`,
       names: databases,
     });
+    await databaseServiceClientConnect.batchSyncDatabases(request);
   };
   const syncDatabase = async (database: string, refresh = false) => {
-    await databaseServiceClient.syncDatabase({
+    const request = create(SyncDatabaseRequestSchema, {
       name: database,
     });
+    await databaseServiceClientConnect.syncDatabase(request);
     if (refresh) {
       await fetchDatabaseByName(database);
     }
@@ -208,14 +232,16 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return databaseMapByName.get(name) ?? unknownDatabase();
   };
   const fetchDatabaseByName = async (name: string, silent = false) => {
-    const database = await databaseServiceClient.getDatabase(
+    const request = create(GetDatabaseRequestSchema, {
+      name,
+    });
+    const newDatabase = await databaseServiceClientConnect.getDatabase(
+      request,
       {
-        name,
-      },
-      {
-        silent,
+        contextValues: createContextValues().set(silentContextKey, silent),
       }
     );
+    const database = convertNewDatabaseToOld(newDatabase);
 
     const [composed] = await upsertDatabaseMap([database]);
 
@@ -236,36 +262,71 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return request;
   };
   const batchGetDatabases = async (names: string[], silent = true) => {
-    const { databases } = await databaseServiceClient.batchGetDatabases(
+    const request = create(BatchGetDatabasesRequestSchema, {
+      names,
+    });
+    const response = await databaseServiceClientConnect.batchGetDatabases(
+      request,
       {
-        names,
-      },
-      {
-        silent,
+        contextValues: createContextValues().set(silentContextKey, silent),
       }
     );
+    const databases = response.databases.map((db) => convertNewDatabaseToOld(db));
     const composed = await upsertDatabaseMap(databases);
     return composed;
   };
   const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
-    const updated = await databaseServiceClient.batchUpdateDatabases(params);
-    const composed = await upsertDatabaseMap(updated.databases);
+    // Convert each UpdateDatabaseRequest
+    const requests = params.requests.map((req) => {
+      if (!req.database) {
+        return {
+          database: undefined,
+          updateMask: req.updateMask ? { paths: req.updateMask } : undefined,
+        };
+      }
+      return {
+        database: convertOldDatabaseToNew(req.database),
+        updateMask: req.updateMask ? { paths: req.updateMask } : undefined,
+      };
+    });
+    
+    const request = create(BatchUpdateDatabasesRequestSchema, {
+      parent: params.parent,
+      requests,
+    });
+    const response = await databaseServiceClientConnect.batchUpdateDatabases(request);
+    const updatedDatabases = response.databases.map((db) => convertNewDatabaseToOld(db));
+    const composed = await upsertDatabaseMap(updatedDatabases);
     return composed;
   };
   const updateDatabase = async (params: UpdateDatabaseRequest) => {
-    const updated = await databaseServiceClient.updateDatabase(params);
+    if (!params.database) {
+      throw new Error("Database is required for update");
+    }
+    const database = convertOldDatabaseToNew(params.database);
+    const request = create(UpdateDatabaseRequestSchema, {
+      ...params,
+      database,
+      updateMask: params.updateMask ? { paths: params.updateMask } : undefined,
+    });
+    const newDatabase = await databaseServiceClientConnect.updateDatabase(request);
+    const updated = convertNewDatabaseToOld(newDatabase);
     const [composed] = await upsertDatabaseMap([updated]);
     return composed;
   };
   const fetchDatabaseSchema = async (database: string, sdlFormat = false) => {
-    const schema = await databaseServiceClient.getDatabaseSchema({
+    const request = create(GetDatabaseSchemaRequestSchema, {
       name: `${database}/schema`,
       sdlFormat,
     });
+    const newSchema = await databaseServiceClientConnect.getDatabaseSchema(request);
+    const schema = convertNewDatabaseSchemaToOld(newSchema);
     return schema;
   };
-  const diffSchema = async (request: DiffSchemaRequest) => {
-    const resp = await databaseServiceClient.diffSchema(request);
+  const diffSchema = async (params: DiffSchemaRequest) => {
+    const request = create(DiffSchemaRequestSchema, params);
+    const newResp = await databaseServiceClientConnect.diffSchema(request);
+    const resp = convertNewDiffSchemaResponseToOld(newResp);
     return resp;
   };
 
