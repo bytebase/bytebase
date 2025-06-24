@@ -81,7 +81,7 @@ CREATE TABLE [app].[users] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [username] NVARCHAR(50) NOT NULL,
     [email] NVARCHAR(100) NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [uk_users_email] UNIQUE ([email])
 );
 
@@ -100,7 +100,7 @@ CREATE INDEX [idx_posts_user_id] ON [app].[posts] ([user_id]);
 `,
 			migrationDDL: `
 -- Add new column
-ALTER TABLE [app].[users] ADD [status] NVARCHAR(20) DEFAULT 'active';
+ALTER TABLE [app].[users] ADD [status] NVARCHAR(20);
 
 -- Add new table
 CREATE TABLE [app].[comments] (
@@ -108,7 +108,7 @@ CREATE TABLE [app].[comments] (
     [post_id] INT NOT NULL,
     [user_id] INT NOT NULL,
     [content] NTEXT NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [fk_comments_post] FOREIGN KEY ([post_id]) REFERENCES [app].[posts]([id]) ON DELETE CASCADE,
     CONSTRAINT [fk_comments_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id])
 );
@@ -136,7 +136,7 @@ CREATE TABLE [sales].[customers] (
 CREATE TABLE [sales].[orders] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [customer_id] INT NOT NULL,
-    [order_date] DATE DEFAULT GETDATE(),
+    [order_date] DATE,
     [total] DECIMAL(10,2),
     CONSTRAINT [fk_orders_customer] FOREIGN KEY ([customer_id]) REFERENCES [sales].[customers]([id])
 );
@@ -172,7 +172,7 @@ CREATE TABLE [reporting].[sales_data] (
     [product_name] NVARCHAR(100) NOT NULL,
     [quantity] INT NOT NULL,
     [price] DECIMAL(10,2) NOT NULL,
-    [sale_date] DATE DEFAULT GETDATE()
+    [sale_date] DATE
 );
 
 CREATE TABLE [reporting].[customers] (
@@ -261,7 +261,7 @@ CREATE TABLE [perf].[events] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [event_name] NVARCHAR(100) NOT NULL,
     [event_data] NVARCHAR(MAX),
-    [timestamp] DATETIME2 DEFAULT GETDATE(),
+    [timestamp] DATETIME2,
     [user_id] INT,
     [category] NVARCHAR(50)
 );
@@ -293,7 +293,7 @@ GO
 CREATE TABLE [finance].[accounts] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [account_number] NVARCHAR(20) NOT NULL,
-    [balance] DECIMAL(15,2) DEFAULT 0,
+    [balance] DECIMAL(15,2),
     [account_type] NVARCHAR(20) NOT NULL,
     [created_at] DATETIME2 DEFAULT GETDATE()
 );
@@ -312,7 +312,7 @@ CREATE TABLE [finance].[transactions] (
     [account_id] INT NOT NULL,
     [amount] DECIMAL(15,2) NOT NULL,
     [transaction_type] NVARCHAR(20) NOT NULL,
-    [transaction_date] DATETIME2 DEFAULT GETDATE(),
+    [transaction_date] DATETIME2,
     CONSTRAINT [fk_transactions_account] FOREIGN KEY ([account_id]) REFERENCES [finance].[accounts]([id]),
     CONSTRAINT [ck_transactions_amount] CHECK ([amount] != 0),
     CONSTRAINT [ck_transactions_type] CHECK ([transaction_type] IN ('DEBIT', 'CREDIT'))
@@ -341,9 +341,6 @@ CREATE TABLE [hr].[employees] (
 ALTER TABLE [hr].[employees] ADD [department_id] INT;
 ALTER TABLE [hr].[employees] ADD [manager_id] INT;
 ALTER TABLE [hr].[employees] ADD [status] NVARCHAR(20);
-
--- Add named default constraint for status
-ALTER TABLE [hr].[employees] ADD CONSTRAINT [df_employees_status] DEFAULT 'ACTIVE' FOR [status];
 
 -- Create department table
 CREATE TABLE [hr].[departments] (
@@ -386,7 +383,7 @@ CREATE TABLE [core].[roles] (
 CREATE TABLE [core].[user_roles] (
     [user_id] INT NOT NULL,
     [role_id] INT NOT NULL,
-    [assigned_at] DATETIME2 DEFAULT GETDATE(),
+    [assigned_at] DATETIME2,
     CONSTRAINT [pk_user_roles] PRIMARY KEY ([user_id], [role_id]),
     CONSTRAINT [fk_user_roles_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id]) ON DELETE CASCADE,
     CONSTRAINT [fk_user_roles_role] FOREIGN KEY ([role_id]) REFERENCES [core].[roles]([id]) ON DELETE CASCADE
@@ -405,7 +402,7 @@ CREATE TABLE [app].[audit_log] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [user_id] INT,
     [action] NVARCHAR(100) NOT NULL,
-    [timestamp] DATETIME2 DEFAULT GETDATE(),
+    [timestamp] DATETIME2,
     [details] NVARCHAR(MAX),
     CONSTRAINT [fk_audit_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id])
 );
@@ -422,7 +419,7 @@ CREATE TABLE [ecommerce].[products] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [name] NVARCHAR(100) NOT NULL,
     [price] DECIMAL(10,2) NOT NULL,
-    [tax_rate] DECIMAL(5,4) DEFAULT 0.08
+    [tax_rate] DECIMAL(5,4)
 );
 `,
 			migrationDDL: `
@@ -446,7 +443,7 @@ CREATE TABLE [ecommerce].[orders] (
     [quantity] INT NOT NULL,
     [unit_price] DECIMAL(10,2) NOT NULL,
     [total] DECIMAL(15,2),
-    [order_date] DATETIME2 DEFAULT GETDATE(),
+    [order_date] DATETIME2,
     CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [ecommerce].[products]([id])
 );
 GO
@@ -471,7 +468,7 @@ CREATE TABLE [tracking].[products] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [name] NVARCHAR(100) NOT NULL,
     [price] DECIMAL(10,2) NOT NULL,
-    [last_modified] DATETIME2 DEFAULT GETDATE()
+    [last_modified] DATETIME2
 );
 `,
 			migrationDDL: `
@@ -509,7 +506,7 @@ CREATE TABLE [test].[users] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [username] NVARCHAR(50) NOT NULL,
     [email] NVARCHAR(100) NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [uk_email] UNIQUE ([email])
 );
 
@@ -542,7 +539,7 @@ CREATE TABLE [test].[users] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [username] NVARCHAR(50) NOT NULL,
     [email] NVARCHAR(100) NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [uk_email] UNIQUE ([email])
 );
 GO
@@ -574,7 +571,7 @@ CREATE TABLE [test].[comments] (
     [post_id] INT NOT NULL,
     [user_id] INT NOT NULL,
     [content] NVARCHAR(MAX) NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
+    [created_at] DATETIME2,
     CONSTRAINT [fk_comment_post] FOREIGN KEY ([post_id]) REFERENCES [test].[posts]([id]) ON DELETE CASCADE,
     CONSTRAINT [fk_comment_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users]([id]) ON DELETE NO ACTION
 );
@@ -714,8 +711,8 @@ CREATE TABLE [app].[users] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [username] NVARCHAR(50) NOT NULL,
     [email] NVARCHAR(100) NOT NULL,
-    [created_at] DATETIME2 DEFAULT GETDATE(),
-    [status] NVARCHAR(20) DEFAULT 'active'
+    [created_at] DATETIME2,
+    [status] NVARCHAR(20)
 );
 
 CREATE TABLE [app].[products] (
@@ -755,7 +752,7 @@ CREATE TABLE [app].[orders] (
     [user_id] INT NOT NULL,
     [product_id] INT NOT NULL,
     [quantity] INT NOT NULL,
-    [order_date] DATETIME2 DEFAULT GETDATE(),
+    [order_date] DATETIME2,
     CONSTRAINT [fk_orders_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id]),
     CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [app].[products]([id])
 );
@@ -798,7 +795,7 @@ CREATE TABLE [test].[invoices] (
     [id] INT IDENTITY(1,1) PRIMARY KEY,
     [customer_id] INT NOT NULL,
     [amount] DECIMAL(10,2) NOT NULL,
-    [invoice_date] DATE DEFAULT GETDATE(),
+    [invoice_date] DATE,
     CONSTRAINT [fk_invoices_customer] FOREIGN KEY ([customer_id]) REFERENCES [test].[customers]([id])
 );
 GO
@@ -837,7 +834,7 @@ EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'test', 'TABLE', 'invoi
 GO
 
 -- Add new column with comment
-ALTER TABLE [test].[invoices] ADD [payment_status] NVARCHAR(20) DEFAULT 'pending';
+ALTER TABLE [test].[invoices] ADD [payment_status] NVARCHAR(20);
 GO
 
 EXEC sp_addextendedproperty 'MS_Description', 'Current payment status: pending, paid, overdue, cancelled', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'payment_status';
@@ -855,7 +852,7 @@ CREATE TABLE [special].[documents] (
     [title] NVARCHAR(200) NOT NULL,
     [content] NVARCHAR(MAX),
     [author] NVARCHAR(100),
-    [created_date] DATETIME2 DEFAULT GETDATE(),
+    [created_date] DATETIME2,
     [metadata] NVARCHAR(500)
 );
 

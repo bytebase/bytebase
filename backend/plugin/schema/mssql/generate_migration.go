@@ -161,6 +161,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 					if i == 0 && hasDroppedIndex {
 						_, _ = buf.WriteString("GO\n")
 					}
+
 					_, _ = buf.WriteString("ALTER TABLE [")
 					_, _ = buf.WriteString(tableDiff.SchemaName)
 					_, _ = buf.WriteString("].[")
@@ -292,16 +293,116 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 
+	// 2.5 Handle table and column comments
+	hasCommentChanges := false
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
+			// Add table comment if present
+			if tableDiff.NewTable.Comment != "" {
+				commentSQL := generateTableCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\n")
+				hasCommentChanges = true
+			}
+			// Add column comments if present
+			for _, column := range tableDiff.NewTable.Columns {
+				if column.Comment != "" {
+					commentSQL := generateColumnCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, column.Name, column.Comment)
+					_, _ = buf.WriteString(commentSQL)
+					_, _ = buf.WriteString(";\n")
+					hasCommentChanges = true
+				}
+			}
+		} else if tableDiff.Action == schema.MetadataDiffActionAlter {
+			// Handle table comment changes
+			oldTableComment := ""
+			newTableComment := ""
+			if tableDiff.OldTable != nil {
+				oldTableComment = tableDiff.OldTable.Comment
+			}
+			if tableDiff.NewTable != nil {
+				newTableComment = tableDiff.NewTable.Comment
+			}
+			if oldTableComment != newTableComment {
+				if oldTableComment == "" && newTableComment != "" {
+					// Add new table comment
+					commentSQL := generateTableCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, newTableComment)
+					_, _ = buf.WriteString(commentSQL)
+					_, _ = buf.WriteString(";\n")
+					hasCommentChanges = true
+				} else if oldTableComment != "" && newTableComment == "" {
+					// Drop table comment
+					commentSQL := generateTableCommentSQL("DROP", tableDiff.SchemaName, tableDiff.TableName, "")
+					_, _ = buf.WriteString(commentSQL)
+					_, _ = buf.WriteString(";\n")
+					hasCommentChanges = true
+				} else if oldTableComment != "" && newTableComment != "" {
+					// Update table comment
+					commentSQL := generateTableCommentSQL("UPDATE", tableDiff.SchemaName, tableDiff.TableName, newTableComment)
+					_, _ = buf.WriteString(commentSQL)
+					_, _ = buf.WriteString(";\n")
+					hasCommentChanges = true
+				}
+			}
+			// Handle column comment changes
+			for _, colDiff := range tableDiff.ColumnChanges {
+				if colDiff.Action == schema.MetadataDiffActionCreate && colDiff.NewColumn != nil {
+					if colDiff.NewColumn.Comment != "" {
+						commentSQL := generateColumnCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn.Name, colDiff.NewColumn.Comment)
+						_, _ = buf.WriteString(commentSQL)
+						_, _ = buf.WriteString(";\n")
+						hasCommentChanges = true
+					}
+				} else if colDiff.Action == schema.MetadataDiffActionAlter {
+					oldColComment := ""
+					newColComment := ""
+					if colDiff.OldColumn != nil {
+						oldColComment = colDiff.OldColumn.Comment
+					}
+					if colDiff.NewColumn != nil {
+						newColComment = colDiff.NewColumn.Comment
+					}
+					if oldColComment != newColComment {
+						if oldColComment == "" && newColComment != "" {
+							// Add new column comment
+							commentSQL := generateColumnCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn.Name, newColComment)
+							_, _ = buf.WriteString(commentSQL)
+							_, _ = buf.WriteString(";\n")
+							hasCommentChanges = true
+						} else if oldColComment != "" && newColComment == "" {
+							// Drop column comment
+							commentSQL := generateColumnCommentSQL("DROP", tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn.Name, "")
+							_, _ = buf.WriteString(commentSQL)
+							_, _ = buf.WriteString(";\n")
+							hasCommentChanges = true
+						} else if oldColComment != "" && newColComment != "" {
+							// Update column comment
+							commentSQL := generateColumnCommentSQL("UPDATE", tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn.Name, newColComment)
+							_, _ = buf.WriteString(commentSQL)
+							_, _ = buf.WriteString(";\n")
+							hasCommentChanges = true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Add GO after comment changes if we have any
+	if hasCommentChanges {
+		_, _ = buf.WriteString("GO\n")
+	}
+
 	// Add a GO statement to separate table creation/alteration from the next phase
 	// Only add if we have tables/alters and we have views/functions/procedures to follow
 	if hasCreateOrAlterTables(diff) && (hasCreateViews(diff) || hasCreateFunctions(diff) || hasCreateProcedures(diff)) {
 		_, _ = buf.WriteString("\nGO\n")
 	}
 
-	// 2.4 Create views in topological order (dependencies first)
+	// 2.6 Create views in topological order (dependencies first)
 	createViewsInOrder(diff, &buf)
 
-	// 2.5 Create functions
+	// 2.7 Create functions
 	for _, funcDiff := range diff.FunctionChanges {
 		if funcDiff.Action == schema.MetadataDiffActionCreate {
 			_, _ = buf.WriteString(funcDiff.NewFunction.Definition)
@@ -319,7 +420,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 
-	// 2.6 Create procedures
+	// 2.8 Create procedures
 	for _, procDiff := range diff.ProcedureChanges {
 		switch procDiff.Action {
 		case schema.MetadataDiffActionCreate:
@@ -343,7 +444,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 
-	// 2.7 Create sequences
+	// 2.9 Create sequences
 	for _, sequenceDiff := range diff.SequenceChanges {
 		if sequenceDiff.Action == schema.MetadataDiffActionCreate {
 			// Generate CREATE SEQUENCE statement
@@ -582,15 +683,6 @@ func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 		_, _ = buf.WriteString(" NOT NULL")
 	}
 
-	// Add default value (but not for IDENTITY columns)
-	if !column.IsIdentity {
-		defaultExpr := getDefaultExpression(column)
-		if defaultExpr != "" {
-			_, _ = buf.WriteString(" DEFAULT ")
-			_, _ = buf.WriteString(defaultExpr)
-		}
-	}
-
 	return buf.String()
 }
 
@@ -631,45 +723,6 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 			_, _ = buf.WriteString(" NOT NULL")
 		}
 		_, _ = buf.WriteString(";\n")
-	}
-
-	// Handle default value changes
-	oldHasDefault := hasDefaultValue(colDiff.OldColumn)
-	newHasDefault := hasDefaultValue(colDiff.NewColumn)
-	if oldHasDefault || newHasDefault {
-		if !defaultValuesEqual(colDiff.OldColumn, colDiff.NewColumn) {
-			// First drop the old default constraint if it exists
-			if oldHasDefault {
-				// We need to find the default constraint name
-				// In practice, this might require querying system tables
-				// For now, we'll use a naming convention
-				constraintName := fmt.Sprintf("DF_%s_%s", tableName, colDiff.OldColumn.Name)
-				_, _ = buf.WriteString("ALTER TABLE [")
-				_, _ = buf.WriteString(schemaName)
-				_, _ = buf.WriteString("].[")
-				_, _ = buf.WriteString(tableName)
-				_, _ = buf.WriteString("] DROP CONSTRAINT [")
-				_, _ = buf.WriteString(constraintName)
-				_, _ = buf.WriteString("];\n")
-			}
-
-			// Add new default constraint if needed
-			if newHasDefault {
-				constraintName := fmt.Sprintf("DF_%s_%s", tableName, colDiff.NewColumn.Name)
-				defaultExpr := getDefaultExpression(colDiff.NewColumn)
-				_, _ = buf.WriteString("ALTER TABLE [")
-				_, _ = buf.WriteString(schemaName)
-				_, _ = buf.WriteString("].[")
-				_, _ = buf.WriteString(tableName)
-				_, _ = buf.WriteString("] ADD CONSTRAINT [")
-				_, _ = buf.WriteString(constraintName)
-				_, _ = buf.WriteString("] DEFAULT ")
-				_, _ = buf.WriteString(defaultExpr)
-				_, _ = buf.WriteString(" FOR [")
-				_, _ = buf.WriteString(colDiff.NewColumn.Name)
-				_, _ = buf.WriteString("];\n")
-			}
-		}
 	}
 
 	return buf.String()
@@ -819,115 +872,37 @@ func hasConstraintsInTable(table *storepb.TableMetadata) bool {
 	return false
 }
 
-// hasDefaultValue checks if a column has any default value
-func hasDefaultValue(column *storepb.ColumnMetadata) bool {
-	if column == nil {
-		return false
-	}
-	return column.GetDefaultExpression() != "" ||
-		(column.GetDefault() != nil && column.GetDefault().Value != "") ||
-		column.GetDefaultNull()
-}
-
-// defaultValuesEqual checks if two columns have the same default value
-func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
-	if col1 == nil || col2 == nil {
-		return col1 == col2
-	}
-
-	// Check default expression
-	if col1.GetDefaultExpression() != col2.GetDefaultExpression() {
-		return false
-	}
-
-	// Check default value
-	def1 := col1.GetDefault()
-	def2 := col2.GetDefault()
-	if (def1 == nil) != (def2 == nil) {
-		return false
-	}
-	if def1 != nil && def1.Value != def2.Value {
-		return false
-	}
-
-	// Check default null
-	if col1.GetDefaultNull() != col2.GetDefaultNull() {
-		return false
-	}
-
-	return true
-}
-
-// getDefaultExpression returns the SQL expression for a column's default value
-func getDefaultExpression(column *storepb.ColumnMetadata) string {
-	if column == nil {
-		return ""
-	}
-
-	if expr := column.GetDefaultExpression(); expr != "" {
-		return expr
-	}
-
-	if def := column.GetDefault(); def != nil && def.Value != "" {
-		// Quote string literals
-		return fmt.Sprintf("'%s'", def.Value)
-	}
-
-	if column.GetDefaultNull() {
-		return "NULL"
-	}
-
-	return ""
-}
-
 // generateExtendedPropertySQL generates SQL for adding, updating, or dropping extended properties (comments)
 func generateExtendedPropertySQL(action, objectType, schemaName, objectName, comment string) string {
 	var buf strings.Builder
 
 	switch action {
 	case "ADD":
-		_, _ = buf.WriteString("EXEC sp_addextendedproperty")
-		_, _ = buf.WriteString(" @name = N'MS_Description'")
-		_, _ = buf.WriteString(", @value = N'")
+		_, _ = buf.WriteString("EXEC sp_addextendedproperty 'MS_Description', '")
 		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
-		_, _ = buf.WriteString("'")
-		_, _ = buf.WriteString(", @level0type = N'SCHEMA'")
-		_, _ = buf.WriteString(", @level0name = N'")
+		_, _ = buf.WriteString("', 'SCHEMA', '")
 		_, _ = buf.WriteString(schemaName)
-		_, _ = buf.WriteString("'")
-		_, _ = buf.WriteString(", @level1type = N'")
+		_, _ = buf.WriteString("', '")
 		_, _ = buf.WriteString(objectType)
-		_, _ = buf.WriteString("'")
-		_, _ = buf.WriteString(", @level1name = N'")
+		_, _ = buf.WriteString("', '")
 		_, _ = buf.WriteString(objectName)
 		_, _ = buf.WriteString("'")
 	case "UPDATE":
-		_, _ = buf.WriteString("EXEC sp_updateextendedproperty")
-		_, _ = buf.WriteString(" @name = N'MS_Description'")
-		_, _ = buf.WriteString(", @value = N'")
+		_, _ = buf.WriteString("EXEC sp_updateextendedproperty 'MS_Description', '")
 		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
-		_, _ = buf.WriteString("'")
-		_, _ = buf.WriteString(", @level0type = N'SCHEMA'")
-		_, _ = buf.WriteString(", @level0name = N'")
+		_, _ = buf.WriteString("', 'SCHEMA', '")
 		_, _ = buf.WriteString(schemaName)
-		_, _ = buf.WriteString("'")
-		_, _ = buf.WriteString(", @level1type = N'")
+		_, _ = buf.WriteString("', '")
 		_, _ = buf.WriteString(objectType)
-		_, _ = buf.WriteString("'")
-		_, _ = buf.WriteString(", @level1name = N'")
+		_, _ = buf.WriteString("', '")
 		_, _ = buf.WriteString(objectName)
 		_, _ = buf.WriteString("'")
 	case "DROP":
-		_, _ = buf.WriteString("EXEC sp_dropextendedproperty")
-		_, _ = buf.WriteString(" @name = N'MS_Description'")
-		_, _ = buf.WriteString(", @level0type = N'SCHEMA'")
-		_, _ = buf.WriteString(", @level0name = N'")
+		_, _ = buf.WriteString("EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', '")
 		_, _ = buf.WriteString(schemaName)
-		_, _ = buf.WriteString("'")
-		_, _ = buf.WriteString(", @level1type = N'")
+		_, _ = buf.WriteString("', '")
 		_, _ = buf.WriteString(objectType)
-		_, _ = buf.WriteString("'")
-		_, _ = buf.WriteString(", @level1name = N'")
+		_, _ = buf.WriteString("', '")
 		_, _ = buf.WriteString(objectName)
 		_, _ = buf.WriteString("'")
 	}
@@ -948,6 +923,49 @@ func generateFunctionCommentSQL(action, schemaName, functionName, comment string
 // generateSequenceCommentSQL generates SQL for sequence comment changes
 func generateSequenceCommentSQL(action, schemaName, sequenceName, comment string) string {
 	return generateExtendedPropertySQL(action, "SEQUENCE", schemaName, sequenceName, comment)
+}
+
+// generateTableCommentSQL generates SQL for table comment changes
+func generateTableCommentSQL(action, schemaName, tableName, comment string) string {
+	return generateExtendedPropertySQL(action, "TABLE", schemaName, tableName, comment)
+}
+
+// generateColumnCommentSQL generates SQL for column comment changes
+func generateColumnCommentSQL(action, schemaName, tableName, columnName, comment string) string {
+	var buf strings.Builder
+
+	switch action {
+	case "ADD":
+		_, _ = buf.WriteString("EXEC sp_addextendedproperty 'MS_Description', '")
+		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+		_, _ = buf.WriteString("', 'SCHEMA', '")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("', 'TABLE', '")
+		_, _ = buf.WriteString(tableName)
+		_, _ = buf.WriteString("', 'COLUMN', '")
+		_, _ = buf.WriteString(columnName)
+		_, _ = buf.WriteString("'")
+	case "UPDATE":
+		_, _ = buf.WriteString("EXEC sp_updateextendedproperty 'MS_Description', '")
+		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+		_, _ = buf.WriteString("', 'SCHEMA', '")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("', 'TABLE', '")
+		_, _ = buf.WriteString(tableName)
+		_, _ = buf.WriteString("', 'COLUMN', '")
+		_, _ = buf.WriteString(columnName)
+		_, _ = buf.WriteString("'")
+	case "DROP":
+		_, _ = buf.WriteString("EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', '")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("', 'TABLE', '")
+		_, _ = buf.WriteString(tableName)
+		_, _ = buf.WriteString("', 'COLUMN', '")
+		_, _ = buf.WriteString(columnName)
+		_, _ = buf.WriteString("'")
+	}
+
+	return buf.String()
 }
 
 type queryClauseListener struct {
