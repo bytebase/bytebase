@@ -32,12 +32,12 @@ import { ReleaseService } from "@/types/proto-es/v1/release_service_pb";
 import { WorksheetService } from "@/types/proto-es/v1/worksheet_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanService } from "@/types/proto-es/v1/plan_service_pb";
+import { ProjectService } from "@/types/proto-es/v1/project_service_pb";
 import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 
 
-import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 
 
 
@@ -82,10 +82,6 @@ const clientFactory = createClientFactory()
 
 
 
-export const projectServiceClient = clientFactory.create(
-  ProjectServiceDefinition,
-  channel
-);
 
 export const databaseServiceClient = clientFactory.create(
   DatabaseServiceDefinition,
@@ -220,5 +216,7 @@ export const worksheetServiceClientConnect = createClient(
 export const sqlServiceClientConnect = createClient(SQLService, transport);
 
 export const planServiceClientConnect = createClient(PlanService, transport);
+
+export const projectServiceClientConnect = createClient(ProjectService, transport);
 
 export const rolloutServiceClientConnect = createClient(RolloutService, transport);
