@@ -102,7 +102,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 		}
 	}
 
-	// Drop procedures
+	// Drop procedures (not supported in TiDB)
 	for _, procDiff := range diff.ProcedureChanges {
 		if procDiff.Action == schema.MetadataDiffActionDrop {
 			if err := writeDropProcedure(buf, procDiff.ProcedureName); err != nil {
@@ -111,10 +111,19 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 		}
 	}
 
-	// Drop functions
+	// Drop functions (not supported in TiDB)
 	for _, funcDiff := range diff.FunctionChanges {
 		if funcDiff.Action == schema.MetadataDiffActionDrop {
 			if err := writeDropFunction(buf, funcDiff.FunctionName); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Drop sequences
+	for _, seqDiff := range diff.SequenceChanges {
+		if seqDiff.Action == schema.MetadataDiffActionDrop {
+			if err := writeDropSequence(buf, seqDiff.SequenceName); err != nil {
 				return err
 			}
 		}
@@ -210,7 +219,16 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		}
 	}
 
-	// Create functions
+	// Create sequences
+	for _, seqDiff := range diff.SequenceChanges {
+		if seqDiff.Action == schema.MetadataDiffActionCreate || seqDiff.Action == schema.MetadataDiffActionAlter {
+			if err := writeSequenceDiff(buf, seqDiff); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Create functions (not supported in TiDB)
 	for _, funcDiff := range diff.FunctionChanges {
 		if funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter {
 			if err := writeFunctionDiff(buf, funcDiff); err != nil {
@@ -219,7 +237,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		}
 	}
 
-	// Create procedures
+	// Create procedures (not supported in TiDB)
 	for _, procDiff := range diff.ProcedureChanges {
 		if procDiff.Action == schema.MetadataDiffActionCreate || procDiff.Action == schema.MetadataDiffActionAlter {
 			if err := writeProcedureDiff(buf, procDiff); err != nil {
@@ -241,6 +259,15 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 }
 
 func generateAlterTable(tableDiff *schema.TableDiff, buf *strings.Builder) error {
+	// Handle table comment changes first
+	if tableDiff.OldTable != nil && tableDiff.NewTable != nil {
+		if tableDiff.OldTable.Comment != tableDiff.NewTable.Comment {
+			if err := writeAlterTableComment(buf, tableDiff.TableName, tableDiff.NewTable.Comment); err != nil {
+				return err
+			}
+		}
+	}
+
 	// Add columns first
 	for _, colDiff := range tableDiff.ColumnChanges {
 		if colDiff.Action == schema.MetadataDiffActionCreate {
@@ -309,6 +336,15 @@ func generateAlterTable(tableDiff *schema.TableDiff, buf *strings.Builder) error
 }
 
 // Write functions for various DDL statements
+
+func writeAlterTableComment(buf *strings.Builder, tableName, comment string) error {
+	_, _ = buf.WriteString("ALTER TABLE `")
+	_, _ = buf.WriteString(tableName)
+	_, _ = buf.WriteString("` COMMENT = '")
+	_, _ = buf.WriteString(escapeString(comment))
+	_, _ = buf.WriteString("';\n\n")
+	return nil
+}
 
 func writeDropTrigger(buf *strings.Builder, trigger string) error {
 	_, _ = buf.WriteString("DROP TRIGGER IF EXISTS `")
@@ -909,6 +945,11 @@ func hasCreateOrAlterObjects(diff *schema.MetadataDiff) bool {
 			return true
 		}
 	}
+	for _, seqDiff := range diff.SequenceChanges {
+		if seqDiff.Action == schema.MetadataDiffActionCreate || seqDiff.Action == schema.MetadataDiffActionAlter {
+			return true
+		}
+	}
 	for _, funcDiff := range diff.FunctionChanges {
 		if funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter {
 			return true
@@ -1026,4 +1067,75 @@ func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *storepb
 	}
 	_, _ = buf.WriteString("\n")
 	return nil
+}
+
+func writeDropSequence(buf *strings.Builder, sequence string) error {
+	_, _ = buf.WriteString("DROP SEQUENCE IF EXISTS `")
+	_, _ = buf.WriteString(sequence)
+	_, _ = buf.WriteString("`;\n\n")
+	return nil
+}
+
+func writeSequenceDiff(buf *strings.Builder, seqDiff *schema.SequenceDiff) error {
+	switch seqDiff.Action {
+	case schema.MetadataDiffActionCreate:
+		return writeCreateSequence(buf, seqDiff.NewSequence)
+	case schema.MetadataDiffActionAlter:
+		return writeAlterSequence(buf, seqDiff.SequenceName, seqDiff.NewSequence)
+	}
+	return nil
+}
+
+func writeCreateSequence(buf *strings.Builder, sequence *storepb.SequenceMetadata) error {
+	_, _ = buf.WriteString("CREATE SEQUENCE `")
+	_, _ = buf.WriteString(sequence.Name)
+	_, _ = buf.WriteString("`")
+
+	if sequence.Start != "" && sequence.Start != "1" {
+		_, _ = buf.WriteString(" START ")
+		_, _ = buf.WriteString(sequence.Start)
+	}
+
+	if sequence.Increment != "" && sequence.Increment != "1" {
+		_, _ = buf.WriteString(" INCREMENT ")
+		_, _ = buf.WriteString(sequence.Increment)
+	}
+
+	if sequence.MinValue != "" {
+		_, _ = buf.WriteString(" MINVALUE ")
+		_, _ = buf.WriteString(sequence.MinValue)
+	}
+
+	if sequence.MaxValue != "" {
+		_, _ = buf.WriteString(" MAXVALUE ")
+		_, _ = buf.WriteString(sequence.MaxValue)
+	}
+
+	if sequence.CacheSize != "" && sequence.CacheSize != "1" {
+		_, _ = buf.WriteString(" CACHE ")
+		_, _ = buf.WriteString(sequence.CacheSize)
+	}
+
+	if sequence.Cycle {
+		_, _ = buf.WriteString(" CYCLE")
+	} else {
+		_, _ = buf.WriteString(" NOCYCLE")
+	}
+
+	if sequence.Comment != "" {
+		_, _ = buf.WriteString(" COMMENT '")
+		_, _ = buf.WriteString(escapeString(sequence.Comment))
+		_, _ = buf.WriteString("'")
+	}
+
+	_, _ = buf.WriteString(";\n")
+	return nil
+}
+
+func writeAlterSequence(buf *strings.Builder, sequenceName string, sequence *storepb.SequenceMetadata) error {
+	// TiDB does not support ALTER SEQUENCE, so we need to DROP and CREATE
+	if err := writeDropSequence(buf, sequenceName); err != nil {
+		return err
+	}
+	return writeCreateSequence(buf, sequence)
 }

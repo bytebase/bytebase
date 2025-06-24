@@ -297,6 +297,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		key := db.TableKey{Schema: "", Table: view.Name}
 		view.Columns = columnMap[key]
+		// Note: TiDB/MySQL does not support view comments, so view.Comment remains empty
 		viewMap[key] = view
 	}
 	if err := viewRows.Err(); err != nil {
@@ -305,6 +306,12 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 	// Query foreign key info.
 	foreignKeysMap, err := d.getForeignKeyList(ctx, d.databaseName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query sequence info.
+	sequences, err := d.getSequenceList(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -436,6 +443,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err := tableRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
+
+	// Add sequences to schema metadata
+	schemaMetadata.Sequences = sequences
 
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
 		Name:    d.databaseName,
@@ -760,4 +770,59 @@ func stripSingleQuote(s string) string {
 		return s[1 : len(s)-1]
 	}
 	return s
+}
+
+func (d *Driver) getSequenceList(ctx context.Context, databaseName string) ([]*storepb.SequenceMetadata, error) {
+	query := `
+		SELECT
+			SEQUENCE_NAME,
+			START,
+			MIN_VALUE,
+			MAX_VALUE,
+			INCREMENT,
+			CYCLE,
+			CACHE_VALUE,
+			IFNULL(COMMENT, '')
+		FROM information_schema.SEQUENCES
+		WHERE SEQUENCE_SCHEMA = ?
+		ORDER BY SEQUENCE_NAME`
+
+	rows, err := d.db.QueryContext(ctx, query, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var sequences []*storepb.SequenceMetadata
+	for rows.Next() {
+		sequence := &storepb.SequenceMetadata{}
+		var cycleOption int64
+
+		if err := rows.Scan(
+			&sequence.Name,
+			&sequence.Start,
+			&sequence.MinValue,
+			&sequence.MaxValue,
+			&sequence.Increment,
+			&cycleOption,
+			&sequence.CacheSize,
+			&sequence.Comment,
+		); err != nil {
+			return nil, err
+		}
+
+		// TiDB sequences are always numeric, set default data type
+		sequence.DataType = "BIGINT"
+
+		// Convert cycle option to boolean (TiDB uses 0/1 instead of YES/NO)
+		sequence.Cycle = cycleOption != 0
+
+		sequences = append(sequences, sequence)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+
+	return sequences, nil
 }
