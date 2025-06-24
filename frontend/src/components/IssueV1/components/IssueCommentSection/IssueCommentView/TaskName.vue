@@ -57,7 +57,7 @@ const link = computed(() => {
   return {
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(issue.project),
+      projectId: extractProjectResourceName(issue.name),
       issueSlug: issueV1Slug(issue.name, issue.title),
     },
     query,
