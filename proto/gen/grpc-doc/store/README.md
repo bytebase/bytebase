@@ -1106,6 +1106,7 @@ ColumnMetadata is the metadata for columns.
 | identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-store-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
 | identity_seed | [int64](#int64) |  | The identity_seed is for identity columns, MSSQL only. |
 | identity_increment | [int64](#int64) |  | The identity_increment is for identity columns, MSSQL only. |
+| default_name | [string](#string) |  | The default_name is the name of the default constraint, MSSQL only. |
 
 
 

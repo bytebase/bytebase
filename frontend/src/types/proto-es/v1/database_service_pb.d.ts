@@ -1515,6 +1515,13 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
    * @generated from field: int64 identity_increment = 21;
    */
   identityIncrement: bigint;
+
+  /**
+   * The default_name is the name of the default constraint, MSSQL only.
+   *
+   * @generated from field: string default_name = 22;
+   */
+  defaultName: string;
 };
 
 /**

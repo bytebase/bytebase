@@ -2055,8 +2055,10 @@ type ColumnMetadata struct {
 	IdentitySeed int64 `protobuf:"varint,18,opt,name=identity_seed,json=identitySeed,proto3" json:"identity_seed,omitempty"`
 	// The identity_increment is for identity columns, MSSQL only.
 	IdentityIncrement int64 `protobuf:"varint,19,opt,name=identity_increment,json=identityIncrement,proto3" json:"identity_increment,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// The default_name is the name of the default constraint, MSSQL only.
+	DefaultName   string `protobuf:"bytes,20,opt,name=default_name,json=defaultName,proto3" json:"default_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ColumnMetadata) Reset() {
@@ -2226,6 +2228,13 @@ func (x *ColumnMetadata) GetIdentityIncrement() int64 {
 		return x.IdentityIncrement
 	}
 	return 0
+}
+
+func (x *ColumnMetadata) GetDefaultName() string {
+	if x != nil {
+		return x.DefaultName
+	}
+	return ""
 }
 
 type isColumnMetadata_DefaultValue interface {
@@ -4051,7 +4060,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xca\x06\n" +
+	"LINEAR_KEY\x10\b\"\xed\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x128\n" +
@@ -4074,7 +4083,8 @@ const file_store_database_proto_rawDesc = "" +
 	"isIdentity\x12b\n" +
 	"\x13identity_generation\x18\x0f \x01(\x0e21.bytebase.store.ColumnMetadata.IdentityGenerationR\x12identityGeneration\x12#\n" +
 	"\ridentity_seed\x18\x12 \x01(\x03R\fidentitySeed\x12-\n" +
-	"\x12identity_increment\x18\x13 \x01(\x03R\x11identityIncrement\"U\n" +
+	"\x12identity_increment\x18\x13 \x01(\x03R\x11identityIncrement\x12!\n" +
+	"\fdefault_name\x18\x14 \x01(\tR\vdefaultName\"U\n" +
 	"\x12IdentityGeneration\x12#\n" +
 	"\x1fIDENTITY_GENERATION_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +

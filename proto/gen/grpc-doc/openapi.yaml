@@ -9223,6 +9223,9 @@ components:
                 identityIncrement:
                     type: string
                     description: The identity_increment is for identity columns, MSSQL only.
+                defaultName:
+                    type: string
+                    description: The default_name is the name of the default constraint, MSSQL only.
             description: ColumnMetadata is the metadata for columns.
         Constant:
             type: object

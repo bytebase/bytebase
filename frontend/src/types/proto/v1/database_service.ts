@@ -745,6 +745,8 @@ export interface ColumnMetadata {
   identitySeed: Long;
   /** The identity_increment is for identity columns, MSSQL only. */
   identityIncrement: Long;
+  /** The default_name is the name of the default constraint, MSSQL only. */
+  defaultName: string;
 }
 
 export enum ColumnMetadata_IdentityGeneration {
@@ -5300,6 +5302,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     identityGeneration: ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
     identitySeed: Long.ZERO,
     identityIncrement: Long.ZERO,
+    defaultName: "",
   };
 }
 
@@ -5361,6 +5364,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     }
     if (!message.identityIncrement.equals(Long.ZERO)) {
       writer.uint32(168).int64(message.identityIncrement.toString());
+    }
+    if (message.defaultName !== "") {
+      writer.uint32(178).string(message.defaultName);
     }
     return writer;
   },
@@ -5524,6 +5530,14 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
           message.identityIncrement = Long.fromString(reader.int64().toString());
           continue;
         }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.defaultName = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5556,6 +5570,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
         : ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
       identitySeed: isSet(object.identitySeed) ? Long.fromValue(object.identitySeed) : Long.ZERO,
       identityIncrement: isSet(object.identityIncrement) ? Long.fromValue(object.identityIncrement) : Long.ZERO,
+      defaultName: isSet(object.defaultName) ? globalThis.String(object.defaultName) : "",
     };
   },
 
@@ -5618,6 +5633,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (!message.identityIncrement.equals(Long.ZERO)) {
       obj.identityIncrement = (message.identityIncrement || Long.ZERO).toString();
     }
+    if (message.defaultName !== "") {
+      obj.defaultName = message.defaultName;
+    }
     return obj;
   },
 
@@ -5652,6 +5670,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     message.identityIncrement = (object.identityIncrement !== undefined && object.identityIncrement !== null)
       ? Long.fromValue(object.identityIncrement)
       : Long.ZERO;
+    message.defaultName = object.defaultName ?? "";
     return message;
   },
 };

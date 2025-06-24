@@ -499,6 +499,9 @@ message ColumnMetadata {
 
   // The identity_increment is for identity columns, MSSQL only.
   int64 identity_increment = 19;
+
+  // The default_name is the name of the default constraint, MSSQL only.
+  string default_name = 20;
 }
 
 message GenerationMetadata {
