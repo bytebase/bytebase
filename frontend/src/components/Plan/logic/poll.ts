@@ -1,14 +1,16 @@
 import { create } from "@bufbuild/protobuf";
 import { computed, watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
-import { issueServiceClient, planServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
 import { useIssueCommentStore } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { ListPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { convertNewPlanCheckRunToOld } from "@/utils/v1/plan-conversions";
+import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";
 import { usePlanContext } from "./context";
 
 export const usePollPlan = () => {
@@ -47,9 +49,11 @@ export const usePollPlan = () => {
   const refreshIssue = async () => {
     if (!issue?.value || isCreating.value) return;
 
-    const updatedIssue = await issueServiceClient.getIssue({
+    const request = create(GetIssueRequestSchema, {
       name: issue.value.name,
     });
+    const newIssue = await issueServiceClientConnect.getIssue(request);
+    const updatedIssue = convertNewIssueToOld(newIssue);
 
     if (issue.value !== updatedIssue) {
       issue.value = updatedIssue;

@@ -40,7 +40,10 @@ import {
   usePlanContext,
 } from "@/components/Plan/logic";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
-import { issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { issueServiceClientConnect } from "@/grpcweb";
+import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { convertNewIssueToOld, convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import {
   useCurrentProjectV1,
@@ -146,14 +149,18 @@ const doCreateIssue = async () => {
   // TODO(steven): Check plan check results before creating issue.
 
   try {
-    const createdIssue = await issueServiceClient.createIssue({
+    const issueToCreate = {
+      ...Issue.fromPartial(buildIssue()),
+      rollout: "",
+      plan: plan.value.name,
+    };
+    const newIssue = convertOldIssueToNew(issueToCreate);
+    const request = create(CreateIssueRequestSchema, {
       parent: project.value.name,
-      issue: {
-        ...Issue.fromPartial(buildIssue()),
-        rollout: "",
-        plan: plan.value.name,
-      },
+      issue: newIssue,
     });
+    const newCreatedIssue = await issueServiceClientConnect.createIssue(request);
+    const createdIssue = convertNewIssueToOld(newCreatedIssue);
 
     nextTick(() => {
       router.push({

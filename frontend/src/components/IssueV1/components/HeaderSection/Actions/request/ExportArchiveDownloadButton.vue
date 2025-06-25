@@ -28,8 +28,10 @@ import { DownloadIcon, CircleCheckBigIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { watchEffect } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { useIssueContext } from "@/components/IssueV1";
-import { issueServiceClient } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
+import { BatchUpdateIssuesStatusRequestSchema, IssueStatus as NewIssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { useSQLStore } from "@/store";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -71,11 +73,12 @@ watchEffect(async () => {
         return [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status);
       })
     ) {
-      await issueServiceClient.batchUpdateIssuesStatus({
+      const request = create(BatchUpdateIssuesStatusRequestSchema, {
         parent: issue.value.project,
         issues: [issue.value.name],
-        status: IssueStatus.DONE,
+        status: NewIssueStatus.DONE,
       });
+      await issueServiceClientConnect.batchUpdateIssuesStatus(request);
     }
   }
 });

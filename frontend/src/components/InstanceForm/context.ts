@@ -4,7 +4,16 @@ import { useDialog } from "naive-ui";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { instanceServiceClient } from "@/grpcweb";
+import { instanceServiceClientConnect } from "@/grpcweb";
+import { convertOldInstanceToNew, convertOldDataSourceToNew } from "@/utils/v1/instance-conversions";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { silentContextKey } from "@/grpcweb/context-key";
+import { 
+  CreateInstanceRequestSchema,
+  AddDataSourceRequestSchema,
+  UpdateDataSourceRequestSchema
+} from "@/types/proto-es/v1/instance_service_pb";
 import {
   environmentNamePrefix,
   pushNotification,
@@ -367,16 +376,15 @@ export const provideInstanceFormContext = (baseContext: {
       const dataSourceCreate = extractDataSourceFromEdit(instance, editingDS);
       instance.dataSources = [dataSourceCreate];
       try {
-        await instanceServiceClient.createInstance(
-          {
-            instance,
-            instanceId: extractInstanceResourceName(instance.name),
-            validateOnly: true,
-          },
-          {
-            silent: true,
-          }
-        );
+        const newInstance = convertOldInstanceToNew(instance);
+        const request = create(CreateInstanceRequestSchema, {
+          instance: newInstance,
+          instanceId: extractInstanceResourceName(instance.name),
+          validateOnly: true,
+        });
+        await instanceServiceClientConnect.createInstance(request, {
+          contextValues: createContextValues().set(silentContextKey, true),
+        });
         return ok();
       } catch (err) {
         return fail(dataSourceCreate.host, err);
@@ -388,14 +396,14 @@ export const provideInstanceFormContext = (baseContext: {
         // When read-only data source is about to be created, use
         // editingDataSource + AddDataSourceRequest.validateOnly = true
         try {
-          await instanceServiceClient.addDataSource(
-            {
-              name: instance.value!.name,
-              dataSource: ds,
-              validateOnly: true,
-            },
-            {
-              silent: true,
+          const newDataSource = convertOldDataSourceToNew(ds);
+          const request = create(AddDataSourceRequestSchema, {
+            name: instance.value!.name,
+            dataSource: newDataSource,
+            validateOnly: true,
+          });
+          await instanceServiceClientConnect.addDataSource(request, {
+            contextValues: createContextValues().set(silentContextKey, true),
             }
           );
           return ok();
@@ -413,17 +421,16 @@ export const provideInstanceFormContext = (baseContext: {
             throw new Error("should never reach this line");
           }
           const updateMask = calcDataSourceUpdateMask(ds, original, editingDS);
-          await instanceServiceClient.updateDataSource(
-            {
-              name: instance.value!.name,
-              dataSource: ds,
-              updateMask,
-              validateOnly: true,
-            },
-            {
-              silent: true,
-            }
-          );
+          const newDataSource = convertOldDataSourceToNew(ds);
+          const request = create(UpdateDataSourceRequestSchema, {
+            name: instance.value!.name,
+            dataSource: newDataSource,
+            updateMask: { paths: updateMask },
+            validateOnly: true,
+          });
+          await instanceServiceClientConnect.updateDataSource(request, {
+            contextValues: createContextValues().set(silentContextKey, true),
+          });
           return ok();
         } catch (err) {
           return fail(ds.host, err);

@@ -2,7 +2,10 @@ import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { useRoute } from "vue-router";
-import { projectServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { projectServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import type { ComposedProject, MaybeRef, ResourceId } from "@/types";
 import {
   emptyProject,
@@ -18,6 +21,17 @@ import type {
   Project,
   ListProjectsResponse,
 } from "@/types/proto/v1/project_service";
+import {
+  GetProjectRequestSchema,
+  ListProjectsRequestSchema,
+  SearchProjectsRequestSchema,
+  CreateProjectRequestSchema,
+  UpdateProjectRequestSchema,
+  DeleteProjectRequestSchema,
+  BatchDeleteProjectsRequestSchema,
+  UndeleteProjectRequestSchema,
+} from "@/types/proto-es/v1/project_service_pb";
+import { convertNewProjectToOld, convertOldProjectToNew } from "@/utils/v1/project-conversions";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { projectNamePrefix } from "./common";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
@@ -88,7 +102,11 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     return projectMapByName.get(name) ?? unknownProject();
   };
   const fetchProjectByName = async (name: string, silent = false) => {
-    const project = await projectServiceClient.getProject({ name }, { silent });
+    const request = create(GetProjectRequestSchema, { name });
+    const response = await projectServiceClientConnect.getProject(request, {
+      contextValues: createContextValues().set(silentContextKey, silent),
+    });
+    const project = convertNewProjectToOld(response);
     await upsertProjectMap([project]);
     return project as ComposedProject;
   };
@@ -102,22 +120,37 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     projects: ComposedProject[];
     nextPageToken?: string;
   }> => {
-    const request = hasWorkspacePermissionV2("bb.projects.list")
-      ? projectServiceClient.listProjects
-      : projectServiceClient.searchProjects;
+    const contextValues = createContextValues().set(silentContextKey, params.silent ?? true);
 
     let response: ListProjectsResponse | undefined = undefined;
     let pageToken = params.pageToken;
     while (true) {
-      const resp = await request(
-        {
+      let resp;
+      if (hasWorkspacePermissionV2("bb.projects.list")) {
+        const request = create(ListProjectsRequestSchema, {
           ...params,
           pageToken,
           filter: getListProjectFilter(params.filter ?? {}),
           showDeleted: params.filter?.state === State.DELETED ? true : false,
-        },
-        { silent: params.silent ?? true }
-      );
+        });
+        const connectResponse = await projectServiceClientConnect.listProjects(request, { contextValues });
+        resp = {
+          projects: connectResponse.projects.map(convertNewProjectToOld),
+          nextPageToken: connectResponse.nextPageToken,
+        };
+      } else {
+        const request = create(SearchProjectsRequestSchema, {
+          ...params,
+          pageToken,
+          filter: getListProjectFilter(params.filter ?? {}),
+          showDeleted: params.filter?.state === State.DELETED ? true : false,
+        });
+        const connectResponse = await projectServiceClientConnect.searchProjects(request, { contextValues });
+        resp = {
+          projects: connectResponse.projects.map(convertNewProjectToOld),
+          nextPageToken: connectResponse.nextPageToken,
+        };
+      }
       if (resp.nextPageToken !== "" && resp.projects.length === 0) {
         pageToken = resp.nextPageToken;
         continue;
@@ -149,34 +182,40 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     return request;
   };
   const createProject = async (project: Project, resourceId: string) => {
-    const created = await projectServiceClient.createProject({
-      project,
+    const request = create(CreateProjectRequestSchema, {
+      project: convertOldProjectToNew(project),
       projectId: resourceId,
     });
+    const response = await projectServiceClientConnect.createProject(request);
+    const created = convertNewProjectToOld(response);
     const composed = await upsertProjectMap([created]);
     return composed[0];
   };
   const updateProject = async (project: Project, updateMask: string[]) => {
-    const updated = await projectServiceClient.updateProject({
-      project,
-      updateMask,
+    const request = create(UpdateProjectRequestSchema, {
+      project: convertOldProjectToNew(project),
+      updateMask: { paths: updateMask },
     });
+    const response = await projectServiceClientConnect.updateProject(request);
+    const updated = convertNewProjectToOld(response);
     const composed = await upsertProjectMap([updated]);
     return composed[0];
   };
   const archiveProject = async (project: Project, force = false) => {
-    await projectServiceClient.deleteProject({
+    const request = create(DeleteProjectRequestSchema, {
       name: project.name,
       force,
     });
+    await projectServiceClientConnect.deleteProject(request);
     project.state = State.DELETED;
     await upsertProjectMap([project]);
   };
   const batchDeleteProjects = async (projectNames: string[], force = false) => {
-    await projectServiceClient.batchDeleteProjects({
+    const request = create(BatchDeleteProjectsRequestSchema, {
       names: projectNames,
       force,
     });
+    await projectServiceClientConnect.batchDeleteProjects(request);
     // Update local cache - mark all projects as deleted
     const projects = projectNames
       .map((name) => {
@@ -195,11 +234,12 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     }
   };
   const restoreProject = async (project: Project) => {
-    await projectServiceClient.undeleteProject({
+    const request = create(UndeleteProjectRequestSchema, {
       name: project.name,
     });
-    project.state = State.ACTIVE;
-    await upsertProjectMap([project]);
+    const response = await projectServiceClientConnect.undeleteProject(request);
+    const restored = convertNewProjectToOld(response);
+    await upsertProjectMap([restored]);
   };
 
   return {

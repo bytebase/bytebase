@@ -1,7 +1,8 @@
 import { isEqual, sortBy } from "lodash-es";
 import type { ComputedRef, InjectionKey } from "vue";
 import { computed, inject, provide, ref, watchEffect } from "vue";
-import { rolloutServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useDatabaseV1Store } from "@/store";
 import {
   getDateForPbTimestamp,
@@ -10,6 +11,8 @@ import {
   unknownTask,
 } from "@/types";
 import type { Stage, Task, TaskRun } from "@/types/proto/v1/rollout_service";
+import { ListTaskRunsRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { convertNewTaskRunToOld } from "@/utils/v1/rollout-conversions";
 import { isValidTaskName } from "@/utils";
 import { useRolloutDetailContext } from "../context";
 import { stageForTask } from "./utils";
@@ -50,9 +53,11 @@ export const provideTaskDetailContext = (stageId: string, taskId: string) => {
     }
 
     // Prepare task runs.
-    const { taskRuns } = await rolloutServiceClient.listTaskRuns({
+    const request = create(ListTaskRunsRequestSchema, {
       parent: task.value.name,
     });
+    const response = await rolloutServiceClientConnect.listTaskRuns(request);
+    const taskRuns = response.taskRuns.map(convertNewTaskRunToOld);
     const sorted = sortBy(taskRuns, (t) =>
       getDateForPbTimestamp(t.createTime)
     ).reverse();

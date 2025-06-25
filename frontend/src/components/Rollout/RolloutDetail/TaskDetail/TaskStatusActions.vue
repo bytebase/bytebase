@@ -40,9 +40,15 @@
 import { EllipsisVerticalIcon, ExternalLinkIcon } from "lucide-vue-next";
 import { NButton, NDropdown } from "naive-ui";
 import { computed } from "vue";
+import { create } from "@bufbuild/protobuf";
+import {
+  BatchRunTasksRequestSchema,
+  BatchSkipTasksRequestSchema,
+  BatchCancelTaskRunsRequestSchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { useI18n } from "vue-i18n";
 import { extractReviewContext } from "@/components/IssueV1";
-import { rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   Issue_Approver_Status,
   IssueStatus,
@@ -132,22 +138,25 @@ const handleTaskStatusAction = async (action: TaskStatusAction) => {
   const stage = stageForTask(rollout.value, task.value);
   if (!stage) return;
   if (action === "RUN" || action === "RETRY") {
-    await rolloutServiceClient.batchRunTasks({
+    const request = create(BatchRunTasksRequestSchema, {
       parent: stage.name,
       tasks: [task.value.name],
     });
+    await rolloutServiceClientConnect.batchRunTasks(request);
   } else if (action === "SKIP") {
-    await rolloutServiceClient.batchSkipTasks({
+    const request = create(BatchSkipTasksRequestSchema, {
       parent: stage.name,
       tasks: [task.value.name],
     });
+    await rolloutServiceClientConnect.batchSkipTasks(request);
   } else if (action === "CANCEL") {
-    await rolloutServiceClient.batchCancelTaskRuns({
+    const request = create(BatchCancelTaskRunsRequestSchema, {
       parent: `${stage.name}/tasks/-`,
       taskRuns: taskRuns.value.map((taskRun) => taskRun.name),
       // TODO(steven): Let user input reason.
       reason: "",
     });
+    await rolloutServiceClientConnect.batchCancelTaskRuns(request);
   }
   emmiter.emit("task-status-action");
 };

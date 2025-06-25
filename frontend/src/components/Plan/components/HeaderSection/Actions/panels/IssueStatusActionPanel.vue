@@ -59,9 +59,14 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { usePlanContextWithIssue } from "@/components/Plan/logic";
-import { issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { issueServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { 
+  BatchUpdateIssuesStatusRequestSchema,
+  IssueStatus as NewIssueStatus 
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { IssueStatusAction } from "../unified";
 
 type LocalState = {
@@ -109,12 +114,16 @@ const handleConfirm = async () => {
       default:
         throw new Error(`Unsupported action: ${action}`);
     }
-    await issueServiceClient.batchUpdateIssuesStatus({
+    // Convert old enum to new enum (values match)
+    const newStatus = issueStatus === IssueStatus.OPEN ? NewIssueStatus.OPEN : NewIssueStatus.CANCELED;
+    
+    const request = create(BatchUpdateIssuesStatusRequestSchema, {
       parent: project.value.name,
       issues: [issue.value.name],
-      status: issueStatus,
+      status: newStatus,
       reason: comment.value ?? "",
     });
+    await issueServiceClientConnect.batchUpdateIssuesStatus(request);
     // Emit event to trigger polling
     events.emit("perform-issue-status-action", { action });
   } finally {
