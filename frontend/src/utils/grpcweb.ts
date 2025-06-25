@@ -12,8 +12,11 @@ export const getErrorCode = (error: unknown) => {
 };
 
 export const extractGrpcErrorMessage = (err: unknown) => {
-  if (err instanceof ClientError || err instanceof ConnectError) {
+  if (err instanceof ClientError) {
     return err.details;
+  }
+  if (err instanceof ConnectError) {
+    return err.message;
   }
   return String(err);
 };
