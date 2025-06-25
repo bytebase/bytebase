@@ -5,9 +5,17 @@ import (
 	"slices"
 	"strings"
 
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+// tableDrop holds drop operations for deduplication
+type tableDrop struct {
+	checkConstraints map[string]string
+	indexes          map[string]string
+	columns          map[string]string
+}
 
 func init() {
 	schema.RegisterGenerateMigration(storepb.Engine_MYSQL, generateMigration)
@@ -121,43 +129,130 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 		}
 	}
 
-	// Drop tables
+	// Drop tables in topologically sorted order (respecting foreign key dependencies)
+	if err := dropTablesInDependencyOrder(diff, buf); err != nil {
+		return err
+	}
+
+	// Handle ALTER table drops (constraints, indexes, columns)
+	// Collect all drop operations by table to avoid duplicates
+	dropsPerTable := make(map[string]*tableDrop)
+
 	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.Action == schema.MetadataDiffActionDrop {
-			if err := writeDropTable(buf, tableDiff.TableName); err != nil {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			tableName := tableDiff.TableName
+			if _, exists := dropsPerTable[tableName]; !exists {
+				dropsPerTable[tableName] = &tableDrop{
+					checkConstraints: make(map[string]string),
+					indexes:          make(map[string]string),
+					columns:          make(map[string]string),
+				}
+			}
+
+			// Collect check constraints to drop
+			for _, checkDiff := range tableDiff.CheckConstraintChanges {
+				if checkDiff.Action == schema.MetadataDiffActionDrop {
+					dropsPerTable[tableName].checkConstraints[checkDiff.OldCheckConstraint.Name] = checkDiff.OldCheckConstraint.Name
+				}
+			}
+
+			// Collect indexes to drop
+			for _, indexDiff := range tableDiff.IndexChanges {
+				if indexDiff.Action == schema.MetadataDiffActionDrop {
+					dropsPerTable[tableName].indexes[indexDiff.OldIndex.Name] = indexDiff.OldIndex.Name
+				}
+			}
+
+			// Collect columns to drop
+			for _, colDiff := range tableDiff.ColumnChanges {
+				if colDiff.Action == schema.MetadataDiffActionDrop {
+					dropsPerTable[tableName].columns[colDiff.OldColumn.Name] = colDiff.OldColumn.Name
+				}
+			}
+		}
+	}
+
+	// Execute the deduplicated drop operations
+	for tableName, drops := range dropsPerTable {
+		// Drop check constraints
+		for constraintName := range drops.checkConstraints {
+			if err := writeDropCheckConstraint(buf, tableName, constraintName); err != nil {
+				return err
+			}
+		}
+
+		// Drop indexes
+		for indexName := range drops.indexes {
+			if err := writeDropIndex(buf, tableName, indexName); err != nil {
+				return err
+			}
+		}
+
+		// Drop columns
+		for columnName := range drops.columns {
+			if err := writeDropColumn(buf, tableName, columnName); err != nil {
 				return err
 			}
 		}
 	}
 
-	// Handle ALTER table drops (constraints, indexes, columns)
+	return nil
+}
+
+// dropTablesInDependencyOrder drops tables in the correct order based on foreign key dependencies
+func dropTablesInDependencyOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
+	// Build a graph of table dependencies
+	graph := parserbase.NewGraph()
+	tablesToDrop := make(map[string]*schema.TableDiff)
+
+	// Add all tables to be dropped to the graph
 	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.Action == schema.MetadataDiffActionAlter {
-			// Drop check constraints
-			for _, checkDiff := range tableDiff.CheckConstraintChanges {
-				if checkDiff.Action == schema.MetadataDiffActionDrop {
-					if err := writeDropCheckConstraint(buf, tableDiff.TableName, checkDiff.OldCheckConstraint.Name); err != nil {
+		if tableDiff.Action == schema.MetadataDiffActionDrop {
+			graph.AddNode(tableDiff.TableName)
+			tablesToDrop[tableDiff.TableName] = tableDiff
+		}
+	}
+
+	// Add edges for foreign key dependencies
+	// Edge from table with FK to referenced table (for dropping order)
+	for _, tableDiff := range tablesToDrop {
+		if tableDiff.OldTable != nil {
+			for _, fk := range tableDiff.OldTable.ForeignKeys {
+				if _, exists := tablesToDrop[fk.ReferencedTable]; exists {
+					// Add edge from this table to referenced table
+					// This ensures this table is dropped before referenced table
+					graph.AddEdge(tableDiff.TableName, fk.ReferencedTable)
+				}
+			}
+		}
+	}
+
+	// Get topological order
+	orderedTables, err := graph.TopologicalSort()
+	if err != nil {
+		// If there's a cycle, fall back to dropping foreign keys first
+		// Drop all foreign keys from tables being dropped
+		for _, tableDiff := range tablesToDrop {
+			if tableDiff.OldTable != nil {
+				for _, fk := range tableDiff.OldTable.ForeignKeys {
+					if err := writeDropForeignKey(buf, tableDiff.TableName, fk.Name); err != nil {
 						return err
 					}
 				}
 			}
+		}
 
-			// Drop indexes
-			for _, indexDiff := range tableDiff.IndexChanges {
-				if indexDiff.Action == schema.MetadataDiffActionDrop {
-					if err := writeDropIndex(buf, tableDiff.TableName, indexDiff.OldIndex.Name); err != nil {
-						return err
-					}
-				}
+		// Then drop tables in any order
+		for _, tableDiff := range tablesToDrop {
+			if err := writeDropTable(buf, tableDiff.TableName); err != nil {
+				return err
 			}
-
-			// Drop columns
-			for _, colDiff := range tableDiff.ColumnChanges {
-				if colDiff.Action == schema.MetadataDiffActionDrop {
-					if err := writeDropColumn(buf, tableDiff.TableName, colDiff.OldColumn.Name); err != nil {
-						return err
-					}
-				}
+		}
+	} else {
+		// Drop tables in topological order
+		for _, tableName := range orderedTables {
+			if err := writeDropTable(buf, tableName); err != nil {
+				return err
 			}
 		}
 	}
@@ -167,6 +262,16 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 
 // createObjectsInOrder creates all objects in the correct order
 func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
+	// Create dummy views first for all new views to handle dependencies
+	// This must be done before creating tables as triggers might reference views
+	for _, viewDiff := range diff.ViewChanges {
+		if viewDiff.Action == schema.MetadataDiffActionCreate && viewDiff.NewView != nil {
+			if err := writeCreateTemporaryView(buf, viewDiff.ViewName, viewDiff.NewView); err != nil {
+				return err
+			}
+		}
+	}
+
 	// Create tables (without foreign keys first)
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionCreate {
@@ -196,11 +301,12 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		}
 	}
 
-	// Create views
+	// Create or replace views with actual definitions
 	for _, viewDiff := range diff.ViewChanges {
 		switch viewDiff.Action {
 		case schema.MetadataDiffActionCreate:
-			if err := writeCreateView(buf, viewDiff.ViewName, viewDiff.NewView); err != nil {
+			// Use CREATE OR REPLACE since we already have a dummy view
+			if err := writeCreateOrReplaceView(buf, viewDiff.ViewName, viewDiff.NewView); err != nil {
 				return err
 			}
 		case schema.MetadataDiffActionAlter:
@@ -428,7 +534,8 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 		// Handle AUTO_INCREMENT before default value
 		if hasAutoIncrement(col) {
 			_, _ = buf.WriteString(" AUTO_INCREMENT")
-		} else if hasDefaultValue(col) && !hasAutoIncrement(col) {
+		} else if hasDefaultValue(col) && !hasAutoIncrement(col) && col.Generation == nil {
+			// Don't add DEFAULT if this is a generated column
 			_, _ = buf.WriteString(" DEFAULT ")
 			_, _ = buf.WriteString(getDefaultExpression(col))
 		}
@@ -437,6 +544,19 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 		if col.OnUpdate != "" {
 			_, _ = buf.WriteString(" ON UPDATE ")
 			_, _ = buf.WriteString(col.OnUpdate)
+		}
+
+		// Handle generated columns
+		if col.Generation != nil && col.Generation.Expression != "" {
+			_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
+			_, _ = buf.WriteString(col.Generation.Expression)
+			_, _ = buf.WriteString(") ")
+			switch col.Generation.Type {
+			case storepb.GenerationMetadata_TYPE_STORED:
+				_, _ = buf.WriteString("STORED")
+			case storepb.GenerationMetadata_TYPE_VIRTUAL:
+				_, _ = buf.WriteString("VIRTUAL")
+			}
 		}
 
 		if col.Comment != "" {
@@ -551,7 +671,8 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 	// Handle AUTO_INCREMENT before default value
 	if hasAutoIncrement(column) {
 		_, _ = buf.WriteString(" AUTO_INCREMENT")
-	} else if hasDefaultValue(column) && !hasAutoIncrement(column) {
+	} else if hasDefaultValue(column) && !hasAutoIncrement(column) && column.Generation == nil {
+		// Don't add DEFAULT if this is a generated column
 		_, _ = buf.WriteString(" DEFAULT ")
 		_, _ = buf.WriteString(getDefaultExpression(column))
 	}
@@ -560,6 +681,19 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 	if column.OnUpdate != "" {
 		_, _ = buf.WriteString(" ON UPDATE ")
 		_, _ = buf.WriteString(column.OnUpdate)
+	}
+
+	// Handle generated columns
+	if column.Generation != nil && column.Generation.Expression != "" {
+		_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
+		_, _ = buf.WriteString(column.Generation.Expression)
+		_, _ = buf.WriteString(") ")
+		switch column.Generation.Type {
+		case storepb.GenerationMetadata_TYPE_STORED:
+			_, _ = buf.WriteString("STORED")
+		case storepb.GenerationMetadata_TYPE_VIRTUAL:
+			_, _ = buf.WriteString("VIRTUAL")
+		}
 	}
 
 	if column.Comment != "" {
@@ -598,7 +732,8 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 	// Handle AUTO_INCREMENT before default value
 	if hasAutoIncrement(column) {
 		_, _ = buf.WriteString(" AUTO_INCREMENT")
-	} else if hasDefaultValue(column) && !hasAutoIncrement(column) {
+	} else if hasDefaultValue(column) && !hasAutoIncrement(column) && column.Generation == nil {
+		// Don't add DEFAULT if this is a generated column
 		_, _ = buf.WriteString(" DEFAULT ")
 		_, _ = buf.WriteString(getDefaultExpression(column))
 	}
@@ -607,6 +742,19 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 	if column.OnUpdate != "" {
 		_, _ = buf.WriteString(" ON UPDATE ")
 		_, _ = buf.WriteString(column.OnUpdate)
+	}
+
+	// Handle generated columns
+	if column.Generation != nil && column.Generation.Expression != "" {
+		_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
+		_, _ = buf.WriteString(column.Generation.Expression)
+		_, _ = buf.WriteString(") ")
+		switch column.Generation.Type {
+		case storepb.GenerationMetadata_TYPE_STORED:
+			_, _ = buf.WriteString("STORED")
+		case storepb.GenerationMetadata_TYPE_VIRTUAL:
+			_, _ = buf.WriteString("VIRTUAL")
+		}
 	}
 
 	if column.Comment != "" {
@@ -638,12 +786,24 @@ func writeCreateIndex(buf *strings.Builder, table string, index *storepb.IndexMe
 		if i > 0 {
 			_, _ = buf.WriteString(", ")
 		}
-		_, _ = buf.WriteString("`")
-		_, _ = buf.WriteString(expr)
-		_, _ = buf.WriteString("`")
+
+		// Check if this is a functional expression or a column name
+		// Functional expressions start with ( and end with )
+		if strings.HasPrefix(expr, "(") && strings.HasSuffix(expr, ")") {
+			// This is a functional expression, unescape quotes and write it as-is
+			unescapedExpr := strings.ReplaceAll(expr, "\\'", "'")
+			_, _ = buf.WriteString(unescapedExpr)
+		} else {
+			// This is a column name, wrap it in backticks
+			_, _ = buf.WriteString("`")
+			_, _ = buf.WriteString(expr)
+			_, _ = buf.WriteString("`")
+		}
 
 		// Handle column length for text/blob columns
-		if i < len(index.KeyLength) && index.KeyLength[i] > 0 {
+		// SPATIAL indexes do not support key lengths, and functional expressions don't use key lengths
+		if i < len(index.KeyLength) && index.KeyLength[i] > 0 && strings.ToUpper(index.Type) != "SPATIAL" &&
+			(!strings.HasPrefix(expr, "(") || !strings.HasSuffix(expr, ")")) {
 			_, _ = fmt.Fprintf(buf, "(%d)", index.KeyLength[i])
 		}
 	}
@@ -758,23 +918,6 @@ func writeAddForeignKey(buf *strings.Builder, table string, fk *storepb.ForeignK
 	}
 
 	_, _ = buf.WriteString(";\n")
-	return nil
-}
-
-func writeCreateView(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
-	_, _ = buf.WriteString("CREATE VIEW `")
-	_, _ = buf.WriteString(viewName)
-	_, _ = buf.WriteString("` AS ")
-	_, _ = buf.WriteString(view.Definition)
-
-	if !strings.HasSuffix(strings.TrimSpace(view.Definition), ";") {
-		_, _ = buf.WriteString(";")
-	}
-	_, _ = buf.WriteString("\n")
-
-	// Note: MySQL doesn't support adding comments directly to views via DDL
-	// View comments are stored in information_schema.VIEWS but cannot be set via CREATE VIEW
-	// The comment field is read-only
 	return nil
 }
 
@@ -935,6 +1078,31 @@ func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *stor
 	// Create a temporary view with SELECT 1 AS column_name structure
 	// to satisfy other views that depend on this view
 	_, _ = buf.WriteString("CREATE OR REPLACE VIEW `")
+	_, _ = buf.WriteString(viewName)
+	_, _ = buf.WriteString("` AS SELECT")
+
+	for i, column := range view.Columns {
+		if i > 0 {
+			_, _ = buf.WriteString(",")
+		}
+		_, _ = buf.WriteString(" 1 AS `")
+		_, _ = buf.WriteString(column.Name)
+		_, _ = buf.WriteString("`")
+	}
+
+	// If no columns, create a dummy view
+	if len(view.Columns) == 0 {
+		_, _ = buf.WriteString(" 1")
+	}
+
+	_, _ = buf.WriteString(";\n")
+	return nil
+}
+
+func writeCreateTemporaryView(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
+	// Create a temporary view with SELECT 1 AS column_name structure
+	// to satisfy views that depend on this view before we create the real one
+	_, _ = buf.WriteString("CREATE VIEW `")
 	_, _ = buf.WriteString(viewName)
 	_, _ = buf.WriteString("` AS SELECT")
 

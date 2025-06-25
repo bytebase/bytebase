@@ -324,11 +324,20 @@ watch(
       if (schemaDiffCache.value[name]) {
         continue;
       } else {
-        const diffResp = await databaseStore.diffSchema({
-          name: db.name,
-          schema: props.sourceSchemaString,
-          sdlFormat: false,
-        });
+        // Use changelog name if source is from changelog, otherwise use schema string
+        const diffRequest = props.changelogSourceSchema?.changelogName
+          ? {
+              name: db.name,
+              changelog: props.changelogSourceSchema.changelogName,
+              sdlFormat: false,
+            }
+          : {
+              name: db.name,
+              schema: props.sourceSchemaString,
+              sdlFormat: false,
+            };
+        
+        const diffResp = await databaseStore.diffSchema(diffRequest);
         const schemaDiff = diffResp.diff ?? "";
         schemaDiffCache.value[name] = {
           raw: schemaDiff,
