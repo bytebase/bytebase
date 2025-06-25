@@ -2,6 +2,7 @@ package tidb
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -273,5 +274,52 @@ func TestConvertCollationToCharset(t *testing.T) {
 	for _, tc := range tests {
 		got := convertCollationToCharset(tc.collation)
 		a.Equal(tc.want, got, tc.collation)
+	}
+}
+
+func TestUnquoteMySQLString(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"'simple'", "simple"},
+		{"'Has\\nNewline'", "Has\nNewline"},
+		{"'Has\\tTab'", "Has\tTab"},
+		{"'Path: C:\\\\Users\\\\File'", "Path: C:\\Users\\File"},
+		{"'Quote\\'s test'", "Quote's test"},
+		{"'Control\\Z'", "Control\x1a"},
+		{"'Null\\0byte'", "Null\x00byte"},
+		{"''", ""},
+		{"'single'", "single"},
+		{"no quotes", "no quotes"},
+		{"'Mixed\\nescapes\\tand\\\\backslashes'", "Mixed\nescapes\tand\\backslashes"},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("input: %s", test.input), func(t *testing.T) {
+			result := unquoteMySQLString(test.input)
+			require.Equal(t, test.expected, result, "Failed to unescape: %q", test.input)
+		})
+	}
+}
+
+func TestStripSingleQuote(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"'quoted'", "quoted"},
+		{"''", ""},
+		{"'single'", "single"},
+		{"no quotes", "no quotes"},
+		{"'partial", "'partial"},
+		{"partial'", "partial'"},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("input: %s", test.input), func(t *testing.T) {
+			result := stripSingleQuote(test.input)
+			require.Equal(t, test.expected, result)
+		})
 	}
 }
