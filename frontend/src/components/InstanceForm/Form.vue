@@ -360,7 +360,7 @@
           ref="scanIntervalInputRef"
           :scan-interval="basicInfo.syncInterval"
           :allow-edit="allowEdit"
-          :instance="instance as ComposedInstance"
+          :instance="adaptComposedInstance.fromLegacy(instance as ComposedInstance)"
           @update:scan-interval="changeScanInterval"
         />
 
@@ -479,7 +479,7 @@
 
     <InstanceArchiveRestoreButton
       v-if="!hideArchiveRestore && !isCreating && instance"
-      :instance="instance as ComposedInstance"
+      :instance="adaptComposedInstance.fromLegacy(instance as ComposedInstance)"
     />
   </div>
 </template>
@@ -516,7 +516,7 @@ import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import type { ComposedInstance } from "@/types";
+import { adaptComposedInstance, type ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";

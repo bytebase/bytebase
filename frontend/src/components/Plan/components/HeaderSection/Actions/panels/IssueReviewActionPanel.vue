@@ -85,7 +85,13 @@ import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue
 import { ErrorList } from "@/components/IssueV1/components/common";
 import { usePlanContextWithIssue } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { issueServiceClientConnect } from "@/grpcweb";
+import { 
+  ApproveIssueRequestSchema,
+  RejectIssueRequestSchema,
+  RequestIssueRequestSchema
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { IssueReviewAction } from "../unified";
 
 type LocalState = {
@@ -201,20 +207,23 @@ const handleConfirm = async () => {
   state.loading = true;
   try {
     if (action === "APPROVE") {
-      await issueServiceClient.approveIssue({
+      const request = create(ApproveIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
+      await issueServiceClientConnect.approveIssue(request);
     } else if (action === "REJECT") {
-      await issueServiceClient.rejectIssue({
+      const request = create(RejectIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
+      await issueServiceClientConnect.rejectIssue(request);
     } else if (action === "RE_REQUEST") {
-      await issueServiceClient.requestIssue({
+      const request = create(RequestIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
+      await issueServiceClientConnect.requestIssue(request);
     }
 
     // Emit event to trigger polling

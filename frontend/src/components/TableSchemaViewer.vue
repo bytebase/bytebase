@@ -24,10 +24,15 @@ import { onMounted, ref, computed } from "vue";
 import { nextTick } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
-import { databaseServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { databaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
+import { 
+  GetSchemaStringRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
+import { convertOldObjectTypeToNew } from "@/utils/v1/database-conversions";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -58,12 +63,13 @@ const resourceName = computed(() => {
 
 onMounted(async () => {
   nextTick(async () => {
-    const response = await databaseServiceClient.getSchemaString({
+    const request = create(GetSchemaStringRequestSchema, {
       name: props.database.name,
-      type: props.type,
+      type: convertOldObjectTypeToNew(props.type),
       schema: props.schema,
       object: props.object,
     });
+    const response = await databaseServiceClientConnect.getSchemaString(request);
     schemaString.value = response.schemaString.trim();
   });
 });

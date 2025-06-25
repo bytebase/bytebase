@@ -1,6 +1,15 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { databaseServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { databaseServiceClientConnect } from "@/grpcweb";
+import { 
+  ListChangelogsRequestSchema,
+  GetChangelogRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import { 
+  convertNewChangelogToOld,
+  convertOldChangelogViewToNew,
+} from "@/utils/v1/database-conversions";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
 import {
@@ -38,8 +47,16 @@ export const useChangelogStore = defineStore("changelog", () => {
   const fetchChangelogList = async (params: Partial<ListChangelogsRequest>) => {
     const { parent } = params;
     if (!parent) throw new Error('"parent" field is required');
-    const { changelogs, nextPageToken } =
-      await databaseServiceClient.listChangelogs(params);
+    const request = create(ListChangelogsRequestSchema, {
+      parent: params.parent,
+      pageSize: params.pageSize,
+      pageToken: params.pageToken,
+      view: params.view ? convertOldChangelogViewToNew(params.view) : undefined,
+      filter: params.filter,
+    });
+    const response = await databaseServiceClientConnect.listChangelogs(request);
+    const changelogs = response.changelogs.map((cl) => convertNewChangelogToOld(cl));
+    const { nextPageToken } = response;
     await upsertChangelogsMap(parent, changelogs);
     return { changelogs, nextPageToken };
   };
@@ -65,7 +82,13 @@ export const useChangelogStore = defineStore("changelog", () => {
     return changelogsMapByDatabase.get(name) ?? [];
   };
   const fetchChangelog = async (params: Partial<GetChangelogRequest>) => {
-    const changelog = await databaseServiceClient.getChangelog(params);
+    const request = create(GetChangelogRequestSchema, {
+      name: params.name,
+      view: params.view ? convertOldChangelogViewToNew(params.view) : undefined,
+      sdlFormat: params.sdlFormat,
+    });
+    const newChangelog = await databaseServiceClientConnect.getChangelog(request);
+    const changelog = convertNewChangelogToOld(newChangelog);
     cache.setEntity(
       [changelog.name, params.view ?? ChangelogView.CHANGELOG_VIEW_BASIC],
       changelog

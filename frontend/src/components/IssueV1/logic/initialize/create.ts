@@ -4,7 +4,8 @@ import {
   getLocalSheetByName,
   type CreatePlanParams,
 } from "@/components/Plan";
-import { rolloutServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useCurrentUserV1, useProjectV1Store, useSheetV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { IssueType } from "@/types";
@@ -13,6 +14,8 @@ import { Issue_Type, IssueStatus } from "@/types/proto/v1/issue_service";
 import { Plan } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { Rollout } from "@/types/proto/v1/rollout_service";
+import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { convertNewRolloutToOld, convertOldPlanToNew } from "@/utils/v1/rollout-conversions";
 import {
   extractProjectResourceName,
   extractSheetUID,
@@ -95,10 +98,12 @@ const generateRolloutFromPlan = async (
   );
   let rollout: Rollout = Rollout.fromPartial({});
   if (hasProjectPermissionV2(project, "bb.rollouts.preview")) {
-    rollout = await rolloutServiceClient.previewRollout({
+    const request = create(PreviewRolloutRequestSchema, {
       project: params.project.name,
-      plan,
+      plan: convertOldPlanToNew(plan),
     });
+    const rolloutNew = await rolloutServiceClientConnect.previewRollout(request);
+    rollout = convertNewRolloutToOld(rolloutNew);
   }
   // Touch UIDs for each object for local referencing
   rollout.plan = plan.name;

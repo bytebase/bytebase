@@ -54,15 +54,18 @@ import { ChevronDownIcon } from "lucide-vue-next";
 import { computed, toRef } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { databaseServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { databaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
 import {
   DatabaseMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
+import { GetSchemaStringRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { minmax } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { convertOldDatabaseMetadataToNew } from "@/utils/v1/database-conversions";
 import { useSchemaEditorContext } from "../context";
 
 const props = defineProps<{
@@ -97,10 +100,12 @@ const { status, data, error } = useQuery({
     const { metadata } = debouncedMocked.value;
 
     try {
-      const response = await databaseServiceClient.getSchemaString({
+      const newMetadata = convertOldDatabaseMetadataToNew(metadata);
+      const request = create(GetSchemaStringRequestSchema, {
         name: props.db.name,
-        metadata,
-      })
+        metadata: newMetadata,
+      });
+      const response = await databaseServiceClientConnect.getSchemaString(request);
       return response.schemaString;
     } catch (err) {
       return Promise.reject(new Error(extractGrpcErrorMessage(err)));

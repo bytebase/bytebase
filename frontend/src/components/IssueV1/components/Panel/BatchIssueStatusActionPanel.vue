@@ -68,8 +68,10 @@ import {
   issueStatusActionDisplayName,
   IssueStatusActionToIssueStatusMap,
 } from "@/components/IssueV1/logic";
-import { issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { issueServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
+import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { ComposedIssue } from "@/types";
 import CommonDrawer from "./CommonDrawer.vue";
 
@@ -118,12 +120,13 @@ const handleConfirm = async (
 
   try {
     emit("updating");
-    await issueServiceClient.batchUpdateIssuesStatus({
+    const request = create(BatchUpdateIssuesStatusRequestSchema, {
       parent: "projects/-",
       issues: props.issueList.map((issue) => issue.name),
-      status: IssueStatusActionToIssueStatusMap[action],
+      status: IssueStatusActionToIssueStatusMap[action] as any,
       reason: comment ?? "",
     });
+    await issueServiceClientConnect.batchUpdateIssuesStatus(request);
 
     // notify the parent component that issues updated
     pushNotification({

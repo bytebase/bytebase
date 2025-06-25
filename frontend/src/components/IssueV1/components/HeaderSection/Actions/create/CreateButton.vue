@@ -70,20 +70,22 @@ import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import {
-  issueServiceClient,
+  issueServiceClientConnect,
   planServiceClientConnect,
   releaseServiceClientConnect,
-  rolloutServiceClient,
+  rolloutServiceClientConnect,
 } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
+import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CheckReleaseRequestSchema,
   ReleaseFileType,
 } from "@/types/proto-es/v1/release_service_pb";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Engine } from "@/types/proto/v1/common";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
@@ -103,6 +105,10 @@ import {
   sheetNameOfTaskV1,
   type Defer,
 } from "@/utils";
+import {
+  convertOldIssueToNew,
+  convertNewIssueToOld,
+} from "@/utils/v1/issue-conversions";
 import {
   convertOldPlanToNew,
   convertNewPlanToOld,
@@ -183,17 +189,20 @@ const doCreateIssue = async () => {
       ...Issue.fromPartial(issue.value),
       rollout: "",
     };
-    const createdIssue = await issueServiceClient.createIssue({
+    const request = create(CreateIssueRequestSchema, {
       parent: issue.value.project,
-      issue: issueCreate,
+      issue: convertOldIssueToNew(issueCreate),
     });
+    const response = await issueServiceClientConnect.createIssue(request);
+    const createdIssue = convertNewIssueToOld(response);
 
-    await rolloutServiceClient.createRollout({
+    const rolloutRequest = create(CreateRolloutRequestSchema, {
       parent: issue.value.project,
       rollout: {
         plan: createdPlan.name,
       },
     });
+    await rolloutServiceClientConnect.createRollout(rolloutRequest);
 
     emitIssueCreateWindowEvent(createdIssue);
     router.replace({

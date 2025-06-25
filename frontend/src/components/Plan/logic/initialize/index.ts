@@ -1,6 +1,9 @@
 import { computed, ref, unref, watch, type MaybeRef } from "vue";
 import { useRoute, useRouter, type LocationQuery } from "vue-router";
-import { issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { issueServiceClientConnect } from "@/grpcweb";
+import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";
 import { projectNamePrefix, usePlanStore } from "@/store";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import type { Issue } from "@/types/proto/v1/issue_service";
@@ -63,9 +66,12 @@ export function useInitializePlan(
     } else if (uid.startsWith("issue:")) {
       // Fetch plan from issue
       const issueUid = uid.substring(6);
-      issueResult = await issueServiceClient.getIssue({
+      const request = create(GetIssueRequestSchema, {
         name: `${projectNamePrefix}${projectId}/issues/${issueUid}`,
       });
+      const newIssue = await issueServiceClientConnect.getIssue(request);
+      issueResult = convertNewIssueToOld(newIssue);
+
       if (!issueResult.plan) {
         // Should not happen, but handle gracefully
         throw new Error(`Issue ${issueUid} does not have an associated plan`);
@@ -82,9 +88,11 @@ export function useInitializePlan(
       // If we have a plan, try to fetch the associated issue if it exists
       if (planResult.issue) {
         try {
-          issueResult = await issueServiceClient.getIssue({
+          const request = create(GetIssueRequestSchema, {
             name: planResult.issue,
           });
+          const newIssue = await issueServiceClientConnect.getIssue(request);
+          issueResult = convertNewIssueToOld(newIssue);
         } catch {
           // Issue might not exist or we don't have permission, that's ok
         }
