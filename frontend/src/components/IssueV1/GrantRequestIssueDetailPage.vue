@@ -63,7 +63,7 @@
               {{
                 condition?.expiredTime
                   ? dayjs(new Date(condition.expiredTime)).format("LLL")
-                  : "-"
+                  : $t("project.members.never-expires")
               }}
             </div>
           </div>
