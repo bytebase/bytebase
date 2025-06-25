@@ -1071,7 +1071,7 @@ DROP TABLE products;
 			description: "Reverse: Drop tables with foreign key dependencies",
 		},
 		{
-			name: "reverse_create_tables_with_fk",
+			name:          "reverse_create_tables_with_fk",
 			initialSchema: ``,
 			migrationDDL: `
 CREATE TABLE users (
@@ -1295,7 +1295,7 @@ ALTER TABLE products ADD CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 
 			description: "Reverse: Add indexes and constraints",
 		},
 		{
-			name: "reverse_alter_table_columns", 
+			name: "reverse_alter_table_columns",
 			initialSchema: `
 CREATE TABLE products (
     id INT NOT NULL AUTO_INCREMENT,
