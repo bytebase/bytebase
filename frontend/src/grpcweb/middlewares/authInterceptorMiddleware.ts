@@ -3,8 +3,6 @@ import { ClientError, ServerError, Status } from "nice-grpc-common";
 import type { ClientMiddleware } from "nice-grpc-web";
 import { router } from "@/router";
 import { useAuthStore } from "@/store";
-import { UserService } from "@/types/proto-es/v1/user_service_pb";
-import { UserServiceDefinition } from "@/types/proto/v1/user_service";
 import { silentContextKey, ignoredCodesContextKey } from "../context-key";
 
 export type IgnoreErrorsOptions = {
@@ -40,13 +38,6 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
           // omit specified errors
         } else {
           if (code === Status.UNAUTHENTICATED) {
-            // Skip show login modal when the request is to get current user.
-            if (
-              call.method.path ===
-              `/${UserServiceDefinition.fullName}/${UserServiceDefinition.methods.getCurrentUser.name}`
-            ) {
-              return;
-            }
             // When receiving 401 and is returned by our server, it means the current
             // login user's token becomes invalid. Thus we force the user to login again.
             useAuthStore().unauthenticatedOccurred = true;
@@ -95,16 +86,9 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
       } else {
         if (code === Code.Unauthenticated) {
           // Skip show login modal when the request is to get current user.
-          if (
-            req.method.parent.name === UserService.name &&
-            req.method.name === UserService.method.getCurrentUser.name
-          ) {
-            // skip
-          } else {
-            // When receiving 401 and is returned by our server, it means the current
-            // login user's token becomes invalid. Thus we force the user to login again.
-            useAuthStore().unauthenticatedOccurred = true;
-          }
+          // When receiving 401 and is returned by our server, it means the current
+          // login user's token becomes invalid. Thus we force the user to login again.
+          useAuthStore().unauthenticatedOccurred = true;
         } else if (code === Code.PermissionDenied) {
           // Jump to 403 page
           router.push({ name: "error.403" });
