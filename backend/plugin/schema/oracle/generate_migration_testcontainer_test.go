@@ -735,7 +735,7 @@ ALTER TABLE TEST_COLUMNS ADD CONSTRAINT CHK_NUMBER_POSITIVE CHECK (COL_NUMBER > 
 			description: "Edge cases for column operations and data type modifications",
 		},
 		{
-			name: "reverse_create_tables_with_fk",
+			name:          "reverse_create_tables_with_fk",
 			initialSchema: "",
 			migrationDDL: `
 CREATE TABLE USERS (
@@ -1059,7 +1059,7 @@ ALTER TABLE BOOKS ADD CONSTRAINT CHECK_PRICE_POSITIVE CHECK (PRICE > 0);
 			description: "Reverse: Revert constraint modifications",
 		},
 		{
-			name: "reverse_drop_sequence",
+			name:          "reverse_drop_sequence",
 			initialSchema: "",
 			migrationDDL: `
 -- Create sequence and table
