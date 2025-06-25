@@ -872,10 +872,6 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 	return buf.String(), nil
 }
 
-func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
-	return generateAlterTableWithOptions(tableDiff, true)
-}
-
 func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdditions bool) (string, error) {
 	var buf strings.Builder
 
@@ -1505,7 +1501,7 @@ func writeMigrationTrigger(out *strings.Builder, trigger *storepb.TriggerMetadat
 }
 
 // writeMigrationMaterializedViewIndex writes an index creation statement for a materialized view
-func writeMigrationMaterializedViewIndex(out *strings.Builder, schema, viewName string, index *storepb.IndexMetadata) {
+func writeMigrationMaterializedViewIndex(out *strings.Builder, _ string, _ string, index *storepb.IndexMetadata) {
 	if index == nil || index.Definition == "" {
 		return
 	}
