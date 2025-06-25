@@ -1,10 +1,23 @@
-import { orderBy } from "lodash-es";
 import { create } from "@bufbuild/protobuf";
+import { orderBy } from "lodash-es";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/grpcweb";
+import { useProjectV1Store } from "@/store";
+import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
+import {
+  emptyIssue,
+  emptyRollout,
+  EMPTY_ID,
+  unknownIssue,
+  UNKNOWN_ID,
+} from "@/types";
+import {
+  CreateIssueRequestSchema,
+  GetIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanRequestSchema,
   ListPlanCheckRunsRequestSchema,
@@ -15,36 +28,23 @@ import {
   ListTaskRunsRequestSchema,
   CreateRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Issue } from "@/types/proto/v1/issue_service";
+import type { Plan } from "@/types/proto/v1/plan_service";
+import { TaskRunLog } from "@/types/proto/v1/rollout_service";
+import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import {
-  CreateIssueRequestSchema,
-  GetIssueRequestSchema,
-} from "@/types/proto-es/v1/issue_service_pb";
+  convertNewIssueToOld,
+  convertOldIssueToNew,
+} from "@/utils/v1/issue-conversions";
 import {
   convertNewPlanToOld,
   convertNewPlanCheckRunToOld,
   convertOldPlanToNew,
 } from "@/utils/v1/plan-conversions";
 import {
-  convertNewIssueToOld,
-  convertOldIssueToNew,
-} from "@/utils/v1/issue-conversions";
-import {
   convertNewRolloutToOld,
   convertNewTaskRunToOld,
 } from "@/utils/v1/rollout-conversions";
-import { useProjectV1Store } from "@/store";
-import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
-import {
-  emptyIssue,
-  emptyRollout,
-  EMPTY_ID,
-  unknownIssue,
-  UNKNOWN_ID,
-} from "@/types";
-import type { Issue } from "@/types/proto/v1/issue_service";
-import type { Plan } from "@/types/proto/v1/plan_service";
-import { TaskRunLog, type Rollout } from "@/types/proto/v1/rollout_service";
-import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "../common";
 
 export interface ComposeIssueConfig {
@@ -84,8 +84,11 @@ export const composeIssue = async (
         parent: issue.plan,
         latestOnly: true,
       });
-      const response = await planServiceClientConnect.listPlanCheckRuns(request);
-      const planCheckRuns = response.planCheckRuns.map(convertNewPlanCheckRunToOld);
+      const response =
+        await planServiceClientConnect.listPlanCheckRuns(request);
+      const planCheckRuns = response.planCheckRuns.map(
+        convertNewPlanCheckRunToOld
+      );
       issue.planCheckRunList = orderBy(planCheckRuns, "name", "desc");
     }
   }
@@ -151,16 +154,10 @@ export const experimentalFetchIssueByUID = async (
   return composeIssue(rawIssue);
 };
 
-export type CreateIssueHooks = {
-  planCreated: (plan: Plan) => Promise<any>;
-  issueCreated: (issue: Issue, plan: Plan) => Promise<any>;
-  rolloutCreated: (issue: Issue, plan: Plan, rollout: Rollout) => Promise<any>;
-};
 export const experimentalCreateIssueByPlan = async (
   project: ComposedProject,
   issueCreate: Issue,
-  planCreate: Plan,
-  hooks?: Partial<CreateIssueHooks>
+  planCreate: Plan
 ) => {
   const newPlan = convertOldPlanToNew(planCreate);
   const request = create(CreatePlanRequestSchema, {
@@ -170,25 +167,24 @@ export const experimentalCreateIssueByPlan = async (
   const response = await planServiceClientConnect.createPlan(request);
   const createdPlan = convertNewPlanToOld(response);
   issueCreate.plan = createdPlan.name;
-  await hooks?.planCreated?.(planCreate);
 
   const issueRequest = create(CreateIssueRequestSchema, {
     parent: project.name,
     issue: convertOldIssueToNew(issueCreate),
   });
-  const newCreatedIssue = await issueServiceClientConnect.createIssue(issueRequest);
+  const newCreatedIssue =
+    await issueServiceClientConnect.createIssue(issueRequest);
   const createdIssue = convertNewIssueToOld(newCreatedIssue);
-  await hooks?.issueCreated?.(createdIssue, createdPlan);
   const rolloutRequest = create(CreateRolloutRequestSchema, {
     parent: project.name,
     rollout: {
       plan: createdPlan.name,
     },
   });
-  const rolloutResponse = await rolloutServiceClientConnect.createRollout(rolloutRequest);
+  const rolloutResponse =
+    await rolloutServiceClientConnect.createRollout(rolloutRequest);
   const createdRollout = convertNewRolloutToOld(rolloutResponse);
   createdIssue.rollout = createdRollout.name;
-  await hooks?.rolloutCreated?.(createdIssue, createdPlan, createdRollout);
 
   return { createdPlan, createdIssue, createdRollout };
 };
