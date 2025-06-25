@@ -550,11 +550,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		// Quoted string has a single quote around it.
 		comment = stripSingleQuote(comment)
 
-		// Skip partition entries by checking if CREATE_OPTIONS contains 'partitioned'
-		// This happens when MySQL shows individual partitions as separate table entries
-		if strings.Contains(strings.ToLower(createOptions), "partitioned") {
-			continue
-		}
+		// Note: We should NOT skip partitioned tables here.
+		// The CREATE_OPTIONS might contain 'partitioned' for partitioned tables,
+		// but we still need to include them in the table list.
+		// The partition details are fetched separately by listPartitionTables.
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		switch tableType {

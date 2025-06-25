@@ -497,19 +497,8 @@ func writeView(out io.Writer, view *storepb.ViewMetadata) error {
 		return err
 	}
 
-	// Drop temporary view.
-	if _, err := io.WriteString(out, "DROP VIEW IF EXISTS `"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, view.Name); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, "`;\n"); err != nil {
-		return err
-	}
-
 	// Definition.
-	if _, err := io.WriteString(out, "CREATE VIEW `"); err != nil {
+	if _, err := io.WriteString(out, "CREATE OR REPLACE VIEW `"); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, view.Name); err != nil {
