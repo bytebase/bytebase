@@ -262,6 +262,13 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 						writeDropColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldColumn.Name)
 					}
 				}
+
+				// Drop triggers
+				for _, triggerDiff := range tableDiff.TriggerChanges {
+					if triggerDiff.Action == schema.MetadataDiffActionDrop {
+						writeDropTrigger(buf, triggerDiff.OldTrigger.Name)
+					}
+				}
 			}
 		}
 	} else {
@@ -326,6 +333,13 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				for _, colDiff := range tableDiff.ColumnChanges {
 					if colDiff.Action == schema.MetadataDiffActionDrop {
 						writeDropColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldColumn.Name)
+					}
+				}
+
+				// Drop triggers
+				for _, triggerDiff := range tableDiff.TriggerChanges {
+					if triggerDiff.Action == schema.MetadataDiffActionDrop {
+						writeDropTrigger(buf, triggerDiff.OldTrigger.Name)
 					}
 				}
 			}
@@ -666,6 +680,11 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 		}
 	}
 
+	// Add triggers
+	for _, trigger := range table.Triggers {
+		writeMigrationTrigger(&buf, trigger)
+	}
+
 	return buf.String(), nil
 }
 
@@ -714,6 +733,13 @@ func generateAlterTable(tableDiff *schema.TableDiff) string {
 	for _, fkDiff := range tableDiff.ForeignKeyChanges {
 		if fkDiff.Action == schema.MetadataDiffActionCreate {
 			writeMigrationForeignKey(&buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey)
+		}
+	}
+
+	// Add triggers
+	for _, triggerDiff := range tableDiff.TriggerChanges {
+		if triggerDiff.Action == schema.MetadataDiffActionCreate {
+			writeMigrationTrigger(&buf, triggerDiff.NewTrigger)
 		}
 	}
 
@@ -1875,5 +1901,25 @@ func writeColumnComment(out *strings.Builder, schema, table, column, comment str
 		_, _ = out.WriteString(`'`)
 	}
 	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeMigrationTrigger writes a CREATE TRIGGER statement for migration
+func writeMigrationTrigger(out *strings.Builder, trigger *storepb.TriggerMetadata) {
+	if trigger == nil {
+		return
+	}
+	_, _ = out.WriteString(trigger.Body)
+	if !strings.HasSuffix(strings.TrimSpace(trigger.Body), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n")
+}
+
+// writeDropTrigger writes a DROP TRIGGER statement
+func writeDropTrigger(out *strings.Builder, triggerName string) {
+	_, _ = out.WriteString(`DROP TRIGGER "`)
+	_, _ = out.WriteString(triggerName)
+	_, _ = out.WriteString(`";`)
 	_, _ = out.WriteString("\n")
 }
