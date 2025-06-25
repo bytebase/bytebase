@@ -117,6 +117,60 @@ ALTER TABLE posts ADD CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
 			description: "Basic table operations with columns, constraints, and indexes",
 		},
 		{
+			name: "reverse_basic_table_operations",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT true,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email),
+    INDEX idx_username (username),
+    INDEX idx_email_active (email, is_active)
+);
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published_at DATETIME,
+    PRIMARY KEY (id),
+    INDEX idx_user_id (user_id),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+);
+
+CREATE TABLE comments (
+    id INT NOT NULL AUTO_INCREMENT,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_post_user (post_id, user_id),
+    CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+`,
+			migrationDDL: `
+-- Drop check constraint
+ALTER TABLE posts DROP CHECK chk_title_length;
+
+-- Drop index
+DROP INDEX idx_email_active ON users;
+
+-- Drop table
+DROP TABLE comments;
+
+-- Drop column
+ALTER TABLE users DROP COLUMN is_active;
+`,
+			description: "Reverse of basic table operations - dropping columns, constraints, and indexes",
+		},
+		{
 			name: "tidb_specific_features",
 			initialSchema: `
 CREATE TABLE products (
@@ -155,6 +209,49 @@ GROUP BY p.id, p.name, p.price, p.stock;
 ALTER TABLE products ADD COLUMN category VARCHAR(50) DEFAULT 'general';
 `,
 			description: "TiDB specific features like AUTO_RANDOM and clustered index",
+		},
+		{
+			name: "reverse_tidb_specific_features",
+			initialSchema: `
+CREATE TABLE products (
+    id BIGINT NOT NULL AUTO_RANDOM,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    stock INT DEFAULT 0,
+    category VARCHAR(50) DEFAULT 'general',
+    PRIMARY KEY (id),
+    INDEX idx_name (name)
+);
+
+CREATE TABLE orders (
+    id INT NOT NULL AUTO_INCREMENT,
+    product_id BIGINT NOT NULL,
+    quantity INT NOT NULL,
+    total DECIMAL(10, 2),
+    order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE VIEW product_inventory AS
+SELECT 
+    p.id,
+    p.name,
+    p.price,
+    p.stock,
+    COALESCE(SUM(o.quantity), 0) AS total_ordered
+FROM products p
+LEFT JOIN orders o ON p.id = o.product_id
+GROUP BY p.id, p.name, p.price, p.stock;
+`,
+			migrationDDL: `
+-- Drop column
+ALTER TABLE products DROP COLUMN category;
+
+-- Drop view
+DROP VIEW product_inventory;
+`,
+			description: "Reverse of TiDB specific features - dropping views and columns",
 		},
 		{
 			name: "views_and_procedures",
@@ -200,6 +297,54 @@ CREATE TABLE sales_reports (
 			description: "Views and stored routines",
 		},
 		{
+			name: "reverse_views_and_procedures",
+			initialSchema: `
+CREATE TABLE sales (
+    id INT NOT NULL AUTO_INCREMENT,
+    product_name VARCHAR(100) NOT NULL,
+    sale_amount DECIMAL(10, 2) NOT NULL,
+    sale_date DATE NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_product_date (product_name, sale_date)
+);
+
+CREATE VIEW monthly_sales AS
+SELECT 
+    YEAR(sale_date) AS year,
+    MONTH(sale_date) AS month,
+    SUM(sale_amount) AS total_sales
+FROM sales
+GROUP BY YEAR(sale_date), MONTH(sale_date);
+
+CREATE VIEW top_products AS
+SELECT 
+    product_name,
+    COUNT(*) AS sale_count,
+    SUM(sale_amount) AS total_revenue
+FROM sales
+GROUP BY product_name
+ORDER BY SUM(sale_amount) DESC;
+
+CREATE TABLE sales_reports (
+    id INT NOT NULL AUTO_INCREMENT,
+    report_type VARCHAR(50) NOT NULL,
+    report_data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_type (report_type)
+);
+`,
+			migrationDDL: `
+-- Drop table
+DROP TABLE sales_reports;
+
+-- Drop views
+DROP VIEW top_products;
+DROP VIEW monthly_sales;
+`,
+			description: "Reverse of views and procedures - dropping views and tables",
+		},
+		{
 			name: "drop_operations",
 			initialSchema: `
 CREATE TABLE products (
@@ -243,6 +388,49 @@ ALTER TABLE products DROP COLUMN category;
 			description: "Drop operations for views, functions, indexes, and constraints",
 		},
 		{
+			name: "reverse_drop_operations",
+			initialSchema: `
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2),
+    sku VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_sku (sku),
+    INDEX idx_name (name),
+    CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 3)
+);
+`,
+			migrationDDL: `
+-- Add column
+ALTER TABLE products ADD COLUMN category VARCHAR(50);
+
+-- Add check constraint
+ALTER TABLE products ADD CONSTRAINT chk_price_positive CHECK (price > 0);
+
+-- Add indexes
+CREATE INDEX idx_price ON products(price);
+CREATE INDEX idx_category ON products(category);
+
+-- Create table
+CREATE TABLE product_stats (
+    id INT NOT NULL AUTO_INCREMENT,
+    category VARCHAR(50) NOT NULL,
+    product_count INT DEFAULT 0,
+    avg_price DECIMAL(10, 2),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_category (category)
+);
+
+-- Create view
+CREATE VIEW product_summary AS
+SELECT category, COUNT(*) as count, AVG(price) as avg_price
+FROM products
+GROUP BY category;
+`,
+			description: "Reverse of drop operations - creating views, indexes, and constraints",
+		},
+		{
 			name: "alter_table_operations",
 			initialSchema: `
 CREATE TABLE users (
@@ -273,6 +461,45 @@ CREATE INDEX idx_name ON users(name);
 CREATE INDEX idx_age ON users(age);
 `,
 			description: "Various ALTER TABLE operations",
+		},
+		{
+			name: "reverse_alter_table_operations",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    age INT,
+    phone VARCHAR(20),
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_email (email),
+    INDEX idx_name (name),
+    INDEX idx_age (age),
+    CONSTRAINT chk_age_positive CHECK (age > 0),
+    CONSTRAINT uk_phone UNIQUE (phone)
+);
+`,
+			migrationDDL: `
+-- Drop indexes
+DROP INDEX idx_age ON users;
+DROP INDEX idx_name ON users;
+
+-- Drop constraints
+ALTER TABLE users DROP CONSTRAINT uk_phone;
+ALTER TABLE users DROP CHECK chk_age_positive;
+
+-- Modify columns back
+ALTER TABLE users MODIFY COLUMN email VARCHAR(100);
+ALTER TABLE users MODIFY COLUMN name VARCHAR(50) NOT NULL;
+
+-- Drop columns
+ALTER TABLE users DROP COLUMN created_at;
+ALTER TABLE users DROP COLUMN address;
+ALTER TABLE users DROP COLUMN phone;
+`,
+			description: "Reverse of ALTER TABLE operations - dropping columns and constraints",
 		},
 		{
 			name: "complex_relationships",
@@ -317,6 +544,50 @@ CREATE TABLE product_attributes (
 			description: "Complex table relationships with triggers",
 		},
 		{
+			name: "reverse_complex_relationships",
+			initialSchema: `
+CREATE TABLE categories (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    parent_id INT,
+    description TEXT,
+    PRIMARY KEY (id),
+    INDEX idx_parent (parent_id),
+    CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES categories(id)
+);
+
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    category_id INT,
+    price DECIMAL(10, 2),
+    weight DECIMAL(8, 3),
+    PRIMARY KEY (id),
+    INDEX idx_category (category_id),
+    CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+CREATE TABLE product_attributes (
+    id INT NOT NULL AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    attribute_name VARCHAR(100) NOT NULL,
+    attribute_value VARCHAR(200),
+    PRIMARY KEY (id),
+    INDEX idx_product_attr (product_id, attribute_name),
+    CONSTRAINT fk_product_attr FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+`,
+			migrationDDL: `
+-- Drop lookup table
+DROP TABLE product_attributes;
+
+-- Drop columns
+ALTER TABLE products DROP COLUMN weight;
+ALTER TABLE categories DROP COLUMN description;
+`,
+			description: "Reverse of complex relationships - dropping tables and columns",
+		},
+		{
 			name: "partitioned_tables",
 			initialSchema: `
 CREATE TABLE sales_data (
@@ -351,6 +622,47 @@ ALTER TABLE sales_data ADD CONSTRAINT chk_amount_positive CHECK (amount > 0);
 `,
 			description: "Operations on partitioned tables",
 		},
+		{
+			name: "reverse_partitioned_tables",
+			initialSchema: `
+CREATE TABLE sales_data (
+    id INT NOT NULL AUTO_INCREMENT,
+    sale_date DATE NOT NULL,
+    customer_id INT NOT NULL,
+    product_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    region VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id, sale_date),
+    INDEX idx_customer (customer_id),
+    INDEX idx_product (product_id),
+    INDEX idx_region_date (region, sale_date),
+    CONSTRAINT chk_amount_positive CHECK (amount > 0)
+);
+
+CREATE VIEW regional_sales AS
+SELECT 
+    region,
+    YEAR(sale_date) AS year,
+    MONTH(sale_date) AS month,
+    SUM(amount) AS total_sales,
+    COUNT(DISTINCT customer_id) AS unique_customers
+FROM sales_data
+GROUP BY region, YEAR(sale_date), MONTH(sale_date);
+`,
+			migrationDDL: `
+-- Drop constraint
+ALTER TABLE sales_data DROP CHECK chk_amount_positive;
+
+-- Drop view
+DROP VIEW regional_sales;
+
+-- Drop indexes
+DROP INDEX idx_region_date ON sales_data;
+DROP INDEX idx_product ON sales_data;
+DROP INDEX idx_customer ON sales_data;
+`,
+			description: "Reverse of partitioned table operations - dropping indexes and views",
+		},
 		// Note: TiDB added foreign key support in v6.6.0 (experimental) and v7.5.0 (GA)
 		// These tests verify that our migration generation handles foreign keys correctly
 		{
@@ -381,6 +693,33 @@ CREATE TABLE posts (
 DROP TABLE IF EXISTS posts;
 DROP TABLE IF EXISTS users;`,
 			description: "Create tables with foreign key constraints",
+		},
+		{
+			name:          "reverse_create_tables_with_fk",
+			initialSchema: ``,
+			migrationDDL: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email),
+    INDEX idx_username (username)
+);
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published_at DATETIME,
+    PRIMARY KEY (id),
+    INDEX idx_user_id (user_id),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+`,
+			description: "Reverse of create tables with foreign key constraints - creating from empty",
 		},
 		{
 			name: "multiple_foreign_keys",
@@ -432,6 +771,60 @@ ALTER TABLE posts ADD CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
 			description: "Tables with multiple foreign key constraints",
 		},
 		{
+			name: "reverse_multiple_foreign_keys",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT true,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email),
+    INDEX idx_username (username),
+    INDEX idx_email_active (email, is_active)
+);
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published_at DATETIME,
+    PRIMARY KEY (id),
+    INDEX idx_user_id (user_id),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+);
+
+CREATE TABLE comments (
+    id INT NOT NULL AUTO_INCREMENT,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_post_user (post_id, user_id),
+    CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+`,
+			migrationDDL: `
+-- Drop check constraint
+ALTER TABLE posts DROP CHECK chk_title_length;
+
+-- Drop index
+DROP INDEX idx_email_active ON users;
+
+-- Drop table with foreign keys
+DROP TABLE comments;
+
+-- Drop column
+ALTER TABLE users DROP COLUMN is_active;
+`,
+			description: "Reverse of multiple foreign keys - dropping tables and constraints",
+		},
+		{
 			name: "drop_and_recreate_fk_constraints",
 			initialSchema: `
 CREATE TABLE authors (
@@ -473,6 +866,48 @@ ALTER TABLE books ADD CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) >= 3
 			description: "Drop and recreate foreign key constraints with different options",
 		},
 		{
+			name: "reverse_drop_and_recreate_fk_constraints",
+			initialSchema: `
+CREATE TABLE authors (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email)
+);
+
+CREATE TABLE books (
+    id INT NOT NULL AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL,
+    author_id INT NOT NULL,
+    isbn VARCHAR(20),
+    published_year INT,
+    price DECIMAL(8, 2),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_isbn (isbn),
+    INDEX idx_author (author_id),
+    INDEX idx_year (published_year),
+    CONSTRAINT fk_author_new FOREIGN KEY (author_id) REFERENCES authors(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT chk_year_extended CHECK (published_year >= 1000 AND published_year <= 2030),
+    CONSTRAINT chk_price_positive CHECK (price > 0),
+    CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) >= 3)
+);
+`,
+			migrationDDL: `
+-- Drop new constraints
+ALTER TABLE books DROP CHECK chk_title_length;
+
+-- Restore original check constraint
+ALTER TABLE books DROP CHECK chk_year_extended;
+ALTER TABLE books ADD CONSTRAINT chk_year_valid CHECK (published_year >= 1000 AND published_year <= 2100);
+
+-- Restore original foreign key
+ALTER TABLE books DROP FOREIGN KEY fk_author_new;
+ALTER TABLE books ADD CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors(id);
+`,
+			description: "Reverse of drop and recreate foreign key constraints - restoring original constraints",
+		},
+		{
 			name: "circular_foreign_key_dependencies",
 			initialSchema: `
 CREATE TABLE customers (
@@ -509,6 +944,48 @@ CREATE TABLE order_items (
 );
 `,
 			description: "Circular foreign key dependencies",
+		},
+		{
+			name: "reverse_circular_foreign_key_dependencies",
+			initialSchema: `
+CREATE TABLE customers (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    preferred_order_id INT,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE orders (
+    id INT NOT NULL AUTO_INCREMENT,
+    customer_id INT NOT NULL,
+    order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(10, 2),
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE customers ADD CONSTRAINT fk_preferred_order FOREIGN KEY (preferred_order_id) REFERENCES orders(id) ON DELETE SET NULL;
+ALTER TABLE orders ADD CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;
+
+CREATE TABLE order_items (
+    id INT NOT NULL AUTO_INCREMENT,
+    order_id INT NOT NULL,
+    product_name VARCHAR(100) NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_order (order_id),
+    CONSTRAINT fk_order_item FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
+`,
+			migrationDDL: `
+-- Drop dependent table
+DROP TABLE order_items;
+
+-- Drop circular foreign keys
+ALTER TABLE orders DROP FOREIGN KEY fk_customer;
+ALTER TABLE customers DROP FOREIGN KEY fk_preferred_order;
+`,
+			description: "Reverse of circular foreign key dependencies - dropping tables and foreign keys",
 		},
 		{
 			name: "table_and_column_comments",
@@ -564,6 +1041,67 @@ ALTER TABLE products ADD COLUMN in_stock BOOLEAN DEFAULT true COMMENT 'Current s
 ALTER TABLE products ADD CONSTRAINT fk_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL;
 `,
 			description: "Adding comments to tables and columns using TiDB COMMENT syntax",
+		},
+		{
+			name: "reverse_table_and_column_comments",
+			initialSchema: `
+CREATE TABLE categories (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL COMMENT 'Category name',
+    PRIMARY KEY (id)
+) COMMENT = 'Product categories for organization';
+
+CREATE TABLE suppliers (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Unique supplier identifier',
+    company_name VARCHAR(100) NOT NULL COMMENT 'Official company name',
+    contact_email VARCHAR(150) COMMENT 'Primary contact email address',
+    phone VARCHAR(20) COMMENT 'Contact phone number',
+    address TEXT COMMENT 'Full business address',
+    is_active BOOLEAN DEFAULT true COMMENT 'Supplier active status',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (contact_email),
+    INDEX idx_active (is_active)
+) COMMENT = 'Supplier information and contact details';
+
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL COMMENT 'Product display name',
+    price DECIMAL(10, 2) NOT NULL COMMENT 'Product price in USD',
+    description TEXT COMMENT 'Detailed product description',
+    category_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    supplier_id INT COMMENT 'Reference to supplier table',
+    weight DECIMAL(8, 3) COMMENT 'Product weight in kilograms',
+    in_stock BOOLEAN DEFAULT true COMMENT 'Current stock availability',
+    PRIMARY KEY (id),
+    INDEX idx_category (category_id),
+    CONSTRAINT fk_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
+) COMMENT = 'Product catalog table storing all available products';
+`,
+			migrationDDL: `
+-- Drop foreign key
+ALTER TABLE products DROP FOREIGN KEY fk_supplier;
+
+-- Drop columns with comments
+ALTER TABLE products DROP COLUMN in_stock;
+ALTER TABLE products DROP COLUMN weight;
+ALTER TABLE products DROP COLUMN supplier_id;
+
+-- Drop table with comments
+DROP TABLE suppliers;
+
+-- Remove comments from columns
+ALTER TABLE categories MODIFY COLUMN name VARCHAR(50) NOT NULL;
+ALTER TABLE categories COMMENT = '';
+
+-- Remove comments from products table and columns
+ALTER TABLE products MODIFY COLUMN description TEXT;
+ALTER TABLE products MODIFY COLUMN price DECIMAL(10, 2) NOT NULL;
+ALTER TABLE products MODIFY COLUMN name VARCHAR(100) NOT NULL;
+ALTER TABLE products COMMENT = '';
+`,
+			description: "Reverse of table and column comments - removing comments and dropping tables",
 		},
 		{
 			name: "modify_and_drop_comments",
@@ -639,6 +1177,84 @@ CREATE TABLE user_preferences (
 			description: "Modifying existing comments and removing comments from tables and columns",
 		},
 		{
+			name: "reverse_modify_and_drop_comments",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Primary key identifier',
+    username VARCHAR(50) NOT NULL COMMENT 'Updated: Unique username for authentication and display',
+    email VARCHAR(100) NOT NULL COMMENT 'User email address',
+    full_name VARCHAR(100),
+    bio TEXT COMMENT 'Updated: Extended user biography with rich text support',
+    status ENUM('active', 'inactive', 'suspended', 'pending') DEFAULT 'active' COMMENT 'Updated: Account status with pending verification',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Account creation date',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+    avatar_url VARCHAR(255) COMMENT 'Profile picture URL',
+    last_login DATETIME COMMENT 'Last successful login timestamp',
+    login_count INT DEFAULT 0 COMMENT 'Total number of logins',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_username (username),
+    UNIQUE KEY uk_email (email),
+    INDEX idx_status (status)
+) COMMENT = 'Updated user account information with enhanced profile features';
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Post unique identifier',
+    user_id INT NOT NULL COMMENT 'Author user ID reference',
+    title VARCHAR(200) NOT NULL COMMENT 'Post title with SEO optimization',
+    content TEXT COMMENT 'Rich text post content with markdown support',
+    status ENUM('draft', 'published', 'archived') DEFAULT 'draft' COMMENT 'Post publication status',
+    published_at DATETIME COMMENT 'Publication timestamp',
+    view_count INT DEFAULT 0,
+    PRIMARY KEY (id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    CONSTRAINT fk_post_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) COMMENT = 'Blog posts with analytics and engagement tracking';
+
+CREATE TABLE user_preferences (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Preference record identifier',
+    user_id INT NOT NULL COMMENT 'User ID foreign key reference',
+    preference_key VARCHAR(100) NOT NULL COMMENT 'Configuration key name',
+    preference_value TEXT COMMENT 'Configuration value in JSON format',
+    is_public BOOLEAN DEFAULT false COMMENT 'Whether preference is publicly visible',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Preference creation time',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last modification time',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_user_key (user_id, preference_key),
+    INDEX idx_key (preference_key),
+    INDEX idx_public (is_public),
+    CONSTRAINT fk_pref_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) COMMENT = 'User-specific configuration and preference settings';
+`,
+			migrationDDL: `
+-- Drop new table
+DROP TABLE user_preferences;
+
+-- Restore original column comments
+ALTER TABLE posts MODIFY COLUMN content TEXT COMMENT 'Post content body';
+ALTER TABLE posts MODIFY COLUMN title VARCHAR(200) NOT NULL COMMENT 'Post title';
+
+-- Drop new columns
+ALTER TABLE users DROP COLUMN login_count;
+ALTER TABLE users DROP COLUMN last_login;
+ALTER TABLE users DROP COLUMN avatar_url;
+
+-- Restore comments that were removed
+ALTER TABLE posts MODIFY COLUMN view_count INT DEFAULT 0 COMMENT 'Number of views';
+ALTER TABLE users MODIFY COLUMN full_name VARCHAR(100) COMMENT 'User full display name';
+
+-- Restore original column types and comments
+ALTER TABLE users MODIFY COLUMN status ENUM('active', 'inactive', 'suspended') DEFAULT 'active' COMMENT 'Account status';
+ALTER TABLE users MODIFY COLUMN bio TEXT COMMENT 'User biography or description';
+ALTER TABLE users MODIFY COLUMN username VARCHAR(50) NOT NULL COMMENT 'Unique username for login';
+
+-- Restore original table comments
+ALTER TABLE posts COMMENT = 'Blog posts and articles';
+ALTER TABLE users COMMENT = 'User account information and profile data';
+`,
+			description: "Reverse of modify and drop comments - restoring original comments and dropping new table",
+		},
+		{
 			name: "comments_with_special_characters",
 			initialSchema: `
 CREATE TABLE test_table (
@@ -653,7 +1269,7 @@ ALTER TABLE test_table COMMENT = 'Table with "double quotes" and ''single quotes
 
 -- Add columns with special characters in comments
 ALTER TABLE test_table ADD COLUMN field_with_quotes VARCHAR(100) COMMENT 'Field with "double" and ''single'' quotes';
-ALTER TABLE test_table ADD COLUMN field_with_symbols VARCHAR(100) COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|\\:";''<>?,./ and more!';
+ALTER TABLE test_table ADD COLUMN field_with_symbols VARCHAR(100) COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:";''<>?,./ and more!';
 ALTER TABLE test_table ADD COLUMN field_with_unicode VARCHAR(100) COMMENT 'Unicode test: 你好世界 🌍 café naïve résumé Москва العالم 한국어';
 ALTER TABLE test_table ADD COLUMN field_multiline TEXT COMMENT 'Multi-line comment:
 Line 1 with regular text
@@ -663,7 +1279,7 @@ Final line with mixed content';
 ALTER TABLE test_table ADD COLUMN field_with_sql VARCHAR(100) COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = ''123'' AND name LIKE "%test%"';
 ALTER TABLE test_table ADD COLUMN field_with_html VARCHAR(100) COMMENT 'HTML content: <div class="test">Hello & "World"</div> <!-- comment -->';
 ALTER TABLE test_table ADD COLUMN field_with_json VARCHAR(100) COMMENT 'JSON example: {"name": "test", "value": 123, "nested": {"key": "value with spaces"}}';
-ALTER TABLE test_table ADD COLUMN field_with_escape VARCHAR(100) COMMENT 'Escape sequences: \\n \\t \\r \\" \\'' \\\\';
+ALTER TABLE test_table ADD COLUMN field_with_escape VARCHAR(100) COMMENT 'Escape sequences: \n \t \r " '' \\';
 
 -- Create table with complex comment containing all special character types
 CREATE TABLE special_comments_table (
@@ -674,7 +1290,7 @@ content',
     html_field TEXT COMMENT 'HTML content field: <script>alert("XSS test & more");</script>',
     sql_field VARCHAR(255) COMMENT 'SQL patterns: SELECT * FROM users WHERE name = ''O''Brien'' AND age > 21',
     unicode_field VARCHAR(200) COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',
-    symbols_field VARCHAR(100) COMMENT 'All symbols: !@#$%^&*()_+-={}[]|\\:";''<>?,./ plus tab	and newline
+    symbols_field VARCHAR(100) COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:";''<>?,./ plus tab	and newline
 test',
     url_field VARCHAR(300) COMMENT 'URL with params: https://example.com/path?param1=value1&param2="quoted value"&param3=50%+discount',
     regex_field VARCHAR(150) COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$ for email validation',
@@ -691,12 +1307,82 @@ test',
 - Multi-line content with various encodings';
 
 -- Test modifying comments with special characters
-ALTER TABLE special_comments_table MODIFY COLUMN data_field JSON COMMENT 'Updated JSON field: {"new": "structure", "with": ["array", "of", "strings"], "escapes": "\\n\\t\\r"}';
+ALTER TABLE special_comments_table MODIFY COLUMN data_field JSON COMMENT 'Updated JSON field: {"new": "structure", "with": ["array", "of", "strings"], "escapes": "\n\t\r"}';
 
 -- Test removing comments that had special characters
 ALTER TABLE special_comments_table MODIFY COLUMN html_field TEXT COMMENT '';
 `,
 			description: "Testing comments with special characters, quotes, Unicode, multi-line text, and edge cases",
+		},
+		{
+			name: "reverse_comments_with_special_characters",
+			initialSchema: `
+CREATE TABLE test_table (
+    id INT NOT NULL AUTO_INCREMENT,
+    simple_field VARCHAR(100),
+    field_with_quotes VARCHAR(100) COMMENT 'Field with "double" and ''single'' quotes',
+    field_with_symbols VARCHAR(100) COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:";''<>?,./ and more!',
+    field_with_unicode VARCHAR(100) COMMENT 'Unicode test: 你好世界 🌍 café naïve résumé Москва العالم 한국어',
+    field_multiline TEXT COMMENT 'Multi-line comment:
+Line 1 with regular text
+Line 2 with "quotes" and symbols @#$
+Line 3 with unicode: 测试 🚀 café
+Final line with mixed content',
+    field_with_sql VARCHAR(100) COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = ''123'' AND name LIKE "%test%"',
+    field_with_html VARCHAR(100) COMMENT 'HTML content: <div class="test">Hello & "World"</div> <!-- comment -->',
+    field_with_json VARCHAR(100) COMMENT 'JSON example: {"name": "test", "value": 123, "nested": {"key": "value with spaces"}}',
+    field_with_escape VARCHAR(100) COMMENT 'Escape sequences: \n \t \r " '' \\',
+    PRIMARY KEY (id)
+) COMMENT = 'Table with "double quotes" and ''single quotes'' in comment';
+
+CREATE TABLE special_comments_table (
+    id BIGINT NOT NULL AUTO_RANDOM COMMENT 'ID with "quotes", symbols @#$, unicode 测试🌟, and
+multi-line
+content',
+    data_field JSON COMMENT 'Updated JSON field: {"new": "structure", "with": ["array", "of", "strings"], "escapes": "\n\t\r"}',
+    html_field TEXT,
+    sql_field VARCHAR(255) COMMENT 'SQL patterns: SELECT * FROM users WHERE name = ''O''Brien'' AND age > 21',
+    unicode_field VARCHAR(200) COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',
+    symbols_field VARCHAR(100) COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:";''<>?,./ plus tab	and newline
+test',
+    url_field VARCHAR(300) COMMENT 'URL with params: https://example.com/path?param1=value1&param2="quoted value"&param3=50%+discount',
+    regex_field VARCHAR(150) COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$ for email validation',
+    PRIMARY KEY (id),
+    INDEX idx_unicode (unicode_field)
+) COMMENT = 'Special characters test table with:
+- Double quotes: "test"
+- Single quotes: ''test''
+- Unicode: 特殊字符测试表 🎯
+- Symbols: @#$%^&*()
+- HTML: <div>content</div>
+- JSON: {"key": "value"}
+- URLs: https://example.com
+- Multi-line content with various encodings';
+`,
+			migrationDDL: `
+-- Restore comment that was removed
+ALTER TABLE special_comments_table MODIFY COLUMN html_field TEXT COMMENT 'HTML content field: <script>alert("XSS test & more");</script>';
+
+-- Restore original comment
+ALTER TABLE special_comments_table MODIFY COLUMN data_field JSON COMMENT 'JSON field storing: {"users": ["John O''Connor", "Jane \"Doe\""], "count": 42}';
+
+-- Drop table with special comments
+DROP TABLE special_comments_table;
+
+-- Drop columns with special character comments
+ALTER TABLE test_table DROP COLUMN field_with_escape;
+ALTER TABLE test_table DROP COLUMN field_with_json;
+ALTER TABLE test_table DROP COLUMN field_with_html;
+ALTER TABLE test_table DROP COLUMN field_with_sql;
+ALTER TABLE test_table DROP COLUMN field_multiline;
+ALTER TABLE test_table DROP COLUMN field_with_unicode;
+ALTER TABLE test_table DROP COLUMN field_with_symbols;
+ALTER TABLE test_table DROP COLUMN field_with_quotes;
+
+-- Remove table comment
+ALTER TABLE test_table COMMENT = '';
+`,
+			description: "Reverse of comments with special characters - removing all special character comments",
 		},
 	}
 
