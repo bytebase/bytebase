@@ -503,8 +503,18 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		if viewDiff.NewView != nil {
 			for _, dep := range viewDiff.NewView.DependencyColumns {
 				depID := getMigrationObjectID(dep.Schema, dep.Table)
-				// Edge from dependency to dependent (table/view to view)
-				graph.AddEdge(depID, viewID)
+				// Only add edge if the dependency exists in our objects being created
+				if allObjects[depID] {
+					// Edge from dependency to dependent (table/view to view)
+					graph.AddEdge(depID, viewID)
+				} else {
+					// Try with empty schema if the dependency schema doesn't match
+					depIDNoSchema := getMigrationObjectID("", dep.Table)
+					if allObjects[depIDNoSchema] {
+						// Edge from dependency to dependent (table/view to view)
+						graph.AddEdge(depIDNoSchema, viewID)
+					}
+				}
 			}
 		}
 	}
@@ -514,8 +524,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		if mvDiff.NewMaterializedView != nil {
 			for _, dep := range mvDiff.NewMaterializedView.DependencyColumns {
 				depID := getMigrationObjectID(dep.Schema, dep.Table)
-				// Edge from dependency to dependent
-				graph.AddEdge(depID, mvID)
+				// Only add edge if the dependency exists in our objects being created
+				if allObjects[depID] {
+					// Edge from dependency to dependent
+					graph.AddEdge(depID, mvID)
+				}
 			}
 		}
 	}
@@ -525,8 +538,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		if funcDiff.NewFunction != nil {
 			for _, dep := range funcDiff.NewFunction.DependencyTables {
 				depID := getMigrationObjectID(dep.Schema, dep.Table)
-				// Edge from table to function
-				graph.AddEdge(depID, funcID)
+				// Only add edge if the dependency exists in our objects being created
+				if allObjects[depID] {
+					// Edge from table to function
+					graph.AddEdge(depID, funcID)
+				}
 			}
 		}
 	}
