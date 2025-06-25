@@ -1,6 +1,11 @@
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { databaseServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { databaseServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import { GetDatabaseMetadataRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import { convertNewDatabaseMetadataToOld } from "@/utils/v1/database-conversions";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
@@ -179,14 +184,15 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     console.debug("[getOrFetchDatabaseMetadata]", {
       name: metadataResourceName,
     });
-    const promise = databaseServiceClient.getDatabaseMetadata(
+    const request = create(GetDatabaseMetadataRequestSchema, {
+      name: metadataResourceName,
+    });
+    const promise = databaseServiceClientConnect.getDatabaseMetadata(
+      request,
       {
-        name: metadataResourceName,
-      },
-      {
-        silent,
+        contextValues: createContextValues().set(silentContextKey, silent),
       }
-    );
+    ).then((newMetadata) => convertNewDatabaseMetadataToOld(newMetadata));
     setRequestCache(metadataResourceName, promise);
     promise.then((res) => {
       mergeCache(res, true);
@@ -291,16 +297,15 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       name: metadataResourceName,
       filter: `schema == "${schema}" && table == "${table}"`,
     });
-    const promise = databaseServiceClient
-      .getDatabaseMetadata(
-        {
-          name: metadataResourceName,
-          filter: `schema == "${schema}" && table == "${table}"`,
-        },
-        {
-          silent,
-        }
-      )
+    const request = create(GetDatabaseMetadataRequestSchema, {
+      name: metadataResourceName,
+      filter: `schema == "${schema}" && table == "${table}"`,
+    });
+    const promise = databaseServiceClientConnect
+      .getDatabaseMetadata(request, {
+        contextValues: createContextValues().set(silentContextKey, silent),
+      })
+      .then((newMetadata) => convertNewDatabaseMetadataToOld(newMetadata))
       .then((res) => mergeCache(res))
       .then((res) => {
         return res.schemas

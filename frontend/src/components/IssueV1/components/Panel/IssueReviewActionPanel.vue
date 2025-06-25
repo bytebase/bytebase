@@ -110,10 +110,16 @@ import {
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
+import { create } from "@bufbuild/protobuf";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
-import { issueServiceClient } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import {
+  ApproveIssueRequestSchema,
+  RejectIssueRequestSchema,
+  RequestIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 
@@ -214,20 +220,23 @@ const handleConfirm = async () => {
   try {
     const status = targetReviewStatusForReviewAction(action);
     if (status === Issue_Approver_Status.APPROVED) {
-      await issueServiceClient.approveIssue({
+      const request = create(ApproveIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
+      await issueServiceClientConnect.approveIssue(request);
     } else if (status === Issue_Approver_Status.PENDING) {
-      await issueServiceClient.requestIssue({
+      const request = create(RequestIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
+      await issueServiceClientConnect.requestIssue(request);
     } else if (status === Issue_Approver_Status.REJECTED) {
-      await issueServiceClient.rejectIssue({
+      const request = create(RejectIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
+      await issueServiceClientConnect.rejectIssue(request);
     }
 
     // notify the issue logic to update issue status

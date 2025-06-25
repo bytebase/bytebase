@@ -4,7 +4,7 @@ import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/compon
 import type { Factor, Operator } from "@/plugins/cel";
 import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
-import type { ComposedInstance } from "@/types";
+import type { ComposedInstanceV2 } from "@/types";
 import type { Algorithm } from "@/types/proto/v1/setting_service";
 import { Setting_SettingName } from "@/types/proto/v1/setting_service";
 import { extractInstanceResourceName } from "@/utils";
@@ -28,7 +28,7 @@ export const getClassificationLevelOptions = () => {
   }));
 };
 
-export const getInstanceIdOptions = (instanceList: ComposedInstance[]) => {
+export const getInstanceIdOptions = (instanceList: ComposedInstanceV2[]) => {
   return instanceList.map<SelectOption>((ins) => {
     const instanceId = extractInstanceResourceName(ins.name);
     return {

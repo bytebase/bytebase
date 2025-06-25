@@ -3,6 +3,7 @@ import type { Environment } from "@/types/v1/environment";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { Engine, State } from "../proto/v1/common";
 import { Instance, InstanceResource } from "../proto/v1/instance_service";
+import type { Instance as NewInstance } from "@/types/proto-es/v1/instance_service_pb";
 import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "./environment";
 
 export const EMPTY_INSTANCE_NAME = `instances/${EMPTY_ID}`;
@@ -11,6 +12,14 @@ export const UNKNOWN_INSTANCE_NAME = `instances/${UNKNOWN_ID}`;
 export interface ComposedInstance extends Instance {
   environmentEntity: Environment;
 }
+
+// New proto-es based type (for gradual migration)
+export interface ComposedInstanceV2 extends NewInstance {
+  environmentEntity: Environment;
+}
+
+// Export conversion adapter from instance-new.ts
+export { adaptComposedInstance } from "./instance-new";
 
 export const unknownInstance = (): ComposedInstance => {
   const environmentEntity = unknownEnvironment();

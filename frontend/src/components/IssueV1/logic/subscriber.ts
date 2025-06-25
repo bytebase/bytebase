@@ -1,5 +1,8 @@
 import { pull } from "lodash-es";
-import { issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { issueServiceClientConnect } from "@/grpcweb";
+import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { convertNewIssueToOld, convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import { t } from "@/plugins/i18n";
 import { pushNotification, useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
@@ -14,10 +17,13 @@ export const updateIssueSubscribers = async (
     ...issue,
     subscribers,
   });
-  const updated = await issueServiceClient.updateIssue({
-    issue: issuePatch,
-    updateMask: ["subscribers"],
+  const newIssuePatch = convertOldIssueToNew(issuePatch);
+  const request = create(UpdateIssueRequestSchema, {
+    issue: newIssuePatch,
+    updateMask: { paths: ["subscribers"] },
   });
+  const newUpdated = await issueServiceClientConnect.updateIssue(request);
+  const updated = convertNewIssueToOld(newUpdated);
   Object.assign(issue, updated);
   if (!silent) {
     pushNotification({

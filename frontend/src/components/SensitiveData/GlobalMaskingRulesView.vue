@@ -156,6 +156,7 @@ import {
   getClassificationLevelOptions,
   getInstanceIdOptions,
 } from "./components/utils";
+import { adaptComposedInstance } from "@/types";
 
 type MaskingRuleMode = "NORMAL" | "EDIT" | "CREATE";
 
@@ -365,7 +366,7 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
                   query: keyword,
                 },
               })
-              .then((resp) => getInstanceIdOptions(resp.instances));
+              .then((resp) => getInstanceIdOptions(resp.instances.map(adaptComposedInstance.fromLegacy)));
           },
         });
         return map;

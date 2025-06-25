@@ -91,10 +91,12 @@ import { ChevronRightIcon, CirclePlayIcon } from "lucide-vue-next";
 import { NTag, NVirtualList, NTooltip, NButton, NPopconfirm } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
+import { create } from "@bufbuild/protobuf";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import { rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useEnvironmentV1Store } from "@/store";
 import { Stage, type Task } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
@@ -125,13 +127,14 @@ const onTaskClick = (task: Task) => {
 };
 
 const createRolloutToStage = async () => {
-  await rolloutServiceClient.createRollout({
+  const request = create(CreateRolloutRequestSchema, {
     parent: project.value.name,
     rollout: {
       plan: rollout.value.plan,
     },
     target: props.stage.environment,
   });
+  await rolloutServiceClientConnect.createRollout(request);
   emmiter.emit("task-status-action");
 };
 </script>

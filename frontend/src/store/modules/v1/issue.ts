@@ -3,7 +3,19 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
-import { issueServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { issueServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import {
+  GetIssueRequestSchema,
+  IssueSchema,
+  SearchIssuesRequestSchema,
+  UpdateIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
+import {
+  convertNewIssueToOld,
+} from "@/utils/v1/issue-conversions";
 import { SYSTEM_BOT_EMAIL, type IssueFilter } from "@/types";
 import type { ApprovalStep, Issue } from "@/types/proto/v1/issue_service";
 import {
@@ -74,28 +86,31 @@ export const buildIssueFilter = (find: IssueFilter): string => {
 
 export const useIssueV1Store = defineStore("issue_v1", () => {
   const regenerateReviewV1 = async (name: string) => {
-    await issueServiceClient.updateIssue({
-      issue: {
+    const request = create(UpdateIssueRequestSchema, {
+      issue: create(IssueSchema, {
         name,
         approvalFindingDone: false,
-      },
-      updateMask: ["approval_finding_done"],
+      }),
+      updateMask: { paths: ["approval_finding_done"] },
     });
+    await issueServiceClientConnect.updateIssue(request);
   };
 
   const listIssues = async (
     { find, pageSize, pageToken }: ListIssueParams,
     composeIssueConfig?: ComposeIssueConfig
   ) => {
-    const resp = await issueServiceClient.searchIssues({
+    const request = create(SearchIssuesRequestSchema, {
       parent: find.project,
       filter: buildIssueFilter(find),
       query: find.query,
       pageSize,
       pageToken,
     });
+    const resp = await issueServiceClientConnect.searchIssues(request);
+    const issues = resp.issues.map((newIssue) => convertNewIssueToOld(newIssue));
     const composedIssues = await Promise.all(
-      resp.issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
+      issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
     );
     // Preprare creator for the issues.
     const users = uniq(composedIssues.map((issue) => issue.creator));
@@ -111,7 +126,11 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     composeIssueConfig?: ComposeIssueConfig,
     silent: boolean = false
   ) => {
-    const issue = await issueServiceClient.getIssue({ name }, { silent });
+    const request = create(GetIssueRequestSchema, { name });
+    const newIssue = await issueServiceClientConnect.getIssue(request, {
+      contextValues: createContextValues().set(silentContextKey, silent),
+    });
+    const issue = convertNewIssueToOld(newIssue);
     return shallowComposeIssue(issue, composeIssueConfig);
   };
 
