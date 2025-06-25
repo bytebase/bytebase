@@ -38,16 +38,7 @@ onMounted(() => {
       return;
     }
 
-    const user = await authStore.fetchCurrentUser();
-    if (!user) {
-      authStore.unauthenticatedOccurred = true;
-      pushNotification({
-        module: "bytebase",
-        style: "WARN",
-        title: t("auth.token-expired-title"),
-        description: t("auth.token-expired-description"),
-      });
-    }
+    await authStore.fetchCurrentUser();
   }, CHECK_AUTHORIZATION_INTERVAL);
 });
 
