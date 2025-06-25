@@ -1,8 +1,9 @@
 import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
 import { ClientError, ServerError, Status } from "nice-grpc-common";
 import type { ClientMiddleware } from "nice-grpc-web";
+import { t } from "@/plugins/i18n";
 import { router } from "@/router";
-import { useAuthStore } from "@/store";
+import { useAuthStore, pushNotification } from "@/store";
 import { silentContextKey, ignoredCodesContextKey } from "../context-key";
 
 export type IgnoreErrorsOptions = {
@@ -41,6 +42,12 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
             // When receiving 401 and is returned by our server, it means the current
             // login user's token becomes invalid. Thus we force the user to login again.
             useAuthStore().unauthenticatedOccurred = true;
+            pushNotification({
+              module: "bytebase",
+              style: "WARN",
+              title: t("auth.token-expired-title"),
+              description: t("auth.token-expired-description"),
+            });
           } else if (code === Status.PERMISSION_DENIED) {
             // Jump to 403 page
             router.push({ name: "error.403" });
@@ -89,6 +96,12 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
           // When receiving 401 and is returned by our server, it means the current
           // login user's token becomes invalid. Thus we force the user to login again.
           useAuthStore().unauthenticatedOccurred = true;
+          pushNotification({
+            module: "bytebase",
+            style: "WARN",
+            title: t("auth.token-expired-title"),
+            description: t("auth.token-expired-description"),
+          });
         } else if (code === Code.PermissionDenied) {
           // Jump to 403 page
           router.push({ name: "error.403" });
