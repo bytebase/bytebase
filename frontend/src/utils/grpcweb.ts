@@ -6,7 +6,7 @@ export const getErrorCode = (error: unknown) => {
     return error.code;
   }
   if (error instanceof ConnectError) {
-    return error.code;
+    return error.code as unknown as Status;
   }
   return Status.UNKNOWN;
 };
