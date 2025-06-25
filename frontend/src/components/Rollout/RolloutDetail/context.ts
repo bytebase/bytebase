@@ -1,23 +1,25 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { computedAsync } from "@vueuse/core";
 import Emittery from "emittery";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { useRoute } from "vue-router";
-import { create } from "@bufbuild/protobuf";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import { rolloutServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import { useIssueV1Store, useProjectV1Store, useRolloutStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedIssue, ComposedProject, ComposedRollout } from "@/types";
 import { unknownProject, unknownRollout } from "@/types";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   Rollout,
   type Task,
   type Stage,
 } from "@/types/proto/v1/rollout_service";
-import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { convertNewRolloutToOld } from "@/utils/v1/rollout-conversions";
 import { flattenTaskV1List } from "@/utils";
+import { convertNewRolloutToOld } from "@/utils/v1/rollout-conversions";
 
 type Events = {
   "task-status-action": undefined;
@@ -77,12 +79,13 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
 
   const mergedStages = computed(() => {
     // Merge preview stages with created rollout stages.
-    return rolloutPreview.value.stages.map((sp) => {
-      const createdStage = rollout.value.stages.find(
-        (s) => s.environment === sp.environment
-      );
-      return createdStage || sp;
-    });
+    return [
+      ...rollout.value.stages,
+      ...rolloutPreview.value.stages.filter(
+        (stage) =>
+          !rollout.value.stages.some((s) => s.environment === stage.environment)
+      ),
+    ];
   });
 
   const context: RolloutDetailContext = {
@@ -113,8 +116,17 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
       },
       validateOnly: true,
     });
-    const rolloutPreviewNew = await rolloutServiceClientConnect.createRollout(request);
-    rolloutPreview.value = convertNewRolloutToOld(rolloutPreviewNew);
+    try {
+      const rolloutPreviewNew = await rolloutServiceClientConnect.createRollout(
+        request,
+        {
+          contextValues: createContextValues().set(silentContextKey, true),
+        }
+      );
+      rolloutPreview.value = convertNewRolloutToOld(rolloutPreviewNew);
+    } catch {
+      rolloutPreview.value = Rollout.fromPartial({});
+    }
   };
 
   refreshRolloutContext();

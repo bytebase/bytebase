@@ -50,6 +50,8 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
@@ -57,12 +59,15 @@ import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
 } from "@/components/DatabaseAndGroupSelector/";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
-import { create } from "@bufbuild/protobuf";
-import { planServiceClientConnect } from "@/grpcweb";
-import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
+import {
+  planServiceClientConnect,
+  rolloutServiceClientConnect,
+} from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useDBGroupStore } from "@/store";
+import { pushNotification, useDatabaseV1Store, useDBGroupStore } from "@/store";
+import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { Plan } from "@/types/proto/v1/plan_service";
 import {
@@ -70,6 +75,10 @@ import {
   generateIssueTitle,
   issueV1Slug,
 } from "@/utils";
+import {
+  convertOldPlanToNew,
+  convertNewPlanToOld,
+} from "@/utils/v1/plan-conversions";
 import { useReleaseDetailContext } from "../context";
 import { createIssueFromPlan } from "./utils";
 
@@ -132,6 +141,24 @@ const handleCreate = async () => {
     ],
   });
   const newPlan = convertOldPlanToNew(planData);
+  try {
+    const previewRolloutRequest = create(PreviewRolloutRequestSchema, {
+      project: project.value.name,
+      plan: newPlan,
+    });
+    await rolloutServiceClientConnect.previewRollout(previewRolloutRequest, {
+      contextValues: createContextValues().set(silentContextKey, true),
+    });
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Preview Rollout Failed",
+      description: `${error instanceof Error ? error.message : "Unknown error"}\nPlease check if you had applied the release to the selected databases.`,
+    });
+    return;
+  }
+
   const request = create(CreatePlanRequestSchema, {
     parent: project.value.name,
     plan: newPlan,
