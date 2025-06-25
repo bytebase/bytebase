@@ -925,7 +925,54 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
+	// Populate view dependencies
+	for schemaName, list := range viewMap {
+		for _, view := range list {
+			dependencies, err := getViewDependencies(txn, schemaName, view.Name)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
+			}
+			view.DependencyColumns = dependencies
+		}
+	}
+
 	return viewMap, nil
+}
+
+// getViewDependencies gets the dependencies of a view.
+func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependencyColumn, error) {
+	var result []*storepb.DependencyColumn
+
+	query := fmt.Sprintf(`
+		SELECT 
+			REFERENCED_OWNER as source_schema,
+			REFERENCED_NAME as source_table,
+			'*' as column_name
+		FROM ALL_DEPENDENCIES
+		WHERE OWNER = '%s'
+			AND NAME = '%s'
+			AND TYPE = 'VIEW'
+			AND REFERENCED_TYPE IN ('TABLE', 'VIEW')
+		ORDER BY REFERENCED_OWNER, REFERENCED_NAME
+	`, schemaName, viewName)
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		dependencyColumn := &storepb.DependencyColumn{}
+		if err := rows.Scan(&dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
+			return nil, err
+		}
+		result = append(result, dependencyColumn)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // getSequences gets all sequences of a database.
