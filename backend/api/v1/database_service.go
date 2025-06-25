@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
@@ -803,6 +804,40 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 
 // DiffSchema diff the database schema.
 func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v1pb.DiffSchemaRequest]) (*connect.Response[v1pb.DiffSchemaResponse], error) {
+	// Check if target is changelog - use new metadata-based approach
+	changeHistoryID := req.Msg.GetChangelog()
+	if changeHistoryID != "" {
+		sourceDBSchema, err := s.getSourceDBSchema(ctx, req.Msg)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get source schema, error: %v", err))
+		}
+
+		targetDBSchema, err := s.getTargetDBSchema(ctx, req.Msg)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get target schema, error: %v", err))
+		}
+
+		engine, err := s.getParserEngine(ctx, req.Msg)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get parser engine, error: %v", err))
+		}
+
+		schemaDiff, err := schema.GetDatabaseSchemaDiff(sourceDBSchema, targetDBSchema)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute schema diff, error: %v", err))
+		}
+
+		migrationSQL, err := schema.GenerateMigration(engine, schemaDiff)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
+		}
+
+		return connect.NewResponse(&v1pb.DiffSchemaResponse{
+			Diff: migrationSQL,
+		}), nil
+	}
+
+	// Fallback to old string-based approach for schema string targets
 	source, err := s.getSourceSchema(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get source schema, error: %v", err))
@@ -830,6 +865,145 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	return connect.NewResponse(&v1pb.DiffSchemaResponse{
 		Diff: diff,
 	}), nil
+}
+
+func (s *DatabaseService) getSourceDBSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseSchema, error) {
+	if strings.Contains(request.Name, common.ChangelogPrefix) {
+		instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(request.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
+			UID: &changelogUID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if changelog == nil {
+			return nil, errors.Errorf("changelog %d not found", changelogUID)
+		}
+
+		// Use SyncHistoryUID to get historical metadata
+		if changelog.SyncHistoryUID != nil {
+			syncHistory, err := s.store.GetSyncHistoryByUID(ctx, *changelog.SyncHistoryUID)
+			if err != nil {
+				return nil, err
+			}
+			if syncHistory == nil {
+				return nil, errors.Errorf("sync history %d not found", *changelog.SyncHistoryUID)
+			}
+
+			// Get instance to determine engine and case sensitivity
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+			if err != nil {
+				return nil, err
+			}
+			if instance == nil {
+				return nil, errors.Errorf("instance %s not found", instanceID)
+			}
+
+			return model.NewDatabaseSchema(
+				syncHistory.Metadata,
+				[]byte(syncHistory.Schema),
+				&storepb.DatabaseConfig{},
+				instance.Metadata.GetEngine(),
+				store.IsObjectCaseSensitive(instance),
+			), nil
+		}
+
+		// Fallback to current database schema if no sync history
+		dbSchema, err := s.store.GetDBSchema(ctx, instanceID, databaseName)
+		if err != nil {
+			return nil, err
+		}
+		if dbSchema == nil {
+			return nil, errors.Errorf("database schema not found for %s/%s", instanceID, databaseName)
+		}
+		return dbSchema, nil
+	}
+
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	dbSchema, err := s.store.GetDBSchema(ctx, instanceID, databaseName)
+	if err != nil {
+		return nil, err
+	}
+	if dbSchema == nil {
+		return nil, errors.Errorf("database schema not found for %s/%s", instanceID, databaseName)
+	}
+	return dbSchema, nil
+}
+
+func (s *DatabaseService) getTargetDBSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseSchema, error) {
+	changeHistoryID := request.GetChangelog()
+
+	// If the change history id is set, use the schema of the change history as the target.
+	if changeHistoryID != "" {
+		instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(changeHistoryID)
+		if err != nil {
+			return nil, err
+		}
+
+		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
+			UID: &changelogUID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if changelog == nil {
+			return nil, errors.Errorf("changelog %d not found", changelogUID)
+		}
+
+		// Use SyncHistoryUID to get historical metadata
+		if changelog.SyncHistoryUID != nil {
+			syncHistory, err := s.store.GetSyncHistoryByUID(ctx, *changelog.SyncHistoryUID)
+			if err != nil {
+				return nil, err
+			}
+			if syncHistory == nil {
+				return nil, errors.Errorf("sync history %d not found", *changelog.SyncHistoryUID)
+			}
+
+			// Get instance to determine engine and case sensitivity
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+			if err != nil {
+				return nil, err
+			}
+			if instance == nil {
+				return nil, errors.Errorf("instance %s not found", instanceID)
+			}
+
+			return model.NewDatabaseSchema(
+				syncHistory.Metadata,
+				[]byte(syncHistory.Schema),
+				&storepb.DatabaseConfig{},
+				instance.Metadata.GetEngine(),
+				store.IsObjectCaseSensitive(instance),
+			), nil
+		}
+
+		// Fallback to current database schema if no sync history
+		dbSchema, err := s.store.GetDBSchema(ctx, instanceID, databaseName)
+		if err != nil {
+			return nil, err
+		}
+		if dbSchema == nil {
+			return nil, errors.Errorf("database schema not found for %s/%s", instanceID, databaseName)
+		}
+		return dbSchema, nil
+	}
+
+	// If schema is provided, we need to parse it - for now, return an error as this case needs more implementation
+	schema := request.GetSchema()
+	if schema != "" {
+		return nil, errors.Errorf("schema string target not yet supported with metadata-based diffing")
+	}
+
+	return nil, errors.Errorf("must set the schema or change history id as the target")
 }
 
 func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {

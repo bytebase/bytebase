@@ -50,6 +50,57 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 		description   string
 	}{
 		{
+			name:          "drop_table_with_dependencies",
+			initialSchema: ``,
+			migrationDDL: `
+--
+-- Table structure for authors
+--
+CREATE TABLE authors (
+  id int NOT NULL AUTO_INCREMENT,
+  name varchar(100) NOT NULL,
+  email varchar(100) DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for books
+--
+CREATE TABLE books (
+  id int NOT NULL AUTO_INCREMENT,
+  title varchar(200) NOT NULL,
+  author_id int NOT NULL,
+  isbn varchar(20) DEFAULT NULL,
+  published_year int DEFAULT NULL,
+  price decimal(8,2) DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_author (author_id),
+  KEY idx_year (published_year),
+  UNIQUE KEY uk_isbn (isbn),
+  CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors (id),
+  CONSTRAINT chk_price_positive CHECK (price > 0),
+  CONSTRAINT chk_year_valid CHECK ((published_year >= 1000) and (published_year <= 2100))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+--
+-- Table structure for products
+--
+CREATE TABLE products (
+  id int NOT NULL AUTO_INCREMENT,
+  name varchar(50) NOT NULL,
+  price decimal(8,2) NOT NULL,
+  description text DEFAULT NULL,
+  category varchar(30) DEFAULT NULL,
+  is_active tinyint(1) DEFAULT '1',
+  PRIMARY KEY (id),
+  KEY idx_category (category),
+  KEY idx_price (price)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+			`,
+		},
+		{
 			name: "create_tables_with_fk",
 			initialSchema: `
 CREATE TABLE users (
@@ -971,6 +1022,564 @@ CREATE TABLE analytics (
 ) ENGINE=InnoDB COMMENT = 'Analytics events tracking - stores user interactions & system events. Data retention: 2 years. Access level: "admin" & "analyst" roles only.';
 `,
 			description: "Test comments with special characters, quotes, multiline text, and Unicode",
+		},
+		// Reverse test cases
+		{
+			name: "reverse_drop_table_with_dependencies",
+			initialSchema: `
+CREATE TABLE authors (
+  id int NOT NULL AUTO_INCREMENT,
+  name varchar(100) NOT NULL,
+  email varchar(100) DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE books (
+  id int NOT NULL AUTO_INCREMENT,
+  title varchar(200) NOT NULL,
+  author_id int NOT NULL,
+  isbn varchar(20) DEFAULT NULL,
+  published_year int DEFAULT NULL,
+  price decimal(8,2) DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_author (author_id),
+  KEY idx_year (published_year),
+  UNIQUE KEY uk_isbn (isbn),
+  CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors (id),
+  CONSTRAINT chk_price_positive CHECK (price > 0),
+  CONSTRAINT chk_year_valid CHECK ((published_year >= 1000) and (published_year <= 2100))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE products (
+  id int NOT NULL AUTO_INCREMENT,
+  name varchar(50) NOT NULL,
+  price decimal(8,2) NOT NULL,
+  description text DEFAULT NULL,
+  category varchar(30) DEFAULT NULL,
+  is_active tinyint(1) DEFAULT '1',
+  PRIMARY KEY (id),
+  KEY idx_category (category),
+  KEY idx_price (price)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+			`,
+			migrationDDL: `
+DROP TABLE books;
+DROP TABLE authors;
+DROP TABLE products;
+			`,
+			description: "Reverse: Drop tables with foreign key dependencies",
+		},
+		{
+			name:          "reverse_create_tables_with_fk",
+			initialSchema: ``,
+			migrationDDL: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email),
+    INDEX idx_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published_at DATETIME,
+    PRIMARY KEY (id),
+    INDEX idx_user_id (user_id),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+			`,
+			description: "Reverse: Create tables with foreign key constraints",
+		},
+		{
+			name: "reverse_basic_table_operations",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT true,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_email (email),
+    INDEX idx_username (username),
+    INDEX idx_email_active (email, is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE posts (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published_at DATETIME,
+    PRIMARY KEY (id),
+    INDEX idx_user_id (user_id),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE comments (
+    id INT NOT NULL AUTO_INCREMENT,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_post_user (post_id, user_id),
+    CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+			`,
+			migrationDDL: `
+-- Drop table
+DROP TABLE comments;
+
+-- Remove constraints
+ALTER TABLE posts DROP CHECK chk_title_length;
+
+-- Drop index
+DROP INDEX idx_email_active ON users;
+
+-- Drop column
+ALTER TABLE users DROP COLUMN is_active;
+			`,
+			description: "Reverse: Basic table operations",
+		},
+		{
+			name: "reverse_views_and_triggers",
+			initialSchema: `
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    stock INT DEFAULT 0,
+    PRIMARY KEY (id),
+    INDEX idx_name (name)
+) ENGINE=InnoDB;
+
+CREATE TABLE orders (
+    id INT NOT NULL AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    total DECIMAL(10, 2),
+    order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+) ENGINE=InnoDB;
+
+CREATE VIEW product_inventory AS
+SELECT 
+    p.id,
+    p.name,
+    p.price,
+    p.stock,
+    COALESCE(SUM(o.quantity), 0) AS total_ordered
+FROM products p
+LEFT JOIN orders o ON p.id = o.product_id
+GROUP BY p.id, p.name, p.price, p.stock;
+
+CREATE VIEW low_stock_products AS
+SELECT * FROM products WHERE stock < 10;
+
+CREATE TRIGGER update_order_total
+BEFORE INSERT ON orders
+FOR EACH ROW
+BEGIN
+    DECLARE product_price DECIMAL(10, 2);
+    SELECT price INTO product_price FROM products WHERE id = NEW.product_id;
+    SET NEW.total = NEW.quantity * product_price;
+END;
+
+CREATE PROCEDURE GetProductInventory(IN product_name VARCHAR(100))
+BEGIN
+    SELECT * FROM product_inventory
+    WHERE name LIKE CONCAT('%', product_name, '%');
+END;
+			`,
+			migrationDDL: `
+-- Drop procedure
+DROP PROCEDURE GetProductInventory;
+
+-- Drop trigger
+DROP TRIGGER update_order_total;
+
+-- Drop views
+DROP VIEW low_stock_products;
+DROP VIEW product_inventory;
+			`,
+			description: "Reverse: Views and triggers",
+		},
+		{
+			name: "reverse_stored_functions",
+			initialSchema: `
+CREATE TABLE sales (
+    id INT NOT NULL AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    sale_date DATE NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_product_date (product_id, sale_date)
+) ENGINE=InnoDB;
+
+CREATE TABLE sales_summary (
+    id INT NOT NULL AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    month_year VARCHAR(7) NOT NULL,
+    total_sales DECIMAL(10, 2),
+    tax_amount DECIMAL(10, 2),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_product_month (product_id, month_year)
+) ENGINE=InnoDB;
+
+CREATE FUNCTION CalculateTotalSales(p_product_id INT, p_start_date DATE, p_end_date DATE)
+RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE total DECIMAL(10, 2);
+    
+    SELECT COALESCE(SUM(quantity * unit_price), 0) INTO total
+    FROM sales
+    WHERE product_id = p_product_id
+    AND sale_date BETWEEN p_start_date AND p_end_date;
+    
+    RETURN total;
+END;
+
+CREATE FUNCTION GetTaxAmount(amount DECIMAL(10, 2), tax_rate DECIMAL(5, 2))
+RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+NO SQL
+BEGIN
+    RETURN amount * (tax_rate / 100);
+END;
+			`,
+			migrationDDL: `
+-- Drop functions
+DROP FUNCTION CalculateTotalSales;
+DROP FUNCTION GetTaxAmount;
+
+-- Drop table
+DROP TABLE sales_summary;
+			`,
+			description: "Reverse: Stored functions",
+		},
+		{
+			name: "reverse_drop_indexes_and_constraints",
+			initialSchema: `
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    category VARCHAR(50),
+    price DECIMAL(10, 2),
+    sku VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+			`,
+			migrationDDL: `
+-- Add indexes and constraints
+CREATE INDEX idx_name ON products(name);
+CREATE INDEX idx_category ON products(category);
+CREATE INDEX idx_price ON products(price);
+ALTER TABLE products ADD UNIQUE KEY uk_sku (sku);
+ALTER TABLE products ADD CONSTRAINT chk_price_positive CHECK (price > 0);
+ALTER TABLE products ADD CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 3);
+			`,
+			description: "Reverse: Add indexes and constraints",
+		},
+		{
+			name: "reverse_alter_table_columns",
+			initialSchema: `
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(50),
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    stock_quantity INT DEFAULT 0,
+    weight DECIMAL(5, 2),
+    PRIMARY KEY (id),
+    INDEX idx_category (category),
+    INDEX idx_price (price),
+    INDEX idx_created_at (created_at),
+    UNIQUE INDEX uk_name_category (name, category),
+    CONSTRAINT chk_price_positive CHECK (price > 0),
+    CONSTRAINT chk_stock_non_negative CHECK (stock_quantity >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+			`,
+			migrationDDL: `
+-- Drop constraints
+ALTER TABLE products DROP CHECK chk_price_positive;
+ALTER TABLE products DROP CHECK chk_stock_non_negative;
+
+-- Drop indexes
+DROP INDEX idx_created_at ON products;
+DROP INDEX uk_name_category ON products;
+
+-- Drop columns
+ALTER TABLE products DROP COLUMN created_at;
+ALTER TABLE products DROP COLUMN updated_at;
+ALTER TABLE products DROP COLUMN stock_quantity;
+ALTER TABLE products DROP COLUMN weight;
+
+-- Modify columns
+ALTER TABLE products MODIFY COLUMN name VARCHAR(50) NOT NULL;
+ALTER TABLE products MODIFY COLUMN price DECIMAL(8, 2) NOT NULL;
+ALTER TABLE products MODIFY COLUMN description TEXT;
+ALTER TABLE products MODIFY COLUMN category VARCHAR(30);
+			`,
+			description: "Reverse: Alter table columns",
+		},
+		{
+			name: "reverse_fulltext_and_spatial_indexes",
+			initialSchema: `
+CREATE TABLE articles (
+    id INT NOT NULL AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    tags VARCHAR(500),
+    PRIMARY KEY (id),
+    FULLTEXT idx_fulltext_content (title, content),
+    FULLTEXT idx_fulltext_tags (tags),
+    INDEX idx_title_tags (title(50), tags(50))
+) ENGINE=InnoDB;
+
+CREATE TABLE locations (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    position POINT NOT NULL,
+    PRIMARY KEY (id),
+    SPATIAL INDEX idx_spatial_position (position)
+) ENGINE=InnoDB;
+			`,
+			migrationDDL: `
+-- Drop indexes
+DROP INDEX idx_fulltext_content ON articles;
+DROP INDEX idx_fulltext_tags ON articles;
+DROP INDEX idx_title_tags ON articles;
+DROP INDEX idx_spatial_position ON locations;
+			`,
+			description: "Reverse: Drop FULLTEXT and SPATIAL indexes",
+		},
+		{
+			name: "reverse_generated_columns",
+			initialSchema: `
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    tax_rate DECIMAL(5, 2) DEFAULT 8.0,
+    price_with_tax DECIMAL(10, 2) AS (price * (1 + tax_rate / 100)) STORED,
+    name_upper VARCHAR(100) AS (UPPER(name)) VIRTUAL,
+    PRIMARY KEY (id),
+    INDEX idx_price_with_tax (price_with_tax),
+    INDEX idx_name_upper (name_upper)
+) ENGINE=InnoDB;
+
+CREATE TABLE order_summary (
+    id INT NOT NULL AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    total_price DECIMAL(10, 2) AS (quantity * unit_price) STORED,
+    order_date DATE NOT NULL,
+    order_year INT AS (YEAR(order_date)) VIRTUAL,
+    order_month INT AS (MONTH(order_date)) VIRTUAL,
+    PRIMARY KEY (id),
+    INDEX idx_year_month (order_year, order_month)
+) ENGINE=InnoDB;
+			`,
+			migrationDDL: `
+-- Drop table
+DROP TABLE order_summary;
+
+-- Drop indexes
+DROP INDEX idx_price_with_tax ON products;
+DROP INDEX idx_name_upper ON products;
+
+-- Drop generated columns
+ALTER TABLE products DROP COLUMN price_with_tax;
+ALTER TABLE products DROP COLUMN name_upper;
+			`,
+			description: "Reverse: Drop generated columns",
+		},
+		{
+			name: "reverse_json_columns_and_indexes",
+			initialSchema: `
+CREATE TABLE users (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    preferences JSON,
+    metadata JSON,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE products (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    details JSON NOT NULL,
+    tags JSON,
+    brand VARCHAR(50) AS (details->>'$.brand') VIRTUAL,
+    PRIMARY KEY (id),
+    INDEX idx_product_brand ((CAST(details->>'$.brand' AS CHAR(50)))),
+    INDEX idx_product_price ((CAST(details->>'$.price' AS DECIMAL(10,2)))),
+    INDEX idx_brand (brand),
+    CONSTRAINT chk_details_not_empty CHECK (JSON_TYPE(details) IS NOT NULL)
+) ENGINE=InnoDB;
+			`,
+			migrationDDL: `
+-- Drop table
+DROP TABLE products;
+
+-- Drop columns
+ALTER TABLE users DROP COLUMN preferences;
+ALTER TABLE users DROP COLUMN metadata;
+			`,
+			description: "Reverse: Drop JSON columns and indexes",
+		},
+		{
+			name: "reverse_complex_triggers",
+			initialSchema: `
+CREATE TABLE inventory (
+    id INT NOT NULL AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 0,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_product (product_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE inventory_log (
+    id INT NOT NULL AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    old_quantity INT,
+    new_quantity INT,
+    change_type VARCHAR(20),
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+
+CREATE TRIGGER trg_inventory_insert
+AFTER INSERT ON inventory
+FOR EACH ROW
+BEGIN
+    INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+    VALUES (NEW.product_id, NULL, NEW.quantity, 'INSERT');
+END;
+
+CREATE TRIGGER trg_inventory_update
+AFTER UPDATE ON inventory
+FOR EACH ROW
+BEGIN
+    IF OLD.quantity != NEW.quantity THEN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (NEW.product_id, OLD.quantity, NEW.quantity, 'UPDATE');
+    END IF;
+END;
+
+CREATE TRIGGER trg_inventory_delete
+BEFORE DELETE ON inventory
+FOR EACH ROW
+BEGIN
+    INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+    VALUES (OLD.product_id, OLD.quantity, NULL, 'DELETE');
+END;
+
+CREATE VIEW inventory_changes AS
+SELECT 
+    product_id,
+    COUNT(*) AS change_count,
+    MAX(changed_at) AS last_changed
+FROM inventory_log
+GROUP BY product_id;
+			`,
+			migrationDDL: `
+-- Drop view
+DROP VIEW inventory_changes;
+
+-- Drop triggers
+DROP TRIGGER trg_inventory_delete;
+DROP TRIGGER trg_inventory_update;
+DROP TRIGGER trg_inventory_insert;
+			`,
+			description: "Reverse: Drop triggers and views",
+		},
+		{
+			name: "reverse_events_and_advanced_features",
+			initialSchema: `
+CREATE TABLE system_stats (
+    id INT NOT NULL AUTO_INCREMENT,
+    stat_name VARCHAR(100) NOT NULL,
+    stat_value DECIMAL(10, 2),
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+
+CREATE EVENT IF NOT EXISTS evt_cleanup_old_stats
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    DELETE FROM system_stats 
+    WHERE recorded_at < DATE_SUB(NOW(), INTERVAL 30 DAY);
+END;
+
+CREATE PROCEDURE RecordSystemStat(
+    IN p_stat_name VARCHAR(100),
+    IN p_stat_value DECIMAL(10, 2)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+    
+    START TRANSACTION;
+    
+    INSERT INTO system_stats (stat_name, stat_value)
+    VALUES (p_stat_name, p_stat_value);
+    
+    COMMIT;
+END;
+
+CREATE FUNCTION GetAverageStat(p_stat_name VARCHAR(100))
+RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE avg_value DECIMAL(10, 2);
+    
+    SELECT AVG(stat_value) INTO avg_value
+    FROM system_stats
+    WHERE stat_name = p_stat_name
+    AND recorded_at >= DATE_SUB(NOW(), INTERVAL 7 DAY);
+    
+    RETURN COALESCE(avg_value, 0);
+END;
+			`,
+			migrationDDL: `
+-- Drop event
+DROP EVENT IF EXISTS evt_cleanup_old_stats;
+
+-- Drop procedure
+DROP PROCEDURE RecordSystemStat;
+
+-- Drop function
+DROP FUNCTION GetAverageStat;
+			`,
+			description: "Reverse: Drop events and advanced features",
 		},
 	}
 
