@@ -352,8 +352,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, err
 		}
-		// Quoted string has a single quote around it.
-		column.Comment = stripSingleQuote(column.Comment)
+		// Quoted string has a single quote around it and is escaped by QUOTE().
+		column.Comment = unquoteMySQLString(column.Comment)
 		if defaultStr.Valid {
 			defaultStr.String = stripSingleQuote(defaultStr.String)
 		}
@@ -547,8 +547,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, err
 		}
-		// Quoted string has a single quote around it.
-		comment = stripSingleQuote(comment)
+		// Quoted string has a single quote around it and is escaped by QUOTE().
+		comment = unquoteMySQLString(comment)
 
 		// Note: We should NOT skip partitioned tables here.
 		// The CREATE_OPTIONS might contain 'partitioned' for partitioned tables,
@@ -1347,4 +1347,58 @@ func stripSingleQuote(s string) string {
 		return s[1 : len(s)-1]
 	}
 	return s
+}
+
+// unquoteMySQLString unescapes a string that was escaped by MySQL's QUOTE() function.
+// MySQL's QUOTE() function escapes:
+// - \ → \\
+// - ' → \'
+// - ASCII NUL (0x00) → \0
+// - Control-Z (0x1A) → \Z
+func unquoteMySQLString(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	// First remove surrounding quotes if present
+	s = stripSingleQuote(s)
+
+	// Now unescape the content
+	result := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			switch s[i+1] {
+			case '\\':
+				result = append(result, '\\')
+				i++ // skip next character
+			case '\'':
+				result = append(result, '\'')
+				i++ // skip next character
+			case '0':
+				result = append(result, 0) // ASCII NUL
+				i++                        // skip next character
+			case 'Z':
+				result = append(result, 0x1A) // Control-Z
+				i++                           // skip next character
+			case 'n':
+				result = append(result, '\n') // newline
+				i++                           // skip next character
+			case 't':
+				result = append(result, '\t') // tab
+				i++                           // skip next character
+			case 'r':
+				result = append(result, '\r') // carriage return
+				i++                           // skip next character
+			case 'b':
+				result = append(result, '\b') // backspace
+				i++                           // skip next character
+			default:
+				// Unknown escape sequence, keep the backslash
+				result = append(result, s[i])
+			}
+		} else {
+			result = append(result, s[i])
+		}
+	}
+	return string(result)
 }
