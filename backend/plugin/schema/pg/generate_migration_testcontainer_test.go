@@ -1263,7 +1263,7 @@ ALTER TABLE books ADD CONSTRAINT check_price_positive CHECK (price > 0);
 			description: "Reverse of drop_and_recreate_constraints: Reverse the constraint changes",
 		},
 		{
-			name: "reverse_drop_sequence_and_type",
+			name:          "reverse_drop_sequence_and_type",
 			initialSchema: ``,
 			migrationDDL: `
 -- Create schema and objects
@@ -1364,7 +1364,7 @@ DROP TABLE categories;
 			description: "Reverse of mixed_operations_complex: Reverse all mixed operations",
 		},
 		{
-			name: "reverse_create_tables_with_fk",
+			name:          "reverse_create_tables_with_fk",
 			initialSchema: ``,
 			migrationDDL: `
 CREATE TABLE users (
