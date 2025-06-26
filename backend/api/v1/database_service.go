@@ -822,7 +822,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get parser engine, error: %v", err))
 		}
 
-		schemaDiff, err := schema.GetDatabaseSchemaDiff(sourceDBSchema, targetDBSchema)
+		schemaDiff, err := schema.GetDatabaseSchemaDiff(engine, sourceDBSchema, targetDBSchema)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute schema diff, error: %v", err))
 		}

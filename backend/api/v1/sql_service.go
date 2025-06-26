@@ -1756,7 +1756,7 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	targetDBSchema := model.NewDatabaseSchema(storeTargetMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
 
 	// Get the metadata diff between source and target
-	metadataDiff, err := schema.GetDatabaseSchemaDiff(sourceDBSchema, targetDBSchema)
+	metadataDiff, err := schema.GetDatabaseSchemaDiff(storepb.Engine(request.Engine), sourceDBSchema, targetDBSchema)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute diff between source and target schemas, error: %v", err))
 	}

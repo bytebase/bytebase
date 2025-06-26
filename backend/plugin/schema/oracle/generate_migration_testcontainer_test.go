@@ -1810,7 +1810,7 @@ COMMENT ON TABLE SPECIAL_DATA IS '';
 			dbSchemaB := model.NewDatabaseSchema(schemaB, nil, nil, storepb.Engine_ORACLE, false)
 
 			// Get diff from B to A (to generate rollback)
-			diff, err := schema.GetDatabaseSchemaDiff(dbSchemaB, dbSchemaA)
+			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_ORACLE, dbSchemaB, dbSchemaA)
 			require.NoError(t, err)
 
 			// Generate rollback migration
