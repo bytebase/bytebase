@@ -82,6 +82,7 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
     const resp = await next(req);
     return resp;
   } catch (error) {
+    const authStore = useAuthStore();
     // If silent is set to true, will NOT show redirect to other pages(e.g., 403, sign in page).
     const silent = req.contextValues.get(silentContextKey);
     const ignoredCodes = req.contextValues.get(ignoredCodesContextKey);
@@ -91,17 +92,19 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
       if (ignoredCodes?.includes(code)) {
         // omit specified errors
       } else {
-        if (code === Code.Unauthenticated) {
+        if (code === Code.Unauthenticated && req.method.name !== "Login") {
           // Skip show login modal when the request is to get current user.
           // When receiving 401 and is returned by our server, it means the current
           // login user's token becomes invalid. Thus we force the user to login again.
-          useAuthStore().unauthenticatedOccurred = true;
-          pushNotification({
-            module: "bytebase",
-            style: "WARN",
-            title: t("auth.token-expired-title"),
-            description: t("auth.token-expired-description"),
-          });
+          authStore.unauthenticatedOccurred = true;
+          if (authStore.isLoggedIn) {
+            pushNotification({
+              module: "bytebase",
+              style: "WARN",
+              title: t("auth.token-expired-title"),
+              description: t("auth.token-expired-description"),
+            });
+          }
         } else if (code === Code.PermissionDenied) {
           // Jump to 403 page
           router.push({ name: "error.403" });

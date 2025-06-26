@@ -94,7 +94,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 		}
 		user, err := s.store.GetUserByID(ctx, userID)
 		if err != nil {
-			return nil, err
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user, error"))
 		}
 		if user == nil {
 			return nil, invalidUserOrPasswordError

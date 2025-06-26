@@ -1,9 +1,12 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { Code } from "@connectrpc/connect";
 import { useLocalStorage } from "@vueuse/core";
 import { uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { authServiceClientConnect, userServiceClientConnect } from "@/grpcweb";
+import { ignoredCodesContextKey } from "@/grpcweb/context-key";
 import { router } from "@/router";
 import {
   AUTH_SIGNIN_MODULE,
@@ -73,7 +76,11 @@ export const useAuthStore = defineStore("auth_v1", () => {
   };
 
   const login = async (request: LoginRequest, redirect: string = "") => {
-    const resp = await authServiceClientConnect.login(request);
+    const resp = await authServiceClientConnect.login(request, {
+      contextValues: createContextValues().set(ignoredCodesContextKey, [
+        Code.NotFound,
+      ]),
+    });
     const redirectUrl = redirect || getRedirectQuery() || "/";
     if (resp.mfaTempToken) {
       unauthenticatedOccurred.value = false;
