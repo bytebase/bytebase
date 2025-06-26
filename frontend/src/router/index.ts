@@ -10,7 +10,6 @@ import {
   useProjectV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
-  useSQLEditorTabStore,
 } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import authRoutes, {
