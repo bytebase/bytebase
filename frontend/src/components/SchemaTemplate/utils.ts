@@ -1,34 +1,61 @@
 import { cloneDeep } from "lodash-es";
 import { computed, reactive } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { useSettingV1Store } from "@/store";
 import { unknownDatabase, type ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
-  DatabaseCatalog,
-  SchemaCatalog,
-  TableCatalog,
-  TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
+  DatabaseCatalogSchema,
+  SchemaCatalogSchema,
+  type TableCatalog,
+  TableCatalogSchema,
+  TableCatalog_ColumnsSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
-  DatabaseMetadata,
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
-import {
+  DatabaseMetadataSchema,
+  SchemaMetadataSchema,
+  type TableMetadata,
+  TableMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import type {
   SchemaTemplateSetting_TableTemplate,
   DataClassificationSetting_DataClassificationConfig,
+} from "@/types/proto-es/v1/setting_service_pb";
+import {
+  SchemaTemplateSetting_TableTemplateSchema,
   Setting_SettingName,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto-es/v1/setting_service_pb";
 
 export const engineList = [Engine.MYSQL, Engine.POSTGRES];
+
+// Create empty schema template table template
+export const createEmptyTableTemplate = (): SchemaTemplateSetting_TableTemplate => {
+  return create(SchemaTemplateSetting_TableTemplateSchema, {
+    id: "",
+    category: "",
+    engine: Engine.ENGINE_UNSPECIFIED,
+    table: create(TableMetadataSchema, {}),
+    catalog: create(TableCatalogSchema, {
+      name: "",
+      kind: {
+        case: "columns",
+        value: create(TableCatalog_ColumnsSchema, {}),
+      },
+    }),
+  });
+};
 
 export const categoryList = computed(() => {
   const settingStore = useSettingV1Store();
   const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
-  const fieldTemplateList =
-    setting?.value?.schemaTemplateSettingValue?.fieldTemplates ?? [];
-  const tableTemplateList =
-    setting?.value?.schemaTemplateSettingValue?.tableTemplates ?? [];
+  
+  if (!setting || !setting.value || setting.value.value.case !== "schemaTemplateSettingValue") {
+    return [];
+  }
+  
+  const schemaTemplateSetting = setting.value.value.value;
+  const fieldTemplateList = schemaTemplateSetting.fieldTemplates ?? [];
+  const tableTemplateList = schemaTemplateSetting.tableTemplates ?? [];
   const resp = [];
 
   for (const category of new Set([
@@ -46,8 +73,14 @@ export const categoryList = computed(() => {
 export const classificationConfig = computed(
   (): DataClassificationSetting_DataClassificationConfig | undefined => {
     const settingStore = useSettingV1Store();
-    // TODO(ed): it's a temporary solution
-    return settingStore.classification[0];
+    const setting = settingStore.getSettingByName(Setting_SettingName.DATA_CLASSIFICATION);
+    
+    if (!setting || !setting.value || setting.value.value.case !== "dataClassificationSettingValue") {
+      return undefined;
+    }
+    
+    const configs = setting.value.value.value.configs;
+    return configs.length > 0 ? configs[0] : undefined;
   }
 );
 
@@ -58,32 +91,35 @@ export const mockMetadataFromTableTemplate = (
     ...unknownDatabase(),
   };
   const tableMetadata =
-    cloneDeep(template.table) ?? TableMetadata.fromPartial({});
-  const schemaMetadata = SchemaMetadata.fromPartial({
+    cloneDeep(template.table) ?? create(TableMetadataSchema, {});
+  const schemaMetadata = create(SchemaMetadataSchema, {
     name: "",
     tables: [tableMetadata],
   });
 
   const tableCatalog =
     cloneDeep(template.catalog) ??
-    TableCatalog.fromPartial({
+    create(TableCatalogSchema, {
       name: "",
-      columns: TableCatalog_Columns.fromPartial({}),
+      kind: {
+        case: "columns",
+        value: create(TableCatalog_ColumnsSchema, {}),
+      },
     });
-  const databaseMetadata = DatabaseMetadata.fromPartial({
+  const databaseMetadata = create(DatabaseMetadataSchema, {
     name: db.name,
     schemas: [
-      SchemaMetadata.fromPartial({
+      create(SchemaMetadataSchema, {
         name: "",
-        tables: [cloneDeep(template.table) ?? TableMetadata.fromPartial({})],
+        tables: [cloneDeep(template.table) ?? create(TableMetadataSchema, {})],
       }),
     ],
   });
-  const schemaCatalog = SchemaCatalog.fromPartial({
+  const schemaCatalog = create(SchemaCatalogSchema, {
     name: "",
     tables: [tableCatalog],
   });
-  const databaseCatalog = DatabaseCatalog.fromPartial({
+  const databaseCatalog = create(DatabaseCatalogSchema, {
     name: db.name,
     schemas: [schemaCatalog],
   });
@@ -111,7 +147,7 @@ export const rebuildTableTemplateFromMetadata = (params: {
 }) => {
   const { tableMetadata, tableCatalog, id, category, engine } = params;
 
-  return SchemaTemplateSetting_TableTemplate.fromPartial({
+  return create(SchemaTemplateSetting_TableTemplateSchema, {
     table: tableMetadata,
     catalog: tableCatalog,
     id,

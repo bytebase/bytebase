@@ -1,6 +1,7 @@
+import { create } from '@bufbuild/protobuf';
 import { environmentNamePrefix } from "@/store";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
-import type { EnvironmentSetting_Environment } from "../proto/v1/setting_service";
+import { EnvironmentSetting_EnvironmentSchema, type EnvironmentSetting_Environment } from "../proto-es/v1/setting_service_pb";
 
 export const ENVIRONMENT_ALL_NAME = "environments/-";
 export const EMPTY_ENVIRONMENT_NAME = `environments/${EMPTY_ID}`;
@@ -12,12 +13,14 @@ export interface Environment extends EnvironmentSetting_Environment {
 
 export const unknownEnvironment = (): Environment => {
   return {
-    name: UNKNOWN_ENVIRONMENT_NAME,
-    id: String(UNKNOWN_ID),
-    title: "<<Unknown environment>>",
+    ...create(EnvironmentSetting_EnvironmentSchema, {
+      name: UNKNOWN_ENVIRONMENT_NAME,
+      id: String(UNKNOWN_ID),
+      title: "<<Unknown environment>>",
+      tags: {},
+      color: "",
+    }),
     order: 0,
-    tags: {},
-    color: "",
   };
 };
 

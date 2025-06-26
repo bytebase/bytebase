@@ -114,7 +114,7 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { emptyProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import WorkspaceMode from "./WorkspaceMode.vue";
 
 interface LocalState {
@@ -230,7 +230,9 @@ onMounted(async () => {
     );
     return onCancel(
       getHomePageByMode(
-        profileSetting?.value?.workspaceProfileSettingValue?.databaseChangeMode
+        profileSetting?.value?.value?.case === "workspaceProfileSettingValue" 
+          ? profileSetting.value.value.value.databaseChangeMode 
+          : undefined
       )
     );
   }

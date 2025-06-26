@@ -31,7 +31,7 @@
     <DrawerContent :title="$t('schema-template.table-template.self')">
       <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
         <TableTemplates
-          :engine="engine"
+          :engine="convertOldEngineToNew(engine)"
           :readonly="true"
           @apply="handleApplyTemplate"
         />
@@ -44,19 +44,26 @@
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { Engine as NewEngine } from "@/types/proto-es/v1/common_pb";
 import {
   TableCatalog,
   TableCatalog_Columns,
 } from "@/types/proto/v1/database_catalog_service";
-import type {
+import {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
+  ColumnMetadata,
 } from "@/types/proto/v1/database_service";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import type {
+  TableMetadata as NewTableMetadata,
+  ColumnMetadata as NewColumnMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, pick } from "lodash-es";
+import { pick } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
@@ -109,6 +116,103 @@ const {
   showClassificationColumn,
   classificationConfig,
 } = useSchemaEditorContext();
+
+// Conversion function for Engine types at service boundaries
+const convertNewEngineToOld = (engine: NewEngine): Engine => {
+  switch (engine) {
+    case NewEngine.ENGINE_UNSPECIFIED: return Engine.ENGINE_UNSPECIFIED;
+    case NewEngine.MYSQL: return Engine.MYSQL;
+    case NewEngine.POSTGRES: return Engine.POSTGRES;
+    case NewEngine.CLICKHOUSE: return Engine.CLICKHOUSE;
+    case NewEngine.SNOWFLAKE: return Engine.SNOWFLAKE;
+    case NewEngine.SQLITE: return Engine.SQLITE;
+    case NewEngine.TIDB: return Engine.TIDB;
+    case NewEngine.MONGODB: return Engine.MONGODB;
+    case NewEngine.REDIS: return Engine.REDIS;
+    case NewEngine.ORACLE: return Engine.ORACLE;
+    case NewEngine.SPANNER: return Engine.SPANNER;
+    case NewEngine.MSSQL: return Engine.MSSQL;
+    case NewEngine.REDSHIFT: return Engine.REDSHIFT;
+    case NewEngine.MARIADB: return Engine.MARIADB;
+    case NewEngine.OCEANBASE: return Engine.OCEANBASE;
+    case NewEngine.DM: return Engine.DM;
+    case NewEngine.RISINGWAVE: return Engine.RISINGWAVE;
+    case NewEngine.OCEANBASE_ORACLE: return Engine.OCEANBASE_ORACLE;
+    case NewEngine.STARROCKS: return Engine.STARROCKS;
+    case NewEngine.DORIS: return Engine.DORIS;
+    case NewEngine.HIVE: return Engine.HIVE;
+    case NewEngine.ELASTICSEARCH: return Engine.ELASTICSEARCH;
+    case NewEngine.BIGQUERY: return Engine.BIGQUERY;
+    case NewEngine.DATABRICKS: return Engine.DATABRICKS;
+    default: return Engine.ENGINE_UNSPECIFIED;
+  }
+};
+
+// Conversion function from old Engine types to new Engine types
+const convertOldEngineToNew = (engine: Engine): NewEngine => {
+  switch (engine) {
+    case Engine.ENGINE_UNSPECIFIED: return NewEngine.ENGINE_UNSPECIFIED;
+    case Engine.MYSQL: return NewEngine.MYSQL;
+    case Engine.POSTGRES: return NewEngine.POSTGRES;
+    case Engine.CLICKHOUSE: return NewEngine.CLICKHOUSE;
+    case Engine.SNOWFLAKE: return NewEngine.SNOWFLAKE;
+    case Engine.SQLITE: return NewEngine.SQLITE;
+    case Engine.TIDB: return NewEngine.TIDB;
+    case Engine.MONGODB: return NewEngine.MONGODB;
+    case Engine.REDIS: return NewEngine.REDIS;
+    case Engine.ORACLE: return NewEngine.ORACLE;
+    case Engine.SPANNER: return NewEngine.SPANNER;
+    case Engine.MSSQL: return NewEngine.MSSQL;
+    case Engine.REDSHIFT: return NewEngine.REDSHIFT;
+    case Engine.MARIADB: return NewEngine.MARIADB;
+    case Engine.OCEANBASE: return NewEngine.OCEANBASE;
+    case Engine.DM: return NewEngine.DM;
+    case Engine.RISINGWAVE: return NewEngine.RISINGWAVE;
+    case Engine.OCEANBASE_ORACLE: return NewEngine.OCEANBASE_ORACLE;
+    case Engine.STARROCKS: return NewEngine.STARROCKS;
+    case Engine.DORIS: return NewEngine.DORIS;
+    case Engine.HIVE: return NewEngine.HIVE;
+    case Engine.ELASTICSEARCH: return NewEngine.ELASTICSEARCH;
+    case Engine.BIGQUERY: return NewEngine.BIGQUERY;
+    case Engine.DATABRICKS: return NewEngine.DATABRICKS;
+    default: return NewEngine.ENGINE_UNSPECIFIED;
+  }
+};
+
+// Conversion function for TableMetadata at service boundaries
+const convertNewTableToOld = (newTable: NewTableMetadata): TableMetadata => {
+  return TableMetadata.fromPartial({
+    name: newTable.name,
+    columns: newTable.columns.map(convertNewColumnToOld),
+    engine: newTable.engine,
+    collation: newTable.collation,
+    userComment: newTable.userComment,
+    comment: newTable.comment,
+    indexes: [], // Initialize empty, will be handled separately if needed
+    partitions: [], // Initialize empty, will be handled separately if needed
+    foreignKeys: [], // Initialize empty, will be handled separately if needed
+  });
+};
+
+// Conversion function for ColumnMetadata at service boundaries
+const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => {
+  return ColumnMetadata.fromPartial({
+    name: newColumn.name,
+    position: newColumn.position,
+    hasDefault: newColumn.hasDefault,
+    defaultNull: newColumn.defaultNull,
+    defaultString: newColumn.defaultString,
+    defaultExpression: newColumn.defaultExpression,
+    onUpdate: newColumn.onUpdate,
+    nullable: newColumn.nullable,
+    type: newColumn.type,
+    characterSet: newColumn.characterSet,
+    collation: newColumn.collation,
+    userComment: newColumn.userComment,
+    comment: newColumn.comment,
+    // classification, labels, effectiveMaskingLevel are not available in old proto types
+  });
+};
 const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
@@ -370,11 +474,11 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   if (!template.table) {
     return;
   }
-  if (template.engine !== engine.value) {
+  if (convertNewEngineToOld(template.engine) !== engine.value) {
     return;
   }
 
-  const table = cloneDeep(template.table);
+  const table = convertNewTableToOld(template.table);
   /* eslint-disable-next-line vue/no-mutating-props */
   props.schema.tables.push(table);
   const metadata = metadataForTable(table);

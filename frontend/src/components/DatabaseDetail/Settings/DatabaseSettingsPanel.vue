@@ -50,7 +50,7 @@ import {
   environmentNamePrefix,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import Labels from "./components/Labels.vue";
 import Secrets from "./components/Secrets.vue";
 

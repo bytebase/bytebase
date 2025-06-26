@@ -32,7 +32,7 @@ import projectV1Routes, {
 import { useAppFeature } from "@/store";
 import type { ComposedProject, MaybeRef } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {

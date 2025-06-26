@@ -152,7 +152,7 @@ import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   TinyTimer,
   defer,

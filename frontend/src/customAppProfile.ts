@@ -3,17 +3,18 @@ import i18n from "./plugins/i18n";
 import { useActuatorV1Store, useSettingByName } from "./store";
 import { defaultAppProfile } from "./types";
 import {
-  DatabaseChangeMode,
+  DatabaseChangeMode as NewDatabaseChangeMode,
   Setting_SettingName,
-} from "./types/proto/v1/setting_service";
+} from "./types/proto-es/v1/setting_service_pb";
 
 export const overrideAppProfile = () => {
   const setting = useSettingByName(Setting_SettingName.WORKSPACE_PROFILE);
   const databaseChangeMode = computed(() => {
-    const mode =
-      setting.value?.value?.workspaceProfileSettingValue?.databaseChangeMode;
-    if (mode === DatabaseChangeMode.EDITOR) return DatabaseChangeMode.EDITOR;
-    return DatabaseChangeMode.PIPELINE;
+    if (setting.value?.value?.value?.case === "workspaceProfileSettingValue") {
+      const mode = setting.value.value.value.value.databaseChangeMode;
+      if (mode === NewDatabaseChangeMode.EDITOR) return NewDatabaseChangeMode.EDITOR;
+    }
+    return NewDatabaseChangeMode.PIPELINE;
   });
 
   overrideAppFeatures(databaseChangeMode.value);
@@ -27,7 +28,7 @@ export const overrideAppProfile = () => {
 };
 
 const overrideAppFeatures = (
-  databaseChangeMode: DatabaseChangeMode.PIPELINE | DatabaseChangeMode.EDITOR
+  databaseChangeMode: NewDatabaseChangeMode.PIPELINE | NewDatabaseChangeMode.EDITOR
 ) => {
   const actuatorStore = useActuatorV1Store();
 
@@ -36,7 +37,7 @@ const overrideAppFeatures = (
     "bb.feature.database-change-mode": databaseChangeMode,
   });
 
-  if (databaseChangeMode === "EDITOR") {
+  if (databaseChangeMode === NewDatabaseChangeMode.EDITOR) {
     actuatorStore.overrideAppFeatures({
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,

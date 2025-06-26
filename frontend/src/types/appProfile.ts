@@ -1,4 +1,4 @@
-import { DatabaseChangeMode } from "./proto/v1/setting_service";
+import { DatabaseChangeMode } from "./proto-es/v1/setting_service_pb";
 
 export type AppFeatures = {
   // Use simple and accurate phrases. Namespace if needed
