@@ -95,8 +95,9 @@
             @change="(val: string) => (state.newComment = val)"
             @submit="doCreateComment(state.newComment)"
           />
-          <div class="my-4 flex items-center justify-between">
+          <div class="my-3 flex items-center justify-between">
             <NButton
+              size="small"
               :disabled="state.newComment.length == 0"
               @click.prevent="doCreateComment(state.newComment)"
             >
@@ -136,6 +137,10 @@ import {
   type DistinctIssueComment,
 } from "./IssueCommentView";
 import IssueCreatedComment from "./IssueCommentView/IssueCreatedComment.vue";
+
+const props = defineProps<{
+  commentFilter?: (comment: ComposedIssueComment) => boolean;
+}>();
 
 interface LocalState {
   editCommentMode: boolean;
@@ -203,7 +208,9 @@ const issueComments = computed((): DistinctIssueComment[] => {
       distinctIssueComments.push({ comment, similar: [] });
     }
   }
-  return distinctIssueComments;
+  return props.commentFilter
+    ? distinctIssueComments.filter((item) => props.commentFilter!(item.comment))
+    : distinctIssueComments;
 });
 
 const allowCreateComment = computed(() => {

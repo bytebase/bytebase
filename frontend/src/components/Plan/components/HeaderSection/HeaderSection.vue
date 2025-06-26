@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2 px-4"
+    class="flex flex-row items-center justify-between gap-2 py-2 px-2 sm:px-4"
   >
     <TitleInput />
     <div class="flex flex-row items-center justify-end">
