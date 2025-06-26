@@ -20,7 +20,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useSettingV1Store, hasFeature } from "@/store";
-import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
+import { Announcement_AlertLevel } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { urlfy } from "@/utils";
 
@@ -35,11 +35,11 @@ const showBanner = computed(() => {
 
 const bgColor = computed(() => {
   switch (settingV1Store.workspaceProfileSetting?.announcement?.level) {
-    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
+    case Announcement_AlertLevel.INFO:
       return "bg-info";
-    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
+    case Announcement_AlertLevel.WARNING:
       return "bg-warning";
-    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
+    case Announcement_AlertLevel.CRITICAL:
       return "bg-error";
     default:
       return "bg-info";
@@ -48,11 +48,11 @@ const bgColor = computed(() => {
 
 const bgColorHover = computed(() => {
   switch (settingV1Store.workspaceProfileSetting?.announcement?.level) {
-    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
+    case Announcement_AlertLevel.INFO:
       return "hover:bg-info-hover";
-    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
+    case Announcement_AlertLevel.WARNING:
       return "hover:bg-warning-hover";
-    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
+    case Announcement_AlertLevel.CRITICAL:
       return "hover:bg-error-hover";
     default:
       return "hover:bg-info-hover";

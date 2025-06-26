@@ -1,6 +1,6 @@
 import { defineComponent, watch } from "vue";
 import { useRouter } from "vue-router";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { WORKSPACE_ROUTE_LANDING } from "./router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "./router/sqlEditor";
 import { useRecentVisit } from "./router/useRecentVisit";

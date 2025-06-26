@@ -40,6 +40,23 @@ import { ChangelogView as NewChangelogView } from "@/types/proto-es/v1/database_
 import { GetSchemaStringRequest_ObjectType as OldObjectType } from "@/types/proto/v1/database_service";
 import { GetSchemaStringRequest_ObjectType as NewObjectType } from "@/types/proto-es/v1/database_service_pb";
 
+import type { SchemaMetadata as OldSchemaMetadata } from "@/types/proto/v1/database_service";
+import { SchemaMetadata as OldSchemaMetadataProto } from "@/types/proto/v1/database_service";
+import type { SchemaMetadata as NewSchemaMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { SchemaMetadataSchema as NewSchemaMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+
+import type { TableMetadata as OldTableMetadata } from "@/types/proto/v1/database_service";
+import { TableMetadata as OldTableMetadataProto } from "@/types/proto/v1/database_service";
+import type { TableMetadata as NewTableMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { TableMetadataSchema as NewTableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+
+import type { ColumnMetadata as OldColumnMetadata } from "@/types/proto/v1/database_service";
+import { ColumnMetadata as OldColumnMetadataProto } from "@/types/proto/v1/database_service";
+import type { ColumnMetadata as NewColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { ColumnMetadataSchema as NewColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+
+
+
 // Convert old ChangelogView enum to new
 export const convertOldChangelogViewToNew = (oldView: OldChangelogView): NewChangelogView => {
   const mapping: Record<OldChangelogView, NewChangelogView> = {
@@ -162,3 +179,40 @@ export const convertNewGetSchemaStringResponseToOld = (newResponse: NewGetSchema
   const json = toJson(NewGetSchemaStringResponseSchema, newResponse);
   return OldGetSchemaStringResponseProto.fromJSON(json);
 };
+
+// Convert old SchemaMetadata proto to proto-es
+export const convertOldSchemaMetadataToNew = (oldMetadata: OldSchemaMetadata): NewSchemaMetadata => {
+  const json = OldSchemaMetadataProto.toJSON(oldMetadata) as any;
+  return fromJson(NewSchemaMetadataSchema, json);
+};
+
+// Convert proto-es SchemaMetadata to old proto
+export const convertNewSchemaMetadataToOld = (newMetadata: NewSchemaMetadata): OldSchemaMetadata => {
+  const json = toJson(NewSchemaMetadataSchema, newMetadata);
+  return OldSchemaMetadataProto.fromJSON(json);
+};
+
+// Convert old TableMetadata proto to proto-es
+export const convertOldTableMetadataToNew = (oldMetadata: OldTableMetadata): NewTableMetadata => {
+  const json = OldTableMetadataProto.toJSON(oldMetadata) as any;
+  return fromJson(NewTableMetadataSchema, json);
+};
+
+// Convert proto-es TableMetadata to old proto
+export const convertNewTableMetadataToOld = (newMetadata: NewTableMetadata): OldTableMetadata => {
+  const json = toJson(NewTableMetadataSchema, newMetadata);
+  return OldTableMetadataProto.fromJSON(json);
+};
+
+// Convert old ColumnMetadata proto to proto-es
+export const convertOldColumnMetadataToNew = (oldMetadata: OldColumnMetadata): NewColumnMetadata => {
+  const json = OldColumnMetadataProto.toJSON(oldMetadata) as any;
+  return fromJson(NewColumnMetadataSchema, json);
+};
+
+// Convert proto-es ColumnMetadata to old proto
+export const convertNewColumnMetadataToOld = (newMetadata: NewColumnMetadata): OldColumnMetadata => {
+  const json = toJson(NewColumnMetadataSchema, newMetadata);
+  return OldColumnMetadataProto.fromJSON(json);
+};
+

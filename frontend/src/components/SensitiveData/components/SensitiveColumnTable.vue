@@ -27,7 +27,8 @@ import {
   useDatabaseCatalog,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import { create } from "@bufbuild/protobuf";
+import { DataClassificationSetting_DataClassificationConfigSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { autoDatabaseRoute } from "@/utils";
 
 const props = defineProps<{
@@ -79,7 +80,7 @@ const classificationConfig = computed(() => {
   return (
     settingStore.getProjectClassification(
       props.database.projectEntity.dataClassificationConfigId
-    ) ?? DataClassificationConfig.fromPartial({})
+    ) ?? create(DataClassificationSetting_DataClassificationConfigSchema, {})
   );
 });
 

@@ -50,7 +50,7 @@ import { router } from "@/router";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { isSQLEditorRoute } from "@/utils";
 import WorkspaceMode from "@/views/Setup/WorkspaceMode.vue";
 

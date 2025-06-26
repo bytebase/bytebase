@@ -102,8 +102,8 @@ import {
 import { useSettingV1Store } from "@/store";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
-import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto-es/v1/setting_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
@@ -150,7 +150,10 @@ const semanticTypeSettingValue = computed(() => {
   const semanticTypeSetting = settingStore.getSettingByName(
     Setting_SettingName.SEMANTIC_TYPES
   );
-  return semanticTypeSetting?.value?.semanticTypeSettingValue?.types ?? [];
+  if (semanticTypeSetting?.value?.value?.case === "semanticTypeSettingValue") {
+    return semanticTypeSetting.value.value.value.types ?? [];
+  }
+  return [];
 });
 
 const options = computed(() => {

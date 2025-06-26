@@ -25,12 +25,12 @@
 </template>
 
 <script lang="ts" setup>
-import Long from "long";
 import { NInputNumber } from "naive-ui";
 import { ref, computed } from "vue";
 import { useSettingV1Store, featureToRef } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName, MaximumSQLResultSizeSettingSchema, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
 import { FeatureBadge } from "../FeatureGuard";
 
 defineProps<{
@@ -42,12 +42,14 @@ const timing = ref<ReturnType<typeof setTimeout>>();
 const hasQueryPolicyFeature = featureToRef(PlanFeature.FEATURE_QUERY_POLICY);
 
 const initialState = () => {
-  const limit =
-    settingV1Store.getSettingByName(Setting_SettingName.SQL_RESULT_SIZE_LIMIT)
-      ?.value?.maximumSqlResultSizeSetting?.limit ??
-    Long.fromNumber(100 * 1024 * 1024);
+  const setting = settingV1Store.getSettingByName(Setting_SettingName.SQL_RESULT_SIZE_LIMIT);
+  let limit = BigInt(100 * 1024 * 1024);
+  
+  if (setting?.value?.value?.case === "maximumSqlResultSizeSetting") {
+    limit = setting.value.value.value.limit ?? limit;
+  }
 
-  return Math.round(limit.toNumber() / 1024 / 1024);
+  return Math.round(Number(limit) / 1024 / 1024);
 };
 
 // limit in MB
@@ -63,11 +65,14 @@ const updateChange = async () => {
   clearTimeout(timing.value);
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.SQL_RESULT_SIZE_LIMIT,
-    value: {
-      maximumSqlResultSizeSetting: {
-        limit: Long.fromNumber(maximumSQLResultLimit.value * 1024 * 1024),
+    value: create(SettingValueSchema, {
+      value: {
+        case: "maximumSqlResultSizeSetting",
+        value: create(MaximumSQLResultSizeSettingSchema, {
+          limit: BigInt(maximumSQLResultLimit.value * 1024 * 1024),
+        }),
       },
-    },
+    }),
   });
 };
 

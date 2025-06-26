@@ -122,7 +122,7 @@ import {
   useIdentityProviderStore,
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { type WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
+import { type WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { isEqual } from "lodash-es";
 import { TriangleAlertIcon } from "lucide-vue-next";

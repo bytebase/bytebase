@@ -105,8 +105,9 @@ import { computed, reactive } from "vue";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { Announcement } from "@/types/proto/v1/setting_service";
-import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
+import type { Announcement } from "@/types/proto-es/v1/setting_service_pb";
+import { Announcement_AlertLevel, AnnouncementSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 
@@ -121,8 +122,8 @@ const hasAnnouncementFeature = featureToRef(PlanFeature.FEATURE_DASHBOARD_ANNOUN
 const rawAnnouncement = computed(() =>
   cloneDeep(
     settingV1Store.workspaceProfileSetting?.announcement ??
-      Announcement.fromPartial({
-        level: Announcement_AlertLevel.ALERT_LEVEL_INFO,
+      create(AnnouncementSchema, {
+        level: Announcement_AlertLevel.INFO,
       })
   )
 );

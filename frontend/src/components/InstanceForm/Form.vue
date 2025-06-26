@@ -3,14 +3,14 @@
     <div class="divide-y divide-block-border w-[850px]">
       <InstanceEngineRadioGrid
         v-if="isCreating"
-        :engine="basicInfo.engine"
-        :engine-list="EngineList"
+        :engine="convertOldEngineToNew(basicInfo.engine)"
+        :engine-list="supportedEngineV1List().map(convertOldEngineToNew)"
         class="w-full mb-6 grid-cols-4 gap-2"
-        @update:engine="changeInstanceEngine"
+        @update:engine="(newEngine: NewEngine) => changeInstanceEngine(convertNewEngineToOld(newEngine))"
       >
-        <template #suffix="{ engine }: { engine: Engine }">
+        <template #suffix="{ engine }: { engine: NewEngine }">
           <BBBetaBadge
-            v-if="isEngineBeta(engine)"
+            v-if="isEngineBeta(convertNewEngineToOld(engine))"
             class="absolute -top-1.5 -right-1 rounded text-xs !bg-gray-500 px-1 !py-0 z-10"
           />
         </template>
@@ -520,6 +520,7 @@ import { adaptComposedInstance, type ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
+import { Engine as NewEngine } from "@/types/proto-es/v1/common_pb";
 import { DataSource_AuthenticationType } from "@/types/proto/v1/instance_service";
 import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
@@ -529,7 +530,79 @@ import {
   onlyAllowNumber,
   autoSubscriptionRoute,
   urlfy,
+  supportedEngineV1List,
 } from "@/utils";
+
+// Engine conversion functions
+// Old proto uses string values, new proto-es uses numeric values
+const convertOldEngineToNew = (engine: Engine): NewEngine => {
+  switch (engine) {
+    case "ENGINE_UNSPECIFIED": return NewEngine.ENGINE_UNSPECIFIED;
+    case "MYSQL": return NewEngine.MYSQL;
+    case "POSTGRES": return NewEngine.POSTGRES;
+    case "CLICKHOUSE": return NewEngine.CLICKHOUSE;
+    case "SNOWFLAKE": return NewEngine.SNOWFLAKE;
+    case "SQLITE": return NewEngine.SQLITE;
+    case "TIDB": return NewEngine.TIDB;
+    case "MONGODB": return NewEngine.MONGODB;
+    case "REDIS": return NewEngine.REDIS;
+    case "ORACLE": return NewEngine.ORACLE;
+    case "SPANNER": return NewEngine.SPANNER;
+    case "MSSQL": return NewEngine.MSSQL;
+    case "REDSHIFT": return NewEngine.REDSHIFT;
+    case "MARIADB": return NewEngine.MARIADB;
+    case "OCEANBASE": return NewEngine.OCEANBASE;
+    case "DM": return NewEngine.DM;
+    case "RISINGWAVE": return NewEngine.RISINGWAVE;
+    case "OCEANBASE_ORACLE": return NewEngine.OCEANBASE_ORACLE;
+    case "STARROCKS": return NewEngine.STARROCKS;
+    case "DORIS": return NewEngine.DORIS;
+    case "HIVE": return NewEngine.HIVE;
+    case "ELASTICSEARCH": return NewEngine.ELASTICSEARCH;
+    case "BIGQUERY": return NewEngine.BIGQUERY;
+    case "DATABRICKS": return NewEngine.DATABRICKS;
+    case "COCKROACHDB": return NewEngine.COCKROACHDB;
+    case "COSMOSDB": return NewEngine.COSMOSDB;
+    case "CASSANDRA": return NewEngine.CASSANDRA;
+    case "TRINO": return NewEngine.TRINO;
+    default: return NewEngine.ENGINE_UNSPECIFIED;
+  }
+};
+
+const convertNewEngineToOld = (engine: NewEngine): Engine => {
+  switch (engine) {
+    case NewEngine.ENGINE_UNSPECIFIED: return Engine.ENGINE_UNSPECIFIED;
+    case NewEngine.MYSQL: return Engine.MYSQL;
+    case NewEngine.POSTGRES: return Engine.POSTGRES;
+    case NewEngine.CLICKHOUSE: return Engine.CLICKHOUSE;
+    case NewEngine.SNOWFLAKE: return Engine.SNOWFLAKE;
+    case NewEngine.SQLITE: return Engine.SQLITE;
+    case NewEngine.TIDB: return Engine.TIDB;
+    case NewEngine.MONGODB: return Engine.MONGODB;
+    case NewEngine.REDIS: return Engine.REDIS;
+    case NewEngine.ORACLE: return Engine.ORACLE;
+    case NewEngine.SPANNER: return Engine.SPANNER;
+    case NewEngine.MSSQL: return Engine.MSSQL;
+    case NewEngine.REDSHIFT: return Engine.REDSHIFT;
+    case NewEngine.MARIADB: return Engine.MARIADB;
+    case NewEngine.OCEANBASE: return Engine.OCEANBASE;
+    case NewEngine.DM: return Engine.DM;
+    case NewEngine.RISINGWAVE: return Engine.RISINGWAVE;
+    case NewEngine.OCEANBASE_ORACLE: return Engine.OCEANBASE_ORACLE;
+    case NewEngine.STARROCKS: return Engine.STARROCKS;
+    case NewEngine.DORIS: return Engine.DORIS;
+    case NewEngine.HIVE: return Engine.HIVE;
+    case NewEngine.ELASTICSEARCH: return Engine.ELASTICSEARCH;
+    case NewEngine.BIGQUERY: return Engine.BIGQUERY;
+    case NewEngine.DATABRICKS: return Engine.DATABRICKS;
+    case NewEngine.COCKROACHDB: return Engine.COCKROACHDB;
+    case NewEngine.COSMOSDB: return Engine.COSMOSDB;
+    case NewEngine.CASSANDRA: return Engine.CASSANDRA;
+    case NewEngine.TRINO: return Engine.TRINO;
+    default: return Engine.ENGINE_UNSPECIFIED;
+  }
+};
+
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
@@ -540,7 +613,6 @@ import SyncDatabases from "./SyncDatabases.vue";
 import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,
-  EngineList,
   RedisConnectionType,
 } from "./constants";
 import { useInstanceFormContext } from "./context";

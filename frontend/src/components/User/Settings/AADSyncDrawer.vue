@@ -123,7 +123,8 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { CopyButton } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useSettingV1Store } from "@/store";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName, SCIMSettingSchema, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{
@@ -146,10 +147,10 @@ const hasPermission = computed(() =>
 );
 
 const workspaceId = computed(() => {
-  return (
-    settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID)?.value
-      ?.stringValue ?? ""
-  );
+  const setting = settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID);
+  return setting?.value?.value?.case === "stringValue" 
+    ? setting.value.value.value 
+    : "";
 });
 
 const externalUrl = computed(() => {
@@ -164,10 +165,10 @@ const scimUrl = computed(() => {
 });
 
 const scimToken = computed(() => {
-  return (
-    settingV1Store.getSettingByName(Setting_SettingName.SCIM)?.value
-      ?.scimSetting?.token ?? ""
-  );
+  const setting = settingV1Store.getSettingByName(Setting_SettingName.SCIM);
+  return setting?.value?.value?.case === "scimSetting" 
+    ? setting.value.value.value.token ?? "" 
+    : "";
 });
 
 const handleSelect = (component: HTMLInputElement | null) => {
@@ -195,11 +196,14 @@ const resetToken = () => {
       settingV1Store
         .upsertSetting({
           name: Setting_SettingName.SCIM,
-          value: {
-            scimSetting: {
-              token: "",
+          value: create(SettingValueSchema, {
+            value: {
+              case: "scimSetting",
+              value: create(SCIMSettingSchema, {
+                token: "",
+              }),
             },
-          },
+          }),
         })
         .then(() => {
           pushNotification({

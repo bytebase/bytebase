@@ -65,7 +65,7 @@ import {
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";
@@ -85,10 +85,12 @@ const tabStore = useSQLEditorTabStore();
 const settingV1Store = useSettingV1Store();
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
-const openAIEnabled = computed(
-  () =>
-    settingV1Store.getSettingByName(Setting_SettingName.AI)?.value?.aiSetting?.enabled ?? false
-);
+const openAIEnabled = computed(() => {
+  const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
+  return setting?.value?.value?.case === "aiSetting" 
+    ? setting.value.value.value.enabled 
+    : false;
+});
 
 const { showAIPanel } = useSQLEditorContext();
 const { instance } = useConnectionOfCurrentSQLEditorTab();

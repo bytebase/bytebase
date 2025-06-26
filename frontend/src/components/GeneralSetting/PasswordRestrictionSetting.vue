@@ -122,8 +122,8 @@
           (checked) => {
             onUpdate({
               passwordRotation: checked
-                ? Duration.fromPartial({
-                    seconds: 7 * 24 * 60 * 60 /* default 7 days */,
+                ? create(DurationSchema, {
+                    seconds: BigInt(7 * 24 * 60 * 60) /* default 7 days */,
                     nanos: 0,
                   })
                 : undefined,
@@ -140,7 +140,7 @@
             <NInputNumber
               v-if="state.passwordRotation"
               :value="
-                Number(state.passwordRotation.seconds.divide(24 * 60 * 60))
+                Number(state.passwordRotation.seconds) / (24 * 60 * 60)
               "
               :readonly="!allowEdit"
               :min="1"
@@ -152,8 +152,8 @@
               @update:value="
                 (val) =>
                   onUpdate({
-                    passwordRotation: Duration.fromPartial({
-                      seconds: (val || 1) * 24 * 60 * 60,
+                    passwordRotation: create(DurationSchema, {
+                      seconds: BigInt((val || 1) * 24 * 60 * 60),
                       nanos: 0,
                     }),
                   })
@@ -179,8 +179,10 @@ import { NInputNumber, NCheckbox } from "naive-ui";
 import { computed, ref, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { Duration } from "@/types/proto/google/protobuf/duration";
-import { PasswordRestrictionSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import type { PasswordRestrictionSetting } from "@/types/proto-es/v1/setting_service_pb";
+import { Setting_SettingName, PasswordRestrictionSettingSchema, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
@@ -194,11 +196,13 @@ const settingV1Store = useSettingV1Store();
 const showFeatureModal = ref<boolean>(false);
 const hasPasswordFeature = featureToRef(PlanFeature.FEATURE_PASSWORD_RESTRICTIONS);
 
-const passwordRestrictionSetting = computed(
-  () =>
-    settingV1Store.getSettingByName(Setting_SettingName.PASSWORD_RESTRICTION)?.value
-      ?.passwordRestrictionSetting ?? PasswordRestrictionSetting.fromPartial({})
-);
+const passwordRestrictionSetting = computed(() => {
+  const setting = settingV1Store.getSettingByName(Setting_SettingName.PASSWORD_RESTRICTION);
+  if (setting?.value?.value?.case === "passwordRestrictionSetting") {
+    return setting.value.value.value;
+  }
+  return create(PasswordRestrictionSettingSchema, {});
+});
 
 const state = reactive<PasswordRestrictionSetting>(
   cloneDeep(passwordRestrictionSetting.value)
@@ -217,11 +221,14 @@ defineExpose({
   update: async () => {
     await settingV1Store.upsertSetting({
       name: Setting_SettingName.PASSWORD_RESTRICTION,
-      value: {
-        passwordRestrictionSetting: {
-          ...state,
+      value: create(SettingValueSchema, {
+        value: {
+          case: "passwordRestrictionSetting",
+          value: create(PasswordRestrictionSettingSchema, {
+            ...state,
+          }),
         },
-      },
+      }),
     });
   },
   revert: () => {

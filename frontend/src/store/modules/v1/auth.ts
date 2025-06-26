@@ -30,7 +30,7 @@ import { CreateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import {
   DatabaseChangeMode,
   Setting_SettingName,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto-es/v1/setting_service_pb";
 import { User, UserType } from "@/types/proto/v1/user_service";
 import { convertOldUserToNew } from "@/utils/v1/user-conversions";
 
