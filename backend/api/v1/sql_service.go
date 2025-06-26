@@ -614,6 +614,10 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 		return nil, errors.Wrap(err, "failed to get semantic types setting")
 	}
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
+		if semanticType.GetId() == "bb.default" || semanticType.GetId() == "bb.default-partial" {
+			// Skip the built-in default semantic types.
+			continue
+		}
 		masker, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
 		if err != nil {
 			return nil, err
