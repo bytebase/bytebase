@@ -23,12 +23,12 @@ import {
   LoginRequestSchema,
   type LoginRequest,
 } from "@/types/proto-es/v1/auth_service_pb";
+import { CreateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import {
   DatabaseChangeMode,
   Setting_SettingName,
 } from "@/types/proto/v1/setting_service";
 import { User, UserType } from "@/types/proto/v1/user_service";
-import { CreateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { convertOldUserToNew } from "@/utils/v1/user-conversions";
 
 export const useAuthStore = defineStore("auth_v1", () => {
@@ -86,9 +86,14 @@ export const useAuthStore = defineStore("auth_v1", () => {
       });
     }
 
-    await fetchCurrentUser();
-    setRequireResetPassword(resp.requireResetPassword);
+    const user = await fetchCurrentUser();
+    unauthenticatedOccurred.value = !user;
 
+    if (unauthenticatedOccurred.value) {
+      return;
+    }
+
+    setRequireResetPassword(resp.requireResetPassword);
     await useSettingV1Store().getOrFetchSettingByName(
       Setting_SettingName.WORKSPACE_PROFILE,
       true // silent
@@ -96,33 +101,30 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
     // After user login, we need to reset the auth session key.
     authSessionKey.value = uniqueId();
-    if (!unauthenticatedOccurred.value) {
-      if (actuatorStore.needAdminSetup) {
-        await actuatorStore.fetchServerInfo();
-        actuatorStore.onboardingState.isOnboarding = true;
-        return router.replace({
-          name: SETUP_MODULE,
-        });
-      }
-      const mode = useAppFeature("bb.feature.database-change-mode");
-      let nextPage = redirectUrl;
-      if (mode.value === DatabaseChangeMode.EDITOR) {
-        const route = router.resolve({
-          name: SQL_EDITOR_HOME_MODULE,
-        });
-        nextPage = route.fullPath;
-      }
-      if (resp.requireResetPassword) {
-        return router.push({
-          name: AUTH_PASSWORD_RESET_MODULE,
-          query: {
-            redirect: nextPage,
-          },
-        });
-      }
-      return router.replace(nextPage);
+    if (actuatorStore.needAdminSetup) {
+      await actuatorStore.fetchServerInfo();
+      actuatorStore.onboardingState.isOnboarding = true;
+      return router.replace({
+        name: SETUP_MODULE,
+      });
     }
-    unauthenticatedOccurred.value = false;
+    const mode = useAppFeature("bb.feature.database-change-mode");
+    let nextPage = redirectUrl;
+    if (mode.value === DatabaseChangeMode.EDITOR) {
+      const route = router.resolve({
+        name: SQL_EDITOR_HOME_MODULE,
+      });
+      nextPage = route.fullPath;
+    }
+    if (resp.requireResetPassword) {
+      return router.push({
+        name: AUTH_PASSWORD_RESET_MODULE,
+        query: {
+          redirect: nextPage,
+        },
+      });
+    }
+    return router.replace(nextPage);
   };
 
   const signup = async (request: Partial<User>) => {
