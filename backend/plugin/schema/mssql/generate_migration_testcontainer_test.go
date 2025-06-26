@@ -2203,7 +2203,7 @@ func executeFiveStepWorkflow(ctx context.Context, host string, port int, initial
 	dbSchemaB := model.NewDatabaseSchema(schemaB, nil, nil, storepb.Engine_MSSQL, false)
 
 	// Get diff from B to A (to generate rollback)
-	diff, err := schema.GetDatabaseSchemaDiff(dbSchemaB, dbSchemaA)
+	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MSSQL, dbSchemaB, dbSchemaA)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate diff")
 	}

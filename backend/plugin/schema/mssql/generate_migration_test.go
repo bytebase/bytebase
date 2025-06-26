@@ -82,7 +82,7 @@ func runMigrationTest(t *testing.T, file string) {
 				newDBSchema = model.NewDatabaseSchema(emptyMetadata, nil, nil, storepb.Engine_MSSQL, false)
 			}
 
-			diff, err = schema.GetDatabaseSchemaDiff(oldDBSchema, newDBSchema)
+			diff, err = schema.GetDatabaseSchemaDiff(storepb.Engine_MSSQL, oldDBSchema, newDBSchema)
 			require.NoErrorf(t, err, "Failed to get schema diff for test case [%02d]: %s", i+1, test.Description)
 
 			// Generate migration

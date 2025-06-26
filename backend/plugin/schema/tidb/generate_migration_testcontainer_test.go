@@ -1425,7 +1425,7 @@ ALTER TABLE test_table COMMENT = '';
 			dbSchemaB := model.NewDatabaseSchema(schemaB, nil, nil, storepb.Engine_TIDB, false)
 
 			// Get diff from B to A (to generate rollback)
-			diff, err := schema.GetDatabaseSchemaDiff(dbSchemaB, dbSchemaA)
+			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_TIDB, dbSchemaB, dbSchemaA)
 			require.NoError(t, err)
 
 			// Log the diff for debugging
