@@ -1022,6 +1022,14 @@
     "schema-drift-detected": {
       "self": "Schema drift detected",
       "description": "The selected database(s) has schema drift. Please make sure the drift is expected and safe to apply."
+    },
+    "review": {
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "under-review": "Under review"
+    },
+    "expermental-page": {
+      "self": "Experimental issue page"
     }
   },
   "plan": {
@@ -1046,6 +1054,7 @@
       "specifications": "Specifications",
       "checks": "Checks",
       "review": "Review",
+      "rollout": "Rollout",
       "statement-empty": "Statement is empty"
     },
     "spec": {

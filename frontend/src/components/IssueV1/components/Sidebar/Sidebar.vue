@@ -68,14 +68,18 @@
           issueId: extractIssueUID(issue.name),
         },
       }"
-      class="text-sm font-normal text-blue-700 hover:underline"
+      class="text-sm font-normal text-gray-500 hover:text-blue-600 hover:underline flex items-center"
+      target="_blank"
     >
-      {{ "Experimental issue page" }}
+      <span>{{ $t("issue.expermental-page.self") }}</span>
+      <ExternalLinkIcon class="inline w-4 h-4 ml-1" />
     </router-link>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { ExternalLinkIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -84,16 +88,18 @@ import { targetsForSpec } from "@/components/Plan";
 import { GhostSection } from "@/components/Plan/components/Configuration";
 import { provideGhostSettingContext } from "@/components/Plan/components/Configuration/GhostSection/context";
 import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection";
-import { create } from "@bufbuild/protobuf";
 import { issueServiceClientConnect } from "@/grpcweb";
-import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { convertNewIssueToOld, convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
+import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { extractIssueUID, extractProjectResourceName, isDev } from "@/utils";
+import {
+  convertNewIssueToOld,
+  convertOldIssueToNew,
+} from "@/utils/v1/issue-conversions";
 import { specForTask, useIssueContext } from "../../logic";
 import IssueLabels from "./IssueLabels.vue";
 import PreBackupSection from "./PreBackupSection";

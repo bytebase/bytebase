@@ -1,15 +1,20 @@
 <template>
   <CreateButton v-if="isCreating" />
   <template v-else>
-    <CreateIssueButton v-if="!plan.issue" />
-    <template v-else-if="plan.issue">
-      <UnifiedActionGroup
-        :primary-action="primaryAction"
-        :secondary-actions="secondaryActions"
-        @perform-action="handlePerformAction"
-      />
+    <!-- Show unified actions for all plan states -->
+    <UnifiedActionGroup
+      :primary-action="primaryAction"
+      :secondary-actions="secondaryActions"
+      @perform-action="handlePerformAction"
+    />
 
-      <!-- Panels -->
+    <!-- Panels -->
+
+    <template v-if="issue">
+      <IssueCreationActionPanel
+        :action="pendingIssueCreationAction"
+        @close="pendingIssueCreationAction = undefined"
+      />
       <IssueReviewActionPanel
         :action="pendingReviewAction"
         @close="pendingReviewAction = undefined"
@@ -19,6 +24,10 @@
         @close="pendingStatusAction = undefined"
       />
     </template>
+    <RolloutActionPanel
+      :action="pendingRolloutAction"
+      @close="pendingRolloutAction = undefined"
+    />
   </template>
 </template>
 
@@ -38,8 +47,13 @@ import {
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import { isUserIncludedInList, hasProjectPermissionV2 } from "@/utils";
-import { CreateButton, CreateIssueButton } from "./create";
-import { IssueReviewActionPanel, IssueStatusActionPanel } from "./panels";
+import { CreateButton } from "./create";
+import {
+  IssueReviewActionPanel,
+  IssueStatusActionPanel,
+  RolloutActionPanel,
+  IssueCreationActionPanel,
+} from "./panels";
 import {
   UnifiedActionGroup,
   type ActionConfig,
@@ -58,12 +72,26 @@ const reviewContext = provideIssueReviewContext(issue);
 // Panel visibility state
 const pendingReviewAction = ref<IssueReviewAction | undefined>(undefined);
 const pendingStatusAction = ref<IssueStatusAction | undefined>(undefined);
+const pendingRolloutAction = ref<"CREATE" | undefined>(undefined);
+const pendingIssueCreationAction = ref<"CREATE" | undefined>(undefined);
 
 // Compute available actions based on issue state and user permissions
 const availableActions = computed(() => {
   const actions: UnifiedAction[] = [];
 
-  if (!issue?.value || isCreating.value) return actions;
+  if (isCreating.value) return actions;
+
+  // If no issue exists, show create issue action
+  if (!issue?.value) {
+    const canCreateIssue = hasProjectPermissionV2(
+      project.value,
+      "bb.plans.create"
+    );
+    if (canCreateIssue) {
+      actions.push("CREATE_ISSUE");
+    }
+    return actions;
+  }
 
   const issueValue = issue.value;
   const isCanceled = issueValue.status === IssueStatus.CANCELED;
@@ -139,11 +167,32 @@ const availableActions = computed(() => {
     actions.push("CLOSE");
   }
 
+  // Check for rollout creation action
+  if (reviewContext.done.value && !plan.value.rollout) {
+    const canCreateRollout = hasProjectPermissionV2(
+      project.value,
+      "bb.rollouts.create"
+    );
+    if (canCreateRollout) {
+      actions.push("CREATE_ROLLOUT");
+    }
+  }
+
   return actions;
 });
 
 const primaryAction = computed((): ActionConfig | undefined => {
   const actions = availableActions.value;
+
+  // CREATE_ISSUE is the highest priority when no issue exists
+  if (actions.includes("CREATE_ISSUE")) {
+    return { action: "CREATE_ISSUE" };
+  }
+
+  // CREATE_ROLLOUT is the highest priority when available
+  if (actions.includes("CREATE_ROLLOUT")) {
+    return { action: "CREATE_ROLLOUT" };
+  }
 
   // REOPEN is primary when issue is closed
   if (actions.includes("REOPEN")) {
@@ -186,6 +235,12 @@ const handlePerformAction = (action: UnifiedAction) => {
     case "CLOSE":
     case "REOPEN":
       pendingStatusAction.value = action as IssueStatusAction;
+      break;
+    case "CREATE_ROLLOUT":
+      pendingRolloutAction.value = "CREATE";
+      break;
+    case "CREATE_ISSUE":
+      pendingIssueCreationAction.value = "CREATE";
       break;
   }
 };

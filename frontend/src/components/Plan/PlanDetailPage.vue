@@ -27,6 +27,7 @@
       <SpecsView v-else-if="tabKey === TabKey.Specifications" />
       <ChecksView v-else-if="tabKey === TabKey.Checks" />
       <IssueReviewView v-else-if="tabKey === TabKey.Review" />
+      <RolloutView v-else-if="tabKey === TabKey.Rollout" />
       <div class="pt-4 mx-auto max-w-2xl" v-else>
         <p>Unknown view for {{ tabKey }}</p>
       </div>
@@ -46,11 +47,18 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+  PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { extractIssueUID, extractPlanUID } from "@/utils";
+import {
+  extractIssueUID,
+  extractPlanUID,
+  extractRolloutUID,
+  isNullOrUndefined,
+} from "@/utils";
 import { ChecksView, HeaderSection, Overview } from "./components";
 import CurrentSpecSelector from "./components/CurrentSpecSelector.vue";
 import { IssueReviewView } from "./components/IssueReviewView";
+import { RolloutView } from "./components/RolloutView";
 import SpecsView from "./components/SpecsView.vue";
 import { useSpecsValidation } from "./components/common";
 import { gotoSpec } from "./components/common/utils";
@@ -61,6 +69,7 @@ enum TabKey {
   Specifications = "specifications",
   Checks = "checks",
   Review = "review",
+  Rollout = "rollout",
 }
 
 const { t } = useI18n();
@@ -89,16 +98,28 @@ const tabKey = computed(() => {
     return TabKey.Checks;
   } else if (routeName === PROJECT_V1_ROUTE_ISSUE_DETAIL_V1) {
     return TabKey.Review;
+  } else if (routeName === PROJECT_V1_ROUTE_ROLLOUT_DETAIL) {
+    return TabKey.Rollout;
   }
+  // Fallback to Overview if no specific tab is matched.
   return TabKey.Overview;
 });
 
 const availableTabs = computed<TabKey[]>(() => {
   const tabs: TabKey[] = [TabKey.Overview, TabKey.Specifications];
   if (!isCreating.value) {
-    tabs.push(TabKey.Checks);
+    if (
+      plan.value.specs.some(
+        (spec) => !isNullOrUndefined(spec.changeDatabaseConfig)
+      )
+    ) {
+      tabs.push(TabKey.Checks);
+    }
     if (plan.value.issue) {
       tabs.push(TabKey.Review);
+    }
+    if (plan.value.rollout) {
+      tabs.push(TabKey.Rollout);
     }
   }
   return tabs;
@@ -133,6 +154,8 @@ const tabRender = (tab: TabKey) => {
       );
     case TabKey.Review:
       return t("plan.navigator.review");
+    case TabKey.Rollout:
+      return t("plan.navigator.rollout");
     default:
       // Fallback to raw tab name.
       return tab;
@@ -147,6 +170,9 @@ const handleTabChange = (tab: TabKey) => {
     params.planId = extractPlanUID(plan.value.name);
     if (plan.value.issue) {
       params.issueId = extractIssueUID(plan.value.issue);
+    }
+    if (plan.value.rollout) {
+      params.rolloutId = extractRolloutUID(plan.value.rollout);
     }
   }
 
@@ -177,6 +203,12 @@ const handleTabChange = (tab: TabKey) => {
   } else if (tab === TabKey.Review) {
     router.push({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+      params: params,
+      query: route.query,
+    });
+  } else if (tab === TabKey.Rollout) {
+    router.push({
+      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
       params: params,
       query: route.query,
     });

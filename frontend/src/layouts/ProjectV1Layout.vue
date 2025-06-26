@@ -93,8 +93,8 @@ import {
   PresetRoleType,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useBodyLayoutContext } from "./common";
 
