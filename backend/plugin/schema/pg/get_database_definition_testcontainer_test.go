@@ -189,6 +189,68 @@ CREATE INDEX idx_data_summary_category ON data_summary(category);
 `,
 		},
 		{
+			name: "comprehensive_views",
+			ddl: `
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(id),
+    total_amount DECIMAL(10, 2) NOT NULL,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'pending'
+);
+
+-- View with public schema references and various formatting
+CREATE VIEW public.active_customer_orders AS
+  SELECT 
+    c.id AS customer_id,
+    c.name,
+    c.email,
+    o.id AS order_id,
+    o.total_amount,
+    o.order_date
+  FROM 
+    public.customers c
+    INNER JOIN public.orders o ON c.id = o.customer_id
+  WHERE 
+    c.active = TRUE 
+    AND o.status = 'completed';
+
+-- Simple view without schema qualification
+CREATE VIEW customer_summary AS
+SELECT 
+  id,
+  name,
+  email,
+  (SELECT COUNT(*) FROM orders WHERE customer_id = customers.id) as order_count
+FROM customers
+WHERE active = true;
+
+-- Materialized view with complex aggregation
+CREATE MATERIALIZED VIEW monthly_sales_summary AS
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  COUNT(*) as order_count,
+  SUM(total_amount) as total_revenue,
+  AVG(total_amount) as avg_order_value,
+  COUNT(DISTINCT customer_id) as unique_customers
+FROM public.orders
+WHERE status = 'completed'
+GROUP BY DATE_TRUNC('month', order_date)
+ORDER BY month
+WITH NO DATA;
+
+CREATE UNIQUE INDEX idx_monthly_sales_month ON monthly_sales_summary(month);
+`,
+		},
+		{
 			name: "triggers",
 			ddl: `
 CREATE TABLE audit_log (
@@ -425,7 +487,7 @@ func filterExplicitSequences(sequences []*storepb.SequenceMetadata) []*storepb.S
 	return result
 }
 
-// compareMaterializedViewsDef compares materialized views between two schemas
+// compareMaterializedViewsDef compares materialized views between two schemas using PostgreSQL view comparer
 func compareMaterializedViewsDef(t *testing.T, viewsA, viewsB []*storepb.MaterializedViewMetadata) {
 	require.Equal(t, len(viewsA), len(viewsB), "number of materialized views should match")
 
@@ -435,13 +497,37 @@ func compareMaterializedViewsDef(t *testing.T, viewsA, viewsB []*storepb.Materia
 		mapA[view.Name] = view
 	}
 
+	// Get PostgreSQL view comparer for sophisticated comparison
+	pgComparer := &PostgreSQLViewComparer{}
+
 	for _, viewB := range viewsB {
 		viewA, exists := mapA[viewB.Name]
 		require.True(t, exists, "materialized view %s should exist in metadata A", viewB.Name)
 
-		// Compare view properties
-		require.Equal(t, normalizeSQLDef(viewA.Definition), normalizeSQLDef(viewB.Definition),
-			"materialized view %s: definition should match", viewB.Name)
+		// Compare view definitions using PostgreSQL view comparer
+		definitionsEqual := pgComparer.compareViewDefinitions(viewA.Definition, viewB.Definition)
+
+		// Ensure definitions are equal using PostgreSQL ANTLR parser comparison
+		if !definitionsEqual {
+			// Log normalized definitions for debugging
+			t.Logf("Materialized view %s definition mismatch:", viewB.Name)
+			t.Logf("  A normalized: %q", pgComparer.normalizeViewDefinition(viewA.Definition))
+			t.Logf("  B normalized: %q", pgComparer.normalizeViewDefinition(viewB.Definition))
+			t.Logf("  A original: %q", viewA.Definition)
+			t.Logf("  B original: %q", viewB.Definition)
+
+			// Fallback to simple comparison for debugging
+			defA := normalizeSQLDef(viewA.Definition)
+			defB := normalizeSQLDef(viewB.Definition)
+			t.Logf("  A simple normalized: %q", defA)
+			t.Logf("  B simple normalized: %q", defB)
+		}
+
+		// Assert that materialized view definitions must be equal after sophisticated PostgreSQL parsing
+		require.True(t, definitionsEqual,
+			"materialized view %s: definitions must be equal using PostgreSQL view comparer (A: %q, B: %q)",
+			viewB.Name, viewA.Definition, viewB.Definition)
+
 		require.Equal(t, viewA.Comment, viewB.Comment,
 			"materialized view %s: comment should match", viewB.Name)
 
@@ -685,7 +771,7 @@ func compareTriggersDef(t *testing.T, tableName string, triggersA, triggersB []*
 	}
 }
 
-// compareViewsDef compares views between two schemas
+// compareViewsDef compares views between two schemas using PostgreSQL view comparer
 func compareViewsDef(t *testing.T, viewsA, viewsB []*storepb.ViewMetadata) {
 	require.Equal(t, len(viewsA), len(viewsB), "number of views should match")
 
@@ -695,14 +781,20 @@ func compareViewsDef(t *testing.T, viewsA, viewsB []*storepb.ViewMetadata) {
 		mapA[view.Name] = view
 	}
 
+	// Get PostgreSQL view comparer for sophisticated comparison
+	pgComparer := &PostgreSQLViewComparer{}
+
 	for _, viewB := range viewsB {
 		viewA, exists := mapA[viewB.Name]
 		require.True(t, exists, "view %s should exist in metadata A", viewB.Name)
 
-		// Compare view definitions
-		defA := normalizeSQLDef(viewA.Definition)
-		defB := normalizeSQLDef(viewB.Definition)
-		require.Equal(t, defA, defB, "view %s: definition should match", viewB.Name)
+		// Compare view definitions using PostgreSQL view comparer
+		definitionsEqual := pgComparer.compareViewDefinitions(viewA.Definition, viewB.Definition)
+
+		// Assert that view definitions must be equal after sophisticated PostgreSQL parsing
+		require.True(t, definitionsEqual,
+			"view %s: definitions must be equal using PostgreSQL view comparer (A: %q, B: %q)",
+			viewB.Name, viewA.Definition, viewB.Definition)
 
 		// Compare comment
 		require.Equal(t, viewA.Comment, viewB.Comment, "view %s: comment should match", viewB.Name)
