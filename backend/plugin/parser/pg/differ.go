@@ -1818,16 +1818,6 @@ func isEqualColumnNameDef(columnA *ast.ColumnNameDef, columnB *ast.ColumnNameDef
 	return columnA.ColumnName == columnB.ColumnName
 }
 
-func isEqualInt32Pointer(a *int32, b *int32) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-	return *a == *b
-}
-
 func isEqualInt64Pointer(a *int64, b *int64) bool {
 	if a == nil && b == nil {
 		return true
