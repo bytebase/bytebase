@@ -302,7 +302,7 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { CodeIcon } from "lucide-vue-next";
 import { NButton, NPopover, NInput } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -327,6 +327,7 @@ import {
   useDatabaseCatalogV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import { Engine } from "@/types/proto/v1/common";
 import {
   TableCatalog,
@@ -336,7 +337,6 @@ import {
   SchemaCatalog,
 } from "@/types/proto/v1/database_catalog_service";
 import { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import {
   bytesToString,
   instanceV1HasCollationAndCharacterSet,
