@@ -279,11 +279,10 @@
                 maxRows: 50,
               }"
               :disabled="!hasDatabaseCatalogPermission"
-              :value="JSON.stringify(state.tableCatalog, null, 4)"
-              @update:value="onCatalogChange"
+              v-model:value="state.tableCatalog"
             />
             <div
-              v-if="!isEqual(state.tableCatalog, tableCatalog)"
+              v-if="state.tableCatalog !== initTableCatalog"
               class="w-full flex items-center justify-end space-x-2 mt-2"
             >
               <NButton
@@ -303,7 +302,7 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { CodeIcon } from "lucide-vue-next";
 import { NButton, NPopover, NInput } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -328,15 +327,16 @@ import {
   useDatabaseCatalogV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import { Engine } from "@/types/proto/v1/common";
 import {
   TableCatalog,
   ObjectSchema,
   ObjectSchema_Type,
   ObjectSchema_StructKind,
+  SchemaCatalog,
 } from "@/types/proto/v1/database_catalog_service";
 import { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import {
   bytesToString,
   instanceV1HasCollationAndCharacterSet,
@@ -361,7 +361,7 @@ import MaskSpinner from "./misc/MaskSpinner.vue";
 interface LocalState {
   columnNameSearchKeyword: string;
   partitionTableNameSearchKeyword: string;
-  tableCatalog: TableCatalog;
+  tableCatalog: string;
   isUploading: boolean;
 }
 
@@ -384,16 +384,42 @@ const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const catalogStore = useDatabaseCatalogV1Store();
 
+const databaseCatalog = useDatabaseCatalog(props.databaseName, false);
+const tableCatalog = computed(() =>
+  getTableCatalog(databaseCatalog.value, props.schemaName, props.tableName)
+);
+
+const initTableCatalog = computed(() => {
+  if (!tableCatalog.value) {
+    return JSON.stringify(
+      TableCatalog.fromPartial({
+        name: props.tableName,
+        objectSchema: ObjectSchema.fromPartial({
+          type: ObjectSchema_Type.OBJECT,
+          structKind: ObjectSchema_StructKind.fromPartial({}),
+        }),
+      }),
+      null,
+      4
+    );
+  }
+
+  const catalog = cloneDeep(tableCatalog.value);
+  catalog.columns = undefined;
+  if (!catalog.objectSchema) {
+    catalog.objectSchema = ObjectSchema.fromPartial({
+      type: ObjectSchema_Type.OBJECT,
+      structKind: ObjectSchema_StructKind.fromPartial({}),
+    });
+  }
+
+  return JSON.stringify(catalog, null, 4);
+});
+
 const state = reactive<LocalState>({
   columnNameSearchKeyword: "",
   partitionTableNameSearchKeyword: "",
-  tableCatalog: TableCatalog.fromPartial({
-    name: props.tableName,
-    objectSchema: ObjectSchema.fromPartial({
-      type: ObjectSchema_Type.OBJECT,
-      structKind: ObjectSchema_StructKind.fromPartial({}),
-    }),
-  }),
+  tableCatalog: "{}",
   isUploading: false,
 });
 const isFetchingTableMetadata = ref(false);
@@ -418,11 +444,6 @@ const table = computedAsync(
   }
 );
 
-const databaseCatalog = useDatabaseCatalog(props.databaseName, false);
-const tableCatalog = computed(() =>
-  getTableCatalog(databaseCatalog.value, props.schemaName, props.tableName)
-);
-
 const hasDatabaseCatalogPermission = computed(() => {
   return hasProjectPermissionV2(
     database.value.projectEntity,
@@ -431,39 +452,16 @@ const hasDatabaseCatalogPermission = computed(() => {
 });
 
 watch(
-  () => tableCatalog.value,
+  () => initTableCatalog.value,
   (catalog) => {
-    if (catalog) {
-      state.tableCatalog = cloneDeep(catalog);
-      // clear
-      state.tableCatalog.columns = undefined;
-      if (!state.tableCatalog.objectSchema) {
-        state.tableCatalog.objectSchema = ObjectSchema.fromPartial({
-          type: ObjectSchema_Type.OBJECT,
-          structKind: ObjectSchema_StructKind.fromPartial({}),
-        });
-      }
-    }
+    state.tableCatalog = catalog;
   },
   { immediate: true, deep: true }
 );
 
-const onCatalogChange = (value: string) => {
-  try {
-    const catalog = JSON.parse(value) as TableCatalog;
-    state.tableCatalog = catalog;
-  } catch (e) {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: t("common.warning"),
-      description: `Failed to parse catalog with error: ${e}`,
-    });
-  }
-};
-
 const onCatalogUpload = async () => {
-  if (state.tableCatalog.name !== props.tableName) {
+  const catalog = JSON.parse(state.tableCatalog) as TableCatalog;
+  if (catalog.name !== props.tableName) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -476,19 +474,25 @@ const onCatalogUpload = async () => {
 
   try {
     const pendingUploadCatalog = cloneDeep(databaseCatalog.value);
-    for (const schemaCatalog of pendingUploadCatalog.schemas) {
-      if (schemaCatalog.name !== props.schemaName) {
-        continue;
-      }
+    const schemaCatalog = pendingUploadCatalog.schemas.find(
+      (schemaCatalog) => schemaCatalog.name === props.schemaName
+    );
+    if (schemaCatalog) {
       const index = schemaCatalog.tables.findIndex(
         (t) => t.name === props.tableName
       );
       if (index >= 0) {
-        schemaCatalog.tables[index] = state.tableCatalog;
+        schemaCatalog.tables[index] = catalog;
       } else {
-        schemaCatalog.tables.push(state.tableCatalog);
+        schemaCatalog.tables.push(catalog);
       }
-      break;
+    } else {
+      pendingUploadCatalog.schemas.push(
+        SchemaCatalog.fromPartial({
+          name: props.schemaName,
+          tables: [catalog],
+        })
+      );
     }
     await catalogStore.updateDatabaseCatalog(pendingUploadCatalog);
 
