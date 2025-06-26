@@ -1022,6 +1022,14 @@
     "schema-drift-detected": {
       "self": "スキーマドリフトが検出されました",
       "description": "選択したデータベースにはスキーマドリフトがあります。ドリフトが想定どおりであり、適用しても安全であることを確認してください。"
+    },
+    "review": {
+      "approved": "承認された",
+      "rejected": "拒否",
+      "under-review": "審査中"
+    },
+    "expermental-page": {
+      "self": "実験問題ページ"
     }
   },
   "plan": {
@@ -1046,6 +1054,7 @@
       "specifications": "仕様",
       "checks": "小切手",
       "review": "レビュー",
+      "rollout": "ロールアウトする",
       "statement-empty": "ステートメントが空です"
     },
     "spec": {

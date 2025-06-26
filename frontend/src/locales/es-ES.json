@@ -1022,6 +1022,14 @@
     "schema-drift-detected": {
       "self": "Se detectó una desviación del esquema",
       "description": "Las bases de datos seleccionadas presentan una desviación de esquema. Asegúrese de que la desviación sea la esperada y de que sea segura para su aplicación."
+    },
+    "review": {
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "under-review": "Bajo revisión"
+    },
+    "expermental-page": {
+      "self": "Página de problemas experimentales"
     }
   },
   "plan": {
@@ -1046,6 +1054,7 @@
       "specifications": "Presupuesto",
       "checks": "Cheques",
       "review": "Revisar",
+      "rollout": "Despliegue",
       "statement-empty": "La declaración está vacía"
     },
     "spec": {

@@ -1022,6 +1022,14 @@
     "schema-drift-detected": {
       "self": "检测到 Schema 偏差",
       "description": "所选数据库存在 Schema 偏差，请在变更前确保该偏差符合预期。"
+    },
+    "review": {
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "under-review": "等待审批"
+    },
+    "expermental-page": {
+      "self": "实验性工单页面"
     }
   },
   "plan": {
@@ -1046,6 +1054,7 @@
       "specifications": "变更项",
       "checks": "检查",
       "review": "审查",
+      "rollout": "推出",
       "statement-empty": "变更语句为空"
     },
     "spec": {
