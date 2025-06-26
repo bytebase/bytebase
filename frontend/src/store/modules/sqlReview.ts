@@ -1,11 +1,10 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { pullAt, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import { reviewConfigServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type {
   SchemaPolicyRule,
@@ -14,18 +13,21 @@ import type {
   ComposedDatabase,
 } from "@/types";
 import {
-  PolicyType,
-  policyTypeToJSON,
-} from "@/types/proto/v1/org_policy_service";
-import { ReviewConfig } from "@/types/proto/v1/review_config_service";
-import {
   DeleteReviewConfigRequestSchema,
   UpdateReviewConfigRequestSchema,
   ListReviewConfigsRequestSchema,
   GetReviewConfigRequestSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
+import {
+  PolicyType,
+  policyTypeToJSON,
+} from "@/types/proto/v1/org_policy_service";
+import { ReviewConfig } from "@/types/proto/v1/review_config_service";
+import {
+  convertNewReviewConfigToOld,
+  convertOldReviewConfigToNew,
+} from "@/utils/v1/review-config-conversions";
 import { usePolicyV1Store } from "./v1/policy";
-import { convertNewReviewConfigToOld } from "@/utils/v1/review-config-conversions";
 
 const reviewConfigTagName = "bb.tag.review_config";
 
@@ -178,9 +180,9 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       ruleList?: SchemaPolicyRule[];
       resources?: string[];
     }) {
-      const patch: Partial<ReviewConfig> = {
+      const patch: ReviewConfig = ReviewConfig.fromPartial({
         name: id,
-      };
+      });
       const updateMask: string[] = [];
       if (enforce !== undefined) {
         updateMask.push("enabled");
@@ -204,11 +206,12 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
 
       const request = create(UpdateReviewConfigRequestSchema, {
-        reviewConfig: patch as any, // Type assertion needed for partial type compatibility
+        reviewConfig: convertOldReviewConfigToNew(patch),
         updateMask: { paths: updateMask },
         allowMissing: true,
       });
-      const updated = await reviewConfigServiceClientConnect.updateReviewConfig(request);
+      const updated =
+        await reviewConfigServiceClientConnect.updateReviewConfig(request);
 
       if (resources) {
         await this.upsertReviewConfigTag({
@@ -262,10 +265,10 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       silent?: boolean;
     }) {
       const request = create(GetReviewConfigRequestSchema, { name });
-      const reviewConfig = await reviewConfigServiceClientConnect.getReviewConfig(
-        request,
-        { contextValues: createContextValues().set(silentContextKey, silent) }
-      );
+      const reviewConfig =
+        await reviewConfigServiceClientConnect.getReviewConfig(request, {
+          contextValues: createContextValues().set(silentContextKey, silent),
+        });
       if (!reviewConfig) {
         return;
       }
