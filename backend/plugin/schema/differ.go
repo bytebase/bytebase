@@ -188,7 +188,7 @@ type EventDiff struct {
 }
 
 // GetDatabaseSchemaDiff compares two model.DatabaseSchema instances and returns the differences.
-func GetDatabaseSchemaDiff(oldSchema, newSchema *model.DatabaseSchema) (*MetadataDiff, error) {
+func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.DatabaseSchema) (*MetadataDiff, error) {
 	if oldSchema == nil || newSchema == nil {
 		return nil, nil
 	}
@@ -239,7 +239,7 @@ func GetDatabaseSchemaDiff(oldSchema, newSchema *model.DatabaseSchema) (*Metadat
 			// Compare schema objects
 			oldSchemaMeta := oldMeta.GetSchema(schemaName)
 			if oldSchemaMeta != nil {
-				compareSchemaObjects(diff, schemaName, oldSchemaMeta, newSchemaMeta)
+				compareSchemaObjects(engine, diff, schemaName, oldSchemaMeta, newSchemaMeta)
 			}
 		}
 	}
@@ -350,7 +350,7 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 }
 
 // compareSchemaObjects compares objects between two schemas.
-func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
 	// Compare tables
 
 	// Check for dropped tables
@@ -395,10 +395,10 @@ func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newS
 	}
 
 	// Compare views
-	compareViews(diff, schemaName, oldSchema, newSchema)
+	compareViews(engine, diff, schemaName, oldSchema, newSchema)
 
 	// Compare materialized views
-	compareMaterializedViews(diff, schemaName, oldSchema, newSchema)
+	compareMaterializedViews(engine, diff, schemaName, oldSchema, newSchema)
 
 	// Compare functions
 	compareFunctions(diff, schemaName, oldSchema, newSchema)
@@ -952,7 +952,9 @@ func partitionsEqual(part1, part2 *storepb.TablePartitionMetadata) bool {
 }
 
 // compareViews compares views between two schemas.
-func compareViews(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+	// Get the engine-specific view comparer
+	comparer := GetViewComparer(engine)
 	// Check for dropped views
 	for _, viewName := range oldSchema.ListViewNames() {
 		if newSchema.GetView(viewName) == nil {
@@ -983,20 +985,49 @@ func compareViews(diff *MetadataDiff, schemaName string, oldSchema, newSchema *m
 				ViewName:   viewName,
 				NewView:    newView.GetProto(),
 			})
-		} else if !oldView.GetProto().GetSkipDump() && oldView.Definition != newView.Definition {
-			diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
-				Action:     MetadataDiffActionAlter,
-				SchemaName: schemaName,
-				ViewName:   viewName,
-				OldView:    oldView.GetProto(),
-				NewView:    newView.GetProto(),
-			})
+		} else if !oldView.GetProto().GetSkipDump() {
+			// Use engine-specific comparison
+			changes, err := comparer.CompareView(oldView, newView)
+			if err != nil {
+				// Fallback to simple definition comparison on error
+				if oldView.Definition != newView.Definition {
+					diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
+						Action:     MetadataDiffActionAlter,
+						SchemaName: schemaName,
+						ViewName:   viewName,
+						OldView:    oldView.GetProto(),
+						NewView:    newView.GetProto(),
+					})
+				}
+			} else if len(changes) > 0 {
+				// Check if any change requires recreation
+				requiresRecreation := false
+				for _, change := range changes {
+					if change.RequiresRecreation {
+						requiresRecreation = true
+						break
+					}
+				}
+
+				if requiresRecreation {
+					diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
+						Action:     MetadataDiffActionAlter,
+						SchemaName: schemaName,
+						ViewName:   viewName,
+						OldView:    oldView.GetProto(),
+						NewView:    newView.GetProto(),
+					})
+				}
+				// TODO: Handle non-recreating changes like comment updates
+			}
 		}
 	}
 }
 
 // compareMaterializedViews compares materialized views between two schemas.
-func compareMaterializedViews(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+func compareMaterializedViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+	// Get the engine-specific view comparer
+	comparer := GetViewComparer(engine)
 	// Check for dropped materialized views
 	for _, mvName := range oldSchema.ListMaterializedViewNames() {
 		if newSchema.GetMaterializedView(mvName) == nil {
@@ -1027,14 +1058,41 @@ func compareMaterializedViews(diff *MetadataDiff, schemaName string, oldSchema, 
 				MaterializedViewName: mvName,
 				NewMaterializedView:  newMV.GetProto(),
 			})
-		} else if !oldMV.GetProto().GetSkipDump() && oldMV.Definition != newMV.Definition {
-			diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
-				Action:               MetadataDiffActionAlter,
-				SchemaName:           schemaName,
-				MaterializedViewName: mvName,
-				OldMaterializedView:  oldMV.GetProto(),
-				NewMaterializedView:  newMV.GetProto(),
-			})
+		} else if !oldMV.GetProto().GetSkipDump() {
+			// Use engine-specific comparison
+			changes, err := comparer.CompareMaterializedView(oldMV, newMV)
+			if err != nil {
+				// Fallback to simple definition comparison on error
+				if oldMV.Definition != newMV.Definition {
+					diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
+						Action:               MetadataDiffActionAlter,
+						SchemaName:           schemaName,
+						MaterializedViewName: mvName,
+						OldMaterializedView:  oldMV.GetProto(),
+						NewMaterializedView:  newMV.GetProto(),
+					})
+				}
+			} else if len(changes) > 0 {
+				// Check if any change requires recreation
+				requiresRecreation := false
+				for _, change := range changes {
+					if change.RequiresRecreation {
+						requiresRecreation = true
+						break
+					}
+				}
+
+				if requiresRecreation {
+					diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
+						Action:               MetadataDiffActionAlter,
+						SchemaName:           schemaName,
+						MaterializedViewName: mvName,
+						OldMaterializedView:  oldMV.GetProto(),
+						NewMaterializedView:  newMV.GetProto(),
+					})
+				}
+				// TODO: Handle non-recreating changes like comment updates or index-only changes
+			}
 		}
 	}
 }
