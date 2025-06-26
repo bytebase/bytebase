@@ -11,8 +11,8 @@ import type {
   BatchQueryContext,
 } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,
@@ -21,7 +21,6 @@ import {
   isSimilarSQLEditorTab,
   useDynamicLocalStorage,
 } from "@/utils";
-import { useCurrentUserV1 } from "../v1/auth";
 import {
   useDatabaseV1Store,
   useDatabaseV1ByName,
@@ -29,6 +28,7 @@ import {
   extractUserId,
   hasFeature,
 } from "../v1";
+import { useCurrentUserV1 } from "../v1/auth";
 import { useSQLEditorStore } from "./editor";
 import {
   EXTENDED_TAB_FIELDS,
@@ -60,12 +60,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const { project } = storeToRefs(useSQLEditorStore());
 
   // states
-  const {
-    fetchExtendedTab,
-    saveExtendedTab,
-    deleteExtendedTab,
-    cleanupExtendedTabs,
-  } = useExtendedTabStore();
+  const { fetchExtendedTab, saveExtendedTab, deleteExtendedTab } =
+    useExtendedTabStore();
   const tabViewStateStore = useTabViewStateStore();
 
   const me = useCurrentUserV1();
@@ -134,6 +130,9 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
   const initializedProjects = new Set<string>();
   const maybeInitProject = (project: string) => {
+    if (!project) {
+      return;
+    }
     if (initializedProjects.has(project)) {
       return;
     }
@@ -377,25 +376,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       );
     }
   };
-  // clean persistent tabs that are not in the `tabIdList` anymore
-  const _cleanup = () => {
-    const prefix = `${keyNamespace.value}.tab.`;
-    const keys = getStorage()
-      .keys()
-      .filter((key) => key.startsWith(prefix));
-    const flattenTabIdSet = new Set(
-      Object.keys(tabIdListMapByProject.value).flatMap(
-        (project) => tabIdListMapByProject.value[project]
-      )
-    );
-    keys.forEach((key) => {
-      const id = key.substring(prefix.length);
-      if (!flattenTabIdSet.has(id)) {
-        getStorage().remove(keyForTab(id));
-      }
-    });
-    cleanupExtendedTabs(userUID.value, Array.from(flattenTabIdSet));
-  };
   // watch the field changes of a tab, store it to localStorage
   // when needed, but not to frequently (for performance consideration)
   const watchTab = (tab: SQLEditorTab, immediate: boolean) => {
@@ -428,16 +408,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     });
     // initialize current project if needed (when it's not stored)
     maybeInitProject(project.value);
-
-    _cleanup();
   };
   initAll();
-
-  const reset = () => {
-    tabIdListMapByProject.value = {};
-    currentTabIdMapByProject.value = {};
-    initAll();
-  };
 
   // some shortcuts
   const isDisconnected = computed(() => {
@@ -476,7 +448,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     setCurrentTabId,
     selectOrAddSimilarNewTab,
     maybeInitProject,
-    reset,
     isDisconnected,
     isSwitchingTab,
     isInBatchMode,
