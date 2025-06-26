@@ -184,6 +184,7 @@ DELIMITER ;
 			description:  "Partitioned tables",
 			databaseName: "test_partitions",
 			originalDDL: `
+-- RANGE partition
 CREATE TABLE sales (
 	id INT NOT NULL AUTO_INCREMENT,
 	sale_date DATE NOT NULL,
@@ -196,6 +197,55 @@ CREATE TABLE sales (
 	PARTITION p2023 VALUES LESS THAN (2024),
 	PARTITION p2024 VALUES LESS THAN (2025),
 	PARTITION p_future VALUES LESS THAN MAXVALUE
+);
+
+-- HASH partition
+CREATE TABLE employees (
+	id INT NOT NULL,
+	name VARCHAR(100) NOT NULL,
+	department_id INT NOT NULL,
+	hired_date DATE,
+	PRIMARY KEY (id)
+) PARTITION BY HASH(id) PARTITIONS 4;
+
+-- LIST partition
+CREATE TABLE customer_regions (
+	id INT NOT NULL AUTO_INCREMENT,
+	customer_name VARCHAR(100) NOT NULL,
+	region VARCHAR(20) NOT NULL,
+	sales_amount DECIMAL(10, 2),
+	PRIMARY KEY (id, region)
+) PARTITION BY LIST COLUMNS(region) (
+	PARTITION p_north VALUES IN ('north', 'northeast', 'northwest'),
+	PARTITION p_south VALUES IN ('south', 'southeast', 'southwest'),
+	PARTITION p_east VALUES IN ('east'),
+	PARTITION p_west VALUES IN ('west'),
+	PARTITION p_central VALUES IN ('central')
+);
+
+-- KEY partition
+CREATE TABLE user_sessions (
+	session_id VARCHAR(64) NOT NULL,
+	user_id INT NOT NULL,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (session_id)
+) PARTITION BY KEY() PARTITIONS 8;
+
+-- RANGE COLUMNS partition
+CREATE TABLE order_archive (
+	order_id INT NOT NULL,
+	order_date DATE NOT NULL,
+	customer_id INT NOT NULL,
+	status VARCHAR(20) NOT NULL,
+	total_amount DECIMAL(10, 2),
+	PRIMARY KEY (order_id, order_date)
+) PARTITION BY RANGE COLUMNS(order_date) (
+	PARTITION p_2022_q1 VALUES LESS THAN ('2022-04-01'),
+	PARTITION p_2022_q2 VALUES LESS THAN ('2022-07-01'),
+	PARTITION p_2022_q3 VALUES LESS THAN ('2022-10-01'),
+	PARTITION p_2022_q4 VALUES LESS THAN ('2023-01-01'),
+	PARTITION p_2023_and_later VALUES LESS THAN (MAXVALUE)
 );
 `,
 		},

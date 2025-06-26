@@ -597,12 +597,28 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			if createTableSQL != "" {
 				_, _ = buf.WriteString("\n")
 			}
+
+			// Add table and column comments for newly created tables
+			if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
+				writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+			}
+			if tableDiff.NewTable != nil {
+				for _, col := range tableDiff.NewTable.Columns {
+					if col.Comment != "" {
+						writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+					}
+				}
+			}
 		}
 
 		// Create views
 		for _, viewDiff := range viewMap {
 			if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
 				return err
+			}
+			// Add view comment for newly created views
+			if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
+				writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
 			}
 		}
 
@@ -611,12 +627,20 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
 				return err
 			}
+			// Add materialized view comment for newly created materialized views
+			if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
+				writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, mvDiff.NewMaterializedView.Comment)
+			}
 		}
 
 		// Create functions
 		for _, funcDiff := range functionMap {
 			if err := writeFunctionDiff(buf, funcDiff); err != nil {
 				return err
+			}
+			// Add function comment for newly created functions
+			if funcDiff.Action == schema.MetadataDiffActionCreate && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
+				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment)
 			}
 		}
 
@@ -640,7 +664,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 		}
 	} else {
-		// Create in topological order (dependencies first)
+		// First pass: Create tables and functions only
 		for _, objID := range orderedList {
 			if tableDiff, ok := tableMap[objID]; ok {
 				// Create table without foreign keys
@@ -652,17 +676,58 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if createTableSQL != "" {
 					_, _ = buf.WriteString("\n")
 				}
-			} else if viewDiff, ok := viewMap[objID]; ok {
+
+				// Add table and column comments for newly created tables
+				if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
+					writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+				}
+				if tableDiff.NewTable != nil {
+					for _, col := range tableDiff.NewTable.Columns {
+						if col.Comment != "" {
+							writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+						}
+					}
+				}
+			} else if funcDiff, ok := functionMap[objID]; ok {
+				if err := writeFunctionDiff(buf, funcDiff); err != nil {
+					return err
+				}
+				// Add function comment for newly created functions
+				if funcDiff.Action == schema.MetadataDiffActionCreate && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
+					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment)
+				}
+			}
+		}
+
+		// Handle ALTER table operations that add columns (views might depend on these)
+		for _, tableDiff := range diff.TableChanges {
+			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				// Only process column additions here
+				for _, colDiff := range tableDiff.ColumnChanges {
+					if colDiff.Action == schema.MetadataDiffActionCreate {
+						writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+					}
+				}
+			}
+		}
+
+		// Second pass: Create views and materialized views (after columns are added)
+		for _, objID := range orderedList {
+			if viewDiff, ok := viewMap[objID]; ok {
 				if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
 					return err
+				}
+				// Add view comment for newly created views
+				if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
+					writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
 				}
 			} else if mvDiff, ok := materializedViewMap[objID]; ok {
 				if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
 					return err
 				}
-			} else if funcDiff, ok := functionMap[objID]; ok {
-				if err := writeFunctionDiff(buf, funcDiff); err != nil {
-					return err
+				// Add materialized view comment for newly created materialized views
+				if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
+					writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, mvDiff.NewMaterializedView.Comment)
 				}
 			}
 		}
@@ -686,12 +751,31 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				}
 			}
 		}
+
+		// Create triggers after foreign keys
+		for _, tableDiff := range tableMap {
+			if tableDiff.NewTable != nil {
+				for _, trigger := range tableDiff.NewTable.Triggers {
+					writeMigrationTrigger(buf, trigger)
+				}
+			}
+		}
+
+		// Create indexes for materialized views after they are created
+		for _, mvDiff := range diff.MaterializedViewChanges {
+			if mvDiff.Action == schema.MetadataDiffActionCreate && mvDiff.NewMaterializedView != nil {
+				for _, index := range mvDiff.NewMaterializedView.Indexes {
+					writeMigrationMaterializedViewIndex(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView.Name, index)
+				}
+			}
+		}
 	}
 
 	// Handle ALTER table operations
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionAlter {
-			alterTableSQL, err := generateAlterTable(tableDiff)
+			// Skip column additions as they were handled earlier
+			alterTableSQL, err := generateAlterTableWithOptions(tableDiff, false)
 			if err != nil {
 				return err
 			}
@@ -788,13 +872,15 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 	return buf.String(), nil
 }
 
-func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
+func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdditions bool) (string, error) {
 	var buf strings.Builder
 
 	// Add columns first (other operations might depend on them)
-	for _, colDiff := range tableDiff.ColumnChanges {
-		if colDiff.Action == schema.MetadataDiffActionCreate {
-			writeAddColumn(&buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+	if includeColumnAdditions {
+		for _, colDiff := range tableDiff.ColumnChanges {
+			if colDiff.Action == schema.MetadataDiffActionCreate {
+				writeAddColumn(&buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+			}
 		}
 	}
 
@@ -835,6 +921,13 @@ func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
 			if err := writeMigrationForeignKey(&buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey); err != nil {
 				return "", err
 			}
+		}
+	}
+
+	// Add triggers after foreign keys
+	for _, triggerDiff := range tableDiff.TriggerChanges {
+		if triggerDiff.Action == schema.MetadataDiffActionCreate {
+			writeMigrationTrigger(&buf, triggerDiff.NewTrigger)
 		}
 	}
 
@@ -1395,6 +1488,30 @@ func writeMigrationForeignKey(out *strings.Builder, schema, table string, fk *st
 	return nil
 }
 
+// writeMigrationTrigger writes a trigger creation statement
+func writeMigrationTrigger(out *strings.Builder, trigger *storepb.TriggerMetadata) {
+	if trigger == nil || trigger.Body == "" {
+		return
+	}
+	_, _ = out.WriteString(trigger.Body)
+	if !strings.HasSuffix(strings.TrimSpace(trigger.Body), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n")
+}
+
+// writeMigrationMaterializedViewIndex writes an index creation statement for a materialized view
+func writeMigrationMaterializedViewIndex(out *strings.Builder, _ string, _ string, index *storepb.IndexMetadata) {
+	if index == nil || index.Definition == "" {
+		return
+	}
+	_, _ = out.WriteString(index.Definition)
+	if !strings.HasSuffix(strings.TrimSpace(index.Definition), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n")
+}
+
 // writeCreateTable writes a CREATE TABLE statement
 func writeMigrationCreateTable(out *strings.Builder, schema, table string, columns []*storepb.ColumnMetadata, checks []*storepb.CheckConstraintMetadata) {
 	_, _ = out.WriteString(`CREATE TABLE "`)
@@ -1488,6 +1605,17 @@ func writeMigrationUniqueKey(out *strings.Builder, schema, table string, index *
 
 // writeIndex writes a CREATE INDEX statement
 func writeMigrationIndex(out *strings.Builder, schema, table string, index *storepb.IndexMetadata) {
+	// If index has a full definition, use it directly
+	if index.Definition != "" {
+		_, _ = out.WriteString(index.Definition)
+		if !strings.HasSuffix(strings.TrimSpace(index.Definition), ";") {
+			_, _ = out.WriteString(";")
+		}
+		_, _ = out.WriteString("\n")
+		return
+	}
+
+	// Otherwise, construct the CREATE INDEX statement
 	_, _ = out.WriteString(`CREATE `)
 	if index.Unique {
 		_, _ = out.WriteString(`UNIQUE `)
@@ -1519,9 +1647,6 @@ func writeMigrationIndex(out *strings.Builder, schema, table string, index *stor
 		}
 	}
 	_, _ = out.WriteString(`)`)
-
-	// Note: IndexMetadata doesn't have a Where field in the current protobuf definition
-	// This would need to be added if partial indexes need to be supported
 
 	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
