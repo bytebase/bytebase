@@ -681,10 +681,10 @@ func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 	_, _ = buf.WriteString("[")
 	_, _ = buf.WriteString(column.Name)
 	_, _ = buf.WriteString("] ")
-	
+
 	// Check if this is a computed column by examining the type field
 	isComputedColumn := strings.Contains(column.Type, " AS (") || strings.HasPrefix(column.Type, "AS (")
-	
+
 	if isComputedColumn {
 		// For computed columns, just use the type as-is (it contains the AS expression)
 		_, _ = buf.WriteString(column.Type)
