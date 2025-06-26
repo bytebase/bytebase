@@ -7,14 +7,14 @@ type AlterSequenceStmt struct {
 	Name        *SequenceNameDef
 	IfExists    bool
 	Type        *Integer
-	IncrementBy *int32
+	IncrementBy *int64
 	NoMinValue  bool
-	MinValue    *int32
+	MinValue    *int64
 	NoMaxValue  bool
-	MaxValue    *int32
-	StartWith   *int32
-	RestartWith *int32
-	Cache       *int32
+	MaxValue    *int64
+	StartWith   *int64
+	RestartWith *int64
+	Cache       *int64
 	Cycle       *bool
 	OwnedByNone bool
 	OwnedBy     *ColumnNameDef
