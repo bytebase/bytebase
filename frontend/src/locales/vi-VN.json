@@ -1022,6 +1022,14 @@
     "schema-drift-detected": {
       "self": "Đã phát hiện sự trôi dạt của sơ đồ",
       "description": "Cơ sở dữ liệu được chọn có sự trôi dạt lược đồ. Vui lòng đảm bảo rằng sự trôi dạt này được mong đợi và an toàn để áp dụng."
+    },
+    "review": {
+      "approved": "Tán thành",
+      "rejected": "Vật bị loại bỏ",
+      "under-review": "Đang xem xét"
+    },
+    "expermental-page": {
+      "self": "Trang vấn đề thử nghiệm"
     }
   },
   "plan": {
@@ -1046,6 +1054,7 @@
       "specifications": "Thông số kỹ thuật",
       "checks": "Kiểm tra",
       "review": "Ôn tập",
+      "rollout": "Triển khai",
       "statement-empty": "Câu lệnh trống rỗng"
     },
     "spec": {

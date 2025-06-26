@@ -28,14 +28,16 @@ const props = defineProps<{
   projectId: string;
   planId?: string;
   issueId?: string;
+  rolloutId?: string;
 }>();
 
 const { t } = useI18n();
-const { isCreating, plan, planCheckRunList, issue, isInitializing } =
+const { isCreating, plan, planCheckRunList, issue, rollout, isInitializing } =
   useInitializePlan(
     toRef(props, "projectId"),
     toRef(props, "planId"),
-    toRef(props, "issueId")
+    toRef(props, "issueId"),
+    toRef(props, "rolloutId")
   );
 const planBaseContext = useBasePlanContext({
   isCreating,
@@ -52,6 +54,7 @@ providePlanContext(
     plan,
     planCheckRunList,
     issue,
+    rollout,
     ...planBaseContext,
   },
   true /* root */
