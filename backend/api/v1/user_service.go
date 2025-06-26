@@ -841,7 +841,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 
 	// Check if the email is valid.
 	if err := validateEmail(email); err != nil {
-		return err
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid email: %v", err.Error()))
 	}
 	// Domain restrictions are not applied to service account.
 	if isServiceAccount {
@@ -857,7 +857,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 			}
 		}
 		if !ok {
-			return errors.Errorf("email %q does not belong to domains %v", email, allowedDomains)
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email %q does not belong to domains %v", email, allowedDomains))
 		}
 	}
 	return nil
