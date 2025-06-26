@@ -534,23 +534,23 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 					return nil, err
 				}
 			case "increment":
-				if createSeqStmt.SequenceDef.IncrementBy, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.IncrementBy, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "start":
-				if createSeqStmt.SequenceDef.StartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.StartWith, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "minvalue":
-				if createSeqStmt.SequenceDef.MinValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.MinValue, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "maxvalue":
-				if createSeqStmt.SequenceDef.MaxValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.MaxValue, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "cache":
-				if createSeqStmt.SequenceDef.Cache, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.Cache, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "cycle":
@@ -1020,33 +1020,33 @@ func convertAlterSequence(in *pgquery.AlterSeqStmt) (*ast.AlterSequenceStmt, err
 				return nil, err
 			}
 		case "increment":
-			if alterSequenceStmt.IncrementBy, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+			if alterSequenceStmt.IncrementBy, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 				return nil, err
 			}
 		case "start":
-			if alterSequenceStmt.StartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+			if alterSequenceStmt.StartWith, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 				return nil, err
 			}
 		case "restart":
-			if alterSequenceStmt.RestartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+			if alterSequenceStmt.RestartWith, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 				return nil, err
 			}
 		case "minvalue":
-			if alterSequenceStmt.MinValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+			if alterSequenceStmt.MinValue, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 				return nil, err
 			}
 			if alterSequenceStmt.MinValue == nil {
 				alterSequenceStmt.NoMinValue = true
 			}
 		case "maxvalue":
-			if alterSequenceStmt.MaxValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+			if alterSequenceStmt.MaxValue, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 				return nil, err
 			}
 			if alterSequenceStmt.MaxValue == nil {
 				alterSequenceStmt.NoMaxValue = true
 			}
 		case "cache":
-			if alterSequenceStmt.Cache, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+			if alterSequenceStmt.Cache, err = convertDefElemNodeIntegerToInt64(defElemNode.DefElem); err != nil {
 				return nil, err
 			}
 		case "cycle":
@@ -1920,20 +1920,20 @@ func convertDefElemNodeIntegerToBool(defElem *pgquery.DefElem) (bool, error) {
 	}
 }
 
-func convertDefElemNodeIntegerToInt32(defElem *pgquery.DefElem) (*int32, error) {
+func convertDefElemNodeIntegerToInt64(defElem *pgquery.DefElem) (*int64, error) {
 	if defElem.Arg == nil {
 		return nil, nil
 	}
 	switch node := defElem.Arg.Node.(type) {
 	case *pgquery.Node_Integer:
-		val := int32(node.Integer.Ival)
+		val := int64(node.Integer.Ival)
 		return &val, nil
 	case *pgquery.Node_Float:
 		float, err := strconv.ParseFloat(node.Float.Fval, 64)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse float")
 		}
-		val := int32(float)
+		val := int64(float)
 		return &val, nil
 	default:
 		return nil, NewConvertErrorf("failed to convert DefElemNode:expected integer or float but found %T", defElem.Arg.Node)

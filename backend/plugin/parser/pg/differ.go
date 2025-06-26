@@ -1728,13 +1728,13 @@ func (diff *diffNode) modifySequenceExceptOwnedBy(oldSequence *ast.CreateSequenc
 	}
 
 	// compare increment
-	if !isEqualInt32Pointer(oldSequence.SequenceDef.IncrementBy, newSequence.SequenceDef.IncrementBy) {
+	if !isEqualInt64Pointer(oldSequence.SequenceDef.IncrementBy, newSequence.SequenceDef.IncrementBy) {
 		alterSequence.IncrementBy = newSequence.SequenceDef.IncrementBy
 		isEqual = false
 	}
 
 	// compare min value
-	if !isEqualInt32Pointer(oldSequence.SequenceDef.MinValue, newSequence.SequenceDef.MinValue) {
+	if !isEqualInt64Pointer(oldSequence.SequenceDef.MinValue, newSequence.SequenceDef.MinValue) {
 		if newSequence.SequenceDef.MinValue == nil {
 			alterSequence.NoMinValue = true
 		} else {
@@ -1744,7 +1744,7 @@ func (diff *diffNode) modifySequenceExceptOwnedBy(oldSequence *ast.CreateSequenc
 	}
 
 	// compare max value
-	if !isEqualInt32Pointer(oldSequence.SequenceDef.MaxValue, newSequence.SequenceDef.MaxValue) {
+	if !isEqualInt64Pointer(oldSequence.SequenceDef.MaxValue, newSequence.SequenceDef.MaxValue) {
 		if newSequence.SequenceDef.MaxValue == nil {
 			alterSequence.NoMaxValue = true
 		} else {
@@ -1754,7 +1754,7 @@ func (diff *diffNode) modifySequenceExceptOwnedBy(oldSequence *ast.CreateSequenc
 	}
 
 	// compare start with
-	if !isEqualInt32Pointer(oldSequence.SequenceDef.StartWith, newSequence.SequenceDef.StartWith) {
+	if !isEqualInt64Pointer(oldSequence.SequenceDef.StartWith, newSequence.SequenceDef.StartWith) {
 		if newSequence.SequenceDef.StartWith != nil {
 			alterSequence.StartWith = newSequence.SequenceDef.StartWith
 			isEqual = false
@@ -1762,7 +1762,7 @@ func (diff *diffNode) modifySequenceExceptOwnedBy(oldSequence *ast.CreateSequenc
 	}
 
 	// compare cache
-	if !isEqualInt32Pointer(oldSequence.SequenceDef.Cache, newSequence.SequenceDef.Cache) {
+	if !isEqualInt64Pointer(oldSequence.SequenceDef.Cache, newSequence.SequenceDef.Cache) {
 		if newSequence.SequenceDef.Cache != nil {
 			alterSequence.Cache = newSequence.SequenceDef.Cache
 			isEqual = false
@@ -1818,7 +1818,7 @@ func isEqualColumnNameDef(columnA *ast.ColumnNameDef, columnB *ast.ColumnNameDef
 	return columnA.ColumnName == columnB.ColumnName
 }
 
-func isEqualInt32Pointer(a *int32, b *int32) bool {
+func isEqualInt64Pointer(a *int64, b *int64) bool {
 	if a == nil && b == nil {
 		return true
 	}

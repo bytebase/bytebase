@@ -99,8 +99,9 @@ const maximumRoleExpiration = computed(() => {
   if (props.role === PresetRoleType.PROJECT_OWNER) {
     return undefined;
   }
-  const seconds =
-    settingV1Store.workspaceProfileSetting?.maximumRoleExpiration?.seconds?.toNumber();
+  const seconds = settingV1Store.workspaceProfileSetting?.maximumRoleExpiration?.seconds
+    ? Number(settingV1Store.workspaceProfileSetting.maximumRoleExpiration.seconds)
+    : undefined;
   if (!seconds) {
     return undefined;
   }

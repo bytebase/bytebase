@@ -315,15 +315,23 @@ import {
   RadioGrid,
   MiniActionButton,
 } from "@/components/v2";
-import {
+import type {
   Algorithm,
   Algorithm_FullMask as FullMask,
   Algorithm_RangeMask as RangeMask,
   Algorithm_MD5Mask as MD5Mask,
   Algorithm_InnerOuterMask,
-  Algorithm_RangeMask_Slice,
+} from "@/types/proto-es/v1/setting_service_pb";
+import {
+  AlgorithmSchema,
+  Algorithm_FullMaskSchema as FullMaskSchema,
+  Algorithm_RangeMaskSchema as RangeMaskSchema,
+  Algorithm_MD5MaskSchema as MD5MaskSchema,
+  Algorithm_InnerOuterMaskSchema,
+  Algorithm_RangeMask_SliceSchema,
   Algorithm_InnerOuterMask_MaskType,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
 import type { MaskingType } from "./utils";
 import { getMaskingType } from "./utils";
 
@@ -353,9 +361,9 @@ defineEmits<{
 }>();
 
 const defaultRangeMask = computed(() =>
-  RangeMask.fromPartial({
+  create(RangeMaskSchema, {
     slices: [
-      Algorithm_RangeMask_Slice.fromPartial({
+      create(Algorithm_RangeMask_SliceSchema, {
         start: 0,
         end: 1,
         substitution: "*",
@@ -365,7 +373,7 @@ const defaultRangeMask = computed(() =>
 );
 
 const defaultInnerOuterMask = computed(() =>
-  Algorithm_InnerOuterMask.fromPartial({
+  create(Algorithm_InnerOuterMaskSchema, {
     prefixLen: 0,
     suffixLen: 0,
     type: Algorithm_InnerOuterMask_MaskType.INNER,
@@ -376,9 +384,9 @@ const defaultInnerOuterMask = computed(() =>
 const state = reactive<LocalState>({
   processing: false,
   maskingType: "full-mask",
-  fullMask: FullMask.fromPartial({}),
+  fullMask: create(FullMaskSchema, {}),
   rangeMask: cloneDeep(defaultRangeMask.value),
-  md5Mask: MD5Mask.fromPartial({}),
+  md5Mask: create(MD5MaskSchema, {}),
   innerOuterMask: cloneDeep(defaultInnerOuterMask.value),
 });
 
@@ -407,32 +415,51 @@ watch(
   () => props.algorithm,
   (algorithm) => {
     state.maskingType = getMaskingType(algorithm) ?? "full-mask";
-    state.fullMask = algorithm?.fullMask ?? FullMask.fromPartial({});
-    state.rangeMask = algorithm?.rangeMask ?? cloneDeep(defaultRangeMask.value);
-    state.md5Mask = algorithm?.md5Mask ?? MD5Mask.fromPartial({});
-    state.innerOuterMask =
-      algorithm?.innerOuterMask ?? cloneDeep(defaultInnerOuterMask.value);
+    state.fullMask = algorithm?.mask?.case === "fullMask" ? algorithm.mask.value : create(FullMaskSchema, {});
+    state.rangeMask = algorithm?.mask?.case === "rangeMask" ? algorithm.mask.value : cloneDeep(defaultRangeMask.value);
+    state.md5Mask = algorithm?.mask?.case === "md5Mask" ? algorithm.mask.value : create(MD5MaskSchema, {});
+    state.innerOuterMask = algorithm?.mask?.case === "innerOuterMask" ? algorithm.mask.value : cloneDeep(defaultInnerOuterMask.value);
   }
 );
 
 const maskingAlgorithm = computed((): Algorithm => {
-  const result = Algorithm.fromPartial({});
-
   switch (state.maskingType) {
     case "full-mask":
-      result.fullMask = state.fullMask;
-      break;
+      return create(AlgorithmSchema, {
+        mask: {
+          case: "fullMask",
+          value: state.fullMask,
+        },
+      });
     case "range-mask":
-      result.rangeMask = state.rangeMask;
-      break;
+      return create(AlgorithmSchema, {
+        mask: {
+          case: "rangeMask",
+          value: state.rangeMask,
+        },
+      });
     case "md5-mask":
-      result.md5Mask = state.md5Mask;
-      break;
+      return create(AlgorithmSchema, {
+        mask: {
+          case: "md5Mask",
+          value: state.md5Mask,
+        },
+      });
     case "inner-outer-mask":
-      result.innerOuterMask = state.innerOuterMask;
+      return create(AlgorithmSchema, {
+        mask: {
+          case: "innerOuterMask",
+          value: state.innerOuterMask,
+        },
+      });
+    default:
+      return create(AlgorithmSchema, {
+        mask: {
+          case: "fullMask",
+          value: create(FullMaskSchema, {}),
+        },
+      });
   }
-
-  return result;
 });
 
 const rangeMaskErrorMessage = computed(() => {
@@ -516,13 +543,13 @@ const onMaskingTypeChange = (maskingType: MaskingType) => {
   }
   switch (maskingType) {
     case "full-mask":
-      state.fullMask = FullMask.fromPartial({});
+      state.fullMask = create(FullMaskSchema, {});
       break;
     case "range-mask":
       state.rangeMask = cloneDeep(defaultRangeMask.value);
       break;
     case "md5-mask":
-      state.md5Mask = MD5Mask.fromPartial({});
+      state.md5Mask = create(MD5MaskSchema, {});
       break;
     case "inner-outer-mask":
       state.innerOuterMask = cloneDeep(defaultInnerOuterMask.value);
@@ -534,7 +561,7 @@ const onMaskingTypeChange = (maskingType: MaskingType) => {
 const addSlice = () => {
   const last = state.rangeMask.slices[state.rangeMask.slices.length - 1];
   state.rangeMask.slices.push(
-    Algorithm_RangeMask_Slice.fromPartial({
+    create(Algorithm_RangeMask_SliceSchema, {
       start: (last?.start ?? -1) + 1,
       end: (last?.end ?? 0) + 1,
       substitution: "*",

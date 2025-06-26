@@ -3,6 +3,8 @@ import type { Setting as OldSetting } from "@/types/proto/v1/setting_service";
 import { Setting as OldSettingProto, Setting_SettingName as OldSettingName } from "@/types/proto/v1/setting_service";
 import type { Setting as NewSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { SettingSchema, Setting_SettingName as NewSettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { Engine as NewEngine } from "@/types/proto-es/v1/common_pb";
+import { Engine as OldEngine } from "@/types/proto/v1/common";
 
 // Convert old proto to proto-es
 export const convertOldSettingToNew = (oldSetting: OldSetting): NewSetting => {
@@ -80,4 +82,124 @@ const convertNewSettingNameEnumToOld = (newName: NewSettingName): OldSettingName
     [NewSettingName.ENVIRONMENT]: OldSettingName.ENVIRONMENT,
   };
   return mapping[newName] ?? OldSettingName.UNRECOGNIZED;
+};
+
+// Convert proto-es Engine to old Engine for utility functions
+export const convertEngineToOld = (engine: NewEngine): OldEngine => {
+  switch (engine) {
+    case NewEngine.MYSQL:
+      return OldEngine.MYSQL;
+    case NewEngine.POSTGRES:
+      return OldEngine.POSTGRES;
+    case NewEngine.TIDB:
+      return OldEngine.TIDB;
+    case NewEngine.SNOWFLAKE:
+      return OldEngine.SNOWFLAKE;
+    case NewEngine.CLICKHOUSE:
+      return OldEngine.CLICKHOUSE;
+    case NewEngine.MONGODB:
+      return OldEngine.MONGODB;
+    case NewEngine.REDIS:
+      return OldEngine.REDIS;
+    case NewEngine.ORACLE:
+      return OldEngine.ORACLE;
+    case NewEngine.SPANNER:
+      return OldEngine.SPANNER;
+    case NewEngine.MSSQL:
+      return OldEngine.MSSQL;
+    case NewEngine.REDSHIFT:
+      return OldEngine.REDSHIFT;
+    case NewEngine.MARIADB:
+      return OldEngine.MARIADB;
+    case NewEngine.OCEANBASE:
+      return OldEngine.OCEANBASE;
+    case NewEngine.DM:
+      return OldEngine.DM;
+    case NewEngine.RISINGWAVE:
+      return OldEngine.RISINGWAVE;
+    case NewEngine.OCEANBASE_ORACLE:
+      return OldEngine.OCEANBASE_ORACLE;
+    case NewEngine.STARROCKS:
+      return OldEngine.STARROCKS;
+    case NewEngine.DORIS:
+      return OldEngine.DORIS;
+    case NewEngine.HIVE:
+      return OldEngine.HIVE;
+    case NewEngine.ELASTICSEARCH:
+      return OldEngine.ELASTICSEARCH;
+    case NewEngine.BIGQUERY:
+      return OldEngine.BIGQUERY;
+    case NewEngine.DYNAMODB:
+      return OldEngine.DYNAMODB;
+    case NewEngine.COSMOSDB:
+      return OldEngine.COSMOSDB;
+    case NewEngine.CASSANDRA:
+      return OldEngine.CASSANDRA;
+    case NewEngine.DATABRICKS:
+      return OldEngine.DATABRICKS;
+    case NewEngine.TRINO:
+      return OldEngine.TRINO;
+    default:
+      return OldEngine.ENGINE_UNSPECIFIED;
+  }
+};
+
+// Convert old Engine to proto-es Engine (for completeness)
+export const convertEngineToNew = (engine: OldEngine): NewEngine => {
+  switch (engine) {
+    case OldEngine.MYSQL:
+      return NewEngine.MYSQL;
+    case OldEngine.POSTGRES:
+      return NewEngine.POSTGRES;
+    case OldEngine.TIDB:
+      return NewEngine.TIDB;
+    case OldEngine.SNOWFLAKE:
+      return NewEngine.SNOWFLAKE;
+    case OldEngine.CLICKHOUSE:
+      return NewEngine.CLICKHOUSE;
+    case OldEngine.MONGODB:
+      return NewEngine.MONGODB;
+    case OldEngine.REDIS:
+      return NewEngine.REDIS;
+    case OldEngine.ORACLE:
+      return NewEngine.ORACLE;
+    case OldEngine.SPANNER:
+      return NewEngine.SPANNER;
+    case OldEngine.MSSQL:
+      return NewEngine.MSSQL;
+    case OldEngine.REDSHIFT:
+      return NewEngine.REDSHIFT;
+    case OldEngine.MARIADB:
+      return NewEngine.MARIADB;
+    case OldEngine.OCEANBASE:
+      return NewEngine.OCEANBASE;
+    case OldEngine.DM:
+      return NewEngine.DM;
+    case OldEngine.RISINGWAVE:
+      return NewEngine.RISINGWAVE;
+    case OldEngine.OCEANBASE_ORACLE:
+      return NewEngine.OCEANBASE_ORACLE;
+    case OldEngine.STARROCKS:
+      return NewEngine.STARROCKS;
+    case OldEngine.DORIS:
+      return NewEngine.DORIS;
+    case OldEngine.HIVE:
+      return NewEngine.HIVE;
+    case OldEngine.ELASTICSEARCH:
+      return NewEngine.ELASTICSEARCH;
+    case OldEngine.BIGQUERY:
+      return NewEngine.BIGQUERY;
+    case OldEngine.DYNAMODB:
+      return NewEngine.DYNAMODB;
+    case OldEngine.COSMOSDB:
+      return NewEngine.COSMOSDB;
+    case OldEngine.CASSANDRA:
+      return NewEngine.CASSANDRA;
+    case OldEngine.DATABRICKS:
+      return NewEngine.DATABRICKS;
+    case OldEngine.TRINO:
+      return NewEngine.TRINO;
+    default:
+      return NewEngine.ENGINE_UNSPECIFIED;
+  }
 };

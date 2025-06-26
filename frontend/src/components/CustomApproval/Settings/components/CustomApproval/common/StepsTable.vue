@@ -41,6 +41,7 @@ import {
   ApprovalStep_Type,
 } from "@/types/proto/v1/issue_service";
 import { approvalNodeText } from "@/utils";
+import { convertOldApprovalNodeToNew } from "@/utils/workspaceApprovalSetting-conversions";
 import { useCustomApprovalContext } from "../context";
 
 const props = defineProps<{
@@ -87,7 +88,7 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
             />
           );
         }
-        return approvalNodeText(step.nodes[0]);
+        return approvalNodeText(convertOldApprovalNodeToNew(step.nodes[0]));
       },
     },
   ];

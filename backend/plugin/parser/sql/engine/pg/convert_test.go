@@ -2718,7 +2718,7 @@ func TestAlterColumnDefault(t *testing.T) {
 }
 
 func TestCreateSequence(t *testing.T) {
-	var one int32 = 1
+	var one int64 = 1
 	tests := []testData{
 		{
 			stmt: `CREATE SEQUENCE public.tbl_seq_id_seq
@@ -2888,7 +2888,7 @@ func TestDropSequence(t *testing.T) {
 }
 
 func TestAlterSequence(t *testing.T) {
-	one := int32(1)
+	one := int64(1)
 	boolFalse := false
 	boolTrue := true
 	tests := []testData{

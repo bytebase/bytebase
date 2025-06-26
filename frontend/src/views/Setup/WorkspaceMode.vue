@@ -66,7 +66,7 @@
 <script lang="ts" setup>
 import { NRadio, NRadioGroup, NSpace } from "naive-ui";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 
 withDefaults(
   defineProps<{

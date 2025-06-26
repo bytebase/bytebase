@@ -16,10 +16,10 @@ type SequenceDef struct {
 	SequenceDataType *Integer
 	// No cycle is default
 	Cycle       bool
-	StartWith   *int32
-	IncrementBy *int32
-	MinValue    *int32
-	MaxValue    *int32
-	Cache       *int32
+	StartWith   *int64
+	IncrementBy *int64
+	MinValue    *int64
+	MaxValue    *int64
+	Cache       *int64
 	OwnedBy     *ColumnNameDef
 }

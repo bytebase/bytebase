@@ -55,7 +55,8 @@ import { computed, reactive, watch } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { defaultTokenDurationInHours } from "@/types";
-import { Duration } from "@/types/proto/google/protobuf/duration";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
@@ -66,7 +67,9 @@ const getInitialState = (): LocalState => {
     showFeatureModal: false,
   };
   const seconds =
-    settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds?.toNumber();
+    settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds
+      ? Number(settingV1Store.workspaceProfileSetting.tokenDuration.seconds)
+      : undefined;
   if (seconds && seconds > 0) {
     if (seconds < 60 * 60 * 24) {
       defaultState.inputValue = Math.floor(seconds / (60 * 60)) || 1;
@@ -112,7 +115,7 @@ const handleFrequencySettingChange = async () => {
       : state.inputValue * 24 * 60 * 60;
   await settingV1Store.updateWorkspaceProfile({
     payload: {
-      tokenDuration: Duration.fromPartial({ seconds, nanos: 0 }),
+      tokenDuration: create(DurationSchema, { seconds: BigInt(seconds), nanos: 0 }),
     },
     updateMask: ["value.workspace_profile_setting_value.token_duration"],
   });

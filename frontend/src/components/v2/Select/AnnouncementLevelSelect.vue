@@ -6,9 +6,9 @@
   >
     <NRadio
       v-for="item in [
-        Announcement_AlertLevel.ALERT_LEVEL_INFO,
-        Announcement_AlertLevel.ALERT_LEVEL_WARNING,
-        Announcement_AlertLevel.ALERT_LEVEL_CRITICAL,
+        Announcement_AlertLevel.INFO,
+        Announcement_AlertLevel.WARNING,
+        Announcement_AlertLevel.CRITICAL,
       ]"
       :key="item"
       :value="item"
@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import { NRadio, NRadioGroup } from "naive-ui";
-import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
+import { Announcement_AlertLevel } from "@/types/proto-es/v1/setting_service_pb";
 
 defineProps<{
   level?: Announcement_AlertLevel;
@@ -39,11 +39,11 @@ defineEmits<{
 
 const AlertLevelToString = (level: Announcement_AlertLevel): string => {
   switch (level) {
-    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
+    case Announcement_AlertLevel.INFO:
       return "INFO";
-    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
+    case Announcement_AlertLevel.WARNING:
       return "WARNING";
-    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
+    case Announcement_AlertLevel.CRITICAL:
       return "CRITICAL";
     default:
       return "INFO";

@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { useAppFeature } from "@/store";
 import { Risk_Source } from "./proto/v1/risk_service";
-import { DatabaseChangeMode } from "./proto/v1/setting_service";
+import { DatabaseChangeMode } from "./proto-es/v1/setting_service_pb";
 
 export const PresetRiskLevel = {
   HIGH: 300,

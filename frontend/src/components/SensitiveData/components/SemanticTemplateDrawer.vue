@@ -35,7 +35,7 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { getSemanticTemplateList } from "@/types";
-import type { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import type { SemanticTypeSetting_SemanticType } from "@/types/proto-es/v1/setting_service_pb";
 import type { SemanticItem } from "./SemanticTypesTable.vue";
 import SemanticTypesTable from "./SemanticTypesTable.vue";
 
