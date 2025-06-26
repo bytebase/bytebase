@@ -1,5 +1,7 @@
 <template>
   <div class="w-full flex flex-col p-4 gap-4">
+    <IssueStatusSection :issue="issue" />
+
     <ApprovalFlowSection :issue="issue" />
 
     <IssueLabels
@@ -28,25 +30,26 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
 import { NInput } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
-import { create } from "@bufbuild/protobuf";
 import { issueServiceClientConnect } from "@/grpcweb";
-import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import {
   extractUserId,
   pushNotification,
   useCurrentProjectV1,
   useCurrentUserV1,
 } from "@/store";
+import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
 import { hasProjectPermissionV2 } from "@/utils";
+import { convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import { usePlanContextWithIssue } from "../../../logic/context";
 import ApprovalFlowSection from "./ApprovalFlowSection/ApprovalFlowSection.vue";
+import IssueStatusSection from "./IssueStatusSection.vue";
 
 const { t } = useI18n();
 const { issue } = usePlanContextWithIssue();

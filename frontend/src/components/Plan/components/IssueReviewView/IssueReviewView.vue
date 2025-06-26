@@ -1,11 +1,11 @@
 <template>
-  <div class="flex-1 flex">
+  <div class="flex-1 flex w-full">
     <!-- Left Panel - Activity -->
-    <div class="flex-1">
+    <div class="flex-1 shrink">
       <ActivitySection />
     </div>
 
-    <div class="w-80 flex border-l">
+    <div class="w-80 shrink-0 flex flex-col border-l">
       <Sidebar />
     </div>
   </div>

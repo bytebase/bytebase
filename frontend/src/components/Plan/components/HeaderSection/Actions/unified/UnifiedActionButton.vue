@@ -38,12 +38,18 @@ const actionDisplayName = (action: UnifiedAction): string => {
       return t("issue.batch-transition.close");
     case "REOPEN":
       return t("issue.batch-transition.reopen");
+    case "CREATE_ROLLOUT":
+      return t("common.create") + " " + t("common.rollout");
+    case "CREATE_ISSUE":
+      return t("common.create") + " " + t("common.issue");
   }
 };
 
 const actionButtonProps = (action: UnifiedAction) => {
   switch (action) {
     case "APPROVE":
+    case "CREATE_ROLLOUT":
+    case "CREATE_ISSUE":
       return {
         type: "primary" as const,
       };

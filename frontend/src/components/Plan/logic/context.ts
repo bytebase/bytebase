@@ -4,6 +4,7 @@ import type { InjectionKey, Ref } from "vue";
 import { inject, provide } from "vue";
 import type { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
+import type { Rollout } from "@/types/proto/v1/rollout_service";
 import type {
   IssueReviewAction,
   IssueStatusAction,
@@ -23,7 +24,7 @@ export type PlanContext = {
   plan: Ref<Plan>;
   planCheckRunList: Ref<PlanCheckRun[]>;
   issue?: Ref<Issue | undefined>;
-  // TODO(steven): save related rollout for checking if the plan is changable.
+  rollout?: Ref<Rollout | undefined>;
 
   // UI events
   events: PlanEvents;
@@ -43,6 +44,17 @@ export const usePlanContextWithIssue = () => {
   return {
     ...context,
     issue: context.issue as Ref<Issue>,
+  };
+};
+
+export const usePlanContextWithRollout = () => {
+  const context = inject(KEY)!;
+  if (!context.rollout?.value) {
+    throw new Error("Rollout is required but not available in plan context");
+  }
+  return {
+    ...context,
+    rollout: context.rollout as Ref<Rollout>,
   };
 };
 
