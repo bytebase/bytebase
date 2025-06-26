@@ -28,7 +28,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -602,30 +601,6 @@ func queryRetry(
 		}
 	}
 	return results, spans, duration, nil
-}
-
-func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map[string]masker.Masker, error) {
-	semanticTypeToMasker := map[string]masker.Masker{
-		"bb.default":         masker.NewDefaultFullMasker(),
-		"bb.default-partial": masker.NewDefaultRangeMasker(),
-	}
-	semanticTypesSetting, err := stores.GetSemanticTypesSetting(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get semantic types setting")
-	}
-	for _, semanticType := range semanticTypesSetting.GetTypes() {
-		if semanticType.GetId() == "bb.default" || semanticType.GetId() == "bb.default-partial" {
-			// Skip the built-in default semantic types.
-			continue
-		}
-		masker, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
-		if err != nil {
-			return nil, err
-		}
-		semanticTypeToMasker[semanticType.GetId()] = masker
-	}
-
-	return semanticTypeToMasker, nil
 }
 
 func getCosmosDBContainerObjectSchema(ctx context.Context, stores *store.Store, instanceID string, databaseName string, containerName string) (*storepb.ObjectSchema, error) {

@@ -73,6 +73,30 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	return nil
 }
 
+func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map[string]masker.Masker, error) {
+	semanticTypeToMasker := map[string]masker.Masker{
+		"bb.default":         masker.NewDefaultFullMasker(),
+		"bb.default-partial": masker.NewDefaultRangeMasker(),
+	}
+	semanticTypesSetting, err := stores.GetSemanticTypesSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get semantic types setting")
+	}
+	for _, semanticType := range semanticTypesSetting.GetTypes() {
+		if semanticType.GetId() == "bb.default" || semanticType.GetId() == "bb.default-partial" {
+			// Skip the built-in default semantic types.
+			continue
+		}
+		masker, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+		if err != nil {
+			return nil, err
+		}
+		semanticTypeToMasker[semanticType.GetId()] = masker
+	}
+
+	return semanticTypeToMasker, nil
+}
+
 // getMaskersForQuerySpan returns the maskers for the query span.
 func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([]masker.Masker, error) {
 	if span == nil {
@@ -80,6 +104,10 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	}
 	maskers := make([]masker.Masker, 0, len(span.Results))
 
+	semanticTypesToMasker, err := buildSemanticTypeToMaskerMap(ctx, s.store)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build semantic type to masker map")
+	}
 	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
 	// we store the projectResourceID - maskingExceptionPolicy in a map.
 	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
@@ -93,7 +121,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 
 		var effectiveMaskers []masker.Masker
 		for column := range spanResult.SourceColumns {
-			newMasker, err := s.getMaskerForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, user)
+			newMasker, err := s.getMaskerForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, user, semanticTypesToMasker)
 			if err != nil {
 				return nil, err
 			}
@@ -133,6 +161,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	maskingExceptionPolicyMap map[string]*storepb.MaskingExceptionPolicy,
 	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 	currentPrincipal *store.UserMessage,
+	semanticTypeToMasker map[string]masker.Masker,
 ) (masker.Masker, error) {
 	if instance != nil && !common.EngineSupportMasking(instance.Metadata.GetEngine()) {
 		return masker.NewNoneMasker(), nil
@@ -203,16 +232,12 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
 
-	// Built-in algorithm.
-	switch semanticTypeID {
-	case "bb.default":
-		return masker.NewDefaultFullMasker(), nil
-	case "bb.default-partial":
-		return masker.NewDefaultRangeMasker(), nil
+	result, ok := semanticTypeToMasker[semanticTypeID]
+	if !ok {
+		return masker.NewNoneMasker(), nil
 	}
 
-	semanticType := m.semanticTypesMap[semanticTypeID]
-	return getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+	return result, nil
 }
 
 func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *parserbase.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
