@@ -80,7 +80,8 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
@@ -130,10 +131,13 @@ const { policy: exportDataPolicy } = usePolicyByParentAndType(
 );
 
 const getInitialState = (): LocalState => {
+  const watermarkSetting = settingV1Store.getSettingByName(Setting_SettingName.WATERMARK);
+  let enableWatermark = false;
+  if (watermarkSetting?.value?.value?.case === "stringValue") {
+    enableWatermark = watermarkSetting.value.value.value === "1";
+  }
   return {
-    enableWatermark:
-      settingV1Store.getSettingByName(Setting_SettingName.WATERMARK)?.value
-        ?.stringValue === "1",
+    enableWatermark,
     enableDataExport: !exportDataPolicy.value?.exportDataPolicy?.disable,
   };
 };
@@ -166,9 +170,12 @@ const handleWatermarkToggle = async () => {
   const value = state.enableWatermark ? "1" : "0";
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.WATERMARK,
-    value: {
-      stringValue: value,
-    },
+    value: create(SettingValueSchema, {
+      value: {
+        case: "stringValue",
+        value: value,
+      },
+    }),
   });
 };
 

@@ -85,7 +85,7 @@ import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave } from "vue-router";
 import { useAppFeature, pushNotification } from "@/store";
 import type { ComposedProject } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
 import {
   ProjectGeneralSettingPanel,

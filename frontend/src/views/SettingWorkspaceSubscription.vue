@@ -171,7 +171,7 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -217,10 +217,8 @@ const userLimit = computed((): string => {
 const workspaceIdField = ref<HTMLInputElement | null>(null);
 
 const workspaceId = computed(() => {
-  return (
-    settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID)?.value
-      ?.stringValue ?? ""
-  );
+  const setting = settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID);
+  return setting?.value?.value?.case === "stringValue" ? setting.value.value.value : "";
 });
 
 const selectWorkspaceId = () => {

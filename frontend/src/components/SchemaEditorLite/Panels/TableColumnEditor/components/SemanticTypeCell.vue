@@ -22,7 +22,7 @@ import { PencilIcon, XIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
 import { MiniActionButton } from "@/components/v2";
-import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
+import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto-es/v1/setting_service_pb";
 
 const props = defineProps<{
   database: string;

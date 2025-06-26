@@ -20,15 +20,18 @@ import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite"
 import { MiniActionButton } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useSettingV1Store } from "@/store";
-import type { Engine } from "@/types/proto/v1/common";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import { create as createProto } from "@bufbuild/protobuf";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  SchemaTemplateSetting,
+  SchemaTemplateSettingSchema,
   Setting_SettingName,
-} from "@/types/proto/v1/setting_service";
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { EngineIcon } from "../Icon";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import { classificationConfig } from "./utils";
+import { convertEngineToOld } from "@/utils/v1/setting-conversions";
 
 const props = defineProps<{
   engine?: Engine;
@@ -57,7 +60,7 @@ const columns = computed(
         key: "name",
         render: (item) => (
           <div class="flex justify-start items-center">
-            <EngineIcon engine={item.engine} customClass="ml-0 mr-1" />
+            <EngineIcon engine={convertEngineToOld(item.engine)} customClass="ml-0 mr-1" />
             {item.column?.name ?? ""}
           </div>
         ),
@@ -173,9 +176,9 @@ const deleteTemplate = async (id: string) => {
     Setting_SettingName.SCHEMA_TEMPLATE
   );
 
-  const settingValue = SchemaTemplateSetting.fromPartial({});
-  if (setting?.value?.schemaTemplateSettingValue) {
-    Object.assign(settingValue, setting.value.schemaTemplateSettingValue);
+  let settingValue = createProto(SchemaTemplateSettingSchema, {});
+  if (setting?.value?.value && setting.value.value.case === "schemaTemplateSettingValue") {
+    settingValue = setting.value.value.value;
   }
 
   const index = settingValue.fieldTemplates.findIndex((t) => t.id === id);
@@ -184,18 +187,24 @@ const deleteTemplate = async (id: string) => {
 
     await settingStore.upsertSetting({
       name: Setting_SettingName.SCHEMA_TEMPLATE,
-      value: {
-        schemaTemplateSettingValue: settingValue,
-      },
+      value: createProto(SettingValueSchema, {
+        value: {
+          case: "schemaTemplateSettingValue",
+          value: settingValue,
+        },
+      }),
     });
   }
 };
 
 const semanticTypeList = computed(() => {
-  return (
-    settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)?.value
-      ?.semanticTypeSettingValue?.types ?? []
-  );
+  const setting = settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
+  if (!setting?.value?.value) return [];
+  const value = setting.value.value;
+  if (value.case === "semanticTypeSettingValue") {
+    return value.value.types ?? [];
+  }
+  return [];
 });
 
 const getSemanticType = (semanticType: string | undefined) => {

@@ -71,7 +71,7 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -94,6 +94,7 @@ import {
   SemanticTypeCell,
   LabelsCell,
 } from "./components";
+import { convertEngineToNew } from "@/utils/v1/setting-conversions";
 
 interface LocalState {
   pendingUpdateColumn?: ColumnMetadata;
@@ -237,10 +238,11 @@ const markColumnStatus = (
 };
 
 const semanticTypeList = computed(() => {
-  return (
-    settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)?.value
-      ?.semanticTypeSettingValue?.types ?? []
-  );
+  const setting = settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
+  if (setting?.value?.value?.case === "semanticTypeSettingValue") {
+    return setting.value.value.value.types ?? [];
+  }
+  return [];
 });
 
 const catalogForColumn = (column: string) => {
@@ -625,13 +627,15 @@ const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
 
 const schemaTemplateColumnTypes = computed(() => {
   const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
-  const columnTypes = setting?.value?.schemaTemplateSettingValue?.columnTypes;
-  if (columnTypes && columnTypes.length > 0) {
-    const columnType = columnTypes.find(
-      (columnType) => columnType.engine === props.engine
-    );
-    if (columnType && columnType.enabled) {
-      return columnType.types;
+  if (setting?.value?.value?.case === "schemaTemplateSettingValue") {
+    const columnTypes = setting.value.value.value.columnTypes;
+    if (columnTypes && columnTypes.length > 0) {
+      const columnType = columnTypes.find(
+        (columnType) => columnType.engine === convertEngineToNew(props.engine)
+      );
+      if (columnType && columnType.enabled) {
+        return columnType.types;
+      }
     }
   }
   return [];

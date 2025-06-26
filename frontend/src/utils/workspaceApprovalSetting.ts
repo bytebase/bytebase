@@ -1,4 +1,5 @@
 import { cloneDeep, isNumber } from "lodash-es";
+import { create as createProto } from "@bufbuild/protobuf";
 import { v4 as uuidv4 } from "uuid";
 import type { EqualityExpr, LogicalExpr, SimpleExpr } from "@/plugins/cel";
 import {
@@ -14,34 +15,60 @@ import { DEFAULT_RISK_LEVEL, PresetRoleType } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { Expr } from "@/types/proto/google/type/expr";
+import type { Expr as _Expr } from "@/types/proto-es/google/type/expr_pb";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
-  ApprovalNode,
-  ApprovalStep,
+  ApprovalNode as _ApprovalNode,
+  ApprovalStep as _ApprovalStep,
 } from "@/types/proto/v1/issue_service";
 import {
-  ApprovalNode_Type,
-  ApprovalStep_Type,
+  ApprovalNode_Type as _ApprovalNode_Type,
+  ApprovalStep_Type as _ApprovalStep_Type,
 } from "@/types/proto/v1/issue_service";
+import {
+  ApprovalNode_Type as ProtoEsApprovalNode_Type,
+  ApprovalStep_Type as ProtoEsApprovalStep_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
+import type {
+  ApprovalTemplate as _ProtoEsApprovalTemplate,
+  ApprovalFlow as _ProtoEsApprovalFlow,
+  ApprovalStep as _ProtoEsApprovalStep,
+  ApprovalNode as _ProtoEsApprovalNode,
+} from "@/types/proto-es/v1/issue_service_pb";
+import {
+  ApprovalTemplateSchema as _ProtoEsApprovalTemplateSchema,
+  ApprovalFlowSchema as _ProtoEsApprovalFlowSchema,
+  ApprovalStepSchema as ProtoEsApprovalStepSchema,
+  ApprovalNodeSchema as ProtoEsApprovalNodeSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   Risk_Source,
   risk_SourceFromJSON,
 } from "@/types/proto/v1/risk_service";
-import {
+import type {
   WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto-es/v1/setting_service_pb";
+import {
+  WorkspaceApprovalSettingSchema,
+  WorkspaceApprovalSetting_RuleSchema as ApprovalRuleSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
 } from "@/utils";
 import { displayRoleTitle } from "./role";
+import { 
+  convertNewApprovalTemplateToOld,
+  convertNewExprToOld as _convertNewExprToOld,
+  convertOldApprovalTemplateToNew
+} from "./workspaceApprovalSetting-conversions";
 
 export const approvalNodeRoleText = (role: string) => {
   return displayRoleTitle(role);
 };
 
-export const approvalNodeText = (node: ApprovalNode): string => {
+export const approvalNodeText = (node: _ProtoEsApprovalNode): string => {
   const { role } = node;
   if (role) {
     return approvalNodeRoleText(role);
@@ -76,7 +103,7 @@ export const resolveLocalApprovalConfig = async (
     const localRule: LocalApprovalRule = {
       uid: uuidv4(),
       expr: resolveCELExpr(CELExpr.fromPartial({})),
-      template: cloneDeep(rule.template!),
+      template: cloneDeep(convertNewApprovalTemplateToOld(rule.template!)),
     };
     ruleMap.set(localRule.uid, localRule);
     if (rule.condition?.expression) {
@@ -180,9 +207,9 @@ export const buildWorkspaceApprovalSetting = async (
     const rule = rules[i];
     const { uid, template } = rule;
 
-    const approvalRule = ApprovalRule.fromPartial({
-      template,
-      condition: { expression: "" },
+    const approvalRule = createProto(ApprovalRuleSchema, {
+      template: convertOldApprovalTemplateToNew(template),
+      condition: createProto(ExprSchema, { expression: "" }),
     });
     approvalRuleMap.set(i, approvalRule);
 
@@ -197,12 +224,12 @@ export const buildWorkspaceApprovalSetting = async (
   const expressionList = await batchConvertParsedExprToCELString(exprList);
   for (let i = 0; i < expressionList.length; i++) {
     const ruleIndex = ruleIndexList[i];
-    approvalRuleMap.get(ruleIndex)!.condition = Expr.fromPartial({
+    approvalRuleMap.get(ruleIndex)!.condition = createProto(ExprSchema, {
       expression: expressionList[i],
     });
   }
 
-  return WorkspaceApprovalSetting.fromPartial({
+  return createProto(WorkspaceApprovalSettingSchema, {
     rules: [...approvalRuleMap.values()],
   });
 };
@@ -294,19 +321,19 @@ export const seedWorkspaceApprovalSetting = () => {
     description: string,
     roles: string[]
   ): ApprovalRule => {
-    return ApprovalRule.fromPartial({
+    return createProto(ApprovalRuleSchema, {
       template: {
         title,
         description,
         flow: {
-          steps: roles.map(
-            (role): ApprovalStep => ({
-              type: ApprovalStep_Type.ANY,
+          steps: roles.map((role) => 
+            createProto(ProtoEsApprovalStepSchema, {
+              type: ProtoEsApprovalStep_Type.ANY,
               nodes: [
-                {
-                  type: ApprovalNode_Type.ANY_IN_GROUP,
+                createProto(ProtoEsApprovalNodeSchema, {
+                  type: ProtoEsApprovalNode_Type.ANY_IN_GROUP,
                   role,
-                },
+                }),
               ],
             })
           ),

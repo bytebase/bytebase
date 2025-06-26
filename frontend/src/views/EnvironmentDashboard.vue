@@ -117,8 +117,9 @@ import {
 import { formatEnvironmentName } from "@/types";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
-import { EnvironmentSetting_Environment } from "@/types/proto/v1/setting_service";
+import { EnvironmentSetting_EnvironmentSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
+import { create } from "@bufbuild/protobuf";
 import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
 import { type VueClass } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
@@ -203,7 +204,7 @@ const tabItemList = computed((): BBTabItem[] => {
 
 const getEnvironmentCreate = () => {
   return {
-    ...EnvironmentSetting_Environment.fromPartial({}),
+    ...create(EnvironmentSetting_EnvironmentSchema, {}),
     order: 0,
   };
 };

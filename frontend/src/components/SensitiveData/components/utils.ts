@@ -5,8 +5,12 @@ import type { Factor, Operator } from "@/plugins/cel";
 import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
 import type { ComposedInstanceV2 } from "@/types";
-import type { Algorithm } from "@/types/proto/v1/setting_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
+import { 
+  Setting_SettingName,
+  AlgorithmSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
 import { extractInstanceResourceName } from "@/utils";
 
 export const getClassificationLevelOptions = () => {
@@ -14,10 +18,13 @@ export const getClassificationLevelOptions = () => {
   const setting = settingStore.getSettingByName(
     Setting_SettingName.DATA_CLASSIFICATION
   );
-  if (!setting) {
+  if (!setting || !setting.value) {
     return [];
   }
-  const config = setting.value?.dataClassificationSettingValue?.configs ?? [];
+  
+  const config = setting.value.value.case === "dataClassificationSettingValue" 
+    ? setting.value.value.value.configs 
+    : [];
   if (config.length === 0) {
     return [];
   }
@@ -59,17 +66,56 @@ export type MaskingType =
 export const getMaskingType = (
   algorithm: Algorithm | undefined
 ): MaskingType | undefined => {
-  if (!algorithm) {
+  if (!algorithm || !algorithm.mask) {
     return;
   }
-  if (algorithm.fullMask) {
-    return "full-mask";
-  } else if (algorithm.rangeMask) {
-    return "range-mask";
-  } else if (algorithm.innerOuterMask) {
-    return "inner-outer-mask";
-  } else if (algorithm.md5Mask) {
-    return "md5-mask";
+  switch (algorithm.mask.case) {
+    case "fullMask":
+      return "full-mask";
+    case "rangeMask":
+      return "range-mask";
+    case "innerOuterMask":
+      return "inner-outer-mask";
+    case "md5Mask":
+      return "md5-mask";
+    default:
+      return;
   }
-  return;
+};
+
+// Create masking algorithm utilities
+export const createFullMaskAlgorithm = (substitution = "*"): Algorithm => {
+  return create(AlgorithmSchema, {
+    mask: {
+      case: "fullMask",
+      value: { substitution },
+    },
+  });
+};
+
+export const createRangeMaskAlgorithm = (slices: { start: number; end: number; substitution: string }[]): Algorithm => {
+  return create(AlgorithmSchema, {
+    mask: {
+      case: "rangeMask",
+      value: { slices },
+    },
+  });
+};
+
+export const createMd5MaskAlgorithm = (salt = ""): Algorithm => {
+  return create(AlgorithmSchema, {
+    mask: {
+      case: "md5Mask",
+      value: { salt },
+    },
+  });
+};
+
+export const createInnerOuterMaskAlgorithm = (prefixLen = 0, suffixLen = 0, substitution = "*"): Algorithm => {
+  return create(AlgorithmSchema, {
+    mask: {
+      case: "innerOuterMask",
+      value: { prefixLen, suffixLen, substitution },
+    },
+  });
 };

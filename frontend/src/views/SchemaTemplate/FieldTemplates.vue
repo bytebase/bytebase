@@ -17,7 +17,7 @@
             @update:checked="toggleEngineCheck(item)"
           >
             <div class="flex items-center gap-x-1 text-sm text-gray-600">
-              <EngineIcon :engine="item" custom-class="ml-0 mr-1" />
+              <EngineIcon :engine="convertEngineForIcon(item)" custom-class="ml-0 mr-1" />
               <span
                 class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
               >
@@ -76,15 +76,20 @@ import FieldTemplateView from "@/components/SchemaTemplate/FieldTemplateView.vue
 import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine as LegacyEngine } from "@/types/proto/v1/common";
 import {
-  ColumnMetadata,
-} from "@/types/proto/v1/database_service";
+  ColumnMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
-  ColumnCatalog,
-} from "@/types/proto/v1/database_catalog_service";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+  ColumnCatalogSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import { create } from "@bufbuild/protobuf";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
+import { 
+  Setting_SettingName,
+  SchemaTemplateSetting_FieldTemplateSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 
 interface LocalState {
   template: SchemaTemplateSetting_FieldTemplate;
@@ -103,11 +108,11 @@ defineEmits<{
   (event: "apply", item: SchemaTemplateSetting_FieldTemplate): void;
 }>();
 
-const initialTemplate = () => ({
+const initialTemplate = (): SchemaTemplateSetting_FieldTemplate => create(SchemaTemplateSetting_FieldTemplateSchema, {
   id: uuidv1(),
   engine: props.engine ?? Engine.MYSQL,
   category: "",
-  column: ColumnMetadata.fromPartial({
+  column: create(ColumnMetadataSchema, {
     name: "",
     type: "",
     nullable: false,
@@ -116,7 +121,7 @@ const initialTemplate = () => ({
     characterSet: "",
     collation: "",
   }),
-  catalog: ColumnCatalog.fromPartial({}),
+  catalog: create(ColumnCatalogSchema, {}),
 });
 
 const state = reactive<LocalState>({
@@ -125,6 +130,58 @@ const state = reactive<LocalState>({
   searchText: "",
   selectedEngine: new Set<Engine>(),
 });
+
+// Conversion function for Engine type conflicts
+const convertEngineForIcon = (engine: Engine): LegacyEngine => {
+  switch (engine) {
+    case Engine.MYSQL:
+      return "MYSQL" as LegacyEngine;
+    case Engine.POSTGRES:
+      return "POSTGRES" as LegacyEngine;
+    case Engine.ORACLE:
+      return "ORACLE" as LegacyEngine;
+    case Engine.TIDB:
+      return "TIDB" as LegacyEngine;
+    case Engine.SNOWFLAKE:
+      return "SNOWFLAKE" as LegacyEngine;
+    case Engine.CLICKHOUSE:
+      return "CLICKHOUSE" as LegacyEngine;
+    case Engine.MONGODB:
+      return "MONGODB" as LegacyEngine;
+    case Engine.REDIS:
+      return "REDIS" as LegacyEngine;
+    case Engine.SQLITE:
+      return "SQLITE" as LegacyEngine;
+    case Engine.MSSQL:
+      return "MSSQL" as LegacyEngine;
+    case Engine.MARIADB:
+      return "MARIADB" as LegacyEngine;
+    case Engine.BIGQUERY:
+      return "BIGQUERY" as LegacyEngine;
+    case Engine.SPANNER:
+      return "SPANNER" as LegacyEngine;
+    case Engine.DATABRICKS:
+      return "DATABRICKS" as LegacyEngine;
+    case Engine.RISINGWAVE:
+      return "RISINGWAVE" as LegacyEngine;
+    case Engine.OCEANBASE:
+      return "OCEANBASE" as LegacyEngine;
+    case Engine.DYNAMODB:
+      return "DYNAMODB" as LegacyEngine;
+    case Engine.HIVE:
+      return "HIVE" as LegacyEngine;
+    case Engine.ELASTICSEARCH:
+      return "ELASTICSEARCH" as LegacyEngine;
+    case Engine.STARROCKS:
+      return "STARROCKS" as LegacyEngine;
+    case Engine.DORIS:
+      return "DORIS" as LegacyEngine;
+    case Engine.CASSANDRA:
+      return "CASSANDRA" as LegacyEngine;
+    default:
+      return "ENGINE_UNSPECIFIED" as LegacyEngine;
+  }
+};
 
 onMounted(() => {
   if (props.engine) {
@@ -154,7 +211,9 @@ const settingStore = useSettingV1Store();
 
 const schemaTemplateList = computed(() => {
   const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
-  return setting?.value?.schemaTemplateSettingValue?.fieldTemplates ?? [];
+  return setting?.value?.value?.case === "schemaTemplateSettingValue" 
+    ? setting.value.value.value.fieldTemplates ?? []
+    : [];
 });
 
 const countTemplateByEngine = (engine: Engine) => {

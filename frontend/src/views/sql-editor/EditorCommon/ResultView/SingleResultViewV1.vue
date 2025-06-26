@@ -237,7 +237,7 @@ import {
 import { Engine, ExportFormat as ExportFormatOld } from "@/types/proto/v1/common";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type {
   QueryResult,
   QueryRow,
