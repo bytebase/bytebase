@@ -1,6 +1,6 @@
-# CLAUDE.md
+# GEMINI.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to GEMINI when working with code in this repository.
 
 ## Project Architecture
 - The database schema is defined in `./backend/migrator/migration/LATEST.sql`
@@ -81,4 +81,4 @@ Always follow these guidelines to avoid common linting errors:
 
 ## Individual Preferences
 
-- @~/.claude/bytebase-instructions.md
+- @~/.gemini/bytebase-instructions.md
