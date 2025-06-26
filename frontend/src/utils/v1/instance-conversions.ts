@@ -23,7 +23,7 @@ import {
 // Convert old proto to proto-es
 export const convertOldInstanceToNew = (oldInstance: OldInstance): NewInstance => {
   // Use toJSON to convert old proto to JSON, then fromJson to convert to proto-es
-  const json = OldInstanceProto.toJSON(oldInstance) as any;
+  const json = OldInstanceProto.toJSON(oldInstance) as any; // Type assertion needed due to proto type incompatibility
   
   // Fix Duration fields: proto-es expects string format, old proto outputs object
   if (json.syncInterval && typeof json.syncInterval === 'object') {

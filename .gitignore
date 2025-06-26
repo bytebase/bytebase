@@ -27,3 +27,9 @@ bytebase-build
 .idea
 
 .DS_Store
+
+# Air
+.air/
+
+# Frontend monaco workers
+frontend/public/monaco-workers/
