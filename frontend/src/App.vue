@@ -25,6 +25,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
 import {
   NConfigProvider,
@@ -67,8 +68,17 @@ onErrorCaptured((error: any /* , _, info */) => {
     (error instanceof ServerError || error instanceof ClientError) &&
     Object.values(Status).includes(error.code)
   ) {
+    return;
     // Ignored: we will handle request errors in the error handler middleware of nice-grpc-web.
-  } else if (!error.response) {
+  }
+  if (
+    error instanceof ConnectError &&
+    Object.values(Code).includes(error.code)
+  ) {
+    return;
+  }
+
+  if (!error.response) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
