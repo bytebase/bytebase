@@ -206,7 +206,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
 
       const request = create(UpdateReviewConfigRequestSchema, {
-        reviewConfig: convertOldReviewConfigToNew(patch), // Type assertion needed for partial type compatibility
+        reviewConfig: convertOldReviewConfigToNew(patch),
         updateMask: { paths: updateMask },
         allowMissing: true,
       });
