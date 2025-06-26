@@ -411,12 +411,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   };
   initAll();
 
-  const reset = () => {
-    tabIdListMapByProject.value = {};
-    currentTabIdMapByProject.value = {};
-    initAll();
-  };
-
   // some shortcuts
   const isDisconnected = computed(() => {
     const tab = currentTab.value;
@@ -454,7 +448,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     setCurrentTabId,
     selectOrAddSimilarNewTab,
     maybeInitProject,
-    reset,
     isDisconnected,
     isSwitchingTab,
     isInBatchMode,

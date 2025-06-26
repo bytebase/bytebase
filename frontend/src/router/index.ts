@@ -70,6 +70,16 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   const routerStore = useRouterStore();
 
+  if (
+    to.path.startsWith("/auth") &&
+    authStore.isLoggedIn &&
+    !authStore.unauthenticatedOccurred
+  ) {
+    const redirect = (to.query["redirect"] as string) || "/";
+    next(redirect);
+    return;
+  }
+
   const fromModule = from.name
     ? from.name.toString().split(".")[0]
     : WORKSPACE_ROOT_MODULE;
@@ -109,7 +119,6 @@ router.beforeEach((to, from, next) => {
     to.name === AUTH_PASSWORD_RESET_MODULE ||
     to.name === AUTH_PASSWORD_FORGOT_MODULE
   ) {
-    useSQLEditorTabStore().reset();
     useDatabaseV1Store().reset();
     useProjectV1Store().reset();
     useInstanceV1Store().reset();
