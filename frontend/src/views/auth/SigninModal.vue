@@ -43,6 +43,10 @@ const shouldShow = computed(() => {
     return false;
   }
 
-  return Boolean(authStore.unauthenticatedOccurred);
+  if (!authStore.isLoggedIn) {
+    return false;
+  }
+
+  return authStore.unauthenticatedOccurred;
 });
 </script>
