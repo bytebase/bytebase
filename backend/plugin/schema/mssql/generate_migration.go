@@ -678,35 +678,45 @@ func generateAlterTable(tableDiff *schema.TableDiff) string {
 
 func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 	var buf strings.Builder
-
 	_, _ = buf.WriteString("[")
 	_, _ = buf.WriteString(column.Name)
 	_, _ = buf.WriteString("] ")
-	_, _ = buf.WriteString(column.Type)
 
-	// Add IDENTITY if applicable
-	if column.IsIdentity {
-		_, _ = buf.WriteString(" IDENTITY(")
-		_, _ = buf.WriteString(fmt.Sprintf("%d,%d", column.IdentitySeed, column.IdentityIncrement))
-		_, _ = buf.WriteString(")")
-	}
+	// Check if this is a computed column by examining the type field
+	isComputedColumn := strings.Contains(column.Type, " AS (") || strings.HasPrefix(column.Type, "AS (")
 
-	// Add nullability
-	if column.Nullable {
-		_, _ = buf.WriteString(" NULL")
+	if isComputedColumn {
+		// For computed columns, just use the type as-is (it contains the AS expression)
+		_, _ = buf.WriteString(column.Type)
+		// Note: Computed columns don't have explicit nullability, IDENTITY, or defaults
+		// unless they are PERSISTED, which would be included in the type definition
 	} else {
-		_, _ = buf.WriteString(" NOT NULL")
-	}
+		// Regular column: add type, identity, nullability, and default
+		_, _ = buf.WriteString(column.Type)
 
-	// Add default value if present
-	if column.GetDefaultExpression() != "" {
-		_, _ = buf.WriteString(" DEFAULT ")
-		_, _ = buf.WriteString(column.GetDefaultExpression())
-	} else if column.GetDefault() != "" {
-		_, _ = buf.WriteString(" DEFAULT ")
-		_, _ = buf.WriteString(column.GetDefault())
-	}
+		// Add IDENTITY if applicable
+		if column.IsIdentity {
+			_, _ = buf.WriteString(" IDENTITY(")
+			_, _ = buf.WriteString(fmt.Sprintf("%d,%d", column.IdentitySeed, column.IdentityIncrement))
+			_, _ = buf.WriteString(")")
+		}
 
+		// Add nullability
+		if column.Nullable {
+			_, _ = buf.WriteString(" NULL")
+		} else {
+			_, _ = buf.WriteString(" NOT NULL")
+		}
+
+		// Add default value if present
+		if column.GetDefaultExpression() != "" {
+			_, _ = buf.WriteString(" DEFAULT ")
+			_, _ = buf.WriteString(column.GetDefaultExpression())
+		} else if column.GetDefault() != "" {
+			_, _ = buf.WriteString(" DEFAULT ")
+			_, _ = buf.WriteString(column.GetDefault())
+		}
+	}
 	return buf.String()
 }
 
