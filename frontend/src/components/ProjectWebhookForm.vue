@@ -265,7 +265,7 @@ import {
   type Activity_Type,
   type Webhook,
 } from "@/types/proto/v1/project_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { projectWebhookV1Slug } from "../utils";
 import WebhookTypeIcon from "./Project/WebhookTypeIcon.vue";
 
@@ -335,9 +335,15 @@ const selectedWebhook = computed(() => {
   );
 });
 
-const imSetting = computed(
-  () => settingStore.getSettingByName(Setting_SettingName.APP_IM)?.value?.appImSettingValue
-);
+const imSetting = computed(() => {
+  const setting = settingStore.getSettingByName(Setting_SettingName.APP_IM);
+  if (!setting?.value?.value) return undefined;
+  const value = setting.value.value;
+  if (value.case === "appImSettingValue") {
+    return value.value;
+  }
+  return undefined;
+});
 
 const imApp = computed(() => {
   if (!selectedWebhook.value?.supportDirectMessage) {

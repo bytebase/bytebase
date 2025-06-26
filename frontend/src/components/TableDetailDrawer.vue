@@ -336,7 +336,7 @@ import {
   ObjectSchema_StructKind,
 } from "@/types/proto/v1/database_catalog_service";
 import { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import {
   bytesToString,
   instanceV1HasCollationAndCharacterSet,

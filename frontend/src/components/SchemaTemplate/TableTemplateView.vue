@@ -28,7 +28,7 @@
       </div>
     </div>
     <TableTemplateTable
-      :engine="engine"
+      :engine="engine ? convertEngineToNew(engine) : undefined"
       :readonly="readonly"
       :template-list="filteredTemplateList"
       class="flex-1"
@@ -43,7 +43,8 @@ import { NCheckbox, NEmpty } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { Engine } from "@/types/proto/v1/common";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
+import { convertEngineToNew } from "@/utils/v1/setting-conversions";
 import TableTemplateTable from "./TableTemplateTable.vue";
 
 interface LocalState {

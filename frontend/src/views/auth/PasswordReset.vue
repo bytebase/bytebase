@@ -47,7 +47,7 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
 interface LocalState {
   password: string;

@@ -40,9 +40,9 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
 import {
-  Algorithm,
+  type Algorithm,
   type SemanticTypeSetting_SemanticType,
-} from "@/types/proto/v1/setting_service";
+} from "@/types/proto-es/v1/setting_service_pb";
 import MaskingAlgorithmsCreateDrawer from "./MaskingAlgorithmsCreateDrawer.vue";
 import { getMaskingType } from "./utils";
 

@@ -67,7 +67,8 @@ import { computed, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import SingleFileSelector from "../SingleFileSelector.vue";
@@ -117,9 +118,12 @@ const doUpdate = async (content: string) => {
   try {
     await settingV1Store.upsertSetting({
       name: Setting_SettingName.BRANDING_LOGO,
-      value: {
-        stringValue: content,
-      },
+      value: create(SettingValueSchema, {
+        value: {
+          case: "stringValue",
+          value: content,
+        },
+      }),
     });
     useActuatorV1Store().setLogo(content);
   } finally {

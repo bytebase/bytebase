@@ -27,7 +27,7 @@ import RestrictIssueCreationConfigure from "@/components/GeneralSetting/Restrict
 import { SQLReviewForResource } from "@/components/SQLReview";
 import { useAppFeature } from "@/store";
 import type { ComposedProject } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 
 defineProps<{
   project: ComposedProject;

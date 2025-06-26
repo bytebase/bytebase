@@ -1,15 +1,16 @@
 import { computed, unref, type MaybeRef } from "vue";
 import { useSettingV1Store } from "@/store";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
 export const useSemanticType = (semanticTypeId: MaybeRef<string>) => {
   const settingV1Store = useSettingV1Store();
 
   const semanticTypeList = computed(() => {
-    return (
-      settingV1Store.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)?.value
-        ?.semanticTypeSettingValue?.types ?? []
-    );
+    const setting = settingV1Store.getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
+    if (setting?.value?.value?.case === "semanticTypeSettingValue") {
+      return setting.value.value.value.types ?? [];
+    }
+    return [];
   });
 
   const semanticType = computed(() => {

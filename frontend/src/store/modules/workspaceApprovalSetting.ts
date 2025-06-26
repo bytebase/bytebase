@@ -3,24 +3,25 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { settingServiceClientConnect } from "@/grpcweb";
+import type { Setting } from "@/types/proto-es/v1/setting_service_pb";
 import { 
   GetSettingRequestSchema, 
-  UpdateSettingRequestSchema
+  UpdateSettingRequestSchema,
+  SettingSchema,
+  Setting_SettingName,
+  ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { convertNewSettingToOld, convertOldSettingToNew, convertOldSettingNameToNew } from "@/utils/v1/setting-conversions";
 import { type LocalApprovalConfig, type LocalApprovalRule } from "@/types";
 import type { Risk_Source } from "@/types/proto/v1/risk_service";
-import type { Setting } from "@/types/proto/v1/setting_service";
-import { Setting_SettingName as OldSettingName } from "@/types/proto/v1/setting_service";
 import {
   resolveLocalApprovalConfig,
   buildWorkspaceApprovalSetting,
   seedWorkspaceApprovalSetting,
 } from "@/utils";
+
 import { useGracefulRequest } from "./utils";
 
-const newName = convertOldSettingNameToNew(OldSettingName.WORKSPACE_APPROVAL);
-const SETTING_NAME = `settings/${newName}`;
+const SETTING_NAME = `settings/${Setting_SettingName[Setting_SettingName.WORKSPACE_APPROVAL]}`;
 
 export const useWorkspaceApprovalSettingStore = defineStore(
   "workspaceApprovalSetting",
@@ -32,8 +33,8 @@ export const useWorkspaceApprovalSettingStore = defineStore(
     });
 
     const setConfigSetting = async (setting: Setting) => {
-      const _config = setting.value?.workspaceApprovalSettingValue;
-      if (_config) {
+      if (setting.value?.value?.case === "workspaceApprovalSettingValue") {
+        const _config = setting.value.value.value;
         if (_config.rules.length === 0) {
           _config.rules.push(...seedWorkspaceApprovalSetting());
         }
@@ -47,28 +48,28 @@ export const useWorkspaceApprovalSettingStore = defineStore(
           name: SETTING_NAME,
         });
         const response = await settingServiceClientConnect.getSetting(request);
-        // Convert to old format for compatibility with setConfigSetting
-        const setting = convertNewSettingToOld(response);
-        await setConfigSetting(setting);
+        await setConfigSetting(response);
       } catch (ex) {
         console.error(ex);
       }
     };
 
     const updateConfig = async () => {
-      const setting = await buildWorkspaceApprovalSetting(config.value);
-      // Create old setting object and convert to new format
-      const oldSetting = {
+      const approvalSetting = await buildWorkspaceApprovalSetting(config.value);
+      
+      const setting = create(SettingSchema, {
         name: SETTING_NAME,
-        value: {
-          workspaceApprovalSettingValue: setting,
-        },
-      };
-      const newSetting = convertOldSettingToNew(oldSetting);
+        value: create(SettingValueSchema, {
+          value: {
+            case: "workspaceApprovalSettingValue",
+            value: approvalSetting,
+          },
+        }),
+      });
       
       const request = create(UpdateSettingRequestSchema, {
         allowMissing: true,
-        setting: newSetting,
+        setting,
       });
       await settingServiceClientConnect.updateSetting(request);
     };

@@ -234,7 +234,7 @@ import {
 } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME, unknownEnvironment } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,

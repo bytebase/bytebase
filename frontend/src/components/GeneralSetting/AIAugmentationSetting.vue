@@ -161,10 +161,12 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Switch } from "@/components/v2";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
-  AISetting,
+  AISettingSchema,
   AISetting_Provider,
   Setting_SettingName,
-} from "@/types/proto/v1/setting_service";
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
 
 interface LocalState {
   enabled: boolean;
@@ -191,10 +193,13 @@ const state = reactive<LocalState>({
   provider: AISetting_Provider.OPEN_AI,
 });
 
-const aiSetting = computed(
-  () =>
-    settingV1Store.getSettingByName(Setting_SettingName.AI)?.value?.aiSetting
-);
+const aiSetting = computed(() => {
+  const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
+  if (setting?.value?.value?.case === "aiSetting") {
+    return setting.value.value.value;
+  }
+  return undefined;
+});
 
 const getInitialState = (): LocalState => {
   return {
@@ -293,16 +298,19 @@ const toggleAIEnabled = (on: boolean) => {
 const updateAISetting = async () => {
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.AI,
-    value: {
-      aiSetting: AISetting.fromPartial({
-        ...(aiSetting.value ?? {}),
-        enabled: state.enabled,
-        apiKey: state.apiKey,
-        endpoint: state.endpoint,
-        model: state.model,
-        provider: state.provider,
-      }),
-    },
+    value: create(SettingValueSchema, {
+      value: {
+        case: "aiSetting",
+        value: create(AISettingSchema, {
+          enabled: state.enabled,
+          apiKey: state.apiKey,
+          endpoint: state.endpoint,
+          model: state.model,
+          provider: state.provider,
+          version: aiSetting.value?.version ?? "",
+        }),
+      },
+    }),
   });
 
   Object.assign(state, getInitialState());
