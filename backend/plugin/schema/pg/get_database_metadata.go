@@ -61,7 +61,29 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	slices.Sort(schemaNames)
 
 	for _, schemaName := range schemaNames {
-		schemaMetadata.Schemas = append(schemaMetadata.Schemas, extractor.schemas[schemaName])
+		schema := extractor.schemas[schemaName]
+
+		// Filter out any tables that are actually materialized views
+		// This handles the case where materialized views are incorrectly classified as tables
+		filteredTables := []*storepb.TableMetadata{}
+		for _, table := range schema.Tables {
+			// Check if this table name exists as a materialized view
+			isMaterializedView := false
+			for _, mv := range schema.MaterializedViews {
+				if mv.Name == table.Name {
+					isMaterializedView = true
+					break
+				}
+			}
+
+			// Only include in tables if it's not a materialized view
+			if !isMaterializedView {
+				filteredTables = append(filteredTables, table)
+			}
+		}
+		schema.Tables = filteredTables
+
+		schemaMetadata.Schemas = append(schemaMetadata.Schemas, schema)
 	}
 
 	// Add extensions
@@ -336,6 +358,14 @@ func extractTypeName(ctx parser.ITypenameContext) string {
 	// Convert to lowercase to match sync.go output
 	typeName = strings.ToLower(typeName)
 
+	return normalizePostgreSQLType(typeName)
+}
+
+// normalizePostgreSQLType normalizes PostgreSQL type names to match sync.go output
+func normalizePostgreSQLType(typeName string) string {
+	// Remove extra whitespace
+	typeName = strings.TrimSpace(typeName)
+
 	// Convert common type variations to match sync.go output
 	// varchar(n) -> character varying(n)
 	if strings.HasPrefix(typeName, "varchar(") {
@@ -360,7 +390,9 @@ func extractTypeName(ctx parser.ITypenameContext) string {
 	if strings.HasSuffix(typeName, "[]") {
 		// PostgreSQL internal representation uses underscore prefix
 		baseType := typeName[:len(typeName)-2]
-		return "_" + baseType
+		// Recursively normalize the base type
+		normalizedBase := normalizePostgreSQLType(baseType)
+		return "_" + normalizedBase
 	}
 
 	// Handle timestamp without explicit timezone
@@ -377,6 +409,33 @@ func extractTypeName(ctx parser.ITypenameContext) string {
 		return "numeric"
 	}
 
+	// Normalize common type aliases to match PostgreSQL catalog output
+	switch typeName {
+	case "int", "int4":
+		return "integer"
+	case "int2":
+		return "smallint"
+	case "int8":
+		return "bigint"
+	case "float4":
+		return "real"
+	case "float8":
+		return "double precision"
+	case "bool":
+		return "boolean"
+	case "char":
+		return "character"
+	case "timestamptz":
+		return "timestamp with time zone"
+	case "timetz":
+		return "time with time zone"
+	}
+
+	// Handle specific length specifications for character types
+	if strings.HasPrefix(typeName, "char(") {
+		return "character" + typeName[4:]
+	}
+
 	return typeName
 }
 
@@ -386,20 +445,24 @@ func (*metadataExtractor) extractTypeNameWithSchema(ctx parser.ITypenameContext,
 		return ""
 	}
 
-	typeName := extractTypeName(ctx)
+	// Get the raw type name first (without normalization)
+	rawTypeName := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	rawTypeName = strings.ToLower(strings.TrimSpace(rawTypeName))
 
-	// Check if this is a built-in PostgreSQL type
-	if isBuiltInType(typeName) {
-		return typeName
+	// Check if this is a built-in PostgreSQL type before normalization
+	if isBuiltInType(rawTypeName) || isBuiltInType(normalizePostgreSQLType(rawTypeName)) {
+		// For built-in types, return the normalized version
+		return normalizePostgreSQLType(rawTypeName)
 	}
 
 	// Check if the type already has a schema prefix
-	if strings.Contains(typeName, ".") {
-		return typeName
+	if strings.Contains(rawTypeName, ".") {
+		// It's already schema-qualified, just normalize it
+		return normalizePostgreSQLType(rawTypeName)
 	}
 
-	// For custom types (like enums), add the schema prefix
-	return fmt.Sprintf("%s.%s", schemaName, typeName)
+	// For custom types (like enums), add the schema prefix to the raw type name
+	return fmt.Sprintf("%s.%s", schemaName, rawTypeName)
 }
 
 // isBuiltInType checks if a type is a built-in PostgreSQL type
@@ -410,48 +473,82 @@ func isBuiltInType(typeName string) bool {
 		baseType = typeName[:idx]
 	}
 
-	// Common built-in PostgreSQL types
+	// Common built-in PostgreSQL types including both aliases and canonical forms
 	builtInTypes := map[string]bool{
+		// Integer types
 		"integer": true, "int": true, "int4": true,
 		"bigint": true, "int8": true,
 		"smallint": true, "int2": true,
+		"serial": true, "serial4": true,
+		"bigserial": true, "serial8": true, "smallserial": true, "serial2": true,
+
+		// Numeric types
 		"numeric": true, "decimal": true,
 		"real": true, "float4": true,
 		"double precision": true, "float8": true,
-		"serial": true, "serial4": true,
-		"bigserial": true, "serial8": true,
+		"money": true,
+
+		// Character types
 		"character": true, "char": true,
 		"character varying": true, "varchar": true,
-		"text":    true,
+		"text": true,
+		"name": true,
+
+		// Boolean
 		"boolean": true, "bool": true,
+
+		// Date/time types
 		"date": true,
 		"time": true, "time without time zone": true, "time with time zone": true, "timetz": true,
 		"timestamp": true, "timestamp without time zone": true, "timestamp with time zone": true, "timestamptz": true,
 		"interval": true,
-		"uuid":     true,
-		"json":     true, "jsonb": true,
-		"xml":   true,
+
+		// UUID
+		"uuid": true,
+
+		// JSON types
+		"json": true, "jsonb": true,
+
+		// XML
+		"xml": true,
+
+		// Binary data
 		"bytea": true,
-		"bit":   true, "bit varying": true,
-		"money": true,
-		"inet":  true, "cidr": true, "macaddr": true, "macaddr8": true,
+
+		// Bit string types
+		"bit": true, "bit varying": true,
+
+		// Network address types
+		"inet": true, "cidr": true, "macaddr": true, "macaddr8": true,
+
+		// Geometric types
 		"point": true, "line": true, "lseg": true, "box": true,
 		"path": true, "polygon": true, "circle": true,
+
+		// Full-text search types
 		"tsquery": true, "tsvector": true,
+
+		// Range types
+		"int4range": true, "int8range": true, "numrange": true,
+		"tsrange": true, "tstzrange": true, "daterange": true,
+
+		// Other types
 		"pg_lsn": true,
-		"oid":    true, "regclass": true, "regproc": true,
-		"name": true,
+		"oid":    true, "regclass": true, "regproc": true, "regtype": true, "regoper": true,
+		"regoperator": true, "regconfig": true, "regdictionary": true,
+		"tid": true, "xid": true, "cid": true,
 	}
 
 	// Also check for array types (ending with [] or starting with _)
 	if strings.HasSuffix(baseType, "[]") {
 		arrayBase := baseType[:len(baseType)-2]
-		return builtInTypes[arrayBase]
+		// Recursively check if the base type is built-in
+		return isBuiltInType(arrayBase)
 	}
 	if strings.HasPrefix(baseType, "_") {
 		// PostgreSQL internal array notation _typename
 		arrayBase := baseType[1:]
-		return builtInTypes[arrayBase]
+		return isBuiltInType(arrayBase)
 	}
 
 	return builtInTypes[baseType]
@@ -588,7 +685,15 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			index.Name = fmt.Sprintf("%s_pkey", table.Name)
 		}
 		// Extract columns
-		if optColumnList := constraintElem.Opt_column_list(); optColumnList != nil && optColumnList.Columnlist() != nil {
+		// For PRIMARY KEY constraints, columns are in direct Columnlist, not Opt_column_list
+		if columnList := constraintElem.Columnlist(); columnList != nil {
+			columns := extractColumnList(columnList)
+			index.Expressions = columns
+			for range columns {
+				index.Descending = append(index.Descending, false)
+			}
+		} else if optColumnList := constraintElem.Opt_column_list(); optColumnList != nil && optColumnList.Columnlist() != nil {
+			// Fallback to Opt_column_list if direct Columnlist is not available
 			columns := extractColumnList(optColumnList.Columnlist())
 			index.Expressions = columns
 			for range columns {
@@ -608,7 +713,15 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			Type:         "btree",
 		}
 		// Extract columns
-		if optColumnList := constraintElem.Opt_column_list(); optColumnList != nil && optColumnList.Columnlist() != nil {
+		// For UNIQUE constraints, columns are in direct Columnlist, not Opt_column_list
+		if columnList := constraintElem.Columnlist(); columnList != nil {
+			columns := extractColumnList(columnList)
+			index.Expressions = columns
+			for range columns {
+				index.Descending = append(index.Descending, false)
+			}
+		} else if optColumnList := constraintElem.Opt_column_list(); optColumnList != nil && optColumnList.Columnlist() != nil {
+			// Fallback to Opt_column_list if direct Columnlist is not available
 			columns := extractColumnList(optColumnList.Columnlist())
 			index.Expressions = columns
 			for range columns {
@@ -799,6 +912,37 @@ func (e *metadataExtractor) EnterAltertablestmt(ctx *parser.AltertablestmtContex
 		if partitionCmd.ATTACH() != nil && partitionCmd.PARTITION() != nil {
 			e.handleAttachPartition(ctx, partitionCmd)
 		}
+		return
+	}
+
+	// Check if this is an ADD CONSTRAINT command
+	if alterTableCmdList := ctx.Alter_table_cmds(); alterTableCmdList != nil {
+		e.handleAlterTableCommands(ctx, alterTableCmdList)
+	}
+}
+
+// handleAlterTableCommands processes ALTER TABLE commands like ADD CONSTRAINT
+func (e *metadataExtractor) handleAlterTableCommands(ctx *parser.AltertablestmtContext, alterTableCmdList parser.IAlter_table_cmdsContext) {
+	// Get the table name from the ALTER TABLE statement
+	if relationExpr := ctx.Relation_expr(); relationExpr != nil {
+		if qualifiedName := relationExpr.Qualified_name(); qualifiedName != nil {
+			schemaName, tableName := e.extractSchemaAndTableName(qualifiedName)
+
+			// Get or create the table
+			table := e.getOrCreateTable(schemaName, tableName)
+
+			// Process each alter table command
+			for _, alterTableCmd := range alterTableCmdList.AllAlter_table_cmd() {
+				if alterTableCmd == nil {
+					continue
+				}
+
+				// Check if this is an ADD CONSTRAINT command
+				if alterTableCmd.ADD_P() != nil && alterTableCmd.Tableconstraint() != nil {
+					e.extractTableConstraint(alterTableCmd.Tableconstraint(), table, schemaName)
+				}
+			}
+		}
 	}
 }
 
@@ -838,6 +982,51 @@ func (e *metadataExtractor) handleAttachPartition(ctx *parser.AltertablestmtCont
 			}
 		}
 	}
+}
+
+// EnterCreatematviewstmt is called when entering a CREATE MATERIALIZED VIEW statement
+func (e *metadataExtractor) EnterCreatematviewstmt(ctx *parser.CreatematviewstmtContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Get the materialized view target
+	mvTarget := ctx.Create_mv_target()
+	if mvTarget == nil {
+		return
+	}
+
+	// Extract schema and view name from the target
+	var schemaName, viewName string
+	if qualifiedName := mvTarget.Qualified_name(); qualifiedName != nil {
+		schemaName, viewName = e.extractSchemaAndTableName(qualifiedName)
+	} else {
+		return
+	}
+
+	schema := e.getOrCreateSchema(schemaName)
+
+	// Create materialized view metadata
+	materializedView := &storepb.MaterializedViewMetadata{
+		Name: viewName,
+	}
+
+	// Extract the view definition
+	if ctx.AS() != nil && ctx.Selectstmt() != nil {
+		// Get the full SELECT statement text
+		selectCtx := ctx.Selectstmt()
+		startToken := selectCtx.GetStart()
+		stopToken := selectCtx.GetStop()
+		if startToken != nil && stopToken != nil {
+			materializedView.Definition = ctx.GetParser().GetTokenStream().GetTextFromTokens(startToken, stopToken)
+		}
+	}
+
+	// Add to schema's materialized views
+	if schema.MaterializedViews == nil {
+		schema.MaterializedViews = []*storepb.MaterializedViewMetadata{}
+	}
+	schema.MaterializedViews = append(schema.MaterializedViews, materializedView)
 }
 
 // extractPartitionBoundSpec extracts the partition bound specification (FOR VALUES clause)
@@ -906,6 +1095,8 @@ func (e *metadataExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	schemaName, viewName := e.extractSchemaAndTableName(ctx.Qualified_name())
 	schemaMetadata := e.getOrCreateSchema(schemaName)
 
+	// Create regular view metadata
+	// Note: Materialized views are not currently supported by the parser and are handled by sync
 	viewMetadata := &storepb.ViewMetadata{
 		Name: viewName,
 	}
