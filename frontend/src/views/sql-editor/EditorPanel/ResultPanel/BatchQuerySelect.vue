@@ -126,7 +126,7 @@ import {
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { hexToRgb } from "@/utils";
-import { convertExportFormatToOld } from "@/utils/v1/setting-conversions";
+import { convertExportFormatToOld } from "@/utils/v1/common-conversions";
 
 
 

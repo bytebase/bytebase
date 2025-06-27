@@ -23,7 +23,7 @@ import {
 import { isValidEnvironmentName, unknownEnvironment } from "@/types";
 import { Instance, type DataSource } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew, convertOldStateToNew, convertStateToOld } from "@/utils/v1/common-conversions";
+import { convertEngineToNew, convertStateToNew, convertStateToOld } from "@/utils/v1/common-conversions";
 import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
@@ -80,7 +80,7 @@ export const provideInstanceFormContext = (baseContext: {
     if (isCreating.value) return true;
 
     return (
-      convertOldStateToNew(instance.value?.state || convertStateToOld(State.STATE_UNSPECIFIED)) === State.ACTIVE &&
+      convertStateToNew(instance.value?.state || convertStateToOld(State.STATE_UNSPECIFIED)) === State.ACTIVE &&
       hasWorkspacePermissionV2("bb.instances.update")
     );
   });

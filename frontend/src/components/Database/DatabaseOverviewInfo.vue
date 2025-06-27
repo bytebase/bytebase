@@ -33,7 +33,7 @@
       </dt>
       <dd class="mt-1 text-sm text-main">
         <span>
-          {{ convertOldStateToNew(database.state) === State.ACTIVE ? "OK" : "NOT_FOUND" }}
+          {{ convertStateToNew(database.state) === State.ACTIVE ? "OK" : "NOT_FOUND" }}
         </span>
       </dd>
     </div>
@@ -54,7 +54,7 @@ import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
 import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew, convertOldStateToNew } from "@/utils/v1/common-conversions";
+import { convertEngineToNew, convertStateToNew } from "@/utils/v1/common-conversions";
 import { instanceV1HasCollationAndCharacterSet } from "@/utils";
 
 const props = defineProps<{

@@ -1,7 +1,7 @@
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
-import { convertStateToOld } from "@/utils/v1/setting-conversions";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { Database } from "../proto/v1/database_service";
 import type { InstanceResource } from "../proto/v1/instance_service";
 import type { Environment } from "../v1/environment";

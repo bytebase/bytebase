@@ -36,7 +36,7 @@ import EllipsisText from "@/components/EllipsisText.vue";
 import VCSIcon from "@/components/VCS/VCSIcon.vue";
 import { getDateForPbTimestamp } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
-import { convertVCSTypeToNew, convertVCSTypeToOld } from "@/utils/v1/setting-conversions";
+import { convertVCSTypeToNew, convertVCSTypeToOld } from "@/utils/v1/common-conversions";
 import { humanizeDate } from "@/utils";
 import { useReleaseDetailContext } from "./context";
 

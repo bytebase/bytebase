@@ -24,7 +24,7 @@
 import { BBButtonConfirm } from "@/bbkit";
 import { useReleaseStore } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToNew } from "@/utils/v1/setting-conversions";
+import { convertStateToNew } from "@/utils/v1/common-conversions";
 import { useReleaseDetailContext } from "./context";
 
 const { release } = useReleaseDetailContext();

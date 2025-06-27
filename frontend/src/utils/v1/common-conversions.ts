@@ -162,7 +162,7 @@ export const convertStateToOld = (state: NewState): OldState => {
 /**
  * Convert old proto State to proto-es State
  */
-export const convertOldStateToNew = (state: OldState): NewState => {
+export const convertStateToNew = (state: OldState): NewState => {
   switch (state) {
     case OldState.STATE_UNSPECIFIED:
       return NewState.STATE_UNSPECIFIED;
@@ -174,11 +174,6 @@ export const convertOldStateToNew = (state: OldState): NewState => {
       return NewState.STATE_UNSPECIFIED;
   }
 };
-
-/**
- * Convert old proto State to proto-es State (alias for consistency)
- */
-export const convertStateToNew = convertOldStateToNew;
 
 /**
  * Convert proto-es ExportFormat to old proto ExportFormat
@@ -203,7 +198,7 @@ export const convertExportFormatToOld = (format: NewExportFormat): OldExportForm
 /**
  * Convert old proto ExportFormat to proto-es ExportFormat
  */
-export const convertOldExportFormatToNew = (format: OldExportFormat): NewExportFormat => {
+export const convertExportFormatToNew = (format: OldExportFormat): NewExportFormat => {
   switch (format) {
     case OldExportFormat.FORMAT_UNSPECIFIED:
       return NewExportFormat.FORMAT_UNSPECIFIED;
@@ -219,11 +214,6 @@ export const convertOldExportFormatToNew = (format: OldExportFormat): NewExportF
       return NewExportFormat.FORMAT_UNSPECIFIED;
   }
 };
-
-/**
- * Convert old proto ExportFormat to proto-es ExportFormat (alias for consistency)
- */
-export const convertExportFormatToNew = convertOldExportFormatToNew;
 
 /**
  * Convert proto-es VCSType to old proto VCSType
@@ -248,7 +238,7 @@ export const convertVCSTypeToOld = (vcsType: NewVCSType): OldVCSType => {
 /**
  * Convert old proto VCSType to proto-es VCSType
  */
-export const convertOldVCSTypeToNew = (vcsType: OldVCSType): NewVCSType => {
+export const convertVCSTypeToNew = (vcsType: OldVCSType): NewVCSType => {
   switch (vcsType) {
     case OldVCSType.VCS_TYPE_UNSPECIFIED:
       return NewVCSType.VCS_TYPE_UNSPECIFIED;
@@ -264,11 +254,6 @@ export const convertOldVCSTypeToNew = (vcsType: OldVCSType): NewVCSType => {
       return NewVCSType.VCS_TYPE_UNSPECIFIED;
   }
 };
-
-/**
- * Convert old proto VCSType to proto-es VCSType (alias for consistency)
- */
-export const convertVCSTypeToNew = convertOldVCSTypeToNew;
 
 /**
  * Convert old proto Engine to JSON string (backwards compatibility)

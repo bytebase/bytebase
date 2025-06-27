@@ -71,7 +71,7 @@ import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
-import { convertExportFormatToNew, convertExportFormatToOld } from "@/utils/v1/setting-conversions";
+import { convertExportFormatToNew, convertExportFormatToOld } from "@/utils/v1/common-conversions";
 import { pushNotification } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {

@@ -105,7 +105,7 @@
           </h4>
           <div class="text-xs">
             <span class="text-gray-500"
-              >{{ getVCSTypeText(convertOldVCSTypeToNew(release.vcsSource.vcsType)) }}:</span
+              >{{ getVCSTypeText(convertVCSTypeToNew(release.vcsSource.vcsType)) }}:</span
             >
             <a
               v-if="release.vcsSource.url"
@@ -157,7 +157,7 @@ import { isValidReleaseName, getDateForPbTimestamp } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
 import { ReleaseFileType } from "@/types/proto/v1/release_service";
 import type { Release_File_ChangeType } from "@/types/proto/v1/release_service";
-import { convertOldVCSTypeToNew } from "@/utils/v1/common-conversions";
+import { convertVCSTypeToNew } from "@/utils/v1/common-conversions";
 import { usePlanSpecContext } from "../../SpecDetailView/context";
 
 const { t } = useI18n();
