@@ -167,6 +167,110 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 	return nil
 }
 
+// DBSchemaWithTodo is a struct for a db_schema with the todo column.
+// It is used for the column default value migration.
+type DBSchemaWithTodo struct {
+	ID         int
+	InstanceID string
+	DBName     string
+	Metadata   string
+}
+
+// ListDBSchemasWithTodo lists all db_schemas with todo = true.
+func (s *Store) ListDBSchemasWithTodo(ctx context.Context, engineType storepb.Engine, limit int) ([]*DBSchemaWithTodo, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT
+			db_schema.id,
+			db_schema.instance,
+			db_schema.db_name,
+			db_schema.metadata
+		FROM db_schema
+		LEFT JOIN instance ON db_schema.instance = instance.resource_id
+		WHERE db_schema.todo = true AND instance.metadata->>'engine' = $1
+		LIMIT $2
+	`, engineType.String(), limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var dbSchemas []*DBSchemaWithTodo
+	for rows.Next() {
+		var dbSchema DBSchemaWithTodo
+		if err := rows.Scan(
+			&dbSchema.ID,
+			&dbSchema.InstanceID,
+			&dbSchema.DBName,
+			&dbSchema.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		dbSchemas = append(dbSchemas, &dbSchema)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return dbSchemas, nil
+}
+
+// UpdateDBSchemaTodo updates the todo column of a db_schema.
+func (s *Store) UpdateDBSchemaTodo(ctx context.Context, id int, todo bool) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE db_schema
+		SET todo = $1
+		WHERE id = $2
+	`, todo, id); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// UpdateDBSchemaMetadata updates the metadata of a db_schema.
+func (s *Store) UpdateDBSchemaMetadata(ctx context.Context, id int, metadata string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE db_schema
+		SET metadata = $1
+		WHERE id = $2
+	`, metadata, id); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// UpdateDBSchemaMetadataAndTodo updates the metadata and todo columns of a db_schema.
+func (s *Store) UpdateDBSchemaMetadataAndTodo(ctx context.Context, id int, metadata string, todo bool) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE db_schema
+		SET metadata = $1, todo = $2
+		WHERE id = $3
+	`, metadata, todo, id); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, instanceID string) (*model.DatabaseSchema, error) {
 	var databaseSchema storepb.DatabaseSchemaMetadata
 	var databaseConfig storepb.DatabaseConfig

@@ -30,6 +30,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	runnermigrator "github.com/bytebase/bytebase/backend/runner/migrator"
 	"github.com/bytebase/bytebase/backend/runner/monitor"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -51,12 +52,13 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	taskSchedulerV2    *taskrun.SchedulerV2
-	planCheckScheduler *plancheck.Scheduler
-	metricReporter     *metricreport.Reporter
-	schemaSyncer       *schemasync.Syncer
-	approvalRunner     *approval.Runner
-	runnerWG           sync.WaitGroup
+	taskSchedulerV2       *taskrun.SchedulerV2
+	planCheckScheduler    *plancheck.Scheduler
+	metricReporter        *metricreport.Reporter
+	schemaSyncer          *schemasync.Syncer
+	approvalRunner        *approval.Runner
+	columnDefaultMigrator *runnermigrator.ColumnDefaultMigrator
+	runnerWG              sync.WaitGroup
 
 	webhookManager *webhook.Manager
 	iamManager     *iam.Manager
@@ -202,6 +204,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	statementReportExecutor := plancheck.NewStatementReportExecutor(stores, sheetManager, s.dbFactory)
 	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
+	// Column default value migrator
+	s.columnDefaultMigrator = runnermigrator.NewColumnDefaultMigrator(stores, []storepb.Engine{})
+
 	// Metric reporter
 	s.initMetricReporter()
 
@@ -236,6 +241,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	s.runnerWG.Add(1)
 	go s.planCheckScheduler.Run(ctx, &s.runnerWG)
+
+	s.runnerWG.Add(1)
+	go s.columnDefaultMigrator.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
 	mmm := monitor.NewMemoryMonitor(s.profile)
