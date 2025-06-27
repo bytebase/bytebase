@@ -44,7 +44,6 @@ func (m *ColumnDefaultMigrator) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			slog.Info("Running column default value migrator...")
 			if err := m.migrate(ctx); err != nil {
 				slog.Error("Failed to run column default value migrator", log.BBError(err))
 			}
