@@ -7,9 +7,10 @@ import { releaseServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef, ComposedRelease, Pagination } from "@/types";
 import { isValidReleaseName, unknownRelease, unknownUser } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import type { DeepPartial, Release } from "@/types/proto/v1/release_service";
 import { Release as ReleaseProto } from "@/types/proto/v1/release_service";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { 
   GetReleaseRequestSchema,
   ListReleasesRequestSchema,
@@ -95,7 +96,7 @@ export const useReleaseStore = defineStore("release", () => {
     const request = create(DeleteReleaseRequestSchema, { name });
     await releaseServiceClientConnect.deleteRelease(request);
     if (releaseMapByName.get(name)) {
-      releaseMapByName.get(name)!.state = State.DELETED;
+      releaseMapByName.get(name)!.state = convertStateToOld(State.DELETED);
     }
   };
 

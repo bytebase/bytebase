@@ -8,6 +8,7 @@ import {
 import type { ComposedDatabase, DatabaseResource } from "@/types";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 
 export type DatabaseResourceType =
   | "databases"
@@ -125,7 +126,7 @@ export const getSchemaOrTableTreeOptions = ({
   if (!databaseMetadata) {
     return undefined;
   }
-  if (hasSchemaProperty(database.instanceResource.engine)) {
+  if (hasSchemaProperty(convertEngineToNew(database.instanceResource.engine))) {
     const schemaNodes = databaseMetadata.schemas.map(
       (schema): DatabaseTreeOption<"schemas"> => {
         const value = `${database.name}/schemas/${schema.name}`;

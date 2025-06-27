@@ -21,8 +21,9 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import { getTimeForPbTimestamp, type ComposedRelease } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { getReleaseFileStatement, humanizeTs } from "@/utils";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 
 interface LocalState {
   selectedReleaseNameList: Set<string>;
@@ -62,7 +63,7 @@ const columnList = computed(
           return (
             <p class="inline-flex w-full">
               <span class="shrink truncate">{release.title}</span>
-              {release.state === State.DELETED && (
+              {release.state === convertStateToOld(State.DELETED) && (
                 <NTag class="shrink-0" type="warning" size="small" round>
                   {t("common.archived")}
                 </NTag>

@@ -69,7 +69,7 @@ import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, hasFeature } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type {
@@ -94,7 +94,6 @@ import {
   SemanticTypeCell,
   LabelsCell,
 } from "./components";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
 
 interface LocalState {
   pendingUpdateColumn?: ColumnMetadata;
@@ -631,7 +630,7 @@ const schemaTemplateColumnTypes = computed(() => {
     const columnTypes = setting.value.value.value.columnTypes;
     if (columnTypes && columnTypes.length > 0) {
       const columnType = columnTypes.find(
-        (columnType) => columnType.engine === convertEngineToNew(props.engine)
+        (columnType) => columnType.engine === props.engine
       );
       if (columnType && columnType.enabled) {
         return columnType.types;

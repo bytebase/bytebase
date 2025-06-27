@@ -40,7 +40,7 @@
       }}</span>
       <ExportFormatSelector
         :key="refreshKey"
-        v-model:format="state.config.format"
+        v-model:format="convertedFormat"
         :editable="optionsEditable"
       />
     </div>
@@ -71,6 +71,7 @@ import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
+import { convertExportFormatToNew, convertExportFormatToOld } from "@/utils/v1/common-conversions";
 import { pushNotification } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
@@ -110,6 +111,16 @@ const optionsEditable = computed(() => {
 const denyEditTaskReasons = computed(() =>
   allowUserToEditStatementForTask(issue.value, selectedTask.value)
 );
+
+// Convert between old and new ExportFormat types
+const convertedFormat = computed({
+  get() {
+    return convertExportFormatToNew(state.config.format);
+  },
+  set(value) {
+    state.config.format = convertExportFormatToOld(value);
+  }
+});
 
 const handleCancelEdit = () => {
   state.isEditing = false;

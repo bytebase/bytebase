@@ -233,7 +233,7 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME, unknownEnvironment } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   instanceV1HasAlterSchema,
@@ -241,6 +241,7 @@ import {
   allowUsingSchemaEditor,
   extractProjectResourceName,
 } from "@/utils";
+import { convertStateToNew } from "@/utils/v1/common-conversions";
 
 const databaseHashList = [
   "overview",
@@ -338,7 +339,7 @@ const createMigration = async (
 ) => {
   if (type === "bb.issue.database.schema.update") {
     if (
-      database.value.state === State.ACTIVE &&
+      convertStateToNew(database.value.state) === State.ACTIVE &&
       allowUsingSchemaEditor([database.value])
     ) {
       state.showSchemaEditorModal = true;

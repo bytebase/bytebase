@@ -222,7 +222,6 @@ import {
   convertNewDatabaseCatalogToOld,
   convertOldTableCatalogToNew,
 } from "@/utils/v1/database-catalog-conversions";
-import { convertEngineToOld as convertNewEngineToOld } from "@/utils/v1/setting-conversions";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { cloneDeep, isEqual, pull } from "lodash-es";
 import { PencilIcon, PlusIcon, XIcon } from "lucide-vue-next";
@@ -264,7 +263,7 @@ const editingForTableEditor = computed(() => {
     databaseMetadata: convertNewDatabaseMetadataToOld(e.databaseMetadata),
     schemaMetadata: convertNewSchemaMetadataToOld(e.schemaMetadata),
     tableMetadata: convertNewTableMetadataToOld(e.tableMetadata),
-    engine: convertNewEngineToOld(e.engine),
+    engine: e.engine,
   };
 });
 
@@ -348,7 +347,7 @@ const categoryOptions = computed(() => {
 });
 
 const allowReorderColumns = computed(() => {
-  return instanceV1AllowsReorderColumns(convertNewEngineToOld(editing.value.engine));
+  return instanceV1AllowsReorderColumns(editing.value.engine);
 });
 
 const submitDisabled = computed(() => {
@@ -467,7 +466,7 @@ const setColumnPrimaryKey = (oldColumn: any, isPrimaryKey: boolean) => {
     column.nullable = false;
     const oldTableMetadata = convertNewTableMetadataToOld(editing.value.tableMetadata);
     upsertColumnPrimaryKey(
-      convertNewEngineToOld(editing.value.engine),
+      editing.value.engine,
       oldTableMetadata,
       column.name
     );

@@ -53,7 +53,7 @@
       </span>
     </div>
 
-    <div v-if="selectedInstance.engine === Engine.MONGODB" class="w-full">
+    <div v-if="selectedInstance.engine === convertEngineToOld(Engine.MONGODB)" class="w-full">
       <label for="name" class="textlabel">
         {{ $t("create-db.new-collection-name") }}
         <span class="text-red-600">*</span>
@@ -67,7 +67,7 @@
       />
     </div>
 
-    <div v-if="selectedInstance.engine === Engine.CLICKHOUSE" class="w-full">
+    <div v-if="selectedInstance.engine === convertEngineToOld(Engine.CLICKHOUSE)" class="w-full">
       <label for="name" class="textlabel">
         {{ $t("create-db.cluster") }}
       </label>
@@ -110,8 +110,8 @@
       <div class="w-full">
         <label for="charset" class="textlabel">
           {{
-            selectedInstance.engine === Engine.POSTGRES ||
-            selectedInstance.engine === Engine.REDSHIFT
+            selectedInstance.engine === convertEngineToOld(Engine.POSTGRES) ||
+            selectedInstance.engine === convertEngineToOld(Engine.REDSHIFT)
               ? $t("db.encoding")
               : $t("db.character-set")
           }}</label
@@ -121,7 +121,7 @@
           name="charset"
           type="text"
           class="mt-1 w-full"
-          :placeholder="defaultCharsetOfEngineV1(selectedInstance.engine)"
+          :placeholder="defaultCharsetOfEngineV1(convertEngineToNew(selectedInstance.engine))"
         />
       </div>
 
@@ -135,7 +135,7 @@
           type="text"
           class="mt-1 w-full"
           :placeholder="
-            defaultCollationOfEngineV1(selectedInstance.engine) || 'default'
+            defaultCollationOfEngineV1(convertEngineToNew(selectedInstance.engine)) || 'default'
           "
         />
       </div>
@@ -172,7 +172,8 @@ import {
   isValidProjectName,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToOld, convertEngineToNew } from "@/utils/v1/common-conversions";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/plan_service";
@@ -236,7 +237,9 @@ const isReservedName = computed(() => {
   return state.databaseName.toLowerCase() == "bytebase";
 });
 
-const supportedEngines = computed(() => enginesSupportCreateDatabase());
+const supportedEngines = computed(() => 
+  enginesSupportCreateDatabase()
+);
 
 const allowCreate = computed(() => {
   return (
@@ -274,7 +277,7 @@ const requireDatabaseOwnerName = computed((): boolean => {
     return false;
   }
   return [Engine.POSTGRES, Engine.REDSHIFT, Engine.COCKROACHDB].includes(
-    instance.engine
+    convertEngineToNew(instance.engine)
   );
 });
 
@@ -335,10 +338,10 @@ const createV1 = async () => {
 
     characterSet:
       state.characterSet ||
-      defaultCharsetOfEngineV1(selectedInstance.value.engine),
+      defaultCharsetOfEngineV1(convertEngineToNew(selectedInstance.value.engine)),
     collation:
       state.collation ||
-      defaultCollationOfEngineV1(selectedInstance.value.engine),
+      defaultCollationOfEngineV1(convertEngineToNew(selectedInstance.value.engine)),
     cluster: state.cluster,
     owner,
   };

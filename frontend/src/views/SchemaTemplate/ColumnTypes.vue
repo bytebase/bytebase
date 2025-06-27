@@ -10,7 +10,7 @@
     <div class="w-full flex flex-col justify-start items-start gap-2">
       <div class="w-full flex flex-row justify-between items-center">
         <div class="flex flex-row justify-start items-center">
-          <EngineIcon :engine="OldEngine.MYSQL" :custom-class="'mr-1'" />
+          <EngineIcon :engine="Engine.MYSQL" :custom-class="'mr-1'" />
           MySQL
         </div>
         <NRadioGroup
@@ -60,7 +60,7 @@
     <div class="w-full flex flex-col justify-start items-start gap-2">
       <div class="w-full flex flex-row justify-between items-center">
         <div class="flex flex-row justify-start items-center">
-          <EngineIcon :engine="OldEngine.POSTGRES" :custom-class="'mr-1'" />
+          <EngineIcon :engine="Engine.POSTGRES" :custom-class="'mr-1'" />
           PostgreSQL
         </div>
         <NRadioGroup
@@ -122,8 +122,6 @@ import { computed, onMounted, ref } from "vue";
 import EngineIcon from "@/components/Icon/EngineIcon.vue";
 import { pushNotification, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { Engine as OldEngine } from "@/types/proto/v1/common";
-import { convertEngineToOld } from "@/utils/v1/setting-conversions";
 import type { SchemaTemplateSetting_FieldTemplate, SchemaTemplateSetting_ColumnType } from "@/types/proto-es/v1/setting_service_pb";
 import {
   SchemaTemplateSetting_ColumnTypeSchema,
@@ -302,7 +300,7 @@ const handleMySQLEnabledChange = (event: InputEvent) => {
   columnTypeTemplateForMySQL.value.enabled = enabled;
   if (enabled) {
     if (columnTypeTemplateForMySQL.value.types.filter(Boolean).length === 0) {
-      columnTypesForMySQL.value = getDataTypeSuggestionList(convertEngineToOld(Engine.MYSQL)).join(
+      columnTypesForMySQL.value = getDataTypeSuggestionList(Engine.MYSQL).join(
         "\n"
       );
     }
@@ -373,7 +371,7 @@ const handlePostgreSQLEnabledChange = (event: InputEvent) => {
     ) {
 
       columnTypesForPostgreSQL.value = getDataTypeSuggestionList(
-        convertEngineToOld(Engine.POSTGRES)
+        Engine.POSTGRES
       ).join("\n");
     }
   }

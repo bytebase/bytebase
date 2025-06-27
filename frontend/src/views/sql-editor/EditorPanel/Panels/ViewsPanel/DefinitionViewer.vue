@@ -48,6 +48,7 @@ import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { nextAnimationFrame } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 
 const props = defineProps<{
@@ -72,7 +73,7 @@ const formatted = computedAsync(
     try {
       const result = await formatSQL(
         sql,
-        dialectOfEngineV1(instanceEngine.value)
+        dialectOfEngineV1(convertEngineToNew(instanceEngine.value))
       );
       return result;
     } catch (err) {
@@ -118,7 +119,7 @@ const handleEditorReady = (
       AIContext.events.emit("send-chat", {
         content: promptUtils.explainCode(
           statement,
-          props.db.instanceResource.engine
+          convertEngineToNew(props.db.instanceResource.engine)
         ),
         newChat,
       });

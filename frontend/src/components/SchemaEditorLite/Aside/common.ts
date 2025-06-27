@@ -11,6 +11,7 @@ import type {
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { groupBy } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource } from "../context/common";
 import {
@@ -304,7 +305,7 @@ export const useBuildTree = () => {
       map.set(tableGroupNode.key, tableGroupNode);
 
       // Views
-      if (engineSupportsEditViews(db.instanceResource.engine)) {
+      if (engineSupportsEditViews(convertEngineToNew(db.instanceResource.engine))) {
         const viewGroupNode: TreeNodeForGroup<"view"> = {
           type: "group",
           group: "view",
@@ -330,7 +331,7 @@ export const useBuildTree = () => {
         map.set(viewGroupNode.key, viewGroupNode);
       }
       // Procedures
-      if (engineSupportsEditProcedures(db.instanceResource.engine)) {
+      if (engineSupportsEditProcedures(convertEngineToNew(db.instanceResource.engine))) {
         const procedureGroupNode: TreeNodeForGroup<"procedure"> = {
           type: "group",
           group: "procedure",
@@ -356,7 +357,7 @@ export const useBuildTree = () => {
         map.set(procedureGroupNode.key, procedureGroupNode);
       }
       // Functions
-      if (engineSupportsEditFunctions(db.instanceResource.engine)) {
+      if (engineSupportsEditFunctions(convertEngineToNew(db.instanceResource.engine))) {
         const functionGroupNode: TreeNodeForGroup<"function"> = {
           type: "group",
           group: "function",

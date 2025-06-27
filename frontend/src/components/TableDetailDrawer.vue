@@ -74,7 +74,7 @@
                 <NPopover
                   trigger="click"
                   placement="bottom"
-                  v-if="supportGetStringSchema(instanceEngine)"
+                  v-if="supportGetStringSchema(instanceEngineNew)"
                   @update:show="(show: boolean) => show"
                 >
                   <template #trigger>
@@ -107,7 +107,7 @@
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
                 <div
-                  v-if="hasTableEngineProperty(instanceEngine)"
+                  v-if="hasTableEngineProperty(instanceEngineNew)"
                   class="col-span-1"
                 >
                   <dt class="text-sm font-medium text-control-light">
@@ -126,7 +126,7 @@
                     <ClassificationCell
                       :classification="tableCatalog.classification"
                       :classification-config="classificationConfig"
-                      :engine="instanceEngine"
+                      :engine="instanceEngineNew"
                       @apply="
                         (id: string) =>
                           $emit('apply-classification', tableName, id)
@@ -154,7 +154,7 @@
                 </div>
 
                 <div
-                  v-if="hasIndexSizeProperty(instanceEngine)"
+                  v-if="hasIndexSizeProperty(instanceEngineNew)"
                   class="col-span-1"
                 >
                   <dt class="text-sm font-medium text-control-light">
@@ -166,7 +166,7 @@
                 </div>
 
                 <template
-                  v-if="instanceV1HasCollationAndCharacterSet(instanceEngine)"
+                  v-if="instanceV1HasCollationAndCharacterSet(instanceEngineNew)"
                 >
                   <div class="col-span-1">
                     <dt class="text-sm font-medium text-control-light">
@@ -201,7 +201,7 @@
           </div>
 
           <div
-            v-if="instanceV1SupportsColumn(instanceEngine)"
+            v-if="instanceV1SupportsColumn(instanceEngineNew)"
             class="mt-6 px-6 space-y-4"
           >
             <div class="w-full flex flex-row justify-between items-center">
@@ -229,7 +229,7 @@
           </div>
 
           <div
-            v-if="instanceV1SupportsIndex(instanceEngine)"
+            v-if="instanceV1SupportsIndex(instanceEngineNew)"
             class="mt-6 px-6 space-y-4"
           >
             <div class="text-lg leading-6 font-medium text-main">
@@ -239,7 +239,7 @@
           </div>
 
           <div
-            v-if="instanceV1SupportsTrigger(instanceEngine)"
+            v-if="instanceV1SupportsTrigger(instanceEngineNew)"
             class="mt-6 px-6 space-y-4"
           >
             <div class="text-lg leading-6 font-medium text-main">
@@ -254,7 +254,7 @@
           </div>
 
           <div
-            v-if="instanceV1MaskingForNoSQL(instanceEngine)"
+            v-if="instanceV1MaskingForNoSQL(instanceEngineNew)"
             class="mt-6 px-6 space-y-4"
           >
             <div>
@@ -328,7 +328,7 @@ import {
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   TableCatalog,
   ObjectSchema,
@@ -351,6 +351,7 @@ import {
   isDatabaseV1Queryable,
   supportGetStringSchema,
 } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
@@ -514,6 +515,10 @@ const instanceEngine = computed(() => {
   return database.value.instanceResource.engine;
 });
 
+const instanceEngineNew = computed(() => {
+  return convertEngineToNew(instanceEngine.value);
+});
+
 const allowQuery = computed(() => {
   if (database.value.project === DEFAULT_PROJECT_NAME) {
     return hasProjectPermissionV2(defaultProject(), "bb.sql.select");
@@ -524,7 +529,7 @@ const allowQuery = computed(() => {
 const hasPartitionTables = computed(() => {
   return (
     // Only show partition tables for PostgreSQL.
-    database.value.instanceResource.engine === Engine.POSTGRES &&
+    convertEngineToNew(database.value.instanceResource.engine) === Engine.POSTGRES &&
     table.value &&
     table.value.partitions.length > 0
   );
@@ -535,7 +540,7 @@ const shouldShowPartitionTablesDataTable = computed(() => {
 });
 
 const getTableName = (tableName: string) => {
-  if (hasSchemaProperty(instanceEngine.value) && props.schemaName) {
+  if (hasSchemaProperty(convertEngineToNew(instanceEngine.value)) && props.schemaName) {
     return `"${props.schemaName}"."${tableName}"`;
   }
   return tableName;

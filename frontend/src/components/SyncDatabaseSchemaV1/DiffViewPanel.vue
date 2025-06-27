@@ -56,7 +56,7 @@ import { ref } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
 import { dialectOfEngineV1 } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 import SchemaDiffViewer from "./SchemaDiffViewer.vue";
 
 defineProps<{

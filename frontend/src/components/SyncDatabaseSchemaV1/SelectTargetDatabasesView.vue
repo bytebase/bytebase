@@ -169,7 +169,8 @@ import {
   type ComposedDatabase,
   type ComposedProject,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import SourceSchemaInfo from "./SourceSchemaInfo.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
@@ -370,7 +371,7 @@ onMounted(async () => {
   if (isValidDatabaseName(targetDatabaseName)) {
     const database =
       await databaseStore.getOrFetchDatabaseByName(targetDatabaseName);
-    if (database && database.instanceResource.engine === props.sourceEngine) {
+    if (database && convertEngineToNew(database.instanceResource.engine) === props.sourceEngine) {
       state.selectedDatabaseNameList = [targetDatabaseName];
       state.selectedDatabaseName = targetDatabaseName;
     }

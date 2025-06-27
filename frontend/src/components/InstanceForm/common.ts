@@ -6,9 +6,10 @@ import {
   UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToOld, convertStateToOld } from "@/utils/v1/common-conversions";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
 
@@ -66,9 +67,9 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
 
   return {
     name: instance?.name ?? UNKNOWN_INSTANCE_NAME,
-    state: instance?.state ?? State.ACTIVE,
+    state: instance?.state ?? convertStateToOld(State.ACTIVE),
     title: instance?.title ?? t("instance.new-instance"),
-    engine: instance?.engine ?? Engine.MYSQL,
+    engine: instance?.engine ?? convertEngineToOld(Engine.MYSQL),
     externalLink: instance?.externalLink ?? "",
     environment: instance?.environment ?? UNKNOWN_ENVIRONMENT_NAME,
     activation: instance

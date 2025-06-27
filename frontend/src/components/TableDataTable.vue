@@ -35,10 +35,11 @@ import {
   useSettingV1Store,
 } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { bytesToString, hasSchemaProperty } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import type { PropType } from "vue";
@@ -103,7 +104,7 @@ const classificationConfig = computed(() => {
 
 const hasSensitiveDataFeature = featureToRef(PlanFeature.FEATURE_DATA_MASKING);
 
-const engine = computed(() => props.database.instanceResource.engine);
+const engine = computed(() => convertEngineToNew(props.database.instanceResource.engine));
 
 const isPostgres = computed(
   () => engine.value === Engine.POSTGRES || engine.value === Engine.RISINGWAVE

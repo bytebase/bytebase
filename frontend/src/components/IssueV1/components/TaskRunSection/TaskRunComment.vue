@@ -41,6 +41,7 @@ import {
 } from "@/types";
 import { TaskRun_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import { useIssueContext } from "../../logic";
 import { displayTaskRunLogEntryType } from "./TaskRunLogTable/common";
@@ -172,7 +173,7 @@ const commentLink = computed((): CommentLink => {
         title: t("common.troubleshoot"),
         link: "https://docs.bytebase.com/change-database/troubleshoot/?source=console#duplicate-version",
       };
-    } else if (isPostgresFamily(db.instanceResource.engine)) {
+    } else if (isPostgresFamily(convertEngineToNew(db.instanceResource.engine))) {
       return {
         title: t("common.troubleshoot"),
         link: "https://docs.bytebase.com/change-database/troubleshoot/?source=console#postgresql",

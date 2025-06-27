@@ -5,7 +5,7 @@
     :style="style"
     :loading="state.isUpdating"
     :disabled="state.isUpdating"
-    :readonly="release.state !== State.ACTIVE"
+    :readonly="release.state !== convertStateToOld(State.ACTIVE)"
     autosize
     required
     @focus="state.isEditing = true"
@@ -21,9 +21,10 @@ import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useReleaseStore } from "@/store";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { Release } from "@/types/proto/v1/release_service";
 import { useReleaseDetailContext } from "../context";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 
 const { t } = useI18n();
 const { release } = useReleaseDetailContext();

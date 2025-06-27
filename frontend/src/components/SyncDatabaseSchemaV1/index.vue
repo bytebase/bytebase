@@ -91,7 +91,8 @@ import {
 } from "@/store";
 import type { ComposedProject } from "@/types";
 import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { ChangelogView } from "@/types/proto/v1/database_service";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 import {
@@ -174,7 +175,7 @@ const sourceEngine = computed(() => {
     const database = databaseStore.getDatabaseByName(
       changelogSourceSchemaState.databaseName
     );
-    return database.instanceResource.engine;
+    return convertEngineToNew(database.instanceResource.engine);
   } else {
     return rawSQLState.engine;
   }

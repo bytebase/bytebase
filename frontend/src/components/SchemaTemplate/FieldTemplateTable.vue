@@ -31,7 +31,6 @@ import {
 import { EngineIcon } from "../Icon";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import { classificationConfig } from "./utils";
-import { convertEngineToOld } from "@/utils/v1/setting-conversions";
 
 const props = defineProps<{
   engine?: Engine;
@@ -60,7 +59,7 @@ const columns = computed(
         key: "name",
         render: (item) => (
           <div class="flex justify-start items-center">
-            <EngineIcon engine={convertEngineToOld(item.engine)} customClass="ml-0 mr-1" />
+            <EngineIcon engine={item.engine} customClass="ml-0 mr-1" />
             {item.column?.name ?? ""}
           </div>
         ),

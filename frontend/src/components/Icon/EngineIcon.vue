@@ -9,7 +9,7 @@
 import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 
 const props = defineProps<{
   engine: Engine;

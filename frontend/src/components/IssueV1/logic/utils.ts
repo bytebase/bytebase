@@ -13,7 +13,8 @@ import {
   unknownEnvironment,
   unknownInstance,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
@@ -83,7 +84,7 @@ export const mockDatabase = (
     useEnvironmentV1Store().getEnvironmentByName(
       db.instanceResource.environment
     ) ?? unknownEnvironment();
-  db.state = State.DELETED;
+  db.state = convertStateToOld(State.DELETED);
   return db;
 };
 

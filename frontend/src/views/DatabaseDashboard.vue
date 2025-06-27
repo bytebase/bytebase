@@ -72,7 +72,7 @@ import {
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, isValidDatabaseName } from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type { SearchParams } from "@/utils";
 import {
@@ -169,7 +169,12 @@ const selectedEnvironment = computed(() => {
 const selectedEngines = computed(() => {
   return state.params.scopes
     .filter((scope) => scope.id === "engine")
-    .map((scope) => engineFromJSON(scope.value));
+    .map((scope) => {
+      // Convert string scope value to Engine enum
+      const engineKey = scope.value.toUpperCase();
+      const engineValue = Engine[engineKey as keyof typeof Engine];
+      return typeof engineValue === "number" ? engineValue : Engine.ENGINE_UNSPECIFIED;
+    });
 });
 
 const filter = computed(() => ({

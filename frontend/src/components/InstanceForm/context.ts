@@ -21,8 +21,9 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { isValidEnvironmentName, unknownEnvironment } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
 import { Instance, type DataSource } from "@/types/proto/v1/instance_service";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew, convertStateToNew, convertStateToOld } from "@/utils/v1/common-conversions";
 import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
@@ -79,7 +80,7 @@ export const provideInstanceFormContext = (baseContext: {
     if (isCreating.value) return true;
 
     return (
-      instance.value?.state === State.ACTIVE &&
+      convertStateToNew(instance.value?.state || convertStateToOld(State.STATE_UNSPECIFIED)) === State.ACTIVE &&
       hasWorkspacePermissionV2("bb.instances.update")
     );
   });
@@ -140,11 +141,11 @@ export const provideInstanceFormContext = (baseContext: {
         return !!ds.region;
       }
 
-      if (basicInfo.value.engine === Engine.ORACLE) {
+      if (convertEngineToNew(basicInfo.value.engine) === Engine.ORACLE) {
         if (!ds.sid && !ds.serviceName) {
           return false;
         }
-      } else if (basicInfo.value.engine === Engine.DATABRICKS) {
+      } else if (convertEngineToNew(basicInfo.value.engine) === Engine.DATABRICKS) {
         if (!ds.warehouseId) {
           return false;
         }
@@ -215,7 +216,7 @@ export const provideInstanceFormContext = (baseContext: {
     ) {
       return false;
     }
-    if (basicInfo.value.engine === Engine.SPANNER) {
+    if (convertEngineToNew(basicInfo.value.engine) === Engine.SPANNER) {
       return (
         basicInfo.value.title.trim() &&
         isValidSpannerHost(adminDataSource.value.host) &&
@@ -224,14 +225,14 @@ export const provideInstanceFormContext = (baseContext: {
     }
 
     // Check Host
-    if (basicInfo.value.engine !== Engine.DYNAMODB) {
+    if (convertEngineToNew(basicInfo.value.engine) !== Engine.DYNAMODB) {
       if (adminDataSource.value.host === "") {
         return false;
       }
     }
 
     // Redis Check Master Name
-    if (basicInfo.value.engine === Engine.REDIS) {
+    if (convertEngineToNew(basicInfo.value.engine) === Engine.REDIS) {
       if (
         adminDataSource.value.redisType === DataSource_RedisType.SENTINEL &&
         adminDataSource.value.masterName === ""
@@ -285,11 +286,11 @@ export const provideInstanceFormContext = (baseContext: {
     if (!showDatabase.value) {
       ds.database = "";
     }
-    if (instance.engine !== Engine.ORACLE) {
+    if (convertEngineToNew(instance.engine) !== Engine.ORACLE) {
       ds.sid = "";
       ds.serviceName = "";
     }
-    if (instance.engine !== Engine.MONGODB) {
+    if (convertEngineToNew(instance.engine) !== Engine.MONGODB) {
       ds.srv = false;
       ds.authenticationDatabase = "";
     }

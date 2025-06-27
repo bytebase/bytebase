@@ -29,8 +29,9 @@ import { NButton, NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useIssueContext } from "../../logic";
 import TaskRunLogTable from "./TaskRunLogTable";
 import TaskRunSession from "./TaskRunSession";
@@ -61,7 +62,7 @@ const sheet = computed(() =>
 
 const showTaskRunSessionTab = computed(() =>
   TASK_RUN_SESSION_SUPPORTED_ENGINES.includes(
-    database.value.instanceResource.engine
+    convertEngineToNew(database.value.instanceResource.engine)
   )
 );
 
