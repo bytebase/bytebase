@@ -1076,15 +1076,15 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.MaximumSQLResultSizeSetting"><span class="badge">M</span>MaximumSQLResultSizeSetting</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PasswordRestrictionSetting"><span class="badge">M</span>PasswordRestrictionSetting</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.SCIMSetting"><span class="badge">M</span>SCIMSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SQLQueryRestrictionSetting"><span class="badge">M</span>SQLQueryRestrictionSetting</a>
                 </li>
               
                 <li>
@@ -12906,31 +12906,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.MaximumSQLResultSizeSetting">MaximumSQLResultSizeSetting</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>limit</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The limit is in bytes.
-The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.PasswordRestrictionSetting">PasswordRestrictionSetting</h3>
         <p></p>
 
@@ -13012,6 +12987,39 @@ The default value is 100MB, we will use the default value if the setting not exi
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SQLQueryRestrictionSetting">SQLQueryRestrictionSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>maximum_result_size</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The size limit in bytes.
+The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_result_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The return rows limit.
+The default value is -1, means no limit. </p></td>
                 </tr>
               
             </tbody>
@@ -13410,13 +13418,6 @@ server would not persist the setting value if it is true. </p></td>
                 </tr>
               
                 <tr>
-                  <td>maximum_sql_result_size_setting</td>
-                  <td><a href="#bytebase.v1.MaximumSQLResultSizeSetting">MaximumSQLResultSizeSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>scim_setting</td>
                   <td><a href="#bytebase.v1.SCIMSetting">SCIMSetting</a></td>
                   <td></td>
@@ -13440,6 +13441,13 @@ server would not persist the setting value if it is true. </p></td>
                 <tr>
                   <td>environment_setting</td>
                   <td><a href="#bytebase.v1.EnvironmentSetting">EnvironmentSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_query_restriction_setting</td>
+                  <td><a href="#bytebase.v1.SQLQueryRestrictionSetting">SQLQueryRestrictionSetting</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

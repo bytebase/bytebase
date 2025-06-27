@@ -330,11 +330,11 @@ export interface Value {
   schemaTemplateSettingValue?: SchemaTemplateSetting | undefined;
   dataClassificationSettingValue?: DataClassificationSetting | undefined;
   semanticTypeSettingValue?: SemanticTypeSetting | undefined;
-  maximumSqlResultSizeSetting?: MaximumSQLResultSizeSetting | undefined;
   scimSetting?: SCIMSetting | undefined;
   passwordRestrictionSetting?: PasswordRestrictionSetting | undefined;
   aiSetting?: AISetting | undefined;
   environmentSetting?: EnvironmentSetting | undefined;
+  sqlQueryRestrictionSetting?: SQLQueryRestrictionSetting | undefined;
 }
 
 export interface AppIMSetting {
@@ -682,12 +682,17 @@ export function algorithm_InnerOuterMask_MaskTypeToNumber(object: Algorithm_Inne
   }
 }
 
-export interface MaximumSQLResultSizeSetting {
+export interface SQLQueryRestrictionSetting {
   /**
-   * The limit is in bytes.
+   * The size limit in bytes.
    * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
    */
-  limit: Long;
+  maximumResultSize: Long;
+  /**
+   * The return rows limit.
+   * The default value is -1, means no limit.
+   */
+  maximumResultRows: number;
 }
 
 export interface SCIMSetting {
@@ -1282,11 +1287,11 @@ function createBaseValue(): Value {
     schemaTemplateSettingValue: undefined,
     dataClassificationSettingValue: undefined,
     semanticTypeSettingValue: undefined,
-    maximumSqlResultSizeSetting: undefined,
     scimSetting: undefined,
     passwordRestrictionSetting: undefined,
     aiSetting: undefined,
     environmentSetting: undefined,
+    sqlQueryRestrictionSetting: undefined,
   };
 }
 
@@ -1313,9 +1318,6 @@ export const Value: MessageFns<Value> = {
     if (message.semanticTypeSettingValue !== undefined) {
       SemanticTypeSetting.encode(message.semanticTypeSettingValue, writer.uint32(90).fork()).join();
     }
-    if (message.maximumSqlResultSizeSetting !== undefined) {
-      MaximumSQLResultSizeSetting.encode(message.maximumSqlResultSizeSetting, writer.uint32(106).fork()).join();
-    }
     if (message.scimSetting !== undefined) {
       SCIMSetting.encode(message.scimSetting, writer.uint32(114).fork()).join();
     }
@@ -1327,6 +1329,9 @@ export const Value: MessageFns<Value> = {
     }
     if (message.environmentSetting !== undefined) {
       EnvironmentSetting.encode(message.environmentSetting, writer.uint32(138).fork()).join();
+    }
+    if (message.sqlQueryRestrictionSetting !== undefined) {
+      SQLQueryRestrictionSetting.encode(message.sqlQueryRestrictionSetting, writer.uint32(146).fork()).join();
     }
     return writer;
   },
@@ -1394,14 +1399,6 @@ export const Value: MessageFns<Value> = {
           message.semanticTypeSettingValue = SemanticTypeSetting.decode(reader, reader.uint32());
           continue;
         }
-        case 13: {
-          if (tag !== 106) {
-            break;
-          }
-
-          message.maximumSqlResultSizeSetting = MaximumSQLResultSizeSetting.decode(reader, reader.uint32());
-          continue;
-        }
         case 14: {
           if (tag !== 114) {
             break;
@@ -1434,6 +1431,14 @@ export const Value: MessageFns<Value> = {
           message.environmentSetting = EnvironmentSetting.decode(reader, reader.uint32());
           continue;
         }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.sqlQueryRestrictionSetting = SQLQueryRestrictionSetting.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1462,9 +1467,6 @@ export const Value: MessageFns<Value> = {
       semanticTypeSettingValue: isSet(object.semanticTypeSettingValue)
         ? SemanticTypeSetting.fromJSON(object.semanticTypeSettingValue)
         : undefined,
-      maximumSqlResultSizeSetting: isSet(object.maximumSqlResultSizeSetting)
-        ? MaximumSQLResultSizeSetting.fromJSON(object.maximumSqlResultSizeSetting)
-        : undefined,
       scimSetting: isSet(object.scimSetting) ? SCIMSetting.fromJSON(object.scimSetting) : undefined,
       passwordRestrictionSetting: isSet(object.passwordRestrictionSetting)
         ? PasswordRestrictionSetting.fromJSON(object.passwordRestrictionSetting)
@@ -1472,6 +1474,9 @@ export const Value: MessageFns<Value> = {
       aiSetting: isSet(object.aiSetting) ? AISetting.fromJSON(object.aiSetting) : undefined,
       environmentSetting: isSet(object.environmentSetting)
         ? EnvironmentSetting.fromJSON(object.environmentSetting)
+        : undefined,
+      sqlQueryRestrictionSetting: isSet(object.sqlQueryRestrictionSetting)
+        ? SQLQueryRestrictionSetting.fromJSON(object.sqlQueryRestrictionSetting)
         : undefined,
     };
   },
@@ -1499,9 +1504,6 @@ export const Value: MessageFns<Value> = {
     if (message.semanticTypeSettingValue !== undefined) {
       obj.semanticTypeSettingValue = SemanticTypeSetting.toJSON(message.semanticTypeSettingValue);
     }
-    if (message.maximumSqlResultSizeSetting !== undefined) {
-      obj.maximumSqlResultSizeSetting = MaximumSQLResultSizeSetting.toJSON(message.maximumSqlResultSizeSetting);
-    }
     if (message.scimSetting !== undefined) {
       obj.scimSetting = SCIMSetting.toJSON(message.scimSetting);
     }
@@ -1513,6 +1515,9 @@ export const Value: MessageFns<Value> = {
     }
     if (message.environmentSetting !== undefined) {
       obj.environmentSetting = EnvironmentSetting.toJSON(message.environmentSetting);
+    }
+    if (message.sqlQueryRestrictionSetting !== undefined) {
+      obj.sqlQueryRestrictionSetting = SQLQueryRestrictionSetting.toJSON(message.sqlQueryRestrictionSetting);
     }
     return obj;
   },
@@ -1546,10 +1551,6 @@ export const Value: MessageFns<Value> = {
       (object.semanticTypeSettingValue !== undefined && object.semanticTypeSettingValue !== null)
         ? SemanticTypeSetting.fromPartial(object.semanticTypeSettingValue)
         : undefined;
-    message.maximumSqlResultSizeSetting =
-      (object.maximumSqlResultSizeSetting !== undefined && object.maximumSqlResultSizeSetting !== null)
-        ? MaximumSQLResultSizeSetting.fromPartial(object.maximumSqlResultSizeSetting)
-        : undefined;
     message.scimSetting = (object.scimSetting !== undefined && object.scimSetting !== null)
       ? SCIMSetting.fromPartial(object.scimSetting)
       : undefined;
@@ -1563,6 +1564,10 @@ export const Value: MessageFns<Value> = {
     message.environmentSetting = (object.environmentSetting !== undefined && object.environmentSetting !== null)
       ? EnvironmentSetting.fromPartial(object.environmentSetting)
       : undefined;
+    message.sqlQueryRestrictionSetting =
+      (object.sqlQueryRestrictionSetting !== undefined && object.sqlQueryRestrictionSetting !== null)
+        ? SQLQueryRestrictionSetting.fromPartial(object.sqlQueryRestrictionSetting)
+        : undefined;
     return message;
   },
 };
@@ -4315,22 +4320,25 @@ export const Algorithm_InnerOuterMask: MessageFns<Algorithm_InnerOuterMask> = {
   },
 };
 
-function createBaseMaximumSQLResultSizeSetting(): MaximumSQLResultSizeSetting {
-  return { limit: Long.ZERO };
+function createBaseSQLQueryRestrictionSetting(): SQLQueryRestrictionSetting {
+  return { maximumResultSize: Long.ZERO, maximumResultRows: 0 };
 }
 
-export const MaximumSQLResultSizeSetting: MessageFns<MaximumSQLResultSizeSetting> = {
-  encode(message: MaximumSQLResultSizeSetting, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (!message.limit.equals(Long.ZERO)) {
-      writer.uint32(8).int64(message.limit.toString());
+export const SQLQueryRestrictionSetting: MessageFns<SQLQueryRestrictionSetting> = {
+  encode(message: SQLQueryRestrictionSetting, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (!message.maximumResultSize.equals(Long.ZERO)) {
+      writer.uint32(8).int64(message.maximumResultSize.toString());
+    }
+    if (message.maximumResultRows !== 0) {
+      writer.uint32(16).int32(message.maximumResultRows);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): MaximumSQLResultSizeSetting {
+  decode(input: BinaryReader | Uint8Array, length?: number): SQLQueryRestrictionSetting {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaximumSQLResultSizeSetting();
+    const message = createBaseSQLQueryRestrictionSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4339,7 +4347,15 @@ export const MaximumSQLResultSizeSetting: MessageFns<MaximumSQLResultSizeSetting
             break;
           }
 
-          message.limit = Long.fromString(reader.int64().toString());
+          message.maximumResultSize = Long.fromString(reader.int64().toString());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.maximumResultRows = reader.int32();
           continue;
         }
       }
@@ -4351,24 +4367,33 @@ export const MaximumSQLResultSizeSetting: MessageFns<MaximumSQLResultSizeSetting
     return message;
   },
 
-  fromJSON(object: any): MaximumSQLResultSizeSetting {
-    return { limit: isSet(object.limit) ? Long.fromValue(object.limit) : Long.ZERO };
+  fromJSON(object: any): SQLQueryRestrictionSetting {
+    return {
+      maximumResultSize: isSet(object.maximumResultSize) ? Long.fromValue(object.maximumResultSize) : Long.ZERO,
+      maximumResultRows: isSet(object.maximumResultRows) ? globalThis.Number(object.maximumResultRows) : 0,
+    };
   },
 
-  toJSON(message: MaximumSQLResultSizeSetting): unknown {
+  toJSON(message: SQLQueryRestrictionSetting): unknown {
     const obj: any = {};
-    if (!message.limit.equals(Long.ZERO)) {
-      obj.limit = (message.limit || Long.ZERO).toString();
+    if (!message.maximumResultSize.equals(Long.ZERO)) {
+      obj.maximumResultSize = (message.maximumResultSize || Long.ZERO).toString();
+    }
+    if (message.maximumResultRows !== 0) {
+      obj.maximumResultRows = Math.round(message.maximumResultRows);
     }
     return obj;
   },
 
-  create(base?: DeepPartial<MaximumSQLResultSizeSetting>): MaximumSQLResultSizeSetting {
-    return MaximumSQLResultSizeSetting.fromPartial(base ?? {});
+  create(base?: DeepPartial<SQLQueryRestrictionSetting>): SQLQueryRestrictionSetting {
+    return SQLQueryRestrictionSetting.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<MaximumSQLResultSizeSetting>): MaximumSQLResultSizeSetting {
-    const message = createBaseMaximumSQLResultSizeSetting();
-    message.limit = (object.limit !== undefined && object.limit !== null) ? Long.fromValue(object.limit) : Long.ZERO;
+  fromPartial(object: DeepPartial<SQLQueryRestrictionSetting>): SQLQueryRestrictionSetting {
+    const message = createBaseSQLQueryRestrictionSetting();
+    message.maximumResultSize = (object.maximumResultSize !== undefined && object.maximumResultSize !== null)
+      ? Long.fromValue(object.maximumResultSize)
+      : Long.ZERO;
+    message.maximumResultRows = object.maximumResultRows ?? 0;
     return message;
   },
 };

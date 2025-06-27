@@ -122,8 +122,12 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			}
 		}
 
-		maximumSQLResultSize := s.store.GetMaximumSQLResultLimit(ctx)
-		queryContext := db.QueryContext{OperatorEmail: user.Email, Container: request.GetContainer(), MaximumSQLResultSize: maximumSQLResultSize}
+		queryRestriction := getMaximumSQLResultLimit(ctx, s.store, s.licenseService, 0)
+		queryContext := db.QueryContext{
+			OperatorEmail:        user.Email,
+			Container:            request.GetContainer(),
+			MaximumSQLResultSize: queryRestriction.MaximumResultSize,
+		}
 		if request.Schema != nil {
 			queryContext.Schema = *request.Schema
 		}
@@ -196,17 +200,14 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		defer conn.Close()
 	}
 
-	maximumSQLResultSize := common.DefaultMaximumSQLResultSize
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
-		maximumSQLResultSize = s.store.GetMaximumSQLResultLimit(ctx)
-	}
+	queryRestriction := getMaximumSQLResultLimit(ctx, s.store, s.licenseService, request.Limit)
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
-		Limit:                int(request.Limit),
+		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
 		Option:               request.QueryOption,
 		Container:            request.GetContainer(),
-		MaximumSQLResultSize: maximumSQLResultSize,
+		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
 	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
@@ -268,6 +269,26 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 
 	return connect.NewResponse(response), nil
+}
+
+func getMaximumSQLResultLimit(
+	ctx context.Context,
+	stores *store.Store,
+	licenseService *enterprise.LicenseService,
+	limit int32,
+) *storepb.SQLQueryRestrictionSetting {
+	value := &storepb.SQLQueryRestrictionSetting{
+		MaximumResultSize: common.DefaultMaximumSQLResultSize,
+		MaximumResultRows: -1,
+	}
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
+		value = stores.GetSQLQueryRestriction(ctx)
+	}
+
+	if limit > 0 && limit < value.MaximumResultRows {
+		value.MaximumResultRows = limit
+	}
+	return value
 }
 
 type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, int, bool /* isExplain */, bool /* isExport */) error
@@ -843,11 +864,11 @@ func DoExport(
 		}
 		defer conn.Close()
 	}
-	maximumSQLResultSize := stores.GetMaximumSQLResultLimit(ctx)
+	queryRestriction := getMaximumSQLResultLimit(ctx, stores, licenseService, request.Limit)
 	queryContext := db.QueryContext{
-		Limit:                int(request.Limit),
+		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
-		MaximumSQLResultSize: maximumSQLResultSize,
+		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
 	}
 	results, spans, duration, queryErr := queryRetry(
 		ctx,

@@ -341,12 +341,6 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
     case: "semanticTypeSettingValue";
   } | {
     /**
-     * @generated from field: bytebase.v1.MaximumSQLResultSizeSetting maximum_sql_result_size_setting = 13;
-     */
-    value: MaximumSQLResultSizeSetting;
-    case: "maximumSqlResultSizeSetting";
-  } | {
-    /**
      * @generated from field: bytebase.v1.SCIMSetting scim_setting = 14;
      */
     value: SCIMSetting;
@@ -369,6 +363,12 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
      */
     value: EnvironmentSetting;
     case: "environmentSetting";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.SQLQueryRestrictionSetting sql_query_restriction_setting = 18;
+     */
+    value: SQLQueryRestrictionSetting;
+    case: "sqlQueryRestrictionSetting";
   } | { case: undefined; value?: undefined };
 };
 
@@ -1226,23 +1226,31 @@ export enum Algorithm_InnerOuterMask_MaskType {
 export declare const Algorithm_InnerOuterMask_MaskTypeSchema: GenEnum<Algorithm_InnerOuterMask_MaskType>;
 
 /**
- * @generated from message bytebase.v1.MaximumSQLResultSizeSetting
+ * @generated from message bytebase.v1.SQLQueryRestrictionSetting
  */
-export declare type MaximumSQLResultSizeSetting = Message<"bytebase.v1.MaximumSQLResultSizeSetting"> & {
+export declare type SQLQueryRestrictionSetting = Message<"bytebase.v1.SQLQueryRestrictionSetting"> & {
   /**
-   * The limit is in bytes.
+   * The size limit in bytes.
    * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
    *
-   * @generated from field: int64 limit = 1;
+   * @generated from field: int64 maximum_result_size = 1;
    */
-  limit: bigint;
+  maximumResultSize: bigint;
+
+  /**
+   * The return rows limit.
+   * The default value is -1, means no limit.
+   *
+   * @generated from field: int32 maximum_result_rows = 2;
+   */
+  maximumResultRows: number;
 };
 
 /**
- * Describes the message bytebase.v1.MaximumSQLResultSizeSetting.
- * Use `create(MaximumSQLResultSizeSettingSchema)` to create a new message.
+ * Describes the message bytebase.v1.SQLQueryRestrictionSetting.
+ * Use `create(SQLQueryRestrictionSettingSchema)` to create a new message.
  */
-export declare const MaximumSQLResultSizeSettingSchema: GenMessage<MaximumSQLResultSizeSetting>;
+export declare const SQLQueryRestrictionSettingSchema: GenMessage<SQLQueryRestrictionSetting>;
 
 /**
  * @generated from message bytebase.v1.SCIMSetting

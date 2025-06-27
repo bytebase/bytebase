@@ -565,8 +565,14 @@
           "never-expires": "Nunca expira"
         },
         "maximum-sql-result": {
-          "self": "Tamaño máximo del resultado SQL",
-          "description": "Limite el tamaño del resultado de la consulta SQL de salida."
+          "size": {
+            "self": "Tamaño máximo del resultado de SQL",
+            "description": "Limite el tamaño del resultado de la consulta SQL de salida."
+          },
+          "rows": {
+            "self": "Máximo de filas de resultados de SQL",
+            "description": "Limite las filas de salida en el resultado de la consulta SQL, el valor <= 0 significa que no hay límite."
+          }
         },
         "query-data-policy": {
           "timeout": {
@@ -843,8 +849,7 @@
           "title": "Creador",
           "description": "Búsqueda por tema creador"
         },
-        "subscriber": {
-        },
+        "subscriber": {},
         "approver": {
           "title": "Aprobador",
           "description": "Búsqueda por aprobador del problema"
