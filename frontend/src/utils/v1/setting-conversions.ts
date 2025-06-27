@@ -3,8 +3,8 @@ import type { Setting as OldSetting } from "@/types/proto/v1/setting_service";
 import { Setting as OldSettingProto, Setting_SettingName as OldSettingName } from "@/types/proto/v1/setting_service";
 import type { Setting as NewSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { SettingSchema, Setting_SettingName as NewSettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { Engine as NewEngine, State as NewState, VCSType as NewVCSType, ExportFormat as NewExportFormat } from "@/types/proto-es/v1/common_pb";
-import { Engine as OldEngine, State as OldState, VCSType as OldVCSType, ExportFormat as OldExportFormat } from "@/types/proto/v1/common";
+import { State as NewState, VCSType as NewVCSType, ExportFormat as NewExportFormat } from "@/types/proto-es/v1/common_pb";
+import { State as OldState, VCSType as OldVCSType, ExportFormat as OldExportFormat } from "@/types/proto/v1/common";
 
 // Convert old proto to proto-es
 export const convertOldSettingToNew = (oldSetting: OldSetting): NewSetting => {

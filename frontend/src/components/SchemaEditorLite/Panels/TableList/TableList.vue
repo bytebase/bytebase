@@ -41,11 +41,16 @@
 </template>
 
 <script lang="ts" setup>
+import { useElementSize } from "@vueuse/core";
+import { pick } from "lodash-es";
+import type { DataTableColumn, DataTableInst } from "naive-ui";
+import { NCheckbox, NDataTable } from "naive-ui";
+import { computed, h, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
-import { convertNewTableMetadataToOld } from "@/utils/v1/database-conversions";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
   TableCatalog,
   TableCatalog_Columns,
@@ -54,20 +59,13 @@ import {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-  ColumnMetadata,
 } from "@/types/proto/v1/database_service";
-import type {
-  TableMetadata as NewTableMetadata,
-  ColumnMetadata as NewColumnMetadata,
-} from "@/types/proto-es/v1/database_service_pb";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  convertEngineToNew,
+  convertEngineToOld,
+} from "@/utils/v1/common-conversions";
+import { convertNewTableMetadataToOld } from "@/utils/v1/database-conversions";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
-import { useElementSize } from "@vueuse/core";
-import { pick } from "lodash-es";
-import type { DataTableColumn, DataTableInst } from "naive-ui";
-import { NCheckbox, NDataTable } from "naive-ui";
-import { computed, h, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { useSchemaEditorContext } from "../../context";
 import { markUUID } from "../common";
 import { NameCell, OperationCell, SelectionCell } from "./components";
@@ -117,41 +115,6 @@ const {
   classificationConfig,
 } = useSchemaEditorContext();
 
-
-// Conversion function for TableMetadata at service boundaries
-const convertNewTableToOld = (newTable: NewTableMetadata): TableMetadata => {
-  return TableMetadata.fromPartial({
-    name: newTable.name,
-    columns: newTable.columns.map(convertNewColumnToOld),
-    engine: newTable.engine,
-    collation: newTable.collation,
-    userComment: newTable.userComment,
-    comment: newTable.comment,
-    indexes: [], // Initialize empty, will be handled separately if needed
-    partitions: [], // Initialize empty, will be handled separately if needed
-    foreignKeys: [], // Initialize empty, will be handled separately if needed
-  });
-};
-
-// Conversion function for ColumnMetadata at service boundaries
-const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => {
-  return ColumnMetadata.fromPartial({
-    name: newColumn.name,
-    position: newColumn.position,
-    hasDefault: newColumn.hasDefault,
-    defaultNull: newColumn.defaultNull,
-    defaultString: newColumn.defaultString,
-    defaultExpression: newColumn.defaultExpression,
-    onUpdate: newColumn.onUpdate,
-    nullable: newColumn.nullable,
-    type: newColumn.type,
-    characterSet: newColumn.characterSet,
-    collation: newColumn.collation,
-    userComment: newColumn.userComment,
-    comment: newColumn.comment,
-    // classification, labels, effectiveMaskingLevel are not available in old proto types
-  });
-};
 const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
