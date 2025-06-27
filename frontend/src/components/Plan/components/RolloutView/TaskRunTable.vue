@@ -20,6 +20,7 @@ import { Duration } from "@/types/proto/google/protobuf/duration";
 import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import { humanizeDurationV1 } from "@/utils";
+import { convertDurationToNew } from "@/utils/v1/common-conversions";
 
 defineProps<{
   taskRuns: TaskRun[];
@@ -83,7 +84,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       width: 120,
       render: (taskRun: TaskRun) => {
         const duration = executionDurationOfTaskRun(taskRun);
-        return duration ? humanizeDurationV1(duration) : "-";
+        return duration ? humanizeDurationV1(convertDurationToNew(duration)) : "-";
       },
     },
     {
