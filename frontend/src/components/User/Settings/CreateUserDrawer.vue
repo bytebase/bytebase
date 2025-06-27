@@ -41,20 +41,19 @@
               {{ $t("common.email") }}
               <span class="text-red-600 ml-0.5">*</span>
             </label>
-            <div
-              v-if="state.user.userType === UserType.SERVICE_ACCOUNT"
-              class="w-full flex flex-col items-start"
-            >
-              <EmailInput
-                v-model:value="state.user.email"
-                :domain="serviceAccountDomain"
-              />
-            </div>
             <EmailInput
-              v-else
               v-model:value="state.user.email"
-              :readonly="false"
-              :domain="enforceIdentityDomain ? workspaceDomain : undefined"
+              :domain-prefix="
+                state.user.userType === UserType.SERVICE_ACCOUNT
+                  ? 'service'
+                  : ''
+              "
+              :fallback-domain="
+                state.user.userType === UserType.SERVICE_ACCOUNT
+                  ? 'bytebase.com'
+                  : ''
+              "
+              :show-domain="state.user.userType === UserType.SERVICE_ACCOUNT"
             />
           </div>
 
@@ -116,7 +115,6 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
 import { NButton, NInput, NRadioGroup, NRadio } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -162,23 +160,6 @@ const state = reactive<LocalState>({
 const passwordRestrictionSetting = computed(
   () => settingV1Store.passwordRestriction
 );
-
-const enforceIdentityDomain = computed(() => {
-  return Boolean(settingV1Store.workspaceProfileSetting?.enforceIdentityDomain);
-});
-
-const workspaceDomain = computed(() => {
-  return head(settingV1Store.workspaceProfileSetting?.domains);
-});
-
-// For service account, we use the domain of the workspace if it exists.
-// Otherwise, we use the default domain.
-const serviceAccountDomain = computed(() => {
-  if (workspaceDomain.value) {
-    return "service." + workspaceDomain.value;
-  }
-  return "service.bytebase.com";
-});
 
 const allowConfirm = computed(() => {
   if (!state.user.email) {
