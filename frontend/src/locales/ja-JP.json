@@ -112,7 +112,6 @@
     "empty": "空欄",
     "creating": "作成...",
     "address": "接続先",
-    "subscribed": "購読済",
     "created": "作成済",
     "labels": "ラベル",
     "mode": "モデル",
@@ -196,7 +195,6 @@
     "schedule": "プラン",
     "state": "州",
     "condition": "状態",
-    "search-user": "ユーザーを検索する",
     "info": "情報",
     "minutes": "分",
     "filter-by-name": "名前でフィルタリングする",
@@ -801,8 +799,6 @@
         "some-tasks-are-still-running": "一部のタスクはまだ実行中です"
       }
     },
-    "subscribe": "サブスクリプション",
-    "unsubscribe": "購読を解除する",
     "add-some-description": "説明を追加してください…",
     "add-a-comment": "コメントを追加",
     "leave-a-comment": "コメントを残す…",
@@ -848,8 +844,6 @@
           "description": "イシュー作成者で検索"
         },
         "subscriber": {
-          "title": "購読者",
-          "description": "イシュー購読者から探す"
         },
         "approver": {
           "title": "承認者",

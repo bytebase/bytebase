@@ -301,15 +301,6 @@ CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
 
--- stores the issue subscribers.
-CREATE TABLE issue_subscriber (
-    issue_id integer NOT NULL REFERENCES issue(id),
-    subscriber_id integer NOT NULL REFERENCES principal(id),
-    PRIMARY KEY (issue_id, subscriber_id)
-);
-
-CREATE INDEX idx_issue_subscriber_subscriber_id ON issue_subscriber(subscriber_id);
-
 -- instance change history records the changes an instance and its databases.
 CREATE TABLE instance_change_history (
     id bigserial PRIMARY KEY,

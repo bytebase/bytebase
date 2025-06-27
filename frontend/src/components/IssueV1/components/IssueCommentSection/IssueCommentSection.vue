@@ -4,8 +4,6 @@
       <span class="textlabel">
         {{ $t("common.activity") }}
       </span>
-
-      <Subscribers />
     </div>
 
     <IssueCommentList />
@@ -14,5 +12,4 @@
 
 <script lang="ts" setup>
 import IssueCommentList from "./IssueCommentList.vue";
-import Subscribers from "./Subscribers";
 </script>

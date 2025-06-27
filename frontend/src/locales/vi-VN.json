@@ -112,7 +112,6 @@
     "empty": "Trống",
     "creating": "Đang tạo...",
     "address": "Địa chỉ",
-    "subscribed": "Đã đăng ký",
     "created": "Đã tạo",
     "labels": "Nhãn",
     "mode": "Chế độ",
@@ -196,7 +195,6 @@
     "schedule": "Lịch trình",
     "state": "Trạng thái",
     "condition": "Điều kiện",
-    "search-user": "Tìm người dùng",
     "info": "Thông tin",
     "minutes": "Phút",
     "filter-by-name": "Lọc theo tên",
@@ -801,8 +799,6 @@
         "some-tasks-are-still-running": "Một số tác vụ vẫn đang chạy"
       }
     },
-    "subscribe": "Theo dõi",
-    "unsubscribe": "Bỏ theo dõi",
     "add-some-description": "Thêm mô tả...",
     "add-a-comment": "Thêm bình luận",
     "leave-a-comment": "Để lại bình luận...",
@@ -848,8 +844,6 @@
           "description": "Tìm kiếm theo người tạo vấn đề"
         },
         "subscriber": {
-          "title": "Người theo dõi",
-          "description": "Tìm kiếm theo người theo dõi vấn đề"
         },
         "approver": {
           "title": "Người phê duyệt",
