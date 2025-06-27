@@ -78,6 +78,14 @@ export const convertEngineToOld = (engine: NewEngine): OldEngine => {
       return OldEngine.SPANNER;
     case NewEngine.COCKROACHDB:
       return OldEngine.COCKROACHDB;
+    case NewEngine.DATABRICKS:
+      return OldEngine.DATABRICKS;
+    case NewEngine.COSMOSDB:
+      return OldEngine.COSMOSDB;
+    case NewEngine.TRINO:
+      return OldEngine.TRINO;
+    case NewEngine.CASSANDRA:
+      return OldEngine.CASSANDRA;
     default:
       return OldEngine.ENGINE_UNSPECIFIED;
   }
@@ -138,6 +146,14 @@ export const convertEngineToNew = (engine: OldEngine): NewEngine => {
       return NewEngine.SPANNER;
     case OldEngine.COCKROACHDB:
       return NewEngine.COCKROACHDB;
+    case OldEngine.DATABRICKS:
+      return NewEngine.DATABRICKS;
+    case OldEngine.COSMOSDB:
+      return NewEngine.COSMOSDB;
+    case OldEngine.TRINO:
+      return NewEngine.TRINO;
+    case OldEngine.CASSANDRA:
+      return NewEngine.CASSANDRA;
     default:
       return NewEngine.ENGINE_UNSPECIFIED;
   }
