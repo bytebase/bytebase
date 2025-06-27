@@ -45,9 +45,6 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.creator) {
     filter.push(`creator == "${find.creator}"`);
   }
-  if (find.subscriber) {
-    filter.push(`subscriber == "${find.subscriber}"`);
-  }
   if (find.statusList && find.statusList.length > 0) {
     filter.push(
       `status in [${find.statusList.map((s) => `"${issueStatusToJSON(s)}"`).join(",")}]`

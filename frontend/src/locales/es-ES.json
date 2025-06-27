@@ -112,7 +112,6 @@
     "empty": "Vacío",
     "creating": "Creando...",
     "address": "Dirección",
-    "subscribed": "Subscrito",
     "created": "Creado",
     "labels": "Etiquetas",
     "mode": "Modo",
@@ -196,7 +195,6 @@
     "schedule": "Horario",
     "state": "Estado",
     "condition": "Condición",
-    "search-user": "Buscar usuario",
     "info": "Información",
     "minutes": "Minutos",
     "filter-by-name": "Filtrar por nombre",
@@ -801,8 +799,6 @@
         "some-tasks-are-still-running": "Algunas tareas aún se están ejecutando"
       }
     },
-    "subscribe": "Suscribirse",
-    "unsubscribe": "Cancelar suscripción",
     "add-some-description": "Agregar alguna descripción...",
     "add-a-comment": "Agregar un comentario",
     "leave-a-comment": "Dejar un comentario...",
@@ -848,8 +844,6 @@
           "description": "Búsqueda por tema creador"
         },
         "subscriber": {
-          "title": "Abonado",
-          "description": "Buscar por suscriptor del problema"
         },
         "approver": {
           "title": "Aprobador",

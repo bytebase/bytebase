@@ -10480,14 +10480,6 @@ If `true`, approval_templates &amp; approvers &amp; approval_finding_error are a
                 </tr>
               
                 <tr>
-                  <td>subscribers</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The subscribers.
-Format: users/hello@world.com </p></td>
-                </tr>
-              
-                <tr>
                   <td>creator</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -11113,7 +11105,6 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 
 Supported filters:
 - creator: issue creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator.
-- subscriber: issue subscriber full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator.
 - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values.
 - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
 - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values.
