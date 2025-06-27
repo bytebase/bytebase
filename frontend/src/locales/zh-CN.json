@@ -1097,9 +1097,7 @@
       "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题"
     },
     "checks": {
-      "self": "检查",
-      "no-checks": "没有可用的检查结果",
-      "click-to-run-checks": "单击“运行检查”以验证此规范"
+      "self": "检查"
     }
   },
   "rollout": {

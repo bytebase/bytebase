@@ -1,5 +1,5 @@
 <template>
-  <NButton v-if="hasRunnableTasks" size="small" @click="handleRunTasks">
+  <NButton v-if="hasRunnableTasks" size="tiny" @click="handleRunTasks">
     <template #icon>
       <PlayIcon class="w-4 h-4" />
     </template>

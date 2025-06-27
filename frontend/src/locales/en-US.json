@@ -1097,9 +1097,7 @@
       "configuration-has-issues": "Configuration has {count} issue | Configuration has {count} issues"
     },
     "checks": {
-      "self": "Checks",
-      "no-checks": "No check results available",
-      "click-to-run-checks": "Click \"Run Checks\" to validate this specification"
+      "self": "Checks"
     }
   },
   "rollout": {

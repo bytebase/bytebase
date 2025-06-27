@@ -48,13 +48,13 @@ const { t } = useI18n();
 const router = useRouter();
 
 const TASK_STATUS_FILTERS: Task_Status[] = [
-  TaskStatusEnum.NOT_STARTED,
-  TaskStatusEnum.PENDING,
-  TaskStatusEnum.RUNNING,
   TaskStatusEnum.DONE,
+  TaskStatusEnum.RUNNING,
   TaskStatusEnum.FAILED,
   TaskStatusEnum.CANCELED,
   TaskStatusEnum.SKIPPED,
+  TaskStatusEnum.PENDING,
+  TaskStatusEnum.NOT_STARTED,
 ];
 
 const getTaskCount = (rollout: ComposedRollout, status: Task_Status) => {
