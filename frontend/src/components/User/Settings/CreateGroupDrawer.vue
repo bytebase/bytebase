@@ -23,7 +23,7 @@
             <EmailInput
               v-model:value="state.group.email"
               :readonly="!isCreating"
-              :domain="workspaceDomain"
+              :show-domain="true"
             />
           </div>
           <div class="flex flex-col gap-y-2">
@@ -131,7 +131,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, head, isEqual } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -144,7 +144,6 @@ import {
   useCurrentUserV1,
   pushNotification,
   useUserStore,
-  useSettingV1Store,
 } from "@/store";
 import {
   userNamePrefix,
@@ -179,7 +178,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
@@ -202,10 +200,6 @@ const state = reactive<LocalState>({
 });
 
 const isCreating = computed(() => !props.group);
-
-const workspaceDomain = computed(() =>
-  head(settingV1Store.workspaceProfileSetting?.domains)
-);
 
 const disallowEditMember = computed(() => !!props.group?.source);
 
