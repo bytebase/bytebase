@@ -171,7 +171,7 @@ import {
   NTooltip,
   type TreeOption,
 } from "naive-ui";
-import { ref, nextTick, watch, h, computed, reactive, watchEffect } from "vue";
+import { ref, shallowRef, nextTick, watch, h, computed, reactive } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
@@ -243,7 +243,7 @@ const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
-
+const environmentList = useEnvironmentV1List();
 const currentUser = useCurrentUserV1();
 
 const expandedState = useDynamicLocalStorage<{
@@ -283,19 +283,9 @@ const state = reactive<LocalState>({
   batchQueryDataSourceType: DataSourceType.READ_ONLY,
 });
 
-const treeByEnvironment: Map<
-  string /* environment full name */,
-  TreeByEnvironment
-> = new Map();
-
-watchEffect(() => {
-  for (const environment of useEnvironmentV1List().value) {
-    treeByEnvironment.set(
-      environment.name,
-      useSQLEditorTreeByEnvironment(environment.name)
-    );
-  }
-});
+const treeByEnvironment = shallowRef<
+  Map<string /* environment full name */, TreeByEnvironment>
+>(new Map());
 
 watch(
   () => state.batchQueryDataSourceType,
@@ -432,10 +422,6 @@ const connect = (node: SQLEditorTreeNode) => {
     },
     context: editorContext,
   });
-  tabStore.updateBatchQueryContext({
-    databases: [],
-    databaseGroups: [],
-  });
   showConnectionPanel.value = false;
 };
 
@@ -537,7 +523,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
 useEmitteryEventListener(editorEvents, "tree-ready", async () => {
   selectedKeys.value = await getSelectedKeys();
 
-  for (const [environment, treeState] of treeByEnvironment.entries()) {
+  for (const [environment, treeState] of treeByEnvironment.value.entries()) {
     if (!treeState.expandedState.value.initialized) {
       // default expand all nodes.
       treeState.expandedState.value.expandedKeys = treeStore.allNodeKeys.filter(
@@ -593,9 +579,17 @@ watch(
 );
 
 const prepareDatabases = async () => {
-  for (const treeState of treeByEnvironment.values()) {
-    await treeState.prepareDatabases(filter.value);
-    treeState.buildTree();
+  for (const environment of environmentList.value) {
+    if (!treeByEnvironment.value.has(environment.name)) {
+      treeByEnvironment.value.set(
+        environment.name,
+        useSQLEditorTreeByEnvironment(environment.name)
+      );
+    }
+    await treeByEnvironment.value
+      .get(environment.name)
+      ?.prepareDatabases(filter.value);
+    treeByEnvironment.value.get(environment.name)?.buildTree();
   }
 };
 
