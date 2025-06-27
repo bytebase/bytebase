@@ -714,6 +714,15 @@ ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, pgparser.S
 
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+	// Force schema qualification for default expressions by setting empty search_path
+	if _, err := txn.Exec("SET search_path = ''"); err != nil {
+		return nil, err
+	}
+	defer func() {
+		// Reset search_path after query
+		txn.Exec("RESET search_path")
+	}()
+
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 	rows, err := txn.Query(listColumnQuery)
 	if err != nil {
@@ -727,8 +736,11 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &characterMaxLength, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &identityGeneration, &comment); err != nil {
 			return nil, err
 		}
+		// Store schema-qualified default in the Default field for Step 4 of column default migration
 		if defaultStr.Valid {
-			column.DefaultExpression = defaultStr.String
+			column.Default = defaultStr.String
+		} else {
+			column.Default = "" // Handle NULL case (no default or DEFAULT NULL)
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {

@@ -74,6 +74,7 @@ func (s *Store) UpsertDBSchema(
 	dbMetadata *storepb.DatabaseSchemaMetadata,
 	dbConfig *storepb.DatabaseConfig,
 	dbSchema []byte,
+	todo bool,
 ) error {
 	metadataBytes, err := protojson.Marshal(dbMetadata)
 	if err != nil {
@@ -90,13 +91,15 @@ func (s *Store) UpsertDBSchema(
 			db_name,
 			metadata,
 			raw_dump,
-			config
+			config,
+			todo
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT(instance, db_name) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump,
-			config = EXCLUDED.config
+			config = EXCLUDED.config,
+			todo = EXCLUDED.todo
 		RETURNING metadata, raw_dump, config
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -113,6 +116,7 @@ func (s *Store) UpsertDBSchema(
 		// Convert to string because []byte{} is null which violates db schema constraints.
 		string(dbSchema),
 		configBytes,
+		todo,
 	).Scan(
 		&metadata,
 		&schema,
