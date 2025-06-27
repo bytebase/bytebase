@@ -19,6 +19,7 @@ import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type { PackageMetadata } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import EllipsisSQLView from "./EllipsisSQLView.vue";
 
 const props = defineProps({
@@ -65,7 +66,7 @@ const columns = computed(() => {
 });
 
 const getPackageName = (packageName: string) => {
-  if (hasSchemaProperty(engine.value) && props.schemaName) {
+  if (hasSchemaProperty(convertEngineToNew(engine.value)) && props.schemaName) {
     return `"${props.schemaName}"."${packageName}"`;
   }
   return packageName;

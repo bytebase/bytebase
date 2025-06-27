@@ -56,7 +56,7 @@ import {
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource,
   DataSourceType,
@@ -64,6 +64,7 @@ import {
 } from "@/types/proto/v1/instance_service";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { defer, isValidSpannerHost } from "@/utils";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
@@ -136,7 +137,7 @@ const allowUpdate = computed((): boolean => {
       return false;
     }
   }
-  if (basicInfo.value.engine === Engine.SPANNER) {
+  if (basicInfo.value.engine === convertEngineToOld(Engine.SPANNER)) {
     if (!isValidSpannerHost(adminDataSource.value.host)) {
       return false;
     }

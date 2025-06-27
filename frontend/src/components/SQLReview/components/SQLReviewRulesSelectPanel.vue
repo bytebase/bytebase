@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { type Engine, engineFromJSON } from "@/types/proto/v1/common";
+import { type Engine } from "@/types/proto-es/v1/common_pb";
 import { ruleTemplateMapV2 } from "@/types/sqlReview";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
 import SQLReviewTabsByEngine from "./SQLReviewTabsByEngine.vue";
@@ -85,8 +85,8 @@ const onSelectedRuleKeysUpdateForEngine = (engine: Engine, keys: string[]) => {
       continue;
     }
     const [engineStr, ruleKey] = key.split(":");
-    const engine = engineFromJSON(engineStr);
-    const rule = ruleTemplateMapV2.get(engine)?.get(ruleKey);
+    const engineNum = parseInt(engineStr) as Engine;
+    const rule = ruleTemplateMapV2.get(engineNum)?.get(ruleKey);
     if (rule) {
       emit("rule-select", rule);
     }
@@ -95,8 +95,8 @@ const onSelectedRuleKeysUpdateForEngine = (engine: Engine, keys: string[]) => {
   // keys remained in the oldSelectedKeys is not selected.
   for (const oldKey of oldSelectedKeys) {
     const [engineStr, ruleKey] = oldKey.split(":");
-    const engine = engineFromJSON(engineStr);
-    const rule = props.selectedRuleMap.get(engine)?.get(ruleKey);
+    const engineNum = parseInt(engineStr) as Engine;
+    const rule = props.selectedRuleMap.get(engineNum)?.get(ruleKey);
     if (rule) {
       emit("rule-remove", rule);
     }

@@ -20,6 +20,7 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { instanceAllowsSchemaScopedQuery } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import ConnectChooser from "./ConnectChooser.vue";
 
 const SchemaOptionValueUnspecified = "-1";
@@ -29,7 +30,7 @@ const route = useRoute();
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { database, instance } = useConnectionOfCurrentSQLEditorTab();
 const show = computed(() => {
-  return instanceAllowsSchemaScopedQuery(instance.value.engine);
+  return instanceAllowsSchemaScopedQuery(convertEngineToNew(instance.value.engine));
 });
 
 const databaseMetadata = computed(() => {

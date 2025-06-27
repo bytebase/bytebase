@@ -28,6 +28,7 @@ import {
   convertOldReviewConfigToNew,
 } from "@/utils/v1/review-config-conversions";
 import { usePolicyV1Store } from "./v1/policy";
+import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 
 const reviewConfigTagName = "bb.tag.review_config";
 
@@ -71,7 +72,7 @@ const convertToSQLReviewPolicy = (
     const rule: SchemaPolicyRule = {
       type: r.type,
       level: r.level,
-      engine: r.engine,
+      engine: convertEngineToNew(r.engine),
       comment: r.comment,
     };
     if (r.payload && r.payload !== "{}") {
@@ -198,7 +199,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
           return {
             type: r.type as string,
             level: r.level,
-            engine: r.engine,
+            engine: convertEngineToOld(r.engine),
             comment: r.comment,
             payload: r.payload ? JSON.stringify(r.payload) : "{}",
           };

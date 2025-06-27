@@ -1,5 +1,6 @@
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import type { Project } from "@/types/proto/v1/project_service";
 
 export const extractProjectResourceName = (name: string) => {
@@ -14,7 +15,7 @@ export function projectV1Name(project: Project) {
   }
 
   const parts = [project.title];
-  if (project.state === State.DELETED) {
+  if (project.state === convertStateToOld(State.DELETED)) {
     parts.push("(Archived)");
   }
   return parts.join(" ");

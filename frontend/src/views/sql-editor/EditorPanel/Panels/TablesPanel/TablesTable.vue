@@ -28,6 +28,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
   bytesToString,
   getHighlightHTMLByRegExp,
@@ -62,7 +63,7 @@ const emit = defineEmits<{
 const { viewState } = useCurrentTabViewStateContext();
 const { t } = useI18n();
 const instanceEngine = computed(() => {
-  return props.db.instanceResource.engine;
+  return convertEngineToNew(props.db.instanceResource.engine);
 });
 
 const filteredTables = computed(() => {

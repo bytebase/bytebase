@@ -40,7 +40,7 @@ import {
   type EditorPanelViewState,
   typeToView,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   GetSchemaStringRequest_ObjectType,
 } from "@/types/proto/v1/database_service";
@@ -60,6 +60,7 @@ import {
   defaultSQLEditorTab,
   isSimilarSQLEditorTab,
 } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { keyWithPosition } from "../../EditorCommon";
 import {
   useCurrentTabViewStateContext,
@@ -150,15 +151,16 @@ export const useActions = () => {
     const { database } = target;
     const db = databaseStore.getDatabaseByName(database);
     const { engine } = db.instanceResource;
+    const protoEsEngine = convertEngineToNew(engine);
 
     const query = await formatCode(
       generateSimpleSelectAllStatement(
-        engine,
+        protoEsEngine,
         schema,
         tableOrViewName,
         SELECT_ALL_LIMIT
       ),
-      engine
+      protoEsEngine
     );
     updateViewState({
       view: "CODE",
@@ -328,7 +330,7 @@ export const useDropdown = () => {
       });
       if (type === 'view') {
        const { view } = target as NodeTarget<"view">;
-       if (supportGetStringSchema(db.instanceResource.engine)) {
+       if (supportGetStringSchema(convertEngineToNew(db.instanceResource.engine))) {
           items.push({
             key: "view-schema-text",
             label: t("sql-editor.view-schema-text"),
@@ -358,7 +360,7 @@ export const useDropdown = () => {
           },
         });
 
-        if (supportGetStringSchema(db.instanceResource.engine)) {
+        if (supportGetStringSchema(convertEngineToNew(db.instanceResource.engine))) {
           items.push({
             key: "view-schema-text",
             label: t("sql-editor.view-schema-text"),
@@ -573,7 +575,7 @@ export const useDropdown = () => {
 
 const engineForTarget = (target: NodeTarget) => {
   const { database } = target as NodeTarget<"database">
-  return useDatabaseV1Store().getDatabaseByName(database).instanceResource.engine;
+  return convertEngineToNew(useDatabaseV1Store().getDatabaseByName(database).instanceResource.engine);
 };
 
 const targetSupportsGenerateSQL = (target: NodeTarget) => {
@@ -652,7 +654,7 @@ const runQuery = async (
     statement,
     connection,
     explain: false,
-    engine: database.instanceResource.engine,
+    engine: convertEngineToNew(database.instanceResource.engine),
     selection: tab.editorState.selection,
   });
 };

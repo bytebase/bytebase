@@ -14,7 +14,8 @@ import {
   unknownUser,
   userBindingPrefix,
 } from "@/types";
-import { State, stateToJSON } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
 import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
 import {
@@ -54,7 +55,9 @@ const getListUserFilter = (params: UserFilter) => {
     filter.push(`project == "${params.project}"`);
   }
   if (params.state === State.DELETED) {
-    filter.push(`state == "${stateToJSON(params.state)}"`);
+    // Convert proto-es State to old proto State for JSON serialization
+    const oldState = convertStateToOld(params.state);
+    filter.push(`state == "${oldState}"`);
   }
 
   return filter.join(" && ");
@@ -157,7 +160,7 @@ export const useUserStore = defineStore("user", () => {
       name: user.name,
     });
     await userServiceClientConnect.deleteUser(request);
-    user.state = State.DELETED;
+    user.state = convertStateToOld(State.DELETED);
     await actuatorStore.fetchServerInfo();
     return user;
   };

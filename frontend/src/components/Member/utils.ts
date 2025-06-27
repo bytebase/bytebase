@@ -9,7 +9,8 @@ import {
   getGroupEmailInBinding,
   groupBindingPrefix,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { Group } from "@/types/proto/v1/group_service";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import { User, UserType } from "@/types/proto/v1/user_service";
@@ -70,7 +71,7 @@ const getMemberBinding = async (
         name: `${userNamePrefix}${email}`,
         email: email,
         userType: UserType.USER,
-        state: State.DELETED,
+        state: convertStateToOld(State.DELETED),
       });
     }
     memberBinding = {

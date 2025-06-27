@@ -43,7 +43,7 @@
 <script lang="ts" setup>
 import { NButton, NEmpty } from "naive-ui";
 import { ref } from "vue";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
 import SQLReviewRulesSelectPanel from "./components/SQLReviewRulesSelectPanel.vue";
 import SQLReviewTabsByEngine from "./components/SQLReviewTabsByEngine.vue";

@@ -17,10 +17,10 @@
         />
       </div>
 
-      <template v-if="databaseEngine !== Engine.REDIS">
+      <template v-if="convertEngineToNew(databaseEngine) !== Engine.REDIS">
         <div class="mb-4 w-full flex flex-row justify-between items-center">
           <div class="text-lg leading-6 font-medium text-main">
-            <span v-if="databaseEngine === Engine.MONGODB">{{
+            <span v-if="convertEngineToNew(databaseEngine) === Engine.MONGODB">{{
               $t("db.collections")
             }}</span>
             <span v-else>{{ $t("db.tables") }}</span>
@@ -50,7 +50,7 @@
 
         <template
           v-if="
-            databaseEngine === Engine.POSTGRES || databaseEngine === Engine.HIVE
+            convertEngineToNew(databaseEngine) === Engine.POSTGRES || convertEngineToNew(databaseEngine) === Engine.HIVE
           "
         >
           <div
@@ -73,7 +73,7 @@
           />
         </template>
 
-        <template v-if="databaseEngine === Engine.POSTGRES">
+        <template v-if="convertEngineToNew(databaseEngine) === Engine.POSTGRES">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.extensions") }}
           </div>
@@ -82,8 +82,8 @@
 
         <template
           v-if="
-            databaseEngine === Engine.POSTGRES ||
-            databaseEngine === Engine.MSSQL
+            convertEngineToNew(databaseEngine) === Engine.POSTGRES ||
+            convertEngineToNew(databaseEngine) === Engine.MSSQL
           "
         >
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
@@ -96,7 +96,7 @@
           />
         </template>
 
-        <template v-if="instanceV1SupportsSequence(databaseEngine)">
+        <template v-if="instanceV1SupportsSequence(convertEngineToNew(databaseEngine))">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.sequences") }}
           </div>
@@ -107,7 +107,7 @@
           />
         </template>
 
-        <template v-if="databaseEngine === Engine.SNOWFLAKE">
+        <template v-if="convertEngineToNew(databaseEngine) === Engine.SNOWFLAKE">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.streams") }}
           </div>
@@ -127,7 +127,7 @@
           />
         </template>
 
-        <template v-if="instanceV1SupportsPackage(databaseEngine)">
+        <template v-if="instanceV1SupportsPackage(convertEngineToNew(databaseEngine))">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.packages") }}
           </div>
@@ -159,7 +159,8 @@ import ViewDataTable from "@/components/ViewDataTable.vue";
 import { SQL_EDITOR_SETTING_DATABASES_MODULE } from "@/router/sqlEditor";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
   hasSchemaProperty,
   instanceV1SupportsPackage,
@@ -197,7 +198,7 @@ const databaseEngine = computed(() => {
 });
 
 const hasSchemaPropertyV1 = computed(() => {
-  return hasSchemaProperty(databaseEngine.value);
+  return hasSchemaProperty(convertEngineToNew(databaseEngine.value));
 });
 
 watch(

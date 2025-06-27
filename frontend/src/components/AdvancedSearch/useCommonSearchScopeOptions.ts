@@ -15,7 +15,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { MaybeRef } from "@/types";
-import { engineToJSON } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SearchScopeId } from "@/utils";
 import {
   environmentV1Name,
@@ -27,6 +27,7 @@ import {
   hasWorkspacePermissionV2,
 } from "@/utils";
 import type { ScopeOption, ValueOption } from "./types";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
 
 export const useCommonSearchScopeOptions = (
   supportOptionIdList: MaybeRef<SearchScopeId[]>
@@ -113,7 +114,7 @@ export const useCommonSearchScopeOptions = (
                   keywords: [
                     name,
                     ins.title,
-                    engineToJSON(ins.engine),
+                    String(ins.engine),
                     extractEnvironmentResourceName(ins.environment),
                   ],
                   render: () => {
@@ -171,8 +172,8 @@ export const useCommonSearchScopeOptions = (
         description: t("issue.advanced-search.scope.engine.description"),
         options: supportedEngineV1List().map((engine) => {
           return {
-            value: engine,
-            keywords: [engineToJSON(engine).toLowerCase()],
+            value: convertEngineToOld(engine),
+            keywords: [Engine[engine].toLowerCase()],
             render: () => h(RichEngineName, { engine, tag: "p" }),
           };
         }),
@@ -196,7 +197,7 @@ export const useCommonSearchScopeOptions = (
         ],
         allowMultiple: false,
       }),
-    } as Record<SearchScopeId, () => ScopeOption>;
+    } as Partial<Record<SearchScopeId, () => ScopeOption>>;
 
     const scopes: ScopeOption[] = [];
     for (const id of unref(supportOptionIdList)) {

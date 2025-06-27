@@ -36,7 +36,7 @@ import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
@@ -47,6 +47,7 @@ import {
 } from "@/types/proto/v1/database_service";
 import { useSchemaEditorContext } from "../context";
 import { upsertColumnPrimaryKey } from "../edit";
+import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 
 // Table name must start with a non-space character, end with a non-space character, and can contain space in between.
 const tableNameFieldRegexp = /^\S[\S ]*\S?$/;
@@ -124,10 +125,10 @@ const handleConfirmButtonClick = async () => {
     const column = ColumnMetadata.fromPartial({});
     column.name = "id";
     const engine = props.database.instanceResource.engine;
-    column.type = engine === Engine.POSTGRES ? "integer" : "int";
+    column.type = engine ===  convertEngineToOld(Engine.POSTGRES) ? "integer" : "int";
     column.comment = "";
     table.columns.push(column);
-    upsertColumnPrimaryKey(engine, table, column.name);
+    upsertColumnPrimaryKey(convertEngineToNew(engine), table, column.name);
     markEditStatus(
       props.database,
       {

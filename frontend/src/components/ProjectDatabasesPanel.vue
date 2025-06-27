@@ -63,7 +63,7 @@ import {
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { isValidDatabaseName } from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
@@ -160,7 +160,11 @@ const selectedLabels = computed(() => {
 const selectedEngines = computed(() => {
   return state.params.scopes
     .filter((scope) => scope.id === "engine")
-    .map((scope) => engineFromJSON(scope.value));
+    .map((scope) => {
+      // Convert string engine name to Engine enum
+      const engineKey = scope.value.toUpperCase();
+      return Engine[engineKey as keyof typeof Engine] ?? Engine.ENGINE_UNSPECIFIED;
+    });
 });
 
 const selectedDriftedValue = computed(() => {

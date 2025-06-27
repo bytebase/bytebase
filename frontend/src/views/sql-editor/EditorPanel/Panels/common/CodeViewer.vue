@@ -81,6 +81,7 @@ import { useAIContext } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { nextAnimationFrame, type VueClass } from "@/utils";
 import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
@@ -102,7 +103,7 @@ const format = useLocalStorage<boolean>(
   "bb.sql-editor.editor-panel.code-viewer.format",
   false
 );
-const instanceEngine = computed(() => props.db.instanceResource.engine);
+const instanceEngine = computed(() => convertEngineToNew(props.db.instanceResource.engine));
 const selectedStatement = ref("");
 
 const formatted = computedAsync(
@@ -157,7 +158,7 @@ const handleEditorReady = (
       AIContext.events.emit("send-chat", {
         content: promptUtils.explainCode(
           statement,
-          props.db.instanceResource.engine
+          convertEngineToNew(props.db.instanceResource.engine)
         ),
         newChat,
       });

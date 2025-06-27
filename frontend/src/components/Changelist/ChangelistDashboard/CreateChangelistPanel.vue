@@ -169,8 +169,9 @@ import {
   Changelist,
   Changelist_Change as Change,
 } from "@/types/proto/v1/changelist_service";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { Sheet } from "@/types/proto/v1/sheet_service";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import {
   ENCODINGS,
   extractChangelistResourceName,
@@ -269,7 +270,7 @@ const doCreate = async () => {
         const { name, arrayBuffer } = f;
         const sheet = Sheet.fromPartial({
           title: name,
-          engine: Engine.ENGINE_UNSPECIFIED, // TODO(jim)
+          engine: convertEngineToOld(Engine.ENGINE_UNSPECIFIED), // TODO(jim)
         });
         const content = new TextDecoder(state.encoding).decode(arrayBuffer);
         setSheetStatement(sheet, content);

@@ -1,5 +1,5 @@
 import type * as monaco from "monaco-editor";
-import { Engine } from "../proto/v1/common";
+import { Engine } from "../proto-es/v1/common_pb";
 
 export type EditorModel = monaco.editor.ITextModel;
 export type EditorPosition = monaco.Position;
@@ -47,7 +47,7 @@ export const dialectOfEngine = (engine = "unknown"): SQLDialect => {
 };
 
 export const dialectOfEngineV1 = (
-  engine: Engine = Engine.UNRECOGNIZED
+  engine: Engine = Engine.ENGINE_UNSPECIFIED
 ): SQLDialect => {
   return EngineToSQLDialectMap.get(engine) ?? "MYSQL";
 };

@@ -86,7 +86,7 @@ import {
   ReleaseFileType,
 } from "@/types/proto-es/v1/release_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
@@ -113,6 +113,7 @@ import {
   convertOldPlanToNew,
   convertNewPlanToOld,
 } from "@/utils/v1/plan-conversions";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import {
   convertNewCheckReleaseResponseToOld,
   convertOldChangeTypeToNew,
@@ -236,9 +237,9 @@ const createSheets = async () => {
       // The sheet is pending create
       const sheet = getLocalSheetByName(config.sheet);
       const engine = await databaseEngineForSpec(spec);
-      sheet.engine = engine;
+      sheet.engine = convertEngineToOld(engine as Engine);
       pendingCreateSheetMap.set(sheet.name, sheet);
-      await maybeFormatSQL(sheet, engine);
+      await maybeFormatSQL(sheet, engine as Engine);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());

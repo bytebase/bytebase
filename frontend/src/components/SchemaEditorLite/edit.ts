@@ -1,6 +1,6 @@
 import { MD5 } from "crypto-js";
 import { pull, pullAt } from "lodash-es";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ForeignKeyMetadata,
   TableMetadata,

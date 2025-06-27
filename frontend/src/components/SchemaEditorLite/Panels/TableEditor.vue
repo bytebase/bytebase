@@ -175,7 +175,7 @@
     <DrawerContent :title="$t('schema-template.field-template.self')">
       <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
         <FieldTemplates
-          :engine="convertOldEngineToNew(engine)"
+          :engine="engine"
           :readonly="true"
           @apply="handleApplyColumnTemplate"
         />
@@ -189,8 +189,8 @@ import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { Engine as NewEngine } from "@/types/proto-es/v1/common_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
   DatabaseCatalog,
   SchemaCatalog,
@@ -276,67 +276,6 @@ const {
   selectionEnabled,
 } = useSchemaEditorContext();
 
-// Conversion function for Engine types at service boundaries
-const convertNewEngineToOld = (engine: NewEngine): Engine => {
-  switch (engine) {
-    case NewEngine.ENGINE_UNSPECIFIED: return Engine.ENGINE_UNSPECIFIED;
-    case NewEngine.MYSQL: return Engine.MYSQL;
-    case NewEngine.POSTGRES: return Engine.POSTGRES;
-    case NewEngine.CLICKHOUSE: return Engine.CLICKHOUSE;
-    case NewEngine.SNOWFLAKE: return Engine.SNOWFLAKE;
-    case NewEngine.SQLITE: return Engine.SQLITE;
-    case NewEngine.TIDB: return Engine.TIDB;
-    case NewEngine.MONGODB: return Engine.MONGODB;
-    case NewEngine.REDIS: return Engine.REDIS;
-    case NewEngine.ORACLE: return Engine.ORACLE;
-    case NewEngine.SPANNER: return Engine.SPANNER;
-    case NewEngine.MSSQL: return Engine.MSSQL;
-    case NewEngine.REDSHIFT: return Engine.REDSHIFT;
-    case NewEngine.MARIADB: return Engine.MARIADB;
-    case NewEngine.OCEANBASE: return Engine.OCEANBASE;
-    case NewEngine.DM: return Engine.DM;
-    case NewEngine.RISINGWAVE: return Engine.RISINGWAVE;
-    case NewEngine.OCEANBASE_ORACLE: return Engine.OCEANBASE_ORACLE;
-    case NewEngine.STARROCKS: return Engine.STARROCKS;
-    case NewEngine.DORIS: return Engine.DORIS;
-    case NewEngine.HIVE: return Engine.HIVE;
-    case NewEngine.ELASTICSEARCH: return Engine.ELASTICSEARCH;
-    case NewEngine.BIGQUERY: return Engine.BIGQUERY;
-    case NewEngine.DATABRICKS: return Engine.DATABRICKS;
-    default: return Engine.ENGINE_UNSPECIFIED;
-  }
-};
-
-// Conversion function from old Engine types to new Engine types
-const convertOldEngineToNew = (engine: Engine): NewEngine => {
-  switch (engine) {
-    case Engine.ENGINE_UNSPECIFIED: return NewEngine.ENGINE_UNSPECIFIED;
-    case Engine.MYSQL: return NewEngine.MYSQL;
-    case Engine.POSTGRES: return NewEngine.POSTGRES;
-    case Engine.CLICKHOUSE: return NewEngine.CLICKHOUSE;
-    case Engine.SNOWFLAKE: return NewEngine.SNOWFLAKE;
-    case Engine.SQLITE: return NewEngine.SQLITE;
-    case Engine.TIDB: return NewEngine.TIDB;
-    case Engine.MONGODB: return NewEngine.MONGODB;
-    case Engine.REDIS: return NewEngine.REDIS;
-    case Engine.ORACLE: return NewEngine.ORACLE;
-    case Engine.SPANNER: return NewEngine.SPANNER;
-    case Engine.MSSQL: return NewEngine.MSSQL;
-    case Engine.REDSHIFT: return NewEngine.REDSHIFT;
-    case Engine.MARIADB: return NewEngine.MARIADB;
-    case Engine.OCEANBASE: return NewEngine.OCEANBASE;
-    case Engine.DM: return NewEngine.DM;
-    case Engine.RISINGWAVE: return NewEngine.RISINGWAVE;
-    case Engine.OCEANBASE_ORACLE: return NewEngine.OCEANBASE_ORACLE;
-    case Engine.STARROCKS: return NewEngine.STARROCKS;
-    case Engine.DORIS: return NewEngine.DORIS;
-    case Engine.HIVE: return NewEngine.HIVE;
-    case Engine.ELASTICSEARCH: return NewEngine.ELASTICSEARCH;
-    case Engine.BIGQUERY: return NewEngine.BIGQUERY;
-    case Engine.DATABRICKS: return NewEngine.DATABRICKS;
-    default: return NewEngine.ENGINE_UNSPECIFIED;
-  }
-};
 
 // Conversion function for ColumnMetadata at service boundaries
 const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => {
@@ -357,8 +296,8 @@ const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => 
     // classification, labels, effectiveMaskingLevel are not available in old proto types
   });
 };
-const engine = computed(() => {
-  return props.db.instanceResource.engine;
+const engine = computed((): Engine => {
+  return convertEngineToNew(props.db.instanceResource.engine);
 });
 const state = reactive<LocalState>({
   mode: "COLUMNS",
@@ -490,7 +429,7 @@ const handleApplyColumnTemplate = (
   if (!template.column) {
     return;
   }
-  if (convertNewEngineToOld(template.engine) !== engine.value) {
+  if (template.engine !== engine.value) {
     return;
   }
   const column = convertNewColumnToOld(template.column);

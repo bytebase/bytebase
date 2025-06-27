@@ -1,6 +1,6 @@
 <template>
   <template v-if="initialized">
-    <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
+    <ArchiveBanner v-if="convertStateToNew(project.state) === State.DELETED" class="py-2" />
     <template v-if="isDefaultProject">
       <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
         {{ $t("database.unassigned-databases") }}
@@ -94,7 +94,8 @@ import {
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToNew } from "@/utils/v1/common-conversions";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useBodyLayoutContext } from "./common";
 
@@ -177,7 +178,7 @@ const hasPermission = computed(() => {
 });
 
 const allowEdit = computed(() => {
-  if (project.value.state === State.DELETED) {
+  if (convertStateToNew(project.value.state) === State.DELETED) {
     return false;
   }
 
@@ -194,7 +195,7 @@ const hasRequestRoleFeature = featureToRef(
 );
 
 const quickActionListForDatabase = computed(() => {
-  if (project.value.state !== State.ACTIVE) {
+  if (convertStateToNew(project.value.state) !== State.ACTIVE) {
     return [];
   }
 

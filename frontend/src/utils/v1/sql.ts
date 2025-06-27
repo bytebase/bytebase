@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import Long from "long";
 import { getDateForPbTimestamp } from "@/types";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   RowValue,
   type RowValue_Timestamp,

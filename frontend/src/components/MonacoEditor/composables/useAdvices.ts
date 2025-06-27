@@ -1,7 +1,9 @@
+import { create } from "@bufbuild/protobuf";
 import { maxBy } from "lodash-es";
 import * as monaco from "monaco-editor";
 import { unref, watchEffect } from "vue";
 import type { MaybeRef } from "@/types";
+import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import { callCssVariable, escapeMarkdown } from "@/utils";
 import { batchConvertPositionToMonacoPosition } from "@/utils/v1/position";
 import type { AdviceOption, MonacoModule } from "../types";
@@ -20,16 +22,16 @@ export const useAdvices = (
       ) ?? "WARNING";
     const content = editor.getModel()?.getValue() ?? "";
     const protoStartPositions = _advices.map((advice) => {
-      return {
+      return create(PositionSchema, {
         line: advice.startLineNumber,
         column: advice.startColumn,
-      };
+      });
     });
     const protoEndPositions = _advices.map((advice) => {
-      return {
+      return create(PositionSchema, {
         line: advice.endLineNumber,
         column: advice.endColumn,
-      };
+      });
     });
     const monacoStartPosition = batchConvertPositionToMonacoPosition(
       protoStartPositions,

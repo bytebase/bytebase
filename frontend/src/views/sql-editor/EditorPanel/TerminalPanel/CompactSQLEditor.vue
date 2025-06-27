@@ -48,6 +48,7 @@ import {
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useInstanceV1EditorLanguage, instanceV1AllowsExplain } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
@@ -87,7 +88,7 @@ const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
 const pendingFormatContentCommand = ref(false);
 const dialect = computed((): SQLDialect => {
   const engine = instance.value.engine;
-  return dialectOfEngineV1(engine);
+  return dialectOfEngineV1(convertEngineToNew(engine));
 });
 
 const firstLinePrompt = computed(() => {
@@ -124,7 +125,7 @@ const execute = (explain = false) => {
   emit("execute", {
     connection: { ...connection.value },
     statement: props.content,
-    engine: instance.value.engine,
+    engine: convertEngineToNew(instance.value.engine),
     explain,
     selection: null,
   });

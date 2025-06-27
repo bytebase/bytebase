@@ -17,7 +17,7 @@
             @update:checked="toggleEngineCheck(item)"
           >
             <div class="flex items-center gap-x-1 text-sm text-gray-600">
-              <EngineIcon :engine="convertEngineToOld(item)" custom-class="ml-0 mr-1" />
+              <EngineIcon :engine="item" custom-class="ml-0 mr-1" />
               <span
                 class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
               >
@@ -48,7 +48,7 @@
       </div>
     </div>
     <TableTemplateView
-      :engine="engine ? convertEngineToOld(engine) : undefined"
+      :engine="engine"
       :readonly="!!readonly"
       :template-list="filteredTemplateList"
       @view="editSchemaTemplate"
@@ -77,7 +77,6 @@ import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToOld } from "@/utils/v1/setting-conversions";
 import { TableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { TableCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";

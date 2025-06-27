@@ -50,13 +50,13 @@ import {
   type ComposedDatabase,
   type DatabaseResource,
 } from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
 import {
   getDefaultPagination,
   type SearchParams,
   CommonFilterScopeIdList,
   extractProjectResourceName,
 } from "@/utils";
+import { convertScopeValueToEngine } from "@/utils/v1/common-conversions";
 import Label from "./Label.vue";
 import type { DatabaseTreeOption } from "./common";
 import {
@@ -225,7 +225,7 @@ const selectedLabels = computed(() => {
 const selectedEngines = computed(() => {
   return params.value.scopes
     .filter((scope) => scope.id === "engine")
-    .map((scope) => engineFromJSON(scope.value));
+    .map((scope) => convertScopeValueToEngine(scope.value));
 });
 
 const databaseFilter = computed(

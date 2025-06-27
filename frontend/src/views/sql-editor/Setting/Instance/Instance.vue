@@ -17,7 +17,7 @@
       <template #header>
         <div class="h-[50px] flex">
           <div class="flex items-center gap-x-2 h-[50px]">
-            <EngineIcon :engine="state.instance.engine" custom-class="!h-6" />
+            <EngineIcon :engine="convertEngineToNew(state.instance.engine)" custom-class="!h-6" />
             <span class="font-medium">{{
               instanceV1Name(state.instance)
             }}</span>
@@ -38,6 +38,7 @@
 import { reactive } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName, instanceV1Name } from "@/utils";
 import InstanceDashboard from "@/views/InstanceDashboard.vue";

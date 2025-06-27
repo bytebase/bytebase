@@ -11,10 +11,10 @@
       }}</span>
     </div>
     <div
-      v-if="vcsSource && vcsSource?.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED"
+      v-if="vcsSource && vcsSource?.vcsType !== convertVCSTypeToOld(VCSType.VCS_TYPE_UNSPECIFIED)"
       class="flex flex-row items-center gap-1"
     >
-      <VCSIcon custom-class="h-4" :type="vcsSource.vcsType" />
+      <VCSIcon custom-class="h-4" :type="convertVCSTypeToNew(vcsSource.vcsType)" />
       <EllipsisText>
         <a
           :href="vcsSource.url"
@@ -35,7 +35,8 @@ import { BBAvatar } from "@/bbkit";
 import EllipsisText from "@/components/EllipsisText.vue";
 import VCSIcon from "@/components/VCS/VCSIcon.vue";
 import { getDateForPbTimestamp } from "@/types";
-import { VCSType } from "@/types/proto/v1/common";
+import { VCSType } from "@/types/proto-es/v1/common_pb";
+import { convertVCSTypeToNew, convertVCSTypeToOld } from "@/utils/v1/common-conversions";
 import { humanizeDate } from "@/utils";
 import { useReleaseDetailContext } from "./context";
 
