@@ -30,47 +30,61 @@
               {{ $t("common.task") }}
             </template>
             <template v-else>{{ $t("common.tasks") }}</template>
-            <span class="font-mono opacity-80" v-if="runnableTasks.length > 1"
+            <span class="opacity-80" v-if="runnableTasks.length > 1"
               >({{ runnableTasks.length }})</span
             >
           </label>
           <div class="flex-1 overflow-y-auto">
-            <NScrollbar class="max-h-64">
-              <ul class="text-sm space-y-2">
-                <li
-                  v-for="task in runnableTasks"
-                  :key="task.name"
-                  class="flex items-center"
-                >
-                  <NTag
-                    v-if="semanticTaskType(task.type)"
-                    class="mr-2"
-                    size="small"
+            <template v-if="useVirtualScroll">
+              <NVirtualList
+                :items="runnableTasks"
+                :item-size="itemHeight"
+                class="max-h-64"
+                item-resizable
+              >
+                <template #default="{ item: task }">
+                  <div
+                    :key="task.name"
+                    class="flex items-center text-sm"
+                    :style="{ height: `${itemHeight}px` }"
                   >
-                    <span class="inline-block text-center">
-                      {{ semanticTaskType(task.type) }}
-                    </span>
-                  </NTag>
-                  <TaskDatabaseName :task="task" />
-                </li>
-              </ul>
-            </NScrollbar>
+                    <NTag
+                      v-if="semanticTaskType(task.type)"
+                      class="mr-2"
+                      size="small"
+                    >
+                      <span class="inline-block text-center">
+                        {{ semanticTaskType(task.type) }}
+                      </span>
+                    </NTag>
+                    <TaskDatabaseName :task="task" />
+                  </div>
+                </template>
+              </NVirtualList>
+            </template>
+            <template v-else>
+              <NScrollbar class="max-h-64">
+                <ul class="text-sm space-y-2">
+                  <li
+                    v-for="task in runnableTasks"
+                    :key="task.name"
+                    class="flex items-center"
+                  >
+                    <NTag
+                      v-if="semanticTaskType(task.type)"
+                      class="mr-2"
+                      size="small"
+                    >
+                      <span class="inline-block text-center">
+                        {{ semanticTaskType(task.type) }}
+                      </span>
+                    </NTag>
+                    <TaskDatabaseName :task="task" />
+                  </li>
+                </ul>
+              </NScrollbar>
+            </template>
           </div>
-        </div>
-
-        <div class="flex flex-col gap-y-1 shrink-0">
-          <p class="font-medium text-control">
-            {{ $t("common.comment") }}
-          </p>
-          <NInput
-            v-model:value="comment"
-            type="textarea"
-            :placeholder="$t('issue.leave-a-comment')"
-            :autosize="{
-              minRows: 3,
-              maxRows: 10,
-            }"
-          />
         </div>
 
         <div
@@ -105,6 +119,21 @@
               clearable
             />
           </div>
+        </div>
+
+        <div class="flex flex-col gap-y-1 shrink-0">
+          <p class="font-medium text-control">
+            {{ $t("common.comment") }}
+          </p>
+          <NInput
+            v-model:value="comment"
+            type="textarea"
+            :placeholder="$t('issue.leave-a-comment')"
+            :autosize="{
+              minRows: 3,
+              maxRows: 10,
+            }"
+          />
         </div>
       </div>
     </template>
@@ -150,6 +179,7 @@ import {
   NScrollbar,
   NTag,
   NTooltip,
+  NVirtualList,
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -200,6 +230,10 @@ const runnableTasks = computed(() => {
       task.status === Task_Status.FAILED
   );
 });
+
+// Virtual scroll configuration
+const useVirtualScroll = computed(() => runnableTasks.value.length > 50);
+const itemHeight = 32; // Height of each task item in pixels
 
 const showScheduledTimePicker = computed(() => {
   return props.action === "RUN_TASKS";

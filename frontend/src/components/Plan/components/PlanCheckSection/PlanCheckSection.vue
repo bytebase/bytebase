@@ -49,68 +49,6 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto">
-      <!-- Check Results -->
-      <div v-if="checkRunsForSpec.length > 0" class="flex flex-wrap gap-4">
-        <!-- Group by Check Type -->
-        <div
-          v-for="(typeGroup, checkType) in groupedByType"
-          :key="checkType"
-          class="inline-flex items-center gap-1"
-        >
-          <component
-            :is="getCheckTypeIcon(checkType)"
-            class="w-4 h-4 opacity-80"
-          />
-          <span class="text-sm">{{ getCheckTypeLabel(checkType) }}</span>
-
-          <!-- Status indicators -->
-          <div class="flex items-center gap-2">
-            <div
-              v-if="typeGroup.summary.error > 0"
-              class="flex items-center gap-1"
-            >
-              <XCircleIcon class="w-3.5 h-3.5 text-error" />
-              <span class="text-sm text-error">{{
-                typeGroup.summary.error
-              }}</span>
-            </div>
-            <div
-              v-if="typeGroup.summary.warning > 0"
-              class="flex items-center gap-1"
-            >
-              <AlertCircleIcon class="w-3.5 h-3.5 text-warning" />
-              <span class="text-sm text-warning">{{
-                typeGroup.summary.warning
-              }}</span>
-            </div>
-            <div
-              v-if="typeGroup.summary.success > 0"
-              class="flex items-center gap-1"
-            >
-              <CheckCircleIcon class="w-3.5 h-3.5 text-success" />
-              <span class="text-sm text-success">{{
-                typeGroup.summary.success
-              }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-else class="flex flex-col">
-        <div class="text-control-light">
-          <div class="flex flex-row justify-start items-center gap-2">
-            <CheckCircleIcon class="w-5 h-5 opacity-40" />
-            <span>{{ $t("plan.checks.no-checks") }}</span>
-          </div>
-          <p v-if="allowRunChecks" class="text-sm mt-1">
-            {{ $t("plan.checks.click-to-run-checks") }}
-          </p>
-        </div>
-      </div>
-    </div>
-
     <!-- Status Drawer -->
     <Drawer v-model:show="drawerVisible">
       <DrawerContent
@@ -207,6 +145,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import {
   CheckCircleIcon,
   AlertCircleIcon,
@@ -222,15 +161,14 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
-import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
-import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   useCurrentUserV1,
   useCurrentProjectV1,
   pushNotification,
   extractUserId,
 } from "@/store";
+import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanCheckRun_Result_Status,
   type PlanCheckRun,
@@ -273,39 +211,6 @@ const summary = computed(() => {
   }
 
   return result;
-});
-
-const groupedByType = computed(() => {
-  const groups: Record<
-    string,
-    {
-      summary: { success: number; warning: number; error: number };
-      checkRuns: PlanCheckRun[];
-    }
-  > = {};
-
-  for (const checkRun of checkRunsForSpec.value) {
-    const type = checkRun.type;
-    if (!groups[type]) {
-      groups[type] = {
-        summary: { success: 0, warning: 0, error: 0 },
-        checkRuns: [],
-      };
-    }
-
-    groups[type].checkRuns.push(checkRun);
-
-    const status = getCheckRunStatus(checkRun);
-    if (status === PlanCheckRun_Result_Status.ERROR) {
-      groups[type].summary.error++;
-    } else if (status === PlanCheckRun_Result_Status.WARNING) {
-      groups[type].summary.warning++;
-    } else {
-      groups[type].summary.success++;
-    }
-  }
-
-  return groups;
 });
 
 const drawerTitle = computed(() => {
