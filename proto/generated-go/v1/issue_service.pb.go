@@ -579,7 +579,6 @@ type ListIssuesRequest struct {
 	//
 	// Supported filters:
 	// - creator: issue creator full name in "users/{email or id}" format, support "==" operator.
-	// - subscriber: issue subscriber full name in "users/{email or id}" format, support "==" operator.
 	// - status: the issue status, support "==" and "in" operator, check the IssueStatus enum for the values.
 	// - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
 	// - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
@@ -1212,9 +1211,6 @@ type Issue struct {
 	// If `true`, approval_templates & approvers & approval_finding_error are available.
 	ApprovalFindingDone  bool   `protobuf:"varint,11,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
 	ApprovalFindingError string `protobuf:"bytes,12,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
-	// The subscribers.
-	// Format: users/hello@world.com
-	Subscribers []string `protobuf:"bytes,13,rep,name=subscribers,proto3" json:"subscribers,omitempty"`
 	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,14,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
@@ -1345,13 +1341,6 @@ func (x *Issue) GetApprovalFindingError() string {
 		return x.ApprovalFindingError
 	}
 	return ""
-}
-
-func (x *Issue) GetSubscribers() []string {
-	if x != nil {
-		return x.Subscribers
-	}
-	return nil
 }
 
 func (x *Issue) GetCreator() string {
@@ -2624,7 +2613,8 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x13RequestIssueRequest\x12/\n" +
 	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
-	"\acomment\x18\x02 \x01(\tR\acomment\"\x8c\v\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"\xea\n" +
+	"\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
@@ -2635,8 +2625,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x12approval_templates\x18\n" +
 	" \x03(\v2\x1d.bytebase.v1.ApprovalTemplateR\x11approvalTemplates\x122\n" +
 	"\x15approval_finding_done\x18\v \x01(\bR\x13approvalFindingDone\x124\n" +
-	"\x16approval_finding_error\x18\f \x01(\tR\x14approvalFindingError\x12 \n" +
-	"\vsubscribers\x18\r \x03(\tR\vsubscribers\x12\x1e\n" +
+	"\x16approval_finding_error\x18\f \x01(\tR\x14approvalFindingError\x12\x1e\n" +
 	"\acreator\x18\x0e \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
 	"\vcreate_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
 	"createTime\x12A\n" +

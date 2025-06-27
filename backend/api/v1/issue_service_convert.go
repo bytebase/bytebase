@@ -48,7 +48,6 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 		ApprovalTemplates:    nil,
 		ApprovalFindingDone:  false,
 		ApprovalFindingError: "",
-		Subscribers:          nil,
 		Creator:              common.FormatUserEmail(issue.Creator.Email),
 		CreateTime:           timestamppb.New(issue.CreatedAt),
 		UpdateTime:           timestamppb.New(issue.UpdatedAt),
@@ -66,10 +65,6 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 	if issue.PipelineUID != nil {
 		issueV1.Rollout = common.FormatRollout(issue.Project.ResourceID, *issue.PipelineUID)
-	}
-
-	for _, subscriber := range issue.Subscribers {
-		issueV1.Subscribers = append(issueV1.Subscribers, common.FormatUserEmail(subscriber.Email))
 	}
 
 	if issuePayload.Approval != nil {

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-ego/gse"
-	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -39,7 +38,6 @@ type IssueMessage struct {
 	Type            storepb.Issue_Type
 	Description     string
 	Payload         *storepb.Issue
-	Subscribers     []*UserMessage
 	PipelineUID     *int
 	PlanUID         *int64
 	TaskStatusCount map[string]int32
@@ -51,9 +49,8 @@ type IssueMessage struct {
 	UpdatedAt time.Time
 
 	// Internal fields.
-	projectID      string
-	subscriberUIDs []int
-	creatorUID     int
+	projectID  string
+	creatorUID int
 }
 
 // UpdateIssueMessage is the message for updating an issue.
@@ -64,7 +61,6 @@ type UpdateIssueMessage struct {
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.Issue
 	RemoveLabels  bool
-	Subscribers   *[]*UserMessage
 
 	PipelineUID *int
 }
@@ -76,10 +72,9 @@ type FindIssueMessage struct {
 	ProjectIDs *[]string
 	PlanUID    *int64
 	PipelineID *int
-	// To support pagination, we add into creator and subscriber.
+	// To support pagination, we add into creator.
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *int
-	SubscriberID    *int
 	CreatedAtBefore *time.Time
 	CreatedAtAfter  *time.Time
 	Types           *[]storepb.Issue_Type
@@ -267,12 +262,6 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		return nil, err
 	}
 
-	if patch.Subscribers != nil {
-		if err := setSubscribers(ctx, tx, uid, *patch.Subscribers); err != nil {
-			return nil, err
-		}
-	}
-
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -283,77 +272,6 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		s.issueByPipelineCache.Remove(*oldIssue.PipelineUID)
 	}
 	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
-}
-
-func setSubscribers(ctx context.Context, txn *sql.Tx, issueUID int, subscribers []*UserMessage) error {
-	subscriberIDs := make(map[int]bool)
-	for _, subscriber := range subscribers {
-		subscriberIDs[subscriber.ID] = true
-	}
-
-	oldSubscriberIDs := make(map[int]bool)
-	rows, err := txn.QueryContext(ctx, `
-		SELECT
-			subscriber_id
-		FROM issue_subscriber
-		WHERE issue_id = $1`,
-		issueUID,
-	)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var subscriberID int
-		if err := rows.Scan(
-			&subscriberID,
-		); err != nil {
-			return err
-		}
-
-		oldSubscriberIDs[subscriberID] = true
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	var adds, deletes []int
-	for v := range oldSubscriberIDs {
-		if _, ok := subscriberIDs[v]; !ok {
-			deletes = append(deletes, v)
-		}
-	}
-	for v := range subscriberIDs {
-		if _, ok := oldSubscriberIDs[v]; !ok {
-			adds = append(adds, v)
-		}
-	}
-	if len(adds) > 0 {
-		var tokens []string
-		var args []any
-		for i, v := range adds {
-			tokens = append(tokens, fmt.Sprintf("($%d, $%d)", 2*i+1, 2*i+2))
-			args = append(args, issueUID, v)
-		}
-		query := fmt.Sprintf(`INSERT INTO issue_subscriber (issue_id, subscriber_id) VALUES %s`, strings.Join(tokens, ", "))
-		if _, err := txn.ExecContext(ctx, query, args...); err != nil {
-			return err
-		}
-	}
-	if len(deletes) > 0 {
-		var tokens []string
-		var args []any
-		args = append(args, issueUID)
-		for i, v := range deletes {
-			tokens = append(tokens, fmt.Sprintf("$%d", i+2))
-			args = append(args, v)
-		}
-		query := fmt.Sprintf(`DELETE FROM issue_subscriber WHERE issue_id = $1 AND subscriber_id IN (%s)`, strings.Join(tokens, ", "))
-		if _, err := txn.ExecContext(ctx, query, args...); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // ListIssueV2 returns the list of issues by find query.
@@ -390,9 +308,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.CreatedAtAfter; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.created_at > $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.SubscriberID; v != nil {
-		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.Types; v != nil {
 		typeStrings := make([]string, 0, len(*v))
@@ -462,7 +377,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.type,
 		issue.description,
 		issue.payload,
-		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers,
 		COALESCE(task_run_status_count.status_count, '{}'::jsonb)
 	FROM %s
 	LEFT JOIN LATERAL (
@@ -503,7 +417,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			Payload: &storepb.Issue{},
 		}
 		var payload []byte
-		var subscriberUIDs pgtype.Int4Array
 		var taskRunStatusCount []byte
 		var statusString string
 		var typeString string
@@ -520,7 +433,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&typeString,
 			&issue.Description,
 			&payload,
-			&subscriberUIDs,
 			&taskRunStatusCount,
 		); err != nil {
 			return nil, err
@@ -534,9 +446,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			issue.Type = storepb.Issue_Type(typeValue)
 		} else {
 			return nil, errors.Errorf("invalid type string: %s", typeString)
-		}
-		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
-			return nil, err
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, issue.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal issue payload")
@@ -566,13 +475,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			return nil, err
 		}
 		issue.Creator = creator
-		for _, subscriberUID := range issue.subscriberUIDs {
-			subscriber, err := s.GetUserByID(ctx, subscriberUID)
-			if err != nil {
-				return nil, err
-			}
-			issue.Subscribers = append(issue.Subscribers, subscriber)
-		}
 
 		s.issueCache.Add(issue.UID, issue)
 		if issue.PipelineUID != nil {

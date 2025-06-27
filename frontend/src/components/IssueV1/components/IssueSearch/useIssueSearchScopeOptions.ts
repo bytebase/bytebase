@@ -231,16 +231,6 @@ export const useIssueSearchScopeOptions = (
         ]),
       },
       {
-        id: "subscriber",
-        title: t("issue.advanced-search.scope.subscriber.title"),
-        description: t("issue.advanced-search.scope.subscriber.description"),
-        search: searchPrincipalSearchValueOptions([
-          UserType.USER,
-          UserType.SERVICE_ACCOUNT,
-          UserType.SYSTEM_BOT,
-        ]),
-      },
-      {
         id: "taskType",
         title: t("issue.advanced-search.scope.type.title"),
         description: t("issue.advanced-search.scope.type.description"),

@@ -196,7 +196,6 @@ message ListIssuesRequest {
   //
   // Supported filters:
   // - creator: issue creator full name in "users/{email or id}" format, support "==" operator.
-  // - subscriber: issue subscriber full name in "users/{email or id}" format, support "==" operator.
   // - status: the issue status, support "==" and "in" operator, check the IssueStatus enum for the values.
   // - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
   // - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
@@ -375,10 +374,6 @@ message Issue {
   // If `true`, approval_templates & approvers & approval_finding_error are available.
   bool approval_finding_done = 11;
   string approval_finding_error = 12;
-
-  // The subscribers.
-  // Format: users/hello@world.com
-  repeated string subscribers = 13;
 
   // Format: users/hello@world.com
   string creator = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
