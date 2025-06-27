@@ -24,10 +24,6 @@
         @close="pendingStatusAction = undefined"
       />
     </template>
-    <RolloutActionPanel
-      :action="pendingRolloutAction"
-      @close="pendingRolloutAction = undefined"
-    />
   </template>
 </template>
 
@@ -51,7 +47,6 @@ import { CreateButton } from "./create";
 import {
   IssueReviewActionPanel,
   IssueStatusActionPanel,
-  RolloutActionPanel,
   IssueCreationActionPanel,
 } from "./panels";
 import {
@@ -62,7 +57,7 @@ import {
   type UnifiedAction,
 } from "./unified";
 
-const { isCreating, plan, issue } = usePlanContext();
+const { isCreating, issue } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 
@@ -72,7 +67,6 @@ const reviewContext = provideIssueReviewContext(issue);
 // Panel visibility state
 const pendingReviewAction = ref<IssueReviewAction | undefined>(undefined);
 const pendingStatusAction = ref<IssueStatusAction | undefined>(undefined);
-const pendingRolloutAction = ref<"CREATE" | undefined>(undefined);
 const pendingIssueCreationAction = ref<"CREATE" | undefined>(undefined);
 
 // Compute available actions based on issue state and user permissions
@@ -167,16 +161,7 @@ const availableActions = computed(() => {
     actions.push("CLOSE");
   }
 
-  // Check for rollout creation action
-  if (reviewContext.done.value && !plan.value.rollout) {
-    const canCreateRollout = hasProjectPermissionV2(
-      project.value,
-      "bb.rollouts.create"
-    );
-    if (canCreateRollout) {
-      actions.push("CREATE_ROLLOUT");
-    }
-  }
+  // No separate rollout creation - handled when creating issue
 
   return actions;
 });
@@ -187,11 +172,6 @@ const primaryAction = computed((): ActionConfig | undefined => {
   // CREATE_ISSUE is the highest priority when no issue exists
   if (actions.includes("CREATE_ISSUE")) {
     return { action: "CREATE_ISSUE" };
-  }
-
-  // CREATE_ROLLOUT is the highest priority when available
-  if (actions.includes("CREATE_ROLLOUT")) {
-    return { action: "CREATE_ROLLOUT" };
   }
 
   // REOPEN is primary when issue is closed
@@ -235,9 +215,6 @@ const handlePerformAction = (action: UnifiedAction) => {
     case "CLOSE":
     case "REOPEN":
       pendingStatusAction.value = action as IssueStatusAction;
-      break;
-    case "CREATE_ROLLOUT":
-      pendingRolloutAction.value = "CREATE";
       break;
     case "CREATE_ISSUE":
       pendingIssueCreationAction.value = "CREATE";
