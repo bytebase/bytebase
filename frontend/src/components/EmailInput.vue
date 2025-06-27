@@ -1,45 +1,55 @@
 <template>
-  <NInputGroup v-if="showDomainLabel">
+  <NInputGroup v-if="enforceDomain && !readonly">
     <NInput
       v-model:value="state.shortValue"
       :size="size"
-      :readonly="readonly"
       :disabled="readonly"
     />
-    <NInputGroupLabel :size="size"> @{{ domain }} </NInputGroupLabel>
+    <NInputGroupLabel :size="size"> @ </NInputGroupLabel>
+    <NSelect
+      :size="size"
+      v-model:value="state.domain"
+      :options="domainSelectOptions"
+      :disabled="readonly"
+    />
   </NInputGroup>
   <NInput
     v-else
     v-model:value="state.value"
     :size="size"
-    :readonly="readonly"
     :disabled="readonly"
   />
 </template>
 
 <script lang="ts" setup>
-import { NInput, NInputGroup, NInputGroupLabel } from "naive-ui";
-import { reactive, watch, ref, onMounted } from "vue";
+import { NInput, NInputGroup, NInputGroupLabel, NSelect } from "naive-ui";
+import { reactive, watch, computed, watchEffect } from "vue";
+import { useSettingV1Store } from "@/store";
 
 interface LocalState {
   // The full email value.
   value: string;
   // The short value without the domain.
   shortValue: string;
+  domain: string;
 }
 
 const props = withDefaults(
   defineProps<{
     size?: "small" | "medium" | "large";
-    domain?: string;
     value?: string;
     readonly?: boolean;
+    domainPrefix?: string;
+    fallbackDomain?: string;
+    showDomain?: boolean;
   }>(),
   {
     size: "medium",
-    domain: undefined,
     value: "",
     readonly: false,
+    domainPrefix: "",
+    fallbackDomain: "",
+    showDomain: false,
   }
 );
 
@@ -50,21 +60,49 @@ const emit = defineEmits<{
 const state: LocalState = reactive({
   value: props.value,
   shortValue: props.value.split("@")[0],
+  domain: props.value.split("@")[1],
 });
-const showDomainLabel = ref(false);
+const settingV1Store = useSettingV1Store();
 
-onMounted(() => {
-  if (props.domain) {
-    if (!props.value || props.value.endsWith(`@${props.domain}`)) {
-      showDomainLabel.value = true;
+const enforceDomain = computed(() => {
+  return (
+    (settingV1Store.workspaceProfileSetting?.enforceIdentityDomain ?? false) ||
+    props.showDomain
+  );
+});
+
+const domainSelectOptions = computed(() => {
+  const domains = (
+    settingV1Store.workspaceProfileSetting?.domains ?? []
+  ).filter((domain) => domain && domain.trim() !== "");
+  if (domains.length === 0 && props.fallbackDomain) {
+    domains.push(props.fallbackDomain);
+  }
+  return domains.map((domain) => {
+    const value = props.domainPrefix
+      ? `${props.domainPrefix}.${domain.trim()}`
+      : domain.trim();
+    return {
+      label: value,
+      value,
+    };
+  });
+});
+
+watchEffect(() => {
+  if (domainSelectOptions.value.length > 0) {
+    if (
+      !domainSelectOptions.value.find((option) => option.value === state.domain)
+    ) {
+      state.domain = domainSelectOptions.value[0].value;
     }
   }
 });
 
 watch([() => state.value, () => state.shortValue], () => {
-  const email = showDomainLabel.value
+  const email = enforceDomain.value
     ? state.shortValue
-      ? `${state.shortValue}@${props.domain}`
+      ? `${state.shortValue}@${state.domain}`
       : ""
     : state.value;
   emit("update:value", email);
