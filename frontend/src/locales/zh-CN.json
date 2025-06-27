@@ -1033,6 +1033,8 @@
     }
   },
   "plan": {
+    "self": "变更计划",
+    "plans": "变更计划",
     "new-plan": "创建变更计划",
     "add-spec": "添加变更项",
     "change-type": "变更类型",
@@ -1052,9 +1054,9 @@
     },
     "navigator": {
       "specifications": "变更项",
-      "checks": "检查",
-      "review": "审查",
-      "rollout": "推出",
+      "checks": "SQL 检查",
+      "review": "审批流",
+      "rollout": "发布任务",
       "statement-empty": "变更语句为空"
     },
     "spec": {
@@ -1105,6 +1107,9 @@
       "no-checks": "没有可用的检查结果",
       "click-to-run-checks": "单击“运行检查”以验证此规范"
     }
+  },
+  "rollout": {
+    "rollouts": "发布任务"
   },
   "quick-action": {
     "create-db": "创建数据库",

@@ -1033,6 +1033,8 @@
     }
   },
   "plan": {
+    "self": "Kế hoạch",
+    "plans": "Kế hoạch",
     "new-plan": "Kế hoạch mới",
     "add-spec": "Thêm thông số kỹ thuật",
     "change-type": "Thay đổi loại",
@@ -1105,6 +1107,9 @@
       "no-checks": "Không có kết quả kiểm tra nào có sẵn",
       "click-to-run-checks": "Nhấp vào \"Chạy kiểm tra\" để xác thực thông số kỹ thuật này"
     }
+  },
+  "rollout": {
+    "rollouts": "Triển khai"
   },
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",

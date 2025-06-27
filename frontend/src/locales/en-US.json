@@ -1033,6 +1033,8 @@
     }
   },
   "plan": {
+    "self": "Plan",
+    "plans": "Plans",
     "new-plan": "New Plan",
     "add-spec": "Add Specification",
     "change-type": "Change Type",
@@ -1105,6 +1107,9 @@
       "no-checks": "No check results available",
       "click-to-run-checks": "Click \"Run Checks\" to validate this specification"
     }
+  },
+  "rollout": {
+    "rollouts": "Rollouts"
   },
   "quick-action": {
     "create-db": "Create database",

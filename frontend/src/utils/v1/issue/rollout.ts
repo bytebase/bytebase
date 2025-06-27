@@ -1,5 +1,6 @@
 import { last } from "lodash-es";
 import { stringify } from "qs";
+import { useI18n } from "vue-i18n";
 import type { ComposedIssue } from "@/types";
 import {
   EMPTY_TASK_NAME,
@@ -197,4 +198,26 @@ export const buildIssueV1LinkWithTask = (
   const url = `/projects/${projectId}/issues/${issueSlug}?${querystring}`;
 
   return url;
+};
+
+export const stringifyTaskStatus = (status: Task_Status): string => {
+  const { t } = useI18n();
+  switch (status) {
+    case Task_Status.NOT_STARTED:
+      return t("task.status.not-started");
+    case Task_Status.PENDING:
+      return t("task.status.pending");
+    case Task_Status.RUNNING:
+      return t("task.status.running");
+    case Task_Status.DONE:
+      return t("task.status.done");
+    case Task_Status.FAILED:
+      return t("task.status.failed");
+    case Task_Status.CANCELED:
+      return t("task.status.canceled");
+    case Task_Status.SKIPPED:
+      return t("task.status.skipped");
+    default:
+      return status;
+  }
 };

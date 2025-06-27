@@ -41,8 +41,9 @@ import { computed } from "vue";
 import TaskStatus from "@/components/Rollout/RolloutDetail/Panels/kits/TaskStatus.vue";
 import type { Rollout, Task_Status } from "@/types/proto/v1/rollout_service";
 import { Task_Status as TaskStatusEnum } from "@/types/proto/v1/rollout_service";
+import { useRolloutViewContext } from "./context";
 
-const props = defineProps<{
+defineProps<{
   rollout: Rollout;
   taskStatusList: Task_Status[];
 }>();
@@ -50,6 +51,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: "update:taskStatusList", taskStatusList: Task_Status[]): void;
 }>();
+
+const { mergedStages } = useRolloutViewContext();
 
 const TASK_STATUS_FILTERS: Task_Status[] = [
   TaskStatusEnum.NOT_STARTED,
@@ -62,7 +65,7 @@ const TASK_STATUS_FILTERS: Task_Status[] = [
 ];
 
 const allTasks = computed(() => {
-  return flatten(props.rollout.stages.map((stage) => stage.tasks));
+  return flatten(mergedStages.value.map((stage) => stage.tasks));
 });
 
 const totalTaskCount = computed(() => allTasks.value.length);

@@ -1033,6 +1033,8 @@
     }
   },
   "plan": {
+    "self": "プラン",
+    "plans": "予定",
     "new-plan": "新しい計画",
     "add-spec": "仕様を追加",
     "change-type": "変更タイプ",
@@ -1105,6 +1107,9 @@
       "no-checks": "チェック結果はありません",
       "click-to-run-checks": "この仕様を検証するには、「チェックを実行」をクリックしてください"
     }
+  },
+  "rollout": {
+    "rollouts": "ロールアウト"
   },
   "quick-action": {
     "create-db": "データベースの作成",
