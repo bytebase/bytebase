@@ -1,12 +1,20 @@
 import type { Ref } from "vue";
 import { reactive, watch } from "vue";
-import {
+import type {
   DatabaseCatalog,
   SchemaCatalog,
   TableCatalog,
   TableCatalog_Columns,
   ColumnCatalog,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import {
+  DatabaseCatalogSchema,
+  SchemaCatalogSchema,
+  TableCatalogSchema,
+  TableCatalog_ColumnsSchema,
+  ColumnCatalogSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import { create } from "@bufbuild/protobuf";
 import type { EditTarget } from "../types";
 import { keyForResourceName } from "./common";
 
@@ -44,7 +52,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
         targets.flatMap((target) => {
           return target.catalog.schemas.flatMap((schemaCatalog) => {
             return schemaCatalog.tables.flatMap((tableCatalog) => {
-              return (tableCatalog.columns?.columns ?? []).map(
+              return (tableCatalog.kind?.case === "columns" ? tableCatalog.kind.value.columns : []).map(
                 (columnCatalog) => {
                   const key = keyForResourceName({
                     database: target.database.name,
@@ -80,7 +88,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
     });
     let databaseCatalog = maps.databaseCatalog.get(databaseKey);
     if (!databaseCatalog) {
-      databaseCatalog = DatabaseCatalog.fromPartial({
+      databaseCatalog = create(DatabaseCatalogSchema, {
         name: database,
       });
       maps.databaseCatalog.set(databaseKey, databaseCatalog);
@@ -119,7 +127,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
       (sc) => sc.name === schema
     );
     if (!schemaCatalog) {
-      schemaCatalog = SchemaCatalog.fromPartial({
+      schemaCatalog = create(SchemaCatalogSchema, {
         name: schema,
         tables: [],
       });
@@ -171,9 +179,12 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
       table,
     });
     if (!tableCatalog) {
-      tableCatalog = TableCatalog.fromPartial({
+      tableCatalog = create(TableCatalogSchema, {
         name: table,
-        columns: TableCatalog_Columns.fromPartial({}),
+        kind: {
+          case: "columns",
+          value: create(TableCatalog_ColumnsSchema, {})
+        },
       });
       insertTableCatalog({
         database,
@@ -181,8 +192,11 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
         table: tableCatalog,
       });
     }
-    if (!tableCatalog.columns) {
-      tableCatalog.columns = TableCatalog_Columns.fromPartial({});
+    if (tableCatalog.kind?.case !== "columns") {
+      tableCatalog.kind = {
+        case: "columns",
+        value: create(TableCatalog_ColumnsSchema, {})
+      };
     }
     update(tableCatalog);
   };
@@ -225,7 +239,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
         table,
       },
       (tableCatalog) => {
-        tableCatalog.columns?.columns.push(column);
+        tableCatalog.kind?.case === "columns" && tableCatalog.kind.value.columns.push(column);
       }
     );
     // Need not to maintain column catalog map here
@@ -250,10 +264,13 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
     if (!tableCatalog) {
       return;
     }
-    if (!tableCatalog.columns) {
-      tableCatalog.columns = TableCatalog_Columns.fromPartial({});
+    if (tableCatalog.kind?.case !== "columns") {
+      tableCatalog.kind = {
+        case: "columns",
+        value: create(TableCatalog_ColumnsSchema, {})
+      };
     }
-    tableCatalog.columns.columns = tableCatalog.columns.columns.filter(
+    tableCatalog.kind.value.columns = tableCatalog.kind.value.columns.filter(
       (columnCatalog) => columnCatalog.name !== column
     );
   };
@@ -278,7 +295,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
       column,
     });
     if (!columnCatalog) {
-      columnCatalog = ColumnCatalog.fromPartial({
+      columnCatalog = create(ColumnCatalogSchema, {
         name: column,
       });
       insertColumnCatalog({

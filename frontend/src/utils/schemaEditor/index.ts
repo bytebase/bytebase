@@ -1,6 +1,5 @@
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 
 export * from "./filter";
 
@@ -18,7 +17,7 @@ export const allowUsingSchemaEditor = (
   databaseList: ComposedDatabase[]
 ): boolean => {
   return databaseList.every((db) => {
-    return engineSupportsSchemaEditor(convertEngineToNew(db.instanceResource.engine));
+    return engineSupportsSchemaEditor(db.instanceResource.engine);
   });
 };
 

@@ -44,7 +44,6 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { engineSupportsMultiSchema } from "../../../spec";
 
 const props = defineProps<{
@@ -91,7 +90,7 @@ const referencedNameForFk = (fk: ForeignKeyMetadata) => {
     (column) => column.name === fk.referencedColumns[position]
   );
 
-  if (engineSupportsMultiSchema(convertEngineToNew(props.db.instanceResource.engine))) {
+  if (engineSupportsMultiSchema(props.db.instanceResource.engine)) {
     return `${referencedSchema.name}.${referencedTable.name}(${referencedColumn?.name})`;
   } else {
     return `${referencedTable.name}(${referencedColumn?.name})`;

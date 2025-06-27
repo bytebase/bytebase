@@ -28,7 +28,7 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
 } from "@/store";
-import {
+import type {
   DatabaseMetadata,
   SchemaMetadata,
   SequenceMetadata,

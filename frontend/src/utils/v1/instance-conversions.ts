@@ -298,3 +298,18 @@ export const convertScopeValueToDataSourceAuthenticationType = (value: string | 
       return NewDataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
   }
 };
+
+// ========== COMPOSED INSTANCE ADAPTERS ==========
+
+import type { ComposedInstance as NewComposedInstance } from "@/types/v1/instance";
+
+export const adaptComposedInstance = {
+  fromLegacy: (legacy: any): NewComposedInstance => {
+    // Since ComposedInstance is already using proto-es types, just return it
+    return legacy as NewComposedInstance;
+  },
+  toLegacy: (current: NewComposedInstance): any => {
+    // Since ComposedInstance is already using proto-es types, just return it
+    return current;
+  }
+};

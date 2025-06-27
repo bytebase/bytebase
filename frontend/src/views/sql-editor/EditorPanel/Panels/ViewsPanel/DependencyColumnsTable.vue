@@ -36,7 +36,7 @@ import {
   keyForDependencyColumn,
   useAutoHeightDataTable,
 } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
+import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 const props = defineProps<{
@@ -79,7 +79,7 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       className: "truncate",
-      hide: !hasSchemaProperty(convertEngineToNew(engine)),
+      hide: !hasSchemaProperty(engine),
       render: (dep) => {
         return h("span", {
           innerHTML: getHighlightHTMLByRegExp(dep.schema, props.keyword ?? ""),

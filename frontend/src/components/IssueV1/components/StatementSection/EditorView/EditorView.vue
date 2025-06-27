@@ -269,7 +269,7 @@ const filename = computed(() => {
 });
 const dialect = computed((): SQLDialect => {
   const db = database.value;
-  return dialectOfEngineV1(convertEngineToNew(db.instanceResource.engine));
+  return dialectOfEngineV1(db.instanceResource.engine);
 });
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");

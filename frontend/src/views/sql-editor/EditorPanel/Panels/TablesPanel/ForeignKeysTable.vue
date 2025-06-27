@@ -30,7 +30,6 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 
@@ -134,7 +133,7 @@ const columns = computed(() => {
         title: "Match type",
         resizable: true,
         minWidth: 140,
-        hide: convertEngineToNew(props.db.instanceResource.engine) !== Engine.POSTGRES,
+        hide: props.db.instanceResource.engine !== Engine.POSTGRES,
       },
     ];
   return columns.filter((header) => !header.hide);

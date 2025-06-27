@@ -2,7 +2,6 @@ import type { SelectOption } from "naive-ui";
 import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/components/common";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { getInstanceIdOptions } from "@/components/SensitiveData/components/utils";
-import { adaptComposedInstance } from "@/types";
 import type { Factor } from "@/plugins/cel";
 import {
   environmentNamePrefix,
@@ -42,7 +41,7 @@ export const getDatabaseGroupOptionConfigMap = () => {
                   query: keyword,
                 },
               })
-              .then((resp) => getInstanceIdOptions(resp.instances.map(adaptComposedInstance.fromLegacy)));
+              .then((resp) => getInstanceIdOptions(resp.instances));
           },
         });
         return map;

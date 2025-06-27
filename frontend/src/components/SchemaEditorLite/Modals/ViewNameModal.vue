@@ -40,8 +40,10 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { ViewMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type { ViewMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { ViewMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
+import { create } from "@bufbuild/protobuf";
 
 // View name must start with a non-space character, end with a non-space character.
 const viewNameFieldRegexp = /^\S\S*\S?$/;
@@ -93,7 +95,7 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (!props.view) {
-    const view = ViewMetadata.fromPartial({
+    const view = create(ViewMetadataSchema, {
       name: state.viewName,
       definition: "",
     });

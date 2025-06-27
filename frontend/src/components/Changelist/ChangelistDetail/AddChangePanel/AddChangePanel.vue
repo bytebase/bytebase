@@ -149,7 +149,7 @@ const doAddChange = async () => {
       if (sourceType === "CHANGELOG") {
         const changelog = await useChangelogStore().getOrFetchChangelogByName(
           change.source,
-          ChangelogView.CHANGELOG_VIEW_FULL
+          ChangelogView.FULL
         );
         setSheetStatement(sheet, changelog?.statement || "");
       }

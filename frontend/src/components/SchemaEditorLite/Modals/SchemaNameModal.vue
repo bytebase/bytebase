@@ -32,8 +32,9 @@ import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
-import { SchemaMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { SchemaMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
+import { create } from "@bufbuild/protobuf";
 
 const schemaNameFieldRegexp = /^\S+$/;
 
@@ -67,7 +68,7 @@ const handleConfirmButtonClick = async () => {
     return;
   }
 
-  const schema = SchemaMetadata.fromPartial({
+  const schema = create(SchemaMetadataSchema, {
     name: state.schemaName,
   });
   /* eslint-disable-next-line vue/no-mutating-props */

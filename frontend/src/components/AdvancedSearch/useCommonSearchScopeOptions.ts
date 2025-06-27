@@ -27,7 +27,6 @@ import {
   hasWorkspacePermissionV2,
 } from "@/utils";
 import type { ScopeOption, ValueOption } from "./types";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
 
 export const useCommonSearchScopeOptions = (
   supportOptionIdList: MaybeRef<SearchScopeId[]>
@@ -172,7 +171,7 @@ export const useCommonSearchScopeOptions = (
         description: t("issue.advanced-search.scope.engine.description"),
         options: supportedEngineV1List().map((engine) => {
           return {
-            value: convertEngineToOld(engine),
+            value: Engine[engine],
             keywords: [Engine[engine].toLowerCase()],
             render: () => h(RichEngineName, { engine, tag: "p" }),
           };

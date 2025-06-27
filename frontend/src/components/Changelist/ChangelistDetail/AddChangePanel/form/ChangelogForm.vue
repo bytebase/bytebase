@@ -64,8 +64,8 @@ import {
   Changelist_Change,
   type Changelist_Change as Change,
 } from "@/types/proto/v1/changelist_service";
+import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
-  Changelog,
   Changelog_Status,
   Changelog_Type,
 } from "@/types/proto-es/v1/database_service_pb";

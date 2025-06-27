@@ -86,7 +86,14 @@ import {
   DEFAULT_PROJECT_NAME,
   isValidProjectName,
 } from "@/types";
-import { UpdateDatabaseRequest } from "@/types/proto-es/v1/database_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  DatabaseSchema$,
+  UpdateDatabaseRequestSchema,
+  BatchUpdateDatabasesRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { autoProjectRoute } from "@/utils";
 import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 
@@ -182,18 +189,20 @@ const doTransfer = async () => {
     loading.value = true;
 
     if (databaseList.length > 0) {
-      await useDatabaseV1Store().batchUpdateDatabases({
-        parent: "-",
-        requests: databaseList.map((database) => {
-          return UpdateDatabaseRequest.fromPartial({
-            database: {
-              name: database.name,
-              project: target.name,
-            },
-            updateMask: ["project"],
-          });
-        }),
-      });
+      await useDatabaseV1Store().batchUpdateDatabases(
+        create(BatchUpdateDatabasesRequestSchema, {
+          parent: "-",
+          requests: databaseList.map((database) => {
+            return create(UpdateDatabaseRequestSchema, {
+              database: create(DatabaseSchema$, {
+                name: database.name,
+                project: target.name,
+              }),
+              updateMask: create(FieldMaskSchema, { paths: ["project"] }),
+            });
+          }),
+        })
+      );
 
       const displayDatabaseName =
         databaseList.length > 1

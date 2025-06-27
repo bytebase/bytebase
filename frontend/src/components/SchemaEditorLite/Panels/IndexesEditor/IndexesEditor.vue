@@ -34,7 +34,6 @@ import { useI18n } from "vue-i18n";
 import { InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import type {
   DatabaseMetadata,
   IndexMetadata,
@@ -174,7 +173,7 @@ const columns = computed(() => {
       render: (index) => {
         const allowTurnOnOrOffPrimary = () => {
           // Do not allow to edit primary key for TiDB.
-          if (convertEngineToNew(props.db.instanceResource.engine) === Engine.TIDB) {
+          if (props.db.instanceResource.engine === Engine.TIDB) {
             return false;
           }
 

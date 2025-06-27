@@ -121,8 +121,8 @@ import {
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  DataSource,
   DataSourceType,
   DataSource_RedisType,
 } from "@/types/proto-es/v1/instance_service_pb";
@@ -131,7 +131,6 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
@@ -156,7 +155,7 @@ const showRedisConfig = computed(() => {
     return false;
   }
   const instance = database.value.instanceResource;
-  return convertEngineToNew(instance.engine) === Engine.REDIS;
+  return instance.engine === Engine.REDIS;
 });
 
 const adminDataSourceRestriction = computed(() => {

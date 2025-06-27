@@ -129,7 +129,7 @@ import {
   getHighlightHTMLByKeyWords,
   isDescendantOf,
 } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
+import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 import FunctionNameModal from "../Modals/FunctionNameModal.vue";
 import ProcedureNameModal from "../Modals/ProcedureNameModal.vue";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
@@ -561,7 +561,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   });
   if (node.type === "database") {
     const { engine } = node.db.instanceResource;
-    if (engineSupportsMultiSchema(convertEngineToNew(engine))) {
+    if (engineSupportsMultiSchema(engine)) {
       icons.push(menuIcon);
     }
   }
@@ -645,7 +645,7 @@ const handleDuplicateTable = (treeNode: TreeNodeForTable) => {
   for (const index of newTable.indexes) {
     let name = `${index.name}_${MD5(`${newTable.name}_${Date.now()}`).toString().slice(0, 6)}`;
     if (index.primary) {
-      const fixedName = getFixedPrimaryKey(convertEngineToNew(engine));
+      const fixedName = getFixedPrimaryKey(engine);
       // If the primary key name is fixed, use it instead.
       if (fixedName) {
         name = fixedName;

@@ -16,7 +16,7 @@
 import { NSelect, type SelectOption } from "naive-ui";
 import { computed, watch } from "vue";
 import { useInstanceV1Store } from "@/store";
-import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 
 interface InstanceRoleSelectOption extends SelectOption {
   value: string;

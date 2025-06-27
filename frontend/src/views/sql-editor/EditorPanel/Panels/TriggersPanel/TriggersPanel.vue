@@ -43,7 +43,7 @@
     useConnectionOfCurrentSQLEditorTab,
     useDBSchemaV1Store,
   } from "@/store";
-  import {
+  import type {
     TriggerMetadata,
   } from "@/types/proto-es/v1/database_service_pb";
   import {

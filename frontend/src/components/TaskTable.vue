@@ -37,9 +37,9 @@ const props = defineProps({
 const { t } = useI18n();
 
 const stringifyTaskState = (state: TaskMetadata_State): string => {
-  if (state === TaskMetadata_State.STATE_STARTED) {
+  if (state === TaskMetadata_State.STARTED) {
     return "Started";
-  } else if (state === TaskMetadata_State.STATE_SUSPENDED) {
+  } else if (state === TaskMetadata_State.SUSPENDED) {
     return "Suspended";
   }
   return "-";

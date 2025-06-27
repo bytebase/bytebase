@@ -89,7 +89,7 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   ObjectSchema_Type,
   type ObjectSchema,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto-es/v1/database_catalog_service_pb";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { hasProjectPermissionV2, instanceV1MaskingForNoSQL } from "@/utils";
 
@@ -157,23 +157,24 @@ const flattenObjectSchema = (
   switch (objectSchema.type) {
     case ObjectSchema_Type.OBJECT:
       const resp = [];
-      for (const [key, schema] of Object.entries(
-        objectSchema.structKind?.properties ?? {}
-      )) {
-        resp.push(
-          ...flattenObjectSchema(
-            [parentPath, key].filter((i) => i).join("."),
-            schema
-          )
-        );
+      if (objectSchema.kind?.case === "structKind") {
+        for (const [key, schema] of Object.entries(
+          objectSchema.kind.value.properties ?? {}
+        )) {
+          resp.push(
+            ...flattenObjectSchema(
+              [parentPath, key].filter((i) => i).join("."),
+              schema
+            )
+          );
+        }
       }
       return resp;
     case ObjectSchema_Type.ARRAY:
-      if (!objectSchema.arrayKind?.kind) {
-        return [];
+      if (objectSchema.kind?.case === "arrayKind" && objectSchema.kind.value.kind) {
+        return flattenObjectSchema(parentPath, objectSchema.kind.value.kind);
       }
-      // TODO(ed): Currently, the object schemas of the element in array are the same.
-      return flattenObjectSchema(parentPath, objectSchema.arrayKind?.kind);
+      return [];
     default:
       return [
         {
@@ -191,22 +192,26 @@ const updateList = async () => {
 
   for (const schema of databaseCatalog.value.schemas) {
     for (const table of schema.tables) {
-      for (const column of table.columns?.columns ?? []) {
-        if (!column.semanticType && !column.classification) {
-          continue;
+      // Handle table with structured columns
+      if (table.kind?.case === "columns") {
+        for (const column of table.kind.value.columns ?? []) {
+          if (!column.semanticType && !column.classification) {
+            continue;
+          }
+          sensitiveList.push({
+            schema: schema.name,
+            table: table.name,
+            column: column.name,
+            semanticTypeId: column.semanticType,
+            classificationId: column.classification,
+            target: column,
+          });
         }
-        sensitiveList.push({
-          schema: schema.name,
-          table: table.name,
-          column: column.name,
-          semanticTypeId: column.semanticType,
-          classificationId: column.classification,
-          target: column,
-        });
       }
 
-      if (table.objectSchema) {
-        const flattenItems = flattenObjectSchema("", table.objectSchema);
+      // Handle table with object schema
+      if (table.kind?.case === "objectSchema") {
+        const flattenItems = flattenObjectSchema("", table.kind.value);
         sensitiveList.push(
           ...flattenItems.map((item) => ({
             ...item,

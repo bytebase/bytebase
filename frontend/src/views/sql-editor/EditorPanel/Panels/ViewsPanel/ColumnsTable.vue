@@ -31,7 +31,6 @@ import type {
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { EllipsisCell } from "../../common";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 
@@ -98,7 +97,7 @@ const columns = computed(() => {
         return h(DefaultValueCell, {
           column,
           disabled: true,
-          engine: convertEngineToNew(engine),
+          engine: engine,
         });
       },
     },

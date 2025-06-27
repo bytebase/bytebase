@@ -30,7 +30,7 @@ import { Changelog_Status } from "@/types/proto-es/v1/database_service_pb";
 const props = defineProps({
   status: {
     required: true,
-    type: String as PropType<Changelog_Status>,
+    type: Number as PropType<Changelog_Status>,
   },
 });
 

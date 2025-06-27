@@ -1,3 +1,5 @@
+import { create } from "@bufbuild/protobuf";
+import { type Duration, DurationSchema } from "@bufbuild/protobuf/wkt";
 import Emittery from "emittery";
 import { uniqueId } from "lodash-es";
 import { ClientError, Status } from "nice-grpc-common";
@@ -15,7 +17,6 @@ import type {
   WebTerminalQueryState,
   SQLEditorQueryParams,
 } from "@/types";
-import { Duration } from "@/types/proto/google/protobuf/duration";
 import {
   AdminExecuteRequest,
   AdminExecuteResponse,
@@ -317,8 +318,8 @@ export const parseDuration = (str: string): Duration | undefined => {
   if (Number.isNaN(totalSeconds) || totalSeconds < 0) return undefined;
   const seconds = Math.floor(totalSeconds);
   const nanos = (totalSeconds - seconds) * 1e9;
-  return Duration.fromPartial({
-    seconds,
+  return create(DurationSchema, {
+    seconds: BigInt(seconds),
     nanos,
   });
 };
