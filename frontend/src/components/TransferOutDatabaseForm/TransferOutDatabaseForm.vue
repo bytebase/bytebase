@@ -86,7 +86,6 @@ import {
   DEFAULT_PROJECT_NAME,
   isValidProjectName,
 } from "@/types";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,

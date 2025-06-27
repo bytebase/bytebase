@@ -1,10 +1,8 @@
+import { create } from "@bufbuild/protobuf";
 import type { Ref } from "vue";
 import { reactive, watch } from "vue";
 import type {
-  DatabaseCatalog,
-  SchemaCatalog,
   TableCatalog,
-  TableCatalog_Columns,
   ColumnCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
@@ -14,7 +12,6 @@ import {
   TableCatalog_ColumnsSchema,
   ColumnCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { create } from "@bufbuild/protobuf";
 import type { EditTarget } from "../types";
 import { keyForResourceName } from "./common";
 
@@ -52,17 +49,19 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
         targets.flatMap((target) => {
           return target.catalog.schemas.flatMap((schemaCatalog) => {
             return schemaCatalog.tables.flatMap((tableCatalog) => {
-              return (tableCatalog.kind?.case === "columns" ? tableCatalog.kind.value.columns : []).map(
-                (columnCatalog) => {
-                  const key = keyForResourceName({
-                    database: target.database.name,
-                    schema: schemaCatalog.name,
-                    table: tableCatalog.name,
-                    column: columnCatalog.name,
-                  });
-                  return [key, columnCatalog];
-                }
-              );
+              return (
+                tableCatalog.kind?.case === "columns"
+                  ? tableCatalog.kind.value.columns
+                  : []
+              ).map((columnCatalog) => {
+                const key = keyForResourceName({
+                  database: target.database.name,
+                  schema: schemaCatalog.name,
+                  table: tableCatalog.name,
+                  column: columnCatalog.name,
+                });
+                return [key, columnCatalog];
+              });
             });
           });
         })
@@ -183,7 +182,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
         name: table,
         kind: {
           case: "columns",
-          value: create(TableCatalog_ColumnsSchema, {})
+          value: create(TableCatalog_ColumnsSchema, {}),
         },
       });
       insertTableCatalog({
@@ -195,7 +194,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
     if (tableCatalog.kind?.case !== "columns") {
       tableCatalog.kind = {
         case: "columns",
-        value: create(TableCatalog_ColumnsSchema, {})
+        value: create(TableCatalog_ColumnsSchema, {}),
       };
     }
     update(tableCatalog);
@@ -239,7 +238,9 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
         table,
       },
       (tableCatalog) => {
-        tableCatalog.kind?.case === "columns" && tableCatalog.kind.value.columns.push(column);
+        if (tableCatalog.kind?.case === "columns") {
+          tableCatalog.kind.value.columns.push(column);
+        }
       }
     );
     // Need not to maintain column catalog map here
@@ -267,7 +268,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
     if (tableCatalog.kind?.case !== "columns") {
       tableCatalog.kind = {
         case: "columns",
-        value: create(TableCatalog_ColumnsSchema, {})
+        value: create(TableCatalog_ColumnsSchema, {}),
       };
     }
     tableCatalog.kind.value.columns = tableCatalog.kind.value.columns.filter(

@@ -55,7 +55,6 @@ import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useChangelogStore, useDatabaseV1ByName } from "@/store";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import { ChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName, extractIssueUID } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";

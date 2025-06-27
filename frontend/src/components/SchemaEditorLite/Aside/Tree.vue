@@ -129,7 +129,6 @@ import {
   getHighlightHTMLByKeyWords,
   isDescendantOf,
 } from "@/utils";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 import FunctionNameModal from "../Modals/FunctionNameModal.vue";
 import ProcedureNameModal from "../Modals/ProcedureNameModal.vue";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";

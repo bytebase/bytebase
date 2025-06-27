@@ -139,7 +139,6 @@ import {
 } from "@/components/v2";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
-import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { TableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
   hasProjectPermissionV2,
