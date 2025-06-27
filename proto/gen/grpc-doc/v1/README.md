@@ -234,9 +234,9 @@
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
-    - [MaximumSQLResultSizeSetting](#bytebase-v1-MaximumSQLResultSizeSetting)
     - [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-v1-SCIMSetting)
+    - [SQLQueryRestrictionSetting](#bytebase-v1-SQLQueryRestrictionSetting)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
@@ -4407,21 +4407,6 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
-<a name="bytebase-v1-MaximumSQLResultSizeSetting"></a>
-
-### MaximumSQLResultSizeSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| limit | [int64](#int64) |  | The limit is in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
-
-
-
-
-
-
 <a name="bytebase-v1-PasswordRestrictionSetting"></a>
 
 ### PasswordRestrictionSetting
@@ -4452,6 +4437,22 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLQueryRestrictionSetting"></a>
+
+### SQLQueryRestrictionSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
+| maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
 
 
 
@@ -4614,11 +4615,11 @@ The data in setting value.
 | schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 | data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
 | semantic_type_setting_value | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
-| maximum_sql_result_size_setting | [MaximumSQLResultSizeSetting](#bytebase-v1-MaximumSQLResultSizeSetting) |  |  |
 | scim_setting | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
 | password_restriction_setting | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
 | ai_setting | [AISetting](#bytebase-v1-AISetting) |  |  |
 | environment_setting | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
+| sql_query_restriction_setting | [SQLQueryRestrictionSetting](#bytebase-v1-SQLQueryRestrictionSetting) |  |  |
 
 
 

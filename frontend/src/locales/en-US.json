@@ -565,8 +565,14 @@
           "never-expires": "Never expires"
         },
         "maximum-sql-result": {
-          "self": "Maximum SQL result size",
-          "description": "Limit the output SQL query result size."
+          "size": {
+            "self": "Maximum SQL result size",
+            "description": "Limit the output SQL query result size."
+          },
+          "rows": {
+            "self": "Maximum SQL result rows",
+            "description": "Limit the output rows in SQL query result, the value <= 0 means no limit."
+          }
         },
         "query-data-policy": {
           "timeout": {

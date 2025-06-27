@@ -681,11 +681,11 @@ type Value struct {
 	//	*Value_SchemaTemplateSettingValue
 	//	*Value_DataClassificationSettingValue
 	//	*Value_SemanticTypeSettingValue
-	//	*Value_MaximumSqlResultSizeSetting
 	//	*Value_ScimSetting
 	//	*Value_PasswordRestrictionSetting
 	//	*Value_AiSetting
 	//	*Value_EnvironmentSetting
+	//	*Value_SqlQueryRestrictionSetting
 	Value         isValue_Value `protobuf_oneof:"value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -791,15 +791,6 @@ func (x *Value) GetSemanticTypeSettingValue() *SemanticTypeSetting {
 	return nil
 }
 
-func (x *Value) GetMaximumSqlResultSizeSetting() *MaximumSQLResultSizeSetting {
-	if x != nil {
-		if x, ok := x.Value.(*Value_MaximumSqlResultSizeSetting); ok {
-			return x.MaximumSqlResultSizeSetting
-		}
-	}
-	return nil
-}
-
 func (x *Value) GetScimSetting() *SCIMSetting {
 	if x != nil {
 		if x, ok := x.Value.(*Value_ScimSetting); ok {
@@ -831,6 +822,15 @@ func (x *Value) GetEnvironmentSetting() *EnvironmentSetting {
 	if x != nil {
 		if x, ok := x.Value.(*Value_EnvironmentSetting); ok {
 			return x.EnvironmentSetting
+		}
+	}
+	return nil
+}
+
+func (x *Value) GetSqlQueryRestrictionSetting() *SQLQueryRestrictionSetting {
+	if x != nil {
+		if x, ok := x.Value.(*Value_SqlQueryRestrictionSetting); ok {
+			return x.SqlQueryRestrictionSetting
 		}
 	}
 	return nil
@@ -870,10 +870,6 @@ type Value_SemanticTypeSettingValue struct {
 	SemanticTypeSettingValue *SemanticTypeSetting `protobuf:"bytes,11,opt,name=semantic_type_setting_value,json=semanticTypeSettingValue,proto3,oneof"`
 }
 
-type Value_MaximumSqlResultSizeSetting struct {
-	MaximumSqlResultSizeSetting *MaximumSQLResultSizeSetting `protobuf:"bytes,13,opt,name=maximum_sql_result_size_setting,json=maximumSqlResultSizeSetting,proto3,oneof"`
-}
-
 type Value_ScimSetting struct {
 	ScimSetting *SCIMSetting `protobuf:"bytes,14,opt,name=scim_setting,json=scimSetting,proto3,oneof"`
 }
@@ -890,6 +886,10 @@ type Value_EnvironmentSetting struct {
 	EnvironmentSetting *EnvironmentSetting `protobuf:"bytes,17,opt,name=environment_setting,json=environmentSetting,proto3,oneof"`
 }
 
+type Value_SqlQueryRestrictionSetting struct {
+	SqlQueryRestrictionSetting *SQLQueryRestrictionSetting `protobuf:"bytes,18,opt,name=sql_query_restriction_setting,json=sqlQueryRestrictionSetting,proto3,oneof"`
+}
+
 func (*Value_StringValue) isValue_Value() {}
 
 func (*Value_AppImSettingValue) isValue_Value() {}
@@ -904,8 +904,6 @@ func (*Value_DataClassificationSettingValue) isValue_Value() {}
 
 func (*Value_SemanticTypeSettingValue) isValue_Value() {}
 
-func (*Value_MaximumSqlResultSizeSetting) isValue_Value() {}
-
 func (*Value_ScimSetting) isValue_Value() {}
 
 func (*Value_PasswordRestrictionSetting) isValue_Value() {}
@@ -913,6 +911,8 @@ func (*Value_PasswordRestrictionSetting) isValue_Value() {}
 func (*Value_AiSetting) isValue_Value() {}
 
 func (*Value_EnvironmentSetting) isValue_Value() {}
+
+func (*Value_SqlQueryRestrictionSetting) isValue_Value() {}
 
 type AppIMSetting struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1485,29 +1485,32 @@ func (*Algorithm_Md5Mask) isAlgorithm_Mask() {}
 
 func (*Algorithm_InnerOuterMask_) isAlgorithm_Mask() {}
 
-type MaximumSQLResultSizeSetting struct {
+type SQLQueryRestrictionSetting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The limit is in bytes.
+	// The size limit in bytes.
 	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-	Limit         int64 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	MaximumResultSize int64 `protobuf:"varint,1,opt,name=maximum_result_size,json=maximumResultSize,proto3" json:"maximum_result_size,omitempty"`
+	// The return rows limit.
+	// The default value is -1, means no limit.
+	MaximumResultRows int32 `protobuf:"varint,2,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
-func (x *MaximumSQLResultSizeSetting) Reset() {
-	*x = MaximumSQLResultSizeSetting{}
+func (x *SQLQueryRestrictionSetting) Reset() {
+	*x = SQLQueryRestrictionSetting{}
 	mi := &file_v1_setting_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MaximumSQLResultSizeSetting) String() string {
+func (x *SQLQueryRestrictionSetting) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MaximumSQLResultSizeSetting) ProtoMessage() {}
+func (*SQLQueryRestrictionSetting) ProtoMessage() {}
 
-func (x *MaximumSQLResultSizeSetting) ProtoReflect() protoreflect.Message {
+func (x *SQLQueryRestrictionSetting) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_setting_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1519,14 +1522,21 @@ func (x *MaximumSQLResultSizeSetting) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MaximumSQLResultSizeSetting.ProtoReflect.Descriptor instead.
-func (*MaximumSQLResultSizeSetting) Descriptor() ([]byte, []int) {
+// Deprecated: Use SQLQueryRestrictionSetting.ProtoReflect.Descriptor instead.
+func (*SQLQueryRestrictionSetting) Descriptor() ([]byte, []int) {
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *MaximumSQLResultSizeSetting) GetLimit() int64 {
+func (x *SQLQueryRestrictionSetting) GetMaximumResultSize() int64 {
 	if x != nil {
-		return x.Limit
+		return x.MaximumResultSize
+	}
+	return 0
+}
+
+func (x *SQLQueryRestrictionSetting) GetMaximumResultRows() int32 {
+	if x != nil {
+		return x.MaximumResultRows
 	}
 	return 0
 }
@@ -3065,7 +3075,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04SCIM\x10\x11\x12\x18\n" +
 	"\x14PASSWORD_RESTRICTION\x10\x12\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x13:-\xeaA*\n" +
-	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\xd0\b\n" +
+	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\xcc\b\n" +
 	"\x05Value\x12#\n" +
 	"\fstring_value\x18\x01 \x01(\tH\x00R\vstringValue\x12L\n" +
 	"\x14app_im_setting_value\x18\x03 \x01(\v2\x19.bytebase.v1.AppIMSettingH\x00R\x11appImSettingValue\x12m\n" +
@@ -3074,13 +3084,13 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x1dschema_template_setting_value\x18\t \x01(\v2\".bytebase.v1.SchemaTemplateSettingH\x00R\x1aschemaTemplateSettingValue\x12s\n" +
 	"!data_classification_setting_value\x18\n" +
 	" \x01(\v2&.bytebase.v1.DataClassificationSettingH\x00R\x1edataClassificationSettingValue\x12a\n" +
-	"\x1bsemantic_type_setting_value\x18\v \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\x18semanticTypeSettingValue\x12p\n" +
-	"\x1fmaximum_sql_result_size_setting\x18\r \x01(\v2(.bytebase.v1.MaximumSQLResultSizeSettingH\x00R\x1bmaximumSqlResultSizeSetting\x12=\n" +
+	"\x1bsemantic_type_setting_value\x18\v \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\x18semanticTypeSettingValue\x12=\n" +
 	"\fscim_setting\x18\x0e \x01(\v2\x18.bytebase.v1.SCIMSettingH\x00R\vscimSetting\x12k\n" +
 	"\x1cpassword_restriction_setting\x18\x0f \x01(\v2'.bytebase.v1.PasswordRestrictionSettingH\x00R\x1apasswordRestrictionSetting\x127\n" +
 	"\n" +
 	"ai_setting\x18\x10 \x01(\v2\x16.bytebase.v1.AISettingH\x00R\taiSetting\x12R\n" +
-	"\x13environment_setting\x18\x11 \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\x12environmentSettingB\a\n" +
+	"\x13environment_setting\x18\x11 \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\x12environmentSetting\x12l\n" +
+	"\x1dsql_query_restriction_setting\x18\x12 \x01(\v2'.bytebase.v1.SQLQueryRestrictionSettingH\x00R\x1asqlQueryRestrictionSettingB\a\n" +
 	"\x05value\"\xce\x06\n" +
 	"\fAppIMSetting\x125\n" +
 	"\x05slack\x18\x01 \x01(\v2\x1f.bytebase.v1.AppIMSetting.SlackR\x05slack\x128\n" +
@@ -3216,9 +3226,10 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x15MASK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05INNER\x10\x01\x12\t\n" +
 	"\x05OUTER\x10\x02B\x06\n" +
-	"\x04mask\"3\n" +
-	"\x1bMaximumSQLResultSizeSetting\x12\x14\n" +
-	"\x05limit\x18\x01 \x01(\x03R\x05limit\"#\n" +
+	"\x04mask\"|\n" +
+	"\x1aSQLQueryRestrictionSetting\x12.\n" +
+	"\x13maximum_result_size\x18\x01 \x01(\x03R\x11maximumResultSize\x12.\n" +
+	"\x13maximum_result_rows\x18\x02 \x01(\x05R\x11maximumResultRows\"#\n" +
 	"\vSCIMSetting\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"\x9a\x03\n" +
 	"\x1aPasswordRestrictionSetting\x12\x1d\n" +
@@ -3302,7 +3313,7 @@ var file_v1_setting_service_proto_goTypes = []any{
 	(*DataClassificationSetting)(nil),                                // 17: bytebase.v1.DataClassificationSetting
 	(*SemanticTypeSetting)(nil),                                      // 18: bytebase.v1.SemanticTypeSetting
 	(*Algorithm)(nil),                                                // 19: bytebase.v1.Algorithm
-	(*MaximumSQLResultSizeSetting)(nil),                              // 20: bytebase.v1.MaximumSQLResultSizeSetting
+	(*SQLQueryRestrictionSetting)(nil),                               // 20: bytebase.v1.SQLQueryRestrictionSetting
 	(*SCIMSetting)(nil),                                              // 21: bytebase.v1.SCIMSetting
 	(*PasswordRestrictionSetting)(nil),                               // 22: bytebase.v1.PasswordRestrictionSetting
 	(*AISetting)(nil),                                                // 23: bytebase.v1.AISetting
@@ -3350,11 +3361,11 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	16, // 8: bytebase.v1.Value.schema_template_setting_value:type_name -> bytebase.v1.SchemaTemplateSetting
 	17, // 9: bytebase.v1.Value.data_classification_setting_value:type_name -> bytebase.v1.DataClassificationSetting
 	18, // 10: bytebase.v1.Value.semantic_type_setting_value:type_name -> bytebase.v1.SemanticTypeSetting
-	20, // 11: bytebase.v1.Value.maximum_sql_result_size_setting:type_name -> bytebase.v1.MaximumSQLResultSizeSetting
-	21, // 12: bytebase.v1.Value.scim_setting:type_name -> bytebase.v1.SCIMSetting
-	22, // 13: bytebase.v1.Value.password_restriction_setting:type_name -> bytebase.v1.PasswordRestrictionSetting
-	23, // 14: bytebase.v1.Value.ai_setting:type_name -> bytebase.v1.AISetting
-	24, // 15: bytebase.v1.Value.environment_setting:type_name -> bytebase.v1.EnvironmentSetting
+	21, // 11: bytebase.v1.Value.scim_setting:type_name -> bytebase.v1.SCIMSetting
+	22, // 12: bytebase.v1.Value.password_restriction_setting:type_name -> bytebase.v1.PasswordRestrictionSetting
+	23, // 13: bytebase.v1.Value.ai_setting:type_name -> bytebase.v1.AISetting
+	24, // 14: bytebase.v1.Value.environment_setting:type_name -> bytebase.v1.EnvironmentSetting
+	20, // 15: bytebase.v1.Value.sql_query_restriction_setting:type_name -> bytebase.v1.SQLQueryRestrictionSetting
 	25, // 16: bytebase.v1.AppIMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
 	26, // 17: bytebase.v1.AppIMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
 	27, // 18: bytebase.v1.AppIMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
@@ -3425,11 +3436,11 @@ func file_v1_setting_service_proto_init() {
 		(*Value_SchemaTemplateSettingValue)(nil),
 		(*Value_DataClassificationSettingValue)(nil),
 		(*Value_SemanticTypeSettingValue)(nil),
-		(*Value_MaximumSqlResultSizeSetting)(nil),
 		(*Value_ScimSetting)(nil),
 		(*Value_PasswordRestrictionSetting)(nil),
 		(*Value_AiSetting)(nil),
 		(*Value_EnvironmentSetting)(nil),
+		(*Value_SqlQueryRestrictionSetting)(nil),
 	}
 	file_v1_setting_service_proto_msgTypes[14].OneofWrappers = []any{
 		(*Algorithm_FullMask_)(nil),
