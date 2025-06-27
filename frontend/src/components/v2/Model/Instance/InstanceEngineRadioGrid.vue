@@ -7,7 +7,7 @@
     <template #item="{ option }: RadioGridItem<Engine>">
       <div class="flex flex-row items-center gap-x-1">
         <RichEngineName
-          :engine="convertEngineToOld(option.value)"
+          :engine="option.value"
           tag="p"
           class="text-center text-sm !text-main"
         />
@@ -27,7 +27,6 @@ import {
   type RadioGridOption,
 } from "../../Form";
 import RichEngineName from "./RichEngineName.vue";
-import { convertEngineToOld } from "@/utils/v1/setting-conversions";
 
 type EngineOption = RadioGridOption<Engine>;
 
@@ -42,7 +41,7 @@ defineEmits<{
 const options = computed(() => {
   return props.engineList.map<EngineOption>((engine) => ({
     value: engine,
-    label: engineNameV1(convertEngineToOld(engine)),
+    label: engineNameV1(engine),
   }));
 });
 </script>

@@ -7,7 +7,9 @@ import {
   languageOfEngineV1,
   unknownInstance,
 } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld, convertEngineToNew } from "@/utils/v1/common-conversions";
 import type {
   Instance,
   InstanceResource,
@@ -25,7 +27,7 @@ export function instanceV1Name(instance: Instance | InstanceResource) {
   if (instance.title === unknownInstance().title) {
     name = extractInstanceResourceName(instance.name);
   }
-  if ((instance as Instance).state === State.DELETED) {
+  if ((instance as Instance).state === convertStateToOld(State.DELETED)) {
     name += ` (${t("common.archived")})`;
   } else if (
     isValidInstanceName(instance.name) &&
@@ -324,16 +326,16 @@ export const instanceV1MaskingForNoSQL = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  return [Engine.MONGODB, Engine.COSMOSDB].includes(engine);
+  return [Engine.MONGODB].includes(engine);
 };
 
 export const engineOfInstanceV1 = (
   instanceOrEngine: Instance | InstanceResource | Engine
-) => {
-  if (typeof instanceOrEngine === "string") {
+): Engine => {
+  if (typeof instanceOrEngine === "number") {
     return instanceOrEngine;
   }
-  return instanceOrEngine.engine;
+  return convertEngineToNew(instanceOrEngine.engine);
 };
 
 export const engineNameV1 = (type: Engine): string => {
@@ -440,7 +442,7 @@ export const useInstanceV1EditorLanguage = (
   instance: MaybeRef<Instance | InstanceResource | undefined>
 ) => {
   return computed(() => {
-    return languageOfEngineV1(unref(instance)?.engine);
+    return languageOfEngineV1(unref(instance)?.engine ? convertEngineToNew(unref(instance)!.engine) : undefined);
   });
 };
 

@@ -1,6 +1,6 @@
 import { t, te } from "@/plugins/i18n";
-import type { Engine } from "@/types/proto/v1/common";
-import { engineFromJSON } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { engineToString } from "@/utils/v1/common-conversions";
 import {
   SQLReviewRuleLevel,
   sQLReviewRuleLevelFromJSON,
@@ -153,7 +153,7 @@ export const getRuleMapByEngine = (
   ruleList: RuleTemplateV2[]
 ): Map<Engine, Map<string, RuleTemplateV2>> => {
   return ruleList.reduce((map, rule) => {
-    const engine = engineFromJSON(rule.engine);
+    const engine = rule.engine; // Engine is already numeric enum, no conversion needed
     if (!map.has(engine)) {
       map.set(engine, new Map());
     }
@@ -165,7 +165,7 @@ export const getRuleMapByEngine = (
     });
     return map;
   }, new Map<Engine, Map<string, RuleTemplateV2>>());
-};
+};;
 
 export const ruleTemplateMapV2 = getRuleMapByEngine(
   sqlReviewSchema as RuleTemplateV2[]
@@ -195,7 +195,7 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
 
     for (const rule of template.ruleList) {
       const ruleTemplate = ruleTemplateMapV2
-        .get(engineFromJSON(rule.engine))
+        .get(rule.engine) // Engine is already numeric
         ?.get(rule.type);
       if (!ruleTemplate) {
         continue;
@@ -751,7 +751,7 @@ export const getRuleLocalization = (
   let description = t(`sql-review.rule.${key}.description`);
 
   if (engine) {
-    const engineSpecificKey = `${key}.${engine.toLowerCase()}`;
+    const engineSpecificKey = `${key}.${engineToString(engine).toLowerCase()}`;
     if (te(`sql-review.rule.${engineSpecificKey}.title`)) {
       title = t(`sql-review.rule.${engineSpecificKey}.title`);
     }

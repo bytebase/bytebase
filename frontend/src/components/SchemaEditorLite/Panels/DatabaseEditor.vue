@@ -145,8 +145,9 @@
 import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/setting-conversions";
+
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToOld, convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -261,13 +262,13 @@ const selectedSchema = computed(() => {
   );
 });
 const shouldShowSchemaSelector = computed(() => {
-  return engine.value === Engine.POSTGRES;
+  return convertEngineToNew(engine.value) === Engine.POSTGRES;
 });
 
 const allowCreateTable = computed(() => {
   const schema = selectedSchema.value;
   if (!schema) return false;
-  if (engine.value === Engine.POSTGRES) {
+  if (convertEngineToNew(engine.value) === Engine.POSTGRES) {
     const status = getSchemaStatus(props.db, {
       schema,
     });

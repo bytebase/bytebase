@@ -5,8 +5,8 @@ import { sheetServiceClientConnect } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { Engine, engineToJSON } from "@/types/proto/v1/common";
 import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { 
   CreateSheetRequestSchema,
   GetSheetRequestSchema,
@@ -14,6 +14,7 @@ import {
 } from "@/types/proto-es/v1/sheet_service_pb";
 import { convertNewSheetToOld, convertOldSheetToNew } from "@/utils/v1/sheet-conversions";
 import { extractSheetUID, getSheetStatement } from "@/utils";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
 
 export type SheetView = "FULL" | "BASIC";
 type SheetCacheKey = [string /* uid */, SheetView];
@@ -42,15 +43,13 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
 
   // CRUD
   const createSheet = async (parent: string, sheet: Partial<Sheet>) => {
-    if (!sheet.engine || sheet.engine === Engine.ENGINE_UNSPECIFIED) {
-      const engineStr = sheet.engine
-        ? engineToJSON(sheet.engine)
-        : "<undefined>";
+    if (!sheet.engine || sheet.engine === convertEngineToOld(Engine.ENGINE_UNSPECIFIED)) {
+      const engineStr = sheet.engine || "<undefined>";
       console.warn(
         `[SheetService.CreateSheet] sheet.engine unspecified: ${engineStr}`
       );
 
-      sheet.engine = Engine.ENGINE_UNSPECIFIED;
+      sheet.engine = convertEngineToOld(Engine.ENGINE_UNSPECIFIED);
     }
     const fullSheet = Sheet.fromPartial(sheet);
     const request = create(CreateSheetRequestSchema, {

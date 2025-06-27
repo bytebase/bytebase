@@ -256,7 +256,8 @@ import {
   SYSTEM_BOT_USER_NAME,
   unknownUser,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   UpdateUserRequest,
@@ -359,7 +360,7 @@ const allowEdit = computed(() => {
   ) {
     return false;
   }
-  if (user.value.state !== State.ACTIVE) {
+  if (user.value.state !== convertStateToOld(State.ACTIVE)) {
     return false;
   }
   return isSelf.value || hasWorkspacePermissionV2("bb.policies.update");

@@ -1,4 +1,4 @@
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import type { AISetting } from "@/types/proto-es/v1/setting_service_pb";
 import type Emittery from "emittery";

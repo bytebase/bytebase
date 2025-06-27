@@ -78,13 +78,14 @@ import { useI18n } from "vue-i18n";
 import { useCurrentUserV1, useUserStore, useCurrentProjectV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { SYSTEM_BOT_EMAIL } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type {
   ApprovalStep,
   Issue,
   Issue_Approver,
 } from "@/types/proto/v1/issue_service";
 import type { User as UserType } from "@/types/proto/v1/user_service";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { memberMapToRolesInProjectIAM } from "@/utils";
 import ApprovalUserView from "./ApprovalUserView.vue";
 import PotentialApprovers from "./PotentialApprovers.vue";
@@ -246,7 +247,7 @@ const potentialApprovers = computedAsync(async () => {
   const users: UserType[] = [];
   for (const email of filteredCandidateEmails.value) {
     const user = await userStore.getOrFetchUserByIdentifier(email);
-    if (user && user.state === State.ACTIVE) {
+    if (user && user.state === convertStateToOld(State.ACTIVE)) {
       users.push(user);
     }
   }

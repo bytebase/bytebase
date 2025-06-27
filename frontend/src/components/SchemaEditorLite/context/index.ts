@@ -4,7 +4,7 @@ import { inject, provide, computed } from "vue";
 import { supportSetClassificationFromComment } from "@/components/ColumnDataTable/utils";
 import { useSettingV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
 import type { EditTarget, RolloutObject } from "../types";
 import { useEditCatalogs } from "./config";

@@ -188,6 +188,8 @@ import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
+import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   pushNotification,
   useCurrentProjectV1,
@@ -240,7 +242,7 @@ const filename = computed(() => {
 });
 const dialect = computed((): SQLDialect => {
   const db = database.value;
-  return dialectOfEngineV1(db.instanceResource.engine);
+  return dialectOfEngineV1(convertEngineToNew(db.instanceResource.engine));
 });
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
@@ -396,10 +398,11 @@ const updateStatement = async (statement: string) => {
   const specsToPatch = planPatch.specs.filter(
     (spec) => spec.id === selectedSpec.value.id
   );
+  const specEngine = await databaseEngineForSpec(head(specsToPatch));
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: plan.value.title,
-    engine: await databaseEngineForSpec(head(specsToPatch)),
+    engine: convertEngineToOld((specEngine ?? Engine.ENGINE_UNSPECIFIED) as Engine),
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

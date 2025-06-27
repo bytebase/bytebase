@@ -2,22 +2,22 @@
   <!-- eslint-disable vue/no-mutating-props -->
   <template
     v-if="
-      basicInfo.engine !== Engine.SPANNER &&
-      basicInfo.engine !== Engine.BIGQUERY &&
-      basicInfo.engine !== Engine.DYNAMODB &&
-      basicInfo.engine !== Engine.DATABRICKS
+      convertEngineToNew(basicInfo.engine) !== Engine.SPANNER &&
+      convertEngineToNew(basicInfo.engine) !== Engine.BIGQUERY &&
+      convertEngineToNew(basicInfo.engine) !== Engine.DYNAMODB &&
+      convertEngineToNew(basicInfo.engine) !== Engine.DATABRICKS
     "
   >
     <div
       v-if="
-        basicInfo.engine === Engine.MYSQL ||
-        basicInfo.engine === Engine.POSTGRES ||
-        basicInfo.engine === Engine.COSMOSDB ||
-        basicInfo.engine === Engine.MSSQL
+        convertEngineToNew(basicInfo.engine) === Engine.MYSQL ||
+        convertEngineToNew(basicInfo.engine) === Engine.POSTGRES ||
+        convertEngineToNew(basicInfo.engine) === Engine.COSMOSDB ||
+        convertEngineToNew(basicInfo.engine) === Engine.MSSQL
       "
       class="mt-2 sm:col-span-3 sm:col-start-1"
     >
-      <template v-if="basicInfo.engine === Engine.COSMOSDB">
+      <template v-if="convertEngineToNew(basicInfo.engine) === Engine.COSMOSDB">
         <NRadioGroup
           v-model:value="dataSource.authenticationType"
           class="textlabel"
@@ -28,7 +28,7 @@
           </NRadio>
         </NRadioGroup>
       </template>
-      <template v-else-if="basicInfo.engine === Engine.MSSQL">
+      <template v-else-if="convertEngineToNew(basicInfo.engine) === Engine.MSSQL">
         <NRadioGroup
           v-model:value="dataSource.authenticationType"
           class="textlabel"
@@ -61,7 +61,7 @@
       </template>
     </div>
     <div
-      v-else-if="basicInfo.engine === Engine.HIVE"
+      v-else-if="convertEngineToNew(basicInfo.engine) === Engine.HIVE"
       class="mt-2 sm:col-span-3 sm:col-start-1"
     >
       <NRadioGroup
@@ -77,7 +77,7 @@
     <CreateDataSourceExample
       class-name="sm:col-span-3 border-none mt-2"
       :create-instance-flag="isCreating"
-      :engine="basicInfo.engine"
+      :engine="convertEngineToNew(basicInfo.engine)"
       :data-source-type="dataSource.type"
       :authentication-type="dataSource.authenticationType"
     />
@@ -176,7 +176,7 @@
           class="mt-2 w-full"
           :disabled="!allowEdit"
           :placeholder="
-            basicInfo.engine === Engine.CLICKHOUSE ? $t('common.default') : ''
+            convertEngineToNew(basicInfo.engine) === Engine.CLICKHOUSE ? $t('common.default') : ''
           "
         />
       </div>
@@ -707,7 +707,7 @@
 
         <div
           v-if="
-            basicInfo.engine === Engine.REDIS &&
+            convertEngineToNew(basicInfo.engine) === Engine.REDIS &&
             dataSource.redisType === DataSource_RedisType.SENTINEL
           "
         >
@@ -768,8 +768,8 @@
   </template>
   <template
     v-if="
-      basicInfo.engine === Engine.SPANNER ||
-      basicInfo.engine === Engine.BIGQUERY
+      convertEngineToNew(basicInfo.engine) === Engine.SPANNER ||
+      convertEngineToNew(basicInfo.engine) === Engine.BIGQUERY
     "
   >
     <div class="mt-2 sm:col-span-3 sm:col-start-1">
@@ -797,7 +797,7 @@
     />
   </template>
 
-  <template v-if="basicInfo.engine === Engine.ORACLE">
+  <template v-if="convertEngineToNew(basicInfo.engine) === Engine.ORACLE">
     <OracleSIDAndServiceNameInput
       v-model:sid="dataSource.sid"
       v-model:service-name="dataSource.serviceName"
@@ -805,7 +805,7 @@
     />
   </template>
 
-  <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
+  <template v-if="convertEngineToNew(basicInfo.engine) === Engine.SNOWFLAKE">
     <div class="mt-4 sm:col-span-3 sm:col-start-1">
       <div class="textlabel block">
         {{ $t("data-source.ssh.private-key") }}
@@ -832,7 +832,7 @@ MIIEvQ...
     </div>
   </template>
 
-  <template v-if="basicInfo.engine === Engine.DATABRICKS">
+  <template v-if="convertEngineToNew(basicInfo.engine) === Engine.DATABRICKS">
     <div>
       <div class="textlabel black mt-4">
         Warehouse ID
@@ -1037,7 +1037,7 @@ MIIEvQ...
       <template v-if="dataSource.pendingCreate">
         <SslCertificateFormV1
           :value="dataSource"
-          :engine-type="basicInfo.engine"
+          :engine-type="convertEngineToNew(basicInfo.engine)"
           :disabled="!allowEdit"
           @change="handleSSLChange"
         />
@@ -1046,7 +1046,7 @@ MIIEvQ...
         <template v-if="dataSource.updateSsl">
           <SslCertificateFormV1
             :value="dataSource"
-            :engine-type="basicInfo.engine"
+            :engine-type="convertEngineToNew(basicInfo.engine)"
             :disabled="!allowEdit"
             @change="handleSSLChange"
           />
@@ -1107,7 +1107,7 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import type { DataSourceOptions } from "@/types/dataSource";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto/v1/instance_service";
 import {
   DataSourceExternalSecret,
@@ -1125,6 +1125,7 @@ import {
   SASLConfig,
 } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";

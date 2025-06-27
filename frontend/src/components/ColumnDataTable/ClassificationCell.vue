@@ -38,7 +38,7 @@ import { NPopconfirm } from "naive-ui";
 import { ref, computed } from "vue";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import { MiniActionButton } from "@/components/v2";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import SelectClassificationDrawer from "../SchemaTemplate/SelectClassificationDrawer.vue";
 import { supportSetClassificationFromComment } from "./utils";

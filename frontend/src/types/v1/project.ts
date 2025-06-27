@@ -1,5 +1,6 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
-import { State } from "../proto/v1/common";
+import { State } from "../proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { IamPolicy } from "../proto/v1/iam_policy";
 import { Project } from "../proto/v1/project_service";
 
@@ -17,7 +18,7 @@ export const emptyProject = (): ComposedProject => {
     ...Project.fromPartial({
       name: EMPTY_PROJECT_NAME,
       title: "",
-      state: State.ACTIVE,
+      state: convertStateToOld(State.ACTIVE),
     }),
     iamPolicy: IamPolicy.fromPartial({}),
   };

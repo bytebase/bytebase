@@ -125,7 +125,8 @@ import {
   batchGetOrFetchDatabases,
   getProjectNameAndDatabaseGroupName,
 } from "@/store";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
   extractInstanceResourceName,
   instanceV1Name,
@@ -253,7 +254,7 @@ const tableData = computed((): TargetRow[] => {
       name: database?.databaseName || target,
       instance: instance ? instanceV1Name(instance) : "",
       environment: database?.effectiveEnvironmentEntity?.title || "",
-      engine: instance?.engine,
+      engine: instance?.engine ? convertEngineToNew(instance.engine) : undefined,
     };
   });
 });

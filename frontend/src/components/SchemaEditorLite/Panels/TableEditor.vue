@@ -175,7 +175,7 @@
     <DrawerContent :title="$t('schema-template.field-template.self')">
       <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
         <FieldTemplates
-          :engine="convertEngineToNew(engine)"
+          :engine="engine"
           :readonly="true"
           @apply="handleApplyColumnTemplate"
         />
@@ -189,7 +189,8 @@ import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/setting-conversions";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
   DatabaseCatalog,
   SchemaCatalog,
@@ -295,8 +296,8 @@ const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => 
     // classification, labels, effectiveMaskingLevel are not available in old proto types
   });
 };
-const engine = computed(() => {
-  return props.db.instanceResource.engine;
+const engine = computed((): Engine => {
+  return convertEngineToNew(props.db.instanceResource.engine);
 });
 const state = reactive<LocalState>({
   mode: "COLUMNS",
@@ -428,7 +429,7 @@ const handleApplyColumnTemplate = (
   if (!template.column) {
     return;
   }
-  if (convertEngineToOld(template.engine) !== engine.value) {
+  if (template.engine !== engine.value) {
     return;
   }
   const column = convertNewColumnToOld(template.column);

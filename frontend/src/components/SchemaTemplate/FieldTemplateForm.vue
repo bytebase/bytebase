@@ -278,7 +278,6 @@ import {
   convertKVListToLabels,
   convertLabelsToKVList,
 } from "@/utils";
-import { convertEngineToOld } from "@/utils/v1/setting-conversions";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
 import { engineList, categoryList, classificationConfig } from "./utils";
@@ -361,7 +360,7 @@ const dirty = computed(() => {
 });
 
 const dataTypeOptions = computed(() => {
-  return getDataTypeSuggestionList(convertEngineToOld(state.engine)).map<SelectOption>(
+  return getDataTypeSuggestionList(state.engine).map<SelectOption>(
     (dataType) => {
       return {
         label: dataType,
@@ -381,7 +380,7 @@ const categoryOptions = computed(() => {
 const defaultValueOptions = computed(() => {
   if (!state.column) return [];
   return getColumnDefaultValueOptions(
-    convertEngineToOld(state.engine),
+    state.engine,
     state.column.type
   ).map<SelectOption>((opt) => ({
     value: opt.key,
@@ -498,7 +497,7 @@ const handleColumnDefaultInput = (value: string) => {
   column.defaultNull = false;
   // If column is text type or has default string, we will treat user's input as string.
   if (
-    isTextOfColumnType(convertEngineToOld(state.engine), column.type) ||
+    isTextOfColumnType(state.engine, column.type) ||
     column.defaultString !== undefined
   ) {
     column.defaultString = value;

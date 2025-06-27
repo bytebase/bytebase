@@ -31,17 +31,17 @@ import { NTabs, NTabPane } from "naive-ui";
 import { ref, watch, computed } from "vue";
 import { RichEngineName } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { supportedEngineV1List } from "@/utils";
 
-const selectedEngine = ref<Engine>(Engine.UNRECOGNIZED);
+const selectedEngine = ref<Engine>(0); // UNSPECIFIED
 
 const props = defineProps<{
   ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
 }>();
 
 watch(
-  () => [...props.ruleMapByEngine.keys()][0] ?? Engine.UNRECOGNIZED,
+  () => [...props.ruleMapByEngine.keys()][0] ?? 0, // UNSPECIFIED
   (engine) => (selectedEngine.value = engine),
   { immediate: true }
 );

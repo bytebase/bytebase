@@ -4,13 +4,13 @@
       <InstanceEngineRadioGrid
         v-if="isCreating"
         :engine="convertEngineToNew(basicInfo.engine)"
-        :engine-list="supportedEngineV1List().map(convertEngineToNew)"
+        :engine-list="supportedEngineV1List()"
         class="w-full mb-6 grid-cols-4 gap-2"
-        @update:engine="(newEngine: NewEngine) => changeInstanceEngine(convertEngineToOld(newEngine))"
+        @update:engine="(newEngine: Engine) => changeInstanceEngine(newEngine)"
       >
-        <template #suffix="{ engine }: { engine: NewEngine }">
+        <template #suffix="{ engine }: { engine: Engine }">
           <BBBetaBadge
-            v-if="isEngineBeta(convertEngineToOld(engine))"
+            v-if="isEngineBeta(engine)"
             class="absolute -top-1.5 -right-1 rounded text-xs !bg-gray-500 px-1 !py-0 z-10"
           />
         </template>
@@ -104,13 +104,13 @@
         </div>
 
         <div class="sm:col-span-3 sm:col-start-1">
-          <template v-if="basicInfo.engine === Engine.SPANNER">
+          <template v-if="basicInfo.engine === convertEngineToOld(Engine.SPANNER)">
             <SpannerHostInput
               v-model:host="adminDataSource.host"
               :allow-edit="allowEdit"
             />
           </template>
-          <template v-if="basicInfo.engine === Engine.BIGQUERY">
+          <template v-if="basicInfo.engine === convertEngineToOld(Engine.BIGQUERY)">
             <BigQueryHostInput
               v-model:host="adminDataSource.host"
               :allow-edit="allowEdit"
@@ -118,7 +118,7 @@
           </template>
           <template v-else>
             <label for="host" class="textlabel block">
-              <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
+              <template v-if="basicInfo.engine === convertEngineToOld(Engine.SNOWFLAKE)">
                 {{ $t("instance.account-locator") }}
                 <span class="text-red-600 mr-2">*</span>
                 <LearnMoreLink
@@ -126,7 +126,7 @@
                   class="text-sm"
                 />
               </template>
-              <template v-else-if="basicInfo.engine === Engine.COSMOSDB">
+              <template v-else-if="basicInfo.engine === convertEngineToOld(Engine.COSMOSDB)">
                 {{ $t("instance.endpoint") }}
                 <span class="text-red-600 mr-2">*</span>
               </template>
@@ -149,7 +149,7 @@
               <template v-else>
                 {{ $t("instance.host-or-socket") }}
                 <span
-                  v-if="basicInfo.engine !== Engine.DYNAMODB"
+                  v-if="basicInfo.engine !== convertEngineToOld(Engine.DYNAMODB)"
                   class="text-red-600 mr-2"
                   >*</span
                 >
@@ -159,7 +159,7 @@
               v-model:value="adminDataSource.host"
               required
               :placeholder="
-                basicInfo.engine === Engine.SNOWFLAKE
+                basicInfo.engine === convertEngineToOld(Engine.SNOWFLAKE)
                   ? $t('instance.your-snowflake-account-locator')
                   : $t('instance.sentence.host.none-snowflake')
               "
@@ -167,7 +167,7 @@
               :disabled="!allowEdit"
             />
             <div
-              v-if="basicInfo.engine === Engine.SNOWFLAKE"
+              v-if="basicInfo.engine === convertEngineToOld(Engine.SNOWFLAKE)"
               class="mt-2 textinfolabel"
             >
               {{ $t("instance.sentence.proxy.snowflake") }}
@@ -177,10 +177,10 @@
 
         <template
           v-if="
-            basicInfo.engine !== Engine.SPANNER &&
-            basicInfo.engine !== Engine.BIGQUERY &&
-            basicInfo.engine !== Engine.DATABRICKS &&
-            basicInfo.engine !== Engine.COSMOSDB &&
+            basicInfo.engine !== convertEngineToOld(Engine.SPANNER) &&
+            basicInfo.engine !== convertEngineToOld(Engine.BIGQUERY) &&
+            basicInfo.engine !== convertEngineToOld(Engine.DATABRICKS) &&
+            basicInfo.engine !== convertEngineToOld(Engine.COSMOSDB) &&
             adminDataSource.authenticationType !==
               DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
           "
@@ -200,7 +200,7 @@
         </template>
 
         <div
-          v-if="basicInfo.engine === Engine.MONGODB"
+          v-if="basicInfo.engine === convertEngineToOld(Engine.MONGODB)"
           class="sm:col-span-4 sm:col-start-1"
         >
           <label
@@ -224,7 +224,7 @@
         </div>
 
         <div
-          v-if="basicInfo.engine === Engine.REDIS"
+          v-if="basicInfo.engine === convertEngineToOld(Engine.REDIS)"
           class="sm:col-span-4 sm:col-start-1 space-y-2"
         >
           <label
@@ -319,7 +319,7 @@
         </div>
 
         <div
-          v-if="basicInfo.engine === Engine.MONGODB && !adminDataSource.srv"
+          v-if="basicInfo.engine === convertEngineToOld(Engine.MONGODB) && !adminDataSource.srv"
           class="sm:col-span-2 sm:col-start-1"
         >
           <label for="replicaSet" class="textlabel">
@@ -335,7 +335,7 @@
 
         <div
           v-if="
-            basicInfo.engine === Engine.MONGODB &&
+            basicInfo.engine === convertEngineToOld(Engine.MONGODB) &&
             !adminDataSource.srv &&
             adminDataSource.additionalAddresses.length === 0
           "
@@ -386,7 +386,7 @@
           <label for="external-link" class="textlabel inline-flex">
             <span class>
               {{
-                basicInfo.engine === Engine.SNOWFLAKE
+                basicInfo.engine === convertEngineToOld(Engine.SNOWFLAKE)
                   ? $t("instance.snowflake-web-console")
                   : $t("instance.external-link")
               }}
@@ -399,7 +399,7 @@
               <heroicons-outline:external-link class="w-4 h-4" />
             </button>
           </label>
-          <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
+          <template v-if="basicInfo.engine === convertEngineToOld(Engine.SNOWFLAKE)">
             <NInput
               required
               class="mt-1 w-full"
@@ -423,7 +423,7 @@
       </div>
 
       <!-- Connection Info -->
-      <template v-if="basicInfo.engine !== Engine.DYNAMODB">
+      <template v-if="basicInfo.engine !== convertEngineToOld(Engine.DYNAMODB)">
         <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.connection-info") }}
         </p>
@@ -460,7 +460,7 @@
       </div>
 
       <div
-        v-if="basicInfo.engine !== Engine.DYNAMODB && isCreating"
+        v-if="basicInfo.engine !== convertEngineToOld(Engine.DYNAMODB) && isCreating"
         class="mt-6 pt-4 space-y-1"
       >
         <p class="w-full text-lg leading-6 font-medium text-gray-900">
@@ -519,8 +519,7 @@ import {
 import { adaptComposedInstance, type ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
-import { Engine } from "@/types/proto/v1/common";
-import { Engine as NewEngine } from "@/types/proto-es/v1/common_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DataSource_AuthenticationType } from "@/types/proto/v1/instance_service";
 import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
@@ -532,7 +531,7 @@ import {
   urlfy,
   supportedEngineV1List,
 } from "@/utils";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 
 
 import LearnMoreLink from "../LearnMoreLink.vue";
@@ -622,14 +621,14 @@ const currentRedisConnectionType = computed(() => {
 });
 
 const showAdditionalAddresses = computed(() => {
-  if (basicInfo.value.engine === Engine.CASSANDRA) {
+  if (basicInfo.value.engine === convertEngineToOld(Engine.CASSANDRA)) {
     return true;
   }
-  if (basicInfo.value.engine === Engine.MONGODB && !adminDataSource.value.srv) {
+  if (basicInfo.value.engine === convertEngineToOld(Engine.MONGODB) && !adminDataSource.value.srv) {
     return true;
   }
   if (
-    basicInfo.value.engine === Engine.REDIS &&
+    basicInfo.value.engine === convertEngineToOld(Engine.REDIS) &&
     (adminDataSource.value.redisType === DataSource_RedisType.CLUSTER ||
       adminDataSource.value.redisType === DataSource_RedisType.SENTINEL)
   ) {
@@ -666,7 +665,7 @@ const changeInstanceEngine = (engine: Engine) => {
         : "host.docker.internal";
     }
   }
-  basicInfo.value.engine = engine;
+  basicInfo.value.engine = convertEngineToOld(engine);
 };
 
 const handleChangeSyncDatabases = (databases: string[]) => {

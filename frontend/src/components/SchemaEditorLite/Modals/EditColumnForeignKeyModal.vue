@@ -91,6 +91,7 @@ import type {
 } from "@/types/proto/v1/database_service";
 import { ForeignKeyMetadata } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useSchemaEditorContext } from "../context";
 import {
   removeColumnFromForeignKey,
@@ -195,7 +196,7 @@ const allowConfirm = computed(() => {
   return state.foreignKeyName !== "" && referencedColumn.value !== undefined;
 });
 const shouldShowSchemaSelector = computed(() => {
-  return hasSchemaProperty(engine.value);
+  return hasSchemaProperty(convertEngineToNew(engine.value));
 });
 const referenceTips = computed(() => {
   return shouldShowSchemaSelector.value

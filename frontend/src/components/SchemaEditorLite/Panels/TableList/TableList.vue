@@ -45,6 +45,7 @@ import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/setting-conversions";
+import { convertNewTableMetadataToOld } from "@/utils/v1/database-conversions";
 import {
   TableCatalog,
   TableCatalog_Columns,
@@ -204,7 +205,7 @@ const catalogForTable = (table: string) => {
 
 const showClassification = computed(() => {
   return showClassificationColumn(
-    engine.value,
+    convertEngineToNew(engine.value),
     classificationConfig.value?.classificationFromConfig ?? false
   );
 });
@@ -311,7 +312,7 @@ const columns = computed(() => {
           classification: catalog.classification,
           readonly: readonly.value,
           disabled: isDroppedSchema.value || isDroppedTable(table),
-          engine: engine.value,
+          engine: convertEngineToNew(engine.value),
           classificationConfig: classificationConfig.value,
           onApply: (id: string) => {
             state.activeTable = table;
@@ -416,7 +417,7 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     return;
   }
 
-  const table = convertNewTableToOld(template.table);
+  const table = convertNewTableMetadataToOld(template.table);
   /* eslint-disable-next-line vue/no-mutating-props */
   props.schema.tables.push(table);
   const metadata = metadataForTable(table);

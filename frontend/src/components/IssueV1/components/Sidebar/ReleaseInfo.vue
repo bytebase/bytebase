@@ -9,7 +9,7 @@
       target="_blank"
       class="normal-link truncate"
       :class="{
-        'line-through opacity-60': release.state === State.DELETED,
+        'line-through opacity-60': release.state === convertStateToOld(State.DELETED),
       }"
     >
       {{ release.title || release.name }}
@@ -23,7 +23,8 @@ import { computed } from "vue";
 import { specForTask, useIssueContext } from "@/components/IssueV1";
 import { useReleaseByName } from "@/store";
 import { isValidReleaseName } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 
 const { issue, selectedTask } = useIssueContext();
 

@@ -7,7 +7,7 @@ import {
   unknownDatabase,
   type ComposedProject,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 
 export const databaseForSpec = (project: ComposedProject, spec: Plan_Spec) => {

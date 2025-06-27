@@ -1,7 +1,7 @@
 import { cloneDeep } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { pushNotification, useDatabaseCatalogV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   SchemaCatalog,
   ColumnCatalog,

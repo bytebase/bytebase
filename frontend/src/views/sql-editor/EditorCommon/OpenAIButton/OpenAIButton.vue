@@ -67,6 +67,7 @@ import {
 } from "@/store";
 import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";
 
@@ -137,13 +138,13 @@ const handleSelect = async (action: ChatAction) => {
     await nextAnimationFrame();
     if (action === "explain-code") {
       events.emit("send-chat", {
-        content: promptUtils.explainCode(statement, instance.value.engine),
+        content: promptUtils.explainCode(statement, convertEngineToNew(instance.value.engine)),
         newChat,
       });
     }
     if (action === "find-problems") {
       events.emit("send-chat", {
-        content: promptUtils.findProblems(statement, instance.value.engine),
+        content: promptUtils.findProblems(statement, convertEngineToNew(instance.value.engine)),
         newChat,
       });
     }

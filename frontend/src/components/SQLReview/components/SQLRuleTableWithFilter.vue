@@ -40,7 +40,7 @@ import {
   SQLRuleTable,
 } from "@/components/SQLReview/components";
 import type { RuleTemplateV2 } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import { getRuleKey } from "./utils";
 

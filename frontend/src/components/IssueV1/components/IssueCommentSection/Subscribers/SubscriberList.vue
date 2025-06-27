@@ -45,11 +45,12 @@ import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, unknownUser } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import { type User } from "@/types/proto/v1/user_service";
 import { UserType } from "@/types/proto/v1/user_service";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { getDefaultPagination } from "@/utils";
 import SubscriberListItem from "./SubscriberListItem.vue";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 
 defineProps<{
   readonly?: boolean;
@@ -101,7 +102,7 @@ const options = computed(() => {
   const subscribers = new Set(issue.value.subscribers);
   const options = state.rawUserList
     .filter(
-      (user) => user.userType === UserType.USER && user.state === State.ACTIVE
+      (user) => user.userType === UserType.USER && user.state === convertStateToOld(State.ACTIVE)
     )
     .map<UserSelectOption>((user) => ({
       user,

@@ -214,7 +214,7 @@ import {
   DATASOURCE_ADMIN_USER_NAME,
   DATASOURCE_READONLY_USER_NAME,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSourceType,
   DataSource_AuthenticationType,
