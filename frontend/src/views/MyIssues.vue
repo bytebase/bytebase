@@ -111,7 +111,6 @@ const TABS = [
   "CREATED",
   "WAITING_APPROVAL",
   "WAITING_ROLLOUT",
-  "SUBSCRIBED",
   "ALL",
   "",
 ] as const;
@@ -182,7 +181,6 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
       label: t("issue.waiting-rollout"),
       hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
     },
-    { value: "SUBSCRIBED", label: t("common.subscribed") },
   ];
   return items.filter((item) => !item.hide);
 });
@@ -206,7 +204,6 @@ const keyForTab = (tab: TabValue) => {
   if (tab === "CREATED") return "my-issues-created";
   if (tab === "WAITING_APPROVAL") return "my-issues-waiting-approval";
   if (tab === "WAITING_ROLLOUT") return "my-issues-waiting-rollout";
-  if (tab === "SUBSCRIBED") return "my-issues-subscribed";
   if (tab === "ALL") return "my-issues-all";
 
   return "my-issues-unknown";
@@ -223,15 +220,6 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
       params: common,
       scopes: {
         id: "creator",
-        value: myEmail,
-      },
-    });
-  }
-  if (tab === "SUBSCRIBED") {
-    return upsertScope({
-      params: common,
-      scopes: {
-        id: "subscriber",
         value: myEmail,
       },
     });
@@ -292,12 +280,6 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
     getValueFromSearchParams(params, "creator") === myEmail
   ) {
     return "CREATED";
-  }
-  if (
-    verifyScopes(["subscriber"]) &&
-    getValueFromSearchParams(params, "subscriber") === myEmail
-  ) {
-    return "SUBSCRIBED";
   }
   if (
     verifyScopes(["approval", "approver"]) &&

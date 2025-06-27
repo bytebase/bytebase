@@ -30,7 +30,6 @@ export const AllSearchScopeIdList = [
   "drifted",
   "table",
   // issue related search scopes.
-  "subscriber",
   "issue-label",
   "taskType",
   // auditLog related search scopes.

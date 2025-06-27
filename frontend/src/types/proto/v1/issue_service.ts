@@ -121,7 +121,6 @@ export interface ListIssuesRequest {
    *
    * Supported filters:
    * - creator: issue creator full name in "users/{email or id}" format, support "==" operator.
-   * - subscriber: issue subscriber full name in "users/{email or id}" format, support "==" operator.
    * - status: the issue status, support "==" and "in" operator, check the IssueStatus enum for the values.
    * - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
    * - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
@@ -273,11 +272,6 @@ export interface Issue {
    */
   approvalFindingDone: boolean;
   approvalFindingError: string;
-  /**
-   * The subscribers.
-   * Format: users/hello@world.com
-   */
-  subscribers: string[];
   /** Format: users/hello@world.com */
   creator: string;
   createTime: Timestamp | undefined;
@@ -1944,7 +1938,6 @@ function createBaseIssue(): Issue {
     approvalTemplates: [],
     approvalFindingDone: false,
     approvalFindingError: "",
-    subscribers: [],
     creator: "",
     createTime: undefined,
     updateTime: undefined,
@@ -1986,9 +1979,6 @@ export const Issue: MessageFns<Issue> = {
     }
     if (message.approvalFindingError !== "") {
       writer.uint32(98).string(message.approvalFindingError);
-    }
-    for (const v of message.subscribers) {
-      writer.uint32(106).string(v!);
     }
     if (message.creator !== "") {
       writer.uint32(114).string(message.creator);
@@ -2102,14 +2092,6 @@ export const Issue: MessageFns<Issue> = {
           message.approvalFindingError = reader.string();
           continue;
         }
-        case 13: {
-          if (tag !== 106) {
-            break;
-          }
-
-          message.subscribers.push(reader.string());
-          continue;
-        }
         case 14: {
           if (tag !== 114) {
             break;
@@ -2217,9 +2199,6 @@ export const Issue: MessageFns<Issue> = {
         : [],
       approvalFindingDone: isSet(object.approvalFindingDone) ? globalThis.Boolean(object.approvalFindingDone) : false,
       approvalFindingError: isSet(object.approvalFindingError) ? globalThis.String(object.approvalFindingError) : "",
-      subscribers: globalThis.Array.isArray(object?.subscribers)
-        ? object.subscribers.map((e: any) => globalThis.String(e))
-        : [],
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
@@ -2272,9 +2251,6 @@ export const Issue: MessageFns<Issue> = {
     }
     if (message.approvalFindingError !== "") {
       obj.approvalFindingError = message.approvalFindingError;
-    }
-    if (message.subscribers?.length) {
-      obj.subscribers = message.subscribers;
     }
     if (message.creator !== "") {
       obj.creator = message.creator;
@@ -2329,7 +2305,6 @@ export const Issue: MessageFns<Issue> = {
     message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     message.approvalFindingDone = object.approvalFindingDone ?? false;
     message.approvalFindingError = object.approvalFindingError ?? "";
-    message.subscribers = object.subscribers?.map((e) => e) || [];
     message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)

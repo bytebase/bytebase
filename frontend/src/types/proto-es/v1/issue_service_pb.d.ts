@@ -101,7 +101,6 @@ export declare type ListIssuesRequest = Message<"bytebase.v1.ListIssuesRequest">
    *
    * Supported filters:
    * - creator: issue creator full name in "users/{email or id}" format, support "==" operator.
-   * - subscriber: issue subscriber full name in "users/{email or id}" format, support "==" operator.
    * - status: the issue status, support "==" and "in" operator, check the IssueStatus enum for the values.
    * - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
    * - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
@@ -450,14 +449,6 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * @generated from field: string approval_finding_error = 12;
    */
   approvalFindingError: string;
-
-  /**
-   * The subscribers.
-   * Format: users/hello@world.com
-   *
-   * @generated from field: repeated string subscribers = 13;
-   */
-  subscribers: string[];
 
   /**
    * Format: users/hello@world.com

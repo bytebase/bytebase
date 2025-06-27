@@ -112,7 +112,6 @@
     "empty": "Empty",
     "creating": "Creating...",
     "address": "Address",
-    "subscribed": "Subscribed",
     "created": "Created",
     "labels": "Labels",
     "mode": "Mode",
@@ -196,7 +195,6 @@
     "schedule": "Schedule",
     "state": "State",
     "condition": "Condition",
-    "search-user": "Search user",
     "info": "Info",
     "minutes": "Minutes",
     "filter-by-name": "Filter by name",
@@ -801,8 +799,6 @@
         "some-tasks-are-still-running": "Some tasks are still running"
       }
     },
-    "subscribe": "Subscribe",
-    "unsubscribe": "Unsubscribe",
     "add-some-description": "Add some description...",
     "add-a-comment": "Add a comment",
     "leave-a-comment": "Leave a comment...",
@@ -848,8 +844,6 @@
           "description": "Search by the issue creator"
         },
         "subscriber": {
-          "title": "Subscriber",
-          "description": "Search by the issue subscriber"
         },
         "approver": {
           "title": "Approver",

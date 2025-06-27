@@ -108,16 +108,12 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
-				case "creator", "subscriber":
+				case "creator":
 					user, err := s.getUserByIdentifier(ctx, value.(string))
 					if err != nil {
 						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
 					}
-					if variable == "creator" {
-						issueFind.CreatorID = &user.ID
-					} else {
-						issueFind.SubscriberID = &user.ID
-					}
+					issueFind.CreatorID = &user.ID
 				case "instance":
 					instanceResourceID, err := common.GetInstanceID(value.(string))
 					if err != nil {
@@ -1203,24 +1199,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 				},
 			})
 
-		case "subscribers":
-			var subscribers []*store.UserMessage
-			for _, subscriber := range req.Msg.Issue.Subscribers {
-				subscriberEmail, err := common.GetUserEmail(subscriber)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get user email from %v, error: %v", subscriber, err))
-				}
-				user, err := s.store.GetUserByEmail(ctx, subscriberEmail)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v, error: %v", subscriberEmail, err))
-				}
-				if user == nil {
-					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %v not found", subscriber))
-				}
-				subscribers = append(subscribers, user)
-			}
-			patch.Subscribers = &subscribers
-
 		case "labels":
 			if len(req.Msg.Issue.Labels) == 0 {
 				patch.RemoveLabels = true
@@ -1438,23 +1416,6 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 	}, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue comment: %v", err))
-	}
-
-	// Add issue commenter to issue subscribers.
-	hasSubscriber := false
-	for _, subscriber := range issue.Subscribers {
-		if subscriber.ID == user.ID {
-			hasSubscriber = true
-			break
-		}
-	}
-	if !hasSubscriber {
-		issue.Subscribers = append(issue.Subscribers, user)
-		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-			Subscribers: &issue.Subscribers,
-		}); err != nil {
-			return nil, err
-		}
 	}
 
 	return connect.NewResponse(convertToIssueComment(req.Msg.Parent, ic)), nil

@@ -112,7 +112,6 @@
     "empty": "空",
     "creating": "创建中...",
     "address": "地址",
-    "subscribed": "已订阅",
     "created": "已创建",
     "labels": "标签",
     "mode": "模式",
@@ -196,7 +195,6 @@
     "schedule": "计划",
     "state": "状态",
     "condition": "条件",
-    "search-user": "搜索用户",
     "info": "信息",
     "minutes": "分钟",
     "filter-by-name": "按名称过滤",
@@ -801,8 +799,6 @@
         "some-tasks-are-still-running": "部分任务仍在运行"
       }
     },
-    "subscribe": "订阅",
-    "unsubscribe": "取消订阅",
     "add-some-description": "添加一些描述…",
     "add-a-comment": "添加评论",
     "leave-a-comment": "发表一条评论…",
@@ -848,8 +844,6 @@
           "description": "根据工单创建人搜索"
         },
         "subscriber": {
-          "title": "订阅人",
-          "description": "根据工单订阅人搜索"
         },
         "approver": {
           "title": "审批人",

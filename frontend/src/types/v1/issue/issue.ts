@@ -59,7 +59,6 @@ export interface IssueFilter {
   database?: string;
   query: string;
   creator?: string;
-  subscriber?: string;
   statusList?: IssueStatus[];
   createdTsAfter?: number;
   createdTsBefore?: number;
