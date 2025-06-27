@@ -31,7 +31,7 @@
     <div class="flex-1 overflow-hidden">
       <StageView
         v-if="!isTableView"
-        :rollout="rollout"
+        :merged-stages="mergedStages"
         :task-status-filter="taskStatusFilter"
       />
       <TaskTable
@@ -48,12 +48,13 @@ import { ListIcon, Columns3Icon } from "lucide-vue-next";
 import { NButton, NButtonGroup } from "naive-ui";
 import { ref } from "vue";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { usePlanContextWithRollout } from "../../logic";
+import { provideRolloutViewContext } from "./context";
 import StageView from "./StageView.vue";
 import TaskFilter from "./TaskFilter.vue";
 import TaskTable from "./TaskTable.vue";
 
-const { rollout } = usePlanContextWithRollout();
+// Provide the context and get its values directly
+const { rollout, mergedStages } = provideRolloutViewContext();
 
 const isTableView = ref(false);
 const taskStatusFilter = ref<Task_Status[]>([]);

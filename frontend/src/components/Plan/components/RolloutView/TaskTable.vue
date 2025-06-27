@@ -25,6 +25,7 @@ import { InstanceV1EngineIcon } from "@/components/v2";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
 import type { Task, Rollout, Task_Status } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
+import { useRolloutViewContext } from "./context";
 
 const props = defineProps<{
   rollout: Rollout;
@@ -34,9 +35,10 @@ const props = defineProps<{
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
+const { mergedStages } = useRolloutViewContext();
 
 const taskList = computed(() => {
-  const allTasks = flatten(props.rollout.stages.map((stage) => stage.tasks));
+  const allTasks = flatten(mergedStages.value.map((stage) => stage.tasks));
   if (props.taskStatusFilter.length === 0) {
     return allTasks;
   }
@@ -45,7 +47,7 @@ const taskList = computed(() => {
   );
 });
 
-const stages = computed(() => props.rollout.stages);
+const stages = computed(() => mergedStages.value);
 
 const columnList = computed((): DataTableColumn<Task>[] => {
   return [

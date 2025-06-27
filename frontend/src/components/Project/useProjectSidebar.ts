@@ -4,9 +4,10 @@ import {
   Users,
   Settings,
   PencilRuler,
-  SearchCodeIcon,
   DownloadIcon,
   PackageIcon,
+  LayoutList,
+  PlayCircle,
 } from "lucide-vue-next";
 import { computed, h, unref } from "vue";
 import type { RouteLocationNormalizedLoaded } from "vue-router";
@@ -28,6 +29,7 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_PLANS,
+  PROJECT_V1_ROUTE_ROLLOUTS,
 } from "@/router/dashboard/projectV1";
 import { useAppFeature } from "@/store";
 import type { ComposedProject, MaybeRef } from "@/types";
@@ -128,10 +130,18 @@ export const useProjectSidebar = (
           databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
-        // TODO(claude): rename title to "Plans".
-        title: t("review-center.self"),
-        icon: () => h(SearchCodeIcon),
+        title: t("plan.plans"),
+        icon: () => h(LayoutList),
         path: PROJECT_V1_ROUTE_PLANS,
+        type: "div",
+        hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+      },
+      {
+        title: t("rollout.rollouts"),
+        path: PROJECT_V1_ROUTE_ROLLOUTS,
+        icon: () => h(PlayCircle),
         type: "div",
         hide:
           isDefaultProject.value ||

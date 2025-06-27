@@ -13,13 +13,22 @@
 
 <script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable } from "naive-ui";
+import { NDataTable, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
+import TaskStatus from "@/components/Rollout/RolloutDetail/Panels/kits/TaskStatus.vue";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { getTimeForPbTimestamp, type ComposedRollout } from "@/types";
-import { extractIssueUID, humanizeTs } from "@/utils";
+import { Task_Status as TaskStatusEnum } from "@/types/proto/v1/rollout_service";
+import type { Task_Status } from "@/types/proto/v1/rollout_service";
+import {
+  extractPlanUID,
+  extractProjectResourceName,
+  humanizeTs,
+  stringifyTaskStatus,
+} from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -38,21 +47,38 @@ const props = withDefaults(
 const { t } = useI18n();
 const router = useRouter();
 
+const TASK_STATUS_FILTERS: Task_Status[] = [
+  TaskStatusEnum.NOT_STARTED,
+  TaskStatusEnum.PENDING,
+  TaskStatusEnum.RUNNING,
+  TaskStatusEnum.DONE,
+  TaskStatusEnum.FAILED,
+  TaskStatusEnum.CANCELED,
+  TaskStatusEnum.SKIPPED,
+];
+
+const getTaskCount = (rollout: ComposedRollout, status: Task_Status) => {
+  const allTasks = rollout.stages.flatMap((stage) => stage.tasks);
+  return allTasks.filter((task) => task.status === status).length;
+};
+
 const columnList = computed(
   (): (DataTableColumn<ComposedRollout> & { hide?: boolean })[] => {
     const columns: (DataTableColumn<ComposedRollout> & { hide?: boolean })[] = [
       {
-        key: "issue",
-        title: t("common.issue"),
+        key: "plan",
+        title: t("plan.self"),
         width: 96,
         render: (rollout) => {
-          const uid = extractIssueUID(rollout.issue);
-          if (!uid) return "-";
-
+          const uid = extractPlanUID(rollout.plan);
           return (
             <RouterLink
               to={{
-                path: `/${rollout.issue}`,
+                name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+                params: {
+                  projectId: extractProjectResourceName(rollout.plan),
+                  planId: uid,
+                },
               }}
               custom={true}
             >
@@ -72,13 +98,34 @@ const columnList = computed(
         },
       },
       {
-        key: "title",
-        title: t("common.title"),
+        key: "taskStatus",
+        title: t("common.tasks"),
         render: (rollout) => {
           return (
-            <p class="inline-flex w-full">
-              <span class="shrink truncate">{rollout.title}</span>
-            </p>
+            <div class="flex flex-row gap-1 items-center">
+              {TASK_STATUS_FILTERS.map((status) => {
+                const count = getTaskCount(rollout, status);
+                if (count === 0) return null;
+
+                return (
+                  <NTag key={status} round>
+                    {{
+                      avatar: () => <TaskStatus status={status} size="small" />,
+                      default: () => (
+                        <div class="flex flex-row items-center gap-1">
+                          <span class="select-none text-sm">
+                            {stringifyTaskStatus(status)}
+                          </span>
+                          <span class="select-none text-sm font-medium">
+                            {count}
+                          </span>
+                        </div>
+                      ),
+                    }}
+                  </NTag>
+                );
+              })}
+            </div>
           );
         },
       },

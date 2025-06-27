@@ -79,22 +79,38 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { ErrorList } from "@/components/Plan/components/common";
-import { planCheckRunListForSpec, usePlanContext } from "@/components/Plan/logic";
+import {
+  planCheckRunListForSpec,
+  usePlanContext,
+} from "@/components/Plan/logic";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
-import { issueServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useCurrentUserV1, usePolicyV1Store } from "@/store";
+import {
+  issueServiceClientConnect,
+  rolloutServiceClientConnect,
+  planServiceClientConnect,
+} from "@/grpcweb";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  useCurrentProjectV1,
+  useCurrentUserV1,
+  usePolicyV1Store,
+} from "@/store";
 import { emptyIssue } from "@/types";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import {
-  extractIssueUID,
   extractProjectResourceName,
   hasProjectPermissionV2,
+  extractPlanUID,
 } from "@/utils";
-import { convertNewIssueToOld, convertOldIssueToNew } from "@/utils/v1/issue-conversions";
+import {
+  convertNewIssueToOld,
+  convertOldIssueToNew,
+} from "@/utils/v1/issue-conversions";
 
 type IssueCreationAction = "CREATE";
 
@@ -118,7 +134,7 @@ const state = reactive<LocalState>({
 const { project } = useCurrentProjectV1();
 const currentUser = useCurrentUserV1();
 const policyV1Store = usePolicyV1Store();
-const { plan, planCheckRunList } = usePlanContext();
+const { plan, planCheckRunList, events } = usePlanContext();
 const comment = ref("");
 const restrictIssueCreationForSqlReviewPolicy = ref(false);
 
@@ -222,19 +238,46 @@ const doCreateIssue = async () => {
       plan: plan.value.name,
     };
     const newIssue = convertOldIssueToNew(issueToCreate);
-    const request = create(CreateIssueRequestSchema, {
+    const issueRequest = create(CreateIssueRequestSchema, {
       parent: project.value.name,
       issue: newIssue,
     });
-    const newCreatedIssue = await issueServiceClientConnect.createIssue(request);
-    const createdIssue = convertNewIssueToOld(newCreatedIssue);
+    const newCreatedIssue =
+      await issueServiceClientConnect.createIssue(issueRequest);
+    convertNewIssueToOld(newCreatedIssue);
+
+    // Then create the rollout from the plan
+    const rolloutRequest = create(CreateRolloutRequestSchema, {
+      parent: project.value.name,
+      rollout: {
+        title: plan.value.title,
+        plan: plan.value.name,
+      },
+    });
+    const createdRollout = await rolloutServiceClientConnect.createRollout(rolloutRequest);
+
+    // Update the plan to include the rollout reference
+    const updatePlanRequest = create(UpdatePlanRequestSchema, {
+      plan: {
+        name: plan.value.name,
+        rollout: createdRollout.name,
+      },
+      updateMask: {
+        paths: ["rollout"],
+      },
+    });
+    await planServiceClientConnect.updatePlan(updatePlanRequest);
+
+    // Emit status changed to refresh the UI
+    events.emit("status-changed", { eager: true });
 
     nextTick(() => {
+      // Stay on the plan page to see the rollout actions
       router.push({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
           projectId: extractProjectResourceName(plan.value.name),
-          issueId: extractIssueUID(createdIssue.name),
+          planId: extractPlanUID(plan.value.name),
         },
       });
     });

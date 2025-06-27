@@ -1,21 +1,27 @@
 import { create } from "@bufbuild/protobuf";
 import { computed, watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
-import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
+import {
+  issueServiceClientConnect,
+  planServiceClientConnect,
+  rolloutServiceClientConnect,
+} from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
 import { useIssueCommentStore } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { ListPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { convertNewPlanCheckRunToOld } from "@/utils/v1/plan-conversions";
 import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";
+import { convertNewRolloutToOld } from "@/utils/v1/rollout-conversions";
 import { usePlanContext } from "./context";
 
 export const usePollPlan = () => {
   const { project } = useCurrentProjectV1();
-  const { isCreating, plan, planCheckRunList, issue, events } =
+  const { isCreating, plan, planCheckRunList, issue, rollout, events } =
     usePlanContext();
   const planStore = usePlanStore();
   const issueCommentStore = useIssueCommentStore();
@@ -43,6 +49,19 @@ export const usePollPlan = () => {
       planCheckRunList.value = response.planCheckRuns.map(
         convertNewPlanCheckRunToOld
       );
+    }
+
+    // Refresh rollout if it exists
+    if (updatedPlan.rollout && rollout && hasProjectPermissionV2(project.value, "bb.rollouts.get")) {
+      try {
+        const rolloutRequest = create(GetRolloutRequestSchema, {
+          name: updatedPlan.rollout,
+        });
+        const newRollout = await rolloutServiceClientConnect.getRollout(rolloutRequest);
+        rollout.value = convertNewRolloutToOld(newRollout);
+      } catch {
+        // Rollout might not exist or we don't have permission
+      }
     }
   };
 
