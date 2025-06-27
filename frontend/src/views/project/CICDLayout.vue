@@ -14,6 +14,7 @@
             :key="tab"
             :name="tab"
             :tab="tabRender(tab)"
+            @click="handleTabChange(tab)"
           />
 
           <!-- Suffix slot for Specifications tab -->
@@ -60,6 +61,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
   extractIssueUID,
@@ -139,7 +141,12 @@ const tabKey = computed(() => {
     return TabKey.Checks;
   } else if (routeName === PROJECT_V1_ROUTE_ISSUE_DETAIL_V1) {
     return TabKey.Review;
-  } else if (routeName === PROJECT_V1_ROUTE_ROLLOUT_DETAIL) {
+  } else if (
+    [
+      PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+      PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+    ].includes(routeName)
+  ) {
     return TabKey.Rollout;
   }
   // Fallback to Overview if no specific tab is matched.

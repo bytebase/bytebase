@@ -1097,9 +1097,7 @@
       "configuration-has-issues": "La configuración tiene {count} problemas | La configuración tiene {count} problemas"
     },
     "checks": {
-      "self": "Cheques",
-      "no-checks": "No hay resultados de verificación disponibles",
-      "click-to-run-checks": "Haga clic en \"Ejecutar comprobaciones\" para validar esta especificación"
+      "self": "Cheques"
     }
   },
   "rollout": {

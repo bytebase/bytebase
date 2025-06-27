@@ -25,7 +25,7 @@
             issueComment.type === IssueCommentType.USER_COMMENT
           "
         >
-          <span>({{ $t("common.edited") }}</span>
+          <span class="opacity-80">({{ $t("common.edited") }}</span>
           <HumanizeTs
             :ts="getTimeForPbTimestamp(issueComment.updateTime, 0) / 1000"
             class="ml-1"

@@ -3,7 +3,6 @@
     <div class="flex items-center justify-between">
       <h3 class="text-base font-medium">
         {{ $t("common.tasks") }}
-        <span>({{ totalTaskCount }})</span>
       </h3>
     </div>
     <div class="flex flex-row gap-1 items-center">
@@ -27,7 +26,14 @@
           <template #avatar>
             <TaskStatus :status="status" size="small" />
           </template>
-          <span class="select-none text-base">{{ getTaskCount(status) }}</span>
+          <div class="flex flex-row items-center gap-2">
+            <span class="select-none text-base">{{
+              stringifyTaskStatus(status)
+            }}</span>
+            <span class="select-none text-base font-medium">{{
+              getTaskCount(status)
+            }}</span>
+          </div>
         </NTag>
       </template>
     </div>
@@ -41,6 +47,7 @@ import { computed } from "vue";
 import TaskStatus from "@/components/Rollout/RolloutDetail/Panels/kits/TaskStatus.vue";
 import type { Rollout, Task_Status } from "@/types/proto/v1/rollout_service";
 import { Task_Status as TaskStatusEnum } from "@/types/proto/v1/rollout_service";
+import { stringifyTaskStatus } from "@/utils";
 import { useRolloutViewContext } from "./context";
 
 defineProps<{
@@ -55,20 +62,18 @@ const emit = defineEmits<{
 const { mergedStages } = useRolloutViewContext();
 
 const TASK_STATUS_FILTERS: Task_Status[] = [
-  TaskStatusEnum.NOT_STARTED,
-  TaskStatusEnum.PENDING,
-  TaskStatusEnum.RUNNING,
   TaskStatusEnum.DONE,
+  TaskStatusEnum.RUNNING,
+  TaskStatusEnum.PENDING,
   TaskStatusEnum.FAILED,
   TaskStatusEnum.CANCELED,
+  TaskStatusEnum.NOT_STARTED,
   TaskStatusEnum.SKIPPED,
 ];
 
 const allTasks = computed(() => {
   return flatten(mergedStages.value.map((stage) => stage.tasks));
 });
-
-const totalTaskCount = computed(() => allTasks.value.length);
 
 const getTaskCount = (status: Task_Status) => {
   return allTasks.value.filter((task) => task.status === status).length;

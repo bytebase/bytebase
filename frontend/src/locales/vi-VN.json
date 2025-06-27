@@ -1097,9 +1097,7 @@
       "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}"
     },
     "checks": {
-      "self": "Kiểm tra",
-      "no-checks": "Không có kết quả kiểm tra nào có sẵn",
-      "click-to-run-checks": "Nhấp vào \"Chạy kiểm tra\" để xác thực thông số kỹ thuật này"
+      "self": "Kiểm tra"
     }
   },
   "rollout": {
