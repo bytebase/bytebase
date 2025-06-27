@@ -113,10 +113,10 @@ const columnList = computed(
                       avatar: () => <TaskStatus status={status} size="small" />,
                       default: () => (
                         <div class="flex flex-row items-center gap-1">
-                          <span class="select-none text-xs">
+                          <span class="select-none text-sm">
                             {stringifyTaskStatus(status)}
                           </span>
-                          <span class="select-none text-xs font-medium">
+                          <span class="select-none text-sm font-medium">
                             {count}
                           </span>
                         </div>
