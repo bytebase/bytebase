@@ -97,14 +97,13 @@ const cicdRoutes: RouteRecordRaw[] = [
               requiredPermissionList: () => ["bb.rollouts.get"],
             },
           },
-          // TODO(steven): Add more children routes for rollout detail.
-          // {
-          //   path: "stages/:stageId/tasks/:taskId",
-          //   name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
-          //   component: () =>
-          //     import("@/components/Rollout/RolloutDetail/TaskDetail/"),
-          //   props: true,
-          // },
+          {
+            path: "stages/:stageId/tasks/:taskId",
+            name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+            component: () =>
+              import("@/components/Plan/components/RolloutView/TaskView.vue"),
+            props: true,
+          },
         ],
       },
     ],

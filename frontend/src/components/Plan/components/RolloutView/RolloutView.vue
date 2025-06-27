@@ -29,7 +29,7 @@
 
     <!-- Content area -->
     <div class="flex-1 overflow-hidden">
-      <StageView
+      <StagesView
         v-if="!isTableView"
         :merged-stages="mergedStages"
         :task-status-filter="taskStatusFilter"
@@ -48,10 +48,10 @@ import { ListIcon, Columns3Icon } from "lucide-vue-next";
 import { NButton, NButtonGroup } from "naive-ui";
 import { ref } from "vue";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { provideRolloutViewContext } from "./context";
-import StageView from "./StageView.vue";
+import StagesView from "./StagesView.vue";
 import TaskFilter from "./TaskFilter.vue";
 import TaskTable from "./TaskTable.vue";
+import { provideRolloutViewContext } from "./context";
 
 // Provide the context and get its values directly
 const { rollout, mergedStages } = provideRolloutViewContext();

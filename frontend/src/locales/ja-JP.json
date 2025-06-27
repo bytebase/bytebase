@@ -1097,9 +1097,7 @@
       "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります"
     },
     "checks": {
-      "self": "小切手",
-      "no-checks": "チェック結果はありません",
-      "click-to-run-checks": "この仕様を検証するには、「チェックを実行」をクリックしてください"
+      "self": "小切手"
     }
   },
   "rollout": {

@@ -1,6 +1,9 @@
 <template>
   <div class="w-full flex flex-col p-4 gap-4">
-    <IssueStatusSection :issue="issue" />
+    <IssueStatusSection
+      v-if="issue.approvalTemplates.length > 0"
+      :issue="issue"
+    />
 
     <ApprovalFlowSection :issue="issue" />
 
@@ -19,7 +22,7 @@
       <NInput
         v-model:value="issue.description"
         type="textarea"
-        placeholder="Add description..."
+        :placeholder="$t('issue.add-some-description')"
         :disabled="!allowChange"
         :autosize="false"
         :resizable="false"
