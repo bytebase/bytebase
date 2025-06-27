@@ -565,8 +565,14 @@
           "never-expires": "Không bao giờ hết hạn"
         },
         "maximum-sql-result": {
-          "self": "Kích thước kết quả SQL tối đa",
-          "description": "Giới hạn kích thước kết quả truy vấn SQL đầu ra."
+          "size": {
+            "self": "Kích thước kết quả SQL tối đa",
+            "description": "Giới hạn kích thước kết quả truy vấn SQL đầu ra."
+          },
+          "rows": {
+            "self": "Số lượng hàng kết quả SQL tối đa",
+            "description": "Giới hạn số hàng đầu ra trong kết quả truy vấn SQL, giá trị <= 0 nghĩa là không giới hạn."
+          }
         },
         "query-data-policy": {
           "timeout": {
@@ -843,8 +849,7 @@
           "title": "Người tạo",
           "description": "Tìm kiếm theo người tạo vấn đề"
         },
-        "subscriber": {
-        },
+        "subscriber": {},
         "approver": {
           "title": "Người phê duyệt",
           "description": "Tìm kiếm theo người phê duyệt vấn đề"

@@ -11304,14 +11304,6 @@ components:
         LogoutRequest:
             type: object
             properties: {}
-        MaximumSQLResultSizeSetting:
-            type: object
-            properties:
-                limit:
-                    type: string
-                    description: |-
-                        The limit is in bytes.
-                         The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
         OAuth2IdentityProviderConfig:
             type: object
             properties:
@@ -12690,6 +12682,20 @@ components:
             properties:
                 token:
                     type: string
+        SQLQueryRestrictionSetting:
+            type: object
+            properties:
+                maximumResultSize:
+                    type: string
+                    description: |-
+                        The size limit in bytes.
+                         The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+                maximumResultRows:
+                    type: integer
+                    description: |-
+                        The return rows limit.
+                         The default value is -1, means no limit.
+                    format: int32
         SQLReviewRule:
             type: object
             properties:
@@ -14196,8 +14202,6 @@ components:
                     $ref: '#/components/schemas/DataClassificationSetting'
                 semanticTypeSettingValue:
                     $ref: '#/components/schemas/SemanticTypeSetting'
-                maximumSqlResultSizeSetting:
-                    $ref: '#/components/schemas/MaximumSQLResultSizeSetting'
                 scimSetting:
                     $ref: '#/components/schemas/SCIMSetting'
                 passwordRestrictionSetting:
@@ -14206,6 +14210,8 @@ components:
                     $ref: '#/components/schemas/AISetting'
                 environmentSetting:
                     $ref: '#/components/schemas/EnvironmentSetting'
+                sqlQueryRestrictionSetting:
+                    $ref: '#/components/schemas/SQLQueryRestrictionSetting'
             description: The data in setting value.
         Webhook:
             required:

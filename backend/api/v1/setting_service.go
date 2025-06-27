@@ -448,14 +448,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
 	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
-		maximumSQLResultSizeSetting := new(storepb.MaximumSQLResultSizeSetting)
-		if err := convertProtoToProto(request.Msg.Setting.Value.GetMaximumSqlResultSizeSetting(), maximumSQLResultSizeSetting); err != nil {
+		sqlQueryRestrictionSetting := new(storepb.SQLQueryRestrictionSetting)
+		if err := convertProtoToProto(request.Msg.Setting.Value.GetSqlQueryRestrictionSetting(), sqlQueryRestrictionSetting); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
 		}
-		if maximumSQLResultSizeSetting.Limit <= 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid maximum sql result size"))
-		}
-		bytes, err := protojson.Marshal(maximumSQLResultSizeSetting)
+		bytes, err := protojson.Marshal(sqlQueryRestrictionSetting)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
@@ -712,18 +709,18 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 			},
 		}, nil
 	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
-		v1Value := new(v1pb.MaximumSQLResultSizeSetting)
+		v1Value := new(v1pb.SQLQueryRestrictionSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
-		if v1Value.GetLimit() <= 0 {
-			v1Value.Limit = common.DefaultMaximumSQLResultSize
+		if v1Value.MaximumResultSize <= 0 {
+			v1Value.MaximumResultSize = common.DefaultMaximumSQLResultSize
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
-				Value: &v1pb.Value_MaximumSqlResultSizeSetting{
-					MaximumSqlResultSizeSetting: v1Value,
+				Value: &v1pb.Value_SqlQueryRestrictionSetting{
+					SqlQueryRestrictionSetting: v1Value,
 				},
 			},
 		}, nil

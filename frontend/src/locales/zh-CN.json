@@ -565,8 +565,14 @@
           "never-expires": "永不过期"
         },
         "maximum-sql-result": {
-          "self": "SQL 输出大小限制",
-          "description": "限制输出 SQL 查询结果的大小。"
+          "size": {
+            "self": "最大 SQL 结果大小",
+            "description": "限制输出 SQL 查询结果的大小。"
+          },
+          "rows": {
+            "self": "SQL结果行数上限",
+            "description": "限制SQL查询结果的输出行数，值 <=0 表示不限制。"
+          }
         },
         "query-data-policy": {
           "timeout": {
@@ -843,8 +849,7 @@
           "title": "创建人",
           "description": "根据工单创建人搜索"
         },
-        "subscriber": {
-        },
+        "subscriber": {},
         "approver": {
           "title": "审批人",
           "description": "根据工单审批人搜索"

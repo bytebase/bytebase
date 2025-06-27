@@ -565,8 +565,14 @@
           "never-expires": "期限切れなし"
         },
         "maximum-sql-result": {
-          "self": "SQL出力サイズ制限",
-          "description": "出力される SQL クエリ結果のサイズを制限します。"
+          "size": {
+            "self": "最大SQL結果サイズ",
+            "description": "出力される SQL クエリ結果のサイズを制限します。"
+          },
+          "rows": {
+            "self": "最大SQL結果行数",
+            "description": "SQL クエリ結果の出力行を制限します。値 <= 0 は制限がないことを意味します。"
+          }
         },
         "query-data-policy": {
           "timeout": {
@@ -843,8 +849,7 @@
           "title": "作成者",
           "description": "イシュー作成者で検索"
         },
-        "subscriber": {
-        },
+        "subscriber": {},
         "approver": {
           "title": "承認者",
           "description": "イシューの承認者で検索"
