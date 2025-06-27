@@ -752,19 +752,20 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 
 				pipelineEnvironmentDoneConfirmed[pipelineEnvironment{pipelineUID: task.PipelineID, environment: task.Environment}] = true
 
-				// Get all tasks to determine environments and their order
-				allTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &task.PipelineID})
+				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
 				if err != nil {
-					return errors.Wrapf(err, "failed to list tasks")
+					return errors.Wrapf(err, "failed to get plan")
 				}
 
-				// Group tasks by environment to determine order
-				environmentMap := make(map[string]bool)
+				// Get environment order from plan deployment config or global settings
 				var environmentOrder []string
-				for _, t := range allTasks {
-					if !environmentMap[t.Environment] {
-						environmentMap[t.Environment] = true
-						environmentOrder = append(environmentOrder, t.Environment)
+				if plan != nil && len(plan.Config.GetDeployment().GetEnvironments()) > 0 {
+					environmentOrder = plan.Config.Deployment.GetEnvironments()
+				} else {
+					// Use global environment setting order
+					environmentOrder, err = getAllEnvironmentIDs(ctx, s.store)
+					if err != nil {
+						return errors.Wrapf(err, "failed to list environments")
 					}
 				}
 
@@ -982,4 +983,17 @@ func isSequentialTask(taskType storepb.Task_Type) bool {
 	default:
 		return false
 	}
+}
+
+// getAllEnvironmentIDs returns all environment IDs from the store.
+func getAllEnvironmentIDs(ctx context.Context, s *store.Store) ([]string, error) {
+	environments, err := s.GetEnvironmentSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list environments")
+	}
+	var environmentIDs []string
+	for _, e := range environments.GetEnvironments() {
+		environmentIDs = append(environmentIDs, e.Id)
+	}
+	return environmentIDs, nil
 }
