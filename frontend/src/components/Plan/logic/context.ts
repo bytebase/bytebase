@@ -70,4 +70,5 @@ export const providePlanContext = (
     };
   }
   provide(KEY, context as PlanContext);
+  return context as PlanContext;
 };

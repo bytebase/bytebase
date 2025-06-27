@@ -1,3 +1,4 @@
+import { head, includes } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { extractUserId, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
@@ -9,7 +10,6 @@ import {
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import { extractDatabaseGroupName, hasProjectPermissionV2 } from "@/utils";
-import { head, includes } from "lodash-es";
 import { projectOfIssue, specForTask } from ".";
 
 export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
@@ -94,6 +94,8 @@ export const semanticTaskType = (type: Task_Type) => {
       return "DDL";
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
       return "gh-ost";
+    case Task_Type.DATABASE_EXPORT:
+      return "Export";
   }
-  return "";
+  return type.toString();
 };
