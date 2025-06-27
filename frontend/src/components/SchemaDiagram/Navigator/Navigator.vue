@@ -6,7 +6,7 @@
     >
       <div class="p-1 space-y-2">
         <SchemaSelector
-          v-if="hasSchemaProperty(convertEngineToNew(database.instanceResource.engine))"
+          v-if="hasSchemaProperty(database.instanceResource.engine)"
           :schemas="databaseMetadata.schemas"
           v-model:value="selectedSchemaNames"
         />
@@ -42,7 +42,6 @@
 import { NInput } from "naive-ui";
 import { reactive } from "vue";
 import { hasSchemaProperty } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useSchemaDiagramContext } from "../common";
 import SchemaSelector from "./SchemaSelector.vue";
 import Tree from "./Tree.vue";

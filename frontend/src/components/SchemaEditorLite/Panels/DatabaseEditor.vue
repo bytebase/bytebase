@@ -132,7 +132,7 @@
     <DrawerContent :title="$t('schema-template.table-template.self')">
       <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
         <TableTemplates
-          :engine="convertEngineToNew(engine)"
+          :engine="engine"
           :readonly="true"
           @apply="handleApplyTemplate"
         />
@@ -147,20 +147,24 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToOld, convertEngineToNew } from "@/utils/v1/common-conversions";
-import {
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import type {
   TableMetadata as NewTableMetadata,
   ColumnMetadata as NewColumnMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { 
+  TableMetadataSchema,
+  ColumnMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { head, sumBy } from "lodash-es";
+import { create } from "@bufbuild/protobuf";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NSelect, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
@@ -191,7 +195,7 @@ const emit = defineEmits<{
 
 // Conversion function for TableMetadata at service boundaries
 const convertNewTableToOld = (newTable: NewTableMetadata): TableMetadata => {
-  return TableMetadata.fromPartial({
+  return create(TableMetadataSchema, {
     name: newTable.name,
     columns: newTable.columns.map(convertNewColumnToOld),
     engine: newTable.engine,
@@ -206,7 +210,7 @@ const convertNewTableToOld = (newTable: NewTableMetadata): TableMetadata => {
 
 // Conversion function for ColumnMetadata at service boundaries
 const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => {
-  return ColumnMetadata.fromPartial({
+  return create(ColumnMetadataSchema, {
     name: newColumn.name,
     position: newColumn.position,
     hasDefault: newColumn.hasDefault,
@@ -262,13 +266,13 @@ const selectedSchema = computed(() => {
   );
 });
 const shouldShowSchemaSelector = computed(() => {
-  return convertEngineToNew(engine.value) === Engine.POSTGRES;
+  return engine.value === Engine.POSTGRES;
 });
 
 const allowCreateTable = computed(() => {
   const schema = selectedSchema.value;
   if (!schema) return false;
-  if (convertEngineToNew(engine.value) === Engine.POSTGRES) {
+  if (engine.value === Engine.POSTGRES) {
     const status = getSchemaStatus(props.db, {
       schema,
     });
@@ -376,7 +380,7 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   if (!template.table) {
     return;
   }
-  if (convertEngineToOld(template.engine) !== engine.value) {
+  if (template.engine !== engine.value) {
     return;
   }
 

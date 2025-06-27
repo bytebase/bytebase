@@ -3,11 +3,11 @@
     class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2"
     data-label="bb-database-overview-description-list"
   >
-    <template v-if="instanceV1HasCollationAndCharacterSet(convertEngineToNew(databaseEngine))">
+    <template v-if="instanceV1HasCollationAndCharacterSet(databaseEngine)">
       <div class="col-span-1 col-start-1">
         <dt class="text-sm font-medium text-control-light">
           {{
-            convertEngineToNew(databaseEngine) === Engine.POSTGRES
+            databaseEngine === Engine.POSTGRES
               ? $t("db.encoding")
               : $t("db.character-set")
           }}
@@ -33,7 +33,7 @@
       </dt>
       <dd class="mt-1 text-sm text-main">
         <span>
-          {{ convertStateToNew(database.state) === State.ACTIVE ? "OK" : "NOT_FOUND" }}
+          {{ database.state === State.ACTIVE ? "OK" : "NOT_FOUND" }}
         </span>
       </dd>
     </div>
@@ -43,7 +43,7 @@
         {{ $t("database.last-successful-sync") }}
       </dt>
       <dd class="mt-1 text-sm text-main">
-        {{ humanizeDate(getDateForPbTimestamp(database.successfulSyncTime)) }}
+        {{ humanizeDate(database.successfulSyncTime ? new Date(Number(database.successfulSyncTime.seconds) * 1000) : undefined) }}
       </dd>
     </div>
   </dl>
@@ -52,10 +52,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
-import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew, convertStateToNew } from "@/utils/v1/common-conversions";
-import { instanceV1HasCollationAndCharacterSet } from "@/utils";
+import { instanceV1HasCollationAndCharacterSet, humanizeDate } from "@/utils";
 
 const props = defineProps<{
   database: ComposedDatabase;

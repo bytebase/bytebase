@@ -9,11 +9,8 @@ import {
   UpdateSecretRequestSchema,
   DeleteSecretRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import {
-  convertNewSecretToOld,
-  convertOldSecretToNew,
-} from "@/utils/v1/database-conversions";
-import type { Secret } from "@/types/proto/v1/database_service";
+// Removed conversion imports as part of Bold Migration Strategy
+import type { Secret } from "@/types/proto-es/v1/database_service_pb";
 import { secretNamePrefix } from "./common";
 
 export const useDatabaseSecretStore = defineStore("database-secret", () => {
@@ -33,7 +30,7 @@ export const useDatabaseSecretStore = defineStore("database-secret", () => {
         contextValues: createContextValues().set(ignoredCodesContextKey, [Code.NotFound, Code.PermissionDenied]),
       }
     );
-    const secrets = response.secrets.map((s) => convertNewSecretToOld(s));
+    const secrets = response.secrets; // Work directly with proto-es types
     secretMapByDatabase.set(parent, secrets);
     return secrets;
   };
@@ -44,14 +41,12 @@ export const useDatabaseSecretStore = defineStore("database-secret", () => {
     allowMissing: boolean
   ) => {
     const database = secret.name.split(secretNamePrefix)[0];
-    const newSecret = convertOldSecretToNew(secret);
     const request = create(UpdateSecretRequestSchema, {
-      secret: newSecret,
+      secret: secret, // Work directly with proto-es types
       updateMask: { paths: updateMask },
       allowMissing,
     });
-    const response = await databaseServiceClientConnect.updateSecret(request);
-    const updatedSecret = convertNewSecretToOld(response);
+    const updatedSecret = await databaseServiceClientConnect.updateSecret(request);
     if (secretMapByDatabase.has(database)) {
       const list = secretMapByDatabase.get(database) ?? [];
       const index = list.findIndex((s) => s.name === secret.name);

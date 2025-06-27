@@ -40,14 +40,17 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
-import {
-  ColumnMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import type {
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  ColumnMetadataSchema,
+  TableMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 import { upsertColumnPrimaryKey } from "../edit";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
+import { create } from "@bufbuild/protobuf";
 
 // Table name must start with a non-space character, end with a non-space character, and can contain space in between.
 const tableNameFieldRegexp = /^\S[\S ]*\S?$/;
@@ -108,7 +111,7 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (!props.table) {
-    const table = TableMetadata.fromPartial({
+    const table = create(TableMetadataSchema, {
       name: state.tableName,
       columns: [],
     });
@@ -122,13 +125,13 @@ const handleConfirmButtonClick = async () => {
       "created"
     );
 
-    const column = ColumnMetadata.fromPartial({});
+    const column = create(ColumnMetadataSchema, {});
     column.name = "id";
     const engine = props.database.instanceResource.engine;
-    column.type = engine ===  convertEngineToOld(Engine.POSTGRES) ? "integer" : "int";
+    column.type = engine === Engine.POSTGRES ? "integer" : "int";
     column.comment = "";
     table.columns.push(column);
-    upsertColumnPrimaryKey(convertEngineToNew(engine), table, column.name);
+    upsertColumnPrimaryKey(engine, table, column.name);
     markEditStatus(
       props.database,
       {

@@ -88,10 +88,11 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import { ForeignKeyMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { ForeignKeyMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { ForeignKeyMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
+import { create } from "@bufbuild/protobuf";
 import { useSchemaEditorContext } from "../context";
 import {
   removeColumnFromForeignKey,
@@ -196,7 +197,7 @@ const allowConfirm = computed(() => {
   return state.foreignKeyName !== "" && referencedColumn.value !== undefined;
 });
 const shouldShowSchemaSelector = computed(() => {
-  return hasSchemaProperty(convertEngineToNew(engine.value));
+  return hasSchemaProperty(engine.value);
 });
 const referenceTips = computed(() => {
   return shouldShowSchemaSelector.value
@@ -267,7 +268,7 @@ const handleConfirm = async () => {
     foreignKey.name = state.foreignKeyName;
     upsertColumnFromForeignKey(foreignKey, column.name, refed.column.name);
   } else {
-    const fk = ForeignKeyMetadata.fromPartial({
+    const fk = create(ForeignKeyMetadataSchema, {
       name: state.foreignKeyName,
       columns: [props.column.name],
       referencedSchema: refed.schema.name,

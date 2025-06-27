@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { InlineInput } from "@/components/v2";
-import { type TablePartitionMetadata } from "@/types/proto/v1/database_service";
+import { type TablePartitionMetadata } from "@/types/proto-es/v1/database_service_pb";
 
 defineProps<{
   readonly?: boolean;

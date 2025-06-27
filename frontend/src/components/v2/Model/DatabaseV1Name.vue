@@ -10,7 +10,7 @@
   >
     <HighlightLabelText :text="database.databaseName" :keyword="keyword" />
     <span
-      v-if="showNotFound && convertStateToNew(database.state) === State.DELETED"
+      v-if="showNotFound && database.state === State.DELETED"
       class="text-control-placeholder"
     >
       (NOT_FOUND)
@@ -24,7 +24,6 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToNew } from "@/utils/v1/common-conversions";
 import { autoDatabaseRoute } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 
@@ -46,7 +45,7 @@ const props = withDefaults(
 
 const router = useRouter();
 const shouldShowLink = computed(() => {
-  return props.link && convertStateToNew(props.database.state) === State.ACTIVE;
+  return props.link && props.database.state === State.ACTIVE;
 });
 
 const bindings = computed(() => {

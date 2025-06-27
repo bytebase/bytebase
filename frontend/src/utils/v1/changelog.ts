@@ -1,12 +1,12 @@
 import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
-import Long from "long";
+import { create } from "@bufbuild/protobuf";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { type AffectedTable, EmptyAffectedTable } from "@/types";
-import { Changelog_Type } from "@/types/proto/v1/database_service";
-import { Changelog } from "@/types/proto/v1/database_service";
+import { Changelog_Type, ChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
+import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
 export const extractChangelogUID = (name: string) => {
@@ -98,10 +98,10 @@ export const mockLatestChangelog = (
   database: ComposedDatabase,
   schema: string = ""
 ) => {
-  return Changelog.fromPartial({
+  return create(ChangelogSchema, {
     name: `${database.name}/changelogs/${UNKNOWN_ID}`,
     schema: schema,
-    schemaSize: Long.fromNumber(new TextEncoder().encode(schema).length),
+    schemaSize: BigInt(new TextEncoder().encode(schema).length),
   });
 };
 

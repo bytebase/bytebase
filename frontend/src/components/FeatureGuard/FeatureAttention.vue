@@ -28,7 +28,7 @@ import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature, PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { computed, reactive } from "vue";

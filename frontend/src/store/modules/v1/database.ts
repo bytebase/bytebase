@@ -16,12 +16,6 @@ import {
   GetDatabaseSchemaRequestSchema,
   DiffSchemaRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import {
-  convertNewDatabaseToOld,
-  convertOldDatabaseToNew,
-  convertNewDatabaseSchemaToOld,
-  convertNewDiffSchemaResponseToOld,
-} from "@/utils/v1/database-conversions";
 import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
   isValidEnvironmentName,
@@ -39,7 +33,7 @@ import type {
   UpdateDatabaseRequest,
   DiffSchemaRequest,
   BatchUpdateDatabasesRequest,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import {
   instanceNamePrefix,
@@ -185,7 +179,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       filter: getListDatabaseFilter(params.filter ?? {}),
     });
     const response = await databaseServiceClientConnect.listDatabases(request);
-    const databases = response.databases.map((db) => convertNewDatabaseToOld(db));
+    const databases = response.databases; // Work directly with proto-es types
     const { nextPageToken } = response;
     if (params.parent.startsWith(instanceNamePrefix)) {
       removeCacheByInstance(params.parent);
@@ -210,7 +204,22 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       if (database.instance !== instance.name) {
         continue;
       }
-      database.instanceResource = instance;
+      // Conversion boundary: Extract InstanceResource fields from ComposedInstance
+      database.instanceResource = {
+        name: instance.name,
+        uid: "",
+        state: instance.state,
+        title: instance.title,
+        engine: instance.engine,
+        externalLink: "",
+        maximumConnections: 0,
+        environment: instance.environment,
+        activation: true,
+        dataSources: [],
+        lastSyncTime: undefined,
+        syncInterval: undefined,
+        options: undefined,
+      } as any; // Cross-service boundary conversion
     }
   };
   const batchSyncDatabases = async (databases: string[]) => {
@@ -236,13 +245,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const request = create(GetDatabaseRequestSchema, {
       name,
     });
-    const newDatabase = await databaseServiceClientConnect.getDatabase(
+    const database = await databaseServiceClientConnect.getDatabase(
       request,
       {
         contextValues: createContextValues().set(silentContextKey, silent),
       }
     );
-    const database = convertNewDatabaseToOld(newDatabase);
 
     const [composed] = await upsertDatabaseMap([database]);
 
@@ -272,31 +280,20 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
         contextValues: createContextValues().set(silentContextKey, silent),
       }
     );
-    const databases = response.databases.map((db) => convertNewDatabaseToOld(db));
+    const databases = response.databases; // Work directly with proto-es types
     const composed = await upsertDatabaseMap(databases);
     return composed;
   };
   const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
-    // Convert each UpdateDatabaseRequest
-    const requests = params.requests.map((req) => {
-      if (!req.database) {
-        return {
-          database: undefined,
-          updateMask: req.updateMask ? { paths: req.updateMask } : undefined,
-        };
-      }
-      return {
-        database: convertOldDatabaseToNew(req.database),
-        updateMask: req.updateMask ? { paths: req.updateMask } : undefined,
-      };
-    });
-    
     const request = create(BatchUpdateDatabasesRequestSchema, {
       parent: params.parent,
-      requests,
+      requests: params.requests.map((req) => ({
+        database: req.database,
+        updateMask: req.updateMask,
+      })),
     });
     const response = await databaseServiceClientConnect.batchUpdateDatabases(request);
-    const updatedDatabases = response.databases.map((db) => convertNewDatabaseToOld(db));
+    const updatedDatabases = response.databases; // Work directly with proto-es types
     const composed = await upsertDatabaseMap(updatedDatabases);
     return composed;
   };
@@ -304,14 +301,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     if (!params.database) {
       throw new Error("Database is required for update");
     }
-    const database = convertOldDatabaseToNew(params.database);
     const request = create(UpdateDatabaseRequestSchema, {
       ...params,
-      database,
-      updateMask: params.updateMask ? { paths: params.updateMask } : undefined,
+      database: params.database,
+      updateMask: params.updateMask,
     });
-    const newDatabase = await databaseServiceClientConnect.updateDatabase(request);
-    const updated = convertNewDatabaseToOld(newDatabase);
+    const updated = await databaseServiceClientConnect.updateDatabase(request);
     const [composed] = await upsertDatabaseMap([updated]);
     return composed;
   };
@@ -320,14 +315,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       name: `${database}/schema`,
       sdlFormat,
     });
-    const newSchema = await databaseServiceClientConnect.getDatabaseSchema(request);
-    const schema = convertNewDatabaseSchemaToOld(newSchema);
+    const schema = await databaseServiceClientConnect.getDatabaseSchema(request);
     return schema;
   };
   const diffSchema = async (params: DiffSchemaRequest) => {
     const request = create(DiffSchemaRequestSchema, params);
-    const newResp = await databaseServiceClientConnect.diffSchema(request);
-    const resp = convertNewDiffSchemaResponseToOld(newResp);
+    const resp = await databaseServiceClientConnect.diffSchema(request);
     return resp;
   };
 

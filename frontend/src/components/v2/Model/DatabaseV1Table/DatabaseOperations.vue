@@ -136,9 +136,12 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
-  Database,
-  UpdateDatabaseRequest,
-} from "@/types/proto/v1/database_service";
+  DatabaseSchema$,
+  UpdateDatabaseRequestSchema,
+  BatchUpdateDatabasesRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema as FieldMaskProtoEsSchema } from "@bufbuild/protobuf/wkt";
 import {
   allowUsingSchemaEditor,
   extractProjectResourceName,
@@ -392,18 +395,18 @@ const unAssignDatabases = async () => {
   }
   try {
     state.loading = true;
-    await databaseStore.batchUpdateDatabases({
+    await databaseStore.batchUpdateDatabases(create(BatchUpdateDatabasesRequestSchema, {
       parent: "-",
       requests: assignedDatabases.value.map((database) => {
-        return UpdateDatabaseRequest.fromPartial({
-          database: {
+        return create(UpdateDatabaseRequestSchema, {
+          database: create(DatabaseSchema$, {
             name: database.name,
             project: DEFAULT_PROJECT_NAME,
-          },
-          updateMask: ["project"],
+          }),
+          updateMask: create(FieldMaskProtoEsSchema, { paths: ["project"] }),
         });
       }),
-    });
+    }));
     emit("refresh");
     pushNotification({
       module: "bytebase",
@@ -606,14 +609,14 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
   const updatedDatabases = await Promise.all(
     props.databases.map(async (database, i) => {
       const label = labelsList[i];
-      const patch = {
-        ...Database.fromPartial(database),
+      const patch = create(DatabaseSchema$, {
+        ...database,
         labels: label,
-      };
-      return await databaseStore.updateDatabase({
-        database: patch,
-        updateMask: ["labels"],
       });
+      return await databaseStore.updateDatabase(create(UpdateDatabaseRequestSchema, {
+        database: patch,
+        updateMask: create(FieldMaskProtoEsSchema, { paths: ["labels"] }),
+      }));
     })
   );
   emit("update", updatedDatabases);
@@ -626,18 +629,18 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
 };
 
 const onEnvironmentUpdate = async (environment: string) => {
-  const updatedDatabases = await databaseStore.batchUpdateDatabases({
+  const updatedDatabases = await databaseStore.batchUpdateDatabases(create(BatchUpdateDatabasesRequestSchema, {
     parent: "-",
     requests: props.databases.map((database) => {
-      return UpdateDatabaseRequest.fromPartial({
-        database: {
+      return create(UpdateDatabaseRequestSchema, {
+        database: create(DatabaseSchema$, {
           name: database.name,
           environment: environment,
-        },
-        updateMask: ["environment"],
+        }),
+        updateMask: create(FieldMaskProtoEsSchema, { paths: ["environment"] }),
       });
     }),
-  });
+  }));
   emit("update", updatedDatabases);
 
   pushNotification({

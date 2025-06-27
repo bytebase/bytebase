@@ -1,5 +1,5 @@
 import type { Engine } from "@/types/proto-es/v1/common_pb";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { engineNameV1 } from "@/utils";
 
 export const databaseMetadataToText = (

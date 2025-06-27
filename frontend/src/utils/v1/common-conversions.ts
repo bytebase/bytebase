@@ -15,6 +15,16 @@ import {
   engineFromJSON as oldEngineFromJSON,
 } from "@/types/proto/v1/common";
 
+import {
+  Duration as OldDuration,
+} from "@/types/proto/google/protobuf/duration"
+
+import {
+  DurationSchema as NewDurationSchema,
+  type Duration as NewDuration,
+} from "@bufbuild/protobuf/wkt"
+
+
 // Proto-es imports
 import { 
   Engine as NewEngine,
@@ -22,6 +32,7 @@ import {
   ExportFormat as NewExportFormat,
   VCSType as NewVCSType,
 } from "@/types/proto-es/v1/common_pb";
+import { create } from "@bufbuild/protobuf";
 
 /**
  * Convert proto-es Engine to old proto Engine
@@ -412,3 +423,17 @@ export const convertScopeValueToEngine = (value: string | number): NewEngine => 
       return NewEngine.ENGINE_UNSPECIFIED;
   }
 };
+
+export const convertDurationToOld = (value: NewDuration): OldDuration => {
+  return OldDuration.fromPartial({
+    seconds: Number(value.seconds),
+    nanos: value.nanos,
+  })
+}
+
+export const convertDurationToNew = (value: OldDuration): NewDuration => {
+  return create(NewDurationSchema, {
+    seconds: value.seconds.toBigInt(),
+    nanos: value.nanos,
+  })
+}

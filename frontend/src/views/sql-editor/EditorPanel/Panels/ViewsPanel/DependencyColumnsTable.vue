@@ -29,14 +29,13 @@ import type {
   DependencyColumn,
   SchemaMetadata,
   ViewMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   getHighlightHTMLByRegExp,
   hasSchemaProperty,
   keyForDependencyColumn,
   useAutoHeightDataTable,
 } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 const props = defineProps<{
@@ -79,7 +78,7 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       className: "truncate",
-      hide: !hasSchemaProperty(convertEngineToNew(engine)),
+      hide: !hasSchemaProperty(engine),
       render: (dep) => {
         return h("span", {
           innerHTML: getHighlightHTMLByRegExp(dep.schema, props.keyword ?? ""),

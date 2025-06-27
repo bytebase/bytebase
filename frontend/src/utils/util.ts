@@ -6,7 +6,7 @@ import utc from "dayjs/plugin/utc";
 import { escapeRegExp, round } from "lodash-es";
 import semver from "semver";
 import { watchEffect, type Ref } from "vue";
-import type { Duration } from "@/types/proto/google/protobuf/duration";
+import type { Duration } from "@bufbuild/protobuf/wkt";
 
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);
@@ -41,7 +41,7 @@ export const humanizeDurationV1 = (
 ) => {
   if (!duration) return "-";
   const { seconds, nanos } = duration;
-  const total = seconds.toNumber() + nanos / 1e9;
+  const total = Number(seconds) + nanos / 1e9;
   if (brief && total <= 1) {
     return "Less than 1s";
   }

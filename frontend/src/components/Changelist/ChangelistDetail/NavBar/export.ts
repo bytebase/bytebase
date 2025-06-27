@@ -3,11 +3,11 @@ import type JSZip from "jszip";
 import { padStart } from "lodash-es";
 import { useChangelogStore, useSheetV1Store } from "@/store";
 import {
-  getDateForPbTimestamp,
+  getDateForPbTimestampProtoEs,
   type Changelist_Change_Source as ChangeSource,
 } from "@/types";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { ChangelogView } from "@/types/proto/v1/database_service";
+import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import {
   escapeFilename,
   getChangelistChangeSourceType,
@@ -35,14 +35,14 @@ const zipFileForChangelog = async (
   }
   const changelog = await useChangelogStore().getOrFetchChangelogByName(
     change.source,
-    ChangelogView.CHANGELOG_VIEW_FULL
+    ChangelogView.FULL
   );
   if (!changelog) {
     return;
   }
 
   const parts: string[] = [
-    dayjs(getDateForPbTimestamp(changelog.createTime)).format(
+    dayjs(getDateForPbTimestampProtoEs(changelog.createTime)).format(
       "YYYY-MM-DD HH:mm:ss"
     ),
   ];

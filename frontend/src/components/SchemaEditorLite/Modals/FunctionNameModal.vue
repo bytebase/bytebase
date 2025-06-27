@@ -39,9 +39,11 @@ import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
-import { FunctionMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { FunctionMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { FunctionMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
+import { create } from "@bufbuild/protobuf";
 
 // Function name must start with a non-space character, end with a non-space character.
 const functionNameFieldRegexp = /^\S\S*\S?$/;
@@ -95,7 +97,7 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (!props.func) {
-    const func = FunctionMetadata.fromPartial({
+    const func = create(FunctionMetadataSchema, {
       name: state.functionName,
       definition: [
         "CREATE FUNCTION `" + state.functionName + "`(...) RETURNS ...",

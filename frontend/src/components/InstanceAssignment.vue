@@ -90,7 +90,7 @@ import {
   useActuatorV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import { Instance } from "@/types/proto/v1/instance_service";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
 import { convertScopeValueToEngine } from "@/utils/v1/common-conversions";

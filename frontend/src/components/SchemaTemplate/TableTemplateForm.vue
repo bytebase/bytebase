@@ -114,11 +114,11 @@
             <TableColumnEditor
               :readonly="!!readonly"
               :show-foreign-key="false"
-              :db="editingForTableEditor.db"
-              :database="editingForTableEditor.databaseMetadata"
-              :schema="editingForTableEditor.schemaMetadata"
-              :table="editingForTableEditor.tableMetadata"
-              :engine="editingForTableEditor.engine"
+              :db="editing.db"
+              :database="editing.databaseMetadata"
+              :schema="editing.schemaMetadata"
+              :table="editing.tableMetadata"
+              :engine="editing.engine"
               :allow-change-primary-keys="true"
               :allow-reorder-columns="allowReorderColumns"
               :max-body-height="640"
@@ -200,7 +200,7 @@ import {
   ColumnMetadataSchema,
   type ColumnMetadata 
 } from "@/types/proto-es/v1/database_service_pb";
-import { type ColumnMetadata as OldColumnMetadata } from "@/types/proto/v1/database_service";
+import { type ColumnMetadata as OldColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   SchemaTemplateSettingSchema,
   Setting_SettingName,
@@ -211,15 +211,6 @@ import {
 import { create as createProto } from "@bufbuild/protobuf";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import {
-  convertNewDatabaseMetadataToOld,
-  convertNewSchemaMetadataToOld,
-  convertNewTableMetadataToOld,
-  convertOldTableMetadataToNew,
-  convertNewColumnMetadataToOld,
-  convertOldColumnMetadataToNew,
-} from "@/utils/v1/database-conversions";
-import {
-  convertNewDatabaseCatalogToOld,
   convertOldTableCatalogToNew,
 } from "@/utils/v1/database-catalog-conversions";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
@@ -256,24 +247,13 @@ const editing = computed(() => {
   return mockMetadataFromTableTemplate(props.template);
 });
 
-const editingForTableEditor = computed(() => {
-  const e = editing.value;
-  return {
-    db: e.db,
-    databaseMetadata: convertNewDatabaseMetadataToOld(e.databaseMetadata),
-    schemaMetadata: convertNewSchemaMetadataToOld(e.schemaMetadata),
-    tableMetadata: convertNewTableMetadataToOld(e.tableMetadata),
-    engine: e.engine,
-  };
-});
-
 const targets = computed(() => {
   const target: EditTarget = {
     database: editing.value.db,
-    metadata: convertNewDatabaseMetadataToOld(editing.value.databaseMetadata),
-    baselineMetadata: convertNewDatabaseMetadataToOld(editing.value.databaseMetadata),
-    catalog: convertNewDatabaseCatalogToOld(editing.value.databaseCatalog),
-    baselineCatalog: convertNewDatabaseCatalogToOld(editing.value.databaseCatalog),
+    metadata: editing.value.databaseMetadata,
+    baselineMetadata: editing.value.databaseMetadata,
+    catalog: editing.value.databaseCatalog,
+    baselineCatalog: editing.value.databaseCatalog,
   };
   return [target];
 });
@@ -328,10 +308,10 @@ const metadataForColumn = (column: ColumnMetadata) => {
     tableMetadata: table,
   } = editing.value;
   return {
-    database: convertNewDatabaseMetadataToOld(database),
-    schema: convertNewSchemaMetadataToOld(schema),
-    table: convertNewTableMetadataToOld(table),
-    column: convertNewColumnMetadataToOld(column),
+    database: database,
+    schema: schema,
+    table: table,
+    column: column,
   };
 };
 
@@ -431,27 +411,22 @@ const onColumnAdd = () => {
   context.queuePendingScrollToColumn({
     db,
     metadata: {
-      database: convertNewDatabaseMetadataToOld(database),
-      schema: convertNewSchemaMetadataToOld(schema),
-      table: convertNewTableMetadataToOld(table),
-      column: convertNewColumnMetadataToOld(column),
+      database: database,
+      schema: schema,
+      table: table,
+      column: column,
     },
   });
 };
 
-const handleDropColumn = (oldColumn: any) => {
-  const column = convertOldColumnMetadataToNew(oldColumn);
+const handleDropColumn = (column: ColumnMetadata) => {
   const { tableMetadata } = editing.value;
   pull(tableMetadata.columns, column);
   tableMetadata.columns = tableMetadata.columns.filter((col) => col !== column);
 
-  const oldTableMetadata = convertNewTableMetadataToOld(tableMetadata);
-  removeColumnPrimaryKey(oldTableMetadata, column.name);
-  removeColumnFromAllForeignKeys(oldTableMetadata, column.name);
+  removeColumnPrimaryKey(tableMetadata, column.name);
+  removeColumnFromAllForeignKeys(tableMetadata, column.name);
   // Convert back to update proto-es tableMetadata
-  const updatedTableMetadata = convertOldTableMetadataToNew(oldTableMetadata);
-  tableMetadata.indexes = updatedTableMetadata.indexes;
-  tableMetadata.foreignKeys = updatedTableMetadata.foreignKeys;
   context.removeColumnCatalog({
     database: editing.value.databaseCatalog.name,
     schema: editing.value.schemaCatalog.name,
@@ -460,25 +435,16 @@ const handleDropColumn = (oldColumn: any) => {
   });
 };
 
-const setColumnPrimaryKey = (oldColumn: any, isPrimaryKey: boolean) => {
-  const column = convertOldColumnMetadataToNew(oldColumn);
+const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
   if (isPrimaryKey) {
     column.nullable = false;
-    const oldTableMetadata = convertNewTableMetadataToOld(editing.value.tableMetadata);
     upsertColumnPrimaryKey(
       editing.value.engine,
-      oldTableMetadata,
+      editing.value.tableMetadata,
       column.name
     );
-    // Convert back to update proto-es tableMetadata
-    const updatedTableMetadata = convertOldTableMetadataToNew(oldTableMetadata);
-    editing.value.tableMetadata.indexes = updatedTableMetadata.indexes;
   } else {
-    const oldTableMetadata = convertNewTableMetadataToOld(editing.value.tableMetadata);
-    removeColumnPrimaryKey(oldTableMetadata, column.name);
-    // Convert back to update proto-es tableMetadata
-    const updatedTableMetadata = convertOldTableMetadataToNew(oldTableMetadata);
-    editing.value.tableMetadata.indexes = updatedTableMetadata.indexes;
+    removeColumnPrimaryKey(editing.value.tableMetadata, column.name);
   }
   markColumnStatus(column, "updated");
 };

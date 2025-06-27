@@ -29,7 +29,6 @@ import {
   type ComposedInstance,
 } from "@/types";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { supportedEngineV1List, getDefaultPagination } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
 import ResourceSelect from "./ResourceSelect.vue";
@@ -123,7 +122,7 @@ watch(
   }
 );
 
-const renderLabel = (instance: InstanceResource) => {
+const renderLabel = (instance: ComposedInstance) => {
   if (instance.name === UNKNOWN_INSTANCE_NAME) {
     return t("instance.all");
   }

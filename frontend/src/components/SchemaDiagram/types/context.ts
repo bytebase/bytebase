@@ -6,7 +6,7 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import type { EditStatus } from "./edit";
 import type { Geometry, Point, Rect } from "./geometry";
 import type { ForeignKey } from "./schema";

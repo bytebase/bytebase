@@ -159,6 +159,7 @@
 import { head } from "lodash-es";
 import { NEllipsis, NTabs, NTabPane } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { BBSpin } from "@/bbkit";
@@ -170,7 +171,7 @@ import {
   type ComposedProject,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
+import { DiffSchemaRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import SourceSchemaInfo from "./SourceSchemaInfo.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
@@ -327,16 +328,22 @@ watch(
       } else {
         // Use changelog name if source is from changelog, otherwise use schema string
         const diffRequest = props.changelogSourceSchema?.changelogName
-          ? {
+          ? create(DiffSchemaRequestSchema, {
               name: db.name,
-              changelog: props.changelogSourceSchema.changelogName,
+              target: {
+                case: "changelog",
+                value: props.changelogSourceSchema.changelogName,
+              },
               sdlFormat: false,
-            }
-          : {
+            })
+          : create(DiffSchemaRequestSchema, {
               name: db.name,
-              schema: props.sourceSchemaString,
+              target: {
+                case: "schema",
+                value: props.sourceSchemaString,
+              },
               sdlFormat: false,
-            };
+            });
         
         const diffResp = await databaseStore.diffSchema(diffRequest);
         const schemaDiff = diffResp.diff ?? "";
@@ -371,7 +378,7 @@ onMounted(async () => {
   if (isValidDatabaseName(targetDatabaseName)) {
     const database =
       await databaseStore.getOrFetchDatabaseByName(targetDatabaseName);
-    if (database && convertEngineToNew(database.instanceResource.engine) === props.sourceEngine) {
+    if (database && database.instanceResource.engine === props.sourceEngine) {
       state.selectedDatabaseNameList = [targetDatabaseName];
       state.selectedDatabaseName = targetDatabaseName;
     }

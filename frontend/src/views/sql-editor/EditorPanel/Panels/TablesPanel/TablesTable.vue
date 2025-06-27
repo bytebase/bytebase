@@ -27,8 +27,7 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   bytesToString,
   getHighlightHTMLByRegExp,
@@ -62,8 +61,8 @@ const emit = defineEmits<{
 
 const { viewState } = useCurrentTabViewStateContext();
 const { t } = useI18n();
-const instanceEngine = computed(() => {
-  return convertEngineToNew(props.db.instanceResource.engine);
+const instanceResource = computed(() => {
+  return props.db.instanceResource;
 });
 
 const filteredTables = computed(() => {
@@ -105,7 +104,7 @@ const columns = computed(() => {
     {
       key: "engine",
       title: t("schema-editor.database.engine"),
-      hide: !hasTableEngineProperty(instanceEngine.value),
+      hide: !hasTableEngineProperty(instanceResource.value),
       resizable: true,
       minWidth: 120,
       maxWidth: 180,
@@ -113,7 +112,7 @@ const columns = computed(() => {
     {
       key: "collation",
       title: t("schema-editor.database.collation"),
-      hide: !instanceV1HasCollationAndCharacterSet(instanceEngine.value),
+      hide: !instanceV1HasCollationAndCharacterSet(instanceResource.value),
       resizable: true,
       minWidth: 120,
       maxWidth: 180,
@@ -135,18 +134,18 @@ const columns = computed(() => {
       minWidth: 120,
       maxWidth: 180,
       render: (row) => {
-        return bytesToString(row.dataSize.toNumber());
+        return bytesToString(Number(row.dataSize));
       },
     },
     {
       key: "indexSize",
       title: t("database.index-size"),
-      hide: !hasIndexSizeProperty(instanceEngine.value),
+      hide: !hasIndexSizeProperty(instanceResource.value),
       resizable: true,
       minWidth: 120,
       maxWidth: 180,
       render: (row) => {
-        return bytesToString(row.indexSize.toNumber());
+        return bytesToString(Number(row.indexSize));
       },
     },
     {

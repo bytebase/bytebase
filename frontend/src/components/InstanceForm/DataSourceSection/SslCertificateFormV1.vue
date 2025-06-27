@@ -50,7 +50,7 @@ import { NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { DataSource } from "@/types/proto/v1/instance_service";
+import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 
 type WithSslOptions = Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey">>;
 

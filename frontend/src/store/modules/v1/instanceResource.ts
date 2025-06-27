@@ -1,7 +1,7 @@
 import { uniqBy } from "lodash-es";
 import { ref, unref, watchEffect, computed, type MaybeRef } from "vue";
 import { isValidInstanceName } from "@/types";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import { useDatabaseV1Store } from "./database";
 import { useInstanceV1Store } from "./instance";
 

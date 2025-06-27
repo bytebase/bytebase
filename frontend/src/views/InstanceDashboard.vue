@@ -94,7 +94,7 @@ import {
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

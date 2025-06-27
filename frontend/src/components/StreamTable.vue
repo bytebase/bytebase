@@ -16,11 +16,11 @@ import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import DefinitionView from "@/components/DefinitionView.vue";
 import type { ComposedDatabase } from "@/types";
-import type { StreamMetadata } from "@/types/proto/v1/database_service";
+import type { StreamMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   StreamMetadata_Mode,
   StreamMetadata_Type,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 
 const props = defineProps({
   database: {
@@ -40,18 +40,18 @@ const props = defineProps({
 const { t } = useI18n();
 
 const stringifyStreamType = (t: StreamMetadata_Type): string => {
-  if (t === StreamMetadata_Type.TYPE_DELTA) {
+  if (t === StreamMetadata_Type.DELTA) {
     return "Delta";
   }
   return "-";
 };
 
 const stringifyStreamMode = (mode: StreamMetadata_Mode): string => {
-  if (mode === StreamMetadata_Mode.MODE_APPEND_ONLY) {
+  if (mode === StreamMetadata_Mode.APPEND_ONLY) {
     return "Append only";
-  } else if (mode === StreamMetadata_Mode.MODE_INSERT_ONLY) {
+  } else if (mode === StreamMetadata_Mode.INSERT_ONLY) {
     return "Insert only";
-  } else if (mode === StreamMetadata_Mode.MODE_DEFAULT) {
+  } else if (mode === StreamMetadata_Mode.UNSPECIFIED) {
     return "default";
   }
   return "-";

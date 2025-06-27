@@ -31,7 +31,6 @@ import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useIssueContext } from "../../logic";
 import TaskRunLogTable from "./TaskRunLogTable";
 import TaskRunSession from "./TaskRunSession";
@@ -62,7 +61,7 @@ const sheet = computed(() =>
 
 const showTaskRunSessionTab = computed(() =>
   TASK_RUN_SESSION_SUPPORTED_ENGINES.includes(
-    convertEngineToNew(database.value.instanceResource.engine)
+    database.value.instanceResource.engine
   )
 );
 

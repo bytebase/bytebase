@@ -3,7 +3,7 @@ import type {
   Selection as MonacoSelection,
 } from "@/components/MonacoEditor";
 import { t } from "@/plugins/i18n";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
 

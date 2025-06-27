@@ -38,7 +38,6 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { hasSchemaProperty } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 defineOptions({
@@ -63,6 +62,6 @@ const schemaSelectOptions = computed(() => {
 });
 
 const showSchemaSelect = computed(() => {
-  return hasSchemaProperty(convertEngineToNew(instance.value.engine));
+  return hasSchemaProperty(instance.value.engine);
 });
 </script>

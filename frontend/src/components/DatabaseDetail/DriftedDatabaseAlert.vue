@@ -54,6 +54,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NAlert, NButton } from "naive-ui";
 import { reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -65,8 +66,12 @@ import {
   useChangelogStore,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { ChangelogView } from "@/types/proto/v1/database_service";
 import type { ComposedDatabase } from "@/types";
+import {
+  ChangelogView,
+  DatabaseSchema$,
+  UpdateDatabaseRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 
 interface LocalState {
   showSchemaDiffModal: boolean;
@@ -90,13 +95,15 @@ const latestChangelogSchema = ref("-- Loading latest changelog schema...");
 const currentDatabaseSchema = ref("-- Loading current database schema...");
 
 const updateDatabaseDrift = async () => {
-  await databaseStore.updateDatabase({
-    database: {
-      ...props.database,
-      drifted: false,
-    },
-    updateMask: ["drifted"],
-  });
+  await databaseStore.updateDatabase(
+    create(UpdateDatabaseRequestSchema, {
+      database: create(DatabaseSchema$, {
+        ...props.database,
+        drifted: false,
+      }),
+      updateMask: { paths: ["drifted"] },
+    })
+  );
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -109,7 +116,7 @@ const fetchLatestChangelogSchema = async () => {
     const changelogs = await changelogStore.getOrFetchChangelogListOfDatabase(
       props.database.name,
       1, // Only get the latest one
-      ChangelogView.CHANGELOG_VIEW_FULL
+      ChangelogView.FULL
     );
     if (changelogs.length > 0) {
       const latestChangelog = changelogs[0];
