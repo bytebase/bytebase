@@ -24,6 +24,18 @@ import {
 export const convertOldInstanceToNew = (oldInstance: OldInstance): NewInstance => {
   // Use toJSON to convert old proto to JSON, then fromJson to convert to proto-es
   const json = OldInstanceProto.toJSON(oldInstance) as any; // Type assertion needed due to proto type incompatibility
+  
+  // Fix Duration fields: proto-es expects string format, old proto outputs object
+  if (json.syncInterval && typeof json.syncInterval === 'object') {
+    const duration = json.syncInterval as { seconds?: string | number; nanos?: number };
+    if (!duration.seconds && !duration.nanos) {
+      delete json.syncInterval;
+    } else {
+      const seconds = Number(duration.seconds || 0) + (duration.nanos || 0) / 1e9;
+      json.syncInterval = `${seconds}s`;
+    }
+  }
+  
   return fromJson(InstanceSchema, json);
 };
 
