@@ -898,29 +898,32 @@ func (x *AppIMSetting) GetDingtalk() *AppIMSetting_DingTalk {
 	return nil
 }
 
-type MaximumSQLResultSizeSetting struct {
+type SQLQueryRestrictionSetting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The limit is in bytes.
+	// The size limit in bytes.
 	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-	Limit         int64 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	MaximumResultSize int64 `protobuf:"varint,1,opt,name=maximum_result_size,json=maximumResultSize,proto3" json:"maximum_result_size,omitempty"`
+	// The return rows limit.
+	// The default value is -1, means no limit.
+	MaximumResultRows int32 `protobuf:"varint,2,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
-func (x *MaximumSQLResultSizeSetting) Reset() {
-	*x = MaximumSQLResultSizeSetting{}
+func (x *SQLQueryRestrictionSetting) Reset() {
+	*x = SQLQueryRestrictionSetting{}
 	mi := &file_store_setting_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MaximumSQLResultSizeSetting) String() string {
+func (x *SQLQueryRestrictionSetting) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MaximumSQLResultSizeSetting) ProtoMessage() {}
+func (*SQLQueryRestrictionSetting) ProtoMessage() {}
 
-func (x *MaximumSQLResultSizeSetting) ProtoReflect() protoreflect.Message {
+func (x *SQLQueryRestrictionSetting) ProtoReflect() protoreflect.Message {
 	mi := &file_store_setting_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -932,14 +935,21 @@ func (x *MaximumSQLResultSizeSetting) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MaximumSQLResultSizeSetting.ProtoReflect.Descriptor instead.
-func (*MaximumSQLResultSizeSetting) Descriptor() ([]byte, []int) {
+// Deprecated: Use SQLQueryRestrictionSetting.ProtoReflect.Descriptor instead.
+func (*SQLQueryRestrictionSetting) Descriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *MaximumSQLResultSizeSetting) GetLimit() int64 {
+func (x *SQLQueryRestrictionSetting) GetMaximumResultSize() int64 {
 	if x != nil {
-		return x.Limit
+		return x.MaximumResultSize
+	}
+	return 0
+}
+
+func (x *SQLQueryRestrictionSetting) GetMaximumResultRows() int32 {
+	if x != nil {
+		return x.MaximumResultRows
 	}
 	return 0
 }
@@ -2562,9 +2572,10 @@ const file_store_setting_proto_rawDesc = "" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
 	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12\x1d\n" +
 	"\n" +
-	"robot_code\x18\x04 \x01(\tR\trobotCode\"3\n" +
-	"\x1bMaximumSQLResultSizeSetting\x12\x14\n" +
-	"\x05limit\x18\x01 \x01(\x03R\x05limit\"#\n" +
+	"robot_code\x18\x04 \x01(\tR\trobotCode\"|\n" +
+	"\x1aSQLQueryRestrictionSetting\x12.\n" +
+	"\x13maximum_result_size\x18\x01 \x01(\x03R\x11maximumResultSize\x12.\n" +
+	"\x13maximum_result_rows\x18\x02 \x01(\x05R\x11maximumResultRows\"#\n" +
 	"\vSCIMSetting\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"\x9a\x03\n" +
 	"\x1aPasswordRestrictionSetting\x12\x1d\n" +
@@ -2656,7 +2667,7 @@ var file_store_setting_proto_goTypes = []any{
 	(*SemanticTypeSetting)(nil),                                      // 10: bytebase.store.SemanticTypeSetting
 	(*Algorithm)(nil),                                                // 11: bytebase.store.Algorithm
 	(*AppIMSetting)(nil),                                             // 12: bytebase.store.AppIMSetting
-	(*MaximumSQLResultSizeSetting)(nil),                              // 13: bytebase.store.MaximumSQLResultSizeSetting
+	(*SQLQueryRestrictionSetting)(nil),                               // 13: bytebase.store.SQLQueryRestrictionSetting
 	(*SCIMSetting)(nil),                                              // 14: bytebase.store.SCIMSetting
 	(*PasswordRestrictionSetting)(nil),                               // 15: bytebase.store.PasswordRestrictionSetting
 	(*AISetting)(nil),                                                // 16: bytebase.store.AISetting
