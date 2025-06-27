@@ -301,7 +301,6 @@ CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
 
-
 -- instance change history records the changes an instance and its databases.
 CREATE TABLE instance_change_history (
     id bigserial PRIMARY KEY,
