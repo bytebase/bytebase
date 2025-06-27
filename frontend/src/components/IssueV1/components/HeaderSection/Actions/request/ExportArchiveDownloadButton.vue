@@ -45,7 +45,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import { ExportRequest } from "@/types/proto/v1/sql_service";
 import { flattenTaskV1List } from "@/utils";
-import { convertExportFormatToNew } from "@/utils/v1/setting-conversions";
+import { convertExportFormatToNew } from "@/utils/v1/common-conversions";
 
 interface LocalState {
   isExporting: boolean;
