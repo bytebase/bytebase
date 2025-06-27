@@ -241,6 +241,9 @@ func collectResourceChanges(database string, searchPath []string, node ast.Node,
 				)
 			} else {
 				schema, indexMetadata := databaseMetadata.SearchIndex(searchPath, index.Name)
+				if indexMetadata == nil {
+					continue
+				}
 				tableMetadata := indexMetadata.GetTableProto()
 				if tableMetadata == nil {
 					continue
