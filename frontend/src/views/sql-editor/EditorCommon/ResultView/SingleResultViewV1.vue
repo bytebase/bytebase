@@ -235,7 +235,7 @@ import {
   isValidInstanceName,
 } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
-import { convertExportFormatToOld, convertEngineToNew } from "@/utils/v1/common-conversions";
+import { convertExportFormatToOld } from "@/utils/v1/common-conversions";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type {
@@ -529,7 +529,7 @@ const handleRequestExport = async () => {
 
 const showVisualizeButton = computed((): boolean => {
   return (
-    convertEngineToNew(connectedInstance.value.engine) === Engine.POSTGRES && props.params.explain
+    connectedInstance.value.engine === Engine.POSTGRES && props.params.explain
   );
 });
 

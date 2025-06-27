@@ -1,18 +1,24 @@
 import { cloneDeep, isEqual, pick } from "lodash-es";
+import { create } from "@bufbuild/protobuf";
 import type { ComposedDatabase } from "@/types";
-import {
+import type {
   DatabaseCatalog,
   ColumnCatalog,
   SchemaCatalog,
   TableCatalog,
-  TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import {
+  SchemaCatalogSchema,
+  TableCatalogSchema,
+  TableCatalog_ColumnsSchema,
+  ColumnCatalogSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   FunctionMetadata,
   ProcedureMetadata,
   TablePartitionMetadata,
   ViewMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   type ColumnMetadata,
   type DatabaseMetadata,
@@ -20,7 +26,7 @@ import {
   type IndexMetadata,
   type SchemaMetadata,
   type TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { ComparableTablePartitionFields, TinyTimer, keyBy } from "@/utils";
 import {
   ComparableColumnFields,
@@ -753,9 +759,9 @@ export class DiffMerge {
         this.mergeTableCatalog(
           schema,
           sourceSchemaCatalog ??
-            SchemaCatalog.fromPartial({ name: schema.name }),
+            create(SchemaCatalogSchema, { name: schema.name }),
           targetSchemaCatalog ??
-            SchemaCatalog.fromPartial({ name: schema.name })
+            create(SchemaCatalogSchema, { name: schema.name })
         );
       }
     }
@@ -812,14 +818,20 @@ export class DiffMerge {
           schema.name,
           table,
           sourceTableCatalog ??
-            TableCatalog.fromPartial({
+            create(TableCatalogSchema, {
               name: table.name,
-              columns: TableCatalog_Columns.fromPartial({}),
+              kind: {
+                case: "columns",
+                value: create(TableCatalog_ColumnsSchema, {})
+              },
             }),
           targetTableCatalog ??
-            TableCatalog.fromPartial({
+            create(TableCatalogSchema, {
               name: table.name,
-              columns: TableCatalog_Columns.fromPartial({}),
+              kind: {
+                case: "columns",
+                value: create(TableCatalog_ColumnsSchema, {})
+              },
             })
         );
       }
@@ -844,14 +856,14 @@ export class DiffMerge {
       database: database.name,
       schema,
       table: table.name,
-      columns: source.columns?.columns ?? [],
+      columns: source.kind?.case === "columns" ? source.kind.value.columns : [],
       map: sourceColumnCatalogMap,
     });
     mapColumnCatalog({
       database: database.name,
       schema,
       table: table.name,
-      columns: source.columns?.columns ?? [],
+      columns: target.kind?.case === "columns" ? target.kind.value.columns : [],
       map: targetColumnCatalogMap,
     });
     const mergedColumnCatalogs: ColumnCatalog[] = [];
@@ -885,15 +897,18 @@ export class DiffMerge {
           schema,
           table.name,
           sourceColumnCatalog ??
-            ColumnCatalog.fromPartial({ name: column.name }),
+            create(ColumnCatalogSchema, { name: column.name }),
           targetColumnCatalog ??
-            ColumnCatalog.fromPartial({ name: column.name })
+            create(ColumnCatalogSchema, { name: column.name })
         );
       }
     }
-    target.columns = TableCatalog_Columns.fromPartial({
-      columns: mergedColumnCatalogs,
-    });
+    target.kind = {
+      case: "columns",
+      value: create(TableCatalog_ColumnsSchema, {
+        columns: mergedColumnCatalogs,
+      })
+    };
     this.timer.end("mergeColumnCatalog", table.columns.length);
   }
   diffColumnCatalog(

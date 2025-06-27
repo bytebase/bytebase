@@ -65,11 +65,11 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
 } from "@/store";
-import {
+import type {
   DatabaseMetadata,
   SchemaMetadata,
   ExternalTableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ExternalTableColumnsTable from "./ExternalTableColumnsTable.vue";
 import ExternalTablesTable from "./ExternalTablesTable.vue";

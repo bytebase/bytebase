@@ -33,8 +33,8 @@ import { computed } from "vue";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
+import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+import { create } from "@bufbuild/protobuf";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
@@ -56,11 +56,11 @@ const columnMetadata = computed(
         table: props.table,
       })
       .columns.find((col) => col.name === props.column) ??
-    ColumnMetadata.create()
+    create(ColumnMetadataSchema, {})
 );
 
 const instanceEngine = computed(
-  () => convertEngineToNew(databaseStore.getDatabaseByName(props.database).instanceResource.engine)
+  () => databaseStore.getDatabaseByName(props.database).instanceResource.engine
 );
 
 const characterSet = computed(() => {

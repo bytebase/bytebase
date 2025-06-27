@@ -22,12 +22,16 @@
 import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
-import {
+import type {
   DatabaseMetadata,
   ViewMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  DatabaseMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
+import { create } from "@bufbuild/protobuf";
 import type { EditStatus } from "../types";
 import CommonCodeEditor from "./CommonCodeEditor.vue";
 import PreviewPane from "./PreviewPane.vue";
@@ -81,7 +85,7 @@ const mocked = computed(() => {
   const databaseCatalog = getDatabaseCatalog(database.name);
 
   const mockedView = cloneDeep(view);
-  const mockedDatabase = DatabaseMetadata.fromPartial({
+  const mockedDatabase = create(DatabaseMetadataSchema, {
     name: database.name,
     characterSet: database.characterSet,
     collation: database.collation,

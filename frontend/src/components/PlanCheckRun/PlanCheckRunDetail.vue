@@ -244,7 +244,6 @@ import { create } from "@bufbuild/protobuf";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { planServiceClientConnect } from "@/grpcweb";
 import { BatchCancelPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
 import {
@@ -343,7 +342,7 @@ const showCancelButton = computed(
 const getRuleTemplateByType = (type: string) => {
   if (props.database) {
     return ruleTemplateMapV2
-      .get(convertEngineToNew(props.database.instanceResource.engine))
+      .get(props.database.instanceResource.engine)
       ?.get(type);
   }
 
@@ -495,13 +494,13 @@ const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
     return {
       type,
       category: "BUILTIN",
-      engine: convertEngineToNew(engine),
+      engine: engine,
       level: builtinRuleLevel(type),
       componentList: [],
     };
   }
   const rule = reviewPolicy.value?.ruleList.find((rule) => {
-    if (engine && rule.engine !== convertEngineToNew(engine)) {
+    if (engine && rule.engine !== engine) {
       return false;
     }
     return rule.type === type;

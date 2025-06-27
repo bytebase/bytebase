@@ -76,7 +76,7 @@ import { create } from "@bufbuild/protobuf";
 import { BBSpin } from "@/bbkit";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   CheckReleaseResponse,
   Release_File_ChangeType,

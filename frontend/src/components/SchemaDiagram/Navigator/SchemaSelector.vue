@@ -15,7 +15,7 @@
 <script lang="tsx" setup>
 import { NSelect } from "naive-ui";
 import { computed } from "vue";
-import type { SchemaMetadata } from "@/types/proto/v1/database_service";
+import type { SchemaMetadata } from "@/types/proto-es/v1/database_service_pb";
 
 const props = defineProps<{
   value: string[];

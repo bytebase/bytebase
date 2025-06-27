@@ -41,7 +41,6 @@ import type {
 import { isValidDatabaseName } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import {
   Advice,
@@ -435,8 +434,8 @@ const useExecuteSQL = () => {
       });
 
     if (
-      convertEngineToNew(database.instanceResource.engine) === Engine.MONGODB ||
-      convertEngineToNew(database.instanceResource.engine) === Engine.COSMOSDB
+      database.instanceResource.engine === Engine.MONGODB ||
+      database.instanceResource.engine === Engine.COSMOSDB
     ) {
       flattenNoSQLResult(resultSet);
     }

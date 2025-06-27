@@ -19,7 +19,7 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
-import type { SequenceMetadata } from "@/types/proto/v1/database_service";
+import type { SequenceMetadata } from "@/types/proto-es/v1/database_service_pb";
 
 defineProps({
   database: {

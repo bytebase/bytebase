@@ -188,7 +188,7 @@ import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   pushNotification,
@@ -242,7 +242,7 @@ const filename = computed(() => {
 });
 const dialect = computed((): SQLDialect => {
   const db = database.value;
-  return dialectOfEngineV1(convertEngineToNew(db.instanceResource.engine));
+  return dialectOfEngineV1(db.instanceResource.engine);
 });
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");

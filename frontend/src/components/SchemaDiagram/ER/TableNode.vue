@@ -95,7 +95,7 @@ import type {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import type { VueClass } from "@/utils";
 import {
   useSchemaDiagramContext,

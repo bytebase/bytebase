@@ -104,7 +104,7 @@ import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import {
   PlanFeature,
   PlanType,

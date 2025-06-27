@@ -38,11 +38,11 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
 } from "@/store";
-import {
+import type {
   DatabaseMetadata,
   ViewMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ViewDetail from "./ViewDetail.vue";
 import ViewsTable from "./ViewsTable.vue";

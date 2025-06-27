@@ -7,18 +7,18 @@ import { silentContextKey } from "@/grpcweb/context-key";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
-import {
-  ColumnCatalog,
+import type {
   DatabaseCatalog,
-  TableCatalog,
-  TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
-import { 
-  GetDatabaseCatalogRequestSchema,
-  UpdateDatabaseCatalogRequestSchema
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { 
-  convertNewDatabaseCatalogToOld,
+  GetDatabaseCatalogRequestSchema,
+  UpdateDatabaseCatalogRequestSchema,
+  DatabaseCatalogSchema,
+  TableCatalogSchema,
+  TableCatalog_ColumnsSchema,
+  ColumnCatalogSchema
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import { 
   convertOldDatabaseCatalogToNew 
 } from "@/utils/v1/database-catalog-conversions";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
@@ -54,7 +54,7 @@ export const useDatabaseCatalogV1Store = defineStore(
         databaseName === String(UNKNOWN_ID) ||
         databaseName === String(EMPTY_ID)
       ) {
-        return DatabaseCatalog.fromPartial({
+        return create(DatabaseCatalogSchema, {
           name: ensureDatabaseCatalogResourceName(
             `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
           ),
@@ -79,9 +79,8 @@ export const useDatabaseCatalogV1Store = defineStore(
       const promise = databaseCatalogServiceClientConnect.getDatabaseCatalog(request, {
         contextValues: createContextValues().set(silentContextKey, silent),
       }).then((res) => {
-        const oldCatalog = convertNewDatabaseCatalogToOld(res);
-        setCache(oldCatalog);
-        return oldCatalog;
+        setCache(res);
+        return res
       });
 
       return promise;
@@ -93,9 +92,8 @@ export const useDatabaseCatalogV1Store = defineStore(
         catalog: newCatalog,
       });
       const response = await databaseCatalogServiceClientConnect.updateDatabaseCatalog(request);
-      const updated = convertNewDatabaseCatalogToOld(response);
-      setCache(updated);
-      return updated;
+      setCache(response);
+      return response;
     };
 
     const getDatabaseCatalog = (database: string) => {
@@ -104,7 +102,7 @@ export const useDatabaseCatalogV1Store = defineStore(
         databaseName === String(UNKNOWN_ID) ||
         databaseName === String(EMPTY_ID)
       ) {
-        return DatabaseCatalog.fromPartial({
+        return create(DatabaseCatalogSchema, {
           name: ensureDatabaseCatalogResourceName(
             `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
           ),
@@ -113,7 +111,7 @@ export const useDatabaseCatalogV1Store = defineStore(
 
       return (
         getCache(database) ??
-        DatabaseCatalog.fromPartial({
+        create(DatabaseCatalogSchema, {
           name: ensureDatabaseCatalogResourceName(database),
           schemas: [],
         })
@@ -150,9 +148,12 @@ export const getTableCatalog = (
   const schemaCatalog = catalog.schemas.find((s) => s.name === schema);
   return (
     schemaCatalog?.tables.find((t) => t.name === table) ??
-    TableCatalog.fromPartial({
+    create(TableCatalogSchema, {
       name: table,
-      columns: TableCatalog_Columns.fromPartial({}),
+      kind: {
+        case: "columns",
+        value: create(TableCatalog_ColumnsSchema, {}),
+      },
     })
   );
 };
@@ -164,9 +165,10 @@ export const getColumnCatalog = (
   column: string
 ) => {
   const tableCatalog = getTableCatalog(catalog, schema, table);
+  const columns = tableCatalog.kind?.case === "columns" ? tableCatalog.kind.value.columns : [];
   return (
-    tableCatalog.columns?.columns.find((c) => c.name === column) ??
-    ColumnCatalog.fromPartial({
+    columns.find((c: any) => c.name === column) ??
+    create(ColumnCatalogSchema, {
       name: column,
     })
   );

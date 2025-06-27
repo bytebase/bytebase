@@ -57,7 +57,6 @@ import { computed, ref, watchEffect } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import {
@@ -141,7 +140,7 @@ useResizeObserver(wrapperRef, (entries) => {
 
 const clickable = computed(() => {
   if (truncated.value) return true;
-  if (convertEngineToNew(database.value.instanceResource.engine) === Engine.MONGODB) {
+  if (database.value.instanceResource.engine === Engine.MONGODB) {
     // A cheap way to check JSON string without paying the parsing cost.
     const maybeJSON = String(props.value).trim();
     return (

@@ -61,7 +61,6 @@ import {
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
 import {
   nextAnimationFrame,
@@ -107,7 +106,7 @@ const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 const language = useInstanceV1EditorLanguage(instance);
 const dialect = computed((): SQLDialect => {
   const engine = instance.value.engine;
-  return dialectOfEngineV1(convertEngineToNew(engine));
+  return dialectOfEngineV1(engine);
 });
 const readonly = computed(() => sheetAndTabStore.isReadOnly);
 
@@ -184,7 +183,7 @@ const runQueryAction = ({
   const params: SQLEditorQueryParams = {
     connection: { ...tab.connection },
     statement,
-    engine: convertEngineToNew(instance.value.engine),
+    engine: instance.value.engine,
     explain,
     selection: null,
   };
@@ -242,13 +241,13 @@ const handleEditorReady = (
       await nextAnimationFrame();
       if (action === "explain-code") {
         AIContext.events.emit("send-chat", {
-          content: promptUtils.explainCode(statement, convertEngineToNew(instance.value.engine)),
+          content: promptUtils.explainCode(statement, instance.value.engine),
           newChat,
         });
       }
       if (action === "find-problems") {
         AIContext.events.emit("send-chat", {
-          content: promptUtils.findProblems(statement, convertEngineToNew(instance.value.engine)),
+          content: promptUtils.findProblems(statement, instance.value.engine),
           newChat,
         });
       }

@@ -61,6 +61,7 @@ import { pick } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
@@ -70,7 +71,8 @@ import { useSettingV1Store, hasFeature } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
+import type { ColumnCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type {
   ColumnMetadata,
@@ -78,7 +80,7 @@ import type {
   ForeignKeyMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
 import type { EditStatus } from "../../types";
@@ -251,7 +253,7 @@ const catalogForColumn = (column: string) => {
       schema: props.schema.name,
       table: props.table.name,
       column,
-    }) ?? ColumnCatalog.fromPartial({ name: column })
+    }) ?? create(ColumnCatalogSchema, { name: column })
   );
 };
 

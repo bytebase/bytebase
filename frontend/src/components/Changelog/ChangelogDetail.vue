@@ -17,13 +17,13 @@
           <div class="flex items-center space-x-2">
             <ChangelogStatusIcon :status="changelog.status" />
             <NTag round>
-              {{ changelog_TypeToJSON(changelog.type) }}
+              {{ getChangelogChangeType(changelog.type) }}
             </NTag>
             <NTag v-if="changelog.version" round>
               {{ $t("common.version") }} {{ changelog.version }}
             </NTag>
             <span class="text-xl">{{
-              getDateForPbTimestamp(changelog.createTime)?.toLocaleString()
+              getDateForPbTimestampProtoEs(changelog.createTime)?.toLocaleString()
             }}</span>
           </div>
           <dl
@@ -138,14 +138,12 @@ import {
   useDBSchemaV1Store,
   useDatabaseV1ByName,
 } from "@/store";
-import { getDateForPbTimestamp } from "@/types";
+import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
-import type { Changelog } from "@/types/proto/v1/database_service";
+import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
-  changelog_TypeToJSON,
   ChangelogView,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   extractIssueUID,
   getStatementSize,
@@ -222,7 +220,7 @@ const affectedTables = computed(() => {
 });
 
 const showSchemaSnapshot = computed(() => {
-  return convertEngineToNew(database.value.instanceResource.engine) !== Engine.RISINGWAVE;
+  return database.value.instanceResource.engine !== Engine.RISINGWAVE;
 });
 
 // "Show diff" feature is enabled when current migration has changed the schema.
@@ -245,7 +243,7 @@ watch(
       }),
       changelogStore.getOrFetchChangelogByName(
         unref(changelogName),
-        ChangelogView.CHANGELOG_VIEW_FULL
+        ChangelogView.FULL
       ),
     ]);
     state.loading = false;

@@ -1,7 +1,6 @@
 import { isDBGroupChangeSpec } from "@/components/Plan/logic";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan_Spec,
@@ -15,7 +14,7 @@ export const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.6.0";
 export const MIN_GHOST_SUPPORT_MARIADB_VERSION = "10.6.0";
 
 export const allowGhostForDatabase = (database: ComposedDatabase) => {
-  const engine = convertEngineToNew(database.instanceResource.engine);
+  const engine = database.instanceResource.engine;
   return (
     (engine === Engine.MYSQL &&
       semverCompare(

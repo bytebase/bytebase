@@ -33,8 +33,7 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
+} from "@/types/proto-es/v1/database_service_pb";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { EllipsisCell } from "../../common";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
@@ -68,7 +67,7 @@ const primaryKey = computed(() => {
 });
 
 const columns = computed(() => {
-  const engine = convertEngineToNew(props.db.instanceResource.engine);
+  const engine = props.db.instanceResource.engine;
   const downGrade = filteredColumns.value.length > 50;
   const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
     {

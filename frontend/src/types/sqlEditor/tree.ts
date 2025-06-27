@@ -1,6 +1,6 @@
 import type { TreeOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import type { InstanceResource } from "../proto/v1/instance_service";
+import type { InstanceResource } from "../proto-es/v1/instance_service_pb";
 import type { ComposedDatabase } from "../v1";
 import type { Environment } from "../v1/environment";
 
@@ -27,7 +27,7 @@ export type LabelTarget = {
 
 export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
   T extends "instance"
-    ? InstanceResource
+    ? Omit<InstanceResource, '$typeName'>
     : T extends "environment"
       ? Environment
       : T extends "database"

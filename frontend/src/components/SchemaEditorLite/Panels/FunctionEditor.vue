@@ -15,7 +15,7 @@ import type {
   DatabaseMetadata,
   FunctionMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 import type { EditStatus } from "../types";
 import CommonCodeEditor from "./CommonCodeEditor.vue";

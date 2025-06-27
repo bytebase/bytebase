@@ -218,7 +218,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSourceType,
   DataSource_AuthenticationType,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 
 interface LocalState {
   showCreateUserExample: boolean;

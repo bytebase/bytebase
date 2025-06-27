@@ -39,9 +39,11 @@ import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
-import { ProcedureMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { ProcedureMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { ProcedureMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
+import { create } from "@bufbuild/protobuf";
 
 // Procedure name must start with a non-space character, end with a non-space character.
 const procedureNameFieldRegexp = /^\S\S*\S?$/;
@@ -95,7 +97,7 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (!props.procedure) {
-    const procedure = ProcedureMetadata.fromPartial({
+    const procedure = create(ProcedureMetadataSchema, {
       name: state.procedureName,
       definition: [
         "CREATE PROCEDURE `" + state.procedureName + "`(...)",

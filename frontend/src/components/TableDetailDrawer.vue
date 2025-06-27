@@ -149,7 +149,7 @@
                     {{ $t("database.data-size") }}
                   </dt>
                   <dd class="mt-1 text-semibold">
-                    {{ bytesToString(table.dataSize.toNumber()) }}
+                    {{ bytesToString(Number(table.dataSize)) }}
                   </dd>
                 </div>
 
@@ -161,7 +161,7 @@
                     {{ $t("database.index-size") }}
                   </dt>
                   <dd class="mt-1 text-semibold">
-                    {{ bytesToString(table.indexSize.toNumber()) }}
+                    {{ bytesToString(Number(table.indexSize)) }}
                   </dd>
                 </div>
 
@@ -329,14 +329,15 @@ import {
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import {
+import type {
   TableCatalog,
-  ObjectSchema,
-  ObjectSchema_Type,
-  ObjectSchema_StructKind,
-  SchemaCatalog,
-} from "@/types/proto/v1/database_catalog_service";
-import { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import {
+  TableCatalogSchema,
+  SchemaCatalogSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
+import { create } from "@bufbuild/protobuf";
 import {
   bytesToString,
   instanceV1HasCollationAndCharacterSet,
@@ -351,7 +352,6 @@ import {
   isDatabaseV1Queryable,
   supportGetStringSchema,
 } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
@@ -393,12 +393,8 @@ const tableCatalog = computed(() =>
 const initTableCatalog = computed(() => {
   if (!tableCatalog.value) {
     return JSON.stringify(
-      TableCatalog.fromPartial({
+      create(TableCatalogSchema, {
         name: props.tableName,
-        objectSchema: ObjectSchema.fromPartial({
-          type: ObjectSchema_Type.OBJECT,
-          structKind: ObjectSchema_StructKind.fromPartial({}),
-        }),
       }),
       null,
       4
@@ -406,14 +402,6 @@ const initTableCatalog = computed(() => {
   }
 
   const catalog = cloneDeep(tableCatalog.value);
-  catalog.columns = undefined;
-  if (!catalog.objectSchema) {
-    catalog.objectSchema = ObjectSchema.fromPartial({
-      type: ObjectSchema_Type.OBJECT,
-      structKind: ObjectSchema_StructKind.fromPartial({}),
-    });
-  }
-
   return JSON.stringify(catalog, null, 4);
 });
 
@@ -489,7 +477,7 @@ const onCatalogUpload = async () => {
       }
     } else {
       pendingUploadCatalog.schemas.push(
-        SchemaCatalog.fromPartial({
+        create(SchemaCatalogSchema, {
           name: props.schemaName,
           tables: [catalog],
         })
@@ -516,7 +504,7 @@ const instanceEngine = computed(() => {
 });
 
 const instanceEngineNew = computed(() => {
-  return convertEngineToNew(instanceEngine.value);
+  return instanceEngine.value;
 });
 
 const allowQuery = computed(() => {
@@ -529,7 +517,7 @@ const allowQuery = computed(() => {
 const hasPartitionTables = computed(() => {
   return (
     // Only show partition tables for PostgreSQL.
-    convertEngineToNew(database.value.instanceResource.engine) === Engine.POSTGRES &&
+    database.value.instanceResource.engine === Engine.POSTGRES &&
     table.value &&
     table.value.partitions.length > 0
   );
@@ -540,7 +528,7 @@ const shouldShowPartitionTablesDataTable = computed(() => {
 });
 
 const getTableName = (tableName: string) => {
-  if (hasSchemaProperty(convertEngineToNew(instanceEngine.value)) && props.schemaName) {
+  if (hasSchemaProperty(instanceEngine.value) && props.schemaName) {
     return `"${props.schemaName}"."${tableName}"`;
   }
   return tableName;

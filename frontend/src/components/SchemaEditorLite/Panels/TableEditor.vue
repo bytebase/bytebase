@@ -190,21 +190,24 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
-  DatabaseCatalog,
-  SchemaCatalog,
-} from "@/types/proto/v1/database_catalog_service";
-import {
+  DatabaseCatalogSchema,
+  SchemaCatalogSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
-  IndexMetadata,
-  TablePartitionMetadata,
+  ForeignKeyMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
   TablePartitionMetadata_Type,
-  type ForeignKeyMetadata,
-  type SchemaMetadata,
-  type TableMetadata,
-} from "@/types/proto/v1/database_service";
+  ColumnMetadataSchema,
+  IndexMetadataSchema,
+  TablePartitionMetadataSchema,
+  DatabaseMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import type { ColumnMetadata as NewColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
@@ -214,6 +217,7 @@ import {
 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { cloneDeep, head, pull } from "lodash-es";
+import { create } from "@bufbuild/protobuf";
 import { ArrowLeftIcon, PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
@@ -279,7 +283,7 @@ const {
 
 // Conversion function for ColumnMetadata at service boundaries
 const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => {
-  return ColumnMetadata.fromPartial({
+  return create(ColumnMetadataSchema, {
     name: newColumn.name,
     position: newColumn.position,
     hasDefault: newColumn.hasDefault,
@@ -297,7 +301,7 @@ const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => 
   });
 };
 const engine = computed((): Engine => {
-  return convertEngineToNew(props.db.instanceResource.engine);
+  return props.db.instanceResource.engine;
 });
 const state = reactive<LocalState>({
   mode: "COLUMNS",
@@ -402,7 +406,7 @@ const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
 };
 
 const handleAddColumn = () => {
-  const column = ColumnMetadata.fromPartial({});
+  const column = create(ColumnMetadataSchema, {});
   /* eslint-disable-next-line vue/no-mutating-props */
   props.table.columns.push(column);
   markColumnStatus(column, "created");
@@ -465,7 +469,7 @@ const handleApplyColumnTemplate = (
 const handleAddIndex = () => {
   // eslint-disable-next-line vue/no-mutating-props
   props.table.indexes.push(
-    IndexMetadata.fromPartial({
+    create(IndexMetadataSchema, {
       name: `${props.table.name}_index_${randomString(8).toLowerCase()}`,
     })
   );
@@ -473,7 +477,7 @@ const handleAddIndex = () => {
 };
 const handleAddPartition = () => {
   const first = head(props.table.partitions);
-  const partition = TablePartitionMetadata.fromPartial({
+  const partition = create(TablePartitionMetadataSchema, {
     type: first?.type ?? TablePartitionMetadata_Type.HASH,
     expression: first?.expression ?? "",
   });
@@ -614,7 +618,7 @@ const mocked = computed(() => {
     const status = getColumnStatus(db, { schema, table, column });
     return status !== "dropped";
   });
-  const mockedDatabase = DatabaseMetadata.fromPartial({
+  const mockedDatabase = create(DatabaseMetadataSchema, {
     name: database.name,
     characterSet: database.characterSet,
     collation: database.collation,
@@ -625,7 +629,7 @@ const mocked = computed(() => {
       },
     ],
   });
-  const mockedCatalog = DatabaseCatalog.fromPartial({
+  const mockedCatalog = create(DatabaseCatalogSchema, {
     name: database.name,
   });
   const schemaCatalog = databaseCatalog.schemas.find(
@@ -636,7 +640,7 @@ const mocked = computed(() => {
   );
   if (schemaCatalog && tableCatalog) {
     mockedCatalog.schemas = [
-      SchemaCatalog.fromPartial({
+      create(SchemaCatalogSchema, {
         ...schemaCatalog,
         tables: [cloneDeep(tableCatalog)],
       }),

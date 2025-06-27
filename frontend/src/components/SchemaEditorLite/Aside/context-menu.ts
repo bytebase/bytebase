@@ -5,7 +5,6 @@ import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { isDescendantOf } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useSchemaEditorContext } from "../context";
 import { engineSupportsMultiSchema } from "../spec";
 import type {
@@ -82,9 +81,8 @@ export const useContextMenu = (): ContextMenuContext => {
     if (typeof node.db === "undefined") return [];
 
     const { engine } = (node.db as ComposedDatabase).instanceResource;
-    const protoEsEngine = convertEngineToNew(engine);
     if (node.type === "database") {
-      if (engineSupportsMultiSchema(protoEsEngine)) {
+      if (engineSupportsMultiSchema(engine)) {
         return [
           {
             key: "create-schema",
@@ -96,7 +94,7 @@ export const useContextMenu = (): ContextMenuContext => {
     }
     if (node.type === "schema") {
       const options: DropdownOption[] = [];
-      if (protoEsEngine === Engine.POSTGRES) {
+      if (engine === Engine.POSTGRES) {
         const status = getSchemaStatus(node.db, node.metadata);
         if (status === "dropped") {
           options.push({

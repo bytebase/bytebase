@@ -8,10 +8,9 @@ import type {
   SchemaMetadata,
   TableMetadata,
   ViewMetadata,
-} from "@/types/proto/v1/database_service";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import { groupBy } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource } from "../context/common";
 import {
@@ -305,7 +304,7 @@ export const useBuildTree = () => {
       map.set(tableGroupNode.key, tableGroupNode);
 
       // Views
-      if (engineSupportsEditViews(convertEngineToNew(db.instanceResource.engine))) {
+      if (engineSupportsEditViews(db.instanceResource.engine)) {
         const viewGroupNode: TreeNodeForGroup<"view"> = {
           type: "group",
           group: "view",
@@ -331,7 +330,7 @@ export const useBuildTree = () => {
         map.set(viewGroupNode.key, viewGroupNode);
       }
       // Procedures
-      if (engineSupportsEditProcedures(convertEngineToNew(db.instanceResource.engine))) {
+      if (engineSupportsEditProcedures(db.instanceResource.engine)) {
         const procedureGroupNode: TreeNodeForGroup<"procedure"> = {
           type: "group",
           group: "procedure",
@@ -357,7 +356,7 @@ export const useBuildTree = () => {
         map.set(procedureGroupNode.key, procedureGroupNode);
       }
       // Functions
-      if (engineSupportsEditFunctions(convertEngineToNew(db.instanceResource.engine))) {
+      if (engineSupportsEditFunctions(db.instanceResource.engine)) {
         const functionGroupNode: TreeNodeForGroup<"function"> = {
           type: "group",
           group: "function",

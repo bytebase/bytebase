@@ -150,9 +150,8 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
-import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   TinyTimer,
@@ -252,7 +251,7 @@ const databaseList = computed(() => {
 // Returns Engine.ENGINE_UNSPECIFIED if there are more than ONE types.
 const databaseEngine = computed((): Engine => {
   const engineTypes = uniq(
-    databaseList.value.map((db) => convertEngineToNew(db.instanceResource.engine))
+    databaseList.value.map((db) => db.instanceResource.engine)
   );
   if (engineTypes.length !== 1) return Engine.ENGINE_UNSPECIFIED;
   return engineTypes[0];

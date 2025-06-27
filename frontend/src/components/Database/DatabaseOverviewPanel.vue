@@ -17,10 +17,10 @@
         />
       </div>
 
-      <template v-if="convertEngineToNew(databaseEngine) !== Engine.REDIS">
+      <template v-if="databaseEngine !== Engine.REDIS">
         <div class="mb-4 w-full flex flex-row justify-between items-center">
           <div class="text-lg leading-6 font-medium text-main">
-            <span v-if="convertEngineToNew(databaseEngine) === Engine.MONGODB">{{
+            <span v-if="databaseEngine === Engine.MONGODB">{{
               $t("db.collections")
             }}</span>
             <span v-else>{{ $t("db.tables") }}</span>
@@ -50,7 +50,7 @@
 
         <template
           v-if="
-            convertEngineToNew(databaseEngine) === Engine.POSTGRES || convertEngineToNew(databaseEngine) === Engine.HIVE
+            databaseEngine === Engine.POSTGRES || databaseEngine === Engine.HIVE
           "
         >
           <div
@@ -73,7 +73,7 @@
           />
         </template>
 
-        <template v-if="convertEngineToNew(databaseEngine) === Engine.POSTGRES">
+        <template v-if="databaseEngine === Engine.POSTGRES">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.extensions") }}
           </div>
@@ -82,8 +82,8 @@
 
         <template
           v-if="
-            convertEngineToNew(databaseEngine) === Engine.POSTGRES ||
-            convertEngineToNew(databaseEngine) === Engine.MSSQL
+            databaseEngine === Engine.POSTGRES ||
+            databaseEngine === Engine.MSSQL
           "
         >
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
@@ -96,7 +96,7 @@
           />
         </template>
 
-        <template v-if="instanceV1SupportsSequence(convertEngineToNew(databaseEngine))">
+        <template v-if="instanceV1SupportsSequence(databaseEngine)">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.sequences") }}
           </div>
@@ -107,7 +107,7 @@
           />
         </template>
 
-        <template v-if="convertEngineToNew(databaseEngine) === Engine.SNOWFLAKE">
+        <template v-if="databaseEngine === Engine.SNOWFLAKE">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.streams") }}
           </div>
@@ -127,7 +127,7 @@
           />
         </template>
 
-        <template v-if="instanceV1SupportsPackage(convertEngineToNew(databaseEngine))">
+        <template v-if="instanceV1SupportsPackage(databaseEngine)">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.packages") }}
           </div>
@@ -160,7 +160,6 @@ import { SQL_EDITOR_SETTING_DATABASES_MODULE } from "@/router/sqlEditor";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
   hasSchemaProperty,
   instanceV1SupportsPackage,
@@ -198,7 +197,7 @@ const databaseEngine = computed(() => {
 });
 
 const hasSchemaPropertyV1 = computed(() => {
-  return hasSchemaProperty(convertEngineToNew(databaseEngine.value));
+  return hasSchemaProperty(databaseEngine.value);
 });
 
 watch(
@@ -283,7 +282,7 @@ const streamList = computed(() => {
   }
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
-    .schemas.map((schema) => schema.streams)
+    .schemas.map((schema: any) => schema.streams)
     .flat();
 });
 
@@ -297,7 +296,7 @@ const taskList = computed(() => {
   }
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
-    .schemas.map((schema) => schema.tasks)
+    .schemas.map((schema: any) => schema.tasks)
     .flat();
 });
 
@@ -311,7 +310,7 @@ const packageList = computed(() => {
   }
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
-    .schemas.map((schema) => schema.packages)
+    .schemas.map((schema: any) => schema.packages)
     .flat();
 });
 
@@ -325,7 +324,7 @@ const sequenceList = computed(() => {
   }
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
-    .schemas.map((schema) => schema.sequences)
+    .schemas.map((schema: any) => schema.sequences)
     .flat();
 });
 
