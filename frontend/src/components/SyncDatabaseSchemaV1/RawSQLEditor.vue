@@ -36,7 +36,7 @@ import { computed, nextTick, reactive } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { dialectOfEngineV1, type ComposedProject } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { engineNameV1 } from "@/utils";
 import { ALLOWED_ENGINES, type RawSQLState } from "./types";
 

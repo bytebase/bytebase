@@ -165,8 +165,9 @@ import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   type SQLEditorQueryParams,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
@@ -215,7 +216,7 @@ const showSheetsFeature = computed(() => {
 
 const queryTip = computed(() => {
   if (
-    instance.value.engine === Engine.COSMOSDB &&
+    convertEngineToNew(instance.value.engine) === Engine.COSMOSDB &&
     !currentTab.value?.connection.table
   ) {
     return t("database.table.select-tip");
@@ -227,7 +228,7 @@ const allowQuery = computed(() => {
   if (isDisconnected.value) return false;
   if (isEmptyStatement.value) return false;
 
-  if (instance.value.engine === Engine.COSMOSDB) {
+  if (convertEngineToNew(instance.value.engine) === Engine.COSMOSDB) {
     return !!currentTab.value?.connection.table;
   }
   return true;
@@ -305,7 +306,7 @@ const handleRunQuery = () => {
   emit("execute", {
     statement,
     connection: { ...tab.connection },
-    engine: instance.value.engine,
+    engine: convertEngineToNew(instance.value.engine),
     explain: false,
     selection: tab.editorState.selection,
   });

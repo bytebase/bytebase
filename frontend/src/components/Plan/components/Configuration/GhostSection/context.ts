@@ -4,6 +4,7 @@ import { computed, inject, provide, unref } from "vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, type ComposedProject } from "@/types";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import {
@@ -70,7 +71,7 @@ export const provideGhostSettingContext = (refs: {
       selectedSpec.value &&
       allowGhostForSpec(selectedSpec.value) &&
       databases.value.every((db) =>
-        GHOST_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
+        GHOST_AVAILABLE_ENGINES.includes(convertEngineToNew(db.instanceResource.engine))
       ) &&
       !isNullOrUndefined(getGhostEnabledForSpec(selectedSpec.value))
     );

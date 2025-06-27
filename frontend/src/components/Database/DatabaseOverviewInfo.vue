@@ -3,11 +3,11 @@
     class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2"
     data-label="bb-database-overview-description-list"
   >
-    <template v-if="instanceV1HasCollationAndCharacterSet(databaseEngine)">
+    <template v-if="instanceV1HasCollationAndCharacterSet(convertEngineToNew(databaseEngine))">
       <div class="col-span-1 col-start-1">
         <dt class="text-sm font-medium text-control-light">
           {{
-            databaseEngine === Engine.POSTGRES
+            convertEngineToNew(databaseEngine) === Engine.POSTGRES
               ? $t("db.encoding")
               : $t("db.character-set")
           }}
@@ -33,7 +33,7 @@
       </dt>
       <dd class="mt-1 text-sm text-main">
         <span>
-          {{ database.state === State.ACTIVE ? "OK" : "NOT_FOUND" }}
+          {{ convertStateToNew(database.state) === State.ACTIVE ? "OK" : "NOT_FOUND" }}
         </span>
       </dd>
     </div>
@@ -53,7 +53,8 @@
 import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
 import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew, convertStateToNew } from "@/utils/v1/common-conversions";
 import { instanceV1HasCollationAndCharacterSet } from "@/utils";
 
 const props = defineProps<{

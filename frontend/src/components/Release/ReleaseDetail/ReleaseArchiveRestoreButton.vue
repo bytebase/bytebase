@@ -1,6 +1,6 @@
 <template>
   <BBButtonConfirm
-    v-if="release.state === State.ACTIVE"
+    v-if="convertStateToNew(release.state) === State.ACTIVE"
     :type="'ARCHIVE'"
     :button-text="$t('release.archive-this-release')"
     :require-confirm="true"
@@ -11,7 +11,7 @@
     @confirm="archiveOrRestoreRelease(true)"
   />
   <BBButtonConfirm
-    v-else-if="release.state === State.DELETED"
+    v-else-if="convertStateToNew(release.state) === State.DELETED"
     :type="'RESTORE'"
     :button-text="$t('common.restore')"
     :require-confirm="false"
@@ -23,7 +23,8 @@
 <script setup lang="ts">
 import { BBButtonConfirm } from "@/bbkit";
 import { useReleaseStore } from "@/store";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToNew } from "@/utils/v1/common-conversions";
 import { useReleaseDetailContext } from "./context";
 
 const { release } = useReleaseDetailContext();

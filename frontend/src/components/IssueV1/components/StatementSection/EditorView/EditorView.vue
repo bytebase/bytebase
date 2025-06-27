@@ -194,6 +194,7 @@ import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
+import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 import { emitWindowEvent } from "@/plugins";
 import {
   pushNotification,
@@ -205,6 +206,7 @@ import { dialectOfEngineV1 } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import type { Advice } from "@/types/proto/v1/sql_service";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   flattenTaskV1List,
   getSheetStatement,
@@ -267,7 +269,7 @@ const filename = computed(() => {
 });
 const dialect = computed((): SQLDialect => {
   const db = database.value;
-  return dialectOfEngineV1(db.instanceResource.engine);
+  return dialectOfEngineV1(convertEngineToNew(db.instanceResource.engine));
 });
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
@@ -456,7 +458,7 @@ const updateStatement = async (statement: string) => {
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: issue.value.title,
-    engine: await databaseEngineForSpec(head(planPatch.specs)),
+    engine: convertEngineToOld(await databaseEngineForSpec(head(planPatch.specs)) as Engine),
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

@@ -124,16 +124,11 @@ import {
   useSQLStore,
 } from "@/store";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
-import { ExportFormat as ExportFormatOld } from "@/types/proto/v1/common";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { hexToRgb } from "@/utils";
+import { convertExportFormatToOld } from "@/utils/v1/common-conversions";
 
-// Temporary conversion function until SQL store is migrated
-const convertExportFormat = (format: ExportFormat): ExportFormatOld => {
-  // Convert proto-es enum to string, then back to old enum
-  const formatString = ExportFormat[format];
-  return ExportFormatOld[formatString as keyof typeof ExportFormatOld] ?? ExportFormatOld.FORMAT_UNSPECIFIED;
-};
+
 
 const MAX_EXPORT = 20;
 
@@ -282,7 +277,7 @@ const handleExportBtnClick = async ({
       const content = await sqlStore.exportData({
         name: databaseName,
         dataSourceId: context.params.connection.dataSourceId ?? "",
-        format: convertExportFormat(options.format),
+        format: convertExportFormatToOld(options.format),
         statement: context.params.statement,
         limit: options.limit,
         admin: tabStore.currentTab?.mode === "ADMIN",

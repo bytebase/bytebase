@@ -14,6 +14,7 @@ import { PreBackupSection } from "@/components/Plan/components/Configuration";
 import { providePreBackupSettingContext } from "@/components/Plan/components/Configuration/PreBackupSection/context";
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useCurrentProjectV1 } from "@/store";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import TaskRollbackSection from "./TaskRollbackSection.vue";
@@ -53,7 +54,7 @@ const shouldShowTaskRollbackSection = computed((): boolean => {
     return false;
   }
   if (
-    !ROLLBACK_AVAILABLE_ENGINES.includes(database.value.instanceResource.engine)
+    !ROLLBACK_AVAILABLE_ENGINES.includes(convertEngineToNew(database.value.instanceResource.engine))
   ) {
     return false;
   }

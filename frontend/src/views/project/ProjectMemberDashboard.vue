@@ -8,7 +8,8 @@ import ProjectMemberPanel from "@/components/ProjectMember/ProjectMemberPanel.vu
 import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{
@@ -24,7 +25,7 @@ const allowEdit = computed(() => {
     return false;
   }
 
-  if (project.value.state === State.DELETED) {
+  if (project.value.state === convertStateToOld(State.DELETED)) {
     return false;
   }
 

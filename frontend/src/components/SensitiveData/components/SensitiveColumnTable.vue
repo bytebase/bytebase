@@ -30,6 +30,7 @@ import type { ComposedDatabase } from "@/types";
 import { create } from "@bufbuild/protobuf";
 import { DataClassificationSetting_DataClassificationConfigSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { autoDatabaseRoute } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -158,7 +159,7 @@ const dataTableColumns = computed(() => {
           <ClassificationCell
             classification={item.classificationId}
             classificationConfig={classificationConfig.value}
-            engine={props.database.instanceResource.engine}
+            engine={convertEngineToNew(props.database.instanceResource.engine)}
             readonly={!props.showOperation || item.disableClassification}
             onApply={(id: string) => onClassificationIdApply(item, id)}
           />

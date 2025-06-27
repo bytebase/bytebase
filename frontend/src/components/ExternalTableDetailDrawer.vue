@@ -145,6 +145,7 @@ import {
   hasSchemaProperty,
   isDatabaseV1Queryable,
 } from "@/utils";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 
@@ -205,7 +206,7 @@ const allowQuery = computed(() => {
 });
 
 const getTableName = (tableName: string) => {
-  if (hasSchemaProperty(instanceEngine.value)) {
+  if (hasSchemaProperty(convertEngineToNew(instanceEngine.value))) {
     return `"${props.schemaName}"."${tableName}"`;
   }
   return tableName;

@@ -206,7 +206,7 @@ import {
   useUserStore,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group } from "@/types/proto/v1/group_service";
 import { WorkspaceProfileSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { create } from "@bufbuild/protobuf";

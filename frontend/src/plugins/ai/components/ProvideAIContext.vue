@@ -12,6 +12,7 @@ import {
 } from "@/store";
 import { AISettingSchema, Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { create } from "@bufbuild/protobuf";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { wrapRefAsPromise } from "@/utils";
 import Emittery from "emittery";
 import { storeToRefs } from "pinia";
@@ -55,7 +56,7 @@ const store = useConversationStore();
 
 const context: AIContext = {
   aiSetting: aiSetting,
-  engine: computed(() => instance.value.engine),
+  engine: computed(() => convertEngineToNew(instance.value.engine)),
   databaseMetadata,
   schema,
   showHistoryDialog,

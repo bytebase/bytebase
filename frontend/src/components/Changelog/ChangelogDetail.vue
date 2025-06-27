@@ -139,7 +139,8 @@ import {
   useDatabaseV1ByName,
 } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import type { Changelog } from "@/types/proto/v1/database_service";
 import {
   changelog_TypeToJSON,
@@ -221,7 +222,7 @@ const affectedTables = computed(() => {
 });
 
 const showSchemaSnapshot = computed(() => {
-  return database.value.instanceResource.engine !== Engine.RISINGWAVE;
+  return convertEngineToNew(database.value.instanceResource.engine) !== Engine.RISINGWAVE;
 });
 
 // "Show diff" feature is enabled when current migration has changed the schema.

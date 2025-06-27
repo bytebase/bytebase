@@ -19,7 +19,8 @@ import {
   useDBSchemaV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import ConnectChooser from "./ConnectChooser.vue";
 
 const OptionValueUnspecified = "-1";
@@ -29,7 +30,7 @@ const route = useRoute();
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { database, instance } = useConnectionOfCurrentSQLEditorTab();
 const show = computed(() => {
-  return instance.value.engine === Engine.COSMOSDB;
+  return convertEngineToNew(instance.value.engine) === Engine.COSMOSDB;
 });
 
 const databaseMetadata = computed(() => {

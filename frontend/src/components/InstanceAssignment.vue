@@ -90,10 +90,10 @@ import {
   useActuatorV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import { engineFromJSON } from "@/types/proto/v1/common";
 import { Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
+import { convertScopeValueToEngine } from "@/utils/v1/common-conversions";
 import LearnMoreLink from "./LearnMoreLink.vue";
 
 const props = withDefaults(
@@ -149,7 +149,7 @@ const selectedEnvironment = computed(() => {
 const selectedEngines = computed(() => {
   return state.params.scopes
     .filter((scope) => scope.id === "engine")
-    .map((scope) => engineFromJSON(scope.value));
+    .map((scope) => convertScopeValueToEngine(scope.value));
 });
 
 const filter = computed(() => ({

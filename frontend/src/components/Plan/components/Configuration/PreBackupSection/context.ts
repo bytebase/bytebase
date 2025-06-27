@@ -15,7 +15,8 @@ import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { convertOldPlanToNew } from "@/utils/v1/plan-conversions";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, type ComposedProject } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { IssueStatus, type Issue } from "@/types/proto/v1/issue_service";
 import {
   Plan_ChangeDatabaseConfig_Type,
@@ -84,7 +85,7 @@ export const providePreBackupSettingContext = (refs: {
       // If any of the databases in the spec is not supported, do not show.
       if (
         !databases.value.every((db) =>
-          BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
+          BACKUP_AVAILABLE_ENGINES.includes(convertEngineToNew(db.instanceResource.engine))
         )
       ) {
         return false;

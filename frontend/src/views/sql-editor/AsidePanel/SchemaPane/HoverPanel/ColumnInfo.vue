@@ -32,8 +32,9 @@ import { CheckIcon, XIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
@@ -59,7 +60,7 @@ const columnMetadata = computed(
 );
 
 const instanceEngine = computed(
-  () => databaseStore.getDatabaseByName(props.database).instanceResource.engine
+  () => convertEngineToNew(databaseStore.getDatabaseByName(props.database).instanceResource.engine)
 );
 
 const characterSet = computed(() => {

@@ -1,5 +1,5 @@
 import type * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-import type { Position } from "@/types/proto/v1/common";
+import type { Position } from "@/types/proto-es/v1/common_pb";
 
 export function batchConvertPositionToMonacoPosition(
   positions: Position[],

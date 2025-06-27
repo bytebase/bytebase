@@ -30,6 +30,7 @@ import { targetsForSpec } from "@/components/Plan/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { pushNotification } from "@/store";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import {
   PRE_BACKUP_AVAILABLE_ENGINES,
   usePreBackupSettingContext,
@@ -70,7 +71,7 @@ const errors = computed(() => {
 
   // Check for unsupported database engines
   const unsupportedEngineDatabases = databases.value.filter(
-    (db) => !PRE_BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
+    (db) => !PRE_BACKUP_AVAILABLE_ENGINES.includes(convertEngineToNew(db.instanceResource.engine))
   );
   if (unsupportedEngineDatabases.length > 0) {
     errors.push(
@@ -104,7 +105,7 @@ const databasesNotMeetingRequirements = computed(() => {
     // Check if database doesn't have backup available
     if (!db.backupAvailable) return true;
     // Check if database engine is not supported
-    if (!PRE_BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine)) {
+    if (!PRE_BACKUP_AVAILABLE_ENGINES.includes(convertEngineToNew(db.instanceResource.engine))) {
       return true;
     }
     return false;

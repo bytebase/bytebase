@@ -93,7 +93,7 @@ import {
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
 
@@ -155,7 +155,13 @@ const selectedPort = computed(() => {
 const selectedEngines = computed(() => {
   return state.params.scopes
     .filter((scope) => scope.id === "engine")
-    .map((scope) => engineFromJSON(scope.value));
+    .map((scope) => {
+      // Convert string scope value to Engine enum
+      const engineValue = Object.values(Engine).find(
+        (engine) => engine === scope.value
+      ) as Engine | undefined;
+      return engineValue ?? Engine.MYSQL; // Default fallback
+    });
 });
 
 const filter = computed(() => ({

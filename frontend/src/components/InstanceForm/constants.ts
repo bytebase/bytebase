@@ -1,64 +1,64 @@
 import { computed } from "vue";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine as OldEngine } from "@/types/proto-es/v1/common_pb";
 import { supportedEngineV1List } from "@/utils";
 
-export const defaultPortForEngine = (engine: Engine) => {
+export const defaultPortForEngine = (engine: OldEngine) => {
   switch (engine) {
-    case Engine.CLICKHOUSE:
+    case OldEngine.CLICKHOUSE:
       return "9000";
-    case Engine.MYSQL:
+    case OldEngine.MYSQL:
       return "3306";
-    case Engine.POSTGRES:
+    case OldEngine.POSTGRES:
       return "5432";
-    case  Engine.SNOWFLAKE:
+    case  OldEngine.SNOWFLAKE:
       return "";
-    case Engine.SQLITE:
+    case OldEngine.SQLITE:
       return "";
-    case Engine.TIDB:
+    case OldEngine.TIDB:
       return "4000";
-    case Engine.MONGODB:
+    case OldEngine.MONGODB:
       return "27017";
-    case Engine.REDIS:
+    case OldEngine.REDIS:
       return "6379";
-    case Engine.ORACLE:
+    case OldEngine.ORACLE:
       return "1521";
-    case Engine.SPANNER:
+    case OldEngine.SPANNER:
       return "";
-    case Engine.MSSQL:
+    case OldEngine.MSSQL:
       return "1433";
-    case Engine.REDSHIFT:
+    case OldEngine.REDSHIFT:
       return "5439";
-    case Engine.MARIADB:
+    case OldEngine.MARIADB:
       return "3306";
-    case Engine.OCEANBASE:
+    case OldEngine.OCEANBASE:
       return "2883";
-    case Engine.DM:
+    case OldEngine.DM:
       return "5236";
-    case Engine.RISINGWAVE:
+    case OldEngine.RISINGWAVE:
         return "4566";
-    case Engine.OCEANBASE_ORACLE:
+    case OldEngine.OCEANBASE_ORACLE:
       return "1521";
-    case Engine.STARROCKS:
+    case OldEngine.STARROCKS:
       return "9030";
-    case Engine.DORIS:
+    case OldEngine.DORIS:
       return "9030";
-    case Engine.HIVE:
+    case OldEngine.HIVE:
       return "10000";
-    case Engine.ELASTICSEARCH:
+    case OldEngine.ELASTICSEARCH:
       return "9200";
-    case Engine.BIGQUERY:
+    case OldEngine.BIGQUERY:
       return "";
-    case Engine.DYNAMODB:
+    case OldEngine.DYNAMODB:
       return "";
-    case Engine.DATABRICKS:
+    case OldEngine.DATABRICKS:
       return "";
-    case Engine.COCKROACHDB:
+    case OldEngine.COCKROACHDB:
       return "26257";
-    case Engine.COSMOSDB:
+    case OldEngine.COSMOSDB:
       return "";
-    case Engine.CASSANDRA:
+    case OldEngine.CASSANDRA:
       return "9042";
-    case Engine.TRINO:
+    case OldEngine.TRINO:
       return "8080";
   }
     throw new Error("engine port unknown");
@@ -69,48 +69,48 @@ export const EngineList = computed(() => {
 });
 
 export const EngineIconPath: Record<string, string> = {
-  [Engine.MYSQL]: new URL("@/assets/db/mysql.png", import.meta.url).href,
-  [Engine.POSTGRES]: new URL("@/assets/db/postgres.png", import.meta.url).href,
-  [Engine.TIDB]: new URL("@/assets/db/tidb.png", import.meta.url).href,
-  [Engine.SNOWFLAKE]: new URL("@/assets/db/snowflake.png", import.meta.url)
+  [OldEngine.MYSQL]: new URL("@/assets/db/mysql.png", import.meta.url).href,
+  [OldEngine.POSTGRES]: new URL("@/assets/db/postgres.png", import.meta.url).href,
+  [OldEngine.TIDB]: new URL("@/assets/db/tidb.png", import.meta.url).href,
+  [OldEngine.SNOWFLAKE]: new URL("@/assets/db/snowflake.png", import.meta.url)
     .href,
-  [Engine.CLICKHOUSE]: new URL("@/assets/db/clickhouse.png", import.meta.url)
+  [OldEngine.CLICKHOUSE]: new URL("@/assets/db/clickhouse.png", import.meta.url)
     .href,
-  [Engine.MONGODB]: new URL("@/assets/db/mongodb.png", import.meta.url).href,
-  [Engine.SPANNER]: new URL("@/assets/db/spanner.png", import.meta.url).href,
-  [Engine.REDIS]: new URL("@/assets/db/redis.png", import.meta.url).href,
-  [Engine.ORACLE]: new URL("@/assets/db/oracle.svg", import.meta.url).href,
-  [Engine.DM]: new URL("@/assets/db/dm.png", import.meta.url).href,
-  [Engine.MSSQL]: new URL("@/assets/db/mssql.svg", import.meta.url).href,
-  [Engine.REDSHIFT]: new URL("@/assets/db/redshift.svg", import.meta.url).href,
-  [Engine.MARIADB]: new URL("@/assets/db/mariadb.png", import.meta.url).href,
-  [Engine.OCEANBASE]: new URL(
+  [OldEngine.MONGODB]: new URL("@/assets/db/mongodb.png", import.meta.url).href,
+  [OldEngine.SPANNER]: new URL("@/assets/db/spanner.png", import.meta.url).href,
+  [OldEngine.REDIS]: new URL("@/assets/db/redis.png", import.meta.url).href,
+  [OldEngine.ORACLE]: new URL("@/assets/db/oracle.svg", import.meta.url).href,
+  [OldEngine.DM]: new URL("@/assets/db/dm.png", import.meta.url).href,
+  [OldEngine.MSSQL]: new URL("@/assets/db/mssql.svg", import.meta.url).href,
+  [OldEngine.REDSHIFT]: new URL("@/assets/db/redshift.svg", import.meta.url).href,
+  [OldEngine.MARIADB]: new URL("@/assets/db/mariadb.png", import.meta.url).href,
+  [OldEngine.OCEANBASE]: new URL(
     "@/assets/db/oceanbase-mysql.svg",
     import.meta.url
   ).href,
-  [Engine.OCEANBASE_ORACLE]: new URL(
+  [OldEngine.OCEANBASE_ORACLE]: new URL(
     "@/assets/db/oceanbase-oracle.svg",
     import.meta.url
   ).href,
-  [Engine.RISINGWAVE]: new URL("@/assets/db/risingwave.png", import.meta.url)
+  [OldEngine.RISINGWAVE]: new URL("@/assets/db/risingwave.png", import.meta.url)
     .href,
-  [Engine.STARROCKS]: new URL("@/assets/db/starrocks.png", import.meta.url)
+  [OldEngine.STARROCKS]: new URL("@/assets/db/starrocks.png", import.meta.url)
     .href,
-  [Engine.DORIS]: new URL("@/assets/db/doris.png", import.meta.url).href,
-  [Engine.HIVE]: new URL("@/assets/db/hive.svg", import.meta.url).href,
-  [Engine.ELASTICSEARCH]: new URL(
+  [OldEngine.DORIS]: new URL("@/assets/db/doris.png", import.meta.url).href,
+  [OldEngine.HIVE]: new URL("@/assets/db/hive.svg", import.meta.url).href,
+  [OldEngine.ELASTICSEARCH]: new URL(
     "@/assets/db/elasticsearch.svg",
     import.meta.url
   ).href,
-  [Engine.BIGQUERY]: new URL("@/assets/db/bigquery.svg", import.meta.url).href,
-  [Engine.DYNAMODB]: new URL("@/assets/db/dynamodb.svg", import.meta.url).href,
-  [Engine.DATABRICKS]: new URL("@/assets/db/databricks.svg", import.meta.url)
+  [OldEngine.BIGQUERY]: new URL("@/assets/db/bigquery.svg", import.meta.url).href,
+  [OldEngine.DYNAMODB]: new URL("@/assets/db/dynamodb.svg", import.meta.url).href,
+  [OldEngine.DATABRICKS]: new URL("@/assets/db/databricks.svg", import.meta.url)
     .href,
-  [Engine.COCKROACHDB]: new URL("@/assets/db/cockroachdb.png", import.meta.url)
+  [OldEngine.COCKROACHDB]: new URL("@/assets/db/cockroachdb.png", import.meta.url)
     .href,
-  [Engine.COSMOSDB]: new URL("@/assets/db/cosmosdb.svg", import.meta.url).href,
-  [Engine.CASSANDRA]: new URL("@/assets/db/cassandra.svg", import.meta.url).href,
-  [Engine.TRINO]: new URL("@/assets/db/trino.svg", import.meta.url).href,
+  [OldEngine.COSMOSDB]: new URL("@/assets/db/cosmosdb.svg", import.meta.url).href,
+  [OldEngine.CASSANDRA]: new URL("@/assets/db/cassandra.svg", import.meta.url).href,
+  [OldEngine.TRINO]: new URL("@/assets/db/trino.svg", import.meta.url).href,
 };
 
 export const MongoDBConnectionStringSchemaList = [

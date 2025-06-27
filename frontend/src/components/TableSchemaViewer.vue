@@ -33,6 +33,7 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
 import { convertOldObjectTypeToNew } from "@/utils/v1/database-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -49,7 +50,7 @@ const engine = computed(() => {
 
 const resourceName = computed(() => {
   if (props.object) {
-    if (hasSchemaProperty(engine.value)) {
+    if (hasSchemaProperty(convertEngineToNew(engine.value))) {
       return `${props.schema}.${props.object}`;
     } else {
       return props.object;

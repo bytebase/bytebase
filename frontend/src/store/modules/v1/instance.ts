@@ -34,8 +34,9 @@ import {
   isValidInstanceName,
   isValidEnvironmentName,
 } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
-import { State, stateToJSON, engineToJSON } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld, convertEngineToOld } from "@/utils/v1/common-conversions";
 import type {
   DataSource,
   Instance,
@@ -78,11 +79,11 @@ const getListInstanceFilter = (params: InstanceFilter) => {
     // engine filter should be:
     // engine in ["MYSQL", "POSTGRES"]
     list.push(
-      `engine in [${params.engines.map((e) => `"${engineToJSON(e)}"`).join(", ")}]`
+      `engine in [${params.engines.map((e) => `"${convertEngineToOld(e)}"`).join(", ")}]`
     );
   }
   if (params.state === State.DELETED) {
-    list.push(`state == "${stateToJSON(params.state)}"`);
+    list.push(`state == "${convertStateToOld(params.state)}"`);
   }
   return list.join(" && ");
 };
@@ -138,7 +139,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       force,
     });
     await instanceServiceClientConnect.deleteInstance(request);
-    instance.state = State.DELETED;
+    instance.state = convertStateToOld(State.DELETED);
     const composed = await upsertInstances([instance]);
     return composed[0];
   };
@@ -147,7 +148,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       name: instance.name,
     });
     await instanceServiceClientConnect.undeleteInstance(request);
-    instance.state = State.ACTIVE;
+    instance.state = convertStateToOld(State.ACTIVE);
     const composed = await upsertInstances([instance]);
     return composed[0];
   };

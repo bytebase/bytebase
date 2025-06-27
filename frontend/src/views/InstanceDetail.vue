@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-2 px-6" v-bind="$attrs">
-    <ArchiveBanner v-if="instance.state === State.DELETED" />
+    <ArchiveBanner v-if="instance.state === convertStateToOld(State.DELETED)" />
 
     <div v-if="!embedded" class="flex items-center justify-between">
       <div class="flex items-center gap-x-2">
-        <EngineIcon :engine="instance.engine" custom-class="!h-6" />
+        <EngineIcon :engine="convertEngineToNew(instance.engine)" custom-class="!h-6" />
         <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
       </div>
     </div>
@@ -13,7 +13,7 @@
       <template #suffix>
         <div class="flex items-center space-x-2">
           <InstanceSyncButton
-            v-if="instance.state === State.ACTIVE"
+            v-if="instance.state === convertStateToOld(State.ACTIVE)"
             @sync-schema="syncSchema"
           />
           <NButton
@@ -127,7 +127,9 @@ import {
   formatEnvironmentName,
   isValidDatabaseName,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   instanceV1HasCreateDatabase,
@@ -270,7 +272,7 @@ const instanceRoleList = computed(() => {
 const allowCreateDatabase = computed(() => {
   return (
     databaseChangeMode.value === DatabaseChangeMode.PIPELINE &&
-    instance.value.state === State.ACTIVE &&
+    instance.value.state === convertStateToOld(State.ACTIVE) &&
     instanceV1HasCreateDatabase(instance.value)
   );
 });

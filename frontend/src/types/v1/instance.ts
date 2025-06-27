@@ -1,8 +1,9 @@
 import { environmentNamePrefix } from "@/store";
 import type { Environment } from "@/types/v1/environment";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
-import { Engine, State } from "../proto/v1/common";
+import { Engine, State } from "../proto-es/v1/common_pb";
 import { Instance, InstanceResource } from "../proto/v1/instance_service";
+import { convertEngineToOld, convertStateToOld } from "@/utils/v1/common-conversions";
 import type { Instance as NewInstance } from "@/types/proto-es/v1/instance_service_pb";
 import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "./environment";
 
@@ -25,9 +26,9 @@ export const unknownInstance = (): ComposedInstance => {
   const environmentEntity = unknownEnvironment();
   const instance = Instance.fromPartial({
     name: UNKNOWN_INSTANCE_NAME,
-    state: State.ACTIVE,
+    state: convertStateToOld(State.ACTIVE),
     title: "<<Unknown instance>>",
-    engine: Engine.MYSQL,
+    engine: convertEngineToOld(Engine.MYSQL),
     environment: `${environmentNamePrefix}${environmentEntity.id}`,
   });
   return {

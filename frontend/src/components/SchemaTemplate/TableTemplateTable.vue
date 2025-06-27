@@ -19,7 +19,6 @@ import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { Engine as LegacyEngine } from "@/types/proto/v1/common";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
   SchemaTemplateSettingSchema,
@@ -45,58 +44,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
-// Conversion function for Engine type conflicts
-const convertEngineForIcon = (engine: Engine): LegacyEngine => {
-  switch (engine) {
-    case Engine.MYSQL:
-      return "MYSQL" as LegacyEngine;
-    case Engine.POSTGRES:
-      return "POSTGRES" as LegacyEngine;
-    case Engine.ORACLE:
-      return "ORACLE" as LegacyEngine;
-    case Engine.TIDB:
-      return "TIDB" as LegacyEngine;
-    case Engine.SNOWFLAKE:
-      return "SNOWFLAKE" as LegacyEngine;
-    case Engine.CLICKHOUSE:
-      return "CLICKHOUSE" as LegacyEngine;
-    case Engine.MONGODB:
-      return "MONGODB" as LegacyEngine;
-    case Engine.REDIS:
-      return "REDIS" as LegacyEngine;
-    case Engine.SQLITE:
-      return "SQLITE" as LegacyEngine;
-    case Engine.MSSQL:
-      return "MSSQL" as LegacyEngine;
-    case Engine.MARIADB:
-      return "MARIADB" as LegacyEngine;
-    case Engine.BIGQUERY:
-      return "BIGQUERY" as LegacyEngine;
-    case Engine.SPANNER:
-      return "SPANNER" as LegacyEngine;
-    case Engine.DATABRICKS:
-      return "DATABRICKS" as LegacyEngine;
-    case Engine.RISINGWAVE:
-      return "RISINGWAVE" as LegacyEngine;
-    case Engine.OCEANBASE:
-      return "OCEANBASE" as LegacyEngine;
-    case Engine.DYNAMODB:
-      return "DYNAMODB" as LegacyEngine;
-    case Engine.HIVE:
-      return "HIVE" as LegacyEngine;
-    case Engine.ELASTICSEARCH:
-      return "ELASTICSEARCH" as LegacyEngine;
-    case Engine.STARROCKS:
-      return "STARROCKS" as LegacyEngine;
-    case Engine.DORIS:
-      return "DORIS" as LegacyEngine;
-    case Engine.CASSANDRA:
-      return "CASSANDRA" as LegacyEngine;
-    default:
-      return "ENGINE_UNSPECIFIED" as LegacyEngine;
-  }
-};
-
 const columns = computed(
   (): DataTableColumn<SchemaTemplateSetting_TableTemplate>[] => {
     const cols: DataTableColumn<SchemaTemplateSetting_TableTemplate>[] = [
@@ -110,7 +57,7 @@ const columns = computed(
         key: "name",
         render: (item) => (
           <div class="flex justify-start items-center">
-            <EngineIcon engine={convertEngineForIcon(item.engine)} customClass="ml-0 mr-1" />
+            <EngineIcon engine={item.engine} customClass="ml-0 mr-1" />
             {item.table?.name ?? ""}
           </div>
         ),
