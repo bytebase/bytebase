@@ -1,7 +1,7 @@
 import type {
   ColumnMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 
 export const findPrimaryKey = (table: TableMetadata) => {
   return table.indexes.find((idx) => idx.primary);

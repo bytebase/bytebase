@@ -88,7 +88,7 @@ import {
 } from "@/store";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { Changelist } from "@/types/proto/v1/changelist_service";
-import { ChangelogView } from "@/types/proto/v1/database_service";
+import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import {
   getChangelistChangeSourceType,
   getSheetStatement,

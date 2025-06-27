@@ -61,7 +61,7 @@ import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service"
 import {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { GetSchemaStringRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { minmax } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";

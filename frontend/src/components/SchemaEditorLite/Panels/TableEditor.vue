@@ -204,7 +204,7 @@ import {
   type ForeignKeyMetadata,
   type SchemaMetadata,
   type TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import type { ColumnMetadata as NewColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {

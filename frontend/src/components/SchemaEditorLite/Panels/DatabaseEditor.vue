@@ -153,7 +153,7 @@ import {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import type {
   TableMetadata as NewTableMetadata,
   ColumnMetadata as NewColumnMetadata,

@@ -93,7 +93,7 @@ import type { ComposedProject } from "@/types";
 import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { convertEngineToNew } from "@/utils/v1/common-conversions";
-import { ChangelogView } from "@/types/proto/v1/database_service";
+import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 import {
   extractDatabaseNameAndChangelogUID,

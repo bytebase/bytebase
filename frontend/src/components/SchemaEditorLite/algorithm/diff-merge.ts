@@ -12,7 +12,7 @@ import type {
   ProcedureMetadata,
   TablePartitionMetadata,
   ViewMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   type ColumnMetadata,
   type DatabaseMetadata,
@@ -20,7 +20,7 @@ import {
   type IndexMetadata,
   type SchemaMetadata,
   type TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { ComparableTablePartitionFields, TinyTimer, keyBy } from "@/utils";
 import {
   ComparableColumnFields,

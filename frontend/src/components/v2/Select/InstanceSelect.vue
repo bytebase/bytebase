@@ -29,7 +29,7 @@ import {
   type ComposedInstance,
 } from "@/types";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import { supportedEngineV1List, getDefaultPagination } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
 import ResourceSelect from "./ResourceSelect.vue";

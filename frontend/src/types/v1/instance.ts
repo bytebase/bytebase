@@ -2,7 +2,7 @@ import { environmentNamePrefix } from "@/store";
 import type { Environment } from "@/types/v1/environment";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { Engine, State } from "../proto-es/v1/common_pb";
-import { Instance, InstanceResource } from "../proto/v1/instance_service";
+import { Instance, InstanceResource } from "../proto-es/v1/instance_service_pb";
 import { convertEngineToOld, convertStateToOld } from "@/utils/v1/common-conversions";
 import type { Instance as NewInstance } from "@/types/proto-es/v1/instance_service_pb";
 import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "./environment";

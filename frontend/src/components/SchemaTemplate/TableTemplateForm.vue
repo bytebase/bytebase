@@ -200,7 +200,7 @@ import {
   ColumnMetadataSchema,
   type ColumnMetadata 
 } from "@/types/proto-es/v1/database_service_pb";
-import { type ColumnMetadata as OldColumnMetadata } from "@/types/proto/v1/database_service";
+import { type ColumnMetadata as OldColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   SchemaTemplateSettingSchema,
   Setting_SettingName,

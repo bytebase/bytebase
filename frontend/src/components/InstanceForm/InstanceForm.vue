@@ -18,7 +18,7 @@ import { onBeforeRouteLeave } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useActuatorV1Store, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { Instance } from "@/types/proto/v1/instance_service";
+import { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 import { FeatureModal } from "../FeatureGuard";
 import { defaultPortForEngine } from "./constants";

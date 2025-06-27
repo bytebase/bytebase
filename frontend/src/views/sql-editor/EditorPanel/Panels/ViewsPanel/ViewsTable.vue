@@ -27,7 +27,7 @@ import type {
   DatabaseMetadata,
   ViewMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { EllipsisCell } from "../../common";
 import { useCurrentTabViewStateContext } from "../../context/viewState";

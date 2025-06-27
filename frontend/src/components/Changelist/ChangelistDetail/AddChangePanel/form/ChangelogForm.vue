@@ -68,7 +68,7 @@ import {
   Changelog,
   Changelog_Status,
   Changelog_Type,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName, extractIssueUID } from "@/utils";
 import ChangelogDetailPanel from "../../ChangelogDetailPanel";
 import { useChangelistDetailContext } from "../../context";

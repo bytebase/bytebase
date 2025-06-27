@@ -1108,7 +1108,7 @@ import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import type { DataSourceOptions } from "@/types/dataSource";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { DataSource } from "@/types/proto/v1/instance_service";
+import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSourceExternalSecret,
   DataSourceExternalSecret_AppRoleAuthOption,
@@ -1123,7 +1123,7 @@ import {
   DataSource_RedisType,
   KerberosConfig,
   SASLConfig,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import { onlyAllowNumber } from "@/utils";
 import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import type { EditDataSource } from "../common";

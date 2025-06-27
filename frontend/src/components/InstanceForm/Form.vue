@@ -520,8 +520,8 @@ import { adaptComposedInstance, type ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DataSource_AuthenticationType } from "@/types/proto/v1/instance_service";
-import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
+import { DataSource_AuthenticationType } from "@/types/proto-es/v1/instance_service_pb";
+import { DataSource_RedisType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   isDev,

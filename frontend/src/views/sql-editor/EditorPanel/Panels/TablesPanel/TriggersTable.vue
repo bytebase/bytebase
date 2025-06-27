@@ -62,7 +62,7 @@ import type {
   TriggerMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { useAutoHeightDataTable } from "@/utils";
 import {
   extractKeyWithPosition,

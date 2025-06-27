@@ -2,7 +2,7 @@ import type { TreeOption } from "naive-ui";
 import type {
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 
 export type NodeType = "schema" | "table";
 

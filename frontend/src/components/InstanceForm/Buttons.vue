@@ -61,7 +61,7 @@ import {
   DataSource,
   DataSourceType,
   Instance,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { defer, isValidSpannerHost } from "@/utils";
 import { convertEngineToOld } from "@/utils/v1/common-conversions";

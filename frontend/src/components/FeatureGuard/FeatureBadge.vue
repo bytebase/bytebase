@@ -63,7 +63,7 @@ import { useSubscriptionV1Store } from "@/store";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature, PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import InstanceAssignment from "../InstanceAssignment.vue";

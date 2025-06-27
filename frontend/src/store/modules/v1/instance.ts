@@ -41,7 +41,7 @@ import type {
   DataSource,
   Instance,
   UpdateInstanceRequest,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { useEnvironmentV1Store } from "./environment";
 

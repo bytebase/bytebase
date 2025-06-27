@@ -36,7 +36,7 @@ import {
 } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { TableMetadata } from "@/types/proto/v1/database_service";
+import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { bytesToString, hasSchemaProperty } from "@/utils";
 import { convertEngineToNew } from "@/utils/v1/common-conversions";

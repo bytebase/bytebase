@@ -65,7 +65,7 @@ import {
   useChangelogStore,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { ChangelogView } from "@/types/proto/v1/database_service";
+import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import type { ComposedDatabase } from "@/types";
 
 interface LocalState {

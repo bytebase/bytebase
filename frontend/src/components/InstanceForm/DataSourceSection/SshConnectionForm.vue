@@ -88,7 +88,7 @@
 
 <script lang="ts" setup>
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { onlyAllowNumber } from "@/utils";
 import { NInput, NRadio } from "naive-ui";
 import { reactive, watch } from "vue";

@@ -8,8 +8,8 @@ import type {
   SchemaMetadata,
   TableMetadata,
   ViewMetadata,
-} from "@/types/proto/v1/database_service";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import { groupBy } from "@/utils";
 import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useSchemaEditorContext } from "../context";

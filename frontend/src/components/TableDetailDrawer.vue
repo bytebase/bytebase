@@ -336,7 +336,7 @@ import {
   ObjectSchema_StructKind,
   SchemaCatalog,
 } from "@/types/proto/v1/database_catalog_service";
-import { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
+import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import {
   bytesToString,
   instanceV1HasCollationAndCharacterSet,

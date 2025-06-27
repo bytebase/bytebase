@@ -4,8 +4,8 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ForeignKeyMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import { IndexMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import { IndexMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { getFixedPrimaryKey, upsertArray } from "@/utils";
 
 export const upsertColumnPrimaryKey = (

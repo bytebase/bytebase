@@ -12,7 +12,7 @@ import { t } from "@/plugins/i18n";
 import { useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { validateDatabaseMetadata } from "./utils";
 

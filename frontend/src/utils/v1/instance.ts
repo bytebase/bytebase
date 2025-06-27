@@ -13,11 +13,11 @@ import { convertStateToOld, convertEngineToNew } from "@/utils/v1/common-convers
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSourceType,
   type DataSource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 export function instanceV1Name(instance: Instance | InstanceResource) {

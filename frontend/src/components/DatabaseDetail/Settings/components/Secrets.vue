@@ -185,7 +185,7 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
-import { Secret } from "@/types/proto/v1/database_service";
+import { Secret } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 export type Detail = {

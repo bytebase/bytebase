@@ -3,7 +3,7 @@ import {
   DataSource,
   DataSourceType,
   DataSource_AuthenticationType,
-} from "../proto/v1/instance_service";
+} from "../proto-es/v1/instance_service_pb";
 
 export const DATASOURCE_ADMIN_USER_NAME = "bytebase";
 export const DATASOURCE_READONLY_USER_NAME = `${DATASOURCE_ADMIN_USER_NAME}_readonly`;

@@ -43,8 +43,8 @@ import {
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   GetSchemaStringRequest_ObjectType,
-} from "@/types/proto/v1/database_service";
-import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import { DataSource, DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import {
   defer,
   extractInstanceResourceName,

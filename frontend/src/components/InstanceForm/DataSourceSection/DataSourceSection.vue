@@ -16,7 +16,7 @@
 <script setup lang="ts">
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import { wrapEditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";

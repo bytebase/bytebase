@@ -1,5 +1,5 @@
 import type { Instance as NewInstance } from "@/types/proto-es/v1/instance_service_pb";
-import type { Instance as OldInstance } from "@/types/proto/v1/instance_service";
+import type { Instance as OldInstance } from "@/types/proto-es/v1/instance_service_pb";
 import { convertNewInstanceToOld, convertOldInstanceToNew } from "@/utils/v1/instance-conversions";
 import type { Environment } from "@/types/v1/environment";
 import { environmentNamePrefix } from "@/store";

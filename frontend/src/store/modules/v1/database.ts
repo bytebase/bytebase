@@ -39,7 +39,7 @@ import type {
   UpdateDatabaseRequest,
   DiffSchemaRequest,
   BatchUpdateDatabasesRequest,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import {
   instanceNamePrefix,

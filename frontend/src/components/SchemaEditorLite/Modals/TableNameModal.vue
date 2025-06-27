@@ -40,11 +40,11 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   ColumnMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 import { upsertColumnPrimaryKey } from "../edit";
 import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";

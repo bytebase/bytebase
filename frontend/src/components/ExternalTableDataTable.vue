@@ -28,7 +28,7 @@ import type { PropType } from "vue";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
-import type { ExternalTableMetadata } from "@/types/proto/v1/database_service";
+import type { ExternalTableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import ExternalTableDetailDrawer from "./ExternalTableDetailDrawer.vue";
 
 type LocalState = {

@@ -13,7 +13,7 @@ import {
   convertNewSecretToOld,
   convertOldSecretToNew,
 } from "@/utils/v1/database-conversions";
-import type { Secret } from "@/types/proto/v1/database_service";
+import type { Secret } from "@/types/proto-es/v1/database_service_pb";
 import { secretNamePrefix } from "./common";
 
 export const useDatabaseSecretStore = defineStore("database-secret", () => {

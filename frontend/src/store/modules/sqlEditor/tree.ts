@@ -16,7 +16,7 @@ import {
   LeafTreeNodeTypes,
   formatEnvironmentName,
 } from "@/types";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { getSemanticLabelValue, groupBy } from "@/utils";
 import { useEnvironmentV1Store, useInstanceResourceByName } from "../v1";

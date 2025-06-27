@@ -31,8 +31,8 @@ import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { SchemaMetadata } from "@/types/proto/v1/database_service";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { SchemaMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 
 const schemaNameFieldRegexp = /^\S+$/;

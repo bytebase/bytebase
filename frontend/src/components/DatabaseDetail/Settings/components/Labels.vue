@@ -42,7 +42,7 @@ import { useI18n } from "vue-i18n";
 import { LabelListEditor } from "@/components/Label/";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { type ComposedDatabase } from "@/types";
-import { Database } from "@/types/proto/v1/database_service";
+import { Database } from "@/types/proto-es/v1/database_service_pb";
 import { convertKVListToLabels, convertLabelsToKVList } from "@/utils";
 
 type LocalState = {

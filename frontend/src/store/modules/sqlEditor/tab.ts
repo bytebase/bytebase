@@ -12,7 +12,7 @@ import type {
 } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,

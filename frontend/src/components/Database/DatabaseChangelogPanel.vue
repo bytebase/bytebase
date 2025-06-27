@@ -137,8 +137,8 @@ import {
   Changelog_Status,
   Changelog_Type,
   ChangelogView,
-} from "@/types/proto/v1/database_service";
-import type { Changelog } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
 

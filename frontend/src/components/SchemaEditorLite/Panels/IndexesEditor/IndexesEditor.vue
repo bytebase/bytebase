@@ -40,7 +40,7 @@ import type {
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { markUUID } from "../common";
 import { ColumnsCell, OperationCell } from "./components";
 

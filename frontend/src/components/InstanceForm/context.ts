@@ -21,7 +21,7 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { isValidEnvironmentName, unknownEnvironment } from "@/types";
-import { Instance, type DataSource } from "@/types/proto/v1/instance_service";
+import { Instance, type DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import { convertEngineToNew, convertStateToNew, convertStateToOld } from "@/utils/v1/common-conversions";
 import {
@@ -30,7 +30,7 @@ import {
   DataSourceType,
   DataSource_AuthenticationType,
   DataSource_RedisType,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractInstanceResourceName,

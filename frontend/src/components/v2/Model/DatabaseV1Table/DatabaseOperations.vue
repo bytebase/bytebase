@@ -138,7 +138,7 @@ import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   Database,
   UpdateDatabaseRequest,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   allowUsingSchemaEditor,
   extractProjectResourceName,

@@ -1,6 +1,6 @@
 import { head } from "lodash-es";
 import type { ComposedDatabase, SQLEditorConnection } from "@/types";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 
 const KEY_WITH_POSITION_DELIMITER = "###";
 

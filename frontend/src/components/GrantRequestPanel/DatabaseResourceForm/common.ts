@@ -6,7 +6,7 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, DatabaseResource } from "@/types";
-import type { TableMetadata } from "@/types/proto/v1/database_service";
+import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
 import { convertEngineToNew } from "@/utils/v1/common-conversions";
 
