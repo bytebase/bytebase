@@ -1,59 +1,148 @@
 import { fromJson, toJson } from "@bufbuild/protobuf";
-import type { Database as OldDatabase } from "@/types/proto/v1/database_service";
-import { Database as OldDatabaseProto } from "@/types/proto/v1/database_service";
-import type { Database as NewDatabase } from "@/types/proto-es/v1/database_service_pb";
-import { DatabaseSchema$ as NewDatabaseSchema } from "@/types/proto-es/v1/database_service_pb";
-
-import type { DatabaseMetadata as OldDatabaseMetadata } from "@/types/proto/v1/database_service";
-import { DatabaseMetadata as OldDatabaseMetadataProto } from "@/types/proto/v1/database_service";
-import type { DatabaseMetadata as NewDatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
-import { DatabaseMetadataSchema as NewDatabaseMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
-
-import type { Changelog as OldChangelog } from "@/types/proto/v1/database_service";
-import { Changelog as OldChangelogProto } from "@/types/proto/v1/database_service";
-import type { Changelog as NewChangelog } from "@/types/proto-es/v1/database_service_pb";
-import { ChangelogSchema as NewChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
-
-import type { Secret as OldSecret } from "@/types/proto/v1/database_service";
-import { Secret as OldSecretProto } from "@/types/proto/v1/database_service";
-import type { Secret as NewSecret } from "@/types/proto-es/v1/database_service_pb";
-import { SecretSchema as NewSecretSchema } from "@/types/proto-es/v1/database_service_pb";
-
-import type { DatabaseSchema as OldDatabaseSchema } from "@/types/proto/v1/database_service";
-import { DatabaseSchema as OldDatabaseSchemaProto } from "@/types/proto/v1/database_service";
-import type { DatabaseSchema as NewDatabaseSchemaType } from "@/types/proto-es/v1/database_service_pb";
-import { DatabaseSchemaSchema as NewDatabaseSchemaSchema } from "@/types/proto-es/v1/database_service_pb";
-
-import type { DiffSchemaResponse as OldDiffSchemaResponse } from "@/types/proto/v1/database_service";
-import { DiffSchemaResponse as OldDiffSchemaResponseProto } from "@/types/proto/v1/database_service";
-import type { DiffSchemaResponse as NewDiffSchemaResponse } from "@/types/proto-es/v1/database_service_pb";
-import { DiffSchemaResponseSchema as NewDiffSchemaResponseSchema } from "@/types/proto-es/v1/database_service_pb";
-
-import type { GetSchemaStringResponse as OldGetSchemaStringResponse } from "@/types/proto/v1/database_service";
-import { GetSchemaStringResponse as OldGetSchemaStringResponseProto } from "@/types/proto/v1/database_service";
-import type { GetSchemaStringResponse as NewGetSchemaStringResponse } from "@/types/proto-es/v1/database_service_pb";
-import { GetSchemaStringResponseSchema as NewGetSchemaStringResponseSchema } from "@/types/proto-es/v1/database_service_pb";
-
-import { ChangelogView as OldChangelogView } from "@/types/proto/v1/database_service";
-import { ChangelogView as NewChangelogView } from "@/types/proto-es/v1/database_service_pb";
-
-import { GetSchemaStringRequest_ObjectType as OldObjectType } from "@/types/proto/v1/database_service";
-import { GetSchemaStringRequest_ObjectType as NewObjectType } from "@/types/proto-es/v1/database_service_pb";
-
-import type { SchemaMetadata as OldSchemaMetadata } from "@/types/proto/v1/database_service";
-import { SchemaMetadata as OldSchemaMetadataProto } from "@/types/proto/v1/database_service";
-import type { SchemaMetadata as NewSchemaMetadata } from "@/types/proto-es/v1/database_service_pb";
-import { SchemaMetadataSchema as NewSchemaMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
-
-import type { TableMetadata as OldTableMetadata } from "@/types/proto/v1/database_service";
-import { TableMetadata as OldTableMetadataProto } from "@/types/proto/v1/database_service";
-import type { TableMetadata as NewTableMetadata } from "@/types/proto-es/v1/database_service_pb";
-import { TableMetadataSchema as NewTableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
-
-import type { ColumnMetadata as OldColumnMetadata } from "@/types/proto/v1/database_service";
-import { ColumnMetadata as OldColumnMetadataProto } from "@/types/proto/v1/database_service";
-import type { ColumnMetadata as NewColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
-import { ColumnMetadataSchema as NewColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+import type { 
+  Database as OldDatabase,
+  GetDatabaseRequest as OldGetDatabaseRequest,
+  BatchGetDatabasesRequest as OldBatchGetDatabasesRequest,
+  BatchGetDatabasesResponse as OldBatchGetDatabasesResponse,
+  ListDatabasesRequest as OldListDatabasesRequest,
+  ListDatabasesResponse as OldListDatabasesResponse,
+  UpdateDatabaseRequest as OldUpdateDatabaseRequest,
+  BatchUpdateDatabasesRequest as OldBatchUpdateDatabasesRequest,
+  BatchUpdateDatabasesResponse as OldBatchUpdateDatabasesResponse,
+  BatchSyncDatabasesRequest as OldBatchSyncDatabasesRequest,
+  BatchSyncDatabasesResponse as OldBatchSyncDatabasesResponse,
+  SyncDatabaseRequest as OldSyncDatabaseRequest,
+  SyncDatabaseResponse as OldSyncDatabaseResponse,
+  GetDatabaseMetadataRequest as OldGetDatabaseMetadataRequest,
+  GetDatabaseSchemaRequest as OldGetDatabaseSchemaRequest,
+  DiffSchemaRequest as OldDiffSchemaRequest,
+  ListSecretsRequest as OldListSecretsRequest,
+  ListSecretsResponse as OldListSecretsResponse,
+  UpdateSecretRequest as OldUpdateSecretRequest,
+  DeleteSecretRequest as OldDeleteSecretRequest,
+  ListChangelogsRequest as OldListChangelogsRequest,
+  ListChangelogsResponse as OldListChangelogsResponse,
+  GetChangelogRequest as OldGetChangelogRequest,
+  GetSchemaStringRequest as OldGetSchemaStringRequest,
+  DatabaseMetadata as OldDatabaseMetadata,
+  Changelog as OldChangelog,
+  Secret as OldSecret,
+  DatabaseSchema as OldDatabaseSchema,
+  DiffSchemaResponse as OldDiffSchemaResponse,
+  GetSchemaStringResponse as OldGetSchemaStringResponse,
+  SchemaMetadata as OldSchemaMetadata,
+  TableMetadata as OldTableMetadata,
+  ColumnMetadata as OldColumnMetadata,
+} from "@/types/proto/v1/database_service";
+import {
+  Database as OldDatabaseProto,
+  GetDatabaseRequest as OldGetDatabaseRequestProto,
+  BatchGetDatabasesRequest as OldBatchGetDatabasesRequestProto,
+  BatchGetDatabasesResponse as OldBatchGetDatabasesResponseProto,
+  ListDatabasesRequest as OldListDatabasesRequestProto,
+  ListDatabasesResponse as OldListDatabasesResponseProto,
+  UpdateDatabaseRequest as OldUpdateDatabaseRequestProto,
+  BatchUpdateDatabasesRequest as OldBatchUpdateDatabasesRequestProto,
+  BatchUpdateDatabasesResponse as OldBatchUpdateDatabasesResponseProto,
+  BatchSyncDatabasesRequest as OldBatchSyncDatabasesRequestProto,
+  BatchSyncDatabasesResponse as OldBatchSyncDatabasesResponseProto,
+  SyncDatabaseRequest as OldSyncDatabaseRequestProto,
+  SyncDatabaseResponse as OldSyncDatabaseResponseProto,
+  GetDatabaseMetadataRequest as OldGetDatabaseMetadataRequestProto,
+  GetDatabaseSchemaRequest as OldGetDatabaseSchemaRequestProto,
+  DiffSchemaRequest as OldDiffSchemaRequestProto,
+  ListSecretsRequest as OldListSecretsRequestProto,
+  ListSecretsResponse as OldListSecretsResponseProto,
+  UpdateSecretRequest as OldUpdateSecretRequestProto,
+  DeleteSecretRequest as OldDeleteSecretRequestProto,
+  ListChangelogsRequest as OldListChangelogsRequestProto,
+  ListChangelogsResponse as OldListChangelogsResponseProto,
+  GetChangelogRequest as OldGetChangelogRequestProto,
+  GetSchemaStringRequest as OldGetSchemaStringRequestProto,
+  DatabaseMetadata as OldDatabaseMetadataProto,
+  Changelog as OldChangelogProto,
+  Secret as OldSecretProto,
+  DatabaseSchema as OldDatabaseSchemaProto,
+  DiffSchemaResponse as OldDiffSchemaResponseProto,
+  GetSchemaStringResponse as OldGetSchemaStringResponseProto,
+  SchemaMetadata as OldSchemaMetadataProto,
+  TableMetadata as OldTableMetadataProto,
+  ColumnMetadata as OldColumnMetadataProto,
+  ChangelogView as OldChangelogView,
+  GetSchemaStringRequest_ObjectType as OldObjectType
+} from "@/types/proto/v1/database_service";
+import type { 
+  Database as NewDatabase,
+  GetDatabaseRequest as NewGetDatabaseRequest,
+  BatchGetDatabasesRequest as NewBatchGetDatabasesRequest,
+  BatchGetDatabasesResponse as NewBatchGetDatabasesResponse,
+  ListDatabasesRequest as NewListDatabasesRequest,
+  ListDatabasesResponse as NewListDatabasesResponse,
+  UpdateDatabaseRequest as NewUpdateDatabaseRequest,
+  BatchUpdateDatabasesRequest as NewBatchUpdateDatabasesRequest,
+  BatchUpdateDatabasesResponse as NewBatchUpdateDatabasesResponse,
+  BatchSyncDatabasesRequest as NewBatchSyncDatabasesRequest,
+  BatchSyncDatabasesResponse as NewBatchSyncDatabasesResponse,
+  SyncDatabaseRequest as NewSyncDatabaseRequest,
+  SyncDatabaseResponse as NewSyncDatabaseResponse,
+  GetDatabaseMetadataRequest as NewGetDatabaseMetadataRequest,
+  GetDatabaseSchemaRequest as NewGetDatabaseSchemaRequest,
+  DiffSchemaRequest as NewDiffSchemaRequest,
+  ListSecretsRequest as NewListSecretsRequest,
+  ListSecretsResponse as NewListSecretsResponse,
+  UpdateSecretRequest as NewUpdateSecretRequest,
+  DeleteSecretRequest as NewDeleteSecretRequest,
+  ListChangelogsRequest as NewListChangelogsRequest,
+  ListChangelogsResponse as NewListChangelogsResponse,
+  GetChangelogRequest as NewGetChangelogRequest,
+  GetSchemaStringRequest as NewGetSchemaStringRequest,
+  DatabaseMetadata as NewDatabaseMetadata,
+  Changelog as NewChangelog,
+  Secret as NewSecret,
+  DatabaseSchema as NewDatabaseSchemaType,
+  DiffSchemaResponse as NewDiffSchemaResponse,
+  GetSchemaStringResponse as NewGetSchemaStringResponse,
+  SchemaMetadata as NewSchemaMetadata,
+  TableMetadata as NewTableMetadata,
+  ColumnMetadata as NewColumnMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  GetDatabaseRequestSchema,
+  BatchGetDatabasesRequestSchema,
+  BatchGetDatabasesResponseSchema,
+  ListDatabasesRequestSchema,
+  ListDatabasesResponseSchema,
+  UpdateDatabaseRequestSchema,
+  BatchUpdateDatabasesRequestSchema,
+  BatchUpdateDatabasesResponseSchema,
+  BatchSyncDatabasesRequestSchema,
+  BatchSyncDatabasesResponseSchema,
+  SyncDatabaseRequestSchema,
+  SyncDatabaseResponseSchema,
+  GetDatabaseMetadataRequestSchema,
+  GetDatabaseSchemaRequestSchema,
+  DiffSchemaRequestSchema,
+  ListSecretsRequestSchema,
+  ListSecretsResponseSchema,
+  UpdateSecretRequestSchema,
+  DeleteSecretRequestSchema,
+  ListChangelogsRequestSchema,
+  ListChangelogsResponseSchema,
+  GetChangelogRequestSchema,
+  GetSchemaStringRequestSchema,
+  DatabaseMetadataSchema as NewDatabaseMetadataSchema,
+  ChangelogSchema as NewChangelogSchema,
+  SecretSchema as NewSecretSchema,
+  DatabaseSchemaSchema as NewDatabaseSchemaSchema,
+  DiffSchemaResponseSchema as NewDiffSchemaResponseSchema,
+  GetSchemaStringResponseSchema as NewGetSchemaStringResponseSchema,
+  SchemaMetadataSchema as NewSchemaMetadataSchema,
+  TableMetadataSchema as NewTableMetadataSchema,
+  ColumnMetadataSchema as NewColumnMetadataSchema,
+  ChangelogView as NewChangelogView,
+  GetSchemaStringRequest_ObjectType as NewObjectType,
+  DatabaseSchema$
+} from "@/types/proto-es/v1/database_service_pb";
 
 
 
@@ -99,12 +188,12 @@ export const convertOldObjectTypeToNew = (oldType?: OldObjectType): NewObjectTyp
 // Convert old Database proto to proto-es
 export const convertOldDatabaseToNew = (oldDatabase: OldDatabase): NewDatabase => {
   const json = OldDatabaseProto.toJSON(oldDatabase) as any;
-  return fromJson(NewDatabaseSchema, json);
+  return fromJson(DatabaseSchema$, json);
 };
 
 // Convert proto-es Database to old proto
 export const convertNewDatabaseToOld = (newDatabase: NewDatabase): OldDatabase => {
-  const json = toJson(NewDatabaseSchema, newDatabase);
+  const json = toJson(DatabaseSchema$, newDatabase);
   return OldDatabaseProto.fromJSON(json);
 };
 
@@ -214,5 +303,283 @@ export const convertOldColumnMetadataToNew = (oldMetadata: OldColumnMetadata): N
 export const convertNewColumnMetadataToOld = (newMetadata: NewColumnMetadata): OldColumnMetadata => {
   const json = toJson(NewColumnMetadataSchema, newMetadata);
   return OldColumnMetadataProto.fromJSON(json);
+};
+
+// ========== REQUEST/RESPONSE CONVERSIONS ==========
+
+// Convert old GetDatabaseRequest proto to proto-es
+export const convertOldGetDatabaseRequestToNew = (oldRequest: OldGetDatabaseRequest): NewGetDatabaseRequest => {
+  const json = OldGetDatabaseRequestProto.toJSON(oldRequest) as any;
+  return fromJson(GetDatabaseRequestSchema, json);
+};
+
+// Convert proto-es GetDatabaseRequest to old proto
+export const convertNewGetDatabaseRequestToOld = (newRequest: NewGetDatabaseRequest): OldGetDatabaseRequest => {
+  const json = toJson(GetDatabaseRequestSchema, newRequest);
+  return OldGetDatabaseRequestProto.fromJSON(json);
+};
+
+// Convert old BatchGetDatabasesRequest proto to proto-es
+export const convertOldBatchGetDatabasesRequestToNew = (oldRequest: OldBatchGetDatabasesRequest): NewBatchGetDatabasesRequest => {
+  const json = OldBatchGetDatabasesRequestProto.toJSON(oldRequest) as any;
+  return fromJson(BatchGetDatabasesRequestSchema, json);
+};
+
+// Convert proto-es BatchGetDatabasesRequest to old proto
+export const convertNewBatchGetDatabasesRequestToOld = (newRequest: NewBatchGetDatabasesRequest): OldBatchGetDatabasesRequest => {
+  const json = toJson(BatchGetDatabasesRequestSchema, newRequest);
+  return OldBatchGetDatabasesRequestProto.fromJSON(json);
+};
+
+// Convert old BatchGetDatabasesResponse proto to proto-es
+export const convertOldBatchGetDatabasesResponseToNew = (oldResponse: OldBatchGetDatabasesResponse): NewBatchGetDatabasesResponse => {
+  const json = OldBatchGetDatabasesResponseProto.toJSON(oldResponse) as any;
+  return fromJson(BatchGetDatabasesResponseSchema, json);
+};
+
+// Convert proto-es BatchGetDatabasesResponse to old proto
+export const convertNewBatchGetDatabasesResponseToOld = (newResponse: NewBatchGetDatabasesResponse): OldBatchGetDatabasesResponse => {
+  const json = toJson(BatchGetDatabasesResponseSchema, newResponse);
+  return OldBatchGetDatabasesResponseProto.fromJSON(json);
+};
+
+// Convert old ListDatabasesRequest proto to proto-es
+export const convertOldListDatabasesRequestToNew = (oldRequest: OldListDatabasesRequest): NewListDatabasesRequest => {
+  const json = OldListDatabasesRequestProto.toJSON(oldRequest) as any;
+  return fromJson(ListDatabasesRequestSchema, json);
+};
+
+// Convert proto-es ListDatabasesRequest to old proto
+export const convertNewListDatabasesRequestToOld = (newRequest: NewListDatabasesRequest): OldListDatabasesRequest => {
+  const json = toJson(ListDatabasesRequestSchema, newRequest);
+  return OldListDatabasesRequestProto.fromJSON(json);
+};
+
+// Convert old ListDatabasesResponse proto to proto-es
+export const convertOldListDatabasesResponseToNew = (oldResponse: OldListDatabasesResponse): NewListDatabasesResponse => {
+  const json = OldListDatabasesResponseProto.toJSON(oldResponse) as any;
+  return fromJson(ListDatabasesResponseSchema, json);
+};
+
+// Convert proto-es ListDatabasesResponse to old proto
+export const convertNewListDatabasesResponseToOld = (newResponse: NewListDatabasesResponse): OldListDatabasesResponse => {
+  const json = toJson(ListDatabasesResponseSchema, newResponse);
+  return OldListDatabasesResponseProto.fromJSON(json);
+};
+
+// Convert old UpdateDatabaseRequest proto to proto-es
+export const convertOldUpdateDatabaseRequestToNew = (oldRequest: OldUpdateDatabaseRequest): NewUpdateDatabaseRequest => {
+  const json = OldUpdateDatabaseRequestProto.toJSON(oldRequest) as any;
+  return fromJson(UpdateDatabaseRequestSchema, json);
+};
+
+// Convert proto-es UpdateDatabaseRequest to old proto
+export const convertNewUpdateDatabaseRequestToOld = (newRequest: NewUpdateDatabaseRequest): OldUpdateDatabaseRequest => {
+  const json = toJson(UpdateDatabaseRequestSchema, newRequest);
+  return OldUpdateDatabaseRequestProto.fromJSON(json);
+};
+
+// Convert old BatchUpdateDatabasesRequest proto to proto-es
+export const convertOldBatchUpdateDatabasesRequestToNew = (oldRequest: OldBatchUpdateDatabasesRequest): NewBatchUpdateDatabasesRequest => {
+  const json = OldBatchUpdateDatabasesRequestProto.toJSON(oldRequest) as any;
+  return fromJson(BatchUpdateDatabasesRequestSchema, json);
+};
+
+// Convert proto-es BatchUpdateDatabasesRequest to old proto
+export const convertNewBatchUpdateDatabasesRequestToOld = (newRequest: NewBatchUpdateDatabasesRequest): OldBatchUpdateDatabasesRequest => {
+  const json = toJson(BatchUpdateDatabasesRequestSchema, newRequest);
+  return OldBatchUpdateDatabasesRequestProto.fromJSON(json);
+};
+
+// Convert old BatchUpdateDatabasesResponse proto to proto-es
+export const convertOldBatchUpdateDatabasesResponseToNew = (oldResponse: OldBatchUpdateDatabasesResponse): NewBatchUpdateDatabasesResponse => {
+  const json = OldBatchUpdateDatabasesResponseProto.toJSON(oldResponse) as any;
+  return fromJson(BatchUpdateDatabasesResponseSchema, json);
+};
+
+// Convert proto-es BatchUpdateDatabasesResponse to old proto
+export const convertNewBatchUpdateDatabasesResponseToOld = (newResponse: NewBatchUpdateDatabasesResponse): OldBatchUpdateDatabasesResponse => {
+  const json = toJson(BatchUpdateDatabasesResponseSchema, newResponse);
+  return OldBatchUpdateDatabasesResponseProto.fromJSON(json);
+};
+
+// Convert old BatchSyncDatabasesRequest proto to proto-es
+export const convertOldBatchSyncDatabasesRequestToNew = (oldRequest: OldBatchSyncDatabasesRequest): NewBatchSyncDatabasesRequest => {
+  const json = OldBatchSyncDatabasesRequestProto.toJSON(oldRequest) as any;
+  return fromJson(BatchSyncDatabasesRequestSchema, json);
+};
+
+// Convert proto-es BatchSyncDatabasesRequest to old proto
+export const convertNewBatchSyncDatabasesRequestToOld = (newRequest: NewBatchSyncDatabasesRequest): OldBatchSyncDatabasesRequest => {
+  const json = toJson(BatchSyncDatabasesRequestSchema, newRequest);
+  return OldBatchSyncDatabasesRequestProto.fromJSON(json);
+};
+
+// Convert old BatchSyncDatabasesResponse proto to proto-es
+export const convertOldBatchSyncDatabasesResponseToNew = (oldResponse: OldBatchSyncDatabasesResponse): NewBatchSyncDatabasesResponse => {
+  const json = OldBatchSyncDatabasesResponseProto.toJSON(oldResponse) as any;
+  return fromJson(BatchSyncDatabasesResponseSchema, json);
+};
+
+// Convert proto-es BatchSyncDatabasesResponse to old proto
+export const convertNewBatchSyncDatabasesResponseToOld = (newResponse: NewBatchSyncDatabasesResponse): OldBatchSyncDatabasesResponse => {
+  const json = toJson(BatchSyncDatabasesResponseSchema, newResponse);
+  return OldBatchSyncDatabasesResponseProto.fromJSON(json);
+};
+
+// Convert old SyncDatabaseRequest proto to proto-es
+export const convertOldSyncDatabaseRequestToNew = (oldRequest: OldSyncDatabaseRequest): NewSyncDatabaseRequest => {
+  const json = OldSyncDatabaseRequestProto.toJSON(oldRequest) as any;
+  return fromJson(SyncDatabaseRequestSchema, json);
+};
+
+// Convert proto-es SyncDatabaseRequest to old proto
+export const convertNewSyncDatabaseRequestToOld = (newRequest: NewSyncDatabaseRequest): OldSyncDatabaseRequest => {
+  const json = toJson(SyncDatabaseRequestSchema, newRequest);
+  return OldSyncDatabaseRequestProto.fromJSON(json);
+};
+
+// Convert old SyncDatabaseResponse proto to proto-es
+export const convertOldSyncDatabaseResponseToNew = (oldResponse: OldSyncDatabaseResponse): NewSyncDatabaseResponse => {
+  const json = OldSyncDatabaseResponseProto.toJSON(oldResponse) as any;
+  return fromJson(SyncDatabaseResponseSchema, json);
+};
+
+// Convert proto-es SyncDatabaseResponse to old proto
+export const convertNewSyncDatabaseResponseToOld = (newResponse: NewSyncDatabaseResponse): OldSyncDatabaseResponse => {
+  const json = toJson(SyncDatabaseResponseSchema, newResponse);
+  return OldSyncDatabaseResponseProto.fromJSON(json);
+};
+
+// Convert old GetDatabaseMetadataRequest proto to proto-es
+export const convertOldGetDatabaseMetadataRequestToNew = (oldRequest: OldGetDatabaseMetadataRequest): NewGetDatabaseMetadataRequest => {
+  const json = OldGetDatabaseMetadataRequestProto.toJSON(oldRequest) as any;
+  return fromJson(GetDatabaseMetadataRequestSchema, json);
+};
+
+// Convert proto-es GetDatabaseMetadataRequest to old proto
+export const convertNewGetDatabaseMetadataRequestToOld = (newRequest: NewGetDatabaseMetadataRequest): OldGetDatabaseMetadataRequest => {
+  const json = toJson(GetDatabaseMetadataRequestSchema, newRequest);
+  return OldGetDatabaseMetadataRequestProto.fromJSON(json);
+};
+
+// Convert old GetDatabaseSchemaRequest proto to proto-es
+export const convertOldGetDatabaseSchemaRequestToNew = (oldRequest: OldGetDatabaseSchemaRequest): NewGetDatabaseSchemaRequest => {
+  const json = OldGetDatabaseSchemaRequestProto.toJSON(oldRequest) as any;
+  return fromJson(GetDatabaseSchemaRequestSchema, json);
+};
+
+// Convert proto-es GetDatabaseSchemaRequest to old proto
+export const convertNewGetDatabaseSchemaRequestToOld = (newRequest: NewGetDatabaseSchemaRequest): OldGetDatabaseSchemaRequest => {
+  const json = toJson(GetDatabaseSchemaRequestSchema, newRequest);
+  return OldGetDatabaseSchemaRequestProto.fromJSON(json);
+};
+
+// Convert old DiffSchemaRequest proto to proto-es
+export const convertOldDiffSchemaRequestToNew = (oldRequest: OldDiffSchemaRequest): NewDiffSchemaRequest => {
+  const json = OldDiffSchemaRequestProto.toJSON(oldRequest) as any;
+  return fromJson(DiffSchemaRequestSchema, json);
+};
+
+// Convert proto-es DiffSchemaRequest to old proto
+export const convertNewDiffSchemaRequestToOld = (newRequest: NewDiffSchemaRequest): OldDiffSchemaRequest => {
+  const json = toJson(DiffSchemaRequestSchema, newRequest);
+  return OldDiffSchemaRequestProto.fromJSON(json);
+};
+
+// Convert old ListSecretsRequest proto to proto-es
+export const convertOldListSecretsRequestToNew = (oldRequest: OldListSecretsRequest): NewListSecretsRequest => {
+  const json = OldListSecretsRequestProto.toJSON(oldRequest) as any;
+  return fromJson(ListSecretsRequestSchema, json);
+};
+
+// Convert proto-es ListSecretsRequest to old proto
+export const convertNewListSecretsRequestToOld = (newRequest: NewListSecretsRequest): OldListSecretsRequest => {
+  const json = toJson(ListSecretsRequestSchema, newRequest);
+  return OldListSecretsRequestProto.fromJSON(json);
+};
+
+// Convert old ListSecretsResponse proto to proto-es
+export const convertOldListSecretsResponseToNew = (oldResponse: OldListSecretsResponse): NewListSecretsResponse => {
+  const json = OldListSecretsResponseProto.toJSON(oldResponse) as any;
+  return fromJson(ListSecretsResponseSchema, json);
+};
+
+// Convert proto-es ListSecretsResponse to old proto
+export const convertNewListSecretsResponseToOld = (newResponse: NewListSecretsResponse): OldListSecretsResponse => {
+  const json = toJson(ListSecretsResponseSchema, newResponse);
+  return OldListSecretsResponseProto.fromJSON(json);
+};
+
+// Convert old UpdateSecretRequest proto to proto-es
+export const convertOldUpdateSecretRequestToNew = (oldRequest: OldUpdateSecretRequest): NewUpdateSecretRequest => {
+  const json = OldUpdateSecretRequestProto.toJSON(oldRequest) as any;
+  return fromJson(UpdateSecretRequestSchema, json);
+};
+
+// Convert proto-es UpdateSecretRequest to old proto
+export const convertNewUpdateSecretRequestToOld = (newRequest: NewUpdateSecretRequest): OldUpdateSecretRequest => {
+  const json = toJson(UpdateSecretRequestSchema, newRequest);
+  return OldUpdateSecretRequestProto.fromJSON(json);
+};
+
+// Convert old DeleteSecretRequest proto to proto-es
+export const convertOldDeleteSecretRequestToNew = (oldRequest: OldDeleteSecretRequest): NewDeleteSecretRequest => {
+  const json = OldDeleteSecretRequestProto.toJSON(oldRequest) as any;
+  return fromJson(DeleteSecretRequestSchema, json);
+};
+
+// Convert proto-es DeleteSecretRequest to old proto
+export const convertNewDeleteSecretRequestToOld = (newRequest: NewDeleteSecretRequest): OldDeleteSecretRequest => {
+  const json = toJson(DeleteSecretRequestSchema, newRequest);
+  return OldDeleteSecretRequestProto.fromJSON(json);
+};
+
+// Convert old ListChangelogsRequest proto to proto-es
+export const convertOldListChangelogsRequestToNew = (oldRequest: OldListChangelogsRequest): NewListChangelogsRequest => {
+  const json = OldListChangelogsRequestProto.toJSON(oldRequest) as any;
+  return fromJson(ListChangelogsRequestSchema, json);
+};
+
+// Convert proto-es ListChangelogsRequest to old proto
+export const convertNewListChangelogsRequestToOld = (newRequest: NewListChangelogsRequest): OldListChangelogsRequest => {
+  const json = toJson(ListChangelogsRequestSchema, newRequest);
+  return OldListChangelogsRequestProto.fromJSON(json);
+};
+
+// Convert old ListChangelogsResponse proto to proto-es
+export const convertOldListChangelogsResponseToNew = (oldResponse: OldListChangelogsResponse): NewListChangelogsResponse => {
+  const json = OldListChangelogsResponseProto.toJSON(oldResponse) as any;
+  return fromJson(ListChangelogsResponseSchema, json);
+};
+
+// Convert proto-es ListChangelogsResponse to old proto
+export const convertNewListChangelogsResponseToOld = (newResponse: NewListChangelogsResponse): OldListChangelogsResponse => {
+  const json = toJson(ListChangelogsResponseSchema, newResponse);
+  return OldListChangelogsResponseProto.fromJSON(json);
+};
+
+// Convert old GetChangelogRequest proto to proto-es
+export const convertOldGetChangelogRequestToNew = (oldRequest: OldGetChangelogRequest): NewGetChangelogRequest => {
+  const json = OldGetChangelogRequestProto.toJSON(oldRequest) as any;
+  return fromJson(GetChangelogRequestSchema, json);
+};
+
+// Convert proto-es GetChangelogRequest to old proto
+export const convertNewGetChangelogRequestToOld = (newRequest: NewGetChangelogRequest): OldGetChangelogRequest => {
+  const json = toJson(GetChangelogRequestSchema, newRequest);
+  return OldGetChangelogRequestProto.fromJSON(json);
+};
+
+// Convert old GetSchemaStringRequest proto to proto-es
+export const convertOldGetSchemaStringRequestToNew = (oldRequest: OldGetSchemaStringRequest): NewGetSchemaStringRequest => {
+  const json = OldGetSchemaStringRequestProto.toJSON(oldRequest) as any;
+  return fromJson(GetSchemaStringRequestSchema, json);
+};
+
+// Convert proto-es GetSchemaStringRequest to old proto
+export const convertNewGetSchemaStringRequestToOld = (newRequest: NewGetSchemaStringRequest): OldGetSchemaStringRequest => {
+  const json = toJson(GetSchemaStringRequestSchema, newRequest);
+  return OldGetSchemaStringRequestProto.fromJSON(json);
 };
 
