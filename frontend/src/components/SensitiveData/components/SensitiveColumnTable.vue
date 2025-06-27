@@ -30,7 +30,7 @@ import type { ComposedDatabase } from "@/types";
 import { create } from "@bufbuild/protobuf";
 import { DataClassificationSetting_DataClassificationConfigSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { autoDatabaseRoute } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 
 const props = defineProps<{
   database: ComposedDatabase;

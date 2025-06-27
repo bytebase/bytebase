@@ -167,7 +167,7 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";

@@ -44,7 +44,7 @@
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 import { convertNewTableMetadataToOld } from "@/utils/v1/database-conversions";
 import {
   TableCatalog,

@@ -20,7 +20,7 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import ConnectChooser from "./ConnectChooser.vue";
 
 const OptionValueUnspecified = "-1";

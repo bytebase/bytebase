@@ -64,7 +64,7 @@ import {
 } from "@/types/proto/v1/instance_service";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { defer, isValidSpannerHost } from "@/utils";
-import { convertEngineToOld } from "@/utils/v1/setting-conversions";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";

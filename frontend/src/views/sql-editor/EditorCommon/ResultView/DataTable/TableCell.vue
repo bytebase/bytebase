@@ -57,7 +57,7 @@ import { computed, ref, watchEffect } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import {

@@ -48,7 +48,7 @@ import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { nextAnimationFrame } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 
 const props = defineProps<{

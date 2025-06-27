@@ -38,7 +38,7 @@
 import { reactive } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName, instanceV1Name } from "@/utils";
 import InstanceDashboard from "@/views/InstanceDashboard.vue";

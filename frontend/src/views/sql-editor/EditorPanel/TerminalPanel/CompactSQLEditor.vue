@@ -48,7 +48,7 @@ import {
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { useInstanceV1EditorLanguage, instanceV1AllowsExplain } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {

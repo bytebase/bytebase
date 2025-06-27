@@ -351,7 +351,7 @@ import {
   isDatabaseV1Queryable,
   supportGetStringSchema,
 } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";

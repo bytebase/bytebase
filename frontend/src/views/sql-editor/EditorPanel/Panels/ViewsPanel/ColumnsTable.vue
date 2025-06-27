@@ -31,7 +31,7 @@ import type {
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { EllipsisCell } from "../../common";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 

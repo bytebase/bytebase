@@ -26,7 +26,7 @@ import {
   getDefaultPagination,
   hasWorkspacePermissionV2,
 } from "@/utils";
-import { convertEngineToOld } from "@/utils/v1/setting-conversions";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import type { ScopeOption, ValueOption } from "./types";
 
 export const useCommonSearchScopeOptions = (

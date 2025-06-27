@@ -69,7 +69,7 @@ import {
   nextAnimationFrame,
   type VueClass,
 } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useCurrentTabViewStateContext } from "../context/viewState.tsx";
 import DiagramPanel from "./DiagramPanel";

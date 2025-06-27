@@ -22,7 +22,7 @@ import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { IndexMetadata } from "@/types/proto/v1/database_service";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 
 const props = defineProps({
   database: {

@@ -81,7 +81,7 @@ import { useAIContext } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { nextAnimationFrame, type VueClass } from "@/utils";
 import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 import { useSQLEditorContext } from "@/views/sql-editor/context";

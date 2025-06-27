@@ -30,7 +30,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 

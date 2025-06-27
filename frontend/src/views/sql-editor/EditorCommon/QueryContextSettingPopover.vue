@@ -131,7 +131,7 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
 import ResultLimitSelect from "./ResultLimitSelect.vue";

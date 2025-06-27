@@ -129,7 +129,7 @@ import {
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
-import { convertEngineToNew } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   instanceV1HasCreateDatabase,

@@ -17,7 +17,7 @@
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { convertEngineToOld } from "@/utils/v1/setting-conversions";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import { wrapEditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import CreateReadOnlyDataSourceTips from "./CreateReadOnlyDataSourceTips.vue";

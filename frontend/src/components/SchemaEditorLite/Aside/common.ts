@@ -11,7 +11,7 @@ import type {
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { groupBy } from "@/utils";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/setting-conversions";
+import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource } from "../context/common";
 import {
