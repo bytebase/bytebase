@@ -27,13 +27,11 @@ import { CopyButton } from "@/components/v2";
 import { create } from "@bufbuild/protobuf";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
-import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
+import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import { 
   GetSchemaStringRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
-import { convertOldObjectTypeToNew } from "@/utils/v1/database-conversions";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -50,7 +48,7 @@ const engine = computed(() => {
 
 const resourceName = computed(() => {
   if (props.object) {
-    if (hasSchemaProperty(convertEngineToNew(engine.value))) {
+    if (hasSchemaProperty(engine.value)) {
       return `${props.schema}.${props.object}`;
     } else {
       return props.object;
@@ -66,7 +64,7 @@ onMounted(async () => {
   nextTick(async () => {
     const request = create(GetSchemaStringRequestSchema, {
       name: props.database.name,
-      type: convertOldObjectTypeToNew(props.type),
+      type: props.type,
       schema: props.schema,
       object: props.object,
     });

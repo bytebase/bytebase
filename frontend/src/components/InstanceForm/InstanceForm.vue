@@ -18,8 +18,7 @@ import { onBeforeRouteLeave } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useActuatorV1Store, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { Instance } from "@/types/proto/v1/instance_service";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { FeatureModal } from "../FeatureGuard";
 import { defaultPortForEngine } from "./constants";
 import { provideInstanceFormContext } from "./context";
@@ -71,7 +70,7 @@ onMounted(async () => {
     adminDataSource.value.host = actuatorStore.isDocker
       ? "host.docker.internal"
       : "127.0.0.1";
-    if (basicInfo.value.engine === convertEngineToOld(Engine.DYNAMODB)) {
+    if (basicInfo.value.engine === Engine.DYNAMODB) {
       adminDataSource.value.host = "";
     }
     adminDataSource.value.srv = false;
@@ -84,7 +83,7 @@ watch(
   () => basicInfo.value.engine,
   () => {
     if (isCreating.value) {
-      adminDataSource.value.port = defaultPortForEngine(convertEngineToNew(basicInfo.value.engine));
+      adminDataSource.value.port = defaultPortForEngine(basicInfo.value.engine);
     }
   },
   {

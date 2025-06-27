@@ -49,12 +49,13 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useChangelogStore, useDatabaseV1ByName } from "@/store";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { Changelog } from "@/types/proto/v1/database_service";
+import { ChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName, extractIssueUID } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
 
@@ -71,7 +72,7 @@ const changelog = computed(() => {
   const name = props.change.source;
   return (
     useChangelogStore().getChangelogByName(name) ??
-    Changelog.fromPartial({
+    create(ChangelogSchema, {
       name,
       version: "<<Unknown Changelog>>",
     })

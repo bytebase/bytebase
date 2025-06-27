@@ -10,7 +10,7 @@
       {{ tableMetadata.rowCount }}
     </InfoItem>
     <InfoItem :title="$t('database.data-size')">
-      {{ bytesToString(tableMetadata.dataSize.toNumber()) }}
+      {{ bytesToString(Number(tableMetadata.dataSize)) }}
     </InfoItem>
     <InfoItem v-if="indexSize" :title="$t('database.index-size')">
       {{ indexSize }}
@@ -29,7 +29,6 @@ import { computed } from "vue";
 import { RichEngineName } from "@/components/v2";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import { bytesToString } from "@/utils";
 import InfoItem from "./InfoItem.vue";
 
@@ -43,7 +42,7 @@ const dbSchema = useDBSchemaV1Store();
 const databaseStore = useDatabaseV1Store();
 
 const instanceEngine = computed(
-  () => convertEngineToNew(databaseStore.getDatabaseByName(props.database).instanceResource.engine)
+  () => databaseStore.getDatabaseByName(props.database).instanceResource.engine
 );
 
 const tableMetadata = computed(() =>
@@ -58,7 +57,7 @@ const indexSize = computed(() => {
   if ([Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(instanceEngine.value)) {
     return "";
   }
-  return bytesToString(tableMetadata.value.indexSize.toNumber());
+  return bytesToString(Number(tableMetadata.value.indexSize));
 });
 
 const collation = computed(() => {

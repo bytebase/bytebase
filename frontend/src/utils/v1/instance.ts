@@ -9,15 +9,15 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToOld, convertEngineToNew } from "@/utils/v1/common-conversions";
+// Using proto-es types directly, no conversions needed
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSourceType,
   type DataSource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 export function instanceV1Name(instance: Instance | InstanceResource) {
@@ -27,7 +27,7 @@ export function instanceV1Name(instance: Instance | InstanceResource) {
   if (instance.title === unknownInstance().title) {
     name = extractInstanceResourceName(instance.name);
   }
-  if ((instance as Instance).state === convertStateToOld(State.DELETED)) {
+  if ((instance as Instance).state === State.DELETED) {
     name += ` (${t("common.archived")})`;
   } else if (
     isValidInstanceName(instance.name) &&
@@ -335,7 +335,7 @@ export const engineOfInstanceV1 = (
   if (typeof instanceOrEngine === "number") {
     return instanceOrEngine;
   }
-  return convertEngineToNew(instanceOrEngine.engine);
+  return instanceOrEngine.engine;
 };
 
 export const engineNameV1 = (type: Engine): string => {
@@ -442,7 +442,7 @@ export const useInstanceV1EditorLanguage = (
   instance: MaybeRef<Instance | InstanceResource | undefined>
 ) => {
   return computed(() => {
-    return languageOfEngineV1(unref(instance)?.engine ? convertEngineToNew(unref(instance)!.engine) : undefined);
+    return languageOfEngineV1(unref(instance)?.engine);
   });
 };
 

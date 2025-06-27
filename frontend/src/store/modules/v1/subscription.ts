@@ -15,7 +15,7 @@ import {
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import type { Subscription } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   GetSubscriptionRequestSchema,

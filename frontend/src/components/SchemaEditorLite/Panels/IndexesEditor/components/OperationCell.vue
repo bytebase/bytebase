@@ -16,7 +16,7 @@
 import { TrashIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
 import { MiniActionButton } from "@/components/v2";
-import type { IndexMetadata } from "@/types/proto/v1/database_service";
+import type { IndexMetadata } from "@/types/proto-es/v1/database_service_pb";
 
 defineProps<{
   index: IndexMetadata;

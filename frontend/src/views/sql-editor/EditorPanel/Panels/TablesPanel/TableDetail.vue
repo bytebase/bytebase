@@ -103,7 +103,7 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ColumnsTable from "./ColumnsTable.vue";

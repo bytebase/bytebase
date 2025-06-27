@@ -11,7 +11,7 @@
 import { computedAsync } from "@vueuse/core";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { isValidInstanceName, unknownInstance } from "@/types";
+import { isValidInstanceName, unknownInstanceResource } from "@/types";
 import type { QueryHistory } from "@/types/proto/v1/sql_service";
 import { extractDatabaseResourceName } from "@/utils";
 
@@ -23,5 +23,5 @@ const instance = computedAsync(async () => {
   const { database } = extractDatabaseResourceName(props.queryHistory.database);
   const d = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
   return d.instanceResource;
-}, unknownInstance());
+}, unknownInstanceResource());
 </script>

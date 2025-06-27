@@ -112,7 +112,7 @@
             <ColumnDataTable
               :database="database"
               :schema="schemaName"
-              :table="TableMetadata.fromPartial({})"
+              :table="create(TableMetadataSchema, {})"
               :column-list="externalTable.columns"
               :is-external-table="true"
               :mask-data-list="[]"
@@ -139,13 +139,13 @@ import {
 } from "@/components/v2";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
-import { TableMetadata } from "@/types/proto/v1/database_service";
+import { TableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
   hasProjectPermissionV2,
   hasSchemaProperty,
   isDatabaseV1Queryable,
 } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
+import { create } from "@bufbuild/protobuf";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 
@@ -206,7 +206,7 @@ const allowQuery = computed(() => {
 });
 
 const getTableName = (tableName: string) => {
-  if (hasSchemaProperty(convertEngineToNew(instanceEngine.value))) {
+  if (hasSchemaProperty(instanceEngine.value)) {
     return `"${props.schemaName}"."${tableName}"`;
   }
   return tableName;

@@ -21,7 +21,7 @@ import type { CSSProperties } from "vue";
 import { computed, ref, onMounted } from "vue";
 import { DropdownInput } from "@/components/v2";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
-import type { ColumnMetadata } from "@/types/proto/v1/database_service";
+import type { ColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { getDataTypeSuggestionList } from "@/utils";
 
 const props = defineProps<{

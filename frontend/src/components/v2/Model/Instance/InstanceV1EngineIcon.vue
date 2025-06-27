@@ -2,7 +2,7 @@
   <NTooltip :disabled="!tooltip || !instance.engineVersion">
     <template #trigger>
       <div :class="sizeClass" class="relative shrink-0" v-bind="$attrs">
-        <EngineIcon custom-class="w-full h-full" :engine="convertEngineToNew(instance.engine)" />
+        <EngineIcon custom-class="w-full h-full" :engine="instance.engine" />
         <div
           v-if="showStatus"
           class="bg-green-400 border-surface-high rounded-full absolute border-2"
@@ -19,11 +19,10 @@ import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import type { PropType } from "vue";
 import { EngineIcon } from "@/components/Icon";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 
 type Size = "small" | "medium" | "large";
 

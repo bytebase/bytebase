@@ -55,12 +55,12 @@ import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useInstanceV1Store } from "@/store";
-import { adaptComposedInstance, type ComposedInstanceV2 } from "@/types";
+import type { ComposedInstance } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
-  instance: ComposedInstanceV2;
+  instance: ComposedInstance;
 }>();
 
 const { t } = useI18n();
@@ -77,9 +77,8 @@ const allowArchiveOrRestore = computed(() => {
 });
 
 const archiveOrRestoreInstance = async (archive: boolean) => {
-  const legacyInstance = adaptComposedInstance.toLegacy(props.instance);
   if (archive) {
-    await instanceStore.archiveInstance(legacyInstance, force.value);
+    await instanceStore.archiveInstance(props.instance, force.value);
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -88,7 +87,7 @@ const archiveOrRestoreInstance = async (archive: boolean) => {
       ]),
     });
   } else {
-    await instanceStore.restoreInstance(legacyInstance);
+    await instanceStore.restoreInstance(props.instance);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

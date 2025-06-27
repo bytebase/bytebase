@@ -31,7 +31,7 @@
     <DrawerContent :title="$t('schema-template.table-template.self')">
       <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
         <TableTemplates
-          :engine="convertEngineToNew(engine)"
+          :engine="engine"
           :readonly="true"
           @apply="handleApplyTemplate"
         />
@@ -41,6 +41,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { useElementSize } from "@vueuse/core";
 import { pick } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
@@ -50,21 +51,16 @@ import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  TableCatalog,
-  TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
-import {
+  TableCatalogSchema,
+  TableCatalog_ColumnsSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import {
-  convertEngineToNew,
-  convertEngineToOld,
-} from "@/utils/v1/common-conversions";
-import { convertNewTableMetadataToOld } from "@/utils/v1/database-conversions";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
 import { markUUID } from "../common";
@@ -159,16 +155,19 @@ const catalogForTable = (table: string) => {
       schema: props.schema.name,
       table,
     }) ??
-    TableCatalog.fromPartial({
+    create(TableCatalogSchema, {
       name: table,
-      columns: TableCatalog_Columns.fromPartial({}),
+      kind: {
+        case: "columns",
+        value: create(TableCatalog_ColumnsSchema, {}),
+      },
     })
   );
 };
 
 const showClassification = computed(() => {
   return showClassificationColumn(
-    convertEngineToNew(engine.value),
+    engine.value,
     classificationConfig.value?.classificationFromConfig ?? false
   );
 });
@@ -275,7 +274,7 @@ const columns = computed(() => {
           classification: catalog.classification,
           readonly: readonly.value,
           disabled: isDroppedSchema.value || isDroppedTable(table),
-          engine: convertEngineToNew(engine.value),
+          engine: engine.value,
           classificationConfig: classificationConfig.value,
           onApply: (id: string) => {
             state.activeTable = table;
@@ -376,11 +375,11 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   if (!template.table) {
     return;
   }
-  if (convertEngineToOld(template.engine) !== engine.value) {
+  if (template.engine !== engine.value) {
     return;
   }
 
-  const table = convertNewTableMetadataToOld(template.table);
+  const table = template.table;
   /* eslint-disable-next-line vue/no-mutating-props */
   props.schema.tables.push(table);
   const metadata = metadataForTable(table);

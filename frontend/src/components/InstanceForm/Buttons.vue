@@ -57,15 +57,18 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import {
+import type {
   DataSource,
-  DataSourceType,
   Instance,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
+import {
+  DataSourceType,
+  InstanceSchema,
+} from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { defer, isValidSpannerHost } from "@/utils";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import { cloneDeep, isEqual } from "lodash-es";
+import { create } from "@bufbuild/protobuf";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -137,7 +140,7 @@ const allowUpdate = computed((): boolean => {
       return false;
     }
   }
-  if (basicInfo.value.engine === convertEngineToOld(Engine.SPANNER)) {
+  if (basicInfo.value.engine === Engine.SPANNER) {
     if (!isValidSpannerHost(adminDataSource.value.host)) {
       return false;
     }
@@ -337,7 +340,7 @@ const doUpdate = async () => {
   const pendingRequestRunners: (() => Promise<any>)[] = [];
 
   const maybeQueueUpdateInstanceBasicInfo = () => {
-    const instancePatch = Instance.fromPartial({
+    const instancePatch = create(InstanceSchema, {
       ...instance,
       ...basicInfo.value,
     });
@@ -355,8 +358,8 @@ const doUpdate = async () => {
       updateMask.push("environment");
     }
     if (
-      instancePatch.syncInterval?.seconds?.toNumber() !==
-      inst.syncInterval?.seconds?.toNumber()
+      Number(instancePatch.syncInterval?.seconds || 0n) !==
+      Number(inst.syncInterval?.seconds || 0n)
     ) {
       updateMask.push("sync_interval");
     }

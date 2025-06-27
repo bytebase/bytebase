@@ -66,16 +66,15 @@ import {
 } from "@/store";
 import {
   UNKNOWN_ID,
-  getDateForPbTimestamp,
+  getDateForPbTimestampProtoEs,
   isValidDatabaseName,
   type ComposedProject,
 } from "@/types";
-import type { Changelog } from "@/types/proto/v1/database_service";
+import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Status,
   Changelog_Type,
-  changelog_TypeToJSON,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   extractChangelogUID,
   isValidChangelogName,
@@ -192,10 +191,10 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
     <div class="flex flex-row justify-start items-center truncate gap-1">
       <HumanizeDate
         class="text-control-light"
-        date={getDateForPbTimestamp(changelog.createTime)}
+        date={getDateForPbTimestampProtoEs(changelog.createTime)}
       />
       <NTag round size="small">
-        {changelog_TypeToJSON(changelog.type)}
+        {Changelog_Type[changelog.type]}
       </NTag>
       {changelog.version && (
         <NTag round size="small">
@@ -255,15 +254,15 @@ watch(
     if (database) {
       try {
         isPreparingSchemaVersionOptions.value = true;
-        const changelogList = (
-          await changelogStore.getOrFetchChangelogListOfDatabase(database.name)
-        ).filter((changelog) =>
-          ALLOWED_CHANGELOG_TYPES.includes(changelog.type)
-        );
+        const changelogList = await changelogStore.getOrFetchChangelogListOfDatabase(database.name);
+        const filteredChangelogList = changelogList
+          .filter((changelog) =>
+            ALLOWED_CHANGELOG_TYPES.includes(changelog.type)
+          );
 
-        if (changelogList.length > 0) {
+        if (filteredChangelogList.length > 0) {
           // Default select the first changelog.
-          state.changelogName = head(changelogList)?.name;
+          state.changelogName = head(filteredChangelogList)?.name;
         } else {
           // If database has no changelog, we will use its latest schema.
           state.changelogName = mockLatestChangelog(database).name;

@@ -4,7 +4,7 @@ import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
+import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";

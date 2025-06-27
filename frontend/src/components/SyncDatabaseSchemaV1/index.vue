@@ -92,8 +92,7 @@ import {
 import type { ComposedProject } from "@/types";
 import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
-import { ChangelogView } from "@/types/proto/v1/database_service";
+import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 import {
   extractDatabaseNameAndChangelogUID,
@@ -175,7 +174,7 @@ const sourceEngine = computed(() => {
     const database = databaseStore.getDatabaseByName(
       changelogSourceSchemaState.databaseName
     );
-    return convertEngineToNew(database.instanceResource.engine);
+    return database.instanceResource.engine;
   } else {
     return rawSQLState.engine;
   }
@@ -193,7 +192,7 @@ onMounted(async () => {
     // Prepare source schema from the selected changelog.
     await changelogStore.getOrFetchChangelogByName(
       changelogName,
-      ChangelogView.CHANGELOG_VIEW_FULL
+      ChangelogView.FULL
     );
     const { databaseName } = extractDatabaseNameAndChangelogUID(changelogName);
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
@@ -282,7 +281,7 @@ const tryChangeStep = async (nextStepIndex: number) => {
     if (changelogSourceSchemaState?.changelogName) {
       await changelogStore.getOrFetchChangelogByName(
         changelogSourceSchemaState.changelogName,
-        ChangelogView.CHANGELOG_VIEW_FULL
+        ChangelogView.FULL
       );
     }
   }

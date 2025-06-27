@@ -21,9 +21,14 @@ const props = defineProps<{
   keyword: string;
 }>();
 
-const instance = computed(
-  () => (props.node as TreeNode<"instance">).meta.target
-);
+const instance = computed(() => {
+  const target = (props.node as TreeNode<"instance">).meta.target;
+  // Add $typeName to match InstanceResource type expected by InstanceV1Name
+  return {
+    ...target,
+    $typeName: "bytebase.v1.InstanceResource" as const,
+  };
+});
 
 const environment = computed(() =>
   useEnvironmentV1Store().getEnvironmentByName(instance.value.environment)

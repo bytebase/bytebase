@@ -1,6 +1,6 @@
 <template>
   <div class="inline-flex items-center justify-center">
-    <EngineIcon v-if="instance" :engine="convertEngineToNew(instance.engine)" />
+    <EngineIcon v-if="instance" :engine="instance.engine" />
     <UnlinkIcon v-else class="w-3.5 h-3.5 text-control opacity-50" />
   </div>
 </template>
@@ -11,7 +11,6 @@ import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { type SQLEditorTab, isValidInstanceName } from "@/types";
 import { connectionForSQLEditorTab } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 
 const props = defineProps<{
   tab?: SQLEditorTab;

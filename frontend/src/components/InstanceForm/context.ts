@@ -5,7 +5,7 @@ import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { instanceServiceClientConnect } from "@/grpcweb";
-import { convertOldInstanceToNew, convertOldDataSourceToNew } from "@/utils/v1/instance-conversions";
+import { convertOldInstanceToNew, convertOldDataSourceToNew, convertNewInstanceToOld, convertNewDataSourceToOld } from "@/utils/v1/instance-conversions";
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { silentContextKey } from "@/grpcweb/context-key";
@@ -21,16 +21,16 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { isValidEnvironmentName, unknownEnvironment } from "@/types";
-import { Instance, type DataSource } from "@/types/proto/v1/instance_service";
+import type { Instance, DataSource } from "@/types/proto-es/v1/instance_service_pb";
+import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToNew, convertStateToNew, convertStateToOld } from "@/utils/v1/common-conversions";
 import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceType,
   DataSource_AuthenticationType,
   DataSource_RedisType,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractInstanceResourceName,
@@ -80,7 +80,7 @@ export const provideInstanceFormContext = (baseContext: {
     if (isCreating.value) return true;
 
     return (
-      convertStateToNew(instance.value?.state || convertStateToOld(State.STATE_UNSPECIFIED)) === State.ACTIVE &&
+      (instance.value?.state || State.STATE_UNSPECIFIED) === State.ACTIVE &&
       hasWorkspacePermissionV2("bb.instances.update")
     );
   });
@@ -141,22 +141,23 @@ export const provideInstanceFormContext = (baseContext: {
         return !!ds.region;
       }
 
-      if (convertEngineToNew(basicInfo.value.engine) === Engine.ORACLE) {
+      if (basicInfo.value.engine === Engine.ORACLE) {
         if (!ds.sid && !ds.serviceName) {
           return false;
         }
-      } else if (convertEngineToNew(basicInfo.value.engine) === Engine.DATABRICKS) {
+      } else if (basicInfo.value.engine === Engine.DATABRICKS) {
         if (!ds.warehouseId) {
           return false;
         }
       }
 
-      if (ds.saslConfig?.krbConfig) {
+      if (ds.saslConfig?.mechanism?.case === 'krbConfig') {
+        const krbConfig = ds.saslConfig.mechanism.value;
         if (
-          !ds.saslConfig.krbConfig.primary ||
-          !ds.saslConfig.krbConfig.realm ||
-          !ds.saslConfig.krbConfig.kdcHost ||
-          !ds.saslConfig.krbConfig.keytab
+          !krbConfig.primary ||
+          !krbConfig.realm ||
+          !krbConfig.kdcHost ||
+          !krbConfig.keytab
         ) {
           return false;
         }
@@ -195,11 +196,12 @@ export const provideInstanceFormContext = (baseContext: {
 
       switch (ds.externalSecret.authType) {
         case DataSourceExternalSecret_AuthType.TOKEN:
-          return !!ds.externalSecret.token;
+          return !!(ds.externalSecret.authOption?.case === 'token' && ds.externalSecret.authOption.value);
         case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
-          return (
-            !!ds.externalSecret.appRole?.roleId &&
-            !!ds.externalSecret.appRole.secretId
+          return !!(
+            ds.externalSecret.authOption?.case === 'appRole' &&
+            ds.externalSecret.authOption.value?.roleId &&
+            ds.externalSecret.authOption.value.secretId
           );
       }
 
@@ -216,7 +218,7 @@ export const provideInstanceFormContext = (baseContext: {
     ) {
       return false;
     }
-    if (convertEngineToNew(basicInfo.value.engine) === Engine.SPANNER) {
+    if (basicInfo.value.engine === Engine.SPANNER) {
       return (
         basicInfo.value.title.trim() &&
         isValidSpannerHost(adminDataSource.value.host) &&
@@ -225,14 +227,14 @@ export const provideInstanceFormContext = (baseContext: {
     }
 
     // Check Host
-    if (convertEngineToNew(basicInfo.value.engine) !== Engine.DYNAMODB) {
+    if (basicInfo.value.engine !== Engine.DYNAMODB) {
       if (adminDataSource.value.host === "") {
         return false;
       }
     }
 
     // Redis Check Master Name
-    if (convertEngineToNew(basicInfo.value.engine) === Engine.REDIS) {
+    if (basicInfo.value.engine === Engine.REDIS) {
       if (
         adminDataSource.value.redisType === DataSource_RedisType.SENTINEL &&
         adminDataSource.value.masterName === ""
@@ -286,11 +288,11 @@ export const provideInstanceFormContext = (baseContext: {
     if (!showDatabase.value) {
       ds.database = "";
     }
-    if (convertEngineToNew(instance.engine) !== Engine.ORACLE) {
+    if (instance.engine !== Engine.ORACLE) {
       ds.sid = "";
       ds.serviceName = "";
     }
-    if (convertEngineToNew(instance.engine) !== Engine.MONGODB) {
+    if (instance.engine !== Engine.MONGODB) {
       ds.srv = false;
       ds.authenticationDatabase = "";
     }
@@ -312,7 +314,7 @@ export const provideInstanceFormContext = (baseContext: {
 
   const pendingCreateInstance = computed(() => {
     // When creating new instance, use the adminDataSource.
-    const instance: Instance = Instance.fromPartial({
+    const instance: Instance = create(InstanceSchema, {
       ...basicInfo.value,
       engineVersion: "",
       dataSources: [],
@@ -369,7 +371,7 @@ export const provideInstanceFormContext = (baseContext: {
     if (isCreating.value) {
       // When creating new instance, use
       // adminDataSource + CreateInstanceRequest.validateOnly = true
-      const instance: Instance = Instance.fromPartial({
+      const instance: Instance = create(InstanceSchema, {
         ...basicInfo.value,
         engineVersion: "",
         dataSources: [],
@@ -377,7 +379,8 @@ export const provideInstanceFormContext = (baseContext: {
       const dataSourceCreate = extractDataSourceFromEdit(instance, editingDS);
       instance.dataSources = [dataSourceCreate];
       try {
-        const newInstance = convertOldInstanceToNew(instance);
+        const oldInstance = convertNewInstanceToOld(instance);
+        const newInstance = convertOldInstanceToNew(oldInstance);
         const request = create(CreateInstanceRequestSchema, {
           instance: newInstance,
           instanceId: extractInstanceResourceName(instance.name),
@@ -397,7 +400,8 @@ export const provideInstanceFormContext = (baseContext: {
         // When read-only data source is about to be created, use
         // editingDataSource + AddDataSourceRequest.validateOnly = true
         try {
-          const newDataSource = convertOldDataSourceToNew(ds);
+          const oldDataSource = convertNewDataSourceToOld(ds);
+          const newDataSource = convertOldDataSourceToNew(oldDataSource);
           const request = create(AddDataSourceRequestSchema, {
             name: instance.value!.name,
             dataSource: newDataSource,
@@ -422,7 +426,8 @@ export const provideInstanceFormContext = (baseContext: {
             throw new Error("should never reach this line");
           }
           const updateMask = calcDataSourceUpdateMask(ds, original, editingDS);
-          const newDataSource = convertOldDataSourceToNew(ds);
+          const oldDataSource = convertNewDataSourceToOld(ds);
+          const newDataSource = convertOldDataSourceToNew(oldDataSource);
           const request = create(UpdateDataSourceRequestSchema, {
             name: instance.value!.name,
             dataSource: newDataSource,

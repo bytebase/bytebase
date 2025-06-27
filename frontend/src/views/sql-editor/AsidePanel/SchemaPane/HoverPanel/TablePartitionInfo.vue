@@ -4,7 +4,7 @@
       {{ partitionMetadata.name }}
     </InfoItem>
     <InfoItem :title="$t('schema-editor.table-partition.type')">
-      {{ tablePartitionMetadata_TypeToJSON(partitionMetadata.type) }}
+      {{ TablePartitionMetadata_Type[partitionMetadata.type] }}
     </InfoItem>
     <InfoItem :title="$t('schema-editor.table-partition.expression')">
       <code>{{ partitionMetadata.expression }}</code>
@@ -19,9 +19,10 @@
 import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
 import {
-  tablePartitionMetadata_TypeToJSON,
-  TablePartitionMetadata,
-} from "@/types/proto/v1/database_service";
+  TablePartitionMetadata_Type,
+  TablePartitionMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import { create } from "@bufbuild/protobuf";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
@@ -42,6 +43,6 @@ const partitionMetadata = computed(
         table: props.table,
       })
       .partitions.find((p) => p.name === props.partition) ??
-    TablePartitionMetadata.create()
+    create(TablePartitionMetadataSchema, {})
 );
 </script>

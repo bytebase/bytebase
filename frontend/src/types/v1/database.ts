@@ -1,9 +1,10 @@
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
-import { Database } from "../proto/v1/database_service";
-import type { InstanceResource } from "../proto/v1/instance_service";
+import { create } from "@bufbuild/protobuf";
+import type { Database } from "../proto-es/v1/database_service_pb";
+import { DatabaseSchema$ } from "../proto-es/v1/database_service_pb";
+import type { InstanceResource } from "../proto-es/v1/instance_service_pb";
 import type { Environment } from "../v1/environment";
 import { formatEnvironmentName, unknownEnvironment } from "./environment";
 import { unknownInstance, unknownInstanceResource } from "./instance";
@@ -29,9 +30,9 @@ export const unknownDatabase = (): ComposedDatabase => {
   const projectEntity = unknownProject();
   const instanceResource = unknownInstanceResource();
   const effectiveEnvironmentEntity = unknownEnvironment();
-  const database = Database.fromPartial({
+  const database = create(DatabaseSchema$, {
     name: `${instanceResource.name}/databases/${UNKNOWN_ID}`,
-    state: convertStateToOld(State.ACTIVE),
+    state: State.ACTIVE,
     project: projectEntity.name,
     effectiveEnvironment: formatEnvironmentName(effectiveEnvironmentEntity.id),
   });

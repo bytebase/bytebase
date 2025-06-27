@@ -29,7 +29,7 @@ import type {
   DatabaseMetadata,
   ProcedureMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
 import { useCurrentTabViewStateContext } from "../../context/viewState";

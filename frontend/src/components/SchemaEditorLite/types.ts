@@ -1,5 +1,5 @@
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -8,7 +8,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
   ViewMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 
 export type EditTarget = {
   database: ComposedDatabase;

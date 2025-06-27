@@ -14,7 +14,8 @@ import {
   unknownInstance,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
+import { create } from "@bufbuild/protobuf";
+import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
@@ -73,18 +74,25 @@ export const mockDatabase = (
   const { instance, databaseName } = extractDatabaseResourceName(db.name);
   db.databaseName = databaseName;
   db.instance = instance;
-  db.instanceResource = {
-    ...db.instanceResource,
-    ...useInstanceResourceByName(instance).instance.value,
-    name: instance,
-  };
+  const { instance: instanceFromStore } = useInstanceResourceByName(instance);
+  // Create InstanceResource from the instance data
+  const instanceData = instanceFromStore.value;
+  db.instanceResource = create(InstanceResourceSchema, {
+    name: instanceData.name,
+    engine: instanceData.engine,
+    title: instanceData.title,
+    activation: instanceData.activation ?? true,
+    dataSources: instanceData.dataSources ?? [],
+    environment: instanceData.environment,
+    engineVersion: instanceData.engineVersion ?? "",
+  });
   db.environment = db.instanceResource.environment;
   db.effectiveEnvironment = db.instanceResource.environment;
   db.effectiveEnvironmentEntity =
     useEnvironmentV1Store().getEnvironmentByName(
       db.instanceResource.environment
     ) ?? unknownEnvironment();
-  db.state = convertStateToOld(State.DELETED);
+  db.state = State.DELETED;
   return db;
 };
 
@@ -103,7 +111,21 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
     }
 
     const environmentStore = useEnvironmentV1Store();
-    const { instance } = useInstanceResourceByName(instanceName);
+    const { instance: instanceFromStore } = useInstanceResourceByName(instanceName);
+    // Create InstanceResource from the instance data
+    const instanceData = instanceFromStore.value;
+    const instanceResource = create(InstanceResourceSchema, {
+      name: instanceData.name,
+      engine: instanceData.engine,
+      title: instanceData.title,
+      activation: instanceData.activation ?? true,
+      dataSources: instanceData.dataSources ?? [],
+      environment: instanceData.environment,
+      engineVersion: instanceData.engineVersion ?? "",
+    });
+    const effectiveEnvironmentEntity = environmentStore.getEnvironmentByName(
+      instanceResource.environment
+    );
     return {
       ...unknownDatabase(),
       name,
@@ -111,11 +133,9 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       instance: instanceName,
       project: project.name,
       projectEntity: project,
-      effectiveEnvironment: instance.value.environment,
-      effectiveEnvironmentEntity: environmentStore.getEnvironmentByName(
-        instance.value.environment
-      ),
-      instanceResource: instance.value,
+      effectiveEnvironment: instanceResource.environment,
+      effectiveEnvironmentEntity: effectiveEnvironmentEntity ?? unknownEnvironment(),
+      instanceResource,
     };
   };
 

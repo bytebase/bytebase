@@ -6,16 +6,15 @@ import {
   UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
-import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import type { DataSource, Instance } from "@/types/proto-es/v1/instance_service_pb";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToOld, convertStateToOld } from "@/utils/v1/common-conversions";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
 
 export type BasicInfo = Omit<
   Instance,
-  "dataSources" | "engineVersion" | "lastSyncTime"
+  "$typeName" | "dataSources" | "engineVersion" | "lastSyncTime"
 >;
 
 export type EditDataSource = DataSource & {
@@ -67,9 +66,9 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
 
   return {
     name: instance?.name ?? UNKNOWN_INSTANCE_NAME,
-    state: instance?.state ?? convertStateToOld(State.ACTIVE),
+    state: instance?.state ?? State.ACTIVE,
     title: instance?.title ?? t("instance.new-instance"),
-    engine: instance?.engine ?? convertEngineToOld(Engine.MYSQL),
+    engine: instance?.engine ?? Engine.MYSQL,
     externalLink: instance?.externalLink ?? "",
     environment: instance?.environment ?? UNKNOWN_ENVIRONMENT_NAME,
     activation: instance
@@ -80,7 +79,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     syncInterval: instance?.syncInterval,
     maximumConnections: instance?.maximumConnections ?? 0,
     syncDatabases: instance?.syncDatabases ?? [],
-    roles: instance ? instance?.roles : [],
+    roles: instance?.roles ?? [],
   };
 };
 

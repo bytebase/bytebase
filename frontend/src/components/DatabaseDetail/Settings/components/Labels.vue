@@ -38,12 +38,13 @@
 import { isEqual } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { useI18n } from "vue-i18n";
 import { LabelListEditor } from "@/components/Label/";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { type ComposedDatabase } from "@/types";
-import { Database } from "@/types/proto/v1/database_service";
 import { convertKVListToLabels, convertLabelsToKVList } from "@/utils";
+import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 
 type LocalState = {
   kvList: { key: string; value: string }[];
@@ -90,14 +91,13 @@ const handleSave = async () => {
     // Otherwise the server API won't update the labels field correctly.
     const labels = convertKVListToLabels(state.kvList, false /* !omitEmpty */);
 
-    const patch = {
-      ...Database.fromPartial(props.database),
-      labels,
-    };
-    await useDatabaseV1Store().updateDatabase({
-      database: patch,
-      updateMask: ["labels"],
-    });
+    await useDatabaseV1Store().updateDatabase(create(UpdateDatabaseRequestSchema,{
+      database: {
+        ...props.database,
+        labels,
+      },
+      updateMask: { paths: ["labels"] },
+    }));
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

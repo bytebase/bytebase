@@ -19,12 +19,12 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { RouterLink } from "vue-router";
-import { getDateForPbTimestamp } from "@/types";
-import type { Changelog } from "@/types/proto/v1/database_service";
+import { getDateForPbTimestampProtoEs } from "@/types";
+import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Status,
   Changelog_Type,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { extractIssueUID, getAffectedTableDisplayName } from "@/utils";
 import {
   changelogLink,
@@ -169,7 +169,7 @@ const columnList = computed(() => {
       ellipsis: true,
       render: (changelog) => {
         return (
-          <HumanizeDate date={getDateForPbTimestamp(changelog.createTime)} />
+          <HumanizeDate date={getDateForPbTimestampProtoEs(changelog.createTime)} />
         );
       },
     },

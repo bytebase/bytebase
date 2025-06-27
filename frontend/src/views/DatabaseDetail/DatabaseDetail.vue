@@ -241,7 +241,6 @@ import {
   allowUsingSchemaEditor,
   extractProjectResourceName,
 } from "@/utils";
-import { convertStateToNew } from "@/utils/v1/common-conversions";
 
 const databaseHashList = [
   "overview",
@@ -339,7 +338,7 @@ const createMigration = async (
 ) => {
   if (type === "bb.issue.database.schema.update") {
     if (
-      convertStateToNew(database.value.state) === State.ACTIVE &&
+      database.value.state === State.ACTIVE &&
       allowUsingSchemaEditor([database.value])
     ) {
       state.showSchemaEditorModal = true;

@@ -28,7 +28,6 @@ import { useCurrentProjectV1 } from "@/store";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { useInstanceV1EditorLanguage } from "@/utils";
-import { convertEngineToNew } from "@/utils/v1/common-conversions";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import InstanceRoleSelect from "./InstanceRoleSelect.vue";
 
@@ -45,8 +44,8 @@ const language = useInstanceV1EditorLanguage(
 
 const shouldShowInstanceRoleSelect = computed(() => {
   // Only works for postgres.
-  const engine = convertEngineToNew(database.value.instanceResource.engine);
-  if (![Engine.POSTGRES].includes(engine)) {
+  const engine = database.value.instanceResource.engine;
+  if (engine !== Engine.POSTGRES) {
     return false;
   }
   // Only works for DDL/DML, exclude creating database and schema baseline.

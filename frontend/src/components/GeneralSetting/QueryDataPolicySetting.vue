@@ -32,20 +32,22 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import { NInputNumber } from "naive-ui";
+import { computed, ref } from "vue";
 import {
   featureToRef,
   usePolicyByParentAndType,
   usePolicyV1Store,
 } from "@/store";
-import { Duration } from "@/types/proto/google/protobuf/duration";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { NInputNumber } from "naive-ui";
-import { computed, ref } from "vue";
+import { convertDurationToOld } from "@/utils/v1/common-conversions";
 import { FeatureBadge } from "../FeatureGuard";
 
 const policyV1Store = usePolicyV1Store();
@@ -84,7 +86,9 @@ const updateChange = async () => {
       type: PolicyType.DATA_QUERY,
       resourceType: PolicyResourceType.WORKSPACE,
       queryDataPolicy: {
-        timeout: Duration.fromPartial({ seconds: seconds.value }),
+        timeout: convertDurationToOld(
+          create(DurationSchema, { seconds: BigInt(seconds.value) })
+        ),
       },
     },
   });

@@ -57,15 +57,14 @@ import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { create } from "@bufbuild/protobuf";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
-import {
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { GetSchemaStringRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { minmax } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
-import { convertOldDatabaseMetadataToNew } from "@/utils/v1/database-conversions";
 import { useSchemaEditorContext } from "../context";
 
 const props = defineProps<{
@@ -100,7 +99,7 @@ const { status, data, error } = useQuery({
     const { metadata } = debouncedMocked.value;
 
     try {
-      const newMetadata = convertOldDatabaseMetadataToNew(metadata);
+      const newMetadata = metadata;
       const request = create(GetSchemaStringRequestSchema, {
         name: props.db.name,
         metadata: newMetadata,
