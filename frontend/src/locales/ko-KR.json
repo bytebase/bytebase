@@ -1,0 +1,2695 @@
+{
+  "common": {
+    "view": "보기",
+    "you": "당신",
+    "general": "일반",
+    "slack": "Slack",
+    "discord": "Discord",
+    "teams": "Teams",
+    "dingtalk": "DingTalk",
+    "feishu": "Feishu",
+    "lark": "Lark",
+    "wecom": "WeCom",
+    "system": "시스템",
+    "custom": "사용자 정의",
+    "overview": "개요",
+    "changelog": "변경 로그",
+    "webhooks": "웹훅",
+    "activity": "활동",
+    "sign-in": "로그인",
+    "sign-in-as-admin": "관리자로 로그인",
+    "sign-up": "회원가입",
+    "email": "이메일",
+    "username": "사용자 이름",
+    "credentials": "자격 증명",
+    "password": "비밀번호",
+    "save": "저장",
+    "cancel": "취소",
+    "comment": "댓글",
+    "home": "홈",
+    "setting": "설정",
+    "settings": "설정",
+    "project": "프로젝트",
+    "projects": "프로젝트",
+    "help": "도움말",
+    "database": "데이터베이스",
+    "databases": "데이터베이스",
+    "description": "설명",
+    "instance": "인스턴스",
+    "instances": "인스턴스",
+    "environment": "환경",
+    "environments": "환경",
+    "environment-name": "환경 이름",
+    "archive": "보관",
+    "archived": "보관됨",
+    "no-license": "라이선스 없음",
+    "logout": "로그아웃",
+    "close": "닫기",
+    "latest": "최신",
+    "error": "오류",
+    "canceled": "취소됨",
+    "approve": "승인",
+    "done": "완료",
+    "create": "생성",
+    "run": "실행",
+    "retry": "재시도",
+    "skip": "건너뛰기",
+    "dismiss": "무시",
+    "back": "뒤로",
+    "next": "다음",
+    "edit": "편집",
+    "update": "업데이트",
+    "updated": "업데이트됨",
+    "visit": "방문",
+    "role": {
+      "self": "역할"
+    },
+    "revert": "되돌리기",
+    "confirm-to-revert": "편집을 되돌리시겠습니까?",
+    "apply": "적용",
+    "reorder": "재정렬",
+    "id": "ID",
+    "name": "이름",
+    "creator": "생성자",
+    "version": "버전",
+    "issue": "이슈",
+    "issues": "이슈",
+    "duration": "기간",
+    "created-at": "생성됨",
+    "updated-at": "업데이트됨",
+    "statement": "명령문",
+    "statement-size": "명령문 크기",
+    "snapshot": "스냅샷",
+    "status": "상태",
+    "stage": "단계",
+    "task": "작업",
+    "tasks": "작업",
+    "blocking-task": "차단 작업",
+    "sql": "SQL",
+    "unassigned": "할당되지 않음",
+    "new": "새로운",
+    "add": "추가",
+    "confirm-and-add": "확인 및 추가",
+    "confirm-and-update": "확인 및 업데이트",
+    "query": "쿼리",
+    "transfer": "전송",
+    "schema": "스키마",
+    "detail": "상세 정보",
+    "type": "유형",
+    "language": "언어",
+    "sensitive-placeholder": "민감 정보 - 쓰기 전용",
+    "enabled": "활성화됨",
+    "default": "기본값",
+    "restore": "복원",
+    "detailed-guide": "상세 가이드",
+    "confirm": "확인",
+    "learn-more": "더 알아보기",
+    "troubleshoot": "문제 해결",
+    "schema-version": "스키마 버전",
+    "time": "시간",
+    "Default": "기본값",
+    "definition": "정의",
+    "empty": "비어 있음",
+    "creating": "생성 중...",
+    "address": "주소",
+    "subscribed": "구독됨",
+    "created": "생성됨",
+    "labels": "레이블",
+    "mode": "모드",
+    "user": "사용자",
+    "users": "사용자",
+    "admin": "관리자",
+    "read-only": "읽기 전용",
+    "all": "전체",
+    "recent": "최근",
+    "ok": "확인",
+    "share": "공유",
+    "or": "또는",
+    "export": "내보내기",
+    "tips": "팁",
+    "delete": "삭제",
+    "history": "기록",
+    "loading": "로딩 중",
+    "copy": "복사",
+    "copied": "복사됨",
+    "manage": "관리",
+    "table": "테이블",
+    "search": "검색",
+    "warning": "경고",
+    "edited": "편집됨",
+    "preview": "미리보기",
+    "file-selector": {
+      "type-limit": "{extension} 파일만 지원합니다",
+      "size-limit": "파일 크기는 {size} MiB보다 작아야 합니다"
+    },
+    "no-data": "데이터 없음",
+    "visibility": "가시성",
+    "duplicate": "복제",
+    "enable": "활성화",
+    "disable": "비활성화",
+    "view-doc": "문서 보기",
+    "write-only": "쓰기 전용",
+    "sync": "동기화",
+    "success": "성공",
+    "failed": "실패",
+    "load-more": "더 불러오기",
+    "rows-per-page": "페이지당 행 수",
+    "access-denied": "접근 거부됨",
+    "restart": "재시작",
+    "want-help": "도움이 필요함",
+    "operation": "작업",
+    "discard-changes": "변경 사항 폐기",
+    "demo-mode": "데모",
+    "operations": "작업",
+    "on": "켜짐",
+    "off": "꺼짐",
+    "verify": "확인",
+    "regenerate": "재생성",
+    "download": "다운로드",
+    "will-lose-unsaved-data": "저장되지 않은 데이터가 손실됩니다.",
+    "deleted": "삭제됨",
+    "will-override-current-data": "현재 데이터를 덮어씁니다.",
+    "rollout": "출시",
+    "upload": "업로드",
+    "added": "추가됨",
+    "revoke": "취소",
+    "cannot-undo-this-action": "이 작업은 취소할 수 없습니다",
+    "select": "선택",
+    "optional": "선택 사항",
+    "reason": "이유",
+    "date": {
+      "days": "{days}일"
+    },
+    "expiration": "만료",
+    "configure": "구성",
+    "groups": "그룹",
+    "database-group": "데이터베이스 그룹 | 데이터베이스 그룹",
+    "members": "멤버",
+    "warehouse": "웨어하우스",
+    "schedule": "일정",
+    "state": "상태",
+    "condition": "조건",
+    "search-user": "사용자 검색",
+    "info": "정보",
+    "minutes": "분",
+    "filter-by-name": "이름으로 필터링",
+    "search-by-name": "이름으로 검색",
+    "license": "라이선스",
+    "view-details": "상세 정보 보기",
+    "force-verb": "{verb} 강제 실행",
+    "untitled": "제목 없음",
+    "missing-required-permission": "필요한 권한이 없습니다",
+    "resource-not-found": "리소스를 찾을 수 없습니다",
+    "continue-anyway": "계속 진행",
+    "permissions": "권한",
+    "baseline": "기준선",
+    "leave-without-saving": "저장하지 않고 나가시겠습니까?",
+    "configure-now": "지금 구성",
+    "connection": "연결",
+    "resource": "리소스",
+    "resources": "리소스",
+    "closed": "닫힘",
+    "refresh": "새로고침",
+    "rollback": "롤백",
+    "rows": {
+      "self": "행",
+      "n-rows": "{n}행"
+    },
+    "back-to-workspace": "작업 공간으로 돌아가기",
+    "override": "덮어쓰기",
+    "encoding": "인코딩",
+    "finish": "완료",
+    "title": "제목",
+    "text-wrap": "텍스트 줄바꿈",
+    "catalog": "카탈로그",
+    "summary": "요약",
+    "errors": "오류",
+    "removed": "제거됨",
+    "submit": "제출"
+  },
+  "error-page": {
+    "go-back-home": "홈으로 돌아가기"
+  },
+  "refresh-remind": {
+    "title": "오래된 버전이 감지됨",
+    "description": "오래된 버전이 감지되었습니다. 페이지를 새로 고치세요."
+  },
+  "task": {
+    "current-task": "현재 작업",
+    "checking": "확인 중...",
+    "check-result": {
+      "title-general": "확인 결과"
+    },
+    "check-type": {
+      "fake": "가짜",
+      "connection": "연결",
+      "sql-review": "SQL 검토",
+      "ghost-sync": "gh-ost 동기화",
+      "affected-rows": {
+        "self": "영향 받는 행",
+        "description": "통계 정보에 의해 추정됨."
+      },
+      "summary-report": "요약 보고서"
+    },
+    "comment": "댓글",
+    "started": "시작됨",
+    "view-change": "변경 사항 보기",
+    "status": {
+      "running": "실행 중",
+      "failed": "실패",
+      "canceled": "취소됨",
+      "skipped": "건너뜀",
+      "done": "완료",
+      "pending": "대기 중",
+      "not-started": "시작되지 않음"
+    },
+    "skip": "건너뛰기",
+    "task-checks": "작업 확인",
+    "prior-backup": "사전 백업",
+    "skip-failed-in-current-stage": "현재 단계의 실패한 작업 건너뛰기",
+    "execution-time": "실행 시간",
+    "run-checks": "확인 실행",
+    "action-all-tasks-in-current-stage": "현재 단계의 모든 작업 {action}",
+    "cancel-task": "작업 취소 | 작업 취소",
+    "created": "생성됨",
+    "run-immediately": "즉시 실행 | 즉시 실행",
+    "scheduled-time": "예약 시간",
+    "select-scheduled-time": "예약 시간 선택",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "예약 시간은 미래여야 합니다"
+    },
+    "online-migration": {
+      "self": "온라인 마이그레이션",
+      "configure-ghost-parameters": "gh-ost 매개변수 구성",
+      "ghost-parameters": "gh-ost 매개변수",
+      "configure": "구성",
+      "error": {
+        "nothing-changed": "변경된 내용이 없습니다",
+        "not-applicable": {
+          "database-doesnt-meet-ghost-requirement": "{database} 데이터베이스가 gh-ost의 요구 사항을 충족하지 않습니다."
+        }
+      },
+      "advice-split-statement-to-single-online-migration-issue": "이 명령문을 단일 온라인 마이그레이션 이슈로 분할하는 것을 권장합니다."
+    },
+    "prior-backup-tips": "미리 영향 받는 데이터 백업"
+  },
+  "task-run": {
+    "status": {
+      "enqueued": "실행 대기 중.",
+      "enqueued-with-rollout-time": "{time} 이후 실행 대기 중.",
+      "waiting-connection": "사용 가능한 인스턴스 연결 대기 중. 인스턴스 연결 수가 Bytebase에 설정된 제한에 도달했습니다. 마지막 보고 시간: {time}.",
+      "waiting-task": "다른 작업이 완료될 때까지 대기 중. 마지막 보고 시간: {time}.",
+      "waiting-max-tasks-per-rollout": "다른 작업이 완료될 때까지 대기 중. 출시당 최대 실행 작업 제한에 도달했습니다. 마지막 보고 시간: {time}."
+    }
+  },
+  "banner": {
+    "license-expired": "{plan}에 대한 라이선스가 {expireAt}에 만료되었습니다.",
+    "license-expires": "{plan}에 대한 라이선스가 {days}일 후인 {expireAt}에 만료됩니다.",
+    "trial-expires": "{plan}에 대한 무료 평가판이 {days}일 후인 {expireAt}에 만료됩니다.",
+    "deploy": "자체 호스팅",
+    "cloud": "클라우드",
+    "request-demo": "30분 제품 데모를 예약하세요.",
+    "external-url": "Bytebase가 --external-url을 구성하지 않았습니다"
+  },
+  "bbkit": {
+    "confirm-button": {
+      "sure-to-delete": "삭제하시겠습니까?",
+      "sure-to-archive": "보관하시겠습니까?",
+      "cannot-undo": "이 작업은 취소할 수 없습니다.",
+      "can-undo": "나중에 이 작업을 취소할 수 있습니다."
+    }
+  },
+  "settings": {
+    "sidebar": {
+      "account": "계정",
+      "profile": "프로필",
+      "workspace": "작업 공간",
+      "security-and-policy": "보안 및 정책",
+      "integration": "통합",
+      "general": "일반",
+      "members": "멤버",
+      "users-and-groups": "사용자 및 그룹",
+      "iam-and-admin": "IAM 및 관리",
+      "im-integration": "IM",
+      "sso": "SSO",
+      "subscription": "구독",
+      "global-masking": "전역 마스킹",
+      "data-classification": "데이터 분류",
+      "data-access": "데이터 접근",
+      "audit-log": "감사 로그",
+      "custom-roles": "사용자 정의 역할",
+      "mail-delivery": "메일 전송"
+    },
+    "profile": {
+      "email": "이메일",
+      "role": "역할",
+      "phone": "전화번호",
+      "phone-tips": "국가 코드를 포함해야 합니다. +1xxxxxx",
+      "password": "비밀번호",
+      "password-hint": "비밀번호는 제한 설정을 따라야 합니다",
+      "password-confirm": "비밀번호 확인",
+      "password-confirm-placeholder": "새 비밀번호 확인",
+      "password-mismatch": "새 비밀번호가 일치하지 않습니다",
+      "subscription": "(역할 관리를 활성화하려면 업그레이드하세요)"
+    },
+    "members": {
+      "inactive": "비활성",
+      "inactive-users": "비활성 유저",
+      "table": {
+        "account": "계정",
+        "role": "역할",
+        "groups": "그룹",
+        "roles": "역할"
+      },
+      "groups": {
+        "self": "그룹",
+        "add-group": "그룹 추가",
+        "update-group": "그룹 업데이트",
+        "form": {
+          "email": "이메일",
+          "email-tips": "이메일은 고유해야 하며, 생성 후에는 변경할 수 없습니다.",
+          "title": "제목",
+          "description": "설명",
+          "members": "멤버",
+          "role": {
+            "owner": "그룹 소유자",
+            "member": "그룹 멤버"
+          }
+        },
+        "n-members": "멤버 {n}명",
+        "workspace-domain-required": "먼저 작업 공간 도메인을 설정하세요."
+      },
+      "action": {
+        "deactivate-confirm-title": "비활성화하시겠습니까?",
+        "reactivate-confirm-title": "다시 활성화하시겠습니까?"
+      },
+      "system-bot": "시스템 봇",
+      "service-account": "서비스 계정",
+      "copy-service-key": "서비스 키 복사",
+      "reset-service-key": "서비스 키 재설정",
+      "reset-service-key-alert": "이 작업은 취소할 수 없습니다. 이전 키는 즉시 작동을 중지합니다. 이 서비스 키를 재설정하시겠습니까?",
+      "service-key-copied": "서비스 키가 클립보드에 복사되었습니다. 비밀로 유지하세요.",
+      "show-inactive": "비활성 유저 표시",
+      "view-by-roles": "역할별로 보기",
+      "add-member": "멤버 추가",
+      "add-user": "사용자 추가",
+      "entra-sync": {
+        "self": "Entra ID(Azure AD)에서 동기화",
+        "description": "Entra ID(이전 Azure AD)에서 사용자와 그룹을 Bytebase 인스턴스로 동기화합니다.",
+        "endpoint": "엔드포인트",
+        "endpoint-tip": "이것을 Entra의 \"테넌트 URL\" 필드에 붙여넣으세요. Entra는 이 엔드포인트를 통해 사용자와 그룹을 Bytebase에 동기화합니다.",
+        "secret-token": "비밀 토큰",
+        "secret-token-tip": "이것을 Entra의 \"비밀 토큰\" 필드에 붙여넣으세요.",
+        "reset-token": "토큰 재설정",
+        "reset-token-warning": "Entra 애플리케이션 프로비저닝 구성을 업데이트해야 합니다."
+      },
+      "all-users": "모든 사용자",
+      "search-member": "멤버 검색",
+      "revoked": "취소됨",
+      "view-by-members": "멤버별로 보기",
+      "revoke-access": "접근 취소",
+      "revoke-access-alert": "접근을 취소하시겠습니까?",
+      "revoke-allusers-alert": "\"@:{'settings.members.all-users'}\"를 취소하면 작업 공간의 다른 모든 사용자로부터 관련 역할이 취소됩니다. 계속하시겠습니까?",
+      "grant-access": "접근 권한 부여",
+      "select-user": "사용자 선택 | 사용자 선택",
+      "select-group": "그룹 선택 | 그룹 선택",
+      "select-in-project": "{project}에서 사용자 또는 그룹 선택",
+      "select-role": "역할 선택 | 역할 선택",
+      "assign-role": "역할 할당 | 역할 할당"
+    },
+    "im-integration": {
+      "description": "특정 이슈 이벤트에 대해 사용자에게 직접 메시지를 보냅니다. 프로젝트 웹훅과 함께 작동합니다."
+    },
+    "sso": {
+      "create": "SSO 생성",
+      "description": "Single Sign-On(SSO)은 사용자가 단일 자격 증명 세트를 통해 여러 애플리케이션 및 웹사이트에 인증할 수 있게 하는 인증 방법입니다.",
+      "delete": "이 SSO 삭제",
+      "form": {
+        "type": "유형",
+        "learn-more-with-user-doc": "구성에 대해 더 알아보기",
+        "redirect-url": "인증 리디렉션 URL",
+        "redirect-url-description": "ID 제공자 애플리케이션 양식의 적절한 필드를 채우는 데 사용됩니다.",
+        "use-template": "템플릿 사용",
+        "basic-information": "기본 정보",
+        "name": "이름",
+        "name-description": "사용자에게 표시될 표시 이름",
+        "resource-id": "리소스 ID",
+        "domain": "도메인",
+        "domain-description": "ID 제공자의 도메인 이름",
+        "identity-provider-information": "ID 제공자 정보",
+        "identity-provider-information-description": "이 정보는 ID 제공자가 제공합니다.",
+        "identity-provider-needed-information": "다음 정보로 SSO 애플리케이션을 생성하세요.",
+        "auth-url-description": "OAuth 로그인 페이지 링크",
+        "scopes-description": "Auth URL에 접근할 때 전달될 범위의 공백으로 구분된 목록",
+        "token-url-description": "accessToken을 얻기 위한 API 주소",
+        "user-info-url-description": "accessToken으로 사용자 정보를 얻기 위한 API 주소",
+        "security-protocol": "보안 프로토콜",
+        "connection-security": "연결 보안",
+        "connection-security-skip-tls-verify": "TLS 확인 건너뛰기",
+        "user-information-mapping": "사용자 정보 매핑",
+        "user-information-mapping-description": "사용자 정보 API의 필드 이름을 Bytebase 사용자에게 매핑합니다.",
+        "identifier": "Bytebase 사용자의 이메일",
+        "identifier-tips": "고유한 문자열이어야 합니다. 이메일 형식이 아닌 경우 도메인과 결합됩니다.",
+        "display-name": "Bytebase 사용자의 표시 이름",
+        "phone": "Bytebase 사용자의 전화번호",
+        "groups": "Bytebase 사용자의 그룹",
+        "auth-style": {
+          "self": "인증 스타일",
+          "in-params": {
+            "self": "매개변수에 포함"
+          },
+          "in-header": {
+            "self": "헤더에 포함"
+          }
+        }
+      },
+      "copy-redirect-url": "리디렉션 URL이 클립보드에 복사되었습니다."
+    },
+    "general": {
+      "workspace": {
+        "id": "작업 공간 ID",
+        "id-description": "고유한 읽기 전용 작업 공간 ID입니다.",
+        "branding": "브랜딩",
+        "only-admin-can-edit": "작업 공간 관리자만 설정을 업데이트할 수 있습니다.",
+        "logo": "로고",
+        "logo-aspect": "권장 로고 크기는 5:2 종횡비입니다. 예: 100 x 40.",
+        "select-logo": "파일 업로드",
+        "drag-logo": "또는 여기에 끌어다 놓기",
+        "logo-upload-tip": "{extension} 최대 {size} MiB",
+        "security": "보안",
+        "account": "계정",
+        "watermark": {
+          "description": "페이지에 사용자 이름, ID 및 이메일을 포함한 워터마크를 표시합니다.",
+          "enable": "워터마크 활성화"
+        },
+        "data-export": {
+          "enable": "데이터 내보내기 활성화",
+          "description": "사용자가 SQL 편집기에서 데이터를 내보낼 수 있도록 허용"
+        },
+        "disallow-signup": {
+          "enable": "셀프 서비스 가입 비활성화",
+          "description": "사용자는 셀프 서비스 가입을 할 수 없으며 작업 공간 관리자의 초대만 받을 수 있습니다."
+        },
+        "require-2fa": {
+          "enable": "모든 사용자에게 2단계 인증 요구",
+          "description": "개인 계정에 2단계 인증이 활성화되어 있지 않은 사용자는 구성을 강제로 해야 합니다."
+        },
+        "disallow-password-signin": {
+          "enable": "이메일 및 비밀번호로 로그인 비활성화",
+          "description": "사용자는 이메일 및 비밀번호로 로그인할 수 없으며 SSO만 허용됩니다.",
+          "require-sso-setup": "기능적인 SSO가 먼저 생성되어야 하며, 그렇지 않으면 사용자가 로그인할 수 없습니다."
+        },
+        "network": "네트워크",
+        "external-url": {
+          "self": "외부 URL",
+          "description": "사용자가 Bytebase를 방문하는 외부 URL로, http:// 또는 https://로 시작해야 합니다."
+        },
+        "sign-in-frequency": {
+          "self": "로그인 빈도",
+          "description": "로그인 빈도는 사용자가 얼마나 자주 재인증해야 하는지 정의합니다. 구성 업데이트 시 변경 사항을 적용하려면 사용자가 다시 로그인해야 합니다.",
+          "hours": "시간",
+          "days": "일"
+        },
+        "maximum-role-expiration": {
+          "self": "최대 역할 만료 기간",
+          "description": "역할 만료 기간은 사용자가 역할을 부여받을 수 있는 최대 기간입니다. 프로젝트 소유자를 제외한 모든 프로젝트 역할에 적용됩니다.",
+          "days": "일",
+          "never-expires": "만료되지 않음"
+        },
+        "maximum-sql-result": {
+          "self": "최대 SQL 결과 크기",
+          "description": "출력 SQL 쿼리 결과 크기를 제한합니다."
+        },
+        "query-data-policy": {
+          "timeout": {
+            "self": "최대 쿼리 시간",
+            "description": "SQL 편집기에서 쿼리가 실행되는 데 허용되는 최대 시간입니다.",
+            "no-time-limit": "0으로 설정하면 쿼리에 시간 제한이 없습니다."
+          }
+        },
+        "domain-restriction": {
+          "self": "작업 공간 도메인",
+          "description": "작업 공간 멤버의 이메일 도메인으로 사용할 수 있는 도메인을 지정합니다.",
+          "domain-input-placeholder": "도메인을 입력하세요. 예: example.com",
+          "members-restriction": {
+            "self": "멤버 제한",
+            "description": "지정된 도메인의 이메일 주소가 있는 사용자로 로그인을 제한합니다."
+          }
+        },
+        "password-restriction": {
+          "self": "비밀번호 제한",
+          "min-length": "비밀번호 최소 길이는 {min}자 이상이어야 합니다",
+          "require-number": "비밀번호에는 최소 하나의 숫자가 포함되어야 합니다",
+          "require-letter": "비밀번호에는 대소문자와 상관없이 최소 하나의 문자가 포함되어야 합니다",
+          "require-uppercase-letter": "비밀번호에는 최소 하나의 대문자가 포함되어야 합니다",
+          "require-special-character": "비밀번호에는 최소 하나의 특수 문자가 포함되어야 합니다",
+          "require-reset-password-for-first-login": "사용자가 첫 로그인 후 비밀번호를 재설정하도록 요구",
+          "password-rotation": "사용자가 {day}일마다 비밀번호를 재설정하도록 요구"
+        },
+        "config-updated": "구성이 업데이트되었습니다.",
+        "config-partly-updated": "구성이 부분적으로 업데이트되었습니다.",
+        "failed-to-update-setting": "\"{title}\" 설정 업데이트에 실패했습니다",
+        "ai-assistant": {
+          "self": "AI 어시스턴트",
+          "enable-ai-assistant": "AI 어시스턴트 활성화",
+          "description": "AI를 사용하여 데이터베이스 개발 작업을 지원합니다.",
+          "provider": {
+            "self": "AI 제공자",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI"
+          },
+          "api-key": {
+            "self": "API 키",
+            "description": "API 키 제공, 읽기 전용. {viewDoc}",
+            "find-my-key": "내 키 찾기",
+            "placeholder": "API 키는 일반적으로 sk-*****로 시작합니다"
+          },
+          "endpoint": {
+            "self": "API 엔드포인트",
+            "description": "API 엔드포인트의 비공개 배포를 제공합니다."
+          },
+          "model": {
+            "self": "모델 이름",
+            "description": "모델 이름의 비공개 배포를 제공합니다."
+          }
+        },
+        "announcement": {
+          "self": "공지사항",
+          "admin-or-dba-can-edit": "작업 공간 관리자 또는 DBA만 공지사항 설정을 업데이트할 수 있습니다."
+        },
+        "announcement-alert-level": {
+          "description": "레벨"
+        },
+        "announcement-text": {
+          "self": "제목",
+          "description": "공지사항을 숨기려면 비워두세요.",
+          "placeholder": "공지사항 제목 입력"
+        },
+        "extra-link": {
+          "self": "링크",
+          "placeholder": "공지사항 링크 입력"
+        },
+        "restrict-issue-creation-for-sql-review": {
+          "title": "오류가 있는 SQL 검토에 대한 이슈 생성 금지",
+          "description": "활성화되면 SQL 검토에 오류가 없는 경우에만 사용자가 이슈를 생성할 수 있습니다."
+        },
+        "database-change-mode": {
+          "self": "데이터베이스 변경 모드",
+          "description": "사용자가 데이터베이스 변경을 수행하는 방법 제어",
+          "issue-mode": {
+            "self": "이슈 모드 (관리됨)",
+            "description": "이슈를 사용하여 데이터베이스 변경을 요청, 검토, 출시 및 버전 관리합니다. 액세스 제어 및 CI & CD 워크플로우가 있는 팀에 적합합니다."
+          },
+          "sql-editor-mode": {
+            "self": "SQL 편집기 모드 (직접)",
+            "description": "SQL 편집기를 사용하여 데이터베이스 변경을 직접 실행합니다. 한 사람이 사용하거나 감독이 필요 없는 환경에 적합합니다."
+          },
+          "can-be-changed-later": "이 설정은 나중에 언제든지 변경할 수 있습니다.",
+          "default-view-changed-to-sql-editor": "작업 공간의 기본 보기가 SQL 편집기로 변경되었습니다.",
+          "go-to-sql-editor": "SQL 편집기로 이동"
+        }
+      }
+    },
+    "sensitive-data": {
+      "remove-sensitive-column-tips": "이 열을 노출하시겠습니까?",
+      "remove-semantic-type-tips": "이 열의 시맨틱 유형을 제거하시겠습니까?",
+      "remove-classification-tips": "이 열의 분류를 제거하시겠습니까?",
+      "grant-access": "접근 권한 부여",
+      "never-expires": "만료되지 않음",
+      "global-rules": {
+        "description": "전역 규칙을 사용하여 마스킹을 일괄 적용합니다. 예: \"email\"로 명명된 모든 열이 특정 시맨틱 유형으로 마스킹되고 마스킹 알고리즘이 적용됩니다.",
+        "condition-order": "조건 순서",
+        "re-order": "순서 변경",
+        "delete-rule-tip": "이 규칙을 삭제하시겠습니까?"
+      },
+      "semantic-types": {
+        "self": "시맨틱 유형",
+        "label": "같은 시맨틱 유형을 가진 열은 동일한 마스킹 알고리즘을 사용합니다.",
+        "use-predefined-type": "미리 정의된 유형 사용",
+        "add-from-template": "템플릿에서 추가",
+        "table": {
+          "semantic-type": "시맨틱 유형",
+          "description": "설명",
+          "masking-algorithm": "마스킹 알고리즘",
+          "delete": "이 시맨틱 유형을 삭제하시겠습니까?"
+        },
+        "template": {
+          "description": "템플릿에서 내장된 시맨틱 유형을 적용할 수 있습니다. 내장된 템플릿은 변경할 수 없습니다.",
+          "duplicate-warning": "시맨틱 유형 \"{title}\"이(가) 이미 존재합니다"
+        },
+        "select": "시맨틱 유형 선택"
+      },
+      "algorithms": {
+        "add": "알고리즘 추가",
+        "edit": "알고리즘 편집",
+        "table": {
+          "masking-type": "마스킹 유형"
+        },
+        "error": {
+          "substitution-required": "대체 값이 필요합니다",
+          "substitution-length": "대체 값은 16바이트 미만이어야 합니다",
+          "salt-required": "솔트가 필요합니다",
+          "slice-required": "슬라이스가 필요합니다",
+          "slice-invalid-number": "슬라이스 시작 또는 끝이 유효한 숫자가 아닙니다",
+          "slice-overlap": "슬라이스 범위가 겹칠 수 없습니다"
+        },
+        "full-mask": {
+          "self": "전체 마스킹",
+          "substitution": "대체 값",
+          "substitution-label": "대체 값은 원래 값을 대체하는 데 사용되는 문자열로, 문자열의 최대 길이는 16바이트입니다."
+        },
+        "range-mask": {
+          "self": "범위 마스킹",
+          "label": "범위 마스킹은 시작 인덱스에서 끝 인덱스(끝은 포함되지 않음)까지의 원래 값을 대체 값으로 바꿉니다. 인덱스는 0부터 시작합니다.",
+          "slice-start": "슬라이스 시작",
+          "slice-end": "슬라이스 끝",
+          "substitution": "대체 값"
+        },
+        "md5-mask": {
+          "self": "MD5 마스킹",
+          "salt": "솔트",
+          "salt-label": "솔트는 원래 값에서 해시를 생성하는 데 사용됩니다."
+        },
+        "inner-outer-mask": {
+          "self": "내부/외부 마스킹",
+          "type": "마스킹 유형",
+          "inner-label": "내부 마스킹은 문자열의 내부 부분을 마스킹합니다. 접두사와 접미사는 마스킹되지 않은 데이터 부분을 나타냅니다.",
+          "inner-mask": "내부 마스킹",
+          "outer-label": "외부 마스킹은 문자열의 왼쪽과 오른쪽 끝을 마스킹합니다. 접두사와 접미사는 마스킹된 데이터 부분을 나타냅니다.",
+          "outer-mask": "외부 마스킹",
+          "prefix-length": "접두사 길이",
+          "suffix-length": "접미사 길이"
+        }
+      },
+      "action": {
+        "self": "작업",
+        "select-action": "작업 선택",
+        "query": "쿼리",
+        "export": "내보내기"
+      },
+      "classification": {
+        "upload": "분류 업로드",
+        "upload-label": "JSON 형식의 분류 파일을 업로드할 수 있습니다.",
+        "copy-succeed": "예제 복사 성공",
+        "override-title": "분류 데이터 덮어쓰기",
+        "override-desc": "기존 분류 데이터가 덮어쓰기되어 모든 프로젝트에 영향을 미칩니다.",
+        "override-confirm": "계속 업로드"
+      },
+      "json-format-example": "JSON 형식 예제",
+      "view-example": "예제 보기"
+    },
+    "mail-delivery": {
+      "description": "SMTP 정보를 구성하면 사용자가 느린 쿼리 주간 보고서와 같은 데이터베이스 보고서를 이메일로 받을 수 있습니다.",
+      "field": {
+        "smtp-server-host": "SMTP 서버 호스트",
+        "smtp-server-port": "SMTP 서버 포트",
+        "from": "보내는 사람",
+        "smtp-username": "SMTP 사용자 이름",
+        "smtp-password": "SMTP 비밀번호",
+        "send-test-email-to": "테스트 이메일 보내기",
+        "send": "보내기",
+        "authentication-method": "인증 방법",
+        "encryption": "암호화"
+      },
+      "updated-tip": "메일 전송 설정이 성공적으로 업데이트되었습니다",
+      "tested-tip": "성공적으로 전송되었습니다. {address}의 받은편지함을 확인하세요."
+    }
+  },
+  "remind": {
+    "release": {
+      "new-version-available": "새 버전이 사용 가능합니다",
+      "new-version-available-with-tag": "새 버전 {tag}이(가) 사용 가능합니다",
+      "new-version-content": "새 버전 {tag}이(가) 지금 사용 가능합니다! 설치 방법은 문서를 확인하세요."
+    },
+    "role-expire": {
+      "title": "역할 만료 알림",
+      "content": "다음 역할이 만료될 예정입니다",
+      "checkbox": "업데이트가 있을 때까지 알림을 받지 않음",
+      "go-to-project": "프로젝트 페이지로 이동"
+    }
+  },
+  "activity": {
+    "sentence": {
+      "created-issue": "이슈 생성됨",
+      "changed-description": "설명 변경됨",
+      "changed-labels": "레이블 변경됨",
+      "changed-from-to": "{name}을(를) \"{oldValue}\"에서 \"{newValue}\"(으)로 변경함",
+      "reopened-issue": "이슈 다시 열림",
+      "resolved-issue": "이슈 해결됨",
+      "canceled-issue": "이슈 취소됨",
+      "changed": "변경됨",
+      "canceled": "취소됨",
+      "started": "시작됨",
+      "completed": "완료됨",
+      "failed": "실패함",
+      "skipped": "건너뜀",
+      "rolled-out": "출시됨",
+      "xxx-automatically": "자동으로 {verb}",
+      "failed-to-backup": "데이터 백업 실패: {error}",
+      "prior-back-table": "데이터베이스 {database} 및 테이블 {tables}에 데이터 백업",
+      "prior-back-table-for-line": "{line}번 줄의 DML에 대해 데이터베이스 {database} 및 테이블 {tables}에 데이터 백업"
+    },
+    "n-similar-activities": "({count}개 유사 활동) | ({count}개 유사 활동)"
+  },
+  "issue": {
+    "my-issues": "내 이슈",
+    "waiting-approval": "승인 대기 중",
+    "waiting-rollout": "출시 대기 중",
+    "status-transition": {
+      "modal": {
+        "resolve": "이슈를 해결하시겠습니까?",
+        "reopen": "이슈를 다시 여시겠습니까?",
+        "close": "이슈를 닫으시겠습니까?"
+      },
+      "warning": {
+        "some-previous-stages-are-not-done": "일부 이전 단계가 완료되지 않았습니다."
+      },
+      "error": {
+        "some-tasks-are-still-running": "일부 작업이 아직 실행 중입니다"
+      }
+    },
+    "subscribe": "구독",
+    "unsubscribe": "구독 취소",
+    "add-some-description": "설명 추가...",
+    "add-a-comment": "댓글 추가",
+    "leave-a-comment": "댓글 남기기...",
+    "comment-editor": {
+      "write": "작성",
+      "preview": "미리보기",
+      "nothing-to-preview": "미리볼 내용이 없습니다",
+      "toolbar": {
+        "header": "제목 텍스트 삽입",
+        "bold": "굵은 텍스트 삽입",
+        "code": "SQL 코드 스니펫 삽입",
+        "link": "링크 삽입",
+        "hashtag": "ID로 이슈 링크 삽입. 해시태그 \"#\" 뒤에 이슈 ID를 입력하세요"
+      }
+    },
+    "advanced-search": {
+      "self": "고급 검색",
+      "filter": "필터",
+      "search": "제목 또는 ID로 검색",
+      "scope": {
+        "project": {
+          "title": "프로젝트",
+          "description": "프로젝트별 필터링"
+        },
+        "instance": {
+          "title": "인스턴스",
+          "description": "인스턴스별 필터링"
+        },
+        "environment": {
+          "title": "환경",
+          "description": "환경별 필터링"
+        },
+        "database": {
+          "title": "데이터베이스",
+          "description": "데이터베이스별 필터링"
+        },
+        "type": {
+          "title": "변경 유형",
+          "description": "이슈에 대한 데이터베이스 변경 유형"
+        },
+        "creator": {
+          "title": "생성자",
+          "description": "이슈 생성자로 검색"
+        },
+        "subscriber": {
+          "title": "구독자",
+          "description": "이슈 구독자로 검색"
+        },
+        "approver": {
+          "title": "승인자",
+          "description": "이슈 승인자로 검색"
+        },
+        "approval": {
+          "value": {
+            "pending": "승인 대기 중",
+            "approved": "승인됨"
+          },
+          "description": "이슈 승인 상태로 검색",
+          "title": "승인 상태"
+        },
+        "label": {
+          "title": "레이블",
+          "description": "이슈 레이블로 필터링"
+        },
+        "database-label": {
+          "title": "레이블",
+          "description": "\"키:값\" 쌍을 입력한 후 Enter 키를 누르세요"
+        },
+        "engine": {
+          "title": "엔진",
+          "description": "엔진별 필터링"
+        }
+      },
+      "hide": "고급 검색 숨기기"
+    },
+    "table": {
+      "open": "열림",
+      "closed": "닫힘",
+      "name": "이름",
+      "updated": "업데이트됨",
+      "creator": "생성자",
+      "current-approver": "현재 승인자"
+    },
+    "stage-select": {
+      "current": "{name} (현재)"
+    },
+    "not-allowed-to-operate-unassigned-database": "할당되지 않은 데이터베이스에 {operation}을(를) 수행할 수 없습니다.\n먼저 프로젝트로 이전해야 합니다.",
+    "migration-mode": {
+      "online": {
+        "description": "gh-ost 기반입니다. 대형 테이블의 경우 테이블 잠금 기간을 몇 시간에서 몇 초로 줄일 수 있습니다 {link}."
+      }
+    },
+    "new-issue": "@:common.new @:common.issue",
+    "format-on-save": "저장 시 형식 지정",
+    "action-to-current-stage": "현재 단계 {action}",
+    "upload-sql": "SQL 업로드",
+    "statement-from-sheet-warning": "SQL이 너무 크기 때문에 표시가 잘리고 편집이 비활성화되었습니다. 덮어쓰려면 새 SQL 파일을 업로드할 수 있습니다.",
+    "overwrite-current-statement": "현재 SQL 문 덮어쓰기",
+    "upload-sql-file-max-size-exceeded": "최대 파일 크기({size})를 초과했습니다.",
+    "waiting-earliest-allowed-time": "{time} 이후에 실행됩니다",
+    "batch-transition": {
+      "not-allowed-tips": "선택한 일부 이슈는 {operation}(을)를 수행할 수 없습니다",
+      "resolve": "해결",
+      "resolved": "해결됨",
+      "reopen": "다시 열기",
+      "reopened": "다시 열림",
+      "action-n-issues": "{n}개 이슈 {action} | {n}개 이슈 {action}",
+      "closed": "닫힘",
+      "close": "닫기"
+    },
+    "sdl": {
+      "schema-change": "스키마 변경",
+      "generated-ddl-statements": "생성된 DDL 문",
+      "full-schema": "전체 스키마",
+      "left-schema-may-change": "이슈가 적용되기 전에 왼쪽의 스키마가 변경될 수 있습니다."
+    },
+    "approval-flow": {
+      "self": "승인 흐름",
+      "tooltip": "승인자는 흐름에 지정된 순서대로 이슈를 검토하고 승인합니다. 흐름의 모든 단계가 승인된 후에만 이슈를 적용할 수 있습니다. 각 위험에 대해 사용자 정의 승인 흐름을 구성할 수 있습니다.",
+      "pre-issue-created-tips": "이슈가 생성된 후, Bytebase는 이슈의 유형과 위험 수준에 따라 해당하는 사용자 정의 승인을 자동으로 일치시킵니다."
+    },
+    "risk-level": {
+      "self": "위험 수준",
+      "low": "낮음",
+      "moderate": "중간",
+      "high": "높음"
+    },
+    "awaiting-rollout": "출시 대기 중",
+    "waiting-for-review": "검토 대기 중",
+    "issue-name": "이슈 이름",
+    "grant-request": {
+      "export-rows": "최대 내보내기 행 수",
+      "select-export-rows": "최대 내보내기 행 수 선택",
+      "expired-at": "만료 시간",
+      "all-databases": "모두",
+      "all-databases-tip": "이 프로젝트의 현재 및 미래의 모든 데이터베이스.",
+      "manually-select": "수동 선택",
+      "custom": "사용자 정의"
+    },
+    "review-sent-back": "검토 반려됨",
+    "update-statement": {
+      "self": "{type} 업데이트",
+      "apply-current-change-to": "현재 변경사항 적용 대상",
+      "target": {
+        "selected-task": "선택된 작업",
+        "selected-stage": "선택된 단계",
+        "all-tasks": "모든 작업"
+      },
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "일괄 모드에서는 현재 변경사항이 모든 작업에 적용됩니다."
+    },
+    "action-anyway": "그래도 {action}",
+    "sql-check": {
+      "sql-checks": "SQL 검사",
+      "not-executed-yet": "아직 실행되지 않음",
+      "statement-is-required": "SQL 문이 필요합니다",
+      "statement-is-too-large": "현재 문장 크기가 2MB를 초과하므로 SQL 검사를 건너뜁니다.",
+      "back-to-edit": "편집으로 돌아가기",
+      "sql-review-violations": "SQL 검토 위반 사항"
+    },
+    "error": {
+      "issue-is-not-open": "이슈가 열려있지 않습니다",
+      "you-don-have-privilege-to-edit-this-issue": "이 이슈를 편집할 권한이 없습니다",
+      "you-are-not-allowed-to-perform-this-action": "이 작업을 수행할 권한이 없습니다",
+      "cannot-close-issue-with-running-tasks": "실행 중인 작업이 있는 이슈를 닫을 수 없습니다"
+    },
+    "unfinished-resolved-issue-tips": "이 이슈는 \"완료\"로 표시되었지만 일부 작업이 성공적으로 실행되지 않았습니다.",
+    "some-tasks-are-not-executed-successfully": "(일부 작업이 성공적으로 실행되지 않음)",
+    "missing-sql-statement": "SQL 문이 없습니다.",
+    "task-summary-tooltip": "{failed}개 작업 실패 | {failed}개 작업 실패",
+    "data-export": {
+      "options": "옵션",
+      "format": "형식",
+      "encrypt": "암호화",
+      "file-downloaded": "파일 다운로드됨"
+    },
+    "task-run": {
+      "logs": "로그",
+      "session": "세션",
+      "task-run-log": {
+        "entry-type": {
+          "command-execute": "명령 실행",
+          "schema-dump": "스키마 덤프",
+          "task-run-status-update": "상태 업데이트",
+          "transaction-control": "트랜잭션 제어",
+          "database-sync": "데이터베이스 동기화",
+          "prior-backup": "사전 백업",
+          "retry-info": "재시도 정보"
+        },
+        "estimated-affected-rows-n": "예상 영향 받는 행 수: {n}",
+        "prior-backup-tables": "사전 백업 테이블",
+        "status-update": {
+          "waiting": "실행 준비 완료",
+          "running": "실행 중"
+        },
+        "retry-info": "잠금 시간 초과로 인해 재시도 중(시도 {n}/{m})."
+      },
+      "task-run-session": {
+        "blocking-sessions": {
+          "self": "차단 세션",
+          "description": "현재 세션을 차단하고 있는 세션"
+        },
+        "blocked-sessions": {
+          "self": "차단된 세션",
+          "description": "현재 세션에 의해 차단된 세션"
+        },
+        "no-session-found": "세션을 찾을 수 없습니다."
+      }
+    },
+    "sql-review-only": "SQL 검토만",
+    "create-issue": "이슈 생성",
+    "this-plan-will-be-converted-to-a-new-issue": "이 계획은 새 이슈로 변환됩니다",
+    "title": {
+      "edit-schema": "스키마 편집",
+      "change-data": "데이터 변경",
+      "export-data": "데이터 내보내기",
+      "create-database": "데이터베이스 생성",
+      "request-role": "역할 요청",
+      "request-specific-role": "\"{role}\" 역할 요청"
+    },
+    "schema-drift-detected": {
+      "self": "스키마 드리프트 감지됨",
+      "description": "선택한 데이터베이스에 스키마 드리프트가 있습니다. 드리프트가 예상되며 안전하게 적용할 수 있는지 확인하세요."
+    }
+  },
+  "plan": {
+    "add-spec": "사양 추가",
+    "change-type": "변경 유형",
+    "schema-migration": "스키마 마이그레이션",
+    "schema-migration-description": "데이터베이스 스키마 수정(DDL)",
+    "data-change": "데이터 변경",
+    "data-change-description": "데이터 수정(DML)",
+    "select-targets": "대상 선택",
+    "overview": {
+      "title": "계획 개요",
+      "description": "이 계획의 모든 사양을 보고 관리합니다",
+      "total-specs": "총 사양",
+      "total-targets": "총 대상",
+      "check-status": "검사 상태",
+      "no-checks": "검사 없음",
+      "affected-resources": "영향받는 리소스"
+    },
+    "navigator": {
+      "overview": "개요",
+      "specifications": "사양",
+      "spec-number": "사양 {number}",
+      "no-specifications": "사양 없음",
+      "statement-empty": "명령문이 비어 있습니다"
+    },
+    "spec": {
+      "type": {
+        "create-database": "데이터베이스 생성",
+        "schema-change": "스키마 변경",
+        "data-change": "데이터 변경",
+        "ghost-migration": "Ghost 마이그레이션",
+        "database-change": "데이터베이스 변경",
+        "export-data": "데이터 내보내기",
+        "unknown": "알 수 없음"
+      },
+      "status": {
+        "pass": "통과",
+        "warn": "경고",
+        "error": "오류"
+      }
+    },
+    "targets": {
+      "title": "대상",
+      "no-targets-found": "대상을 찾을 수 없습니다",
+      "no-targets": "대상 없음",
+      "one-target": "1개 대상",
+      "multiple-targets": "{count}개 대상",
+      "one-database": "1개 데이터베이스",
+      "multiple-databases": "{count}개 데이터베이스",
+      "database-group": "데이터베이스 그룹",
+      "database-not-found": "데이터베이스를 찾을 수 없습니다",
+      "environment": "환경: {environment}",
+      "type": {
+        "instance": "인스턴스",
+        "database": "데이터베이스",
+        "database-group": "데이터베이스 그룹"
+      }
+    },
+    "options": {
+      "self": "옵션",
+      "applies-to-all-tasks": "모든 작업에 적용",
+      "applies-to-some-tasks": "{count}/{total}개의 작업에 적용",
+      "split-into-multiple-issues-tip": "각 작업에 대해 다른 옵션을 구성하려면 여러 이슈로 분할하세요."
+    },
+    "pre-backup": {
+      "only-some-databases-checked": "일부 데이터베이스만 확인됨.",
+      "some-databases-not-meeting-requirements": "일부 데이터베이스({databases})가 요구 사항을 충족하지 않습니다",
+      "some-databases-have-issues": "{count}개 데이터베이스에 문제가 있습니다 | {count}개 데이터베이스에 문제가 있습니다",
+      "configuration-has-issues": "구성에 {count}개 문제가 있습니다 | 구성에 {count}개 문제가 있습니다"
+    },
+    "ghost": {
+      "only-some-databases-checked": "일부 데이터베이스만 확인됨.",
+      "some-databases-not-meeting-requirements": "일부 데이터베이스({databases})가 요구 사항을 충족하지 않습니다",
+      "some-databases-have-issues": "{count}개 데이터베이스에 문제가 있습니다 | {count}개 데이터베이스에 문제가 있습니다",
+      "configuration-has-issues": "구성에 {count}개 문제가 있습니다 | 구성에 {count}개 문제가 있습니다"
+    }
+  },
+  "quick-action": {
+    "create-db": "데이터베이스 생성",
+    "new-db": "새 DB",
+    "add-instance": "@:common.add @:common.instance",
+    "new-project": "@:common.new @:common.project",
+    "create-project": "@:common.create @:common.project",
+    "transfer-in-db": "DB 이전",
+    "from-unassigned-databases": "할당되지 않은 데이터베이스",
+    "from-projects": "다른 프로젝트에서",
+    "transfer-in-db-title": "데이터베이스 이전",
+    "unassigned-db-hint": "새로 동기화된 데이터베이스는 처음에 할당되지 않은 상태로 시작하며, 사용하려면 프로젝트로 이동해야 합니다.",
+    "request-export-data": "내보내기 요청"
+  },
+  "create-db": {
+    "new-database-name": "새 데이터베이스 이름",
+    "database-owner-name": "데이터베이스 소유자 이름",
+    "cluster": "클러스터",
+    "reserved-db-error": "{databaseName}은(는) 예약된 이름입니다",
+    "new-collection-name": "새 컬렉션 이름"
+  },
+  "db": {
+    "encoding": "인코딩",
+    "character-set": "문자 집합",
+    "collation": "콜레이션",
+    "tables": "테이블",
+    "collections": "컬렉션",
+    "views": "뷰",
+    "extensions": "확장 기능",
+    "external-tables": "외부 테이블",
+    "functions": "함수",
+    "streams": "스트림",
+    "tasks": "작업",
+    "labels-for-resource": "{resource}에 대한 레이블",
+    "failed-to-sync-schema-for-database-database-value-name": "데이터베이스 '{0}'의 스키마 동기화에 실패했습니다.",
+    "successfully-synced-schema-for-database-database-value-name": "데이터베이스 '{0}'의 스키마 동기화에 성공했습니다.",
+    "start-to-sync-schema": "스키마 동기화 시작",
+    "failed-to-sync-schema": "스키마 동기화 실패",
+    "successfully-synced-schema": "스키마 동기화 성공",
+    "create": "데이터베이스 생성",
+    "procedures": "프로시저",
+    "partitions": "파티션",
+    "packages": "패키지",
+    "sequences": "시퀀스",
+    "sequence": {
+      "data-type": "데이터 유형",
+      "start": "시작 값",
+      "min-value": "최소값",
+      "max-value": "최대값",
+      "increment": "증가값",
+      "cycle": "순환",
+      "cacheSize": "캐시 크기",
+      "lastValue": "마지막 값"
+    },
+    "triggers": "트리거",
+    "trigger": {
+      "body": "본문",
+      "timing": "타이밍",
+      "event": "이벤트"
+    },
+    "schema": {
+      "default": "기본값"
+    },
+    "catalog": {
+      "description": "테이블 카탈로그를 편집하고 업로드합니다."
+    }
+  },
+  "instance": {
+    "select": "인스턴스 선택",
+    "select-database-user": "데이터베이스 사용자 선택",
+    "new-database": "새 데이터베이스",
+    "syncing": "동기화 중 ...",
+    "sync": {
+      "self": "인스턴스 동기화",
+      "sync-all": "모든 데이터베이스 동기화",
+      "sync-new": "새 데이터베이스만 동기화",
+      "sync-all-tip": "데이터베이스 동기화는 비동기식이며 몇 초에서 몇 분이 걸릴 수 있습니다"
+    },
+    "selected-n-instances": "{n}개 인스턴스 선택됨 | {n}개 인스턴스 선택됨",
+    "users": "사용자",
+    "successfully-archived-instance-updatedinstance-name": "인스턴스 '{0}'을(를) 성공적으로 보관했습니다.",
+    "successfully-synced-schema-for-instance-instance-value-name": "인스턴스 '{0}'의 스키마 동기화에 성공했습니다.",
+    "archive-this-instance": "이 인스턴스 보관",
+    "archive-instance-instance-name": "인스턴스 '{0}'을(를) 보관하시겠습니까?",
+    "archived-instances-will-not-be-displayed": "보관된 인스턴스는 표시되지 않습니다.",
+    "restore-this-instance": "이 인스턴스 복원",
+    "restore": "복원",
+    "restore-instance-instance-name-to-normal-state": "인스턴스 '{0}'을(를) 정상 상태로 복원하시겠습니까?",
+    "account-locator": "계정 로케이터",
+    "host-or-socket": "호스트 또는 소켓",
+    "endpoint": "엔드포인트",
+    "project-id": "프로젝트 ID",
+    "instance-id": "인스턴스 ID",
+    "your-snowflake-account-locator": "Snowflake 계정 로케이터",
+    "port": "포트",
+    "authentication-database": "인증 데이터베이스",
+    "instance-name": "인스턴스 이름",
+    "snowflake-web-console": "Snowflake 웹 콘솔",
+    "external-link": "외부 링크",
+    "connection-info": "연결 정보",
+    "show-how-to-create": "생성 방법 보기",
+    "no-read-only-data-source-warn-for-admin-dba": "인스턴스에 읽기 전용 연결이 구성되어 있지 않습니다. 하나 추가하는 것을 고려하세요.",
+    "no-read-only-data-source-warn-for-developer": "인스턴스에 읽기 전용 연결이 구성되어 있지 않습니다. DBA에게 추가를 요청하세요.",
+    "sentence": {
+      "host": {
+        "none-snowflake": "예: host.docker.internal {'|'} 호스트 IP {'|'} 로컬 소켓"
+      },
+      "proxy": {
+        "snowflake": "프록시 서버의 경우, {'@'}PROXY_HOST를 추가하고 포트에 PROXY_PORT를 지정하세요"
+      },
+      "console": {
+        "snowflake": "이 인스턴스를 관리하는 외부 콘솔 URL(예: AWS RDS 콘솔, 사내 DB 인스턴스 콘솔)"
+      },
+      "outbound-ip-list": "데이터베이스 인스턴스에 인바운드 방화벽 규칙을 사용하는 경우, Bytebase Cloud에서 접근할 수 있도록 다음 IP 주소를 허용 목록에 포함시켜 주세요.",
+      "create-admin-user": "이것은 Bytebase가 DDL 및 DML(비 SELECT) 작업을 수행하는 데 사용하는 연결 사용자입니다.",
+      "create-readonly-user": "이것은 Bytebase가 SELECT 쿼리와 같은 읽기 전용 작업을 수행하는 데 사용하는 연결입니다.",
+      "create-admin-user-non-sql": "이것은 Bytebase가 쓰기 및 관리 작업을 수행하는 데 사용하는 연결 사용자입니다.",
+      "create-readonly-user-non-sql": "이것은 Bytebase가 읽기 전용 작업을 수행하는 데 사용하는 연결입니다.",
+      "google-cloud-sql": {
+        "instance-name": "인스턴스 연결 이름",
+        "instance-name-tips": "인스턴스 연결 이름은 project-id:region:instance-name 형식이어야 합니다.",
+        "mysql": {
+          "template": "{user} 이름의 서비스 계정을 생성한 다음 Google Cloud SQL에 IAM 사용자 {user}{'@'}'%'로 추가하세요. 이 사용자에게 필요한 권한을 부여하세요."
+        },
+        "postgresql": {
+          "template": "{user} 이름의 서비스 계정을 생성한 다음 Google Cloud SQL에 IAM 사용자 {user}{'@'}project-id.iam으로 추가하세요. 이 사용자에게 필요한 권한을 부여하세요."
+        }
+      },
+      "aws-rds": {
+        "mysql": {
+          "template": "다음은 사용자 {user}{'@'}%를 생성하고 필요한 권한을 부여하는 예제입니다."
+        },
+        "postgresql": {
+          "template": "다음은 사용자 '{user}'를 생성하고 필요한 권한을 부여하는 예제입니다."
+        }
+      },
+      "create-user-example": {
+        "snowflake": {
+          "template": "다음은 {warehouse}에 대해 비밀번호가 {password}인 사용자 '{user}'를 생성하고 필요한 권한을 부여하는 예제입니다."
+        },
+        "mysql": {
+          "template": "다음은 비밀번호가 {password}인 사용자 {user}{'@'}%를 생성하고 필요한 권한을 부여하는 예제입니다."
+        },
+        "clickhouse": {
+          "template": "다음은 비밀번호가 {password}인 사용자 '{user}'를 생성하고 필요한 권한을 부여하는 예제입니다. 먼저 ClickHouse SQL 주도 워크플로우 {link}를 활성화한 다음 사용자를 생성하기 위해 다음 쿼리를 실행해야 합니다.",
+          "sql-driven-workflow": "SQL 주도 워크플로우"
+        },
+        "postgresql": {
+          "warn": "연결 인스턴스가 클라우드 제공업체에 의해 관리되는 경우 SUPERUSER를 사용할 수 없으며, 해당 제공업체의 관리 콘솔을 통해 사용자를 생성해야 합니다. 생성된 사용자는 제공업체별 준-SUPERUSER 권한을 갖게 됩니다. 모든 기존 역할에 대해 'GRANT role_name TO bytebase;'로 Bytebase 권한을 부여해야 합니다. 그렇지 않으면 Bytebase가 기존 데이터베이스나 테이블에 접근하지 못할 수 있습니다.",
+          "template": "다음은 비밀번호가 {password}인 사용자 '{user}'를 생성하고 필요한 권한을 부여하는 예제입니다. 연결 인스턴스가 자체 호스팅인 경우 SUPERUSER 권한을 부여할 수 있습니다."
+        },
+        "redis": {
+          "template": "다음은 비밀번호가 {password}인 사용자 {user}를 생성하고 필요한 권한을 부여하는 예제입니다."
+        }
+      }
+    },
+    "no-password": "비밀번호 없음",
+    "type-or-paste-credentials": "자격 증명을 입력하거나 붙여넣기",
+    "type-or-paste-credentials-write-only": "자격 증명을 입력하거나 붙여넣기 - 쓰기 전용",
+    "password-write-only": "DB 비밀번호 - 쓰기 전용",
+    "password-type": {
+      "password": "비밀번호",
+      "password-tip": "외부 비밀 관리 엔드포인트도 지정할 수 있습니다",
+      "google-iam": "Google Cloud SQL IAM",
+      "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
+      "external-secret-vault": "Vault (KV v2)",
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager"
+    },
+    "iam-extension": {
+      "credential-source": "자격 증명 소스",
+      "tenant-id": "테넌트 ID",
+      "client-id": "클라이언트 ID",
+      "client-secret": "클라이언트 시크릿"
+    },
+    "database-region": "데이터베이스 리전",
+    "external-secret-gcp": {
+      "secret-name": "시크릿 전체 이름",
+      "secret-name-tips": "시크릿 이름은 \"projects/project-id/secrets/secret-id\" 형식이어야 합니다."
+    },
+    "external-secret-vault": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "인증 유형",
+        "token": {
+          "self": "토큰",
+          "tips": "TTL이 없는 루트 토큰."
+        },
+        "approle": {
+          "self": "AppRole",
+          "role-id": "인증 역할 ID",
+          "secret-id": "인증 시크릿 ID",
+          "secret-id-plain-text": "역할 시크릿 ID의 일반 텍스트",
+          "secret-id-environment": "역할 시크릿 ID의 환경 이름",
+          "secret-plain-text": "일반 텍스트",
+          "secret-env-name": "환경 이름",
+          "secret-tips": "TTL이 없는 unwrapped 시크릿 ID. 일반 텍스트를 사용하거나 환경 또는 로컬 파일에 넣을 수 있습니다. {learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "시크릿 엔진 이름",
+      "vault-secret-path": "시크릿 경로",
+      "vault-secret-key": "시크릿 키",
+      "vault-secret-engine-tips": "KV v2 엔진만 지원합니다."
+    },
+    "external-secret": {
+      "secret-name": "시크릿 이름",
+      "key-name": "시크릿 키"
+    },
+    "test-connection": "연결 테스트",
+    "new-instance": "새 인스턴스",
+    "unable-to-connect": "Bytebase가 인스턴스에 연결할 수 없습니다. 연결 정보를 다시 검토하는 것이 좋습니다. 하지만 지금은 이 경고를 무시해도 괜찮습니다. 생성 후 인스턴스 상세 페이지에서 연결 정보를 수정할 수 있습니다.\n\n오류 세부 정보: {0}",
+    "successfully-created-instance-createdinstance-name": "인스턴스 '{0}'을(를) 성공적으로 생성했습니다.",
+    "successfully-updated-instance-instance-name": "인스턴스 '{0}'을(를) 성공적으로 업데이트했습니다.",
+    "copy-grant-statement": "CREATE USER 및 GRANT 문이 클립보드에 복사되었습니다. {engine} 클라이언트에 붙여넣어 적용하세요.",
+    "successfully-connected-instance": "인스턴스에 성공적으로 연결했습니다.",
+    "failed-to-connect-instance": "인스턴스 연결에 실패했습니다.",
+    "failed-to-connect-instance-localhost": "Docker로 Bytebase를 실행하는 경우 호스트 주소에 \"host.docker.internal\"을 사용해 보세요.",
+    "filter-instance-name": "인스턴스 이름 필터링",
+    "grants": "권한",
+    "find-gcp-project-id": "GCP 프로젝트 ID를 찾으려면 참조하세요",
+    "find-gcp-project-id-and-instance-id": "GCP 프로젝트 ID와 인스턴스 ID를 찾으려면 참조하세요",
+    "create-gcp-credentials": "자격 증명을 생성하려면 참조하세요",
+    "all": "모든 인스턴스",
+    "force-archive-description": "강제로 보관합니다. 모든 데이터베이스가 할당 해제됩니다.",
+    "scan-interval": {
+      "self": "스캔 간격",
+      "default-never": "기본값 (안 함)",
+      "description": "Bytebase는 주기적으로 인스턴스 스키마를 동기화하고 이상을 감지합니다.",
+      "min-value": "최소값 {value}분"
+    },
+    "maximum-connections": {
+      "self": "최대 연결 수",
+      "default-value": "기본값 (10)",
+      "description": "인스턴스에 대한 최대 연결 수를 설정하여 연결 및 리소스 사용을 제한합니다.",
+      "max-value": "최대 {value}개 연결"
+    },
+    "sync-databases": {
+      "self": "데이터베이스 동기화",
+      "description": "선택한 데이터베이스만 동기화합니다.",
+      "sync-all": "모든 데이터베이스 동기화",
+      "search-database": "데이터베이스 검색",
+      "add-database": "+ 데이터베이스 추가, 제출하려면 Enter 키를 누르세요"
+    },
+    "advanced-search": {
+      "scope": {
+        "host": {
+          "title": "호스트",
+          "description": "인스턴스 호스트별로 필터링합니다. 값을 입력한 다음 Enter 키를 누르세요."
+        },
+        "port": {
+          "title": "포트",
+          "description": "인스턴스 포트별로 필터링합니다. 값을 입력한 다음 Enter 키를 누르세요."
+        }
+      }
+    },
+    "no-params-yet-add-above": "아직 구성된 매개변수가 없습니다. 위 양식을 사용하여 매개변수를 추가하세요.",
+    "no-extra-params-configured": "구성된 추가 연결 매개변수가 없습니다",
+    "parameter-name-placeholder": "매개변수 이름",
+    "parameter-value-placeholder": "매개변수 값"
+  },
+  "environment": {
+    "select": "환경 선택",
+    "delete": "이 환경 삭제",
+    "create": "환경 생성",
+    "successfully-updated-environment": "환경 '{name}'을(를) 성공적으로 업데이트했습니다.",
+    "production-environment": "프로덕션 환경",
+    "access-control": {
+      "title": "접근 제어",
+      "disable-copy-data-from-sql-editor": "SQL 편집기에서 데이터 복사 제한 (관리자/DBA 허용)",
+      "restrict-admin-connection": {
+        "self": "관리 데이터 소스 쿼리 제한",
+        "disallow": "관리 데이터 소스에서 데이터 쿼리 비활성화",
+        "fallback": "읽기 전용 연결이 없을 경우 관리 데이터 소스에서 데이터 쿼리 허용"
+      }
+    },
+    "statement-execution": {
+      "title": "명령문 실행",
+      "disallow-ddl": "SQL 편집기에서 DDL 명령문 실행 비활성화",
+      "disallow-dml": "SQL 편집기에서 데이터 수정 DML 명령문 실행 비활성화"
+    }
+  },
+  "quick-start": {
+    "self": "빠른 시작",
+    "guide": "시도해보려면 단계를 클릭하세요",
+    "view-an-issue": "이슈 보기",
+    "visit-project": "@:common.visit @:common.projects",
+    "visit-instance": "@:common.visit @:common.instances",
+    "visit-database": "@:common.visit @:common.databases",
+    "visit-environment": "@:common.visit @:common.environments",
+    "visit-member": "@:common.visit @:common.members",
+    "query-data": "데이터 쿼리",
+    "notice": {
+      "title": "빠른 시작 가이드 해제됨",
+      "desc": "오른쪽 상단 메뉴에서 나중에 다시 표시할 수 있습니다"
+    }
+  },
+  "auth": {
+    "sign-up": {
+      "title": "계정 등록",
+      "admin-title": "{account} 설정",
+      "admin-account": "관리자 계정",
+      "create-admin-account": "관리자 계정 생성",
+      "existing-user": "이미 계정이 있으신가요?",
+      "accept-terms-and-policy": "Bytebase의 {terms} 및 {policy}에 동의합니다",
+      "terms-of-service": "서비스 약관",
+      "privacy-policy": "개인정보 처리방침"
+    },
+    "sign-in": {
+      "forget-password": "비밀번호를 잊으셨나요?",
+      "new-user": "Bytebase를 처음 사용하시나요?",
+      "demo-note": "이메일:{username} 비밀번호:{password}",
+      "sign-in-with-idp": "{idp}로 로그인"
+    },
+    "password-forget": {
+      "title": "비밀번호를 잊으셨나요?",
+      "selfhost": "비밀번호를 재설정하려면 Bytebase 관리자에게 문의하세요.",
+      "cloud": "{link}로 이동하여 비밀번호를 재설정하세요.",
+      "return-to-sign-in": "로그인으로 돌아가기"
+    },
+    "password-forgot": "비밀번호 찾기",
+    "password-reset": {
+      "title": "비밀번호 재설정",
+      "content": "비밀번호 제한 정책에 따라 비밀번호를 재설정해야 합니다."
+    },
+    "login-as-another": {
+      "title": "다른 사용자로 로그인했습니다",
+      "content": "홈 페이지로 리디렉션합니다."
+    },
+    "token-expired-title": "토큰 만료됨",
+    "token-expired-description": "토큰이 만료되었습니다. 다시 로그인하세요"
+  },
+  "policy": {
+    "rollout": {
+      "name": "출시 정책",
+      "tip": "정책은 소급하여 이슈에 적용됩니다.",
+      "info": "작업은 '{permission}' 권한이 있는 사용자 또는 다음 역할을 가진://",
+      "auto": "자동",
+      "auto-info": "모든 검사를 통과하면 변경 사항이 자동으로 출시되고 실행됩니다.",
+      "last-issue-approver": "마지막 이슈 승인자"
+    },
+    "environment-tier": {
+      "name": "환경 등급",
+      "description": "환경이 다른 환경과 다르게 표시됩니다.",
+      "mark-env-as-production": "프로덕션 환경으로 표시"
+    }
+  },
+  "changelog": {
+    "self": "변경 로그",
+    "select": "스키마 버전은 Bytebase를 통해 스키마 변경이 적용될 때마다 기록됩니다",
+    "change-type": "유형",
+    "no-schema-change": "이 마이그레이션에는 스키마 변경이 없습니다",
+    "show-diff": "차이점 보기",
+    "schema-snapshot-after-change": "이 변경 사항을 적용한 후 기록된 스키마 스냅샷",
+    "current-schema-empty": "현재 스키마가 비어 있습니다",
+    "establish-baseline": "새 기준선 설정",
+    "refreshing": "변경 로그 새로고침 중...",
+    "establish-baseline-description": "Bytebase는 현재 스키마를 새 기준선으로 사용합니다. 이는 실제 스키마 상태와 Bytebase에 기록된 스키마 상태를 조정하고 보고된 스키마 드리프트를 수정합니다. 현재 스키마가 원하는 상태를 반영하는 경우에만 이 작업을 수행해야 합니다.",
+    "establish-database-baseline": "\"{name}\" 기준선 설정",
+    "export": "변경 로그 내보내기",
+    "need-to-select-first": "먼저 변경 로그를 선택해야 합니다",
+    "all-tables": "모든 테이블",
+    "affected-tables": "영향 받는 테이블",
+    "select-affection-tables": "영향 받는 테이블 선택",
+    "rollback-tip": "롤백할 특정 DDL 변경 로그를 선택하세요."
+  },
+  "database": {
+    "sync-database": "데이터베이스 동기화",
+    "select": "데이터베이스 선택",
+    "sync-status": "동기화 상태",
+    "last-successful-sync": "마지막 성공적인 동기화",
+    "filter-database": "데이터베이스 필터링",
+    "transfer-project": "프로젝트 이전",
+    "unassign": "할당 해제",
+    "unassign-alert-title": "데이터베이스 할당 해제",
+    "unassign-alert-description": "선택한 데이터베이스가 프로젝트에서 제거됩니다",
+    "edit-schema": "스키마 편집",
+    "edit-labels": "레이블 편집",
+    "edit-environment": "환경 편집",
+    "mixed-values-for-label": "이 선택된 레이블에는 혼합된 값이 있습니다",
+    "mixed-label-values-warning": "선택한 일부 리소스에 동일한 키에 대해 혼합된 값이 있습니다",
+    "change-data": "데이터 변경",
+    "table-detail": "테이블 상세 정보",
+    "batch-action-not-support-alter-schema": "일부 데이터베이스는 스키마 변경을 지원하지 않습니다",
+    "batch-action-permission-denied": "데이터베이스에 대한 {action} 권한이 없습니다",
+    "batch-action-disabled": "다른 프로젝트의 데이터베이스에 대해 {action}을(를) 수행할 수 없습니다",
+    "batch-action-disabled-for-unassigned": "할당되지 않은 데이터베이스에 대해 {action}을(를) 수행할 수 없습니다",
+    "data-export-action-disabled": "두 개 이상의 데이터베이스에 대해 데이터를 내보낼 수 없습니다",
+    "successfully-transferred-databases": "데이터베이스를 성공적으로 이전했습니다",
+    "nullable": "널 허용",
+    "expression": "표현식",
+    "unique": "고유",
+    "visible": "표시",
+    "comment": "주석",
+    "engine": "엔진",
+    "row-count-estimate": "행 수 추정치",
+    "data-size": "데이터 크기",
+    "index-size": "인덱스 크기",
+    "column": "열",
+    "columns": "열",
+    "indexes": "인덱스",
+    "row-count-est": "행 수 추정치",
+    "incorrect-project-warning": "SQL 편집기는 사용자에게 권한이 있는 프로젝트의 데이터베이스만 쿼리할 수 있습니다. 먼저 이 데이터베이스를 프로젝트로 이전해야 합니다.",
+    "go-to-transfer": "이전하러 가기",
+    "unassigned-databases": "할당되지 않은 데이터베이스",
+    "selected-n-databases": "{n}개 데이터베이스 선택됨 | {n}개 데이터베이스 선택됨",
+    "n-databases": "{n}개 데이터베이스 | {n}개 데이터베이스",
+    "select-databases-from-same-project": "동일한 프로젝트의 데이터베이스를 선택하세요",
+    "sync-schema": {
+      "title": "스키마 동기화",
+      "description": "Bytebase는 스키마를 하나 또는 여러 대상 데이터베이스에 동기화할 수 있습니다. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB만 해당)",
+      "schema-history-version": "스키마 기록 버전",
+      "copy-schema": "스키마 복사",
+      "select-source-schema": "소스 스키마 선택",
+      "select-target-databases": "대상 데이터베이스 선택",
+      "source-schema": "소스 스키마",
+      "schema-version": {
+        "self": "스키마 버전"
+      },
+      "target-databases": "대상 데이터베이스",
+      "with-diff": "차이점 포함",
+      "no-diff": "차이점 없음",
+      "message": {
+        "select-a-target-database-first": "먼저 대상 데이터베이스를 선택하세요.",
+        "no-target-databases": "대상 데이터베이스 없음",
+        "no-diff-found": "차이점을 찾을 수 없습니다."
+      },
+      "schema-change-preview": "'{database}'에 대한 스키마 변경 미리보기",
+      "synchronize-statements": "해당하는 생성된 DDL 문",
+      "synchronize-statements-description": "생성된 DDL 문을 추가로 편집할 수 있습니다",
+      "preview-issue": "이슈 미리보기",
+      "schema-change": "스키마 변경",
+      "generated-ddl-statement": "생성된 DDL 문"
+    },
+    "access-denied": "이 데이터베이스에 접근할 권한이 없습니다.",
+    "schema": {
+      "select": "스키마 선택",
+      "unspecified": "지정되지 않음"
+    },
+    "table": {
+      "select": "테이블 선택",
+      "select-tip": "시작하려면 테이블을 선택하세요."
+    },
+    "all": "모든 데이터베이스",
+    "show-schemaless-databases": "스키마 없는 데이터베이스 표시. (스키마 없는 데이터베이스에는 스키마 편집을 적용할 수 없습니다.)",
+    "secret": {
+      "self": "시크릿",
+      "new": "새 시크릿",
+      "edit": "시크릿 편집",
+      "name-placeholder": "시크릿 이름 입력",
+      "validation": {
+        "cannot-be-changed-later": "나중에 변경할 수 없습니다",
+        "duplicated-name": "시크릿 이름이 중복되었습니다",
+        "name-is-required": "시크릿 이름이 필요합니다",
+        "name-pattern-mismatch": "시크릿 이름은 대문자, 숫자 또는 _ (밑줄)만 포함해야 합니다",
+        "name-cannot-prefix-with-bytebase": "시크릿 이름은 'BYTEBASE_'로 시작할 수 없습니다",
+        "name-cannot-start-with-number": "시크릿 이름은 숫자로 시작할 수 없습니다"
+      },
+      "description-placeholder": "설명 입력",
+      "value": "값",
+      "value-placeholder": "값 입력 (쓰기 전용)",
+      "delete-tips": "시크릿 삭제",
+      "description": "변경 스크립트에서 시크릿을 사용하여 민감한 정보를 숨길 수 있습니다. {guide}를 참조하세요"
+    },
+    "transfer": {
+      "errors": {
+        "select-target-project": "대상 프로젝트 선택",
+        "select-at-least-one-database": "하나 이상의 데이터베이스 선택"
+      },
+      "select-databases": "데이터베이스 선택",
+      "select-target-project": "대상 프로젝트 선택"
+    },
+    "transfer-database-to": "데이터베이스를 대상 프로젝트로 이전",
+    "classification": {
+      "self": "분류",
+      "description": "데이터 분류를 사용하여 소수의 분류만 제어함으로써 많은 열에 대한 마스킹 정책을 관리합니다.",
+      "sync-from-comment": "주석에서 분류 동기화",
+      "sync-from-comment-tip": "활성화되면 테이블/열 주석에서 분류가 동기화됩니다. 주석은 \"{format}\" 형식을 따라야 합니다.",
+      "sync-from-comment-enable-warning": "분류는 DDL과 함께 변경되고 원래 주석에서 동기화됩니다.",
+      "sync-from-comment-disable-warning": "분류는 DDL과 함께 변경되지 않으며, 데이터베이스 상세 페이지에서 언제든지 변경할 수 있습니다."
+    },
+    "partitioned": "분할됨",
+    "partition-tables": "파티션 테이블",
+    "external-server-name": "외부 서버 이름",
+    "external-database-name": "외부 데이터베이스 이름",
+    "foreign-table-detail": "외부 테이블 상세 정보",
+    "view-definition": "뷰 정의",
+    "foreign-keys": "외래 키",
+    "foreign-key": {
+      "reference": "참조"
+    },
+    "checks": "체크",
+    "backup-unavailable-for-databases": "다음 데이터베이스에 대해 백업을 사용할 수 없습니다: {databases}",
+    "engine-not-supported-for-backup": "다음에 대해 사전 백업이 지원되지 않습니다: {databases}",
+    "revision": {
+      "self": "리비전",
+      "applied-at": "적용 시간",
+      "filename": "파일 이름",
+      "delete-confirm-dialog": {
+        "title": "삭제하시겠습니까?",
+        "content": "이 작업은 적용된 리비전을 삭제하지만 데이터베이스 스키마는 변경되지 않습니다. 이 작업은 취소할 수 없습니다."
+      }
+    },
+    "not-found": "데이터베이스를 찾을 수 없습니다",
+    "drifted": {
+      "self": "스키마 드리프트",
+      "schema-drift-detected": {
+        "self": "스키마 드리프트 감지됨",
+        "description": "스키마가 마지막으로 적용된 스키마와 다릅니다. 이로 인해 응용 프로그램 오류가 발생할 수 있으며 해결해야 합니다."
+      },
+      "new-baseline": {
+        "self": "새 기준선",
+        "successfully-established": "새 기준선이 성공적으로 설정되었습니다"
+      }
+    }
+  },
+  "project": {
+    "table": {
+      "name": "@:common.name"
+    },
+    "create-modal": {
+      "project-name": "@:common.project @:common.name",
+      "success-prompt": "프로젝트 {name}이(가) 성공적으로 생성되었습니다."
+    },
+    "overview": {
+      "info-slot-content": "Bytebase는 정기적으로 인스턴스 스키마를 동기화합니다. 새로 동기화된 데이터베이스는 처음에 여기에 배치됩니다. 사용자는 이를 적절한 애플리케이션 프로젝트로 이전해야 합니다."
+    },
+    "webhook": {
+      "success-created-prompt": "웹훅 {name}이(가) 성공적으로 생성되었습니다.",
+      "success-updated-prompt": "웹훅 {name}이(가) 성공적으로 업데이트되었습니다.",
+      "success-deleted-prompt": "웹훅 {name}이(가) 성공적으로 삭제되었습니다.",
+      "success-tested-prompt": "웹훅 이벤트 테스트 성공.",
+      "fail-tested-title": "웹훅 이벤트 테스트 실패.",
+      "add-a-webhook": "웹훅 추가",
+      "create-webhook": "웹훅 생성",
+      "destination": "대상",
+      "webhook-url": "웹훅 URL",
+      "triggering-activity": "트리거 활동",
+      "test-webhook": "웹훅 테스트",
+      "creation": {
+        "title": "웹훅 생성",
+        "desc": "{destination} 채널에서 메시지를 받을 수 있는 해당 웹훅을 생성합니다.",
+        "view-doc": "{destination}의 문서 보기"
+      },
+      "deletion": {
+        "btn-text": "이 웹훅 삭제",
+        "confirm-title": "웹훅 '{title}'과(와) 모든 실행 기록을 삭제하시겠습니까?"
+      },
+      "direct-messages": "다이렉트 메시지",
+      "enable-direct-messages": "다이렉트 메시지 활성화",
+      "direct-messages-tip": "활성화되면 Bytebase는 관련 사용자(이메일로 일치)에게 다이렉트 메시지를 보냅니다. 지원: {events}",
+      "direct-messages-warning": "작동하려면 {im}를 구성해야 합니다.",
+      "activity-support-direct-message": "관련 사용자에게 다이렉트 메시지 보내기 지원",
+      "activity-item": {
+        "issue-creation": {
+          "title": "이슈 생성",
+          "label": "새 이슈가 생성되었을 때"
+        },
+        "issue-status-change": {
+          "title": "이슈 상태 변경",
+          "label": "이슈 상태가 변경되었을 때"
+        },
+        "issue-stage-status-change": {
+          "title": "이슈 단계 상태 변경",
+          "label": "이슈의 단계 상태가 변경되었을 때"
+        },
+        "issue-task-status-change": {
+          "title": "이슈 작업 상태 변경",
+          "label": "이슈의 작업 상태가 변경되었을 때"
+        },
+        "issue-info-change": {
+          "title": "이슈 정보 변경",
+          "label": "이슈 정보(예: 제목, 설명)가 변경되었을 때"
+        },
+        "issue-comment-creation": {
+          "title": "이슈 댓글 생성",
+          "label": "새 이슈 댓글이 생성되었을 때"
+        },
+        "issue-approval-notify": {
+          "title": "이슈 승인 필요",
+          "label": "이슈가 승인 대기 중일 때"
+        },
+        "notify-issue-approved": {
+          "title": "이슈 승인됨",
+          "label": "이슈가 승인되었을 때"
+        },
+        "notify-pipeline-rollout": {
+          "title": "이슈 출시 필요",
+          "label": "이슈가 출시 대기 중일 때"
+        }
+      }
+    },
+    "settings": {
+      "success-updated": "프로젝트 설정이 성공적으로 업데이트되었습니다.",
+      "update-failed": "프로젝트 설정 업데이트에 실패했습니다.",
+      "success-member-added-prompt": "프로젝트에 성공적으로 추가되었습니다.",
+      "archive": {
+        "title": "프로젝트 보관",
+        "description": "보관된 프로젝트는 표시되지 않습니다.",
+        "btn-text": "이 @.lower:{'common.project'} 보관"
+      },
+      "restore": {
+        "title": "프로젝트 복원",
+        "btn-text": "이 @.lower:{'common.project'} 복원"
+      },
+      "issue-related": {
+        "self": "이슈 관련",
+        "labels": {
+          "self": "레이블",
+          "description": "관리를 위해 이슈에 레이블을 첨부할 수 있습니다",
+          "configure-labels": "레이블 구성",
+          "placeholder": "태그를 추가하려면 Enter 키를 누르세요",
+          "force-issue-labels": {
+            "self": "모든 이슈에 레이블 필요",
+            "description": "이슈를 생성할 때 적어도 하나의 레이블이 필요합니다.",
+            "warning": "적어도 하나의 구성된 레이블이 필요합니다"
+          }
+        },
+        "allow-modify-statement": {
+          "self": "문장 수정 허용",
+          "description": "사용자가 이슈 생성 후 문장을 수정할 수 있도록 허용합니다."
+        },
+        "auto-resolve-issue": {
+          "self": "이슈 자동 해결",
+          "description": "모든 작업이 완료된 후 이슈를 자동으로 해결합니다."
+        },
+        "enforce-issue-title": {
+          "self": "이슈 제목 강제",
+          "description": "이슈 제목을 자동 생성하는 대신 비어 있지 않고 사용자가 직접 생성하도록 강제합니다."
+        },
+        "allow-self-approval": {
+          "self": "자체 승인 허용",
+          "description": "이슈 생성자가 이슈를 승인할 수 있도록 허용합니다."
+        },
+        "auto-enable-backup": {
+          "self": "백업 자동 활성화",
+          "description": "모든 데이터 변경 이슈에 대해 백업을 자동으로 활성화합니다."
+        },
+        "skip-backup-errors": {
+          "self": "백업 오류 건너뛰기",
+          "description": "백업 오류를 건너뛰고 데이터 변경 작업을 계속 실행합니다."
+        },
+        "postgres-database-tenant-mode": {
+          "self": "Postgres 데이터베이스 테넌트 모드",
+          "description": "Postgres 데이터베이스의 테넌트 모드입니다. 활성화되면 이슈는 데이터베이스 소유자(OWNER)에 의해 실행됩니다. 그렇지 않으면 인스턴스 연결 사용자에 의해 실행됩니다."
+        },
+        "max-retries": {
+          "self": "잠금 시간 초과에 대한 최대 재시도 횟수",
+          "description": "작업을 실행할 때 잠금 시간 초과에 대한 최대 재시도 횟수입니다. 기본값은 0입니다."
+        },
+        "ci-sampling-size": {
+          "self": "CI 데이터 샘플링 크기",
+          "description": "CI 데이터 검증 중에 샘플링할 최대 데이터베이스 수입니다. 비활성화(0)되면 전체 검증이 수행됩니다."
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "출시당 병렬 작업",
+          "description": "출시당 병렬 작업 수를 제어합니다. 0으로 설정하면 모든 제한이 비활성화됩니다."
+        }
+      }
+    },
+    "members": {
+      "description": "프로젝트 멤버는 프로젝트 내에서 데이터베이스와 이슈를 운영할 수 있는 권한을 결정합니다. 프로젝트 소유자, 작업 공간 관리자 및 작업 공간 DBA는 모두 전체 프로젝트 권한을 가집니다.",
+      "edit": "멤버 편집 - {member}",
+      "view-by-members": "멤버별로 보기",
+      "view-by-roles": "역할별로 보기",
+      "cannot-remove-last-owner": "프로젝트의 마지막 소유자를 제거할 수 없습니다",
+      "revoke-role-from-user": "'{user}'에서 '{role}' 취소",
+      "never-expires": "만료 안 됨",
+      "role-description": "역할 설명",
+      "role-never-expires": "이 역할은 만료되지 않습니다.",
+      "add-more": "더 추가",
+      "condition-name": "조건 이름",
+      "workspace-level-roles": "작업 공간 수준 역할",
+      "project-level-roles": "프로젝트 수준 역할"
+    },
+    "select": "프로젝트 선택",
+    "all": "모든 프로젝트",
+    "masking-exemption": {
+      "self": "마스킹 면제",
+      "grant-exemption": "면제 부여",
+      "revoke-exemption-title": "{member}에 대한 내보내기 및 쿼리 마스킹 면제를 모두 제거하시겠습니까?"
+    }
+  },
+  "data-source": {
+    "snowflake-keypair-tip": "키 페어 인증",
+    "extra-params": {
+      "self": "추가 매개변수",
+      "description": "데이터베이스 연결 문자열에 대한 추가 매개변수"
+    },
+    "ssl": {
+      "ca-cert": "CA 인증서",
+      "client-key": "클라이언트 키",
+      "client-cert": "클라이언트 인증서"
+    },
+    "ssh-type": {
+      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
+      "none": "없음"
+    },
+    "ssh": {
+      "host": "서버",
+      "port": "포트",
+      "user": "사용자",
+      "password": "비밀번호",
+      "ssh-key": "SSH 키",
+      "tunnel": "터널",
+      "private-key": "개인 키"
+    },
+    "ssl-connection": "SSL 연결",
+    "ssh-connection": "SSH 연결",
+    "read-replica-host": "읽기 전용 복제본 호스트",
+    "read-replica-port": "읽기 전용 복제본 포트",
+    "delete-read-only-data-source": "읽기 전용 데이터 소스 삭제",
+    "connection-string-schema": "연결 문자열 스키마",
+    "connection-type": "연결 유형",
+    "additional-node-addresses": "추가 노드 주소",
+    "replica-set": "복제본 세트",
+    "admin": "관리자",
+    "read-only": "읽기 전용",
+    "direct-connection": "직접 연결",
+    "select-query-data-source": "쿼리 데이터 소스 선택"
+  },
+  "setting": {
+    "label": {
+      "value-placeholder": "레이블 값...",
+      "key-placeholder": "레이블 키..."
+    }
+  },
+  "sql-editor": {
+    "self": "SQL 편집기",
+    "select-connection": "연결을 선택하세요",
+    "search-results": "검색 결과",
+    "loading-databases": "데이터베이스 로딩 중...",
+    "show-databases-without-query-permission": "쿼리 권한이 없는 데이터베이스 표시",
+    "loading-data": "데이터 로딩 중...",
+    "table-empty-placeholder": "쿼리를 실행하려면 실행을 클릭하세요.",
+    "no-data-available": "데이터 없음",
+    "download-as-file": "{file}로 다운로드",
+    "only-select-allowed": "{select} 문만 실행할 수 있습니다.",
+    "enable-ddl-for-environment": "{environment} 환경에 대해 DDL/DML 문을 활성화할 수 있습니다.",
+    "and-submit-an-issue": "이슈 제출",
+    "to-enable-admin-mode": "관리자 모드 활성화",
+    "notify-empty-statement": "편집기에 SQL 문을 입력하세요",
+    "can-not-execute-query": "데이터 로딩 중에는 쿼리를 실행할 수 없습니다.",
+    "invalid-database": "잘못된 데이터베이스입니다: {database}",
+    "request-cancelled": "요청이 취소되었습니다",
+    "request-aborted": "사용자가 요청을 중단했습니다",
+    "no-data-source": "쿼리 가능한 데이터 소스가 없습니다. 환경 또는 프로젝트의 데이터 소스 쿼리 정책을 확인하세요.",
+    "rows": "행 | 행",
+    "vertical-display": "세로 표시",
+    "no-history-found": "기록을 찾을 수 없음",
+    "search-history-by-statement": "문장으로 검색",
+    "binary-format": "이진 형식",
+    "hex-format": "16진수 형식",
+    "boolean-format": "부울 형식",
+    "text-format": "텍스트 형식",
+    "hint-tips": {
+      "confirm-to-close-unsaved-sheet": {
+        "title": "저장되지 않은 시트를 닫으시겠습니까?",
+        "content": "시트를 닫고 저장되지 않은 데이터를 잃으시겠습니까?"
+      }
+    },
+    "copy-url": "URL 복사",
+    "notify": {
+      "copy-code-succeed": "코드 복사 성공",
+      "copy-share-link": "공유 링크가 클립보드에 복사되었습니다."
+    },
+    "connect-to-a-database": "데이터베이스에 연결",
+    "link-access": "링크 접근",
+    "private": "비공개",
+    "private-desc": "이 시트에는 사용자만 접근할 수 있습니다",
+    "project-read": "프로젝트 읽기",
+    "project-read-desc": "시트 소유자와 프로젝트 소유자는 읽기/쓰기가 가능하고, 다른 프로젝트 멤버는 읽기만 가능합니다",
+    "project-write": "프로젝트 쓰기",
+    "project-write-desc": "시트 소유자와 프로젝트 멤버 모두 읽기/쓰기가 가능합니다",
+    "create-read-only-data-source": "생성하러 가기",
+    "save-sheet": "시트 저장",
+    "save-sheet-input-placeholder": "시트 이름을 입력하세요",
+    "format": "형식",
+    "sql-review-result": "SQL 검토 결과",
+    "visualize-explain": "설명 시각화",
+    "rows-upper-limit": "쿼리 결과 한도에 도달했습니다",
+    "close-sheet": "시트 닫기",
+    "connect": "연결",
+    "connected": "연결됨",
+    "connect-in-admin-mode": "관리자 모드로 연결",
+    "admin-mode": {
+      "self": "관리자 모드",
+      "exit": "관리자 모드 종료"
+    },
+    "allow-admin-mode-only": "인스턴스 {instance}는 관리자 모드에서만 접근 가능합니다.",
+    "query-time": "쿼리 시간",
+    "connection-lost": "연결이 끊겼습니다. 다음 쿼리 실행 시 재연결을 시도합니다.",
+    "sheet": {
+      "self": "시트",
+      "connection": "연결"
+    },
+    "tab": {
+      "unsaved": "저장되지 않음",
+      "context-menu": {
+        "actions": {
+          "close": "닫기",
+          "close-others": "다른 탭 닫기",
+          "close-to-the-right": "오른쪽 탭 닫기",
+          "close-saved": "저장된 탭 닫기",
+          "close-all": "모두 닫기",
+          "rename": "이름 변경"
+        }
+      }
+    },
+    "batch-query": {
+      "batch": "일괄",
+      "select-database-group": "일괄 쿼리를 위해 {select-database-group}을(를) 선택할 수 있습니다",
+      "description": "{project} 내에서 {database}개의 추가 데이터베이스와 {group}개의 데이터베이스 그룹을 일괄 쿼리합니다.",
+      "show-or-hide-empty-query-results": "빈 쿼리 결과 표시/숨기기",
+      "select-data-source": {
+        "self": "일괄용 데이터 소스 선택",
+        "tooltip": "제한 정책이 적용된 사용 가능한 데이터 소스를 찾은 후 선택을 적용합니다.",
+        "admin": "관리자",
+        "readonly": "읽기 전용",
+        "not-match": "데이터 소스가 일치하지 않습니다. {expect}이(가) 예상되었으나 {actual}이(가) 선택되었습니다."
+      }
+    },
+    "batch-export": {
+      "self": "일괄 내보내기",
+      "tooltip": "최대 {max}개의 데이터베이스를 선택하여 최신 쿼리 결과를 일괄 내보낼 수 있습니다",
+      "failed-for-db": "{db}의 데이터 내보내기에 실패했습니다"
+    },
+    "execute-query": "쿼리 실행",
+    "pending-query": "쿼리 대기 중",
+    "executing-query": "쿼리 실행 중",
+    "request-query": "쿼리 요청",
+    "copy-success": "복사 성공",
+    "connect-in-new-tab": "새 탭에서 연결",
+    "copy-name": "이름 복사",
+    "preview-table-data": "테이블 데이터 미리보기",
+    "view-database-detail": "데이터베이스 상세 정보 보기",
+    "copy-all-column-names": "모든 열 이름 복사",
+    "view-schema-text": "스키마 텍스트 보기",
+    "last-synced": "마지막 동기화: {time}",
+    "click-to-sync-now": "지금 동기화하려면, 클릭하세요",
+    "sync-in-progress": "동기화 진행 중",
+    "create-a-worksheet": "새 워크시트 생성",
+    "select-a-database-to-start": "시작하려면 데이터베이스 선택",
+    "select-encoding": "인코딩 선택",
+    "redis-command": {
+      "self": "Redis 명령 실행 대상",
+      "all-nodes": "모든 노드",
+      "single-node": "단일 노드",
+      "only-for-cluster": "클러스터 연결에서만 사용 가능"
+    },
+    "result-limit": {
+      "self": "결과 제한",
+      "n-rows": "{n}행",
+      "rows": "행"
+    },
+    "n-per-page": "페이지당 {n}개",
+    "customize-tree-structure": "트리 구조 사용자 정의",
+    "add-a-new-instance": "새 인스턴스 추가",
+    "web-socket": {
+      "errors": {
+        "title": "WebSocket 연결 실패",
+        "description": "자동 완성이 제한되거나 비활성화될 수 있습니다.",
+        "disconnected": "WebSocket 연결 끊김"
+      }
+    },
+    "query-context": {
+      "admin-data-source-is-disallowed-to-query": "관리자 데이터 소스에 대한 쿼리가 허용되지 않습니다.",
+      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "읽기 전용 데이터 소스를 사용할 수 있을 때 관리자 데이터 소스에 대한 쿼리가 허용되지 않습니다."
+    },
+    "manage-connections": "연결 관리",
+    "view-detail": "세부 정보 보기",
+    "generate-sql": "SQL 생성",
+    "current-editing-statement-is-not-empty": "현재 편집 중인 문장이 비어 있지 않습니다.",
+    "run-anyway": "그래도 실행",
+    "no-project": {
+      "not-member-of-any-projects": "어떤 프로젝트의 멤버도 아닙니다.",
+      "go-to-create": "생성하러 가기",
+      "contact-the-admin-to-grant-access": "접근 권한을 부여받으려면 관리자에게 문의하세요."
+    },
+    "upload-file": "파일 업로드",
+    "copy-selected-results": "{action} 또는 {button}으로 선택한 데이터 복사",
+    "format-default": "기본값",
+    "column-display-format": "열 표시 형식",
+    "next-row": "다음 행",
+    "previous-row": "이전 행"
+  },
+  "schema-editor": {
+    "self": "스키마 편집기",
+    "preview-issue": "이슈 미리보기",
+    "sync-sql-from-schema-editor": "스키마 편집기에서 SQL 동기화",
+    "raw-sql": "원시 SQL",
+    "search-database-and-table": "데이터베이스 및 테이블 검색",
+    "search-table": "테이블 검색",
+    "search-column": "열 검색",
+    "nothing-changed-for-database": "데이터베이스 {database}에 대한 변경 사항 없음",
+    "actions": {
+      "create-schema": "스키마 생성",
+      "drop-schema": "스키마 삭제",
+      "create-table": "새 테이블",
+      "rename": "이름 변경",
+      "drop-table": "테이블 삭제",
+      "restore": "복원",
+      "add-column": "열 추가",
+      "add-from-template": "템플릿에서 추가",
+      "drop-column": "열 삭제",
+      "create-procedure": "프로시저 생성",
+      "create-function": "함수 생성",
+      "drop": "삭제",
+      "create-view": "뷰 생성"
+    },
+    "database": {
+      "name": "이름",
+      "engine": "엔진",
+      "collation": "콜레이션",
+      "comment": "주석"
+    },
+    "schema": {
+      "select": "스키마 선택",
+      "name": "스키마 이름"
+    },
+    "tables": "테이블",
+    "table": {
+      "select": "테이블 선택",
+      "name": "테이블 이름"
+    },
+    "columns": "열",
+    "column": {
+      "select": "열 선택",
+      "name": "이름",
+      "type": "유형",
+      "default": "기본값",
+      "comment": "주석",
+      "not-null": "널 불가",
+      "primary": "기본 키",
+      "foreign-key": "외래 키",
+      "classification": "분류",
+      "on-update": "업데이트 시"
+    },
+    "default": {
+      "no-default": "기본값 없음",
+      "expression": "표현식",
+      "null": "NULL",
+      "value": "값"
+    },
+    "message": {
+      "invalid-schema-name": "유효하지 않은 스키마 이름",
+      "invalid-table-name": "유효하지 않은 테이블 이름",
+      "duplicated-table-name": "중복된 테이블 이름",
+      "invalid-schema": "유효하지 않은 스키마",
+      "cannot-drop-the-last-column": "마지막 열을 삭제할 수 없습니다",
+      "cannot-change-config": "데이터베이스 구성은 스키마와 함께 변경되어야 합니다",
+      "duplicated-procedure-name": "중복된 프로시저 이름",
+      "invalid-procedure-name": "유효하지 않은 프로시저 이름",
+      "duplicated-function-name": "중복된 함수 이름",
+      "invalid-function-name": "유효하지 않은 함수 이름",
+      "invalid-view-name": "유효하지 않은 뷰 이름",
+      "duplicated-view-name": "중복된 뷰 이름"
+    },
+    "confirm-to-close": {
+      "title": "닫기 확인",
+      "description": "패널을 닫으시겠습니까? 변경 사항이 손실됩니다."
+    },
+    "foreign-key": {
+      "edit": "외래 키 편집",
+      "name-description": "외래 키의 고유 이름"
+    },
+    "index": {
+      "indexes": "인덱스",
+      "edit-indexes": "인덱스 편집",
+      "unique": "고유",
+      "dependency-columns": "종속 열"
+    },
+    "table-partition": {
+      "partitions": "파티션",
+      "edit-partitions": "파티션 편집",
+      "expression": "표현식",
+      "value": "값",
+      "add-sub-partition": "하위 파티션 추가",
+      "type": "유형"
+    },
+    "views": "뷰",
+    "procedures": "프로시저",
+    "functions": "함수",
+    "preview-schema-text": "스키마 텍스트 미리보기",
+    "preview-view-definition": "뷰 정의 미리보기"
+  },
+  "label": {
+    "empty-label-value": "비어 있음",
+    "error": {
+      "key-necessary": "키가 필요합니다",
+      "value-necessary": "값이 필요합니다",
+      "key-duplicated": "중복된 키",
+      "max-value-length-exceeded": "값의 길이는 {length}자를 초과할 수 없습니다"
+    },
+    "add-label": "레이블 추가"
+  },
+  "oauth": {
+    "unknown-event": "예기치 않은 이벤트 유형, OAuth 실패."
+  },
+  "subscription": {
+    "try-for-free": "무료 체험",
+    "inquire-enterprise-plan": "엔터프라이즈 플랜 문의",
+    "enterprise-free-trial": "{days}일 무료 엔터프라이즈 체험",
+    "button": {
+      "upgrade": "업그레이드"
+    },
+    "description": "Bytebase 라이선스를 업로드하여 프로/엔터프라이즈 기능을 잠금 해제할 수 있습니다.",
+    "upload-license": "라이선스 업로드",
+    "upgrade-trial-button": "체험판 업그레이드",
+    "request-n-days-trial": "{days}일 체험판 요청 (신용카드 필요 없음)",
+    "request-with-qr": "QR 코드 스캔",
+    "require-subscription": "이 기능은 {requiredPlan} 구독이 필요합니다. 잠금 해제하려면 Bytebase 라이선스를 구매하세요.",
+    "required-plan-with-trial": "이 기능은 {requiredPlan}이 필요합니다. {startTrial}",
+    "trial-for-plan": "{days}일 동안 {plan}에 대한 무료 체험을 시작할 수 있습니다 - 신용카드 필요 없음.",
+    "trial-for-days": "{days}일 동안 무료 체험을 시작할 수 있습니다 - 신용카드 필요 없음.",
+    "upgrade-trial": "무료 체험을 이 플랜으로 업그레이드할 수 있습니다.",
+    "contact-to-upgrade": "플랜을 업그레이드하려면 작업 공간 관리자에게 문의하세요.",
+    "upgrade-now": "지금 업그레이드",
+    "instance-assignment": {
+      "license": "라이선스",
+      "assign-license": "라이선스 할당",
+      "require-license": "인스턴스 라이선스 필요",
+      "missing-license-attention": "이 기능을 활성화하려면 인스턴스에 라이선스를 할당해야 합니다.",
+      "n-license-remain": "남은 수: {n}",
+      "manage-license": "인스턴스 라이선스 관리",
+      "used-and-total-license": "할당됨 / 총 인스턴스 라이선스",
+      "used-and-total-user": "활성 / 총 사용자 제한",
+      "success-notification": "라이선스 할당을 성공적으로 업데이트했습니다"
+    },
+    "update": {
+      "success": {
+        "title": "라이선스를 성공적으로 업데이트했습니다",
+        "description": "구독 플랜의 프리미엄 기능이 잠금 해제되었습니다."
+      },
+      "failure": {
+        "title": "라이선스 업데이트 실패",
+        "description": "라이선스가 유효한지 확인하세요."
+      }
+    },
+    "plan-features": "{plan} 기능",
+    "overuse-warning": "{currentPlan}에서 {neededPlan}이(가) 제한됩니다. 계속 접근하려면 지금 업그레이드하세요.",
+    "overuse-modal": {
+      "description": "{plan}에서 사용할 수 없는 기능을 사용 중입니다. 계속 접근하려면 지금 업그레이드하세요:"
+    }
+  },
+  "sheet": {
+    "mine": "내 시트",
+    "star": "즐겨찾기",
+    "unstar": "즐겨찾기 해제",
+    "starred": "즐겨찾기됨",
+    "shared": "공유됨",
+    "notifications": {
+      "duplicate-success": "\"내 시트\"로 성공적으로 복제되었습니다"
+    },
+    "hint-tips": {
+      "confirm-to-delete-this-sheet": "이 시트를 삭제하시겠습니까?",
+      "confirm-to-duplicate-sheet": "이 시트를 복제하시겠습니까?"
+    },
+    "search-sheets": "시트 검색",
+    "draft": "초안"
+  },
+  "sql-review": {
+    "title": "SQL 검토",
+    "description": "SQL 검토 정책은 각 환경에 대해 다양한 SQL 린트 규칙 세트를 정의할 수 있습니다. 이는 팀이 SQL 모범 사례를 채택하고 서로 다른 데이터베이스에서 스키마 일관성을 강제하는 데 도움이 됩니다. DDL/DML 변경을 시도하거나 SQL 편집기를 사용하여 데이터를 쿼리할 때마다 쿼리는 구성된 SQL 검토 정책에 대해 확인됩니다.",
+    "disabled": "SQL 검토가 비활성화되었습니다",
+    "no-policy-set": "SQL 검토 정책 없음",
+    "create-policy": "SQL 검토 생성",
+    "select-review": "SQL 검토 선택",
+    "select-review-rules": "SQL 검토 규칙 선택",
+    "select-all": "모두 선택",
+    "select-review-label": "기존 SQL 검토 정책을 리소스에 첨부하거나 {create}할 수 있습니다.",
+    "configure-policy": "정책 구성",
+    "policy-removed": "검토 정책을 성공적으로 제거했습니다.",
+    "policy-created": "검토 정책을 성공적으로 생성했습니다.",
+    "policy-create-failed": "검토 정책 생성에 실패했습니다.",
+    "policy-updated": "검토 정책을 성공적으로 업데이트했습니다.",
+    "policy-update-failed": "검토 정책 업데이트에 실패했습니다.",
+    "add-rules": "규칙 추가",
+    "add-or-remove-rules": "규칙 추가 또는 제거",
+    "no-permission": "DBA 또는 관리자만 검토 정책을 생성하거나 업데이트할 수 있는 권한이 있습니다.",
+    "delete": "SQL 검토 정책 삭제",
+    "input-then-press-enter": "값을 입력한 다음 Enter 키를 눌러 추가",
+    "not-available-for-free": "{plan}에서는 규칙을 사용할 수 없습니다",
+    "unlock-full-feature": "100개 이상의 SQL 린트 규칙 잠금 해제",
+    "search-by-name": "이름으로 검색",
+    "attach-resource": {
+      "no-linked-resources": "첨부된 리소스 없음",
+      "change-resources": "첨부된 리소스 변경",
+      "self": "리소스에 첨부",
+      "label": "SQL 검토 정책을 환경 또는 프로젝트에 적용할 수 있습니다. 데이터베이스는 프로젝트 수준 정책이 있는 경우 이를 사용하고, 없으면 환경 수준 정책으로 대체합니다.",
+      "label-environment": "SQL 검토 정책은 선택된 환경에 속한 모든 데이터베이스에 영향을 미칩니다.",
+      "label-project": "SQL 검토 정책은 선택된 프로젝트에 속한 모든 데이터베이스에 영향을 미칩니다. 이는 데이터베이스 환경 수준 정책을 대체합니다.",
+      "override-warning": "다음 리소스는 이미 다른 SQL 검토 정책과 연결되어 있습니다. \"{button}\"을 클릭하면 구성을 덮어씁니다."
+    },
+    "create": {
+      "breadcrumb": "SQL 검토 정책 생성",
+      "basic-info": {
+        "name": "기본 정보",
+        "display-name": "표시 이름",
+        "display-name-placeholder": "검토 정책 이름",
+        "display-name-default": "SQL 검토 정책",
+        "display-name-label": "서로 다른 검토 정책들 사이에서 식별하는 데 도움이 되는 표시 이름입니다.",
+        "choose-template": "템플릿 선택"
+      },
+      "configure-rule": {
+        "name": "규칙 구성",
+        "change-template": "템플릿 변경",
+        "confirm-override-title": "변경 확인",
+        "confirm-override-description": "규칙이 덮어쓰기됩니다"
+      }
+    },
+    "rule": {
+      "active": "활성"
+    },
+    "enabled-rules": "활성화된 규칙",
+    "rule-detail": "규칙 상세 정보",
+    "view-definition": "정의 보기",
+    "all-checks-passed": "모든 검사 통과."
+  },
+  "audit-log": {
+    "export-finished": "내보내기 완료",
+    "export-tooltip": "30일 이내의 시작 시간과 종료 시간을 선택해야 합니다",
+    "table": {
+      "created-ts": "시간",
+      "actor": "작업자",
+      "level": "레벨",
+      "method": "메서드",
+      "request": "요청",
+      "response": "응답",
+      "status": "상태",
+      "service-data": "서비스 데이터"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "작업자",
+          "description": "감사 로그 작업자로 검색"
+        },
+        "method": {
+          "title": "메서드",
+          "description": "감사 로그의 메서드로 검색"
+        },
+        "level": {
+          "title": "레벨",
+          "description": "감사 로그의 레벨로 검색"
+        }
+      }
+    }
+  },
+  "schema-diagram": {
+    "self": "스키마 다이어그램",
+    "fit-content-with-view": "뷰에 내용 맞추기"
+  },
+  "identity-provider": {
+    "test-connection": "연결 테스트"
+  },
+  "sensitive-data": {
+    "self": "민감한 데이터"
+  },
+  "resource": {
+    "delete-warning": "\"{name}\"이(가) 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "delete-warning-with-resources": "\"{name}\"이(가) 다음 리소스에서 사용 중입니다:",
+    "delete-warning-retry": "이러한 리소스에서 제거한 다음 다시 시도하세요."
+  },
+  "resource-id": {
+    "self": "{resource} ID",
+    "description": "{resource} ID는 고유 식별자입니다. 생성 후에는 변경할 수 없습니다.",
+    "cannot-be-changed-later": "나중에 변경할 수 없습니다.",
+    "validation": {
+      "duplicated": "{resource} ID가 이미 존재합니다. 다른 것을 선택하세요.",
+      "pattern": "{resource} ID는 소문자, 숫자 또는 하이픈을 포함할 수 있습니다. 소문자로 시작하고 문자나 숫자로 끝나야 합니다.",
+      "minlength": "{resource} ID가 너무 짧습니다. 최소 1자 이상이어야 합니다.",
+      "overflow": "{resource} ID가 너무 깁니다. 64자 미만이어야 합니다.",
+      "empty": "{resource} ID는 비워둘 수 없습니다"
+    }
+  },
+  "multi-factor": {
+    "self": "다중 인증",
+    "auth-code": "인증 코드",
+    "recovery-code": "복구 코드",
+    "other-methods": {
+      "self": "다른 방법",
+      "use-auth-app": {
+        "self": "인증 앱 사용",
+        "description": "모바일 기기에서 2단계 인증(TOTP) 앱을 열어 인증 코드를 확인하세요."
+      },
+      "use-recovery-code": {
+        "self": "복구 코드 사용",
+        "description": "모바일 기기에 접근할 수 없는 경우 복구 코드 중 하나를 입력하여 신원을 확인하세요."
+      }
+    }
+  },
+  "two-factor": {
+    "self": "2단계 인증",
+    "description": "2단계 인증은 멤버 계정에 추가 보안 레이어를 제공합니다. 로그인할 때 인증 앱에서 생성한 보안 코드를 입력해야 합니다.",
+    "enabled": "2단계 인증 활성화됨",
+    "setup-steps": {
+      "setup-auth-app": {
+        "self": "인증 앱 설정",
+        "description": "로그인 중 요청될 때 2단계 인증 코드를 받기 위해 Google Authenticator, Microsoft Authenticator 또는 Authy와 같은 휴대폰 앱을 사용하세요.",
+        "scan-qr-code": {
+          "self": "QR 코드 스캔",
+          "description": "휴대폰의 인증 앱을 사용하여 스캔하세요. 스캔할 수 없는 경우 대신 {action}을 하세요.",
+          "enter-the-text": "텍스트 입력"
+        },
+        "verify-code": "앱에서 코드 확인"
+      },
+      "download-recovery-codes": {
+        "self": "복구 코드 다운로드",
+        "tips": "복구 코드를 비밀번호만큼 안전하게 보관하세요. Lastpass, 1Password 또는 Keeper와 같은 비밀번호 관리자와 함께 저장하는 것이 좋습니다.",
+        "keep-safe": {
+          "self": "복구 코드를 안전한 곳에 보관하세요.",
+          "description": "이 코드는 2단계 인증 코드를 분실한 경우 계정에 접근할 수 있는 마지막 수단입니다. 이 코드를 찾을 수 없으면 계정에 대한 접근 권한을 잃게 됩니다."
+        }
+      },
+      "recovery-codes-saved": "복구 코드를 저장했습니다"
+    },
+    "recovery-codes": {
+      "self": "복구 코드",
+      "description": "2단계 인증 코드를 받을 수 없는 경우 계정에 접근하기 위해 복구 코드를 사용할 수 있습니다."
+    },
+    "disable": {
+      "self": "2단계 인증 비활성화",
+      "description": "계정에 대한 2단계 인증을 비활성화하려고 합니다. 로그인할 때 더 이상 인증 앱에서 생성한 보안 코드를 입력할 필요가 없습니다."
+    },
+    "your-two-factor-secret": {
+      "self": "2단계 인증 비밀",
+      "description": "코드를 복사하여 TOTP 앱에 수동으로 입력하세요.",
+      "copy-succeed": "비밀이 클립보드에 복사되었습니다. 앱에 붙여넣으세요."
+    },
+    "messages": {
+      "2fa-enabled": "2단계 인증이 활성화되었습니다.",
+      "2fa-disabled": "2단계 인증이 비활성화되었습니다.",
+      "recovery-codes-regenerated": "복구 코드가 재생성되었습니다.",
+      "2fa-required": "작업 공간에서 2단계 인증이 필요합니다. 계속하려면 활성화하세요.",
+      "cannot-disable": "관리자가 작업 공간에서 요구하기 때문에 2단계 인증을 비활성화할 수 없습니다."
+    }
+  },
+  "plugin": {
+    "ai": {
+      "text-to-sql-placeholder": "자연어를 사용하면 Bytebase가 SQL로 변환합니다",
+      "conversation": {
+        "untitled": "제목 없는 대화",
+        "delete": "대화 삭제",
+        "rename": "대화 이름 변경",
+        "select-or-create": "대화를 시작하려면 {create}하거나 선택하세요.",
+        "history-conversations": "대화 기록",
+        "view-history-conversations": "대화 기록 보기",
+        "new-conversation": "새 대화 시작",
+        "no-message": "이 대화에 메시지 없음",
+        "tips": {
+          "suggest-prompt": "프롬프트 제안 중...",
+          "no-more": "더 이상 없음"
+        }
+      },
+      "statement-copied": "문장이 클립보드에 복사되었습니다",
+      "text2sql": "텍스트에서 SQL로",
+      "actions": {
+        "explain-code": "코드 설명",
+        "find-problems": "문제 찾기",
+        "insert-at-caret": "커서 위치에 삽입"
+      },
+      "send": "보내기",
+      "new-line": "새 줄",
+      "ai-assistant": "AI 어시스턴트",
+      "not-configured": {
+        "self": "AI 어시스턴트가 구성되지 않았습니다.",
+        "contact-admin-to-configure": "조직 관리자에게 문의하세요.",
+        "go-to-configure": "구성하러 가기"
+      }
+    }
+  },
+  "custom-approval": {
+    "self": "사용자 정의 승인",
+    "risk-rule": {
+      "active": "활성",
+      "edit-rule": "규칙 편집",
+      "delete": "위험 규칙 삭제",
+      "risk": {
+        "self": "위험",
+        "select": "위험 선택",
+        "risk-level": {
+          "default": "기본값",
+          "low": "낮음",
+          "moderate": "중간",
+          "high": "높음"
+        },
+        "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "데이터베이스 생성",
+          "data_export": "데이터 내보내기",
+          "request-role": "역할 요청"
+        }
+      },
+      "template": {
+        "templates": "템플릿",
+        "load": "로드",
+        "load-template": "템플릿 로드",
+        "view": "템플릿 보기"
+      },
+      "rule-name": "규칙 이름",
+      "view-rule": "규칙 보기",
+      "source": {
+        "select": "유형 선택",
+        "self": "유형"
+      },
+      "input-rule-name": "규칙 이름 입력",
+      "search": "규칙 검색"
+    },
+    "approval-flow": {
+      "self": "승인 흐름",
+      "approval-flows": "승인 흐름",
+      "approval-nodes": "승인 노드",
+      "delete": "승인 흐름 삭제",
+      "select": "승인 흐름 선택",
+      "create-approval-flow": "승인 흐름 생성",
+      "edit-approval-flow": "승인 흐름 편집",
+      "node": {
+        "nodes": "승인 노드",
+        "description": "여러 승인자가 있을 때 이 노드에서는 하나의 승인만 필요합니다.",
+        "order": "순서",
+        "approver": "승인자",
+        "add": "노드 추가",
+        "delete": "승인 노드 삭제"
+      },
+      "view-approval-flow": "승인 흐름 보기",
+      "skip": "수동 승인 건너뛰기",
+      "risk-not-configured-tips": "{link}을(를) 정의했는지 확인하세요.",
+      "the-related-risk-rules": "관련 위험 규칙",
+      "issue-review": {
+        "sent-back": "반려됨",
+        "review-sent-back-by": "{user}에 의해 검토 반려됨"
+      }
+    },
+    "risk": {
+      "self": "위험",
+      "risks": "위험",
+      "description": "위험 센터는 다양한 조건에서 다양한 데이터베이스 작업에 대한 위험 수준을 정의합니다. 위험 수준은 해당 사용자 정의 승인 흐름을 결정합니다."
+    },
+    "rule": {
+      "rules": "규칙"
+    },
+    "issue-review": {
+      "approve-issue": "이슈를 승인하시겠습니까?",
+      "you": "사용자",
+      "generating-approval-flow": "승인 흐름 생성 중",
+      "approved-issue": "승인된 이슈",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "일부 작업 검사가 통과하지 못했습니다",
+        "some-task-checks-are-still-running": "일부 작업 검사가 아직 실행 중입니다",
+        "x-field-is-required": "{field}이(가) 필요합니다"
+      },
+      "send-back": "반려",
+      "send-back-issue": "이슈를 반려하시겠습니까?",
+      "re-request-review": "검토 재요청",
+      "re-request-review-issue": "이슈 검토를 재요청하시겠습니까?",
+      "sent-back-issue": "반려된 이슈",
+      "re-requested-review": "이슈 검토 재요청됨",
+      "no-one-matched": "일치하는 사람 없음",
+      "any-n-role-can-approve": "어떤 {role}이든 승인 가능",
+      "approved-by-n": "{approver}에 의해 승인됨",
+      "issue-creators-cannot-approve-their-own-issue": "이슈 생성자는 자신의 이슈를 승인할 수 없습니다"
+    }
+  },
+  "schema-template": {
+    "self": "스키마 템플릿",
+    "field-template": {
+      "self": "필드 템플릿",
+      "description": "필드 템플릿을 미리 정의한 다음 스키마 변경 중에 템플릿을 적용할 수 있습니다."
+    },
+    "column-type-restriction": {
+      "self": "열 유형 제한",
+      "description": "각 데이터베이스 엔진에 대해 허용되는 열 유형을 제한할 수 있습니다.",
+      "allow-all": "모두 허용",
+      "allow-limited-types": "제한된 유형 허용",
+      "back-to-edit": "편집으로 돌아가기",
+      "add-and-save": "추가 및 저장",
+      "messages": {
+        "unable-to-update": "제한을 업데이트할 수 없습니다",
+        "following-column-types-are-used": "다음 열 유형은 여전히 필드 템플릿에서 사용되고 있습니다",
+        "one-allowed-type-per-line": "줄당 하나의 허용된 데이터 유형"
+      }
+    },
+    "table-template": {
+      "self": "테이블 템플릿",
+      "description": "테이블 템플릿을 미리 정의한 다음 스키마 변경 중에 템플릿을 적용할 수 있습니다."
+    },
+    "search-by-name-or-comment": "이름 또는 주석으로 검색",
+    "form": {
+      "category": "카테고리",
+      "category-desc": "기존 카테고리를 선택하거나 새로 만드세요",
+      "unclassified": "미분류",
+      "column-name": "열 이름",
+      "column-type": "열 유형",
+      "default-value": "기본값",
+      "comment": "주석",
+      "nullable": "널 허용",
+      "table-name": "테이블 이름",
+      "on-update": "업데이트 시"
+    },
+    "classification": {
+      "self": "데이터 분류",
+      "select": "분류 선택",
+      "search": "분류 검색"
+    }
+  },
+  "role": {
+    "self": "역할",
+    "setting": {
+      "description": "사용자 정의 역할을 정의합니다. 프로젝트 멤버에 적용하고 사용자 정의 승인에 사용할 수 있습니다.",
+      "add": "역할 추가",
+      "edit": "역할 편집",
+      "title-placeholder": "역할 제목 입력",
+      "description-placeholder": "역할 설명 입력"
+    },
+    "title": "제목",
+    "select-role": "역할 선택",
+    "expired-tip": "역할이 만료되었을 수 있습니다.",
+    "import-from-role": "역할에서 가져오기",
+    "workspace-roles": {
+      "self": "작업 공간 역할"
+    },
+    "project-roles": {
+      "self": "프로젝트 역할",
+      "apply-to-all-projects": "모든 프로젝트에 적용"
+    },
+    "custom-roles": {
+      "self": "사용자 정의 역할"
+    },
+    "workspace-admin": {
+      "self": "작업 공간 관리자",
+      "description": "작업 공간 관리자는 작업 공간 내 모든 권한을 가집니다."
+    },
+    "workspace-dba": {
+      "self": "작업 공간 DBA",
+      "description": "작업 공간 DBA는 작업 공간 멤버 관리를 제외한 작업 공간 내 모든 권한을 가집니다."
+    },
+    "workspace-member": {
+      "self": "작업 공간 멤버",
+      "description": "작업 공간 멤버는 작업 공간 내에서 가장 기본적인 역할입니다."
+    },
+    "project-owner": {
+      "self": "프로젝트 소유자",
+      "description": "프로젝트 내 모든 권한"
+    },
+    "project-developer": {
+      "self": "프로젝트 개발자",
+      "description": "모든 뷰어 권한과 데이터베이스 변경 요청 권한."
+    },
+    "project-releaser": {
+      "self": "프로젝트 릴리서",
+      "description": "모든 뷰어 권한과 릴리스 목적의 데이터베이스 변경 요청 검토 권한."
+    },
+    "sql-editor-user": {
+      "self": "SQL 편집기 사용자",
+      "description": "데이터베이스 데이터를 쿼리할 수 있는 권한."
+    },
+    "project-exporter": {
+      "self": "프로젝트 내보내기 사용자",
+      "description": "데이터베이스 데이터를 내보낼 수 있는 권한."
+    },
+    "project-viewer": {
+      "self": "프로젝트 뷰어",
+      "description": "기본 프로젝트 정보 보기, 데이터베이스 접근 및 권한 요청 시작을 위한 읽기 전용 권한."
+    },
+    "issue-creator": {
+      "self": "이슈 생성자"
+    }
+  },
+  "database-group": {
+    "create": "새 데이터베이스 그룹",
+    "matched-database": "일치하는 데이터베이스",
+    "unmatched-database": "일치하지 않는 데이터베이스",
+    "condition": {
+      "self": "조건"
+    },
+    "select": "데이터베이스 그룹 선택",
+    "no-matched-databases": "일치하는 데이터베이스 없음"
+  },
+  "export-center": {
+    "self": "내보내기 센터",
+    "permission-denied": "권한이 거부됨"
+  },
+  "review-center": {
+    "self": "검토 센터",
+    "review-sql": "SQL 검토"
+  },
+  "schema-designer": {
+    "use-tips": "시작하려면 테이블을 클릭하세요."
+  },
+  "cel": {
+    "condition": {
+      "self": "조건",
+      "description-tips": "조건은 표현식을 통해 구성할 수 있는 규칙입니다. 예를 들어, \"환경이 prod\"라는 조건은 \"prod\" 환경에서 실행되는 이슈와 일치합니다.",
+      "add": "조건 추가",
+      "add-group": "조건 그룹 추가",
+      "add-raw-expression": "원시 표현식 추가",
+      "group": {
+        "or": {
+          "description": "다음 중 하나가 참인 경우..."
+        },
+        "and": {
+          "description": "다음 모두가 참인 경우..."
+        },
+        "tooltip": "조건 그룹은 \"And\" 및 \"Or\" 연산자로 연결된 조건의 모음입니다."
+      },
+      "input-value": "값 입력",
+      "add-condition-in-group-placeholder": "조건을 추가하려면 {plus}을(를) 추가하세요",
+      "select-value": "값 선택",
+      "input-value-press-enter": "값을 입력하고 Enter 키를 눌러 확인하세요",
+      "add-root-condition-placeholder": "조건을 추가하려면 \"조건 추가\" 또는 \"조건 그룹 추가\"를 클릭하세요"
+    }
+  },
+  "changelist": {
+    "self": "변경 목록",
+    "changelists": "변경 목록",
+    "new": "새 변경 목록",
+    "name": "변경 목록 이름",
+    "name-placeholder": "내 변경 목록",
+    "error": {
+      "name-is-required": "변경 목록 이름이 필요합니다",
+      "invalid-resource-id": "유효하지 않은 리소스 ID",
+      "nothing-changed": "변경된 내용이 없습니다",
+      "sql-cannot-be-empty": "SQL이 필요합니다",
+      "select-at-least-one-change": "하나 이상의 변경 사항을 선택하세요",
+      "select-at-least-one-change-to-export": "내보낼 변경 사항을 하나 이상 선택하세요",
+      "add-at-least-one-change": "하나 이상의 변경 사항을 추가하세요",
+      "you-are-not-allowed-to-perform-this-action": "이 작업을 수행할 권한이 없습니다"
+    },
+    "apply-to-database": "데이터베이스에 적용",
+    "add-change": {
+      "self": "변경 추가",
+      "changelog": {
+        "select-at-least-one-changelog-below": "아래에서 최소 하나의 변경 로그 선택"
+      }
+    },
+    "change-source": {
+      "self": "변경 소스",
+      "raw-sql": "원시 SQL",
+      "source": "소스"
+    },
+    "confirm-remove-change": "이 변경을 제거하시겠습니까?",
+    "delete-this-changelist": "이 변경 목록 삭제",
+    "confirm-delete-changelist": "이 변경 목록을 삭제하시겠습니까?",
+    "import": {
+      "no-file-to-upload": "업로드할 파일 없음",
+      "upload-sql-or-zip-file": ".sql 또는 .zip 파일 업로드",
+      "optional-upload-sql-or-zip-file": "(선택 사항) .sql 또는 .zip 파일 업로드"
+    },
+    "change-type": "변경 유형"
+  },
+  "release": {
+    "releases": "릴리스",
+    "files": "파일",
+    "create": "릴리스 생성",
+    "select": "릴리스 선택",
+    "archive-this-release": "이 릴리스 보관",
+    "total-files": "총 {count}개 파일",
+    "actions": {
+      "new-file": "새 파일",
+      "import-from-release": "릴리스에서 가져오기"
+    },
+    "messages": {
+      "succeed-to-create-release": "릴리스 생성 성공",
+      "files-will-always-be-sorted-and-executed-in-version-order": "파일은 항상 버전 순서대로 정렬되고 실행됩니다.",
+      "cannot-modify-files-after-created": "릴리스가 생성된 후에는 파일을 수정할 수 없습니다."
+    },
+    "usage-description": "릴리스는 API 통합을 통한 사용자 정의 GitOps에서만 사용됩니다."
+  },
+  "export-data": {
+    "export-rows": "행 내보내기",
+    "error": {
+      "export-rows-required": "내보내기 행 수 필요",
+      "export-rows-must-gt-zero": "내보내기 행 수는 0보다 커야 합니다"
+    },
+    "export-format": "내보내기 형식",
+    "password-optional": "비밀번호로 암호화 (선택 사항)",
+    "password-info": "내보내기 파일을 암호화할 비밀번호를 제공하세요."
+  },
+  "branch": {
+    "select-tables-to-rollout": "출시할 테이블 선택",
+    "index": {
+      "drop-index-confirm": "인덱스를 삭제하시겠습니까?"
+    },
+    "table-partition": {
+      "drop-partition-confirm": "테이블 파티션을 삭제하시겠습니까?",
+      "drop-partition-with-subpartitions-confirm": "모든 하위 파티션도 삭제됩니다."
+    }
+  },
+  "worksheet": {
+    "self": "워크시트"
+  },
+  "setup": {
+    "self": "설정",
+    "basic-info": "기본 정보",
+    "skip-setup": "설정 건너뛰기",
+    "purposes": {
+      "self": "Bytebase의 주요 목적은 무엇인가요?",
+      "alter-schema": "스키마 변경",
+      "query-data": "데이터 쿼리"
+    },
+    "workflow": {
+      "self": "데이터베이스 작업 방식은 무엇인가요?",
+      "team": "팀원과 함께 작업, CI/CD 파이프라인 필요",
+      "simple": "복잡한 워크플로우 없음, UI 도구만 필요"
+    },
+    "data": {
+      "self-setup": "프로젝트 설정",
+      "built-in": "내장 샘플 사용",
+      "built-in-desc": "샘플 프로젝트 및 인스턴스 생성"
+    }
+  },
+  "landing": {
+    "quick-link": {
+      "self": "빠른 링크",
+      "manage": "빠른 링크 관리",
+      "visit-prjects": "프로젝트 방문",
+      "visit-issues": "이슈 방문"
+    },
+    "last-visit": "마지막 방문",
+    "changelog-for-version": "{version}에 대한 변경 로그"
+  }
+}
