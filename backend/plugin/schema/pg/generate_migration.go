@@ -1024,8 +1024,7 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 	}
 
 	if column.Default != "" {
-		// Quote string literals
-		return fmt.Sprintf("'%s'", column.Default)
+		return column.Default
 	}
 
 	if column.DefaultNull {
