@@ -354,8 +354,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		// Quoted string has a single quote around it and is escaped by QUOTE().
 		column.Comment = unquoteMySQLString(column.Comment)
-		// Set UserComment to the same value as Comment when there's no classification
-		column.UserComment = column.Comment
 		if defaultStr.Valid {
 			defaultStr.String = stripSingleQuote(defaultStr.String)
 		}
@@ -573,7 +571,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 				DataFree:         dataFree,
 				CreateOptions:    createOptions,
 				Comment:          comment,
-				UserComment:      comment,
 				Partitions:       partitionTables[key],
 				CheckConstraints: checkMap[key],
 				Charset:          charset,

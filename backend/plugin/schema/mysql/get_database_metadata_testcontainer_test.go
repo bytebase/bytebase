@@ -621,7 +621,7 @@ func compareColumns(t *testing.T, dbColumns, parsedColumns []*storepb.ColumnMeta
 		compareDefaultValues(t, dbCol, parsedCol, tableName, parsedCol.Name)
 
 		// Compare comments
-		require.Equal(t, dbCol.UserComment, parsedCol.UserComment,
+		require.Equal(t, dbCol.Comment, parsedCol.Comment,
 			"comment mismatch for column %s.%s", tableName, parsedCol.Name)
 	}
 }

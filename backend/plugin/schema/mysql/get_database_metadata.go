@@ -227,7 +227,6 @@ func (e *metadataExtractor) extractColumnDefinition(ctx mysql.IColumnDefinitionC
 	if ctx.FieldDefinition() != nil {
 		if comment := e.extractColumnComment(ctx.FieldDefinition()); comment != "" {
 			column.Comment = comment
-			column.UserComment = comment // Match MySQL driver behavior
 		}
 	}
 
@@ -430,7 +429,6 @@ func (*metadataExtractor) extractTableComment(ctx *mysql.CreateTableContext, tab
 		if option.COMMENT_SYMBOL() != nil && option.TextStringLiteral() != nil {
 			comment := mysqlparser.NormalizeMySQLTextStringLiteral(option.TextStringLiteral())
 			table.Comment = comment
-			table.UserComment = comment // Match MySQL driver behavior
 			break
 		}
 	}
@@ -994,7 +992,7 @@ func (e *metadataExtractor) extractFieldDefinitionForAlter(columnName string, ct
 
 	// Extract comment
 	if comment := e.extractColumnComment(ctx); comment != "" {
-		column.UserComment = comment
+		column.Comment = comment
 	}
 
 	table.Columns = append(table.Columns, column)
