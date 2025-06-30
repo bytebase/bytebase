@@ -10,28 +10,38 @@
     <div
       class="w-full flex flex-row justify-between items-center gap-2 px-2 pt-2 pb-1"
     >
-      <p>
+      <div class="flex items-center space-x-1">
         <span class="text-base font-medium">
           {{ environmentStore.getEnvironmentByName(stage.environment).title }}
         </span>
-        <NTag class="ml-2" v-if="!isCreated" round size="tiny">Preview</NTag>
-      </p>
-      <div v-if="isCreated">
-        <RunTasksButton :stage="stage" @run-tasks="handleRunAllTasks" />
+        <NTag v-if="!isCreated" round size="tiny">{{
+          $t("common.preview")
+        }}</NTag>
       </div>
-      <div v-else>
+      <div class="flex justify-end items-center">
+        <RunTasksButton
+          v-if="isCreated && canRunTasks"
+          :stage="stage"
+          @run-tasks="handleRunAllTasks"
+        />
         <NPopconfirm
+          v-else-if="!isCreated && canCreateRollout"
           :negative-text="null"
           :positive-text="$t('common.confirm')"
           :positive-button-props="{ size: 'tiny' }"
           @positive-click="createRolloutToStage"
         >
           <template #trigger>
-            <NButton text size="small">
-              <template #icon>
-                <CirclePlayIcon class="w-4 h-4" />
+            <NTooltip>
+              <template #trigger>
+                <NButton text size="small">
+                  <template #icon>
+                    <CircleFadingPlusIcon class="w-4 h-4" />
+                  </template>
+                </NButton>
               </template>
-            </NButton>
+              {{ $t("common.create") }}
+            </NTooltip>
           </template>
           {{ $t("common.confirm-and-add") }}
         </NPopconfirm>
@@ -79,7 +89,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { CirclePlayIcon } from "lucide-vue-next";
+import { CircleFadingPlusIcon } from "lucide-vue-next";
 import { NTag, NTooltip, NVirtualList, NButton, NPopconfirm } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
@@ -107,6 +117,7 @@ import RunTasksButton from "./RunTasksButton.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
 import { useRolloutViewContext } from "./context";
+import { useTaskActionPermissions } from "./taskPermissions";
 
 const props = defineProps<{
   stage: Stage;
@@ -119,13 +130,11 @@ const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
 const { events } = usePlanContextWithRollout();
 const { rollout } = useRolloutViewContext();
+const { canPerformTaskAction } = useTaskActionPermissions();
 
 const showRunTasksPanel = ref(false);
 
 const isCreated = computed(() => {
-  if (!rollout.value) {
-    return false;
-  }
   return rollout.value.stages.some(
     (stage) => stage.environment === props.stage.environment
   );
@@ -140,9 +149,17 @@ const filteredTasks = computed(() => {
   );
 });
 
+const canRunTasks = computed(() => {
+  return canPerformTaskAction(props.stage.tasks, rollout.value, project.value);
+});
+
+const canCreateRollout = computed(() => {
+  return canRunTasks.value;
+});
+
 // Helper function to extract IDs from task and stage names
 const getTaskRouteParams = (task: Task) => {
-  const rolloutId = rollout.value?.name.split("/").pop();
+  const rolloutId = rollout.value.name.split("/").pop();
   const stageId = props.stage.name.split("/").pop();
   const taskId = task.name.split("/").pop();
 
