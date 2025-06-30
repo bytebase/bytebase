@@ -258,6 +258,7 @@ func (s *Store) UpdateDBSchemaMetadata(ctx context.Context, id int, metadata str
 
 // UpdateDBSchemaMetadataIfTodo updates the metadata and sets todo to false only if todo is currently true.
 // This is used by the migrator to avoid race conditions with the sync process.
+// The WHERE condition ensures atomic check-and-update, preventing any race conditions.
 func (s *Store) UpdateDBSchemaMetadataIfTodo(ctx context.Context, id int, metadata string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
