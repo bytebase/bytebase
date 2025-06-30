@@ -135,6 +135,7 @@ CREATE TABLE db_schema (
     metadata json NOT NULL DEFAULT '{}',
     raw_dump text NOT NULL DEFAULT '',
     config jsonb NOT NULL DEFAULT '{}',
+    todo boolean NOT NULL DEFAULT TRUE,
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 

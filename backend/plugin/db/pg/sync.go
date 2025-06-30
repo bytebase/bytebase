@@ -727,8 +727,11 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &characterMaxLength, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &identityGeneration, &comment); err != nil {
 			return nil, err
 		}
+		// Store schema-qualified default in the Default field for Step 4 of column default migration
 		if defaultStr.Valid {
-			column.DefaultExpression = defaultStr.String
+			column.Default = defaultStr.String
+		} else {
+			column.Default = "" // Handle NULL case (no default or DEFAULT NULL)
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
