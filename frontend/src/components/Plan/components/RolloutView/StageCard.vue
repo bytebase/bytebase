@@ -17,7 +17,24 @@
         <NTag class="ml-2" v-if="!isCreated" round size="tiny">Preview</NTag>
       </p>
       <div v-if="isCreated">
-        <RunTasksButton :stage="stage" @run-tasks="showRunTasksPanel = true" />
+        <RunTasksButton :stage="stage" @run-tasks="handleRunAllTasks" />
+      </div>
+      <div v-else>
+        <NPopconfirm
+          :negative-text="null"
+          :positive-text="$t('common.confirm')"
+          :positive-button-props="{ size: 'tiny' }"
+          @positive-click="createRolloutToStage"
+        >
+          <template #trigger>
+            <NButton text size="small">
+              <template #icon>
+                <CirclePlayIcon class="w-4 h-4" />
+              </template>
+            </NButton>
+          </template>
+          {{ $t("common.confirm-and-add") }}
+        </NPopconfirm>
       </div>
     </div>
     <NVirtualList
@@ -52,30 +69,40 @@
 
     <!-- Task Rollout Action Panel -->
     <TaskRolloutActionPanel
-      :action="showRunTasksPanel ? 'RUN_TASKS' : undefined"
-      :stage="stage"
-      @close="showRunTasksPanel = false"
+      v-if="showRunTasksPanel"
+      action="RUN"
+      :target="{ type: 'tasks', stage }"
+      @close="handlePanelClose"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { NTag, NTooltip, NVirtualList } from "naive-ui";
+import { create } from "@bufbuild/protobuf";
+import { CirclePlayIcon } from "lucide-vue-next";
+import { NTag, NTooltip, NVirtualList, NButton, NPopconfirm } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import TaskStatus from "@/components/Rollout/RolloutDetail/Panels/kits/TaskStatus.vue";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
-import { extractProjectResourceName } from "@/utils";
+import {
+  useCurrentProjectV1,
+  useEnvironmentV1Store,
+  pushNotification,
+} from "@/store";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   Stage,
   type Task,
   type Task_Status,
 } from "@/types/proto/v1/rollout_service";
+import { extractProjectResourceName } from "@/utils";
 import { extractSchemaVersionFromTask } from "@/utils";
+import { usePlanContextWithRollout } from "../../logic";
 import RunTasksButton from "./RunTasksButton.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
@@ -90,6 +117,7 @@ const { t: $t } = useI18n();
 const router = useRouter();
 const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
+const { events } = usePlanContextWithRollout();
 const { rollout } = useRolloutViewContext();
 
 const showRunTasksPanel = ref(false);
@@ -114,10 +142,10 @@ const filteredTasks = computed(() => {
 
 // Helper function to extract IDs from task and stage names
 const getTaskRouteParams = (task: Task) => {
-  const rolloutId = rollout.value?.name.split('/').pop();
-  const stageId = props.stage.name.split('/').pop();
-  const taskId = task.name.split('/').pop();
-  
+  const rolloutId = rollout.value?.name.split("/").pop();
+  const stageId = props.stage.name.split("/").pop();
+  const taskId = task.name.split("/").pop();
+
   return { rolloutId, stageId, taskId };
 };
 
@@ -133,6 +161,44 @@ const handleTaskClick = (task: Task) => {
         stageId: params.stageId,
         taskId: params.taskId,
       },
+    });
+  }
+};
+
+const handleRunAllTasks = () => {
+  showRunTasksPanel.value = true;
+};
+
+const handlePanelClose = () => {
+  showRunTasksPanel.value = false;
+};
+
+const createRolloutToStage = async () => {
+  try {
+    const request = create(CreateRolloutRequestSchema, {
+      parent: project.value.name,
+      rollout: {
+        plan: rollout.value.plan,
+      },
+      target: props.stage.environment,
+    });
+    await rolloutServiceClientConnect.createRollout(request);
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: $t("common.success"),
+      description: $t("common.created"),
+    });
+
+    // Trigger immediate refresh of rollout data
+    events.emit("status-changed", { eager: true });
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: $t("common.error"),
+      description: String(error),
     });
   }
 };

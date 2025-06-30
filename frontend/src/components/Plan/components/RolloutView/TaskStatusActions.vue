@@ -1,45 +1,54 @@
 <template>
-  <div
-    v-if="primaryAction || dropdownOptions.length > 0"
-    class="flex flex-row justify-end items-center gap-x-2"
-  >
-    <NButton
-      v-if="primaryAction"
-      type="primary"
-      size="small"
-      @click="handleTaskStatusAction(primaryAction)"
+  <div>
+    <div
+      v-if="primaryAction || dropdownOptions.length > 0"
+      class="flex flex-row justify-end items-center gap-x-2"
     >
-      {{ actionDisplayTitle(primaryAction) }}
-    </NButton>
-    <NDropdown
-      v-if="dropdownOptions.length > 0"
-      trigger="hover"
-      :options="dropdownOptions"
-      @select="(action) => handleTaskStatusAction(action)"
-    >
-      <NButton size="small">
-        <template #icon>
-          <EllipsisVerticalIcon class="w-4 h-4" />
-        </template>
+      <NButton
+        v-if="primaryAction"
+        type="primary"
+        size="small"
+        @click="handlePrimaryAction"
+      >
+        {{ actionDisplayTitle(primaryAction) }}
       </NButton>
-    </NDropdown>
+      <NDropdown
+        v-if="dropdownOptions.length > 0"
+        trigger="hover"
+        :options="dropdownOptions"
+        @select="handleDropdownSelect"
+      >
+        <NButton size="small">
+          <template #icon>
+            <EllipsisVerticalIcon class="w-4 h-4" />
+          </template>
+        </NButton>
+      </NDropdown>
+    </div>
+
+    <!-- Task Rollout Action Panel -->
+    <TaskRolloutActionPanel
+      v-if="currentPanelAction && showActionPanel && actionTarget"
+      :action="currentPanelAction"
+      :target="actionTarget"
+      @close="handleActionPanelClose"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { EllipsisVerticalIcon } from "lucide-vue-next";
 import { NButton, NDropdown } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { create } from "@bufbuild/protobuf";
-import {
-  BatchRunTasksRequestSchema,
-  BatchSkipTasksRequestSchema,
-  BatchCancelTaskRunsRequestSchema,
-} from "@/types/proto-es/v1/rollout_service_pb";
-import { rolloutServiceClientConnect } from "@/grpcweb";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import type { Task, TaskRun, Rollout, Stage } from "@/types/proto/v1/rollout_service";
+import type {
+  Task,
+  TaskRun,
+  Rollout,
+  Stage,
+} from "@/types/proto/v1/rollout_service";
+import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
 
 type TaskStatusAction =
   // NOT_STARTED -> PENDING
@@ -62,20 +71,69 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const showActionPanel = ref(false);
+const selectedAction = ref<TaskStatusAction>();
 
-// Helper function to find the stage for a task
-const findStageForTask = (rollout: Rollout | undefined, task: Task): Stage | undefined => {
-  if (!rollout) return undefined;
-  
-  for (const stage of rollout.stages) {
-    for (const stageTask of stage.tasks) {
-      if (stageTask.name === task.name) {
-        return stage;
+type PanelAction = "RUN" | "SKIP" | "CANCEL" | undefined;
+
+const currentPanelAction = computed((): PanelAction => {
+  if (!showActionPanel.value || !selectedAction.value) return undefined;
+
+  switch (selectedAction.value) {
+    case "RUN":
+    case "RETRY":
+      return "RUN";
+    case "SKIP":
+      return "SKIP";
+    case "CANCEL":
+      return "CANCEL";
+    default:
+      return undefined;
+  }
+});
+
+// Determine target based on action type
+const actionTarget = computed(() => {
+  if (!currentPanelAction.value) return undefined;
+
+  if (currentPanelAction.value === "CANCEL") {
+    // For cancel actions, we need task runs
+    return {
+      type: "taskRuns" as const,
+      taskRuns: props.taskRuns,
+      stage: stage.value,
+    };
+  } else {
+    // For run and skip actions, we use specific tasks
+    return {
+      type: "tasks" as const,
+      tasks: [props.task],
+      stage: stage.value,
+    };
+  }
+});
+
+// Get the stage for the current task
+const stage = computed((): Stage => {
+  // Find the actual stage if rollout is provided
+  if (props.rollout) {
+    for (const stage of props.rollout.stages) {
+      for (const stageTask of stage.tasks) {
+        if (stageTask.name === props.task.name) {
+          return stage;
+        }
       }
     }
   }
-  return undefined;
-};
+
+  // Should not reach here.
+  return {
+    id: "",
+    name: "",
+    environment: "",
+    tasks: [],
+  } as Stage;
+});
 
 const primaryAction = computed((): TaskStatusAction | null => {
   if (props.task.status === Task_Status.NOT_STARTED) {
@@ -126,36 +184,21 @@ const actionDisplayTitle = (action: TaskStatusAction) => {
   }
 };
 
-const handleTaskStatusAction = async (action: TaskStatusAction) => {
-  const stage = findStageForTask(props.rollout, props.task);
-  if (!stage) return;
-  
-  try {
-    if (action === "RUN" || action === "RETRY") {
-      const request = create(BatchRunTasksRequestSchema, {
-        parent: stage.name,
-        tasks: [props.task.name],
-      });
-      await rolloutServiceClientConnect.batchRunTasks(request);
-    } else if (action === "SKIP") {
-      const request = create(BatchSkipTasksRequestSchema, {
-        parent: stage.name,
-        tasks: [props.task.name],
-      });
-      await rolloutServiceClientConnect.batchSkipTasks(request);
-    } else if (action === "CANCEL") {
-      const request = create(BatchCancelTaskRunsRequestSchema, {
-        parent: `${stage.name}/tasks/-`,
-        taskRuns: props.taskRuns.map((taskRun) => taskRun.name),
-        // TODO: Let user input reason.
-        reason: "",
-      });
-      await rolloutServiceClientConnect.batchCancelTaskRuns(request);
-    }
-    
-    emit("task-action-completed");
-  } catch (error) {
-    console.error("Failed to execute task action:", error);
+const handlePrimaryAction = () => {
+  if (primaryAction.value) {
+    selectedAction.value = primaryAction.value;
+    showActionPanel.value = true;
   }
+};
+
+const handleDropdownSelect = (action: TaskStatusAction) => {
+  selectedAction.value = action;
+  showActionPanel.value = true;
+};
+
+const handleActionPanelClose = () => {
+  showActionPanel.value = false;
+  selectedAction.value = undefined;
+  emit("task-action-completed");
 };
 </script>

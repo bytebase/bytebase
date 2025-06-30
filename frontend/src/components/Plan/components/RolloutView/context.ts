@@ -8,8 +8,11 @@ import { silentContextKey } from "@/grpcweb/context-key";
 import { useCurrentProjectV1 } from "@/store";
 import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { Rollout, type Stage } from "@/types/proto/v1/rollout_service";
-import { convertNewRolloutToOld, convertOldPlanToNew } from "@/utils/v1/rollout-conversions";
-import { usePlanContextWithRollout } from "../../logic";
+import {
+  convertNewRolloutToOld,
+  convertOldPlanToNew,
+} from "@/utils/v1/rollout-conversions";
+import { usePlanContextWithRollout, usePlanContext } from "../../logic";
 
 export type RolloutViewContext = {
   rollout: Ref<Rollout>;
@@ -27,6 +30,7 @@ export const useRolloutViewContext = () => {
 
 export const provideRolloutViewContext = () => {
   const { plan, rollout } = usePlanContextWithRollout();
+  const { events } = usePlanContext();
   const { project } = useCurrentProjectV1();
 
   const rolloutPreview = ref<Rollout>(Rollout.fromPartial({}));
@@ -59,12 +63,10 @@ export const provideRolloutViewContext = () => {
     });
 
     try {
-      const rolloutPreviewNew = await rolloutServiceClientConnect.previewRollout(
-        request,
-        {
+      const rolloutPreviewNew =
+        await rolloutServiceClientConnect.previewRollout(request, {
           contextValues: createContextValues().set(silentContextKey, true),
-        }
-      );
+        });
       rolloutPreview.value = convertNewRolloutToOld(rolloutPreviewNew);
     } catch (error) {
       // Handle preview errors gracefully
@@ -86,6 +88,13 @@ export const provideRolloutViewContext = () => {
     },
   });
   poller.start();
+
+  events.on("status-changed", async (data) => {
+    // Only refresh if the event is eager or if rollout is not yet created
+    if (data.eager) {
+      await fetchRolloutPreview();
+    }
+  });
 
   const context: RolloutViewContext = {
     rollout,

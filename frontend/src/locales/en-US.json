@@ -849,8 +849,7 @@
           "title": "Creator",
           "description": "Search by the issue creator"
         },
-        "subscriber": {
-        },
+        "subscriber": {},
         "approver": {
           "title": "Approver",
           "description": "Search by the issue approver"
@@ -1027,9 +1026,6 @@
       "approved": "Approved",
       "rejected": "Rejected",
       "under-review": "Under review"
-    },
-    "expermental-page": {
-      "self": "Experimental issue page"
     }
   },
   "plan": {
