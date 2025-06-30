@@ -24,9 +24,8 @@ import { instanceRoleServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
 import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
 import { create } from "@bufbuild/protobuf";
-import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 import { ListInstanceRolesRequestSchema } from "@/types/proto-es/v1/instance_role_service_pb";
-import { convertNewInstanceRoleToOld } from "@/utils/v1/instance-role-conversions";
 import { useEditorContext } from "./context";
 
 /**
@@ -64,7 +63,7 @@ watch(
       pageSize: DEFAULT_PAGE_SIZE,
     });
     const response = await instanceRoleServiceClientConnect.listInstanceRoles(request);
-    instanceRoles.value = response.roles.map(convertNewInstanceRoleToOld);
+    instanceRoles.value = response.roles;
   },
   {
     immediate: true,
