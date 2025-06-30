@@ -32,28 +32,9 @@
               </template>
               <template v-else>{{ $t("common.tasks") }}</template>
               <span class="opacity-80" v-if="eligibleTasks.length > 1">
-                <template v-if="showTaskSelection">
-                  ({{ selectedTaskNames.size }} / {{ eligibleTasks.length }})
-                </template>
-                <template v-else> ({{ eligibleTasks.length }}) </template>
+                ({{ eligibleTasks.length }})
               </span>
             </label>
-            <div v-if="showTaskSelection" class="flex gap-x-2">
-              <NButton
-                size="tiny"
-                :disabled="selectedTaskNames.size === eligibleTasks.length"
-                @click="selectAllTasks"
-              >
-                {{ $t("sql-review.select-all") }}
-              </NButton>
-              <NButton
-                size="tiny"
-                :disabled="selectedTaskNames.size === 0"
-                @click="selectNoTasks"
-              >
-                {{ "Clear" }}
-              </NButton>
-            </div>
           </div>
           <div class="flex-1 overflow-y-auto">
             <template v-if="useVirtualScroll">
@@ -69,14 +50,6 @@
                     class="flex items-center text-sm"
                     :style="{ height: `${itemHeight}px` }"
                   >
-                    <NCheckbox
-                      v-if="showTaskSelection"
-                      :checked="selectedTaskNames.has(task.name)"
-                      @update:checked="
-                        (checked) => handleTaskSelectionChange(task, checked)
-                      "
-                      class="mr-2"
-                    />
                     <NTag
                       v-if="semanticTaskType(task.type)"
                       class="mr-2"
@@ -99,14 +72,6 @@
                     :key="task.name"
                     class="flex items-center"
                   >
-                    <NCheckbox
-                      v-if="showTaskSelection"
-                      :checked="selectedTaskNames.has(task.name)"
-                      @update:checked="
-                        (checked) => handleTaskSelectionChange(task, checked)
-                      "
-                      class="mr-2"
-                    />
                     <NTag
                       v-if="semanticTaskType(task.type)"
                       class="mr-2"
@@ -215,13 +180,13 @@ import dayjs from "dayjs";
 import Long from "long";
 import {
   NButton,
-  NCheckbox,
   NDatePicker,
   NInput,
   NScrollbar,
   NTag,
   NTooltip,
   NVirtualList,
+  NCheckbox,
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -266,7 +231,6 @@ const state = reactive<LocalState>({
 const environmentStore = useEnvironmentV1Store();
 const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
-const selectedTaskNames = ref<Set<string>>(new Set());
 
 // Extract stage from target
 const targetStage = computed(() => {
@@ -341,28 +305,14 @@ const eligibleTasks = computed(() => {
   return [];
 });
 
-// Show task selection UI when there are multiple eligible tasks and no specific tasks provided
-const showTaskSelection = computed(() => {
-  return (
-    eligibleTasks.value.length > 1 &&
-    props.target.type === "tasks" &&
-    !targetTasks.value
-  );
-});
-
-// Get the tasks that will actually be run (selected or all)
+// Get the tasks that will actually be run
 const runnableTasks = computed(() => {
-  if (showTaskSelection.value && selectedTaskNames.value.size > 0) {
-    return eligibleTasks.value.filter((task) =>
-      selectedTaskNames.value.has(task.name)
-    );
-  }
   return eligibleTasks.value;
 });
 
 // Virtual scroll configuration
 const useVirtualScroll = computed(() => eligibleTasks.value.length > 50);
-const itemHeight = computed(() => (showTaskSelection.value ? 40 : 32)); // Height of each task item in pixels
+const itemHeight = computed(() => 32); // Height of each task item in pixels
 
 const showScheduledTimePicker = computed(() => {
   return props.action === "RUN";
@@ -372,11 +322,7 @@ const confirmErrors = computed(() => {
   const errors: string[] = [];
 
   if (runnableTasks.value.length === 0) {
-    if (showTaskSelection.value && eligibleTasks.value.length > 0) {
-      errors.push("Please select at least one task");
-    } else {
-      errors.push(t("common.no-data"));
-    }
+    errors.push(t("common.no-data"));
   }
 
   // Validate scheduled time if not running immediately (only for RUN)
@@ -454,33 +400,8 @@ const handleConfirm = async () => {
   }
 };
 
-const handleTaskSelectionChange = (task: Task, checked: boolean) => {
-  if (checked) {
-    selectedTaskNames.value.add(task.name);
-  } else {
-    selectedTaskNames.value.delete(task.name);
-  }
-  // Trigger reactivity
-  selectedTaskNames.value = new Set(selectedTaskNames.value);
-};
-
-const selectAllTasks = () => {
-  selectedTaskNames.value = new Set(eligibleTasks.value.map((t) => t.name));
-};
-
-const selectNoTasks = () => {
-  selectedTaskNames.value.clear();
-  selectedTaskNames.value = new Set();
-};
-
 const resetState = () => {
   comment.value = "";
   runTimeInMS.value = undefined;
-  selectedTaskNames.value.clear();
-
-  // Pre-select all tasks by default when showing selection
-  if (showTaskSelection.value) {
-    selectAllTasks();
-  }
 };
 </script>

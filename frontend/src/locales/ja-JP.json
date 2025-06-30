@@ -278,6 +278,13 @@
     "cancel-task": "タスクをキャンセルする",
     "created": "内蔵",
     "run-immediately": "すぐに実行",
+    "selected-n-tasks": "{n} 個のタスクが選択されました | {n} 個のタスクが選択されました",
+    "no-tasks-selected": "タスクが選択されていません",
+    "no-runnable-tasks": "実行可能なタスクはありません",
+    "no-skippable-tasks": "スキップ可能なタスクはありません",
+    "no-cancellable-tasks": "キャンセル可能なタスクはありません",
+    "cross-stage-not-supported": "ステージ間の操作はサポートされていません",
+    "no-permission": "この操作を実行する権限がありません",
     "scheduled-time": "予定時刻",
     "select-scheduled-time": "予定時刻を選択してください",
     "error": {

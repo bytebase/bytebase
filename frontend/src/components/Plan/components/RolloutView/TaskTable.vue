@@ -1,18 +1,18 @@
 <template>
-  <div class="w-full h-full flex flex-col p-4">
-    <NDataTable
-      size="small"
-      :columns="columnList"
-      :data="taskList"
-      :striped="true"
-      :bordered="true"
-      :row-key="(task: Task) => task.name"
-      :virtual-scroll="virtualScrollEnabled"
-      :max-height="'80vh'"
-      :row-height="virtualScrollEnabled ? 40 : undefined"
-      :row-props="rowProps"
-    />
-  </div>
+  <NDataTable
+    size="small"
+    :columns="columnList"
+    :data="taskList"
+    :striped="true"
+    :bordered="false"
+    :row-key="(task: Task) => task.name"
+    :virtual-scroll="virtualScrollEnabled"
+    :max-height="'80vh'"
+    :row-height="virtualScrollEnabled ? 40 : undefined"
+    :row-props="rowProps"
+    :checked-row-keys="selectedTaskNames"
+    @update:checked-row-keys="handleSelectionChange"
+  />
 </template>
 
 <script lang="tsx" setup>
@@ -29,30 +29,36 @@ import { databaseForTask } from "@/components/Rollout/RolloutDetail/utils";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
-import type {
-  Task,
-  Rollout,
-  Task_Status,
-} from "@/types/proto/v1/rollout_service";
+import type { Task, Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractSchemaVersionFromTask,
 } from "@/utils";
 import { useRolloutViewContext } from "./context";
 
-const props = defineProps<{
-  rollout: Rollout;
-  taskStatusFilter: Task_Status[];
+const props = withDefaults(
+  defineProps<{
+    taskStatusFilter: Task_Status[];
+    selectedTasks?: Task[];
+  }>(),
+  {
+    selectedTasks: () => [],
+  }
+);
+
+const emit = defineEmits<{
+  (event: "update:selected-tasks", tasks: Task[]): void;
+  (event: "refresh"): void;
 }>();
 
 const { t } = useI18n();
 const router = useRouter();
 const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
-const { mergedStages } = useRolloutViewContext();
+const { rollout, mergedStages } = useRolloutViewContext();
 
 const taskList = computed(() => {
-  const allTasks = flatten(mergedStages.value.map((stage) => stage.tasks));
+  const allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
   if (props.taskStatusFilter.length === 0) {
     return allTasks;
   }
@@ -60,6 +66,18 @@ const taskList = computed(() => {
     props.taskStatusFilter.includes(task.status)
   );
 });
+
+// Selection handling
+const selectedTaskNames = computed(() => {
+  return props.selectedTasks.map((task) => task.name);
+});
+
+const handleSelectionChange = (selectedKeys: Array<string | number>) => {
+  const selectedTasks = taskList.value.filter((task) =>
+    selectedKeys.includes(task.name)
+  );
+  emit("update:selected-tasks", selectedTasks);
+};
 
 const stages = computed(() => mergedStages.value);
 
@@ -82,7 +100,7 @@ const getTaskRouteParams = (task: Task) => {
   const stage = stageMap.value.get(task.name);
   if (!stage) return null;
 
-  const rolloutId = props.rollout.name.split("/").pop();
+  const rolloutId = rollout.value.name.split("/").pop();
   const stageId = stage.name.split("/").pop();
   const taskId = task.name.split("/").pop();
 
@@ -115,6 +133,17 @@ const rowProps = (task: Task) => {
 
 const columnList = computed((): DataTableColumn<Task>[] => {
   return [
+    {
+      type: "selection",
+      width: 50,
+      cellProps: () => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
+    },
     {
       key: "status",
       width: 80,
