@@ -1026,9 +1026,6 @@
       "approved": "已批准",
       "rejected": "已拒绝",
       "under-review": "等待审批"
-    },
-    "expermental-page": {
-      "self": "实验性工单页面"
     }
   },
   "plan": {
