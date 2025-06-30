@@ -49,9 +49,9 @@ import {
   type ComposedProject,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto/v1/org_policy_service";
-import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto/v1/org_policy_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto-es/v1/org_policy_service_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
 import {
   type ConditionExpression,

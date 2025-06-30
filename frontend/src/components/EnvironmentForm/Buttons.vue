@@ -35,7 +35,7 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { useEnvironmentFormContext } from "./context";
 
 const { t } = useI18n();

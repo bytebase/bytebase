@@ -85,7 +85,7 @@ import { emptyIssue } from "@/types";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import {
   extractProjectResourceName,

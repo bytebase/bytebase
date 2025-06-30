@@ -21,7 +21,7 @@ import {
 import {
   PolicyType,
   policyTypeToJSON,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { ReviewConfig } from "@/types/proto/v1/review_config_service";
 import {
   convertNewReviewConfigToOld,

@@ -100,7 +100,7 @@ import {
   emptySimpleExpr,
 } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
-import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
+import type { MaskingRulePolicy_MaskingRule } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto-es/v1/setting_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import {

@@ -72,7 +72,7 @@ import {
   TEMPLATE_LIST_V2 as builtInTemplateList,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import SQLReviewInfo from "./SQLReviewInfo.vue";

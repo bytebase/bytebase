@@ -90,7 +90,7 @@ import {
   ObjectSchema_Type,
   type ObjectSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasProjectPermissionV2, instanceV1MaskingForNoSQL } from "@/utils";
 
 const props = defineProps<{

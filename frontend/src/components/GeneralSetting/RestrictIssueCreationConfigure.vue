@@ -32,7 +32,7 @@ import {
 import {
   PolicyResourceType,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { computed, ref, watch } from "vue";
 import { Switch } from "../v2";

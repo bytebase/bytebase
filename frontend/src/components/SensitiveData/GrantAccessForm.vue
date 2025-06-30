@@ -112,13 +112,13 @@ import { Expr } from "@/types/proto/google/type/expr";
 import type {
   Policy,
   MaskingExceptionPolicy_MaskingException,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   PolicyType,
   PolicyResourceType,
   MaskingExceptionPolicy_MaskingException_Action,
   maskingExceptionPolicy_MaskingException_ActionToJSON,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SensitiveColumn } from "./types";
 import {

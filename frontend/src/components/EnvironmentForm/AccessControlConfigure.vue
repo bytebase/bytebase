@@ -112,7 +112,7 @@ import {
   DataSourceQueryPolicy_Restriction,
   DisableCopyDataPolicy,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";

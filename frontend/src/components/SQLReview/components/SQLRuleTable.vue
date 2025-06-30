@@ -136,7 +136,7 @@ import {
   getRuleLocalization,
   ruleIsAvailableInSubscription,
 } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";

@@ -61,7 +61,7 @@ import { BBModal } from "@/bbkit";
 import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 import { usePolicyV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   PlanCheckRun,
   PlanCheckRun_Result,

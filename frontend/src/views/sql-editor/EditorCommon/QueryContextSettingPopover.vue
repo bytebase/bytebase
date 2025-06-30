@@ -135,7 +135,7 @@ import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
 import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";

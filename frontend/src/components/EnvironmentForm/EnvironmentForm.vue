@@ -12,8 +12,8 @@
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { hasFeature } from "@/store";
 import { VirtualRoleType } from "@/types";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { useEventListener } from "@vueuse/core";

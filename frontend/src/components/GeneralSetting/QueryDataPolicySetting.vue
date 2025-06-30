@@ -45,7 +45,7 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   PolicyResourceType,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { convertDurationToOld } from "@/utils/v1/common-conversions";
 import { FeatureBadge } from "../FeatureGuard";

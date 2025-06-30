@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { sQLReviewRuleLevelToJSON } from "@/types/proto/v1/org_policy_service";
+import { sQLReviewRuleLevelToJSON } from "@/types/proto-es/v1/org_policy_service_pb";
 import { TEMPLATE_LIST_V2, getRuleLocalizationKey } from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
 

@@ -27,7 +27,7 @@ import {
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {

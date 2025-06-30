@@ -53,8 +53,8 @@ import { NCheckbox } from "naive-ui";
 import { ref, watch } from "vue";
 import { computed } from "vue";
 import { VirtualRoleType } from "@/types";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
-import { RolloutPolicy } from "@/types/proto/v1/org_policy_service";
+import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
+import { RolloutPolicy } from "@/types/proto-es/v1/org_policy_service_pb";
 import { RoleSelect } from "../v2";
 
 const props = defineProps<{

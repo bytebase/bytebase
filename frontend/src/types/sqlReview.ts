@@ -4,7 +4,7 @@ import { engineToString } from "@/utils/v1/common-conversions";
 import {
   SQLReviewRuleLevel,
   sQLReviewRuleLevelFromJSON,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import type { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
