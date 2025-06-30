@@ -252,7 +252,7 @@ const disallowCopyingData = computed(() => {
       parentPath: props.database?.project,
       policyType: PolicyType.DISABLE_COPY_DATA,
     });
-    if (projectLevelPolicy?.disableCopyDataPolicy?.active) {
+    if (projectLevelPolicy?.policy?.case === "disableCopyDataPolicy" && projectLevelPolicy.policy.value.active) {
       return true;
     }
     // If the database is provided, use its effective environment.
@@ -264,7 +264,7 @@ const disallowCopyingData = computed(() => {
     parentPath: environment,
     policyType: PolicyType.DISABLE_COPY_DATA,
   });
-  if (policy?.disableCopyDataPolicy?.active) {
+  if (policy?.policy?.case === "disableCopyDataPolicy" && policy.policy.value.active) {
     return true;
   }
   return false;

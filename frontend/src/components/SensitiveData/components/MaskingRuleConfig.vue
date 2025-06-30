@@ -108,6 +108,8 @@ import {
   batchConvertParsedExprToCELString,
 } from "@/utils";
 import { factorSupportDropdown, factorOperatorOverrideMap } from "./utils";
+import { create } from "@bufbuild/protobuf";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 
 export interface SemanticTypeSelectOption extends SelectOption {
   value: string;
@@ -220,12 +222,12 @@ const onConfirm = async () => {
   emit("confirm", {
     ...props.maskingRule,
     semanticType: state.semanticType!,
-    condition: {
+    condition: create(ExprSchema, {
       expression: expressions[0],
       title: state.title,
       description: "",
       location: "",
-    },
+    }),
   });
   state.dirty = false;
 };

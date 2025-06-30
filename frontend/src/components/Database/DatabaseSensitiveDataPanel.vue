@@ -90,6 +90,8 @@ import {
   ObjectSchema_Type,
   type ObjectSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { create } from "@bufbuild/protobuf";
+import { MaskingExceptionPolicySchema } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasProjectPermissionV2, instanceV1MaskingForNoSQL } from "@/utils";
 
@@ -273,7 +275,9 @@ const removeMaskingExceptions = async (sensitiveColumn: MaskData) => {
   }
 
   const exceptions = (
-    policy.maskingExceptionPolicy?.maskingExceptions ?? []
+    policy.policy?.case === "maskingExceptionPolicy"
+      ? policy.policy.value.maskingExceptions
+      : []
   ).filter(
     (exception) =>
       !isCurrentColumnException(exception, {
@@ -282,9 +286,11 @@ const removeMaskingExceptions = async (sensitiveColumn: MaskData) => {
       })
   );
 
-  policy.maskingExceptionPolicy = {
-    ...(policy.maskingExceptionPolicy ?? {}),
-    maskingExceptions: exceptions,
+  policy.policy = {
+    case: "maskingExceptionPolicy",
+    value: create(MaskingExceptionPolicySchema, {
+      maskingExceptions: exceptions,
+    }),
   };
   await policyStore.upsertPolicy({
     parentPath: props.database.project,

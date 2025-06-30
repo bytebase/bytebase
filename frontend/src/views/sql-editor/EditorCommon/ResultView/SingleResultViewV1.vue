@@ -321,7 +321,9 @@ const { policy: exportDataPolicy } = usePolicyByParentAndType(
 );
 
 const disallowExportQueryData = computed(() => {
-  return exportDataPolicy.value?.exportDataPolicy?.disable ?? false;
+  return exportDataPolicy.value?.policy?.case === "exportDataPolicy" 
+    ? exportDataPolicy.value.policy.value.disable 
+    : false;
 });
 
 const viewMode = computed((): ViewMode => {

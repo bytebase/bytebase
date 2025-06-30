@@ -92,8 +92,11 @@ const resourcesOccupied = computedAsync(async () => {
       policyType: PolicyType.MASKING_EXCEPTION,
     });
 
-    for (const exception of policy?.maskingExceptionPolicy?.maskingExceptions ??
-      []) {
+    const exceptions = 
+      policy?.policy?.case === "maskingExceptionPolicy"
+        ? policy.policy.value.maskingExceptions
+        : [];
+    for (const exception of exceptions) {
       if (exception.member === member) {
         resources.add(project.name);
         break;

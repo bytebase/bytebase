@@ -9,7 +9,7 @@
         class="flex items-center gap-x-2 text-sm text-gray-600"
       >
         <NCheckbox
-          :id="sQLReviewRuleLevelToJSON(level)"
+          :id="sqlReviewRuleLevelToString(level)"
           :checked="isCheckedLevel(level)"
           @update:checked="
             (checked) => $emit('toggle-checked-level', level, checked)
@@ -26,7 +26,6 @@
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
-import { sQLReviewRuleLevelToJSON } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLRuleLevelBadge from "./SQLRuleLevelBadge.vue";
 
@@ -64,4 +63,20 @@ const errorLevelList = computed(() => {
   }
   return map;
 });
+
+// Helper function to convert SQLReviewRuleLevel to string
+const sqlReviewRuleLevelToString = (level: SQLReviewRuleLevel): string => {
+  switch (level) {
+    case SQLReviewRuleLevel.LEVEL_UNSPECIFIED:
+      return "LEVEL_UNSPECIFIED";
+    case SQLReviewRuleLevel.ERROR:
+      return "ERROR";
+    case SQLReviewRuleLevel.WARNING:
+      return "WARNING";
+    case SQLReviewRuleLevel.DISABLED:
+      return "DISABLED";
+    default:
+      return "UNKNOWN";
+  }
+};
 </script>

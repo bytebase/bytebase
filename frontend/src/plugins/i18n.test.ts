@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { sQLReviewRuleLevelToJSON } from "@/types/proto-es/v1/org_policy_service_pb";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import { TEMPLATE_LIST_V2, getRuleLocalizationKey } from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
 
@@ -54,7 +54,7 @@ describe("Test i18n for SQL review", () => {
           ).toBe(true);
           expect(
             !!i18nForSQLReview["level"][
-              sQLReviewRuleLevelToJSON(rule.level).toLowerCase()
+              sqlReviewRuleLevelToString(rule.level).toLowerCase()
             ]
           ).toBe(true);
 
@@ -75,6 +75,22 @@ describe("Test i18n for SQL review", () => {
     });
   }
 });
+
+// Helper function to convert SQLReviewRuleLevel to string
+const sqlReviewRuleLevelToString = (level: SQLReviewRuleLevel): string => {
+  switch (level) {
+    case SQLReviewRuleLevel.LEVEL_UNSPECIFIED:
+      return "LEVEL_UNSPECIFIED";
+    case SQLReviewRuleLevel.ERROR:
+      return "ERROR";
+    case SQLReviewRuleLevel.WARNING:
+      return "WARNING";
+    case SQLReviewRuleLevel.DISABLED:
+      return "DISABLED";
+    default:
+      return "UNKNOWN";
+  }
+};
 
 const compareMessages = (
   localA: { [k: string]: any },

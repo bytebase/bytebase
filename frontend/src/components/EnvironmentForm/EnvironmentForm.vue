@@ -88,7 +88,7 @@ useEmitteryEventListener(events, "create", (params) => {
       return;
     }
   }
-  const rp = rolloutPolicy.rolloutPolicy;
+  const rp = rolloutPolicy.policy.case === "rolloutPolicy" ? rolloutPolicy.policy.value : undefined;
   if (rp?.automatic === false) {
     if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
       if (!hasFeature(PlanFeature.FEATURE_APPROVAL_WORKFLOW)) {
@@ -114,7 +114,7 @@ useEmitteryEventListener(events, "update", (environment) => {
 useEmitteryEventListener(events, "update-policy", (params) => {
   const { policyType, policy } = params;
   if (policyType === PolicyType.ROLLOUT_POLICY) {
-    const rp = policy.rolloutPolicy;
+    const rp = policy.policy.case === "rolloutPolicy" ? policy.policy.value : undefined;
     if (rp?.automatic === false) {
       if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
         if (!hasFeature(PlanFeature.FEATURE_APPROVAL_WORKFLOW)) {

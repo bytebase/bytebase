@@ -178,13 +178,17 @@ export const getAdminDataSourceRestrictionOfDatabase = (
     policyType: PolicyType.DATA_SOURCE_QUERY,
   });
   const projectLevelAdminDSRestriction =
-    projectLevelPolicy?.dataSourceQueryPolicy?.adminDataSourceRestriction;
+    projectLevelPolicy?.policy?.case === "dataSourceQueryPolicy"
+      ? projectLevelPolicy.policy.value.adminDataSourceRestriction
+      : undefined;
   const envLevelPolicy = policyStore.getPolicyByParentAndType({
     parentPath: database.effectiveEnvironment,
     policyType: PolicyType.DATA_SOURCE_QUERY,
   });
   const envLevelAdminDSRestriction =
-    envLevelPolicy?.dataSourceQueryPolicy?.adminDataSourceRestriction;
+    envLevelPolicy?.policy?.case === "dataSourceQueryPolicy"
+      ? envLevelPolicy.policy.value.adminDataSourceRestriction
+      : undefined;
   return {
     environmentPolicy:
       envLevelAdminDSRestriction ??

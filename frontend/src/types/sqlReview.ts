@@ -3,7 +3,6 @@ import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { engineToString } from "@/utils/v1/common-conversions";
 import {
   SQLReviewRuleLevel,
-  sQLReviewRuleLevelFromJSON,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import sqlReviewSchema from "./sql-review-schema.yaml";
@@ -203,7 +202,7 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
 
       ruleList.push({
         ...ruleTemplate,
-        level: sQLReviewRuleLevelFromJSON(rule.level),
+        level: rule.level,
         // Using template rule payload to override the component list.
         componentList: ruleTemplate.componentList.map((component) => {
           if (rule.payload && rule.payload[component.key]) {
