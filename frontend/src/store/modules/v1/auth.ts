@@ -135,12 +135,12 @@ export const useAuthStore = defineStore("auth_v1", () => {
   };
 
   const signup = async (request: Partial<User>) => {
-    const user = {
+    const user = User.fromPartial({
       email: request.email,
       title: request.name,
       password: request.password,
       userType: UserType.USER,
-    };
+    });
     const newUser = convertOldUserToNew(user as User);
     const createRequest = create(CreateUserRequestSchema, {
       user: newUser,
