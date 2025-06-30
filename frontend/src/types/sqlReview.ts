@@ -136,8 +136,8 @@ export interface SQLReviewPolicy {
 export interface RuleTemplateV2 {
   type: string;
   category: string;
-  engine: Engine;
-  level: SQLReviewRuleLevel;
+  engine: string; // keyof typeof Engine
+  level: string; // keyof typeof SQLReviewRuleLevel
   componentList: RuleConfigComponent[];
   comment?: string;
 }
@@ -183,9 +183,9 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
     id: string;
     ruleList: {
       type: string;
-      level: SQLReviewRuleLevel;
+      level: string; // keyof typeof SQLReviewRuleLevel
       payload?: PayloadObject;
-      engine: Engine;
+      engine: string; // keyof typeof Engine
     }[];
   }[];
 
