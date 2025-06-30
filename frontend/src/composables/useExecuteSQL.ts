@@ -41,7 +41,7 @@ import type {
 import { isValidDatabaseName } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
   Advice,
   Advice_Status,
@@ -247,7 +247,7 @@ const useExecuteSQL = () => {
               {
                 skipCache: false,
                 silent: true,
-                view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+                view: DatabaseGroupView.FULL,
               }
             );
             for (const matchedDatabase of databaseGroup.matchedDatabases) {

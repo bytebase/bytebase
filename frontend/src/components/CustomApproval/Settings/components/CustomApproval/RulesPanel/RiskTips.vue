@@ -20,7 +20,7 @@ import { computed } from "vue";
 import { WORKSPACE_ROUTE_RISKS } from "@/router/dashboard/workspaceRoutes";
 import { useRiskStore } from "@/store";
 import { DEFAULT_RISK_LEVEL } from "@/types";
-import type { Risk_Source } from "@/types/proto/v1/risk_service";
+import type { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 
 const props = defineProps<{
   level: number;

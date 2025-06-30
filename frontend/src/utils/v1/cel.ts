@@ -6,8 +6,8 @@ import {
   BatchParseRequestSchema, 
   BatchDeparseRequestSchema
 } from "@/types/proto-es/v1/cel_service_pb";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { convertNewExprToOld, convertOldExprToNew } from "@/utils/v1/cel-conversions";
+import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import { ExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 
 export const batchConvertCELStringToParsedExpr = async (
   celList: string[]
@@ -21,11 +21,11 @@ export const batchConvertCELStringToParsedExpr = async (
     });
     
     // Convert new Expr array to old Expr array for compatibility
-    return response.expressions.map(convertNewExprToOld);
+    return response.expressions;
   } catch (error) {
     console.error(error);
     return Array.from({ length: celList.length }).map((_) =>
-      Expr.fromPartial({})
+      create(ExprSchema, {})
     );
   }
 };
@@ -34,11 +34,8 @@ export const batchConvertParsedExprToCELString = async (
   parsedExprList: Expr[]
 ): Promise<string[]> => {
   try {
-    // Convert old Expr array to new Expr array
-    const newExprList = parsedExprList.map(convertOldExprToNew);
-    
     const request = create(BatchDeparseRequestSchema, {
-      expressions: newExprList,
+      expressions: parsedExprList,
     });
     const response = await celServiceClientConnect.batchDeparse(request, {
       contextValues: createContextValues().set(silentContextKey, true),

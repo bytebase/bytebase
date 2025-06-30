@@ -14,8 +14,8 @@ import {
   useSupportedSourceList,
   type ComposedProject,
 } from "@/types";
-import type { Risk } from "@/types/proto/v1/risk_service";
-import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
+import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
+import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import {
   displayRoleTitle,
   engineNameV1,
@@ -42,7 +42,7 @@ export const sourceText = (source: Risk_Source) => {
     case Risk_Source.REQUEST_ROLE:
       return t("custom-approval.risk-rule.risk.namespace.request-role");
     default:
-      return Risk_Source.UNRECOGNIZED;
+      return "UNRECOGNIZED";
   }
 };
 
@@ -191,7 +191,7 @@ const getLevelOptions = () => {
 
 const getSourceOptions = () => {
   return useSupportedSourceList().value.map<SelectOption>((source) => ({
-    label: risk_SourceToJSON(source),
+    label: Risk_Source[source],
     value: source,
   }));
 };

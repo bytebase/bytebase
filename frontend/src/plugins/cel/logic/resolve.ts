@@ -1,4 +1,4 @@
-import type { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import type {
   StringFactor,
   Operator,
@@ -46,11 +46,11 @@ export const wrapAsGroup = (
 // Convert common expr to simple expr
 export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
   const dfs = (expr: CELExpr, negative: boolean = false): SimpleExpr => {
-    const { callExpr } = expr;
-    if (!callExpr) {
+    if (expr.exprKind?.case !== "callExpr") {
       // If no callExpr, we treat it as a raw string.
       return resolveRawStringExpr(expr);
     }
+    const callExpr = expr.exprKind.value;
 
     try {
       const { args } = callExpr;
@@ -103,35 +103,39 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
 };
 
 const resolveEqualityExpr = (expr: CELExpr): EqualityExpr => {
-  const operator = expr.callExpr!.function as EqualityOperator;
-  const [factorExpr, valueExpr] = expr.callExpr!.args;
+  const callExpr = expr.exprKind?.case === "callExpr" ? expr.exprKind.value : null;
+  if (!callExpr) throw new Error(`Expected callExpr but got ${expr.exprKind?.case}`);
+  const operator = callExpr.function as EqualityOperator;
+  const [factorExpr, valueExpr] = callExpr.args;
   const factor = getFactorName(factorExpr);
   if (isNumberFactor(factor)) {
     return {
       type: ExprType.Condition,
       operator,
-      args: [factor, valueExpr.constExpr!.int64Value!.toNumber() ?? 0],
+      args: [factor, valueExpr.exprKind?.case === "constExpr" && valueExpr.exprKind.value.constantKind?.case === "int64Value" ? Number(valueExpr.exprKind.value.constantKind.value) : 0],
     };
   }
   if (isStringFactor(factor)) {
     return {
       type: ExprType.Condition,
       operator,
-      args: [factor, valueExpr.constExpr!.stringValue! ?? ""],
+      args: [factor, valueExpr.exprKind?.case === "constExpr" ? (valueExpr.exprKind.value.constantKind?.case === "stringValue" ? valueExpr.exprKind.value.constantKind.value : "") : ""],
     };
   }
   throw new Error(`cannot resolve expr ${JSON.stringify(expr)}`);
 };
 
 const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
-  const operator = expr.callExpr!.function as CompareOperator;
-  const [factorExpr, valueExpr] = expr.callExpr!.args;
+  const callExpr = expr.exprKind?.case === "callExpr" ? expr.exprKind.value : null;
+  if (!callExpr) throw new Error(`Expected callExpr but got ${expr.exprKind?.case}`);
+  const operator = callExpr.function as CompareOperator;
+  const [factorExpr, valueExpr] = callExpr.args;
   const factor = getFactorName(factorExpr);
   if (isNumberFactor(factor)) {
     return {
       type: ExprType.Condition,
       operator,
-      args: [factor, valueExpr.constExpr!.int64Value!.toNumber()],
+      args: [factor, valueExpr.exprKind?.case === "constExpr" ? Number(valueExpr.exprKind.value.constantKind?.case === "int64Value" ? valueExpr.exprKind.value.constantKind.value : "0") : 0],
     };
   }
   if (isTimestampFactor(factor)) {
@@ -140,7 +144,9 @@ const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
       operator,
       args: [
         factor,
-        new Date(valueExpr.callExpr!.args[0].constExpr!.stringValue!),
+        valueExpr.exprKind?.case === "callExpr" && valueExpr.exprKind.value.args[0]?.exprKind?.case === "constExpr"
+          ? new Date(valueExpr.exprKind.value.args[0]?.exprKind?.case === "constExpr" && valueExpr.exprKind.value.args[0].exprKind.value.constantKind?.case === "stringValue" ? valueExpr.exprKind.value.args[0].exprKind.value.constantKind.value : "")
+          : new Date(),
       ],
     };
   }
@@ -148,13 +154,15 @@ const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
 };
 
 const resolveStringExpr = (expr: CELExpr): StringExpr => {
-  const operator = expr.callExpr!.function as StringOperator;
-  const factor = getFactorName(expr.callExpr!.target!);
-  const value = expr.callExpr!.args[0];
+  const callExpr = expr.exprKind?.case === "callExpr" ? expr.exprKind.value : null;
+  if (!callExpr) throw new Error(`Expected callExpr but got ${expr.exprKind?.case}`);
+  const operator = callExpr.function as StringOperator;
+  const factor = getFactorName(callExpr.target!);
+  const value = callExpr.args[0];
   return {
     type: ExprType.Condition,
     operator,
-    args: [factor as StringFactor, value.constExpr!.stringValue!],
+    args: [factor as StringFactor, value.exprKind?.case === "constExpr" ? (value.exprKind.value.constantKind?.case === "stringValue" ? value.exprKind.value.constantKind.value : "") : ""],
   };
 };
 
@@ -162,11 +170,13 @@ const resolveCollectionExpr = (
   expr: CELExpr,
   negative: boolean = false
 ): CollectionExpr => {
-  let operator = expr.callExpr!.function as CollectionOperator;
+  const callExpr = expr.exprKind?.case === "callExpr" ? expr.exprKind.value : null;
+  if (!callExpr) throw new Error(`Expected callExpr but got ${expr.exprKind?.case}`);
+  let operator = callExpr.function as CollectionOperator;
   if (negative) {
     operator = "@not_in";
   }
-  const [factorExpr, valuesExpr] = expr.callExpr!.args;
+  const [factorExpr, valuesExpr] = callExpr.args;
   const factor = getFactorName(factorExpr);
 
   if (isNumberFactor(factor)) {
@@ -175,9 +185,11 @@ const resolveCollectionExpr = (
       operator,
       args: [
         factor,
-        valuesExpr.listExpr?.elements?.map(
-          (constant) => constant.constExpr?.int64Value?.toNumber() ?? 0
-        ) ?? [],
+        valuesExpr.exprKind?.case === "listExpr"
+          ? valuesExpr.exprKind.value.elements?.map(
+              (constant) => constant.exprKind?.case === "constExpr" ? Number(constant.exprKind.value.constantKind?.case === "int64Value" ? constant.exprKind.value.constantKind.value : "0") ?? 0 : 0
+            ) ?? []
+          : [],
       ],
     };
   }
@@ -187,9 +199,11 @@ const resolveCollectionExpr = (
       operator,
       args: [
         factor,
-        valuesExpr.listExpr?.elements?.map(
-          (constant) => constant.constExpr?.stringValue ?? ""
-        ) ?? [],
+        valuesExpr.exprKind?.case === "listExpr"
+          ? valuesExpr.exprKind.value.elements?.map(
+              (constant) => constant.exprKind?.case === "constExpr" ? (constant.exprKind.value.constantKind?.case === "stringValue" ? constant.exprKind.value.constantKind.value : "") : ""
+            ) ?? []
+          : [],
       ],
     };
   }
@@ -214,11 +228,14 @@ export const emptySimpleExpr = (
 };
 
 const getFactorName = (expr: CELExpr): string => {
-  if (expr.identExpr !== undefined) {
-    return expr.identExpr.name;
-  } else if (expr.selectExpr !== undefined) {
-    return `${expr.selectExpr.operand!.identExpr!.name!}.${expr.selectExpr
-      .field!}`;
+  if (expr.exprKind?.case === "identExpr") {
+    return expr.exprKind.value.name;
+  } else if (expr.exprKind?.case === "selectExpr") {
+    const selectExpr = expr.exprKind.value;
+    const operandName = selectExpr.operand?.exprKind?.case === "identExpr" 
+      ? selectExpr.operand.exprKind.value.name 
+      : "";
+    return `${operandName}.${selectExpr.field}`;
   }
   throw new Error(`cannot resolve factor name ${JSON.stringify(expr)}`);
 };

@@ -11,8 +11,9 @@ import {
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
-import { Group } from "@/types/proto/v1/group_service";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { create } from "@bufbuild/protobuf";
+import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
+import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import { User, UserType } from "@/types/proto/v1/user_service";
 import type { MemberBinding, GroupBinding } from "./types";
 
@@ -40,12 +41,12 @@ const getMemberBinding = async (
     if (!group) {
       const email = extractGroupEmail(member);
       group = {
-        ...Group.create({
+        ...create(GroupSchema, {
           name: `${groupNamePrefix}${email}`,
           title: email,
         }),
         deleted: true,
-      } as GroupBinding;
+      };
     }
 
     memberBinding = {
