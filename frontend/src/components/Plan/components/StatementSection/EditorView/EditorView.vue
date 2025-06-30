@@ -9,7 +9,7 @@
           >
             {{ statementTitle }}
           </span>
-          <span v-if="isCreating" class="text-red-600">*</span>
+          <span v-if="isEmpty(state.statement)" class="text-red-600">*</span>
         </div>
       </div>
       <div class="flex items-center justify-end gap-x-2">
@@ -165,7 +165,8 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep, head, isEmpty } from "lodash-es";
+import { create } from "@bufbuild/protobuf";
+import { cloneDeep, head, includes, isEmpty } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -184,12 +185,7 @@ import {
 } from "@/components/Plan/logic";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   pushNotification,
   useCurrentProjectV1,
@@ -197,6 +193,9 @@ import {
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   getSheetStatement,
@@ -204,6 +203,11 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
+import {
+  convertOldPlanToNew,
+  convertNewPlanToOld,
+} from "@/utils/v1/plan-conversions";
 import { usePlanSpecContext } from "../../SpecDetailView/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import type { EditState } from "./useTempEditState";
@@ -217,7 +221,8 @@ type LocalState = EditState & {
 const { t } = useI18n();
 const dialog = useDialog();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, events, planCheckRunList } = usePlanContext();
+const { isCreating, plan, events, planCheckRunList, rollout } =
+  usePlanContext();
 const { selectedSpec } = usePlanSpecContext();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -300,8 +305,25 @@ const shouldShowEditButton = computed(() => {
   if (state.isEditing) {
     return false;
   }
-  if (plan.value.issue) {
-    return false;
+  if (plan.value.rollout && rollout?.value) {
+    const tasks = rollout.value.stages
+      .flatMap((stage) => stage.tasks)
+      .filter((task) => task.specId === selectedSpec.value.id);
+    if (
+      tasks.some((task) =>
+        includes(
+          [
+            Task_Status.RUNNING,
+            Task_Status.PENDING,
+            Task_Status.DONE,
+            Task_Status.SKIPPED,
+          ],
+          task.status
+        )
+      )
+    ) {
+      return false;
+    }
   }
   return true;
 });
@@ -402,7 +424,9 @@ const updateStatement = async (statement: string) => {
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: plan.value.title,
-    engine: convertEngineToOld((specEngine ?? Engine.ENGINE_UNSPECIFIED) as Engine),
+    engine: convertEngineToOld(
+      (specEngine ?? Engine.ENGINE_UNSPECIFIED) as Engine
+    ),
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(
