@@ -205,7 +205,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
 	// Column default value migrator
-	s.columnDefaultMigrator = runnermigrator.NewColumnDefaultMigrator(stores, []storepb.Engine{})
+	s.columnDefaultMigrator = runnermigrator.NewColumnDefaultMigrator(stores, runnermigrator.EnginesNeedingMigration())
 
 	// Metric reporter
 	s.initMetricReporter()
