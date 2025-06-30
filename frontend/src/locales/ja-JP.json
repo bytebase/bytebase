@@ -284,6 +284,7 @@
     "no-skippable-tasks": "スキップ可能なタスクはありません",
     "no-cancellable-tasks": "キャンセル可能なタスクはありません",
     "cross-stage-not-supported": "ステージ間の操作はサポートされていません",
+    "no-permission": "この操作を実行する権限がありません",
     "scheduled-time": "予定時刻",
     "select-scheduled-time": "予定時刻を選択してください",
     "error": {
