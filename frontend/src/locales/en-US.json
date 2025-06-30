@@ -278,6 +278,13 @@
     "cancel-task": "Cancel task | Cancel tasks",
     "created": "Created",
     "run-immediately": "Run task immediately | Run tasks immediately",
+    "selected-n-tasks": "{n} task selected | {n} tasks selected",
+    "no-tasks-selected": "No tasks selected",
+    "no-runnable-tasks": "No runnable tasks",
+    "no-skippable-tasks": "No skippable tasks", 
+    "no-cancellable-tasks": "No cancellable tasks",
+    "cross-stage-not-supported": "Cross-stage operations not supported",
+    "no-permission": "No permission to perform this action",
     "scheduled-time": "Scheduled time",
     "select-scheduled-time": "Select scheduled time",
     "error": {

@@ -34,11 +34,7 @@
         :merged-stages="mergedStages"
         :task-status-filter="taskStatusFilter"
       />
-      <TaskTable
-        v-else
-        :rollout="rollout"
-        :task-status-filter="taskStatusFilter"
-      />
+      <TaskTableView v-else :task-status-filter="taskStatusFilter" />
     </div>
   </div>
 </template>
@@ -50,10 +46,9 @@ import { ref } from "vue";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import StagesView from "./StagesView.vue";
 import TaskFilter from "./TaskFilter.vue";
-import TaskTable from "./TaskTable.vue";
+import TaskTableView from "./TaskTableView.vue";
 import { provideRolloutViewContext } from "./context";
 
-// Provide the context and get its values directly
 const { rollout, mergedStages } = provideRolloutViewContext();
 
 const isTableView = ref(false);
