@@ -14,7 +14,9 @@
         <span class="text-base font-medium">
           {{ environmentStore.getEnvironmentByName(stage.environment).title }}
         </span>
-        <NTag v-if="!isCreated" round size="tiny">Preview</NTag>
+        <NTag v-if="!isCreated" round size="tiny">{{
+          $t("common.preview")
+        }}</NTag>
       </div>
       <div class="flex justify-end items-center">
         <RunTasksButton
