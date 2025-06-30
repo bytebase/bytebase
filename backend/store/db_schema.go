@@ -256,20 +256,32 @@ func (s *Store) UpdateDBSchemaMetadata(ctx context.Context, id int, metadata str
 	return tx.Commit()
 }
 
-// UpdateDBSchemaMetadataAndTodo updates the metadata and todo columns of a db_schema.
-func (s *Store) UpdateDBSchemaMetadataAndTodo(ctx context.Context, id int, metadata string, todo bool) error {
+// UpdateDBSchemaMetadataIfTodo updates the metadata and sets todo to false only if todo is currently true.
+// This is used by the migrator to avoid race conditions with the sync process.
+func (s *Store) UpdateDBSchemaMetadataIfTodo(ctx context.Context, id int, metadata string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `
+	result, err := tx.ExecContext(ctx, `
 		UPDATE db_schema
-		SET metadata = $1, todo = $2
-		WHERE id = $3
-	`, metadata, todo, id); err != nil {
+		SET metadata = $1, todo = false
+		WHERE id = $2 AND todo = true
+	`, metadata, id)
+	if err != nil {
 		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		// Schema was already processed by sync, skip update
+		return tx.Rollback()
 	}
 
 	return tx.Commit()
