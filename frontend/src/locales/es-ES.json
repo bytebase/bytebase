@@ -1016,7 +1016,6 @@
       }
     },
     "sql-review-only": "Sólo revisión de SQL",
-    "this-plan-will-be-converted-to-a-new-issue": "Este plan se convertirá en una nueva edición.",
     "title": {
       "edit-schema": "Editar esquema",
       "change-data": "Cambiar datos",
@@ -2656,9 +2655,6 @@
   "export-center": {
     "self": "centro de exportacion",
     "permission-denied": "Permiso denegado"
-  },
-  "review-center": {
-    "self": "Centro de revisión"
   },
   "schema-designer": {
     "use-tips": "Selecciona las tablas a diseñar"

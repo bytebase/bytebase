@@ -1016,7 +1016,6 @@
       }
     },
     "sql-review-only": "仅 SQL 审核",
-    "this-plan-will-be-converted-to-a-new-issue": "该变更计划将转换为一个工单",
     "title": {
       "edit-schema": "变更 Schema",
       "change-data": "变更数据",
@@ -2656,9 +2655,6 @@
   "export-center": {
     "self": "导出中心",
     "permission-denied": "您没有权限执行此操作"
-  },
-  "review-center": {
-    "self": "SQL 审核中心"
   },
   "schema-designer": {
     "use-tips": "选择需要设计的表"

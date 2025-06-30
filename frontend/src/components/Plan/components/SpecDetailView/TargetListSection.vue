@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <div class="relative flex-1">
+    <div class="relative w-full flex-1">
       <div
         v-if="isLoadingTargets"
         class="flex items-center justify-center py-8"
@@ -42,7 +42,7 @@
       </div>
       <div
         v-else-if="targets.length > 0"
-        class="flex flex-wrap gap-2 overflow-y-auto"
+        class="w-full flex flex-wrap gap-2 overflow-y-auto"
       >
         <div
           v-for="item in tableData"
@@ -98,6 +98,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import {
   ServerIcon,
   DatabaseIcon,
@@ -111,10 +112,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import EngineIcon from "@/components/Icon/EngineIcon.vue";
-import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useInstanceV1Store,
@@ -126,6 +124,7 @@ import {
   getProjectNameAndDatabaseGroupName,
 } from "@/store";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   extractInstanceResourceName,
   instanceV1Name,
@@ -133,6 +132,10 @@ import {
   extractDatabaseGroupName,
   extractProjectResourceName,
 } from "@/utils";
+import {
+  convertOldPlanToNew,
+  convertNewPlanToOld,
+} from "@/utils/v1/plan-conversions";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
 import AllTargetsDrawer from "./AllTargetsDrawer.vue";

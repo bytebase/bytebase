@@ -281,7 +281,7 @@
     "selected-n-tasks": "{n} task selected | {n} tasks selected",
     "no-tasks-selected": "No tasks selected",
     "no-runnable-tasks": "No runnable tasks",
-    "no-skippable-tasks": "No skippable tasks", 
+    "no-skippable-tasks": "No skippable tasks",
     "no-cancellable-tasks": "No cancellable tasks",
     "cross-stage-not-supported": "Cross-stage operations not supported",
     "no-permission": "No permission to perform this action",
@@ -1016,7 +1016,6 @@
       }
     },
     "sql-review-only": "SQL Review Only",
-    "this-plan-will-be-converted-to-a-new-issue": "This plan will be converted to a new issue",
     "title": {
       "edit-schema": "Edit schema",
       "change-data": "Change data",
@@ -2656,9 +2655,6 @@
   "export-center": {
     "self": "Export Center",
     "permission-denied": "Permission denied"
-  },
-  "review-center": {
-    "self": "Review Center"
   },
   "schema-designer": {
     "use-tips": "Click a table to start."

@@ -1016,7 +1016,6 @@
       }
     },
     "sql-review-only": "SQLレビューのみ",
-    "this-plan-will-be-converted-to-a-new-issue": "この計画は新しい問題に変換されます",
     "title": {
       "edit-schema": "スキーマを編集",
       "change-data": "データの変更",
@@ -2656,9 +2655,6 @@
   "export-center": {
     "self": "エクスポートセンター",
     "permission-denied": "この操作を実行する権限がありません"
-  },
-  "review-center": {
-    "self": "レビューセンター"
   },
   "schema-designer": {
     "use-tips": "デザインするテーブルを選択してください"
