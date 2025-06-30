@@ -207,7 +207,7 @@ import {
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { Group } from "@/types/proto/v1/group_service";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { WorkspaceProfileSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";

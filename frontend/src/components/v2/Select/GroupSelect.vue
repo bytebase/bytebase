@@ -22,7 +22,7 @@ import {
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useGroupStore, useProjectV1Store, useWorkspaceV1Store } from "@/store";
 import { PRESET_WORKSPACE_ROLES } from "@/types";
-import type { Group } from "@/types/proto/v1/group_service";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(

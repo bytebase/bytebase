@@ -65,7 +65,7 @@ import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { UserType, type User } from "@/types/proto/v1/user_service";
 import {
   GroupMember_Role,
-} from "@/types/proto/v1/group_service";
+} from "@/types/proto-es/v1/group_service_pb";
 
 withDefaults(
   defineProps<{

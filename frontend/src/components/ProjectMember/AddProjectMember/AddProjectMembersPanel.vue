@@ -54,7 +54,9 @@ import {
   useProjectIamPolicyStore,
 } from "@/store";
 import { PresetRoleType, type ComposedProject } from "@/types";
-import { Binding } from "@/types/proto/v1/iam_policy";
+import { create } from "@bufbuild/protobuf";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { getBindingIdentifier } from "../utils";
 import AddProjectMemberForm from "./AddProjectMemberForm.vue";
 
@@ -74,7 +76,7 @@ interface LocalState {
 const { t } = useI18n();
 const state = reactive<LocalState>({
   bindings: props.bindings || [
-    Binding.fromPartial({
+    create(BindingSchema, {
       role: PresetRoleType.PROJECT_VIEWER,
     }),
   ],
@@ -98,7 +100,7 @@ const allowConfirm = computed(() => {
 
 const handleAddMore = () => {
   state.bindings.push(
-    Binding.fromPartial({
+    create(BindingSchema, {
       role: PresetRoleType.PROJECT_VIEWER,
     })
   );

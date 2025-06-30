@@ -1,5 +1,5 @@
 import { type InjectionKey, type Ref, inject, provide, ref } from "vue";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
+import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 
 export type RiskFilterContext = {
   source: Ref<Risk_Source>; // default Risk_Source.SOURCE_UNSPECIFIED to "ALL"
