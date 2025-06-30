@@ -234,8 +234,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "plans",
         name: PROJECT_V1_ROUTE_PLANS,
         meta: {
-          // TODO(claude): rename title to "Plans" later.
-          title: () => t("review-center.self"),
+          title: () => t("plan.plans"),
           requiredPermissionList: () => ["bb.databases.list", "bb.plans.list"],
         },
         component: () => import("@/views/ReviewCenter/index.vue"),

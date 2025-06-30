@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 flex pt-2 pb-4">
+  <div class="w-full flex-1 flex pt-2 pb-4">
     <SpecDetailView :key="selectedSpec.id" />
   </div>
 </template>

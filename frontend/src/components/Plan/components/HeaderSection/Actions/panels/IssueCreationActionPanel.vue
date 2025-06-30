@@ -3,13 +3,12 @@
     :show="action !== undefined"
     :title="title"
     :loading="state.loading"
-    @show="resetState"
     @close="$emit('close')"
   >
     <template #default>
       <div v-if="action" class="flex flex-col gap-y-4 px-1">
         <div class="flex flex-col gap-y-1">
-          <div class="font-medium text-control">Plan</div>
+          <div class="font-medium text-control">{{ $t("plan.self") }}</div>
           <div class="textinfolabel">
             {{ plan.title }}
           </div>
@@ -22,21 +21,6 @@
           <div class="textinfolabel">
             {{ plan.description || "No description" }}
           </div>
-        </div>
-
-        <div class="flex flex-col gap-y-1">
-          <p class="font-medium text-control">
-            {{ $t("common.comment") }}
-          </p>
-          <NInput
-            v-model:value="comment"
-            type="textarea"
-            :placeholder="$t('issue.leave-a-comment')"
-            :autosize="{
-              minRows: 3,
-              maxRows: 10,
-            }"
-          />
         </div>
       </div>
     </template>
@@ -73,7 +57,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { uniqBy } from "lodash-es";
-import { NButton, NInput, NTooltip, useDialog } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -87,9 +71,11 @@ import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/co
 import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,
-  planServiceClientConnect,
 } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+} from "@/router/dashboard/projectV1";
 import {
   useCurrentProjectV1,
   useCurrentUserV1,
@@ -97,7 +83,6 @@ import {
 } from "@/store";
 import { emptyIssue } from "@/types";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -105,7 +90,9 @@ import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import {
   extractProjectResourceName,
   hasProjectPermissionV2,
-  extractPlanUID,
+  extractIssueUID,
+  isDev,
+  issueV1Slug,
 } from "@/utils";
 import {
   convertNewIssueToOld,
@@ -127,7 +114,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
-const dialog = useDialog();
 const state = reactive<LocalState>({
   loading: false,
 });
@@ -135,7 +121,6 @@ const { project } = useCurrentProjectV1();
 const currentUser = useCurrentUserV1();
 const policyV1Store = usePolicyV1Store();
 const { plan, planCheckRunList, events } = usePlanContext();
-const comment = ref("");
 const restrictIssueCreationForSqlReviewPolicy = ref(false);
 
 const title = computed(() => {
@@ -214,18 +199,7 @@ watchEffect(async () => {
 });
 
 const handleConfirm = async () => {
-  const { action } = props;
-  if (!action) return;
-
-  dialog.info({
-    title: t("common.confirm"),
-    content: t("issue.this-plan-will-be-converted-to-a-new-issue"),
-    negativeText: t("common.cancel"),
-    positiveText: t("common.create"),
-    onPositiveClick: async () => {
-      await doCreateIssue();
-    },
-  });
+  await doCreateIssue();
 };
 
 const doCreateIssue = async () => {
@@ -242,9 +216,9 @@ const doCreateIssue = async () => {
       parent: project.value.name,
       issue: newIssue,
     });
-    const newCreatedIssue =
+    const createdIssue =
       await issueServiceClientConnect.createIssue(issueRequest);
-    convertNewIssueToOld(newCreatedIssue);
+    convertNewIssueToOld(createdIssue);
 
     // Then create the rollout from the plan
     const rolloutRequest = create(CreateRolloutRequestSchema, {
@@ -254,32 +228,30 @@ const doCreateIssue = async () => {
         plan: plan.value.name,
       },
     });
-    const createdRollout = await rolloutServiceClientConnect.createRollout(rolloutRequest);
-
-    // Update the plan to include the rollout reference
-    const updatePlanRequest = create(UpdatePlanRequestSchema, {
-      plan: {
-        name: plan.value.name,
-        rollout: createdRollout.name,
-      },
-      updateMask: {
-        paths: ["rollout"],
-      },
-    });
-    await planServiceClientConnect.updatePlan(updatePlanRequest);
+    await rolloutServiceClientConnect.createRollout(rolloutRequest);
 
     // Emit status changed to refresh the UI
     events.emit("status-changed", { eager: true });
 
     nextTick(() => {
-      // Stay on the plan page to see the rollout actions
-      router.push({
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(plan.value.name),
-          planId: extractPlanUID(plan.value.name),
-        },
-      });
+      if (isDev()) {
+        router.push({
+          name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+          params: {
+            projectId: extractProjectResourceName(plan.value.name),
+            issueId: extractIssueUID(createdIssue.name),
+          },
+        });
+      } else {
+        // TODO(steven): remove me please.
+        router.push({
+          name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+          params: {
+            projectId: extractProjectResourceName(plan.value.name),
+            issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
+          },
+        });
+      }
     });
   } finally {
     state.loading = false;
@@ -295,9 +267,5 @@ const buildIssue = () => {
   issue.status = IssueStatus.OPEN;
   issue.type = Issue_Type.DATABASE_CHANGE;
   return issue;
-};
-
-const resetState = () => {
-  comment.value = "";
 };
 </script>
