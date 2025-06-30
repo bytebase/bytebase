@@ -714,18 +714,6 @@ ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, pgparser.S
 
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
-	// Force schema qualification for default expressions by setting empty search_path
-	if _, err := txn.Exec("SET search_path = ''"); err != nil {
-		return nil, err
-	}
-	defer func() {
-		// Reset search_path after query
-		_, err := txn.Exec("RESET search_path")
-		if err != nil {
-			slog.Warn("failed to reset search_path after getting columns: %v", log.BBError(err))
-		}
-	}()
-
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 	rows, err := txn.Query(listColumnQuery)
 	if err != nil {
