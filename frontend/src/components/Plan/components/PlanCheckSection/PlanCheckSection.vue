@@ -13,7 +13,7 @@
             class="flex items-center gap-1 hover:opacity-80"
             @click="openDrawer('ERROR')"
           >
-            <XCircleIcon class="w-4 h-4 text-error" />
+            <XCircleIcon class="w-5 h-5 text-error" />
             <span class="text-error">{{ summary.error }}</span>
           </button>
           <button
@@ -21,7 +21,7 @@
             class="flex items-center gap-1 hover:opacity-80"
             @click="openDrawer('WARNING')"
           >
-            <AlertCircleIcon class="w-4 h-4 text-warning" />
+            <AlertCircleIcon class="w-5 h-5 text-warning" />
             <span class="text-warning">{{ summary.warning }}</span>
           </button>
           <button
@@ -29,7 +29,7 @@
             class="flex items-center gap-1 hover:opacity-80"
             @click="openDrawer('SUCCESS')"
           >
-            <CheckCircleIcon class="w-4 h-4 text-success" />
+            <CheckCircleIcon class="w-5 h-5 text-success" />
             <span class="text-success">{{ summary.success }}</span>
           </button>
         </div>
@@ -97,7 +97,7 @@
                     class="space-y-2"
                   >
                     <div class="text-sm font-medium text-control">
-                      {{ formatTarget(checkRun.target) }}
+                      <DatabaseDisplay :database="checkRun.target" />
                     </div>
                     <div
                       v-for="(result, idx) in getResultsByStatus(
@@ -173,10 +173,11 @@ import {
   PlanCheckRun_Result_Status,
   type PlanCheckRun,
 } from "@/types/proto/v1/plan_service";
-import { hasProjectPermissionV2, extractDatabaseResourceName } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import { planCheckRunListForSpec, planSpecHasPlanChecks } from "../../logic";
 import { usePlanContext } from "../../logic/context";
 import { usePlanSpecContext } from "../SpecDetailView/context";
+import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
@@ -309,14 +310,6 @@ const getCheckTypeLabel = (type: string) => {
     default:
       return type;
   }
-};
-
-const formatTarget = (target: string): string => {
-  const { instanceName, databaseName } = extractDatabaseResourceName(target);
-  if (instanceName && databaseName) {
-    return `${databaseName} (${instanceName})`;
-  }
-  return target;
 };
 
 const runChecks = async () => {

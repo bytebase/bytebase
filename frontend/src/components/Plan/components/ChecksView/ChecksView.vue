@@ -67,7 +67,7 @@
     </div>
 
     <!-- Results List -->
-    <div class="flex-1 overflow-y-auto border-t mt-2">
+    <div class="flex-1 overflow-y-auto">
       <div v-if="isLoading" class="flex items-center justify-center py-12">
         <BBSpin />
       </div>
@@ -77,16 +77,9 @@
         class="flex flex-col items-center justify-center py-12"
       >
         <CheckCircleIcon class="w-12 h-12 text-control-light opacity-50 mb-4" />
-        <div class="text-lg font-medium text-control-light mb-2">
+        <div class="text-lg text-control-light">
           {{
             hasFilters ? "No results match your filters" : "No check results"
-          }}
-        </div>
-        <div class="text-sm text-control-lighter">
-          {{
-            hasFilters
-              ? "Try adjusting your filters"
-              : "Run checks to see results here"
           }}
         </div>
       </div>
@@ -105,13 +98,11 @@
                 :is="getCheckTypeIcon(checkRun.type)"
                 class="w-5 h-5 text-control-light"
               />
-              <div>
+              <div class="flex flex-row items-center gap-2">
                 <span class="text-sm font-medium">
                   {{ getCheckTypeLabel(checkRun.type) }}
                 </span>
-                <span class="text-xs text-control-light">
-                  Target: {{ formatTarget(checkRun.target) }}
-                </span>
+                <DatabaseDisplay :database="checkRun.target" />
               </div>
             </div>
 
@@ -186,8 +177,9 @@ import {
   PlanCheckRun_Type,
   type PlanCheckRun,
 } from "@/types/proto/v1/plan_service";
-import { extractDatabaseResourceName, humanizeTs } from "@/utils";
+import { humanizeTs } from "@/utils";
 import { usePlanContext } from "../../logic/context";
+import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const { t } = useI18n();
 const { planCheckRunList } = usePlanContext();
@@ -374,14 +366,6 @@ const getStatusLabel = (status: PlanCheckRun_Result_Status) => {
     default:
       return "Unknown";
   }
-};
-
-const formatTarget = (target: string): string => {
-  const { instanceName, databaseName } = extractDatabaseResourceName(target);
-  if (instanceName && databaseName) {
-    return `${databaseName} (${instanceName})`;
-  }
-  return target;
 };
 
 const formatTime = (timestamp: any): string => {
