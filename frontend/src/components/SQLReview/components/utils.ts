@@ -4,7 +4,7 @@ import type {
   SQLReviewPolicy,
 } from "@/types";
 import { convertPolicyRuleToRuleTemplate, ruleTemplateMapV2 } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { PayloadValueType } from "./RuleConfigComponents";
 
 export const getRuleKey = (rule: RuleTemplateV2) =>

@@ -259,7 +259,7 @@ import {
   ruleTemplateMapV2,
   convertPolicyRuleToRuleTemplate,
 } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   PlanCheckRun,
   PlanCheckRun_Result,

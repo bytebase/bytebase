@@ -14,10 +14,7 @@ import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  type MaskingExceptionPolicy_MaskingException_Action as Action,
-  maskingExceptionPolicy_MaskingException_ActionToJSON as actionToJSON,
-} from "@/types/proto/v1/org_policy_service";
+import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto-es/v1/org_policy_service_pb";
 
 const props = defineProps<{
   disabled?: boolean;
@@ -32,10 +29,24 @@ defineEmits<{
 
 const { t } = useI18n();
 
+// Helper function to convert Action enum to string
+const actionToString = (action: Action): string => {
+  switch (action) {
+    case Action.ACTION_UNSPECIFIED:
+      return "ACTION_UNSPECIFIED";
+    case Action.QUERY:
+      return "QUERY";
+    case Action.EXPORT:
+      return "EXPORT";
+    default:
+      return "UNKNOWN";
+  }
+};
+
 const options = computed(() => {
   return props.actionList.map<SelectOption>((action) => ({
     label: t(
-      `settings.sensitive-data.action.${actionToJSON(action).toLowerCase()}`
+      `settings.sensitive-data.action.${actionToString(action).toLowerCase()}`
     ),
     value: action,
   }));

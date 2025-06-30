@@ -85,7 +85,7 @@ import { emptyIssue } from "@/types";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import {
   extractProjectResourceName,
@@ -179,7 +179,8 @@ watchEffect(async () => {
       parentPath: "",
       policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
     });
-  if (workspaceLevelPolicy?.restrictIssueCreationForSqlReviewPolicy?.disallow) {
+  if (workspaceLevelPolicy?.policy?.case === "restrictIssueCreationForSqlReviewPolicy" &&
+      workspaceLevelPolicy.policy.value.disallow) {
     restrictIssueCreationForSqlReviewPolicy.value = true;
     return;
   }
@@ -189,7 +190,8 @@ watchEffect(async () => {
       parentPath: project.value.name,
       policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
     });
-  if (projectLevelPolicy?.restrictIssueCreationForSqlReviewPolicy?.disallow) {
+  if (projectLevelPolicy?.policy?.case === "restrictIssueCreationForSqlReviewPolicy" &&
+      projectLevelPolicy.policy.value.disallow) {
     restrictIssueCreationForSqlReviewPolicy.value = true;
     return;
   }

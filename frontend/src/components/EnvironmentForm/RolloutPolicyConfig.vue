@@ -50,11 +50,11 @@
 <script setup lang="ts">
 import { cloneDeep, uniq } from "lodash-es";
 import { NCheckbox } from "naive-ui";
-import { ref, watch } from "vue";
-import { computed } from "vue";
+import { ref, watch, computed } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { VirtualRoleType } from "@/types";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
-import { RolloutPolicy } from "@/types/proto/v1/org_policy_service";
+import type { Policy, RolloutPolicy } from "@/types/proto-es/v1/org_policy_service_pb";
+import { RolloutPolicySchema } from "@/types/proto-es/v1/org_policy_service_pb";
 import { RoleSelect } from "../v2";
 
 const props = defineProps<{
@@ -66,7 +66,13 @@ const emit = defineEmits<{
   (event: "update:policy", policy: Policy): void;
 }>();
 
-const rolloutPolicy = ref(cloneDeep(props.policy.rolloutPolicy!));
+const rolloutPolicy = ref<RolloutPolicy>(
+  cloneDeep(
+    props.policy.policy?.case === "rolloutPolicy"
+      ? props.policy.policy.value
+      : create(RolloutPolicySchema)
+  )
+);
 
 const isAutomaticRolloutChecked = computed(() => {
   return rolloutPolicy.value.automatic;
@@ -81,19 +87,22 @@ const isIssueLastApproverChecked = computed(() => {
 const update = (rp: RolloutPolicy) => {
   emit("update:policy", {
     ...props.policy,
-    rolloutPolicy: rp,
+    policy: {
+      case: "rolloutPolicy",
+      value: rp,
+    },
   });
 };
 const toggleAutomaticRollout = (selected: boolean) => {
   update(
-    RolloutPolicy.fromPartial({
+    create(RolloutPolicySchema, {
       ...rolloutPolicy.value,
       automatic: selected,
     })
   );
 };
 const toggleIssueRoles = (checked: boolean, role: string) => {
-  const issueRoles = rolloutPolicy.value.issueRoles;
+  const issueRoles = [...rolloutPolicy.value.issueRoles];
   if (checked) {
     issueRoles.push(role);
   } else {
@@ -103,7 +112,7 @@ const toggleIssueRoles = (checked: boolean, role: string) => {
     }
   }
   update(
-    RolloutPolicy.fromPartial({
+    create(RolloutPolicySchema, {
       ...rolloutPolicy.value,
       issueRoles: uniq(issueRoles),
     })
@@ -111,7 +120,7 @@ const toggleIssueRoles = (checked: boolean, role: string) => {
 };
 const updateRoles = (roles: string[]) => {
   update(
-    RolloutPolicy.fromPartial({
+    create(RolloutPolicySchema, {
       ...rolloutPolicy.value,
       roles: roles,
     })
@@ -119,9 +128,11 @@ const updateRoles = (roles: string[]) => {
 };
 
 watch(
-  () => props.policy.rolloutPolicy!,
+  () => props.policy.policy?.case === "rolloutPolicy" ? props.policy.policy.value : undefined,
   (p) => {
-    rolloutPolicy.value = cloneDeep(p);
+    if (p) {
+      rolloutPolicy.value = cloneDeep(p);
+    }
   },
   { immediate: true, deep: true }
 );
