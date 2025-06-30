@@ -1016,7 +1016,6 @@
       }
     },
     "sql-review-only": "Chỉ đánh giá SQL",
-    "this-plan-will-be-converted-to-a-new-issue": "Kế hoạch này sẽ được chuyển đổi thành một vấn đề mới",
     "title": {
       "edit-schema": "Chỉnh sửa lược đồ",
       "change-data": "Thay đổi dữ liệu",
@@ -2656,9 +2655,6 @@
   "export-center": {
     "self": "Trung tâm xuất",
     "permission-denied": "Quyền bị từ chối"
-  },
-  "review-center": {
-    "self": "Trung tâm đánh giá"
   },
   "schema-designer": {
     "use-tips": "Nhấp vào một bảng để bắt đầu."

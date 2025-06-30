@@ -58,7 +58,7 @@ const actionDisplayName = (action: UnifiedAction): string => {
     case "REOPEN":
       return t("issue.batch-transition.reopen");
     case "CREATE_ISSUE":
-      return t("common.create") + " " + t("common.issue");
+      return t("plan.ready-for-review");
   }
 };
 
