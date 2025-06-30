@@ -35,9 +35,10 @@ import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { buildCELExpr } from "@/plugins/cel";
-import { Expr } from "@/types/proto/google/type/expr";
-import type { Risk } from "@/types/proto/v1/risk_service";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
+import { create } from "@bufbuild/protobuf";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
+import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import { batchConvertParsedExprToCELString, defer } from "@/utils";
 import { useRiskCenterContext } from "../context";
 import ViewTemplate from "./ViewTemplate.vue";
@@ -132,7 +133,7 @@ const applyTemplate = async (template: RuleTemplate) => {
   }
   const expressions = await batchConvertParsedExprToCELString([celexpr]);
   const overrides: Partial<Risk> = {
-    condition: Expr.fromPartial({ expression: expressions[0] }),
+    condition: create(ExprSchema, { expression: expressions[0] }),
     level,
     title,
   };

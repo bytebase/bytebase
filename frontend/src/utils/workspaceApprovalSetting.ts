@@ -14,9 +14,10 @@ import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
 import { DEFAULT_RISK_LEVEL, PresetRoleType } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
-import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import type { Expr as _Expr } from "@/types/proto-es/google/type/expr_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import { ExprSchema as CELExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import type {
   ApprovalNode as _ApprovalNode,
   ApprovalStep as _ApprovalStep,
@@ -43,8 +44,7 @@ import {
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Risk_Source,
-  risk_SourceFromJSON,
-} from "@/types/proto/v1/risk_service";
+} from "@/types/proto-es/v1/risk_service_pb";
 import type {
   WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
@@ -102,7 +102,7 @@ export const resolveLocalApprovalConfig = async (
     const rule = config.rules[i];
     const localRule: LocalApprovalRule = {
       uid: uuidv4(),
-      expr: resolveCELExpr(CELExpr.fromPartial({})),
+      expr: resolveCELExpr(createProto(CELExprSchema, {})),
       template: cloneDeep(convertNewApprovalTemplateToOld(rule.template!)),
     };
     ruleMap.set(localRule.uid, localRule);
@@ -116,7 +116,7 @@ export const resolveLocalApprovalConfig = async (
   for (let i = 0; i < exprList.length; i++) {
     const ruleId = ruleIdList[i];
     ruleMap.get(ruleId)!.expr = resolveCELExpr(
-      exprList[i] ?? CELExpr.fromPartial({})
+      exprList[i] ?? createProto(CELExprSchema, {})
     );
   }
 
@@ -143,7 +143,7 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
     if (operator !== "_&&_") return fail(expr, rule);
     if (!args || args.length !== 2) return fail(expr, rule);
     const source = resolveSourceExpr(args[0]);
-    if (source === Risk_Source.UNRECOGNIZED) return fail(expr, rule);
+    if (source === Risk_Source.SOURCE_UNSPECIFIED) return fail(expr, rule);
     const level = resolveLevelExpr(args[1]);
     if (Number.isNaN(level)) return fail(expr, rule);
 
@@ -221,7 +221,9 @@ export const buildWorkspaceApprovalSetting = async (
     }
   }
 
-  const expressionList = await batchConvertParsedExprToCELString(exprList);
+  const expressionList = await batchConvertParsedExprToCELString(
+    exprList
+  );
   for (let i = 0; i < expressionList.length; i++) {
     const ruleIndex = ruleIndexList[i];
     approvalRuleMap.get(ruleIndex)!.condition = createProto(ExprSchema, {
@@ -236,22 +238,25 @@ export const buildWorkspaceApprovalSetting = async (
 
 const resolveSourceExpr = (expr: SimpleExpr): Risk_Source => {
   if (!isConditionExpr(expr)) {
-    return Risk_Source.UNRECOGNIZED;
+    return Risk_Source.SOURCE_UNSPECIFIED;
   }
   const { operator, args } = expr;
   if (operator !== "_==_") {
-    return Risk_Source.UNRECOGNIZED;
+    return Risk_Source.SOURCE_UNSPECIFIED;
   }
   if (!args || args.length !== 2) {
-    return Risk_Source.UNRECOGNIZED;
+    return Risk_Source.SOURCE_UNSPECIFIED;
   }
   const factor = args[0];
   if (factor !== "source") {
-    return Risk_Source.UNRECOGNIZED;
+    return Risk_Source.SOURCE_UNSPECIFIED;
   }
-  const source = risk_SourceFromJSON(args[1]);
+  const sourceValue = args[1];
+  const source = typeof sourceValue === 'string' ? 
+    (Risk_Source[sourceValue as keyof typeof Risk_Source] ?? Risk_Source.SOURCE_UNSPECIFIED) :
+    sourceValue as Risk_Source;
   if (!useSupportedSourceList().value.includes(source)) {
-    return Risk_Source.UNRECOGNIZED;
+    return Risk_Source.SOURCE_UNSPECIFIED;
   }
   return source;
 };

@@ -60,7 +60,8 @@ import {
   IssueSchema,
   Issue_Type as NewIssue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   GrantRequest,
   Issue,
@@ -99,7 +100,7 @@ const currentUser = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 
 const state = reactive<LocalState>({
-  binding: Binding.fromPartial({
+  binding: create(BindingSchema, {
     role: props.role,
     members: [getUserEmailInBinding(currentUser.value.email)],
   }),

@@ -15,7 +15,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { SpinnerButton, SpinnerSwitch } from "@/components/v2/Form";
 import { pushNotification, useRiskStore } from "@/store";
-import type { Risk } from "@/types/proto/v1/risk_service";
+import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { levelText } from "../common";
 import { useRiskCenterContext } from "./context";

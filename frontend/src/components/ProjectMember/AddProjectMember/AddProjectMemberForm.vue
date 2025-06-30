@@ -95,7 +95,7 @@ import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { RoleSelect } from "@/components/v2/Select";
 import { PresetRoleType, type DatabaseResource } from "@/types";
-import type { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { checkRoleContainsAnyPermission } from "@/utils";
 import { buildConditionExpr } from "@/utils/issue/cel";

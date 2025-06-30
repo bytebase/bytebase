@@ -50,7 +50,6 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -68,8 +67,8 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { Plan } from "@/types/proto/v1/plan_service";
+import { create } from "@bufbuild/protobuf";
 import {
   extractProjectResourceName,
   generateIssueTitle,
@@ -81,6 +80,7 @@ import {
 } from "@/utils/v1/plan-conversions";
 import { useReleaseDetailContext } from "../context";
 import { createIssueFromPlan } from "./utils";
+import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
 
 const emit = defineEmits<{
   (event: "close"): void;
@@ -119,11 +119,9 @@ const handleCreate = async () => {
   const databaseList = state.targetSelectState.selectedDatabaseNameList.map(
     (name) => databaseStore.getDatabaseByName(name)
   );
-  const databaseGroup = DatabaseGroup.fromPartial({
-    ...dbGroupStore.getDBGroupByName(
-      state.targetSelectState.selectedDatabaseGroup || ""
-    ),
-  });
+  const databaseGroup = create(DatabaseGroupSchema, dbGroupStore.getDBGroupByName(
+    state.targetSelectState.selectedDatabaseGroup || ""
+  ));
   const planData = Plan.fromPartial({
     title: `Release "${release.value.title}"`,
     description: `Apply release "${release.value.title}" to selected databases.`,

@@ -24,6 +24,11 @@ import {
   type Duration as NewDuration,
 } from "@bufbuild/protobuf/wkt"
 
+// Expr type imports
+import { Expr as OldExpr } from "@/types/proto/google/type/expr";
+import type { Expr as NewExpr } from "@/types/proto-es/google/type/expr_pb";
+import { ExprSchema as NewExprSchema } from "@/types/proto-es/google/type/expr_pb";
+
 
 // Proto-es imports
 import { 
@@ -437,3 +442,27 @@ export const convertDurationToNew = (value: OldDuration): NewDuration => {
     nanos: value.nanos,
   })
 }
+
+/**
+ * Convert old proto Expr to proto-es Expr
+ */
+export const convertExprToNew = (expr: OldExpr): NewExpr => {
+  return create(NewExprSchema, {
+    expression: expr.expression,
+    title: expr.title,
+    description: expr.description,
+    location: expr.location,
+  });
+};
+
+/**
+ * Convert proto-es Expr to old proto Expr
+ */
+export const convertExprToOld = (expr: NewExpr): OldExpr => {
+  return OldExpr.create({
+    expression: expr.expression,
+    title: expr.title,
+    description: expr.description,
+    location: expr.location,
+  });
+};
