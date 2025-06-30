@@ -81,7 +81,7 @@ import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/pr
 import { useProjectByName, hasFeature } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto/v1/org_policy_service";
+import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {

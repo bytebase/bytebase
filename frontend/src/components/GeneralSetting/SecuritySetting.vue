@@ -77,9 +77,10 @@ import {
   useSettingV1Store,
 } from "@/store";
 import {
+  ExportDataPolicySchema,
   PolicyResourceType,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { Setting_SettingName, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -138,7 +139,7 @@ const getInitialState = (): LocalState => {
   }
   return {
     enableWatermark,
-    enableDataExport: !exportDataPolicy.value?.exportDataPolicy?.disable,
+    enableDataExport: exportDataPolicy.value?.policy?.case === "exportDataPolicy" ? !exportDataPolicy.value.policy.value.disable : true,
   };
 };
 
@@ -159,8 +160,11 @@ const handleDataExportToggle = async () => {
     policy: {
       type: PolicyType.DATA_EXPORT,
       resourceType: PolicyResourceType.WORKSPACE,
-      exportDataPolicy: {
-        disable: !state.enableDataExport,
+      policy: {
+        case: "exportDataPolicy",
+        value: create(ExportDataPolicySchema, {
+          disable: !state.enableDataExport,
+        }),
       },
     },
   });

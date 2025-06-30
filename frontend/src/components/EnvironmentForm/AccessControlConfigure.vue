@@ -102,17 +102,22 @@
 </template>
 
 <script setup lang="ts">
+import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NRadio, NRadioGroup } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { hasFeature, usePolicyV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import {
+import type {
   DataSourceQueryPolicy,
-  DataSourceQueryPolicy_Restriction,
   DisableCopyDataPolicy,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  DataSourceQueryPolicySchema,
+  DataSourceQueryPolicy_Restriction,
+  DisableCopyDataPolicySchema,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
@@ -132,18 +137,26 @@ const policyStore = usePolicyV1Store();
 
 const getInitialState = (): LocalState => {
   return {
-    disableCopyDataPolicy: cloneDeep(
-      policyStore.getPolicyByParentAndType({
+    disableCopyDataPolicy: (() => {
+      const policy = policyStore.getPolicyByParentAndType({
         parentPath: props.resource,
         policyType: PolicyType.DISABLE_COPY_DATA,
-      })?.disableCopyDataPolicy ?? DisableCopyDataPolicy.fromPartial({})
-    ),
-    dataSourceQueryPolicy: cloneDeep(
-      policyStore.getPolicyByParentAndType({
+      });
+      if (policy?.policy.case === "disableCopyDataPolicy") {
+        return cloneDeep(policy.policy.value);
+      }
+      return createProto(DisableCopyDataPolicySchema, {});
+    })(),
+    dataSourceQueryPolicy: (() => {
+      const policy = policyStore.getPolicyByParentAndType({
         parentPath: props.resource,
         policyType: PolicyType.DATA_SOURCE_QUERY,
-      })?.dataSourceQueryPolicy ?? DataSourceQueryPolicy.fromPartial({})
-    ),
+      });
+      if (policy?.policy.case === "dataSourceQueryPolicy") {
+        return cloneDeep(policy.policy.value);
+      }
+      return createProto(DataSourceQueryPolicySchema, {});
+    })(),
   };
 };
 
@@ -195,8 +208,11 @@ const updateDisableCopyDataPolicy = async () => {
     parentPath: props.resource,
     policy: {
       type: PolicyType.DISABLE_COPY_DATA,
-      disableCopyDataPolicy: {
-        ...state.disableCopyDataPolicy,
+      policy: {
+        case: "disableCopyDataPolicy",
+        value: {
+          ...state.disableCopyDataPolicy,
+        },
       },
     },
   });
@@ -213,9 +229,12 @@ const updateAdminDataSourceQueryRestrctionPolicy = async () => {
     parentPath: props.resource,
     policy: {
       type: PolicyType.DATA_SOURCE_QUERY,
-      dataSourceQueryPolicy: DataSourceQueryPolicy.fromPartial({
-        ...state.dataSourceQueryPolicy,
-      }),
+      policy: {
+        case: "dataSourceQueryPolicy",
+        value: createProto(DataSourceQueryPolicySchema, {
+          ...state.dataSourceQueryPolicy,
+        }),
+      },
     },
   });
 };

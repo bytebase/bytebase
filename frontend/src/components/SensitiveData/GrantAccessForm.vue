@@ -33,9 +33,7 @@
             >
               {{
                 $t(
-                  `settings.sensitive-data.action.${maskingExceptionPolicy_MaskingException_ActionToJSON(
-                    action
-                  ).toLowerCase()}`
+                  `settings.sensitive-data.action.${MaskingExceptionPolicy_MaskingException_Action[action].toLowerCase()}`
                 )
               }}
             </NCheckbox>
@@ -108,17 +106,19 @@ import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { usePolicyV1Store, pushNotification } from "@/store";
 import type { DatabaseResource } from "@/types";
-import { Expr } from "@/types/proto/google/type/expr";
+import { create } from "@bufbuild/protobuf";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
   Policy,
   MaskingExceptionPolicy_MaskingException,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   PolicyType,
   PolicyResourceType,
   MaskingExceptionPolicy_MaskingException_Action,
-  maskingExceptionPolicy_MaskingException_ActionToJSON,
-} from "@/types/proto/v1/org_policy_service";
+  MaskingExceptionPolicySchema,
+  MaskingExceptionPolicy_MaskingExceptionSchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SensitiveColumn } from "./types";
 import {
@@ -233,17 +233,19 @@ const getPendingUpdatePolicy = async (
         const resourceExpression = [...expressionList, ...expressions].filter(
           (e) => e
         );
-        maskingExceptions.push({
-          member,
-          action,
-          condition: Expr.fromPartial({
-            description: state.description,
-            expression:
-              resourceExpression.length > 0
-                ? resourceExpression.join(" && ")
-                : undefined,
-          }),
-        });
+        maskingExceptions.push(
+          create(MaskingExceptionPolicy_MaskingExceptionSchema, {
+            member,
+            action,
+            condition: create(ExprSchema, {
+              description: state.description,
+              expression:
+                resourceExpression.length > 0
+                  ? resourceExpression.join(" && ")
+                  : "",
+            }),
+          })
+        );
       }
     }
   }
@@ -252,13 +254,19 @@ const getPendingUpdatePolicy = async (
     parentPath,
     policyType: PolicyType.MASKING_EXCEPTION,
   });
-  const existed = policy?.maskingExceptionPolicy?.maskingExceptions ?? [];
+  const existed = 
+    policy?.policy?.case === "maskingExceptionPolicy"
+      ? policy.policy.value.maskingExceptions
+      : [];
   return {
     name: policy?.name,
     type: PolicyType.MASKING_EXCEPTION,
     resourceType: PolicyResourceType.PROJECT,
-    maskingExceptionPolicy: {
-      maskingExceptions: [...existed, ...maskingExceptions],
+    policy: {
+      case: "maskingExceptionPolicy",
+      value: create(MaskingExceptionPolicySchema, {
+        maskingExceptions: [...existed, ...maskingExceptions],
+      }),
     },
   };
 };
