@@ -51,7 +51,7 @@ import {
   isValidInstanceName,
   isValidProjectName,
 } from "@/types";
-import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   emptySQLEditorConnection,
   extractProjectResourceName,

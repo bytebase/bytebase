@@ -20,8 +20,8 @@ import {
 } from "@/types/proto-es/v1/review_config_service_pb";
 import {
   PolicyType,
-  policyTypeToJSON,
-} from "@/types/proto/v1/org_policy_service";
+  TagPolicySchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { ReviewConfig } from "@/types/proto/v1/review_config_service";
 import {
   convertNewReviewConfigToOld,
@@ -29,6 +29,7 @@ import {
 } from "@/utils/v1/review-config-conversions";
 import { usePolicyV1Store } from "./v1/policy";
 import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
+import { convertOldSQLReviewRuleLevelToNew, convertNewSQLReviewRuleLevelToOld } from "@/utils/v1/org-policy-conversions";
 
 const reviewConfigTagName = "bb.tag.review_config";
 
@@ -44,10 +45,13 @@ const upsertReviewConfigTag = async (
         policy: {
           name: getTagPolicyName(resourcePath),
           type: PolicyType.TAG,
-          tagPolicy: {
-            tags: {
-              [reviewConfigTagName]: configName,
-            },
+          policy: {
+            case: "tagPolicy",
+            value: create(TagPolicySchema, {
+              tags: {
+                [reviewConfigTagName]: configName,
+              },
+            }),
           },
         },
       });
@@ -71,7 +75,7 @@ const convertToSQLReviewPolicy = (
   for (const r of reviewConfig.rules) {
     const rule: SchemaPolicyRule = {
       type: r.type,
-      level: r.level,
+      level: convertOldSQLReviewRuleLevelToNew(r.level),
       engine: convertEngineToNew(r.engine),
       comment: r.comment,
     };
@@ -95,9 +99,7 @@ interface SQLReviewState {
 }
 
 const getTagPolicyName = (environmentPath: string): string => {
-  return `${environmentPath}/${policyNamePrefix}${policyTypeToJSON(
-    PolicyType.TAG
-  ).toLowerCase()}`;
+  return `${environmentPath}/${policyNamePrefix}tag`;
 };
 
 export const useSQLReviewStore = defineStore("sqlReview", {
@@ -198,7 +200,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         patch.rules = ruleList.map((r) => {
           return {
             type: r.type as string,
-            level: r.level,
+            level: convertNewSQLReviewRuleLevelToOld(r.level),
             engine: convertEngineToOld(r.engine),
             comment: r.comment,
             payload: r.payload ? JSON.stringify(r.payload) : "{}",
@@ -307,7 +309,9 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       if (!policy) {
         return;
       }
-      const sqlReviewName = policy.tagPolicy?.tags[reviewConfigTagName];
+      const sqlReviewName = policy.policy?.case === "tagPolicy" 
+        ? policy.policy.value.tags[reviewConfigTagName]
+        : undefined;
       if (!sqlReviewName) {
         return;
       }

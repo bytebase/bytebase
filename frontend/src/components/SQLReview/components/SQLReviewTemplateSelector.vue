@@ -98,7 +98,7 @@ import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { useSQLReviewPolicyList } from "@/store";
 import type { SQLReviewPolicyTemplateV2 } from "@/types";
 import { TEMPLATE_LIST_V2 as builtInTemplateList } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import { rulesToTemplate } from "./utils";
 
 const props = withDefaults(

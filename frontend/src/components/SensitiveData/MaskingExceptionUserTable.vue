@@ -48,10 +48,12 @@ import {
   isValidDatabaseName,
   type ComposedProject,
 } from "@/types";
-import { Expr } from "@/types/proto/google/type/expr";
-import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto/v1/org_policy_service";
-import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto/v1/org_policy_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { create } from "@bufbuild/protobuf";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto-es/v1/org_policy_service_pb";
+import { MaskingExceptionPolicySchema } from "@/types/proto-es/v1/org_policy_service_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
 import {
   type ConditionExpression,
@@ -233,7 +235,7 @@ const updateAccessUserList = async () => {
     return;
   }
 
-  if (!policy.value || !policy.value.maskingExceptionPolicy) {
+  if (!policy.value || policy.value.policy?.case !== "maskingExceptionPolicy") {
     state.rawAccessList = [];
     state.loading = false;
     return;
@@ -251,7 +253,7 @@ const updateAccessUserList = async () => {
   // - 2 cannot merge: user1, action:export, level:FULL, expires at 2023-09-04
   // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
   const memberMap = new Map<string, AccessUser>();
-  const { maskingExceptions } = policy.value.maskingExceptionPolicy;
+  const { maskingExceptions } = policy.value.policy.value;
   const expressionList = maskingExceptions.map((e) =>
     e.condition?.expression ? e.condition?.expression : "true"
   );
@@ -577,7 +579,7 @@ const updateExceptionPolicy = async () => {
       exceptions.push({
         action,
         member,
-        condition: Expr.fromPartial({
+        condition: create(ExprSchema, {
           description: accessUser.description,
           expression: expressions.join(" && "),
         }),
@@ -585,9 +587,11 @@ const updateExceptionPolicy = async () => {
     }
   }
 
-  policy.maskingExceptionPolicy = {
-    ...(policy.maskingExceptionPolicy ?? {}),
-    maskingExceptions: exceptions,
+  policy.policy = {
+    case: "maskingExceptionPolicy",
+    value: create(MaskingExceptionPolicySchema, {
+      maskingExceptions: exceptions,
+    }),
   };
   await policyStore.upsertPolicy({
     parentPath: props.project.name,

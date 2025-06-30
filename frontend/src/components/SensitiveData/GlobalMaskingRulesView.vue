@@ -137,12 +137,14 @@ import {
   useProjectV1Store,
   useInstanceV1Store,
 } from "@/store";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
+import { create } from "@bufbuild/protobuf";
+import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { MaskingRulePolicy_MaskingRule } from "@/types/proto-es/v1/org_policy_service_pb";
+import { MaskingRulePolicySchema, MaskingRulePolicy_MaskingRuleSchema } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   PolicyType,
   PolicyResourceType,
-  MaskingRulePolicy_MaskingRule,
-} from "@/types/proto/v1/org_policy_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   arraySwap,
@@ -200,14 +202,16 @@ const updateList = async () => {
     return;
   }
 
-  state.maskingRuleItemList = (policy.maskingRulePolicy?.rules ?? []).map(
-    (rule) => {
-      return {
-        mode: "NORMAL",
-        rule,
-      };
-    }
-  );
+  state.maskingRuleItemList = (
+    policy.policy?.case === "maskingRulePolicy"
+      ? policy.policy.value.rules
+      : []
+  ).map((rule) => {
+    return {
+      mode: "NORMAL",
+      rule,
+    };
+  });
 };
 
 onMounted(async () => {
@@ -217,7 +221,7 @@ onMounted(async () => {
 const addNewRule = () => {
   state.maskingRuleItemList.push({
     mode: "CREATE",
-    rule: MaskingRulePolicy_MaskingRule.fromPartial({
+    rule: create(MaskingRulePolicy_MaskingRuleSchema, {
       id: uuidv4(),
     }),
   });
@@ -318,10 +322,13 @@ const onPolicyUpsert = async () => {
   const patch: Partial<Policy> = {
     type: PolicyType.MASKING_RULE,
     resourceType: PolicyResourceType.WORKSPACE,
-    maskingRulePolicy: {
-      rules: state.maskingRuleItemList
-        .filter((item) => item.mode === "NORMAL")
-        .map((item) => item.rule),
+    policy: {
+      case: "maskingRulePolicy",
+      value: create(MaskingRulePolicySchema, {
+        rules: state.maskingRuleItemList
+          .filter((item) => item.mode === "NORMAL")
+          .map((item) => item.rule),
+      }),
     },
   };
 

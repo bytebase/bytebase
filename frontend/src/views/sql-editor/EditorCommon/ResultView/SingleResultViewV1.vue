@@ -236,7 +236,7 @@ import {
 } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { convertExportFormatToOld } from "@/utils/v1/common-conversions";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type {
   QueryResult,
@@ -321,7 +321,9 @@ const { policy: exportDataPolicy } = usePolicyByParentAndType(
 );
 
 const disallowExportQueryData = computed(() => {
-  return exportDataPolicy.value?.exportDataPolicy?.disable ?? false;
+  return exportDataPolicy.value?.policy?.case === "exportDataPolicy" 
+    ? exportDataPolicy.value.policy.value.disable 
+    : false;
 });
 
 const viewMode = computed((): ViewMode => {

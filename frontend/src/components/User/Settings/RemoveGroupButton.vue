@@ -39,7 +39,7 @@ import {
 import { extractUserId } from "@/store/modules/v1/common";
 import { getGroupEmailInBinding } from "@/types";
 import { type Group, GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
@@ -92,8 +92,11 @@ const resourcesOccupied = computedAsync(async () => {
       policyType: PolicyType.MASKING_EXCEPTION,
     });
 
-    for (const exception of policy?.maskingExceptionPolicy?.maskingExceptions ??
-      []) {
+    const exceptions = 
+      policy?.policy?.case === "maskingExceptionPolicy"
+        ? policy.policy.value.maskingExceptions
+        : [];
+    for (const exception of exceptions) {
       if (exception.member === member) {
         resources.add(project.name);
         break;

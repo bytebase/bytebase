@@ -7,6 +7,8 @@ import { PolicyResourceType as OldPolicyResourceType } from "@/types/proto/v1/or
 import { PolicyResourceType as NewPolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PolicyType as OldPolicyType } from "@/types/proto/v1/org_policy_service";
 import { PolicyType as NewPolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import { SQLReviewRuleLevel as OldSQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel as NewSQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 
 // Convert old proto to proto-es
 export const convertOldPolicyToNew = (oldPolicy: OldPolicy): NewPolicy => {
@@ -78,4 +80,27 @@ export const convertNewPolicyTypeToOld = (newType: NewPolicyType): OldPolicyType
     [NewPolicyType.DATA_QUERY]: OldPolicyType.DATA_QUERY,
   };
   return mapping[newType] ?? OldPolicyType.UNRECOGNIZED;
+};
+
+// Convert old SQLReviewRuleLevel enum to new (string to numeric)
+export const convertOldSQLReviewRuleLevelToNew = (oldLevel: OldSQLReviewRuleLevel): NewSQLReviewRuleLevel => {
+  const mapping: Record<OldSQLReviewRuleLevel, NewSQLReviewRuleLevel> = {
+    [OldSQLReviewRuleLevel.LEVEL_UNSPECIFIED]: NewSQLReviewRuleLevel.LEVEL_UNSPECIFIED,
+    [OldSQLReviewRuleLevel.ERROR]: NewSQLReviewRuleLevel.ERROR,
+    [OldSQLReviewRuleLevel.WARNING]: NewSQLReviewRuleLevel.WARNING,
+    [OldSQLReviewRuleLevel.DISABLED]: NewSQLReviewRuleLevel.DISABLED,
+    [OldSQLReviewRuleLevel.UNRECOGNIZED]: NewSQLReviewRuleLevel.LEVEL_UNSPECIFIED,
+  };
+  return mapping[oldLevel] ?? NewSQLReviewRuleLevel.LEVEL_UNSPECIFIED;
+};
+
+// Convert new SQLReviewRuleLevel enum to old (numeric to string)
+export const convertNewSQLReviewRuleLevelToOld = (newLevel: NewSQLReviewRuleLevel): OldSQLReviewRuleLevel => {
+  const mapping: Record<NewSQLReviewRuleLevel, OldSQLReviewRuleLevel> = {
+    [NewSQLReviewRuleLevel.LEVEL_UNSPECIFIED]: OldSQLReviewRuleLevel.LEVEL_UNSPECIFIED,
+    [NewSQLReviewRuleLevel.ERROR]: OldSQLReviewRuleLevel.ERROR,
+    [NewSQLReviewRuleLevel.WARNING]: OldSQLReviewRuleLevel.WARNING,
+    [NewSQLReviewRuleLevel.DISABLED]: OldSQLReviewRuleLevel.DISABLED,
+  };
+  return mapping[newLevel] ?? OldSQLReviewRuleLevel.UNRECOGNIZED;
 };
