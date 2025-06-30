@@ -720,7 +720,10 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	}
 	defer func() {
 		// Reset search_path after query
-		txn.Exec("RESET search_path")
+		_, err := txn.Exec("RESET search_path")
+		if err != nil {
+			slog.Warn("failed to reset search_path after getting columns: %v", log.BBError(err))
+		}
 	}()
 
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
