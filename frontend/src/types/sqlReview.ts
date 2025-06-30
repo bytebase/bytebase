@@ -1,5 +1,5 @@
 import { t, te } from "@/plugins/i18n";
-import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { engineToString } from "@/utils/v1/common-conversions";
 import {
   SQLReviewRuleLevel,
@@ -132,12 +132,23 @@ export interface SQLReviewPolicy {
   resources: string[];
 }
 
-// RuleTemplateV2 is the rule template. Used by the frontend
-export interface RuleTemplateV2 {
+// engine and level are enum strings.
+// we need to convert them first.
+interface RuleTemplateV2Raw {
   type: string;
   category: string;
   engine: string; // keyof typeof Engine
   level: string; // keyof typeof SQLReviewRuleLevel
+  componentList: RuleConfigComponent[];
+  comment?: string;
+}
+
+// RuleTemplateV2 is the rule template. Used by the frontend
+export interface RuleTemplateV2 {
+  type: string;
+  category: string;
+  engine: Engine;
+  level: SQLReviewRuleLevel;
   componentList: RuleConfigComponent[];
   comment?: string;
 }
@@ -164,10 +175,30 @@ export const getRuleMapByEngine = (
     });
     return map;
   }, new Map<Engine, Map<string, RuleTemplateV2>>());
-};;
+};
+
+const convertRuleTemplateV2Raw = (sqlReviewSchema: RuleTemplateV2Raw[]): RuleTemplateV2[] => {
+  return sqlReviewSchema.map((rawRule) => {
+    // Convert engine string key to enum value
+    const engineKey = rawRule.engine as keyof typeof Engine;
+    const engine = Engine[engineKey] ?? Engine.ENGINE_UNSPECIFIED;
+    
+    // Convert level string key to enum value
+    const levelKey = rawRule.level as keyof typeof SQLReviewRuleLevel;
+    const level = SQLReviewRuleLevel[levelKey] ?? SQLReviewRuleLevel.DISABLED;
+    
+    return {
+      ...rawRule,
+      engine,
+      level,
+    };
+  });
+}
 
 export const ruleTemplateMapV2 = getRuleMapByEngine(
-  sqlReviewSchema as RuleTemplateV2[]
+  convertRuleTemplateV2Raw(
+    sqlReviewSchema as RuleTemplateV2Raw[]
+  )
 );
 
 // Build the frontend template list based on schema and template.
@@ -193,16 +224,24 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
     const ruleList: RuleTemplateV2[] = [];
 
     for (const rule of template.ruleList) {
+      // Convert engine string to enum for map lookup
+      const engineKey = rule.engine as keyof typeof Engine;
+      const engine = Engine[engineKey] ?? Engine.ENGINE_UNSPECIFIED;
+      
       const ruleTemplate = ruleTemplateMapV2
-        .get(rule.engine) // Engine is already numeric
+        .get(engine)
         ?.get(rule.type);
       if (!ruleTemplate) {
         continue;
       }
 
+      // Convert level string to enum
+      const levelKey = rule.level as keyof typeof SQLReviewRuleLevel;
+      const level = SQLReviewRuleLevel[levelKey] ?? SQLReviewRuleLevel.DISABLED;
+
       ruleList.push({
         ...ruleTemplate,
-        level: rule.level,
+        level,
         // Using template rule payload to override the component list.
         componentList: ruleTemplate.componentList.map((component) => {
           if (rule.payload && rule.payload[component.key]) {
