@@ -1026,9 +1026,6 @@
       "approved": "Aprobado",
       "rejected": "Rechazado",
       "under-review": "Bajo revisión"
-    },
-    "expermental-page": {
-      "self": "Página de problemas experimentales"
     }
   },
   "plan": {
