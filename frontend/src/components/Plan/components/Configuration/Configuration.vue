@@ -21,23 +21,27 @@ import PreBackupSection from "./PreBackupSection";
 import { providePreBackupSettingContext } from "./PreBackupSection/context";
 
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, events } = usePlanContext();
+const { isCreating, plan, events, issue, rollout } = usePlanContext();
 const { selectedSpec } = usePlanSpecContext();
 
 const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
   provideGhostSettingContext({
     project,
-    plan: plan,
+    plan,
     selectedSpec,
     isCreating,
+    issue,
+    rollout,
   });
 
 const { shouldShow: shouldShowPreBackupSection, events: preBackupEvents } =
   providePreBackupSettingContext({
     project,
-    plan: plan,
+    plan,
     selectedSpec,
     isCreating,
+    issue,
+    rollout,
   });
 
 const shouldShow = computed(() => {

@@ -15,6 +15,7 @@
         v-if="taskRunDetailContext.taskRun"
         :key="taskRunDetailContext.taskRun.name"
         :task-run="taskRunDetailContext.taskRun"
+        :database="databaseForTask(project, selectedTask)"
       />
     </DrawerContent>
   </Drawer>
@@ -28,9 +29,10 @@ import { last } from "lodash-es";
 import { NButton, type DataTableColumn, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useSheetV1Store } from "@/store";
+import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import {
   getDateForPbTimestamp,
   getTimeForPbTimestamp,
@@ -54,6 +56,7 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
+const { project } = useCurrentProjectV1();
 const { selectedTask } = useIssueContext();
 
 const sheet = computedAsync(async () => {

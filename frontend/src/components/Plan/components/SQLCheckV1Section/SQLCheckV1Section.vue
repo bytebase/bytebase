@@ -90,8 +90,8 @@
                 </div>
 
                 <!-- Target Database -->
-                <div class="text-xs text-control font-medium">
-                  Database: {{ formatTarget(advice.target) }}
+                <div>
+                  <DatabaseDisplay :database="advice.target" />
                 </div>
 
                 <!-- Advice Content -->
@@ -120,6 +120,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import {
   CheckCircleIcon,
   AlertCircleIcon,
@@ -128,28 +129,30 @@ import {
 } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { getLocalSheetByName } from "@/components/Plan";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import { getRuleLocalization, ruleTemplateMapV2 } from "@/types";
+import {
+  CheckReleaseRequestSchema,
+  ReleaseFileType,
+} from "@/types/proto-es/v1/release_service_pb";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import {
   Release_File_ChangeType,
   type CheckReleaseResponse_CheckResult,
 } from "@/types/proto/v1/release_service";
-import { CheckReleaseRequestSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
-import { convertNewCheckReleaseResponseToOld, convertOldChangeTypeToNew } from "@/utils/v1/release-conversions";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
+import { getSheetStatement, isNullOrUndefined } from "@/utils";
 import {
-  getSheetStatement,
-  isNullOrUndefined,
-  extractDatabaseResourceName,
-} from "@/utils";
+  convertNewCheckReleaseResponseToOld,
+  convertOldChangeTypeToNew,
+} from "@/utils/v1/release-conversions";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
 import { usePlanSpecContext } from "../SpecDetailView/context";
+import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const { plan } = usePlanContext();
 const { selectedSpec } = usePlanSpecContext();
@@ -264,7 +267,8 @@ const runChecks = async () => {
             changeType: convertOldChangeTypeToNew(
               config.type === Plan_ChangeDatabaseConfig_Type.DATA
                 ? Release_File_ChangeType.DML
-                : Release_File_ChangeType.DDL),
+                : Release_File_ChangeType.DDL
+            ),
           },
         ],
       },
@@ -296,14 +300,6 @@ const getStatusColor = (status: Advice_Status | string) => {
   if (status === Advice_Status.WARNING || status === "WARNING")
     return "text-warning";
   return "text-success";
-};
-
-const formatTarget = (target: string): string => {
-  const { instanceName, databaseName } = extractDatabaseResourceName(target);
-  if (instanceName && databaseName) {
-    return `${databaseName} (${instanceName})`;
-  }
-  return target;
 };
 
 watch(
