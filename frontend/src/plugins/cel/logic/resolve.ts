@@ -30,6 +30,21 @@ import {
 } from "../types";
 import stringifyExpr from "./stringify";
 
+// Helper functions to extract constant values from proto-es oneof patterns
+const getConstantInt64Value = (expr: CELExpr): number => {
+  if (expr.exprKind?.case === "constExpr" && expr.exprKind.value.constantKind?.case === "int64Value") {
+    return Number(expr.exprKind.value.constantKind.value);
+  }
+  return 0;
+};
+
+const getConstantStringValue = (expr: CELExpr): string => {
+  if (expr.exprKind?.case === "constExpr" && expr.exprKind.value.constantKind?.case === "stringValue") {
+    return expr.exprKind.value.constantKind.value;
+  }
+  return "";
+};
+
 // For simplify UI implementation, the "root" condition need to be a group.
 export const wrapAsGroup = (
   expr: SimpleExpr,
@@ -112,14 +127,14 @@ const resolveEqualityExpr = (expr: CELExpr): EqualityExpr => {
     return {
       type: ExprType.Condition,
       operator,
-      args: [factor, valueExpr.exprKind?.case === "constExpr" && valueExpr.exprKind.value.constantKind?.case === "int64Value" ? Number(valueExpr.exprKind.value.constantKind.value) : 0],
+      args: [factor, getConstantInt64Value(valueExpr)],
     };
   }
   if (isStringFactor(factor)) {
     return {
       type: ExprType.Condition,
       operator,
-      args: [factor, valueExpr.exprKind?.case === "constExpr" ? (valueExpr.exprKind.value.constantKind?.case === "stringValue" ? valueExpr.exprKind.value.constantKind.value : "") : ""],
+      args: [factor, getConstantStringValue(valueExpr)],
     };
   }
   throw new Error(`cannot resolve expr ${JSON.stringify(expr)}`);
@@ -135,7 +150,7 @@ const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
     return {
       type: ExprType.Condition,
       operator,
-      args: [factor, valueExpr.exprKind?.case === "constExpr" ? Number(valueExpr.exprKind.value.constantKind?.case === "int64Value" ? valueExpr.exprKind.value.constantKind.value : "0") : 0],
+      args: [factor, getConstantInt64Value(valueExpr)],
     };
   }
   if (isTimestampFactor(factor)) {
@@ -145,7 +160,7 @@ const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
       args: [
         factor,
         valueExpr.exprKind?.case === "callExpr" && valueExpr.exprKind.value.args[0]?.exprKind?.case === "constExpr"
-          ? new Date(valueExpr.exprKind.value.args[0]?.exprKind?.case === "constExpr" && valueExpr.exprKind.value.args[0].exprKind.value.constantKind?.case === "stringValue" ? valueExpr.exprKind.value.args[0].exprKind.value.constantKind.value : "")
+          ? new Date(getConstantStringValue(valueExpr.exprKind.value.args[0]))
           : new Date(),
       ],
     };
@@ -162,7 +177,7 @@ const resolveStringExpr = (expr: CELExpr): StringExpr => {
   return {
     type: ExprType.Condition,
     operator,
-    args: [factor as StringFactor, value.exprKind?.case === "constExpr" ? (value.exprKind.value.constantKind?.case === "stringValue" ? value.exprKind.value.constantKind.value : "") : ""],
+    args: [factor as StringFactor, getConstantStringValue(value)],
   };
 };
 
@@ -186,9 +201,7 @@ const resolveCollectionExpr = (
       args: [
         factor,
         valuesExpr.exprKind?.case === "listExpr"
-          ? valuesExpr.exprKind.value.elements?.map(
-              (constant) => constant.exprKind?.case === "constExpr" ? Number(constant.exprKind.value.constantKind?.case === "int64Value" ? constant.exprKind.value.constantKind.value : "0") ?? 0 : 0
-            ) ?? []
+          ? valuesExpr.exprKind.value.elements?.map(getConstantInt64Value) ?? []
           : [],
       ],
     };
@@ -200,9 +213,7 @@ const resolveCollectionExpr = (
       args: [
         factor,
         valuesExpr.exprKind?.case === "listExpr"
-          ? valuesExpr.exprKind.value.elements?.map(
-              (constant) => constant.exprKind?.case === "constExpr" ? (constant.exprKind.value.constantKind?.case === "stringValue" ? constant.exprKind.value.constantKind.value : "") : ""
-            ) ?? []
+          ? valuesExpr.exprKind.value.elements?.map(getConstantStringValue) ?? []
           : [],
       ],
     };
