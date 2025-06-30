@@ -278,6 +278,13 @@
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado",
     "run-immediately": "Ejecutar tarea inmediatamente",
+    "selected-n-tasks": "{n} tarea seleccionada | {n} tareas seleccionadas",
+    "no-tasks-selected": "No hay tareas seleccionadas",
+    "no-runnable-tasks": "No hay tareas ejecutables",
+    "no-skippable-tasks": "No hay tareas que se puedan omitir",
+    "no-cancellable-tasks": "No hay tareas cancelables",
+    "cross-stage-not-supported": "No se admiten operaciones entre etapas",
+    "no-permission": "No hay permiso para realizar esta acción",
     "scheduled-time": "Hora programada",
     "select-scheduled-time": "Seleccionar hora programada",
     "error": {
