@@ -11,12 +11,14 @@
               :size="'large'"
               :instance="database.instanceResource"
             />
-            <span class="font-medium">{{ database.instanceResource.title }}</span>
+            <span class="font-medium">{{
+              database.instanceResource.title
+            }}</span>
             <ChevronRightIcon class="inline opacity-60 mx-2 w-5" />
             <span>{{ database.databaseName }}</span>
           </div>
         </div>
-        
+
         <!-- Task Status Actions -->
         <TaskStatusActions
           :task="task"
@@ -28,12 +30,21 @@
 
       <div class="flex flex-row gap-x-2">
         <NTag round>{{ semanticTaskType(task.type) }}</NTag>
-        <NTag v-if="schemaVersion" round>{{ schemaVersion }}</NTag>
+        <NTooltip v-if="schemaVersion">
+          <template #trigger>
+            <NTag round>{{ schemaVersion }}</NTag>
+          </template>
+          {{ $t("common.version") }}
+        </NTooltip>
       </div>
     </div>
 
     <!-- Task Runs Table -->
-    <TaskRunTable v-if="taskRuns.length > 0" :task-runs="taskRuns" />
+    <TaskRunTable
+      v-if="taskRuns.length > 0"
+      :task="task"
+      :task-runs="taskRuns"
+    />
 
     <!-- Sheet Statement -->
     <div class="w-full flex-1 min-h-0">
@@ -62,7 +73,7 @@
 import { create } from "@bufbuild/protobuf";
 import { isEqual, sortBy } from "lodash-es";
 import { ChevronRightIcon } from "lucide-vue-next";
-import { NTag } from "naive-ui";
+import { NTag, NTooltip } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
@@ -221,13 +232,13 @@ const handleTaskActionCompleted = async () => {
       console.error("Failed to refresh task runs:", error);
     }
   }
-  
+
   // Refresh rollout data in route mode
   if (isRouteMode.value) {
     const rolloutId = props.rolloutId || (route.params.rolloutId as string);
     const stageId = props.stageId || (route.params.stageId as string);
     const taskId = props.taskId || (route.params.taskId as string);
-    
+
     if (rolloutId && stageId && taskId) {
       try {
         const rolloutName = `projects/${project.value.name.split("/")[1]}/rollouts/${rolloutId}`;
@@ -235,7 +246,7 @@ const handleTaskActionCompleted = async () => {
         const response = await rolloutServiceClientConnect.getRollout(request);
         const rollout = convertNewRolloutToOld(response);
         rolloutRef.value = rollout;
-        
+
         // Update the task reference
         for (const stage of rollout.stages) {
           if (stage.name.endsWith(`/${stageId}`)) {
