@@ -15,15 +15,12 @@ import {
 import { bindingListInIAM, getUserEmailListInBinding } from "@/utils";
 import { extractUserId } from "./common";
 import { extractGroupEmail } from "./group";
-import { convertNewIamPolicyToOld } from "@/utils/v1/iam-conversions";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
-  // Internal state uses proto-es types
   const _workspaceIamPolicy = ref<IamPolicy>(create(IamPolicySchema, {}));
   
-  // Computed property that provides old proto type for compatibility
   const workspaceIamPolicy = computed(() => {
-    return convertNewIamPolicyToOld(_workspaceIamPolicy.value);
+    return _workspaceIamPolicy.value;
   });
 
   // roleMapToUsers returns Map<roles/{role}, Set<users/{email}>>

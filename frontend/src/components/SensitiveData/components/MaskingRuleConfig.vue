@@ -100,7 +100,6 @@ import {
   emptySimpleExpr,
 } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
-import { Expr } from "@/types/proto/google/type/expr";
 import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
 import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto-es/v1/setting_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
@@ -221,10 +220,12 @@ const onConfirm = async () => {
   emit("confirm", {
     ...props.maskingRule,
     semanticType: state.semanticType!,
-    condition: Expr.fromPartial({
+    condition: {
       expression: expressions[0],
       title: state.title,
-    }),
+      description: "",
+      location: "",
+    },
   });
   state.dirty = false;
 };

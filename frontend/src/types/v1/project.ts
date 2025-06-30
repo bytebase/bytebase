@@ -1,8 +1,10 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
-import { IamPolicy } from "../proto/v1/iam_policy";
+import type { IamPolicy } from "../proto-es/v1/iam_policy_pb";
+import { IamPolicySchema } from "../proto-es/v1/iam_policy_pb";
 import { Project } from "../proto/v1/project_service";
+import { create as createProto } from "@bufbuild/protobuf";
 
 export const DEFAULT_PROJECT_UID = 1;
 export const EMPTY_PROJECT_NAME = `projects/${EMPTY_ID}`;
@@ -20,7 +22,7 @@ export const emptyProject = (): ComposedProject => {
       title: "",
       state: convertStateToOld(State.ACTIVE),
     }),
-    iamPolicy: IamPolicy.fromPartial({}),
+    iamPolicy: createProto(IamPolicySchema, {}),
   };
 };
 

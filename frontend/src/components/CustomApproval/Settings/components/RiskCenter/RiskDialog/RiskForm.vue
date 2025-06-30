@@ -107,8 +107,10 @@ import {
   emptySimpleExpr,
 } from "@/plugins/cel";
 import { useSupportedSourceList } from "@/types";
-import { Expr } from "@/types/proto/google/type/expr";
-import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
+import { create } from "@bufbuild/protobuf";
+import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
+import { Risk_Source, RiskSchema } from "@/types/proto-es/v1/risk_service_pb";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
@@ -145,7 +147,7 @@ const { allowAdmin } = context;
 const supportedSourceList = useSupportedSourceList();
 
 const state = reactive<LocalState>({
-  risk: Risk.fromPartial({}),
+  risk: create(RiskSchema, {}),
   expr: wrapAsGroup(emptySimpleExpr()),
 });
 const mode = computed(() => context.dialog.value?.mode ?? "CREATE");
@@ -236,7 +238,7 @@ const handleUpsert = async () => {
     return;
   }
   const expressions = await batchConvertParsedExprToCELString([celexpr]);
-  risk.condition = Expr.fromPartial({
+  risk.condition = create(ExprSchema, {
     expression: expressions[0],
   });
   emit("save", risk);

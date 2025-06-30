@@ -12,7 +12,7 @@ import {
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { type LocalApprovalConfig, type LocalApprovalRule } from "@/types";
-import type { Risk_Source } from "@/types/proto/v1/risk_service";
+import type { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import {
   resolveLocalApprovalConfig,
   buildWorkspaceApprovalSetting,

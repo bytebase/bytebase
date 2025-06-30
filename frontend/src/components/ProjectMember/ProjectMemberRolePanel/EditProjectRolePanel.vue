@@ -140,7 +140,7 @@ import {
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { displayRoleTitle, checkRoleContainsAnyPermission } from "@/utils";

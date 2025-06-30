@@ -125,7 +125,7 @@
     v-if="state.showAddMemberPanel"
     :project="project"
     :bindings="[
-      Binding.fromPartial({
+      create(BindingSchema, {
         members: [binding.binding],
       }),
     ]"
@@ -135,6 +135,7 @@
 
 <script lang="tsx" setup>
 import { cloneDeep, isEqual } from "lodash-es";
+import { create } from "@bufbuild/protobuf";
 import { Building2Icon, PenIcon, TrashIcon } from "lucide-vue-next";
 import { NButton, NTag, NTooltip, NDataTable, useDialog } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
@@ -158,7 +159,8 @@ import {
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType, PRESET_ROLES } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
 import {
   displayRoleTitle,
@@ -323,7 +325,7 @@ const getDataTableColumns = (
             text
             class="cursor-pointer opacity-60 hover:opacity-100"
             onClick={() => {
-              editingBinding.value = Binding.fromPartial({
+              editingBinding.value = create(BindingSchema, {
                 role: role,
                 members: [props.binding.binding],
                 condition: singleBinding.rawBinding.condition,
@@ -479,7 +481,7 @@ const handleDeleteCondition = async (
           .map((b) => b.databaseResource) as DatabaseResource[];
 
         policy.bindings.push(
-          Binding.fromPartial({
+          create(BindingSchema, {
             role: item.role,
             members: [props.binding.binding],
             condition: buildConditionExpr({

@@ -2,26 +2,22 @@ import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { riskServiceClientConnect } from "@/grpcweb";
-import type { Risk as OldRisk } from "@/types/proto/v1/risk_service";
-import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
+import type { 
+  Risk,
+} from "@/types/proto-es/v1/risk_service_pb";
 import {
   CreateRiskRequestSchema,
   DeleteRiskRequestSchema,
   ListRisksRequestSchema,
   UpdateRiskRequestSchema,
 } from "@/types/proto-es/v1/risk_service_pb";
-import {
-  convertOldRiskToNew,
-  convertNewRiskToOld,
-} from "@/utils/v1/risk-conversions";
 
 export const useRiskStore = defineStore("risk", () => {
   // Internal state uses proto-es types
   const _riskList = ref<Risk[]>([]);
   
-  // Computed property provides old proto type for compatibility
   const riskList = computed(() => {
-    return _riskList.value.map(convertNewRiskToOld);
+    return _riskList.value;
   });
 
   const fetchRiskList = async () => {
@@ -33,13 +29,12 @@ export const useRiskStore = defineStore("risk", () => {
     return riskList.value;
   };
 
-  const upsertRisk = async (risk: OldRisk) => {
-    const newRisk = convertOldRiskToNew(risk);
-    const existedRisk = _riskList.value.find((r) => r.name === newRisk.name);
+  const upsertRisk = async (risk: Risk) => {
+    const existedRisk = _riskList.value.find((r) => r.name === risk.name);
     if (existedRisk) {
       // update
       const request = create(UpdateRiskRequestSchema, {
-        risk: newRisk,
+        risk: risk,
         updateMask: { paths: ["title", "level", "active", "condition", "source"] },
       });
       const updated = await riskServiceClientConnect.updateRisk(request);
@@ -47,14 +42,14 @@ export const useRiskStore = defineStore("risk", () => {
     } else {
       // create
       const request = create(CreateRiskRequestSchema, {
-        risk: newRisk,
+        risk: risk,
       });
       const created = await riskServiceClientConnect.createRisk(request);
       _riskList.value.push(created);
     }
   };
 
-  const deleteRisk = async (risk: OldRisk) => {
+  const deleteRisk = async (risk: Risk) => {
     const request = create(DeleteRiskRequestSchema, {
       name: risk.name,
     });

@@ -4,8 +4,8 @@ import { createContextValues } from "@connectrpc/connect";
 import { celServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { BatchParseRequestSchema } from "@/types/proto-es/v1/cel_service_pb";
-import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { convertNewExprToOld } from "@/utils/v1/cel-conversions";
+import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import { ExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import type { ConditionExpr, ConditionGroupExpr, SimpleExpr } from "../types";
 import {
   isEqualityExpr,
@@ -42,14 +42,7 @@ export const buildCELExpr = async (
       const response = await celServiceClientConnect.batchParse(request, {
         contextValues: createContextValues().set(silentContextKey, true),
       });
-      // Convert the first expression from new to old format
-      const newExpr = head(response.expressions);
-      const celExpr = newExpr ? convertNewExprToOld(newExpr) : undefined;
-      if (celExpr) {
-        return celExpr;
-      } else {
-        return undefined;
-      }
+      return head(response.expressions);
     }
     throw new Error(`unexpected type "${String(expr)}"`);
   };
@@ -129,9 +122,9 @@ export const buildCELExpr = async (
 };
 
 const wrapCELExpr = (object: any): CELExpr => {
-  return CELExpr.fromPartial({
-    id: seq.next(),
-    ...object,
+  return create(ExprSchema, {
+    id: BigInt(seq.next()),
+    exprKind: object,
   });
 };
 
@@ -139,15 +132,17 @@ const wrapCELExpr = (object: any): CELExpr => {
 const wrapConstExpr = (value: number | string | Date): CELExpr => {
   if (typeof value === "string") {
     return wrapCELExpr({
-      constExpr: {
+      case: "constExpr",
+      value: {
         stringValue: value,
       },
     });
   }
   if (typeof value === "number") {
     return wrapCELExpr({
-      constExpr: {
-        int64Value: value,
+      case: "constExpr",
+      value: {
+        int64Value: BigInt(value),
       },
     });
   }
@@ -156,7 +151,8 @@ const wrapConstExpr = (value: number | string | Date): CELExpr => {
 
 const wrapListExpr = (values: string[] | number[]): CELExpr => {
   return wrapCELExpr({
-    listExpr: {
+    case: "listExpr",
+    value: {
       elements: values.map(wrapConstExpr),
     },
   });
@@ -164,7 +160,8 @@ const wrapListExpr = (values: string[] | number[]): CELExpr => {
 
 const wrapIdentExpr = (name: string): CELExpr => {
   return wrapCELExpr({
-    identExpr: {
+    case: "identExpr",
+    value: {
       name,
     },
   });
@@ -183,6 +180,7 @@ const wrapCallExpr = (
     object.target = target;
   }
   return wrapCELExpr({
-    callExpr: object,
+    case: "callExpr",
+    value: object,
   });
 };
