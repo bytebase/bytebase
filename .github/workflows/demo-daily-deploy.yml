@@ -1,0 +1,10 @@
+name: Demo Daily Deploy
+on:
+  schedule:
+    - cron: '0 0 * * *'
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Deploy
+        run: /usr/bin/curl https://api.render.com/deploy/srv-cqq0vm8gph6c7382o34g?key=mqDZc1p_NX4
