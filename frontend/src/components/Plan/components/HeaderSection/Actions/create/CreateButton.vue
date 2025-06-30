@@ -28,12 +28,12 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { create } from "@bufbuild/protobuf";
 import {
   ErrorList,
   useSpecsValidation,
@@ -44,12 +44,10 @@ import {
 } from "@/components/Plan/logic";
 import { usePlanContext } from "@/components/Plan/logic";
 import { planServiceClientConnect } from "@/grpcweb";
-import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
@@ -58,6 +56,11 @@ import {
   extractSheetUID,
   hasProjectPermissionV2,
 } from "@/utils";
+import { convertEngineToOld } from "@/utils/v1/common-conversions";
+import {
+  convertOldPlanToNew,
+  convertNewPlanToOld,
+} from "@/utils/v1/plan-conversions";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -98,7 +101,7 @@ const doCreatePlan = async () => {
     if (!createdPlan) return;
 
     nextTick(() => {
-      router.push({
+      router.replace({
         name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
           projectId: extractProjectResourceName(createdPlan.name),
@@ -130,7 +133,9 @@ const createSheets = async () => {
       // The sheet is pending create
       const sheet = getLocalSheetByName(config.sheet);
       const engine = await databaseEngineForSpec(spec);
-      sheet.engine = convertEngineToOld((engine ?? Engine.ENGINE_UNSPECIFIED) as Engine);
+      sheet.engine = convertEngineToOld(
+        (engine ?? Engine.ENGINE_UNSPECIFIED) as Engine
+      );
       pendingCreateSheetMap.set(sheet.name, sheet);
     }
   }

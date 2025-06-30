@@ -9,12 +9,12 @@
     />
 
     <!-- Panels -->
+    <IssueCreationActionPanel
+      :action="pendingIssueCreationAction"
+      @close="pendingIssueCreationAction = undefined"
+    />
 
     <template v-if="issue">
-      <IssueCreationActionPanel
-        :action="pendingIssueCreationAction"
-        @close="pendingIssueCreationAction = undefined"
-      />
       <IssueReviewActionPanel
         :action="pendingReviewAction"
         @close="pendingReviewAction = undefined"

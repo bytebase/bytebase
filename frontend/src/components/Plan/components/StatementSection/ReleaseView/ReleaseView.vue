@@ -23,15 +23,20 @@
           v-if="release && isValidReleaseName(release.name)"
           size="small"
           tag="a"
+          text
           :href="`/${release.name}`"
           target="_blank"
+          icon-placement="right"
         >
           {{ $t("common.view") }}
+          <template #icon>
+            <ExternalLinkIcon class="w-4 h-4" />
+          </template>
         </NButton>
       </div>
     </div>
 
-    <div v-if="release" class="border rounded-md p-4 bg-gray-50">
+    <div v-if="release" class="border rounded-md px-4 py-3 bg-gray-50">
       <div class="space-y-3">
         <div class="flex items-start justify-between">
           <div>
@@ -105,7 +110,9 @@
           </h4>
           <div class="text-xs">
             <span class="text-gray-500"
-              >{{ getVCSTypeText(convertVCSTypeToNew(release.vcsSource.vcsType)) }}:</span
+              >{{
+                getVCSTypeText(convertVCSTypeToNew(release.vcsSource.vcsType))
+              }}:</span
             >
             <a
               v-if="release.vcsSource.url"
@@ -147,7 +154,7 @@
 
 <script setup lang="ts">
 import dayjs from "dayjs";
-import { PackageIcon } from "lucide-vue-next";
+import { PackageIcon, ExternalLinkIcon } from "lucide-vue-next";
 import { NAlert, NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";

@@ -11,11 +11,9 @@
               :size="'large'"
               :instance="database.instanceResource"
             />
-            <span class="font-medium">{{
-              database.instanceResource.title
-            }}</span>
+            <span>{{ database.instanceResource.title }}</span>
             <ChevronRightIcon class="inline opacity-60 mx-2 w-5" />
-            <span>{{ database.databaseName }}</span>
+            <span class="font-medium">{{ database.databaseName }}</span>
           </div>
         </div>
 
