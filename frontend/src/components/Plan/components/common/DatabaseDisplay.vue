@@ -57,7 +57,6 @@ const instanceDisplayName = computed(() => {
 });
 
 const databaseDisplayName = computed(() => {
-  // Extract from target
   const { databaseName } = extractDatabaseResourceName(props.database);
   return databaseName || "Unknown Database";
 });
