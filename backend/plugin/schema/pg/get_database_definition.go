@@ -1081,25 +1081,11 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 		}
 
 		// Handle default values
-		if column.DefaultExpression != "" {
+		if column.Default != "" {
 			if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
 				return err
 			}
-			if _, err := io.WriteString(out, column.DefaultExpression); err != nil {
-				return err
-			}
-		} else if column.Default != "" {
-			if _, err := io.WriteString(out, ` DEFAULT '`); err != nil {
-				return err
-			}
 			if _, err := io.WriteString(out, column.Default); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, `'`); err != nil {
-				return err
-			}
-		} else if column.DefaultNull {
-			if _, err := io.WriteString(out, ` DEFAULT NULL`); err != nil {
 				return err
 			}
 		}

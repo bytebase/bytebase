@@ -36,6 +36,19 @@ func NewColumnDefaultMigrator(store *store.Store, supportedEngines []storepb.Eng
 	}
 }
 
+// EnginesNeedingMigration returns the list of engines that currently need column default migration.
+// This function dynamically builds the list based on common.EngineNeedsColumnDefaultMigration.
+func EnginesNeedingMigration() []storepb.Engine {
+	var engines []storepb.Engine
+	// Check all known engines
+	for _, engine := range storepb.Engine_value {
+		if common.EngineNeedsColumnDefaultMigration(storepb.Engine(engine)) {
+			engines = append(engines, storepb.Engine(engine))
+		}
+	}
+	return engines
+}
+
 // Run starts the ColumnDefaultMigrator.
 func (m *ColumnDefaultMigrator) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -106,8 +119,9 @@ func (m *ColumnDefaultMigrator) migrate(ctx context.Context) error {
 				continue
 			}
 
-			// Update metadata and todo in a single transaction.
-			if err := m.store.UpdateDBSchemaMetadataAndTodo(ctx, dbSchema.ID, string(marshaled), false); err != nil {
+			// Update metadata and todo in a single transaction, only if todo is still true.
+			// This prevents race conditions with the sync process.
+			if err := m.store.UpdateDBSchemaMetadataIfTodo(ctx, dbSchema.ID, string(marshaled)); err != nil {
 				slog.Error("Failed to update db schema metadata and todo", slog.Int("db_schema_id", dbSchema.ID), slog.String("db_name", dbSchema.DBName), log.BBError(err))
 				continue
 			}
