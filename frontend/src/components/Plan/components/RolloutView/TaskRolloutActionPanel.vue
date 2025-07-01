@@ -9,14 +9,7 @@
     <template #default>
       <div class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1">
         <!-- Issue Approval Alert -->
-        <div
-          v-if="
-            issueApprovalStatus.hasIssue &&
-            !issueApprovalStatus.isApproved &&
-            props.action === 'RUN'
-          "
-          class="shrink-0"
-        >
+        <div v-if="shouldShowForceRollout" class="shrink-0">
           <NAlert
             type="warning"
             :title="
@@ -167,14 +160,7 @@
     <template #footer>
       <div class="w-full flex flex-row justify-between items-center gap-x-2">
         <!-- Force rollout checkbox -->
-        <div
-          v-if="
-            !issueApprovalStatus.isApproved &&
-            issueApprovalStatus.hasIssue &&
-            props.action === 'RUN'
-          "
-          class="flex items-center"
-        >
+        <div v-if="shouldShowForceRollout" class="flex items-center">
           <NCheckbox v-model:checked="forceRollout" :disabled="state.loading">
             {{ $t("rollout.force-rollout") }}
           </NCheckbox>
@@ -312,6 +298,15 @@ const issueApprovalStatus = computed(() => {
     hasIssue: true,
     status,
   };
+});
+
+const shouldShowForceRollout = computed(() => {
+  // Show force rollout checkbox only for RUN action with issue approval
+  return (
+    props.action === "RUN" &&
+    issueApprovalStatus.value.hasIssue &&
+    !issueApprovalStatus.value.isApproved
+  );
 });
 
 // Extract stage from target
