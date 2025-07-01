@@ -182,7 +182,7 @@ import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const { t } = useI18n();
-const { planCheckRunList } = usePlanContext();
+const { planCheckRuns } = usePlanContext();
 
 const isLoading = ref(false);
 const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(undefined);
@@ -192,7 +192,7 @@ const hasFilters = computed(() => {
 });
 
 const filteredCheckRuns = computed(() => {
-  return planCheckRunList.value.filter((checkRun) => {
+  return planCheckRuns.value.filter((checkRun) => {
     // Filter by status - check if any result matches the selected status
     if (selectedStatus.value !== undefined) {
       const hasMatchingResult = checkRun.results.some(
@@ -231,7 +231,7 @@ const statusCounts = computed(() => {
     error: 0,
   };
 
-  for (const checkRun of planCheckRunList.value) {
+  for (const checkRun of planCheckRuns.value) {
     for (const result of checkRun.results) {
       switch (result.status) {
         case PlanCheckRun_Result_Status.SUCCESS:

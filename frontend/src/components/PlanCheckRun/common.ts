@@ -33,7 +33,7 @@ export type PlanCheckRunSummary = {
 };
 
 export const planCheckRunSummaryForCheckRunList = (
-  planCheckRunList: PlanCheckRun[]
+  planCheckRuns: PlanCheckRun[]
 ) => {
   const summary: PlanCheckRunSummary = {
     runningCount: 0,
@@ -42,11 +42,11 @@ export const planCheckRunSummaryForCheckRunList = (
     errorCount: 0,
   };
 
-  planCheckRunList = planCheckRunList.filter(
+  planCheckRuns = planCheckRuns.filter(
     (check) => !HiddenPlanCheckTypes.has(check.type)
   );
 
-  const listGroupByTypeTargetSheet = planCheckRunList.reduce(
+  const listGroupByTypeTargetSheet = planCheckRuns.reduce(
     (acc, checkRun) => {
       const key = `${checkRun.type}-${checkRun.target}-${checkRun.sheet}`;
       if (!acc[key]) {

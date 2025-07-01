@@ -182,7 +182,7 @@ import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { plan, planCheckRunList } = usePlanContext();
+const { plan, planCheckRuns } = usePlanContext();
 const { selectedSpec } = usePlanSpecContext();
 
 const isRunningChecks = ref(false);
@@ -194,12 +194,11 @@ const show = computed(() => {
 });
 
 const checkRunsForSpec = computed(() => {
-  return planCheckRunListForSpec(planCheckRunList.value, selectedSpec.value);
+  return planCheckRunListForSpec(planCheckRuns.value, selectedSpec.value);
 });
 
 const summary = computed(() => {
   const result = { success: 0, warning: 0, error: 0 };
-
   for (const checkRun of checkRunsForSpec.value) {
     const status = getCheckRunStatus(checkRun);
     if (status === "ERROR") {
@@ -210,7 +209,6 @@ const summary = computed(() => {
       result.success++;
     }
   }
-
   return result;
 });
 

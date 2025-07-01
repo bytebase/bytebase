@@ -11,7 +11,7 @@ import { extractPlanCheckRunUID } from "@/utils";
 
 export const useSQLAdviceMarkers = (
   isCreating: Ref<boolean>,
-  planCheckRunList?: Ref<PlanCheckRun[]>,
+  planCheckRuns?: Ref<PlanCheckRun[]>,
   advices?: Ref<Advice[] | undefined>
 ) => {
   const markers = computed(() => {
@@ -33,14 +33,14 @@ export const useSQLAdviceMarkers = (
         };
       });
     } else {
-      if (!planCheckRunList) return [];
-      if (!planCheckRunList.value) return [];
+      if (!planCheckRuns) return [];
+      if (!planCheckRuns.value) return [];
       const types: PlanCheckRun_Type[] = [
         PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
       ];
       return types.flatMap((type) => {
         return getLatestAdviceOptions(
-          planCheckRunList.value.filter((checkRun) => checkRun.type === type)
+          planCheckRuns.value.filter((checkRun) => checkRun.type === type)
         );
       });
     }
@@ -48,8 +48,8 @@ export const useSQLAdviceMarkers = (
   return { markers };
 };
 
-const getLatestAdviceOptions = (planCheckRunList: PlanCheckRun[]) => {
-  const latest = maxBy(planCheckRunList, (checkRun) =>
+const getLatestAdviceOptions = (planCheckRuns: PlanCheckRun[]) => {
+  const latest = maxBy(planCheckRuns, (checkRun) =>
     parseInt(extractPlanCheckRunUID(checkRun.name), 10)
   );
   if (!latest) {

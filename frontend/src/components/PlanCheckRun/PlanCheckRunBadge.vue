@@ -53,7 +53,7 @@ import { extractPlanCheckRunUID } from "@/utils";
 import { planCheckRunResultStatus } from "./common";
 
 const props = defineProps<{
-  planCheckRunList: PlanCheckRun[];
+  planCheckRuns: PlanCheckRun[];
   type: PlanCheckRun_Type;
   clickable?: boolean;
   selected?: boolean;
@@ -67,7 +67,7 @@ const { t } = useI18n();
 
 const latestPlanCheckRun = computed(() => {
   // Get the latest PlanCheckRun by UID.
-  return maxBy(props.planCheckRunList, (check) =>
+  return maxBy(props.planCheckRuns, (check) =>
     Number(extractPlanCheckRunUID(check.name))
   )!;
 });

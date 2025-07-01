@@ -17,10 +17,11 @@
             @click="handleTabChange(tab)"
           />
 
-          <!-- Suffix slot for Specifications tab -->
-          <template v-if="tabKey === TabKey.Specifications" #suffix>
-            <div class="pr-4 flex flex-row justify-end items-center">
-              <CurrentSpecSelector />
+          <!-- Suffix slot -->
+          <template #suffix>
+            <div class="pr-4 flex flex-row justify-end items-center gap-4">
+              <CurrentSpecSelector v-if="tabKey === TabKey.Specifications" />
+              <RefreshIndicator v-if="!isCreating" />
             </div>
           </template>
         </NTabs>
@@ -50,6 +51,7 @@ import {
 } from "@/components/Plan";
 import { HeaderSection } from "@/components/Plan/components";
 import CurrentSpecSelector from "@/components/Plan/components/CurrentSpecSelector.vue";
+import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
 import { useSpecsValidation } from "@/components/Plan/components/common";
 import { gotoSpec } from "@/components/Plan/components/common/utils";
 import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
@@ -86,7 +88,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { isCreating, plan, planCheckRunList, issue, rollout, isInitializing } =
+const { isCreating, plan, planCheckRuns, issue, rollout, isInitializing } =
   useInitializePlan(
     toRef(props, "projectId"),
     toRef(props, "planId"),
@@ -109,7 +111,7 @@ providePlanContext(
   {
     isCreating,
     plan,
-    planCheckRunList,
+    planCheckRuns,
     issue,
     rollout,
     ...planBaseContext,
@@ -211,7 +213,12 @@ const tabRender = (tab: TabKey) => {
 };
 
 const handleTabChange = (tab: TabKey) => {
-  const params = route.params;
+  if (!route || !route.params) {
+    console.warn("Route or route.params is undefined");
+    return;
+  }
+
+  const params = { ...route.params };
   if (isCreating.value) {
     params.planId = "create";
   } else {
@@ -224,11 +231,13 @@ const handleTabChange = (tab: TabKey) => {
     }
   }
 
+  const query = route.query || {};
+
   if (tab === TabKey.Overview) {
     router.push({
       name: PROJECT_V1_ROUTE_PLAN_DETAIL,
       params: params,
-      query: route.query,
+      query: query,
     });
   } else if (tab === TabKey.Specifications) {
     // Auto select the first spec when switching to Specifications tab.
@@ -239,26 +248,26 @@ const handleTabChange = (tab: TabKey) => {
       router.push({
         name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
         params: params,
-        query: route.query,
+        query: query,
       });
     }
   } else if (tab === TabKey.Checks) {
     router.push({
       name: PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
       params: params,
-      query: route.query,
+      query: query,
     });
   } else if (tab === TabKey.Review) {
     router.push({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
       params: params,
-      query: route.query,
+      query: query,
     });
   } else if (tab === TabKey.Rollout) {
     router.push({
       name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
       params: params,
-      query: route.query,
+      query: query,
     });
   }
 };
