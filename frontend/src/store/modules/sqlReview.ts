@@ -21,15 +21,11 @@ import {
 import {
   PolicyType,
   TagPolicySchema,
+  SQLReviewRuleSchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import { ReviewConfig } from "@/types/proto/v1/review_config_service";
-import {
-  convertNewReviewConfigToOld,
-  convertOldReviewConfigToNew,
-} from "@/utils/v1/review-config-conversions";
+import type { ReviewConfig } from "@/types/proto-es/v1/review_config_service_pb";
+import { ReviewConfigSchema } from "@/types/proto-es/v1/review_config_service_pb";
 import { usePolicyV1Store } from "./v1/policy";
-import { convertEngineToNew, convertEngineToOld } from "@/utils/v1/common-conversions";
-import { convertOldSQLReviewRuleLevelToNew, convertNewSQLReviewRuleLevelToOld } from "@/utils/v1/org-policy-conversions";
 
 const reviewConfigTagName = "bb.tag.review_config";
 
@@ -75,8 +71,8 @@ const convertToSQLReviewPolicy = (
   for (const r of reviewConfig.rules) {
     const rule: SchemaPolicyRule = {
       type: r.type,
-      level: convertOldSQLReviewRuleLevelToNew(r.level),
-      engine: convertEngineToNew(r.engine),
+      level: r.level,
+      engine: r.engine,
       comment: r.comment,
     };
     if (r.payload && r.payload !== "{}") {
@@ -183,7 +179,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       ruleList?: SchemaPolicyRule[];
       resources?: string[];
     }) {
-      const patch: ReviewConfig = ReviewConfig.fromPartial({
+      const patch: ReviewConfig = create(ReviewConfigSchema, {
         name: id,
       });
       const updateMask: string[] = [];
@@ -198,18 +194,18 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       if (ruleList) {
         updateMask.push("rules");
         patch.rules = ruleList.map((r) => {
-          return {
+          return create(SQLReviewRuleSchema, {
             type: r.type as string,
-            level: convertNewSQLReviewRuleLevelToOld(r.level),
-            engine: convertEngineToOld(r.engine),
+            level: r.level,
+            engine: r.engine,
             comment: r.comment,
             payload: r.payload ? JSON.stringify(r.payload) : "{}",
-          };
+          });
         });
       }
 
       const request = create(UpdateReviewConfigRequestSchema, {
-        reviewConfig: convertOldReviewConfigToNew(patch),
+        reviewConfig: patch,
         updateMask: { paths: updateMask },
         allowMissing: true,
       });
@@ -225,8 +221,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         updated.resources = resources;
       }
 
-      const oldUpdated = convertNewReviewConfigToOld(updated);
-      const reviewPolicy = convertToSQLReviewPolicy(oldUpdated);
+      const reviewPolicy = convertToSQLReviewPolicy(updated);
       if (!reviewPolicy) {
         throw new Error(`invalid review config ${JSON.stringify(updated)}`);
       }
@@ -251,8 +246,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
 
       const reviewPolicyList: SQLReviewPolicy[] = [];
       for (const config of reviewConfigs) {
-        const oldConfig = convertNewReviewConfigToOld(config);
-        const reviewPolicy = convertToSQLReviewPolicy(oldConfig);
+        const reviewPolicy = convertToSQLReviewPolicy(config);
         if (reviewPolicy) {
           reviewPolicyList.push(reviewPolicy);
         }
@@ -275,8 +269,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       if (!reviewConfig) {
         return;
       }
-      const oldReviewConfig = convertNewReviewConfigToOld(reviewConfig);
-      const reviewPolicy = convertToSQLReviewPolicy(oldReviewConfig);
+      const reviewPolicy = convertToSQLReviewPolicy(reviewConfig);
       if (reviewPolicy) {
         this.setReviewPolicy(reviewPolicy);
       }
