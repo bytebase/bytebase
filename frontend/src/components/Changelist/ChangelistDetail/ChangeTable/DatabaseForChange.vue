@@ -13,7 +13,7 @@
 import { asyncComputed } from "@vueuse/core";
 import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto-es/v1/changelist_service_pb";
 import { extractDatabaseResourceName, isChangelogChangeSource } from "@/utils";
 
 const props = defineProps<{

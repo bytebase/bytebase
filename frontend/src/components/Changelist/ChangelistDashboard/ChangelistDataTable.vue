@@ -23,8 +23,8 @@ import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useUserStore } from "@/store";
-import { getDateForPbTimestamp } from "@/types";
-import type { Changelist } from "@/types/proto/v1/changelist_service";
+import { getDateForPbTimestampProtoEs } from "@/types";
+import type { Changelist } from "@/types/proto-es/v1/changelist_service_pb";
 import { extractChangelistResourceName } from "@/utils";
 import { projectForChangelist } from "../ChangelistDetail/common";
 
@@ -76,7 +76,7 @@ const columnList = computed((): ChangelistDataTableColumn[] => {
         width: 256,
         render: (changelist) => {
           return (
-            <HumanizeDate date={getDateForPbTimestamp(changelist.updateTime)} />
+            <HumanizeDate date={getDateForPbTimestampProtoEs(changelist.updateTime)} />
           );
         },
       },

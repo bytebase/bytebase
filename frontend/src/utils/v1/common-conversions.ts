@@ -20,8 +20,14 @@ import {
 } from "@/types/proto/google/protobuf/duration"
 
 import {
+  Timestamp as OldTimestamp,
+} from "@/types/proto/google/protobuf/timestamp";
+
+import {
   DurationSchema as NewDurationSchema,
   type Duration as NewDuration,
+  TimestampSchema as NewTimestampSchema,
+  type Timestamp as NewTimestamp,
 } from "@bufbuild/protobuf/wkt"
 
 // Expr type imports
@@ -464,5 +470,25 @@ export const convertExprToOld = (expr: NewExpr): OldExpr => {
     title: expr.title,
     description: expr.description,
     location: expr.location,
+  });
+};
+
+/**
+ * Convert proto-es Timestamp to old proto Timestamp
+ */
+export const convertTimestampToOld = (timestamp: NewTimestamp): OldTimestamp => {
+  return OldTimestamp.fromPartial({
+    seconds: Number(timestamp.seconds),
+    nanos: timestamp.nanos,
+  });
+};
+
+/**
+ * Convert old proto Timestamp to proto-es Timestamp
+ */
+export const convertTimestampToNew = (timestamp: OldTimestamp): NewTimestamp => {
+  return create(NewTimestampSchema, {
+    seconds: timestamp.seconds.toBigInt(),
+    nanos: timestamp.nanos,
   });
 };

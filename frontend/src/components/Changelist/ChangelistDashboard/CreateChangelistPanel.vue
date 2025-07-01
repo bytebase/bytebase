@@ -154,6 +154,7 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { create as createProto } from "@bufbuild/protobuf";
 import { BBSpin } from "@/bbkit";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import {
@@ -166,9 +167,10 @@ import { pushNotification, useChangelistStore, useSheetV1Store } from "@/store";
 import type { ResourceId } from "@/types";
 import type { ComposedProject } from "@/types";
 import {
-  Changelist,
-  Changelist_Change as Change,
-} from "@/types/proto/v1/changelist_service";
+  ChangelistSchema,
+  Changelist_ChangeSchema as ChangeSchema,
+  CreateChangelistRequestSchema,
+} from "@/types/proto-es/v1/changelist_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { convertEngineToOld } from "@/utils/v1/common-conversions";
@@ -282,19 +284,21 @@ const doCreate = async () => {
       })
     );
     const changes = createdSheets.map((sheet) =>
-      Change.fromPartial({
+      createProto(ChangeSchema, {
         sheet: sheet.name,
       })
     );
 
-    const created = await useChangelistStore().createChangelist({
-      parent: projectName.value,
-      changelist: Changelist.fromPartial({
-        description: title.value,
-        changes,
-      }),
-      changelistId: resourceId.value,
-    });
+    const created = await useChangelistStore().createChangelist(
+      createProto(CreateChangelistRequestSchema, {
+        parent: projectName.value,
+        changelist: createProto(ChangelistSchema, {
+          description: title.value,
+          changes,
+        }),
+        changelistId: resourceId.value,
+      })
+    );
     showCreatePanel.value = false;
     pushNotification({
       module: "bytebase",

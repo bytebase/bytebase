@@ -14,7 +14,7 @@ import { NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto-es/v1/changelist_service_pb";
 import DatabaseForChange from "./DatabaseForChange.vue";
 import RemoveChangeButton from "./RemoveChangeButton.vue";
 import ReorderButtons from "./ReorderButtons.vue";

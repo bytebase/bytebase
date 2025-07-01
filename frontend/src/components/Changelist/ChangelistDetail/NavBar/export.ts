@@ -6,7 +6,7 @@ import {
   getDateForPbTimestampProtoEs,
   type Changelist_Change_Source as ChangeSource,
 } from "@/types";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto-es/v1/changelist_service_pb";
 import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import {
   escapeFilename,

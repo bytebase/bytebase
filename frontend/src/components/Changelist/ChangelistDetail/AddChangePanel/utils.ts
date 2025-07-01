@@ -1,10 +1,11 @@
 import { reactive } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { useLocalSheetStore } from "@/store";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import { Changelist_ChangeSchema } from "@/types/proto-es/v1/changelist_service_pb";
 
 export const emptyRawSQLChange = (project: string) => {
   return reactive(
-    Change.fromPartial({
+    create(Changelist_ChangeSchema, {
       sheet: `${project}/sheets/${useLocalSheetStore().nextUID()}`,
       source: "",
     })

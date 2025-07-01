@@ -7,10 +7,9 @@ import { releaseServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef, ComposedRelease, Pagination } from "@/types";
 import { isValidReleaseName, unknownRelease, unknownUser } from "@/types";
-import type { DeepPartial, Release } from "@/types/proto/v1/release_service";
-import { Release as ReleaseProto } from "@/types/proto/v1/release_service";
+import type { Release } from "@/types/proto-es/v1/release_service_pb";
+import { ReleaseSchema } from "@/types/proto-es/v1/release_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { 
   GetReleaseRequestSchema,
   ListReleasesRequestSchema,
@@ -18,7 +17,6 @@ import {
   DeleteReleaseRequestSchema,
   UndeleteReleaseRequestSchema
 } from "@/types/proto-es/v1/release_service_pb";
-import { convertNewReleaseToOld, convertOldReleaseToNew } from "@/utils/v1/release-conversions";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { useUserStore } from "./user";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";
@@ -43,8 +41,7 @@ export const useReleaseStore = defineStore("release", () => {
       showDeleted: Boolean(showDeleted),
     });
     const resp = await releaseServiceClientConnect.listReleases(request);
-    const oldReleases = resp.releases.map(convertNewReleaseToOld);
-    const composedReleaseList = await batchComposeRelease(oldReleases);
+    const composedReleaseList = await batchComposeRelease(resp.releases);
     composedReleaseList.forEach((release) => {
       releaseMapByName.set(release.name, release);
     });
@@ -59,8 +56,7 @@ export const useReleaseStore = defineStore("release", () => {
     const response = await releaseServiceClientConnect.getRelease(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    const release = convertNewReleaseToOld(response);
-    const [composedRelease] = await batchComposeRelease([release]);
+    const [composedRelease] = await batchComposeRelease([response]);
     releaseMapByName.set(composedRelease.name, composedRelease);
     return composedRelease;
   };
@@ -74,20 +70,20 @@ export const useReleaseStore = defineStore("release", () => {
   };
 
   const updateRelase = async (
-    release: DeepPartial<Release>,
+    release: Partial<Release>,
     updateMask: string[]
   ) => {
-    // Convert the partial release to the new format for the request
-    const fullRelease = ReleaseProto.fromPartial(release);
-    const newRelease = convertOldReleaseToNew(fullRelease);
+    const fullRelease = {
+      ...create(ReleaseSchema, {}),
+      ...release,
+    };
     
     const request = create(UpdateReleaseRequestSchema, {
-      release: newRelease,
+      release: fullRelease,
       updateMask: { paths: updateMask },
     });
     const resp = await releaseServiceClientConnect.updateRelease(request);
-    const oldRelease = convertNewReleaseToOld(resp);
-    const composedRelease = await batchComposeRelease([oldRelease]);
+    const composedRelease = await batchComposeRelease([resp]);
     releaseMapByName.set(composedRelease[0].name, composedRelease[0]);
     return composedRelease[0];
   };
@@ -96,15 +92,14 @@ export const useReleaseStore = defineStore("release", () => {
     const request = create(DeleteReleaseRequestSchema, { name });
     await releaseServiceClientConnect.deleteRelease(request);
     if (releaseMapByName.get(name)) {
-      releaseMapByName.get(name)!.state = convertStateToOld(State.DELETED);
+      releaseMapByName.get(name)!.state = State.DELETED;
     }
   };
 
   const undeleteRelease = async (name: string) => {
     const request = create(UndeleteReleaseRequestSchema, { name });
     const response = await releaseServiceClientConnect.undeleteRelease(request);
-    const release = convertNewReleaseToOld(response);
-    const composedRelease = await batchComposeRelease([release]);
+    const composedRelease = await batchComposeRelease([response]);
     releaseMapByName.set(composedRelease[0].name, composedRelease[0]);
   };
 
@@ -147,7 +142,7 @@ export const useReleaseByName = (name: MaybeRef<string>) => {
   };
 };
 
-export const batchComposeRelease = async (releaseList: Release[]) => {
+export const batchComposeRelease = async (releaseList: Release[]): Promise<ComposedRelease[]> => {
   const userStore = useUserStore();
   await userStore.batchGetUsers(releaseList.map((release) => release.creator));
 

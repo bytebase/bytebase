@@ -37,6 +37,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
@@ -44,8 +45,8 @@ import { BBSpin } from "@/bbkit";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_CHANGELIST_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useChangelistStore } from "@/store";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { Changelist } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto-es/v1/changelist_service_pb";
+import { ChangelistSchema } from "@/types/proto-es/v1/changelist_service_pb";
 import { getChangelistChangeSourceType } from "@/utils";
 import AddChangePanel from "./AddChangePanel";
 import ApplyToDatabasePanel from "./ApplyToDatabasePanel";
@@ -68,10 +69,10 @@ const state = reactive({
 });
 
 const patchChanges = async (changes: Change[]) => {
-  const patch = {
-    ...Changelist.fromPartial(changelist.value),
+  const patch = create(ChangelistSchema, {
+    ...changelist.value,
     changes,
-  };
+  });
   try {
     isUpdating.value = true;
     await useChangelistStore().patchChangelist(patch, ["changes"]);
