@@ -25,7 +25,6 @@ import { revisionServiceClientConnect } from "@/grpcweb";
 import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
 import type { ComposedDatabase } from "@/types";
 import { useDatabaseDetailContext } from "./context";
-import { convertNewRevisionToOld } from "@/utils/v1/revision-conversions";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -49,7 +48,7 @@ const fetchRevisionList = async ({
     await revisionServiceClientConnect.listRevisions(request);
   return {
     nextPageToken,
-    list: revisions.map(convertNewRevisionToOld),
+    list: revisions,
   };
 };
 </script>

@@ -142,13 +142,10 @@ import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import {
   Release_File_ChangeType,
   type CheckReleaseResponse_CheckResult,
-} from "@/types/proto/v1/release_service";
+} from "@/types/proto-es/v1/release_service_pb";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
 import { getSheetStatement, isNullOrUndefined } from "@/utils";
-import {
-  convertNewCheckReleaseResponseToOld,
-  convertOldChangeTypeToNew,
-} from "@/utils/v1/release-conversions";
+import { convertNewAdviceArrayToOld } from "@/utils/v1/sql-conversions";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
 import { usePlanSpecContext } from "../SpecDetailView/context";
@@ -191,7 +188,8 @@ const allAdvices = computed(() => {
   }
   const advices: AdviceWithTarget[] = [];
   for (const result of checkResults.value) {
-    for (const advice of result.advices) {
+    const oldAdvices = convertNewAdviceArrayToOld(result.advices);
+    for (const advice of oldAdvices) {
       advices.push({
         ...advice,
         target: result.target,
@@ -264,20 +262,17 @@ const runChecks = async () => {
             version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType: convertOldChangeTypeToNew(
-              config.type === Plan_ChangeDatabaseConfig_Type.DATA
-                ? Release_File_ChangeType.DML
-                : Release_File_ChangeType.DDL
-            ),
+            changeType: config.type === Plan_ChangeDatabaseConfig_Type.DATA
+              ? Release_File_ChangeType.DML
+              : Release_File_ChangeType.DDL,
           },
         ],
       },
       targets,
     });
     const response = await releaseServiceClientConnect.checkRelease(request);
-    const result = convertNewCheckReleaseResponseToOld(response);
 
-    checkResults.value = result.results || [];
+    checkResults.value = response.results || [];
   } finally {
     isRunningChecks.value = false;
   }

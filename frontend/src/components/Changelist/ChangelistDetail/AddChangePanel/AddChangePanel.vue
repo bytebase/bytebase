@@ -73,6 +73,7 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
+import { create } from "@bufbuild/protobuf";
 import { FileIcon, HistoryIcon } from "lucide-vue-next";
 import { NButton, NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
@@ -86,8 +87,8 @@ import {
   useChangelogStore,
   useLocalSheetStore,
 } from "@/store";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { Changelist } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto-es/v1/changelist_service_pb";
+import { ChangelistSchema } from "@/types/proto-es/v1/changelist_service_pb";
 import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import {
   getChangelistChangeSourceType,
@@ -170,10 +171,10 @@ const doAddChange = async () => {
         await createSheetForPendingAddChange(pendingAddChanges.value[i])
       );
     }
-    const changelistPatch = {
-      ...Changelist.fromPartial(changelist.value),
+    const changelistPatch = create(ChangelistSchema, {
+      ...changelist.value,
       changes: [...changelist.value.changes, ...newChanges],
-    };
+    });
     await useChangelistStore().patchChangelist(changelistPatch, ["changes"]);
     pushNotification({
       module: "bytebase",

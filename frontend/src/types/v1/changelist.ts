@@ -1,10 +1,11 @@
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { Changelist } from "@/types/proto/v1/changelist_service";
+import { ChangelistSchema } from "@/types/proto-es/v1/changelist_service_pb";
+import { create } from "@bufbuild/protobuf";
 
 export const UNKNOWN_CHANGELIST_NAME = "projects/-1/changelists/-1";
 
 export const unknownChangelist = () => {
-  return Changelist.fromPartial({
+  return create(ChangelistSchema, {
     name: UNKNOWN_CHANGELIST_NAME,
     description: "<<Unknown Changelist>>",
     creator: SYSTEM_BOT_USER_NAME,

@@ -34,7 +34,7 @@ import { computed, reactive, watch } from "vue";
 import { useRoute } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_RELEASE_DETAIL } from "@/router/dashboard/projectV1";
-import type { Release_File } from "@/types/proto/v1/release_service";
+import type { Release_File } from "@/types/proto-es/v1/release_service_pb";
 import BasicInfo from "./BasicInfo.vue";
 import NavBar from "./NavBar";
 import ReleaseArchiveRestoreButton from "./ReleaseArchiveRestoreButton.vue";

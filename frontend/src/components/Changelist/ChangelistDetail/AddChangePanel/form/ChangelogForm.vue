@@ -48,6 +48,7 @@
 import { orderBy } from "lodash-es";
 import { NCheckbox, NCheckboxGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { ChangelogDataTable } from "@/components/Changelog";
 import { DatabaseSelect } from "@/components/v2";
 import {
@@ -61,9 +62,9 @@ import {
   EmptyAffectedTable,
 } from "@/types";
 import {
-  Changelist_Change,
+  Changelist_ChangeSchema,
   type Changelist_Change as Change,
-} from "@/types/proto/v1/changelist_service";
+} from "@/types/proto-es/v1/changelist_service_pb";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Status,
@@ -134,7 +135,7 @@ const selectedChangelogList = computed<string[]>({
       [(c) => parseInt(extractIssueUID(c.issue), 10)],
       ["asc"]
     ).map<Change>((changelog) =>
-      Changelist_Change.fromPartial({
+      create(Changelist_ChangeSchema, {
         sheet: changelog.statementSheet,
         source: changelog.name,
       })

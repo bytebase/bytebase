@@ -20,15 +20,16 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { UploadIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import UploadFilesButton from "@/components/UploadFilesButton.vue";
 import { pushNotification, useChangelistStore, useSheetV1Store } from "@/store";
 import {
-  Changelist_Change as Change,
-  Changelist,
-} from "@/types/proto/v1/changelist_service";
+  Changelist_ChangeSchema,
+  ChangelistSchema,
+} from "@/types/proto-es/v1/changelist_service_pb";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { setSheetStatement } from "@/utils";
 import { useChangelistDetailContext } from "../context";
@@ -53,11 +54,11 @@ const onUploadFiles = async (
     })
   );
   const newChanges = createdSheets.map((sheet) =>
-    Change.fromPartial({
+    create(Changelist_ChangeSchema, {
       sheet: sheet.name,
     })
   );
-  const changelistPatch = Changelist.fromPartial({
+  const changelistPatch = create(ChangelistSchema, {
     ...changelist.value,
     changes: [...changelist.value.changes, ...newChanges],
   });

@@ -1,6 +1,6 @@
 import { useSheetV1Store } from "@/store";
 import type { Changelist_Change_Source } from "@/types";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto-es/v1/changelist_service_pb";
 import { getSheetStatement } from "./sheet";
 
 export const extractChangelistResourceName = (name: string) => {

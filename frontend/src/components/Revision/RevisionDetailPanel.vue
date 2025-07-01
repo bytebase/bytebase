@@ -11,7 +11,7 @@
     >
       <span>
         {{ $t("database.revision.applied-at") }}:
-        <HumanizeDate :date="getDateForPbTimestamp(revision.createTime)" />
+        <HumanizeDate :date="getDateForPbTimestampProtoEs(revision.createTime)" />
       </span>
       <span v-if="relatedIssueUID">
         {{ $t("common.issue") }}:
@@ -57,7 +57,7 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useRevisionStore, useSheetV1Store } from "@/store";
-import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
+import { getDateForPbTimestampProtoEs, type ComposedDatabase } from "@/types";
 import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import { extractIssueUID, getSheetStatement } from "@/utils";
 import TaskRunLogTable from "../IssueV1/components/TaskRunSection/TaskRunLogTable/TaskRunLogTable.vue";
