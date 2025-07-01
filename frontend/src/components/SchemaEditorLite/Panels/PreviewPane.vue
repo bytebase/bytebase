@@ -52,10 +52,9 @@ import {
   useParentElement,
 } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
-import { computed, toRef } from "vue";
+import { computed, toRef, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { create } from "@bufbuild/protobuf";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
