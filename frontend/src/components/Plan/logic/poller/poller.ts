@@ -198,12 +198,13 @@ export const useResourcePoller = (options: ResourcePollerOptions = {}) => {
     issueCommentsPoller.stop();
     rolloutPoller.stop();
 
-    // Reset poller states
+    // Reset poller states and initial refresh flag
     pollerStates.plan = false;
     pollerStates.planCheckRuns = false;
     pollerStates.issue = false;
     pollerStates.issueComments = false;
     pollerStates.rollout = false;
+    hasInitialRefresh = false;
 
     // Restart active ones (this will reset the progressive intervals)
     if (activeResources.includes("plan")) {
@@ -227,18 +228,29 @@ export const useResourcePoller = (options: ResourcePollerOptions = {}) => {
       pollerStates.rollout = true;
     }
 
-    // Do immediate refresh for the new route
-    setTimeout(() => refreshAll(), 100);
+    // Note: No immediate refresh here - let the watchEffect handle it to avoid duplicates
   };
 
-  // Watch for route changes and restart pollers to ensure fresh data
+  // Watch for route changes and restart pollers only when resources actually change
   watch(
-    () => route.name,
-    (newRouteName, oldRouteName) => {
-      if (newRouteName !== oldRouteName && newRouteName) {
-        restartActivePollers();
+    () => resourcesToPolled.value,
+    (newResources, oldResources) => {
+      // Only restart if the resources to be polled have actually changed
+      if (oldResources && newResources.length > 0) {
+        // Create sorted arrays to compare
+        const newSorted = [...newResources].sort();
+        const oldSorted = [...oldResources].sort();
+
+        const resourcesChanged =
+          newSorted.length !== oldSorted.length ||
+          newSorted.some((resource, index) => resource !== oldSorted[index]);
+
+        if (resourcesChanged) {
+          restartActivePollers();
+        }
       }
-    }
+    },
+    { deep: true }
   );
 
   // Set up event listeners

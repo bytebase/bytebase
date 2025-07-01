@@ -1,6 +1,6 @@
 <template>
   <CommonDrawer
-    :show="true"
+    :show="show"
     :title="title"
     :loading="state.loading"
     @show="resetState"
@@ -180,7 +180,7 @@
                 @click="handleConfirm"
               >
                 <template v-if="action === 'RUN'">{{
-                  $t("common.rollout")
+                  $t("common.run")
                 }}</template>
                 <template v-else-if="action === 'SKIP'">{{
                   $t("common.skip")
@@ -247,6 +247,7 @@ export type TargetType =
   | { type: "taskRuns"; taskRuns: TaskRun[]; stage: Stage };
 
 const props = defineProps<{
+  show: boolean;
   action: "RUN" | "SKIP" | "CANCEL";
   target: TargetType;
 }>();
@@ -333,7 +334,7 @@ const targetTaskRuns = computed(() => {
 const title = computed(() => {
   switch (props.action) {
     case "RUN":
-      return t("common.rollout");
+      return t("common.run");
     case "SKIP":
       return t("common.skip");
     case "CANCEL":

@@ -281,6 +281,7 @@
     "created": "内蔵",
     "run-immediately": "すぐに実行",
     "selected-n-tasks": "{n} 個のタスクが選択されました | {n} 個のタスクが選択されました",
+    "no-tasks": "タスクなし",
     "no-tasks-selected": "タスクが選択されていません",
     "no-runnable-tasks": "実行可能なタスクはありません",
     "no-skippable-tasks": "スキップ可能なタスクはありません",
