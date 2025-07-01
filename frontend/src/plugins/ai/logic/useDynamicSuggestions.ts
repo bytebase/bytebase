@@ -8,7 +8,7 @@ import {
   convertOldAICompletionRequestToNew,
   convertNewAICompletionResponseToOld,
 } from "@/utils/v1/sql-conversions";
-import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
+import { type AICompletionRequest_Message } from "@/types/proto-es/v1/sql_service_pb";
 import { WebStorageHelper } from "@/utils";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";

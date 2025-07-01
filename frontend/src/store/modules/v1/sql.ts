@@ -8,9 +8,9 @@ import {
 } from "@/grpcweb/context-key";
 import type { SQLResultSetV1 } from "@/types";
 import { PlanCheckRun_ResultSchema } from "@/types/proto-es/v1/plan_service_pb";
-import type { ExportRequest, QueryRequest } from "@/types/proto/v1/sql_service";
-import { Advice } from "@/types/proto/v1/sql_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import type { ExportRequest, QueryRequest } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import {
   convertOldQueryRequestToNew,

@@ -3,7 +3,7 @@ import {
   Activity_Type,
   Webhook,
   Webhook_Type,
-} from "../proto/v1/project_service";
+} from "../proto-es/v1/project_service_pb";
 
 export const emptyProjectWebhook = () => {
   return Webhook.fromPartial({

@@ -7,7 +7,7 @@ import {
   convertNewSearchQueryHistoriesResponseToOld,
 } from "@/utils/v1/sql-conversions";
 import { isValidProjectName, isValidDatabaseName } from "@/types";
-import type { QueryHistory } from "@/types/proto/v1/sql_service";
+import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 
 export interface QueryHistoryFilter {
   statement?: string;

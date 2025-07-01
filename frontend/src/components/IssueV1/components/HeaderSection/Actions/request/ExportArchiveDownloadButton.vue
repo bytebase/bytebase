@@ -43,7 +43,7 @@ import {
   TaskRun_ExportArchiveStatus,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
-import { ExportRequest } from "@/types/proto/v1/sql_service";
+import { ExportRequest } from "@/types/proto-es/v1/sql_service_pb";
 import { flattenTaskV1List } from "@/utils";
 import { convertExportFormatToNew } from "@/utils/v1/common-conversions";
 

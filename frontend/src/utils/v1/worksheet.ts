@@ -1,8 +1,8 @@
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
+import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
 export const extractWorksheetUID = (name: string) => {

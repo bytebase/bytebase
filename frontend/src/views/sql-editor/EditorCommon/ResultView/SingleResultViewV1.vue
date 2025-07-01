@@ -242,7 +242,7 @@ import type {
   QueryResult,
   QueryRow,
   RowValue,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto-es/v1/sql_service_pb";
 import {
   compareQueryRowValues,
   createExplainToken,

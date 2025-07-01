@@ -154,7 +154,7 @@ import {
   Plan_ChangeDatabaseConfig_Type,
 } from "@/types/proto/v1/plan_service";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 
 defineProps<{
   title?: string;

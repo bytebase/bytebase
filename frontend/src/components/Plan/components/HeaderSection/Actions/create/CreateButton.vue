@@ -49,7 +49,7 @@ import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   extractPlanUID,
   extractProjectResourceName,

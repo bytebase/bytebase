@@ -172,7 +172,7 @@ import {
   CreateChangelistRequestSchema,
 } from "@/types/proto-es/v1/changelist_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import {
   ENCODINGS,

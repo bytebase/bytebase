@@ -1,5 +1,5 @@
 import { reactive } from "vue";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 
 const state = {
   uid: -101,

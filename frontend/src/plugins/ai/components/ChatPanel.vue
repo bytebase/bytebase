@@ -38,7 +38,7 @@ import {
   convertNewAICompletionResponseToOld,
 } from "@/utils/v1/sql-conversions";
 import { useSQLEditorTabStore } from "@/store";
-import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
+import { type AICompletionRequest_Message } from "@/types/proto-es/v1/sql_service_pb";
 import { nextAnimationFrame } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";

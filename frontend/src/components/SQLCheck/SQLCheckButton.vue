@@ -84,11 +84,11 @@ import {
   ReleaseFileType,
   Release_File_ChangeType,
 } from "@/types/proto-es/v1/release_service_pb";
-import type { Advice } from "@/types/proto/v1/sql_service";
+import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
   Advice as AdviceProto,
   Advice_Status,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import {

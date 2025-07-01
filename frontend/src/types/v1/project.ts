@@ -3,7 +3,7 @@ import { State } from "../proto-es/v1/common_pb";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
 import type { IamPolicy } from "../proto-es/v1/iam_policy_pb";
 import { IamPolicySchema } from "../proto-es/v1/iam_policy_pb";
-import { Project } from "../proto/v1/project_service";
+import { Project } from "../proto-es/v1/project_service_pb";
 import { create as createProto } from "@bufbuild/protobuf";
 
 export const DEFAULT_PROJECT_UID = 1;

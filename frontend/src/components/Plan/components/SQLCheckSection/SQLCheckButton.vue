@@ -62,7 +62,7 @@ import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_p
 import { CheckReleaseRequestSchema, CheckReleaseResponseSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
 import { AdviceSchema, Advice_Status as ProtoESAdvice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { convertNewAdviceArrayToOld } from "@/utils/v1/sql-conversions";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import { useSpecSheet } from "../StatementSection/useSpecSheet";

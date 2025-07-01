@@ -30,7 +30,7 @@ import {
   Changelist_ChangeSchema,
   ChangelistSchema,
 } from "@/types/proto-es/v1/changelist_service_pb";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { setSheetStatement } from "@/utils";
 import { useChangelistDetailContext } from "../context";
 

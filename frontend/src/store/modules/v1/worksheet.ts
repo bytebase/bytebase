@@ -15,11 +15,11 @@ import {
   SearchWorksheetsRequestSchema,
   UpdateWorksheetOrganizerRequestSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import type { WorksheetOrganizer } from "@/types/proto/v1/worksheet_service";
+import type { WorksheetOrganizer } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   Worksheet_Visibility,
   Worksheet,
-} from "@/types/proto/v1/worksheet_service";
+} from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   extractWorksheetUID,
   getSheetStatement,

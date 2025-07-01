@@ -204,8 +204,8 @@ import {
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { Advice } from "@/types/proto/v1/sql_service";
+import { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   flattenTaskV1List,

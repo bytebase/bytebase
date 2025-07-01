@@ -155,7 +155,7 @@ import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { DrawerContent } from "@/components/v2";
 import { CopyButton } from "@/components/v2";
-import type { RowValue } from "@/types/proto/v1/sql_service";
+import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain } from "@/utils";
 import {
   useBinaryFormatContext,

@@ -37,8 +37,8 @@ import { NTag } from "naive-ui";
 import { computed, ref } from "vue";
 import { TaskSpinner } from "@/components/IssueV1/components/common";
 import { SQLCheckPanel } from "@/components/SQLCheck";
-import type { Advice } from "@/types/proto/v1/sql_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { usePlanSQLCheckContext } from "./context";
 
 const props = defineProps<{

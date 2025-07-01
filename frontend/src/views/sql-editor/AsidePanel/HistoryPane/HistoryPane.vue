@@ -85,7 +85,7 @@ import {
   getDateForPbTimestamp,
   type SQLEditorTab,
 } from "@/types";
-import type { QueryHistory } from "@/types/proto/v1/sql_service";
+import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { getHighlightHTMLByKeyWords, defer } from "@/utils";
 
 interface State {

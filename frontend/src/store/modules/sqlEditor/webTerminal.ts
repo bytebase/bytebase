@@ -21,7 +21,7 @@ import {
   AdminExecuteRequest,
   AdminExecuteResponse,
   QueryResult,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto-es/v1/sql_service_pb";
 import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,

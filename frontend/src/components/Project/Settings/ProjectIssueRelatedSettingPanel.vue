@@ -272,7 +272,7 @@ import type { ComposedProject } from "@/types";
 import {
   Label,
   Project_ExecutionRetryPolicy,
-} from "@/types/proto/v1/project_service";
+} from "@/types/proto-es/v1/project_service_pb";
 import { cloneDeep, isEqual } from "lodash-es";
 import { TriangleAlertIcon } from "lucide-vue-next";
 import {

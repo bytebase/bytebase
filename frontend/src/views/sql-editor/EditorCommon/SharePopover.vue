@@ -99,7 +99,7 @@ import {
   useWorkSheetAndTabStore,
 } from "@/store";
 import type { AccessOption } from "@/types";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractProjectResourceName, extractWorksheetUID } from "@/utils";
 
 const { t } = useI18n();

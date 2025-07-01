@@ -7,7 +7,7 @@ import {
   RowValue,
   type RowValue_Timestamp,
   type RowValue_TimestampTZ,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto-es/v1/sql_service_pb";
 import { isNullOrUndefined } from "../util";
 
 // extractSQLRowValuePlain extracts a plain value from a RowValue.

@@ -27,7 +27,7 @@ import { UNKNOWN_ID } from "@/types";
 import {
   Worksheet,
   Worksheet_Visibility,
-} from "@/types/proto/v1/worksheet_service";
+} from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractWorksheetUID } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import { useSQLEditorContext } from "../context";

@@ -59,7 +59,7 @@ import { NScrollbar } from "naive-ui";
 import { computed, watch, ref } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
-import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import TableCell from "./DataTable/TableCell.vue";
 import SensitiveDataIcon from "./DataTable/common/SensitiveDataIcon.vue";

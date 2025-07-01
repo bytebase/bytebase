@@ -61,7 +61,7 @@ import {
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
+import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
   nextAnimationFrame,
   useInstanceV1EditorLanguage,

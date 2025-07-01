@@ -196,7 +196,7 @@ import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   getSheetStatement,
   getStatementSize,

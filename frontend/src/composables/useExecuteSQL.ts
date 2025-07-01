@@ -46,7 +46,7 @@ import {
   Advice,
   Advice_Status,
   advice_StatusToJSON,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto-es/v1/sql_service_pb";
 import {
   getValidDataSourceByPolicy,
   hasPermissionToCreateChangeDatabaseIssue,

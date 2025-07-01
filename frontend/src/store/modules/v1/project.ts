@@ -17,6 +17,11 @@ import {
   isValidProjectName,
 } from "@/types";
 import { State as NewState } from "@/types/proto-es/v1/common_pb";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
+import type {
+  Project,
+  ListProjectsResponse,
+} from "@/types/proto-es/v1/project_service_pb";
 import {
   GetProjectRequestSchema,
   ListProjectsRequestSchema,

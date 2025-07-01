@@ -13,7 +13,7 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
-import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain, isDescendantOf, toClipboard } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
 import {

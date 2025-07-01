@@ -1,7 +1,7 @@
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
 import type { Task, Task_Status } from "@/types/proto/v1/rollout_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { convertNewAdviceStatusToOld } from "@/utils/v1/sql-conversions";
 import { type IssueContext } from "../../logic";
 

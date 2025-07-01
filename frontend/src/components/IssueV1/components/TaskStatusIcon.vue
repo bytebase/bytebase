@@ -64,7 +64,7 @@ import { useCurrentProjectV1 } from "@/store";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { convertNewAdviceStatusToOld } from "@/utils/v1/sql-conversions";
 import { planCheckStatusForTask, useIssueContext } from "../logic";
 
