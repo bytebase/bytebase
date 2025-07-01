@@ -62,7 +62,7 @@ import { RolloutView } from "./components/RolloutView";
 import SpecsView from "./components/SpecsView.vue";
 import { useSpecsValidation } from "./components/common";
 import { gotoSpec } from "./components/common/utils";
-import { usePlanContext, usePollPlan } from "./logic";
+import { usePlanContext } from "./logic";
 
 enum TabKey {
   Overview = "overview",
@@ -214,6 +214,4 @@ const handleTabChange = (tab: TabKey) => {
     });
   }
 };
-
-usePollPlan();
 </script>

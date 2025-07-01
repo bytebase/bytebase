@@ -129,6 +129,8 @@
     "delete": "Delete",
     "history": "History",
     "loading": "Loading",
+    "just-now": "just now",
+    "n-seconds-ago": "{count} seconds ago",
     "copy": "Copy",
     "copied": "Copied",
     "click-to-copy": "Click to copy",
@@ -1106,6 +1108,9 @@
     },
     "checks": {
       "self": "Checks"
+    },
+    "refresh-indicator": {
+      "last-refresh": "Last refresh: {time}"
     }
   },
   "rollout": {

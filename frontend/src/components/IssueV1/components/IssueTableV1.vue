@@ -172,7 +172,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
             <IssueStatusIconWithTaskSummary issue={issue} />
             <a
               href={issueUrl(issue)}
-              class="flex items-center space-x-2 select-none"
+              class="flex items-center space-x-2 select-none truncate"
               onClick={(e: MouseEvent) => {
                 e.stopPropagation();
               }}

@@ -129,6 +129,8 @@
     "delete": "消去",
     "history": "履歴",
     "loading": "読み込み中",
+    "just-now": "ちょうど今",
+    "n-seconds-ago": "{count} 秒前",
     "copy": "コピー",
     "copied": "コピーされました",
     "click-to-copy": "クリックしてコピー",
@@ -1106,6 +1108,9 @@
     },
     "checks": {
       "self": "小切手"
+    },
+    "refresh-indicator": {
+      "last-refresh": "最終更新: {time}"
     }
   },
   "rollout": {
