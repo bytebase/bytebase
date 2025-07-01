@@ -1,7 +1,7 @@
 import { stringify } from "qs";
 import type { OAuthState } from "@/types";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { IdentityProviderType } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 
 export const SSOConfigSessionKey = "sso-config";
 

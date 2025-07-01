@@ -84,7 +84,7 @@ import type {
   Issue,
   Issue_Approver,
 } from "@/types/proto/v1/issue_service";
-import type { User as UserType } from "@/types/proto/v1/user_service";
+import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { memberMapToRolesInProjectIAM } from "@/utils";
 import ApprovalUserView from "./ApprovalUserView.vue";

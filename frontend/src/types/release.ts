@@ -1,7 +1,7 @@
 import { getProjectNameReleaseId } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "./const";
 import { Release } from "./proto/v1/release_service";
-import type { User } from "./proto/v1/user_service";
+import type { User } from "./proto-es/v1/user_service_pb";
 import { unknownUser } from "./v1";
 import {
   UNKNOWN_PROJECT_NAME,

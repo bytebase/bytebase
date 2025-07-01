@@ -64,7 +64,7 @@ import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { convertStateToNew } from "@/utils/v1/common-conversions";
-import { User, UserType } from "@/types/proto/v1/user_service";
+import { User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { MemberBinding } from "../../types";
 
 const props = defineProps<{

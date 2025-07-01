@@ -496,7 +496,7 @@ import {
   type OIDCIdentityProviderConfig,
   type LDAPIdentityProviderConfig,
   LDAPIdentityProviderConfig_SecurityProtocol,
-} from "@/types/proto/v1/idp_service";
+} from "@/types/proto-es/v1/idp_service_pb";
 
 interface Props {
   identityProvider: IdentityProvider;

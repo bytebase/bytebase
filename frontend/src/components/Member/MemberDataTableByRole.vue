@@ -16,7 +16,7 @@ import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import type { User } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { displayRoleTitle } from "@/utils";
 import UserNameCell from "./MemberDataTable/cells/UserNameCell.vue";
 import UserOperationsCell from "./MemberDataTable/cells/UserOperationsCell.vue";

@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { roleServiceClientConnect } from "@/grpcweb";
-import type { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { 
   ListRolesRequestSchema,
   UpdateRoleRequestSchema,

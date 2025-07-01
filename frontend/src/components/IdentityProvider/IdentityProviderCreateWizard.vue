@@ -473,7 +473,7 @@ import {
   OAuth2IdentityProviderConfig,
   OIDCIdentityProviderConfig,
   LDAPIdentityProviderConfig,
-} from "@/types/proto/v1/idp_service";
+} from "@/types/proto-es/v1/idp_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { OAuth2IdentityProviderTemplate } from "@/utils";
 import { identityProviderTypeToString } from "@/utils";

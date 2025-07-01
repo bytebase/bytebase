@@ -84,7 +84,7 @@ import YouTag from "@/components/misc/YouTag.vue";
 import { CopyButton } from "@/components/v2";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { UserType, type User } from "@/types/proto/v1/user_service";
+import { UserType, type User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{

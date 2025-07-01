@@ -265,7 +265,7 @@ import {
   OIDCIdentityProviderConfig,
   LDAPIdentityProviderConfig,
   IdentityProviderConfig,
-} from "@/types/proto/v1/idp_service";
+} from "@/types/proto-es/v1/idp_service_pb";
 import {
   hasWorkspacePermissionV2,
   identityProviderTypeToString,

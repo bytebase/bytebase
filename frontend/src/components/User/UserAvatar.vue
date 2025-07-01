@@ -14,7 +14,7 @@ import { computed } from "vue";
 import { BBAvatar } from "@/bbkit";
 import type { BBAvatarSizeType } from "@/bbkit/types";
 import { UNKNOWN_ID, unknownUser } from "@/types";
-import { type User } from "@/types/proto/v1/user_service";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 import type { VueClass } from "@/utils";
 
 const props = defineProps({

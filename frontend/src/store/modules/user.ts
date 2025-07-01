@@ -16,8 +16,8 @@ import {
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
-import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
-import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import type { UpdateUserRequest, User } from "@/types/proto-es/v1/user_service_pb";
+import { UserType, userTypeToJSON } from "@/types/proto-es/v1/user_service_pb";
 import {
   GetUserRequestSchema,
   ListUsersRequestSchema,

@@ -258,7 +258,7 @@ import {
   UpdateUserRequest,
   UserType,
   type User,
-} from "@/types/proto/v1/user_service";
+} from "@/types/proto-es/v1/user_service_pb";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
 

@@ -14,7 +14,7 @@ import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { create } from "@bufbuild/protobuf";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import { User, UserType } from "@/types/proto/v1/user_service";
+import { User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { MemberBinding, GroupBinding } from "./types";
 
 const getMemberBinding = async (

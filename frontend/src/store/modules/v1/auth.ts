@@ -31,7 +31,7 @@ import {
   DatabaseChangeMode,
   Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { User, UserType } from "@/types/proto/v1/user_service";
+import { User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { convertOldUserToNew } from "@/utils/v1/user-conversions";
 
 export const useAuthStore = defineStore("auth_v1", () => {

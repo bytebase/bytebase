@@ -23,7 +23,7 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useUserStore } from "@/store";
-import type { User } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import ProfileDashboard from "@/views/ProfileDashboard.vue";
 import SettingWorkspaceUsers from "@/views/SettingWorkspaceUsers.vue";
 

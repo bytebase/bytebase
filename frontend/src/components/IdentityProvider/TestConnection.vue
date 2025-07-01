@@ -98,7 +98,7 @@ import {
   IdentityProviderType,
   TestIdentityProviderResponse,
   type IdentityProvider,
-} from "@/types/proto/v1/idp_service";
+} from "@/types/proto-es/v1/idp_service_pb";
 import {
   TestIdentityProviderRequestSchema,
   CreateIdentityProviderRequestSchema,

@@ -211,7 +211,7 @@ import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { WorkspaceProfileSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { type User } from "@/types/proto/v1/user_service";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;

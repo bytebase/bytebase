@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { identityProviderServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import type { IdentityProvider as NewIdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import {
   CreateIdentityProviderRequestSchema,
