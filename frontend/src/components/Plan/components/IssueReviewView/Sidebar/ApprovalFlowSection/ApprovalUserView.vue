@@ -20,8 +20,7 @@ import { computed } from "vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useCurrentUserV1, useUserStore } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { UserType } from "@/types/proto/v1/user_service";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 
 type SizeType = "tiny" | "small" | "normal";
 
@@ -55,7 +54,7 @@ const candidateUser = computedAsync(async () => {
   if (!user) {
     return;
   }
-  if (user.userType !== UserType.USER || user.state !== convertStateToOld(State.ACTIVE)) {
+  if (user.userType !== UserType.USER || user.state !== State.ACTIVE) {
     return;
   }
   return user;

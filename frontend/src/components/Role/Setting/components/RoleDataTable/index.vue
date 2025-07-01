@@ -14,7 +14,7 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { displayRoleDescription } from "@/utils";
 import RoleOperationsCell from "./cells/RoleOperationsCell.vue";
 import RoleTitleCell from "./cells/RoleTitleCell.vue";

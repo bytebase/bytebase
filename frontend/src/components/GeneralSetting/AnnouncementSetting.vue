@@ -109,6 +109,7 @@ import type { Announcement } from "@/types/proto-es/v1/setting_service_pb";
 import { Announcement_AlertLevel, AnnouncementSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { FeatureBadge } from "../FeatureGuard";
 
 const props = defineProps<{
@@ -139,7 +140,9 @@ const updateAnnouncementSetting = async () => {
     payload: {
       announcement: { ...state },
     },
-    updateMask: ["value.workspace_profile_setting_value.announcement"],
+    updateMask: create(FieldMaskSchema, {
+      paths: ["value.workspace_profile_setting_value.announcement"]
+    }),
   });
 };
 

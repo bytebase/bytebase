@@ -42,7 +42,7 @@ import { computed, watch, reactive } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { useCurrentUserV1, useProjectV1Store, useRoleStore } from "@/store";
-import type { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import {
   useDynamicLocalStorage,
   bindingListInIAM,

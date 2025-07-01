@@ -2,13 +2,12 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { roleServiceClientConnect } from "@/grpcweb";
-import type { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { 
   ListRolesRequestSchema,
   UpdateRoleRequestSchema,
   DeleteRoleRequestSchema
 } from "@/types/proto-es/v1/role_service_pb";
-import { convertNewRoleToOld, convertOldRoleToNew } from "@/utils/v1/role-conversions";
 import { useGracefulRequest } from "./utils";
 
 export const useRoleStore = defineStore("role", () => {
@@ -17,7 +16,7 @@ export const useRoleStore = defineStore("role", () => {
   const fetchRoleList = async () => {
     const request = create(ListRolesRequestSchema, {});
     const response = await roleServiceClientConnect.listRoles(request);
-    roleList.value = response.roles.map(convertNewRoleToOld);
+    roleList.value = response.roles;
     return roleList.value;
   };
 
@@ -26,23 +25,21 @@ export const useRoleStore = defineStore("role", () => {
   };
 
   const upsertRole = async (role: Role) => {
-    const newRole = convertOldRoleToNew(role);
     const request = create(UpdateRoleRequestSchema, {
-      role: newRole,
+      role: role,
       updateMask: {
         paths: ["title", "description", "permissions"],
       },
       allowMissing: true,
     });
     const response = await roleServiceClientConnect.updateRole(request);
-    const updated = convertNewRoleToOld(response);
     const index = roleList.value.findIndex((r) => r.name === role.name);
     if (index >= 0) {
-      roleList.value.splice(index, 1, updated);
+      roleList.value.splice(index, 1, response);
     } else {
-      roleList.value.push(updated);
+      roleList.value.push(response);
     }
-    return updated;
+    return response;
   };
 
   const deleteRole = async (role: Role) => {

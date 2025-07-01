@@ -46,8 +46,11 @@ import {
   useAuthStore,
   useCurrentUserV1,
 } from "@/store";
-import { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { create as createProto } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 
 interface LocalState {
   password: string;
@@ -102,9 +105,11 @@ const onConfirm = async () => {
     password: state.password,
   };
   await userStore.updateUser(
-    UpdateUserRequest.fromPartial({
+    createProto(UpdateUserRequestSchema, {
       user: patch,
-      updateMask: ["password"],
+      updateMask: createProto(FieldMaskSchema, {
+        paths: ["password"]
+      }),
     })
   );
   pushNotification({

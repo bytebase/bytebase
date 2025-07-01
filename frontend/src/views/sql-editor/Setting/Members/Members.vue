@@ -21,7 +21,7 @@ import { useRoute, useRouter } from "vue-router";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { useUserStore } from "@/store";
-import type { User } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import ProfileDashboard from "@/views/ProfileDashboard.vue";
 import SettingWorkspaceMembers from "@/views/SettingWorkspaceMembers.vue";
 

@@ -149,7 +149,7 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useActuatorV1Store, useAuthStore } from "@/store";
-import type { User } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 

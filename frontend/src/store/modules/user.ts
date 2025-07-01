@@ -15,9 +15,8 @@ import {
   userBindingPrefix,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
-import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
-import { UserType, userTypeToJSON } from "@/types/proto/v1/user_service";
+import type { UpdateUserRequest, User } from "@/types/proto-es/v1/user_service_pb";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   GetUserRequestSchema,
   ListUsersRequestSchema,
@@ -27,7 +26,6 @@ import {
   UndeleteUserRequestSchema,
   BatchGetUsersRequestSchema,
 } from "@/types/proto-es/v1/user_service_pb";
-import { convertNewUserToOld, convertOldUserToNew } from "@/utils/v1/user-conversions";
 import { ensureUserFullName } from "@/utils";
 import { useActuatorV1Store } from "./v1/actuator";
 import { userNamePrefix, extractUserId } from "./v1/common";
@@ -48,16 +46,14 @@ const getListUserFilter = (params: UserFilter) => {
   }
   if (params.types) {
     filter.push(
-      `user_type in [${params.types.map((t) => `"${userTypeToJSON(t)}"`).join(", ")}]`
+      `user_type in [${params.types.map((t) => `"${UserType[t]}"`).join(", ")}]`
     );
   }
   if (isValidProjectName(params.project)) {
     filter.push(`project == "${params.project}"`);
   }
   if (params.state === State.DELETED) {
-    // Convert proto-es State to old proto State for JSON serialization
-    const oldState = convertStateToOld(params.state);
-    filter.push(`state == "${oldState}"`);
+    filter.push(`state == "${State[params.state]}"`);
   }
 
   return filter.join(" && ");
@@ -84,9 +80,8 @@ export const useUserStore = defineStore("user", () => {
 
   const fetchCurrentUser = async () => {
     const response = await userServiceClientConnect.getCurrentUser({});
-    const user = convertNewUserToOld(response);
-    setUser(user);
-    return user;
+    setUser(response);
+    return response;
   };
 
   const fetchUserList = async (params: {
@@ -104,12 +99,11 @@ export const useUserStore = defineStore("user", () => {
       showDeleted: params.filter?.state === State.DELETED ? true : false,
     });
     const response = await userServiceClientConnect.listUsers(request);
-    const users = response.users.map(convertNewUserToOld);
-    for (const user of users) {
+    for (const user of response.users) {
       setUser(user);
     }
     return {
-      users,
+      users: response.users,
       nextPageToken: response.nextPageToken,
     };
   };
@@ -121,19 +115,16 @@ export const useUserStore = defineStore("user", () => {
     const response = await userServiceClientConnect.getUser(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    const user = convertNewUserToOld(response);
-    return setUser(user);
+    return setUser(response);
   };
 
   const createUser = async (user: User) => {
-    const newUser = convertOldUserToNew(user);
     const request = create(CreateUserRequestSchema, {
-      user: newUser,
+      user: user,
     });
     const response = await userServiceClientConnect.createUser(request);
-    const createdUser = convertNewUserToOld(response);
     await actuatorStore.fetchServerInfo();
-    return setUser(createdUser);
+    return setUser(response);
   };
 
   const updateUser = async (updateUserRequest: UpdateUserRequest) => {
@@ -142,17 +133,15 @@ export const useUserStore = defineStore("user", () => {
     if (!originData) {
       throw new Error(`user with name ${name} not found`);
     }
-    const newUser = convertOldUserToNew(updateUserRequest.user!);
     const request = create(UpdateUserRequestSchema, {
-      user: newUser,
-      updateMask: updateUserRequest.updateMask ? { paths: updateUserRequest.updateMask } : undefined,
+      user: updateUserRequest.user,
+      updateMask: updateUserRequest.updateMask,
       otpCode: updateUserRequest.otpCode,
       regenerateTempMfaSecret: updateUserRequest.regenerateTempMfaSecret,
       regenerateRecoveryCodes: updateUserRequest.regenerateRecoveryCodes,
     });
     const response = await userServiceClientConnect.updateUser(request);
-    const user = convertNewUserToOld(response);
-    return setUser(user);
+    return setUser(response);
   };
 
   const archiveUser = async (user: User) => {
@@ -160,7 +149,7 @@ export const useUserStore = defineStore("user", () => {
       name: user.name,
     });
     await userServiceClientConnect.deleteUser(request);
-    user.state = convertStateToOld(State.DELETED);
+    user.state = State.DELETED;
     await actuatorStore.fetchServerInfo();
     return user;
   };
@@ -170,9 +159,8 @@ export const useUserStore = defineStore("user", () => {
       name: user.name,
     });
     const response = await userServiceClientConnect.undeleteUser(request);
-    const restoredUser = convertNewUserToOld(response);
     await actuatorStore.fetchServerInfo();
-    return setUser(restoredUser);
+    return setUser(response);
   };
 
   const batchGetUsers = async (userNameList: string[]) => {
@@ -195,11 +183,10 @@ export const useUserStore = defineStore("user", () => {
       names: distinctList,
     });
     const response = await userServiceClientConnect.batchGetUsers(request);
-    const users = response.users.map(convertNewUserToOld);
-    for (const user of users) {
+    for (const user of response.users) {
       setUser(user);
     }
-    return users;
+    return response.users;
   };
 
   const getOrFetchUserByIdentifier = async (

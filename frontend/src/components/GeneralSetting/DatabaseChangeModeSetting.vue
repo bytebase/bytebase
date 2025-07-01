@@ -51,6 +51,8 @@ import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isSQLEditorRoute } from "@/utils";
 import WorkspaceMode from "@/views/Setup/WorkspaceMode.vue";
 
@@ -94,7 +96,9 @@ const onUpdate = async () => {
     payload: {
       databaseChangeMode: state.databaseChangeMode,
     },
-    updateMask: ["value.workspace_profile_setting_value.database_change_mode"],
+    updateMask: create(FieldMaskSchema, {
+      paths: ["value.workspace_profile_setting_value.database_change_mode"]
+    }),
   });
   if (
     state.databaseChangeMode === DatabaseChangeMode.EDITOR &&

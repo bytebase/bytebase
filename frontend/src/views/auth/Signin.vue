@@ -192,8 +192,8 @@ import {
 } from "@/store";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { IdentityProviderType } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 import { openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 
