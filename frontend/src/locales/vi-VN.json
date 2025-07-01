@@ -2062,7 +2062,8 @@
       "no-default": "Không mặc định",
       "expression": "Biểu thức",
       "null": "NULL",
-      "value": "Giá trị"
+      "value": "Giá trị",
+      "postgres-placeholder": "Nhập biểu thức mặc định (ví dụ: 'hello', 42, now(), nextval('seq')) hoặc để trống nếu không có biểu thức mặc định"
     },
     "message": {
       "invalid-schema-name": "Tên lược đồ không hợp lệ",
