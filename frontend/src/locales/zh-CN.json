@@ -1034,6 +1034,14 @@
       "approved": "已批准",
       "rejected": "已拒绝",
       "under-review": "等待审批"
+    },
+    "approval": {
+      "rejected-title": "工单被退回",
+      "pending-title": "工单待审批",
+      "rejected-description": "此工单已被审批者退回。需要强制发布才能继续。",
+      "pending-description": "此工单正在等待审批。需要强制发布才能继续。",
+      "rejected-error": "此工单已被退回。请确认并勾选强制发布才能继续。",
+      "pending-error": "此工单正在等待审批。请确认并勾选强制发布才能继续。"
     }
   },
   "plan": {
@@ -1114,7 +1122,8 @@
     }
   },
   "rollout": {
-    "rollouts": "发布任务"
+    "rollouts": "发布任务",
+    "force-rollout": "强制发布"
   },
   "quick-action": {
     "create-db": "创建数据库",
