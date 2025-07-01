@@ -172,8 +172,7 @@ import {
   CreateChangelistRequestSchema,
 } from "@/types/proto-es/v1/changelist_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   ENCODINGS,
   extractChangelistResourceName,
@@ -270,9 +269,9 @@ const doCreate = async () => {
     const createdSheets = await Promise.all(
       files.value.map(async (f) => {
         const { name, arrayBuffer } = f;
-        const sheet = Sheet.fromPartial({
+        const sheet = createProto(SheetSchema, {
           title: name,
-          engine: convertEngineToOld(Engine.ENGINE_UNSPECIFIED), // TODO(jim)
+          engine: Engine.ENGINE_UNSPECIFIED,
         });
         const content = new TextDecoder(state.encoding).decode(arrayBuffer);
         setSheetStatement(sheet, content);

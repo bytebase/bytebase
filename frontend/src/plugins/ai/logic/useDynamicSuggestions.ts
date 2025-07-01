@@ -1,5 +1,6 @@
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
+import { create as createProto } from "@bufbuild/protobuf";
 
 import { hashCode } from "@/bbkit/BBUtil";
 import { sqlServiceClientConnect } from "@/grpcweb";
@@ -8,7 +9,7 @@ import {
   convertOldAICompletionRequestToNew,
   convertNewAICompletionResponseToOld,
 } from "@/utils/v1/sql-conversions";
-import { type AICompletionRequest_Message } from "@/types/proto/v1/sql_service";
+import { type AICompletionRequest_Message, AICompletionRequest_MessageSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { WebStorageHelper } from "@/utils";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";
@@ -94,14 +95,14 @@ export const useDynamicSuggestions = () => {
           new Set([...used.values(), ...suggestions])
         );
         const messages: AICompletionRequest_Message[] = [
-          {
+          createProto(AICompletionRequest_MessageSchema, {
             role: "system",
             content: command,
-          },
-          {
+          }),
+          createProto(AICompletionRequest_MessageSchema, {
             role: "user",
             content: prompt,
-          },
+          }),
         ];
         console.debug("[DynamicSuggestions]");
         console.debug(command);

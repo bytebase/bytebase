@@ -56,7 +56,7 @@ import { twMerge } from "tailwind-merge";
 import { computed, ref, watchEffect } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import {
@@ -96,9 +96,9 @@ const allowSelect = computed(() => {
   return props.allowSelect && !selectionDisabled.value;
 });
 
-// Check if the value is binary data
+// Check if the value is binary data (proto-es oneof pattern)
 const hasByteData = computed(() => {
-  return !!props.value.bytesValue;
+  return props.value.kind?.case === "bytesValue";
 });
 
 const binaryFormat = computed(() => {
@@ -114,16 +114,19 @@ watchEffect(() => {
     return;
   }
   if (!binaryFormat.value) {
-    const binaryFormat = detectBinaryFormat({
-      bytesValue: props.value.bytesValue,
-      columnType: props.columnType,
-    });
+    const bytesValue = props.value.kind?.case === "bytesValue" ? props.value.kind.value : undefined;
+    if (bytesValue) {
+      const binaryFormat = detectBinaryFormat({
+        bytesValue,
+        columnType: props.columnType,
+      });
     setBinaryFormat({
       rowIndex: props.rowIndex,
       colIndex: props.colIndex,
       setIndex: props.setIndex,
-      format: binaryFormat,
-    });
+        format: binaryFormat,
+      });
+    }
   }
 });
 
@@ -182,9 +185,10 @@ const classes = computed(() => {
   return twMerge(classes);
 });
 
-// Format the binary value based on selected format
+// Format the binary value based on selected format (proto-es oneof pattern)
 const formattedValue = computed(() => {
-  if (!props.value?.bytesValue) {
+  const bytesValue = props.value.kind?.case === "bytesValue" ? props.value.kind.value : undefined;
+  if (!bytesValue) {
     return props.value;
   }
 
@@ -197,7 +201,7 @@ const formattedValue = computed(() => {
   }
 
   const stringValue = formatBinaryValue({
-    bytesValue: props.value.bytesValue,
+    bytesValue,
     format: actualFormat,
   });
   return {

@@ -161,7 +161,6 @@ import { PresetRoleType, PRESET_ROLES } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
 import {
   displayRoleTitle,
   hasProjectPermissionV2,
@@ -375,7 +374,7 @@ const getDataTableColumns = (
 // 1. Disallow removing the last OWNER.
 // 2. Allow workspace roles who can manage project. This helps when the project OWNER is no longer available.
 const allowRemoveRole = (role: string) => {
-  if (props.project.state === convertStateToOld(State.DELETED)) {
+  if (props.project.state === State.DELETED) {
     return false;
   }
   if (props.binding.type === "groups") {

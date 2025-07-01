@@ -2,8 +2,8 @@
   <SheetConnectionIcon :tab="tab" class="w-4 h-4" />
   <heroicons-outline:user-group
     v-if="
-      sheet?.visibility === Worksheet_Visibility.VISIBILITY_PROJECT_READ ||
-      sheet?.visibility === Worksheet_Visibility.VISIBILITY_PROJECT_WRITE
+      sheet?.visibility === Worksheet_Visibility.PROJECT_READ ||
+      sheet?.visibility === Worksheet_Visibility.PROJECT_WRITE
     "
     class="w-4 h-4"
   />
@@ -17,7 +17,7 @@ import { WrenchIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { SheetConnectionIcon } from "../../EditorCommon";
 
 const props = defineProps<{

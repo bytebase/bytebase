@@ -25,7 +25,7 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
-import type { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   extractDatabaseResourceName,

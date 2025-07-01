@@ -82,10 +82,10 @@ import {
 } from "@/store";
 import {
   DEBOUNCE_SEARCH_DELAY,
-  getDateForPbTimestamp,
+  getDateForPbTimestampProtoEs,
   type SQLEditorTab,
 } from "@/types";
-import type { QueryHistory } from "@/types/proto/v1/sql_service";
+import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { getHighlightHTMLByKeyWords, defer } from "@/utils";
 
 interface State {
@@ -152,7 +152,7 @@ const getFormattedStatement = (statement: string) => {
 };
 
 const titleOfQueryHistory = (history: QueryHistory) => {
-  return dayjs(getDateForPbTimestamp(history.createTime)).format(
+  return dayjs(getDateForPbTimestampProtoEs(history.createTime)).format(
     "YYYY-MM-DD HH:mm:ss"
   );
 };

@@ -1,8 +1,10 @@
 import { orderBy } from "lodash-es";
 import { stringify } from "uuid";
+import { create as createProto } from "@bufbuild/protobuf";
 import type { SQLResultSetV1 } from "@/types";
-import { NullValue } from "@/types/proto/google/protobuf/struct";
-import { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import { NullValue } from "@bufbuild/protobuf/wkt";
+import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
+import { QueryRowSchema, RowValueSchema } from "@/types/proto-es/v1/sql_service_pb";
 
 type NoSQLRowData = {
   key: string;
@@ -100,71 +102,99 @@ const convertAnyToRowValue = (
     case "number": {
       if (Math.floor(value) === value) {
         return {
-          value: RowValue.fromPartial({
-            int32Value: value,
+          value: createProto(RowValueSchema, {
+            kind: {
+              case: "int32Value",
+              value: value,
+            },
           }),
           type: "INTEGER",
         };
       }
       return {
-        value: RowValue.fromPartial({
-          floatValue: value,
+        value: createProto(RowValueSchema, {
+          kind: {
+            case: "floatValue",
+            value: value,
+          },
         }),
         type: "FLOAT",
       };
     }
     case "string":
       return {
-        value: RowValue.fromPartial({
-          stringValue: value,
+        value: createProto(RowValueSchema, {
+          kind: {
+            case: "stringValue",
+            value: value,
+          },
         }),
         type: "TEXT",
       };
     case "undefined":
       return {
-        value: RowValue.fromPartial({
-          nullValue: NullValue.NULL_VALUE,
+        value: createProto(RowValueSchema, {
+          kind: {
+            case: "nullValue",
+            value: NullValue.NULL_VALUE,
+          },
         }),
         type: "NULL",
       };
     case "boolean":
       return {
-        value: RowValue.fromPartial({
-          boolValue: value,
+        value: createProto(RowValueSchema, {
+          kind: {
+            case: "boolValue",
+            value: value,
+          },
         }),
         type: "BOOLEAN",
       };
     case "bigint":
       return {
-        value: RowValue.fromPartial({
-          stringValue: value.toString(),
+        value: createProto(RowValueSchema, {
+          kind: {
+            case: "stringValue",
+            value: value.toString(),
+          },
         }),
         type: "TEXT",
       };
     case "object": {
       if (value === null) {
         return {
-          value: RowValue.fromPartial({
-            nullValue: NullValue.NULL_VALUE,
+          value: createProto(RowValueSchema, {
+            kind: {
+              case: "nullValue",
+              value: NullValue.NULL_VALUE,
+            },
           }),
           type: "NULL",
         };
       }
       if (Array.isArray(value)) {
         return {
-          value: RowValue.fromPartial({
-            stringValue: JSON.stringify(value.map(flattenNoSQLColumn)),
+          value: createProto(RowValueSchema, {
+            kind: {
+              case: "stringValue",
+              value: JSON.stringify(value.map(flattenNoSQLColumn)),
+            },
           }),
           type: "OBJECT",
         };
       }
       if (value instanceof Date) {
         return {
-          value: RowValue.fromPartial({
-            timestampValue: {
-              googleTimestamp: {
-                seconds: Math.floor(value.getTime() / 1000),
-                nanos: (value.getTime() % 1000) * 1e6,
+          value: createProto(RowValueSchema, {
+            kind: {
+              case: "timestampValue",
+              value: {
+                googleTimestamp: {
+                  seconds: BigInt(Math.floor(value.getTime() / 1000)),
+                  nanos: (value.getTime() % 1000) * 1e6,
+                },
+                accuracy: 6,
               },
             },
           }),
@@ -177,8 +207,11 @@ const convertAnyToRowValue = (
         return convertAnyToRowValue(formatted, !nested);
       } else {
         return {
-          value: RowValue.fromPartial({
-            stringValue: JSON.stringify(value),
+          value: createProto(RowValueSchema, {
+            kind: {
+              case: "stringValue",
+              value: JSON.stringify(value),
+            },
           }),
           type: "TEXT",
         };
@@ -186,8 +219,11 @@ const convertAnyToRowValue = (
     }
     default:
       return {
-        value: RowValue.fromPartial({
-          stringValue: JSON.stringify(value),
+        value: createProto(RowValueSchema, {
+          kind: {
+            case: "stringValue",
+            value: JSON.stringify(value),
+          },
         }),
         type: "TEXT",
       };
@@ -204,14 +240,17 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
     }).map((_) => "TEXT");
 
     for (const row of result.rows) {
-      if (row.values.length !== 1 || !row.values[0].stringValue) {
+      if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
         continue;
       }
-      const data = JSON.parse(row.values[0].stringValue);
+      const data = JSON.parse(row.values[0].kind.value);
       const values: RowValue[] = Array.from({ length: columns.length }).map(
         (_) =>
-          RowValue.fromPartial({
-            nullValue: NullValue.NULL_VALUE,
+          createProto(RowValueSchema, {
+            kind: {
+              case: "nullValue",
+              value: NullValue.NULL_VALUE,
+            },
           })
       );
 
@@ -224,7 +263,7 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
       }
 
       rows.push(
-        QueryRow.fromPartial({
+        createProto(QueryRowSchema, {
           values: values,
         })
       );
@@ -279,10 +318,10 @@ const getNoSQLColumns = (rows: QueryRow[]) => {
 };
 
 const getNoSQLRows = (row: QueryRow): NoSQLRowData[] | undefined => {
-  if (row.values.length !== 1 || !row.values[0].stringValue) {
+  if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
     return;
   }
-  const parsedRow = JSON.parse(row.values[0].stringValue) as {
+  const parsedRow = JSON.parse(row.values[0].kind.value) as {
     [key: string]: any;
   };
   const results: NoSQLRowData[] = [];

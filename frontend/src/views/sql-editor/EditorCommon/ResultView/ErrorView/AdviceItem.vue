@@ -31,7 +31,7 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { positionWithOffset } from "@/components/MonacoEditor/utils";
 import type { SQLEditorQueryParams } from "@/types";
-import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
+import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 
 const props = defineProps<{

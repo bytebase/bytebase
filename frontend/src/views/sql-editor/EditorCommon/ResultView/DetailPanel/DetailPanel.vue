@@ -155,7 +155,7 @@ import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { DrawerContent } from "@/components/v2";
 import { CopyButton } from "@/components/v2";
-import type { RowValue } from "@/types/proto/v1/sql_service";
+import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain } from "@/utils";
 import {
   useBinaryFormatContext,
@@ -205,12 +205,12 @@ const binaryFormat = computed(() => {
 // Check if the current value is binary data (using bytesValue)
 const isBinaryData = computed(() => {
   if (!rawValue.value) return false;
-  return !!rawValue.value.bytesValue;
+  return rawValue.value.kind?.case === "bytesValue";
 });
 
 // Format the binary value based on selected format
 const formattedValue = computed(() => {
-  if (!rawValue.value?.bytesValue) {
+  if (rawValue.value?.kind?.case !== "bytesValue") {
     return rawValue.value;
   }
 
@@ -223,7 +223,7 @@ const formattedValue = computed(() => {
   }
 
   const stringValue = formatBinaryValue({
-    bytesValue: rawValue.value.bytesValue,
+    bytesValue: rawValue.value.kind.value,
     format: actualFormat,
   });
   return {

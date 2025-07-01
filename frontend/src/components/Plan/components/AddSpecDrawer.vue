@@ -149,12 +149,13 @@ import type { DatabaseSelectState } from "@/components/DatabaseAndGroupSelector"
 import { getLocalSheetByName, getNextLocalSheetUID } from "@/components/Plan";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
+import { create as createProto } from "@bufbuild/protobuf";
 import {
   Plan_ChangeDatabaseConfig,
   Plan_ChangeDatabaseConfig_Type,
 } from "@/types/proto/v1/plan_service";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 
 defineProps<{
   title?: string;
@@ -234,7 +235,7 @@ const handleConfirm = async () => {
     }
 
     const sheetUID = getNextLocalSheetUID();
-    const sheet = Sheet.fromPartial({
+    const sheet = createProto(SheetSchema, {
       ...getLocalSheetByName(`${project.value.name}/sheets/${sheetUID}`),
       title:
         changeType.value === "MIGRATE" ? "Schema Migration" : "Data Change",

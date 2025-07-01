@@ -5,16 +5,15 @@ import { sheetServiceClientConnect } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { 
   CreateSheetRequestSchema,
   GetSheetRequestSchema,
   UpdateSheetRequestSchema
 } from "@/types/proto-es/v1/sheet_service_pb";
-import { convertNewSheetToOld, convertOldSheetToNew } from "@/utils/v1/sheet-conversions";
 import { extractSheetUID, getSheetStatement } from "@/utils";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
 
 export type SheetView = "FULL" | "BASIC";
 type SheetCacheKey = [string /* uid */, SheetView];
@@ -43,26 +42,32 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
 
   // CRUD
   const createSheet = async (parent: string, sheet: Partial<Sheet>) => {
-    if (!sheet.engine || sheet.engine === convertEngineToOld(Engine.ENGINE_UNSPECIFIED)) {
-      const engineStr = sheet.engine || "<undefined>";
+    if (!sheet.engine) {
       console.warn(
-        `[SheetService.CreateSheet] sheet.engine unspecified: ${engineStr}`
+        `[SheetService.CreateSheet] sheet.engine unspecified: ${sheet.engine}`
       );
-
-      sheet.engine = convertEngineToOld(Engine.ENGINE_UNSPECIFIED);
+      sheet.engine = Engine.ENGINE_UNSPECIFIED;
     }
-    const fullSheet = Sheet.fromPartial(sheet);
+    const fullSheet = create(SheetSchema, {
+      name: sheet.name || "",
+      title: sheet.title || "",
+      creator: sheet.creator || "",
+      content: sheet.content || new Uint8Array(),
+      contentSize: sheet.contentSize || BigInt(0),
+      engine: sheet.engine || Engine.MYSQL,
+      payload: sheet.payload,
+      createTime: sheet.createTime,
+    });
     const request = create(CreateSheetRequestSchema, {
       parent,
-      sheet: convertOldSheetToNew(fullSheet),
+      sheet: fullSheet,
     });
     const response = await sheetServiceClientConnect.createSheet(request);
-    const created = convertNewSheetToOld(response);
-    setCache(created, "FULL");
+    setCache(response, "FULL");
     if (sheet.name) {
       removeLocalSheet(sheet.name);
     }
-    return created;
+    return response;
   };
 
   /**
@@ -114,8 +119,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
         raw: view === "FULL",
       });
       const response = await sheetServiceClientConnect.getSheet(request);
-      const sheet = convertNewSheetToOld(response);
-      return sheet;
+      return response;
     } catch {
       return undefined;
     }
@@ -152,15 +156,23 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
 
   const patchSheetContent = async (sheet: Partial<Sheet>) => {
     if (!sheet.name) return;
-    const fullSheet = Sheet.fromPartial(sheet);
+    const fullSheet = create(SheetSchema, {
+      name: sheet.name || "",
+      title: sheet.title || "",
+      creator: sheet.creator || "",
+      content: sheet.content || new Uint8Array(),
+      contentSize: sheet.contentSize || BigInt(0),
+      engine: sheet.engine || Engine.MYSQL,
+      payload: sheet.payload,
+      createTime: sheet.createTime,
+    });
     const request = create(UpdateSheetRequestSchema, {
-      sheet: convertOldSheetToNew(fullSheet),
+      sheet: fullSheet,
       updateMask: { paths: ["content"] },
     });
     const response = await sheetServiceClientConnect.updateSheet(request);
-    const updated = convertNewSheetToOld(response);
-    setCache(updated, "FULL");
-    return updated;
+    setCache(response, "FULL");
+    return response;
   };
 
   return {

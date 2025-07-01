@@ -124,9 +124,10 @@ import {
   useSQLStore,
 } from "@/store";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
+import { create } from "@bufbuild/protobuf";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hexToRgb } from "@/utils";
-import { convertExportFormatToOld } from "@/utils/v1/common-conversions";
 
 
 
@@ -274,15 +275,17 @@ const handleExportBtnClick = async ({
       continue;
     }
     try {
-      const content = await sqlStore.exportData({
-        name: databaseName,
-        dataSourceId: context.params.connection.dataSourceId ?? "",
-        format: convertExportFormatToOld(options.format),
-        statement: context.params.statement,
-        limit: options.limit,
-        admin: tabStore.currentTab?.mode === "ADMIN",
-        password: options.password,
-      });
+      const content = await sqlStore.exportData(
+        create(ExportRequestSchema, {
+          name: databaseName,
+          dataSourceId: context.params.connection.dataSourceId ?? "",
+          format: options.format,
+          statement: context.params.statement,
+          limit: options.limit,
+          admin: tabStore.currentTab?.mode === "ADMIN",
+          password: options.password,
+        })
+      );
 
       contents.push({
         content,

@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { SQLResultSetV1 } from "@/types";
-import type { QueryResult_PostgresError } from "@/types/proto/v1/sql_service";
+import type { QueryResult_PostgresError } from "@/types/proto-es/v1/sql_service_pb";
 
 const props = defineProps<{
   resultSet: SQLResultSetV1;
@@ -27,8 +27,8 @@ const props = defineProps<{
 const postgresErrors = computed(() => {
   const errors: QueryResult_PostgresError[] = [];
   props.resultSet.results.forEach((result) => {
-    if (result.postgresError) {
-      errors.push(result.postgresError);
+    if (result.detailedError?.case === "postgresError") {
+      errors.push(result.detailedError.value);
     }
   });
   return errors;
