@@ -111,7 +111,7 @@
           <div class="text-xs">
             <span class="text-gray-500"
               >{{
-                getVCSTypeText(convertVCSTypeToNew(release.vcsSource.vcsType))
+                getVCSTypeText(release.vcsSource.vcsType)
               }}:</span
             >
             <a
@@ -127,7 +127,7 @@
 
         <div class="text-xs text-gray-500">
           {{
-            dayjs(getDateForPbTimestamp(release.createTime)).format(
+            dayjs(getDateForPbTimestampProtoEs(release.createTime)).format(
               "YYYY-MM-DD HH:mm:ss"
             )
           }}
@@ -160,11 +160,10 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { useReleaseByName } from "@/store";
-import { isValidReleaseName, getDateForPbTimestamp } from "@/types";
+import { isValidReleaseName, getDateForPbTimestampProtoEs } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
-import { ReleaseFileType } from "@/types/proto/v1/release_service";
-import type { Release_File_ChangeType } from "@/types/proto/v1/release_service";
-import { convertVCSTypeToNew } from "@/utils/v1/common-conversions";
+import { ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
+import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
 import { usePlanSpecContext } from "../../SpecDetailView/context";
 
 const { t } = useI18n();
@@ -197,11 +196,11 @@ const displayedFiles = computed(() => {
 
 const getChangeTypeText = (changeType: Release_File_ChangeType) => {
   switch (changeType) {
-    case "DDL":
+    case Release_File_ChangeType.DDL:
       return t("release.change-type.ddl");
-    case "DDL_GHOST":
+    case Release_File_ChangeType.DDL_GHOST:
       return t("release.change-type.ddl-ghost");
-    case "DML":
+    case Release_File_ChangeType.DML:
       return t("release.change-type.dml");
     default:
       return t("release.change-type.unspecified");

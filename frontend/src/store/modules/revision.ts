@@ -3,8 +3,7 @@ import { computed, reactive } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { revisionServiceClientConnect } from "@/grpcweb";
 import type { Pagination } from "@/types";
-import { Revision } from "@/types/proto/v1/revision_service";
-import { convertNewRevisionToOld } from "@/utils/v1/revision-conversions";
+import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import {
   ListRevisionsRequestSchema,
   GetRevisionRequestSchema,
@@ -31,13 +30,9 @@ export const useRevisionStore = defineStore("revision", () => {
     });
     const resp = await revisionServiceClientConnect.listRevisions(request);
     resp.revisions.forEach((revision) => {
-      const oldRevision = convertNewRevisionToOld(revision);
-      revisionMapByName.set(oldRevision.name, oldRevision);
+      revisionMapByName.set(revision.name, revision);
     });
-    return {
-      ...resp,
-      revisions: resp.revisions.map(convertNewRevisionToOld),
-    };
+    return resp;
   };
 
   const getRevisionsByDatabase = (database: string) => {
@@ -53,9 +48,8 @@ export const useRevisionStore = defineStore("revision", () => {
 
     const request = create(GetRevisionRequestSchema, { name });
     const revision = await revisionServiceClientConnect.getRevision(request);
-    const oldRevision = convertNewRevisionToOld(revision);
-    revisionMapByName.set(oldRevision.name, oldRevision);
-    return oldRevision;
+    revisionMapByName.set(revision.name, revision);
+    return revision;
   };
 
   const getRevisionByName = (name: string) => {

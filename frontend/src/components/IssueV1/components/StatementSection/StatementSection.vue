@@ -13,6 +13,7 @@ import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSec
 import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useCurrentProjectV1 } from "@/store";
 import { TaskTypeListWithStatement } from "@/types";
+import { convertNewAdviceArrayToOld } from "@/utils/v1/sql-conversions";
 import { isValidTaskName } from "@/utils";
 import { useEventListener } from "@vueuse/core";
 import { computed, nextTick, ref } from "vue";
@@ -31,7 +32,8 @@ const editorViewRef = ref<InstanceType<typeof EditorView>>();
 
 const advices = computed(() => {
   const database = databaseForTask(project.value, selectedTask.value);
-  return resultMap.value[database.name]?.advices || [];
+  const newAdvices = resultMap.value[database.name]?.advices || [];
+  return convertNewAdviceArrayToOld(newAdvices);
 });
 
 type ViewMode = "NONE" | "EDITOR";

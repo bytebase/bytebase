@@ -15,7 +15,7 @@ import { unknownChangelist, unknownProject, isValidProjectName } from "@/types";
 import type {
   Changelist,
   Changelist_Change as Change,
-} from "@/types/proto/v1/changelist_service";
+} from "@/types/proto-es/v1/changelist_service_pb";
 import {
   hasPermissionToCreateChangeDatabaseIssueInProject,
   hasProjectPermissionV2,

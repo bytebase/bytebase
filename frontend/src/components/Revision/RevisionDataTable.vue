@@ -33,8 +33,8 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, useRouter } from "vue-router";
 import { useRevisionStore } from "@/store";
-import { getDateForPbTimestamp } from "@/types";
-import type { Revision } from "@/types/proto/v1/revision_service";
+import { getDateForPbTimestampProtoEs } from "@/types";
+import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { extractIssueUID } from "@/utils";
 import { useDatabaseDetailContext } from "../Database/context";
 import HumanizeDate from "../misc/HumanizeDate.vue";
@@ -128,7 +128,7 @@ const columnList = computed(() => {
       width: 128,
       resizable: true,
       render: (revision) => (
-        <HumanizeDate date={getDateForPbTimestamp(revision.createTime)} />
+        <HumanizeDate date={getDateForPbTimestampProtoEs(revision.createTime)} />
       ),
     },
   ];
