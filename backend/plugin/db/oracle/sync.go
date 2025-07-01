@@ -780,7 +780,14 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 			return nil, nil, nil, err
 		}
 		key := db.IndexKey{Schema: schemaName, Table: tableName, Index: indexName}
-		indexColumnMap[key] = append(indexColumnMap[key], columnName)
+		
+		// Clean up column name but preserve the original if it's already clean
+		cleanColumnName := columnName
+		if strings.HasPrefix(columnName, "\"") && strings.HasSuffix(columnName, "\"") {
+			cleanColumnName = columnName[1 : len(columnName)-1]
+		}
+		
+		indexColumnMap[key] = append(indexColumnMap[key], cleanColumnName)
 		descendingMap[key] = append(descendingMap[key], descend.String == "DESC")
 	}
 	if err := colRows.Err(); err != nil {
@@ -848,28 +855,40 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 
 		index.Unique = unique == "UNIQUE"
 		indexKey := db.IndexKey{Schema: schemaName, Table: tableName, Index: index.Name}
-		if strings.Contains(index.Type, "FUNCTION-BASED") {
-			// For function-based indexes, use expressions if available
-			if expressions, ok := indexExpressionMap[indexKey]; ok && len(expressions) > 0 {
-				index.Expressions = expressions
-			} else {
-				// Fallback to column map, but skip if it contains system-generated columns
-				index.Expressions = indexColumnMap[indexKey]
-				// Skip indexes that reference system-generated virtual columns
-				hasVirtualColumn := false
-				for _, expr := range index.Expressions {
-					if strings.HasPrefix(expr, "SYS_NC") {
-						hasVirtualColumn = true
-						break
-					}
-				}
-				if hasVirtualColumn {
-					continue
+		// Handle index expressions - preserve Oracle's classification
+		if expressions, ok := indexExpressionMap[indexKey]; ok && len(expressions) > 0 {
+			// This index has function-based expressions from ALL_IND_EXPRESSIONS
+			index.Expressions = expressions
+		} else {
+			// This index uses simple column references from ALL_IND_COLUMNS
+			columns := indexColumnMap[indexKey]
+			
+			// Skip indexes that reference system-generated virtual columns
+			hasVirtualColumn := false
+			for _, col := range columns {
+				if strings.HasPrefix(col, "SYS_NC") {
+					hasVirtualColumn = true
+					break
 				}
 			}
-		} else {
-			index.Expressions = indexColumnMap[indexKey]
-			index.Descending = descendingMap[indexKey]
+			if hasVirtualColumn {
+				continue
+			}
+			
+			// For column-based indexes, quote the column names to match expected format
+			quotedColumns := make([]string, len(columns))
+			for i, col := range columns {
+				quotedColumns[i] = fmt.Sprintf(`"%s"`, col)
+			}
+			index.Expressions = quotedColumns
+		}
+		// Note: Keep index.Type as reported by Oracle (don't modify it)
+		
+		// Set descending flags for all indexes (both function-based and normal)
+		if desc, ok := descendingMap[indexKey]; ok && len(desc) > 0 {
+			// Always set descending array if we have column information,
+			// even if all columns are ascending (to maintain consistency)
+			index.Descending = desc
 		}
 		index.Visible = true
 		if visibility.Valid && visibility.String == "INVISIBLE" {
@@ -1018,6 +1037,11 @@ func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*s
 		var schemaName string
 		if err := rows.Scan(&schemaName, &materializedView.Name, &materializedView.Definition); err != nil {
 			return nil, err
+		}
+
+		// Ensure the definition ends with a newline to match expected format
+		if materializedView.Definition != "" && !strings.HasSuffix(materializedView.Definition, "\n") {
+			materializedView.Definition += "\n"
 		}
 
 		// Add comment if available

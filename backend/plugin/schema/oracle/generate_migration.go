@@ -1553,15 +1553,41 @@ func writeMigrationIndex(out *strings.Builder, schema, table string, index *stor
 	_, _ = out.WriteString(table)
 	_, _ = out.WriteString(`" (`)
 
-	for i, expr := range index.Expressions {
-		if i > 0 {
-			_, _ = out.WriteString(`, `)
-		}
-		_, _ = out.WriteString(expr)
+	// Handle FUNCTION-BASED indexes differently from normal indexes
+	if strings.Contains(index.Type, "FUNCTION-BASED") {
+		for i, expression := range index.Expressions {
+			if i > 0 {
+				_, _ = out.WriteString(`, `)
+			}
+			_, _ = out.WriteString(expression)
 
-		// Handle descending order if specified
-		if i < len(index.Descending) && index.Descending[i] {
-			_, _ = out.WriteString(` DESC`)
+			// For function-based indexes, always add explicit ASC/DESC
+			if i < len(index.Descending) && index.Descending[i] {
+				_, _ = out.WriteString(` DESC`)
+			} else {
+				_, _ = out.WriteString(` ASC`)
+			}
+		}
+	} else {
+		for i, column := range index.Expressions {
+			if i > 0 {
+				_, _ = out.WriteString(`, `)
+			}
+			// Remove quotes if they already exist to avoid double quoting
+			cleanColumn := column
+			if strings.HasPrefix(column, `"`) && strings.HasSuffix(column, `"`) {
+				cleanColumn = column[1 : len(column)-1]
+			}
+			_, _ = out.WriteString(`"`)
+			_, _ = out.WriteString(cleanColumn)
+			_, _ = out.WriteString(`"`)
+
+			// For normal indexes, add explicit ASC/DESC
+			if i < len(index.Descending) && index.Descending[i] {
+				_, _ = out.WriteString(` DESC`)
+			} else {
+				_, _ = out.WriteString(` ASC`)
+			}
 		}
 	}
 	_, _ = out.WriteString(`)`)

@@ -264,6 +264,7 @@ func (*metadataExtractor) extractIndexExpressions(ctx parser.ITable_index_clause
 	}
 
 	isFunctionBased := false
+	var descendingFlags []bool
 
 	// Extract index expressions using ANTLR parser
 	indexExprOptions := ctx.AllIndex_expr_option()
@@ -273,12 +274,15 @@ func (*metadataExtractor) extractIndexExpressions(ctx parser.ITable_index_clause
 		}
 
 		var exprText string
-		
+		isDescending := false
+
 		// Get the index expression
 		if indexExpr := exprOption.Index_expr(); indexExpr != nil {
 			if columnName := indexExpr.Column_name(); columnName != nil {
-				// Simple column reference
+				// Simple column reference - extract without quotes
 				_, _, exprText = oracleparser.NormalizeColumnName(columnName)
+				// Remove quotes if present to match database metadata format
+				exprText = strings.Trim(exprText, "\"")
 			} else if expression := indexExpr.Expression(); expression != nil {
 				// Function-based expression
 				exprText = getTextFromContext(expression)
@@ -286,16 +290,29 @@ func (*metadataExtractor) extractIndexExpressions(ctx parser.ITable_index_clause
 			}
 		}
 
-		// Check for ASC/DESC and mark as function-based if DESC
-		isDescending := exprOption.DESC() != nil
-		if isDescending {
-			isFunctionBased = true
-		}
+		// Check for ASC/DESC modifiers
+		isDescending = exprOption.DESC() != nil
+		// Note: Don't mark simple column DESC as function-based in the parser
+		// Oracle may internally treat it as function-based, but for DDL generation purposes,
+		// we should generate it as a normal index with explicit ASC/DESC modifiers
 
 		// Store the expression (without ASC/DESC modifiers)
 		if exprText != "" {
 			index.Expressions = append(index.Expressions, exprText)
+			descendingFlags = append(descendingFlags, isDescending)
 		}
+	}
+
+	// Set descending flags if any columns have descending order
+	hasDescending := false
+	for _, desc := range descendingFlags {
+		if desc {
+			hasDescending = true
+			break
+		}
+	}
+	if hasDescending {
+		index.Descending = descendingFlags
 	}
 
 	// Update index type for function-based indexes
@@ -363,6 +380,10 @@ func (e *metadataExtractor) EnterCreate_materialized_view(ctx *parser.Create_mat
 	definition := ""
 	if ctx.Select_only_statement() != nil {
 		definition = getTextFromContext(ctx.Select_only_statement())
+		// Ensure the definition ends with a newline to match database format
+		if definition != "" && !strings.HasSuffix(definition, "\n") {
+			definition += "\n"
+		}
 	}
 
 	materializedView := &storepb.MaterializedViewMetadata{
@@ -371,7 +392,7 @@ func (e *metadataExtractor) EnterCreate_materialized_view(ctx *parser.Create_mat
 	}
 
 	e.materializedViews[viewName] = materializedView
-	
+
 	// Ensure this materialized view is not also treated as a table
 	// Oracle parsing might have triggered table creation first
 	delete(e.tables, viewName)
@@ -429,7 +450,7 @@ func (*metadataExtractor) extractSequenceOptions(ctx *parser.Create_sequenceCont
 				sequence.Increment = incrementValue
 			}
 		}
-		
+
 		// We could extract other sequence properties here if needed:
 		// - MAXVALUE/NOMAXVALUE
 		// - MINVALUE/NOMINVALUE
@@ -438,7 +459,6 @@ func (*metadataExtractor) extractSequenceOptions(ctx *parser.Create_sequenceCont
 		// - ORDER/NOORDER
 	}
 }
-
 
 // EnterCreate_function_body is called when entering a create function statement
 func (e *metadataExtractor) EnterCreate_function_body(ctx *parser.Create_function_bodyContext) {
@@ -456,8 +476,21 @@ func (e *metadataExtractor) EnterCreate_function_body(ctx *parser.Create_functio
 		return
 	}
 
-	// Extract the function body
+	// Extract the function body and ensure it has proper formatting
 	definition := getTextFromContext(ctx)
+
+	// Clean up the definition to match expected format
+	// Remove CREATE OR REPLACE prefix if present
+	if strings.HasPrefix(strings.ToUpper(definition), "CREATE OR REPLACE ") {
+		definition = definition[18:] // Remove "CREATE OR REPLACE "
+	} else if strings.HasPrefix(strings.ToUpper(definition), "CREATE ") {
+		definition = definition[7:] // Remove "CREATE "
+	}
+
+	// Ensure definition starts with FUNCTION keyword
+	if !strings.HasPrefix(strings.ToUpper(definition), "FUNCTION") {
+		definition = "FUNCTION " + definition
+	}
 
 	function := &storepb.FunctionMetadata{
 		Name:       functionName,
@@ -1178,7 +1211,7 @@ func normalizeDataTypeText(text string) string {
 		}
 		return normalized
 	case strings.HasPrefix(normalized, "CHAR("):
-		// Handle CHAR with BYTE/CHAR specifiers  
+		// Handle CHAR with BYTE/CHAR specifiers
 		if strings.HasSuffix(normalized, ")") {
 			start := strings.Index(normalized, "(") + 1
 			end := strings.LastIndex(normalized, ")")
@@ -1315,7 +1348,7 @@ func parseInt(s string) int {
 }
 
 // getTextFromContext gets text from ANTLR context preserving original spacing
-func getTextFromContext(ctx interface{}) string {
+func getTextFromContext(ctx any) string {
 	// Try to get parser-aware context first
 	if parserCtx, ok := ctx.(interface {
 		GetParser() antlr.Parser
@@ -1327,11 +1360,11 @@ func getTextFromContext(ctx interface{}) string {
 			}
 		}
 	}
-	
+
 	// Fallback to GetText() for other contexts
 	if textCtx, ok := ctx.(interface{ GetText() string }); ok {
 		return textCtx.GetText()
 	}
-	
+
 	return ""
 }
