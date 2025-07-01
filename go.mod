@@ -41,7 +41,7 @@ require (
 	github.com/bytebase/trino-parser v0.0.0-20250502000119-9977709a63e8
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/cockroachdb/cockroachdb-parser v0.23.2
+	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.3.0+incompatible
 	github.com/databricks/databricks-sdk-go v0.71.0
 	github.com/docker/docker v28.1.1+incompatible
@@ -144,11 +144,13 @@ require (
 	github.com/biogo/store v0.0.0-20201120204734-aad293a2328f // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/boombuler/barcode v1.0.2 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/cloudfoundry/gosigar v1.3.6 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
-	github.com/cockroachdb/errors v1.9.0 // indirect
-	github.com/cockroachdb/logtags v0.0.0-20211118104740-dabe8e521a4f // indirect
-	github.com/cockroachdb/redact v1.1.3 // indirect
+	github.com/cockroachdb/errors v1.11.3 // indirect
+	github.com/cockroachdb/logtags v0.0.0-20241215232642-bb51bb14a506 // indirect
+	github.com/cockroachdb/redact v1.1.5 // indirect
+	github.com/cockroachdb/version v0.0.0-20250314144055-3860cd14adf2 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
@@ -163,9 +165,10 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.8.0 // indirect
 	github.com/ebitengine/purego v0.8.2 // indirect
+	github.com/elastic/gosigar v0.14.3 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/getsentry/sentry-go v0.12.0 // indirect
+	github.com/getsentry/sentry-go v0.27.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -194,6 +197,7 @@ require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	github.com/jaegertracing/jaeger v1.18.1 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -220,9 +224,9 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/onsi/gomega v1.27.10 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
+	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/petermattis/goid v0.0.0-20211229010228-4d14c490ee36 // indirect
 	github.com/pierrre/geohash v1.0.0 // indirect
 	github.com/pingcap/sysutil v1.0.1-0.20230407040306-fb007c5aff21 // indirect
@@ -254,13 +258,18 @@ require (
 	go.opentelemetry.io/contrib/detectors/gcp v1.35.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.36.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.36.0 // indirect
+	go.opentelemetry.io/otel/exporters/zipkin v1.36.0 // indirect
 	go.opentelemetry.io/otel/metric v1.36.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.36.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.36.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.6.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
+	gonum.org/v1/gonum v0.16.0 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
