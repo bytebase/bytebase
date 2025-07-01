@@ -1,20 +1,13 @@
+import { create } from "@bufbuild/protobuf";
+import { Code } from "@connectrpc/connect";
+import { createContextValues } from "@connectrpc/connect";
 import Emittery from "emittery";
 import { head, isEmpty, cloneDeep } from "lodash-es";
-import { Code } from "@connectrpc/connect";
 import { Status } from "nice-grpc-common";
-import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
 import { sqlServiceClientConnect } from "@/grpcweb";
 import { ignoredCodesContextKey } from "@/grpcweb/context-key";
-import { 
-  CheckRequestSchema,
-  CheckRequest_ChangeType as NewCheckRequest_ChangeType,
-} from "@/types/proto-es/v1/sql_service_pb";
-import {
-  convertNewCheckResponseToOld,
-} from "@/utils/v1/sql-conversions";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
@@ -39,18 +32,19 @@ import type {
   QueryDataSourceType,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
-import type {
-  Advice,
-  QueryOption,
+import {
+  CheckRequestSchema,
+  CheckRequest_ChangeType as NewCheckRequest_ChangeType,
+  QueryRequestSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
+import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
   Advice_Status,
-  QueryOption_RedisRunCommandsOn,
   QueryOptionSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   getValidDataSourceByPolicy,
   hasPermissionToCreateChangeDatabaseIssue,
@@ -141,14 +135,13 @@ const useExecuteSQL = () => {
       statement: params.statement,
       changeType: NewCheckRequest_ChangeType.SQL_EDITOR,
     });
-    const newResponse = await sqlServiceClientConnect.check(request, {
-      contextValues: createContextValues()
-        .set(ignoredCodesContextKey, [Code.PermissionDenied]),
+    const response = await sqlServiceClientConnect.check(request, {
+      contextValues: createContextValues().set(ignoredCodesContextKey, [
+        Code.PermissionDenied,
+      ]),
       signal: abortController?.signal,
     });
-    const response = convertNewCheckResponseToOld(newResponse);
-    const { advices: oldAdvices } = response;
-    const advices = newResponse.advices;
+    const advices = response.advices;
     events.emit("update:advices", { tab, params, advices });
     return { passed: advices.length === 0, advices };
   };
@@ -407,7 +400,7 @@ const useExecuteSQL = () => {
     }
 
     const resultSet = await sqlStore.query(
-      {
+      create(QueryRequestSchema, {
         name: database.name,
         dataSourceId: dataSourceId,
         statement: context.params.statement,
@@ -418,7 +411,7 @@ const useExecuteSQL = () => {
         queryOption: create(QueryOptionSchema, {
           redisRunCommandsOn: sqlEditorStore.redisCommandOption,
         }),
-      } as any,
+      }),
       abortController.signal
     );
 
