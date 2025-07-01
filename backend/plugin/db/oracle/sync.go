@@ -115,6 +115,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get routines from database %q", d.databaseName)
 	}
+	materializedViews, err := getMaterializedViews(txn, d.databaseName, columnMap)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", d.databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
@@ -126,13 +130,14 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		LinkedDatabases: dbLinks,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-		Name:       "",
-		Tables:     tableMap[d.databaseName],
-		Views:      viewMap[d.databaseName],
-		Sequences:  sequences,
-		Functions:  functions,
-		Procedures: procedures,
-		Packages:   packages,
+		Name:              "",
+		Tables:            tableMap[d.databaseName],
+		Views:             viewMap[d.databaseName],
+		MaterializedViews: materializedViews,
+		Sequences:         sequences,
+		Functions:         functions,
+		Procedures:        procedures,
+		Packages:          packages,
 	})
 	return databaseMetadata, nil
 }
@@ -305,7 +310,10 @@ func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*stor
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
 		FROM all_tables
 		WHERE OWNER = '%s'
-		ORDER BY TABLE_NAME`, schemaName)
+		AND TABLE_NAME NOT IN (
+			SELECT MVIEW_NAME FROM all_mviews WHERE OWNER = '%s'
+		)
+		ORDER BY TABLE_NAME`, schemaName, schemaName)
 
 	slog.Debug("running get tables query")
 	rows, err := txn.Query(query)
@@ -840,18 +848,24 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 
 		index.Unique = unique == "UNIQUE"
 		indexKey := db.IndexKey{Schema: schemaName, Table: tableName, Index: index.Name}
-		if index.Type == "FUNCTION-BASED" {
-			index.Expressions = indexExpressionMap[indexKey]
-			// Skip indexes that reference system-generated virtual columns
-			hasVirtualColumn := false
-			for _, expr := range index.Expressions {
-				if strings.HasPrefix(expr, "SYS_NC") {
-					hasVirtualColumn = true
-					break
+		if strings.Contains(index.Type, "FUNCTION-BASED") {
+			// For function-based indexes, use expressions if available
+			if expressions, ok := indexExpressionMap[indexKey]; ok && len(expressions) > 0 {
+				index.Expressions = expressions
+			} else {
+				// Fallback to column map, but skip if it contains system-generated columns
+				index.Expressions = indexColumnMap[indexKey]
+				// Skip indexes that reference system-generated virtual columns
+				hasVirtualColumn := false
+				for _, expr := range index.Expressions {
+					if strings.HasPrefix(expr, "SYS_NC") {
+						hasVirtualColumn = true
+						break
+					}
 				}
-			}
-			if hasVirtualColumn {
-				continue
+				if hasVirtualColumn {
+					continue
+				}
 			}
 		} else {
 			index.Expressions = indexColumnMap[indexKey]
@@ -973,6 +987,55 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	}
 
 	return result, nil
+}
+
+// getMaterializedViews gets all materialized views of a database.
+func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*storepb.ColumnMetadata) ([]*storepb.MaterializedViewMetadata, error) {
+	var materializedViews []*storepb.MaterializedViewMetadata
+
+	// Get materialized view comments
+	materializedViewCommentMap, err := getMaterializedViewComments(txn, schemaName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get materialized view comments")
+	}
+
+	query := fmt.Sprintf(`
+		SELECT OWNER, MVIEW_NAME, QUERY
+		FROM sys.all_mviews
+		WHERE OWNER = '%s'
+		ORDER BY MVIEW_NAME
+	`, schemaName)
+
+	slog.Debug("running get materialized views query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		materializedView := &storepb.MaterializedViewMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &materializedView.Name, &materializedView.Definition); err != nil {
+			return nil, err
+		}
+
+		// Add comment if available
+		key := db.TableKey{Schema: schemaName, Table: materializedView.Name}
+		if comment, ok := materializedViewCommentMap[key]; ok {
+			materializedView.Comment = comment
+		}
+
+		materializedViews = append(materializedViews, materializedView)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return materializedViews, nil
 }
 
 // getSequences gets all sequences of a database.
@@ -1312,7 +1375,6 @@ func getIndexComments(_ *sql.Tx, schemaName string) (map[db.IndexKey]string, err
 }
 
 // getMaterializedViewComments gets comments for materialized views from Oracle system views
-// nolint:unused
 func getMaterializedViewComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, error) {
 	materializedViewCommentMap := make(map[db.TableKey]string)
 

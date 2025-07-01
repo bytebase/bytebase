@@ -69,10 +69,13 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 		Sequences:         []*storepb.SequenceMetadata{},
 	}
 
-	// Sort and add tables
+	// Sort and add tables (exclude tables that are actually materialized views)
 	var tableNames []string
 	for name := range extractor.tables {
-		tableNames = append(tableNames, name)
+		// Skip tables that are actually materialized views
+		if _, isMaterializedView := extractor.materializedViews[name]; !isMaterializedView {
+			tableNames = append(tableNames, name)
+		}
 	}
 	slices.Sort(tableNames)
 	for _, name := range tableNames {
@@ -368,6 +371,10 @@ func (e *metadataExtractor) EnterCreate_materialized_view(ctx *parser.Create_mat
 	}
 
 	e.materializedViews[viewName] = materializedView
+	
+	// Ensure this materialized view is not also treated as a table
+	// Oracle parsing might have triggered table creation first
+	delete(e.tables, viewName)
 }
 
 // EnterCreate_sequence is called when entering a create sequence statement

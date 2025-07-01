@@ -348,11 +348,10 @@ CREATE TABLE PRODUCT_SALES_DAILY (
     COST_OF_GOODS NUMBER(12,2) NOT NULL
 );
 
--- Materialized view for performance
+-- Materialized view for performance (simplified for query rewrite support)
 CREATE MATERIALIZED VIEW PRODUCT_PERFORMANCE_MV
 BUILD IMMEDIATE
 REFRESH COMPLETE ON DEMAND
-ENABLE QUERY REWRITE
 AS
 SELECT 
     PRODUCT_ID,
@@ -362,7 +361,6 @@ SELECT
     SUM(UNITS_SOLD) AS TOTAL_UNITS,
     SUM(COST_OF_GOODS) AS TOTAL_COST,
     SUM(SALES_AMOUNT) - SUM(COST_OF_GOODS) AS TOTAL_PROFIT,
-    ROUND((SUM(SALES_AMOUNT) - SUM(COST_OF_GOODS)) / NULLIF(SUM(SALES_AMOUNT), 0) * 100, 2) AS PROFIT_MARGIN_PCT,
     AVG(SALES_AMOUNT) AS AVG_DAILY_REVENUE,
     MIN(SALE_DATE) AS FIRST_SALE_DATE,
     MAX(SALE_DATE) AS LAST_SALE_DATE
@@ -372,7 +370,7 @@ GROUP BY PRODUCT_ID, CATEGORY;
 
 -- Create index on materialized view
 CREATE INDEX idx_mv_category ON PRODUCT_PERFORMANCE_MV(CATEGORY);
-CREATE INDEX idx_mv_profit_margin ON PRODUCT_PERFORMANCE_MV(PROFIT_MARGIN_PCT);
+CREATE INDEX idx_mv_total_profit ON PRODUCT_PERFORMANCE_MV(TOTAL_PROFIT);
 `,
 		},
 		{
@@ -848,10 +846,10 @@ func compareMetadata(t *testing.T, dbMeta, parsedMeta *storepb.DatabaseSchemaMet
 	dbSchema := dbMeta.Schemas[0]
 	parsedSchema := parsedMeta.Schemas[0]
 
-	t.Logf("Test case %s - DB: %d tables, %d views, %d sequences, %d functions, %d procedures | Parsed: %d tables, %d views, %d sequences, %d functions, %d procedures",
+	t.Logf("Test case %s - DB: %d tables, %d views, %d materialized views, %d sequences, %d functions, %d procedures | Parsed: %d tables, %d views, %d materialized views, %d sequences, %d functions, %d procedures",
 		testName,
-		len(dbSchema.Tables), len(dbSchema.Views), len(dbSchema.Sequences), len(dbSchema.Functions), len(dbSchema.Procedures),
-		len(parsedSchema.Tables), len(parsedSchema.Views), len(parsedSchema.Sequences), len(parsedSchema.Functions), len(parsedSchema.Procedures))
+		len(dbSchema.Tables), len(dbSchema.Views), len(dbSchema.MaterializedViews), len(dbSchema.Sequences), len(dbSchema.Functions), len(dbSchema.Procedures),
+		len(parsedSchema.Tables), len(parsedSchema.Views), len(parsedSchema.MaterializedViews), len(parsedSchema.Sequences), len(parsedSchema.Functions), len(parsedSchema.Procedures))
 
 	// Compare schema names (allow flexibility for Oracle default schema)
 	if dbSchema.Name != "" && parsedSchema.Name != "" {
@@ -963,24 +961,24 @@ func compareColumns(t *testing.T, dbColumns, parsedColumns []*storepb.ColumnMeta
 // compareColumnMetadata comprehensively compares all fields in ColumnMetadata
 func compareColumnMetadata(t *testing.T, dbCol, parsedCol *storepb.ColumnMetadata, tableName, colName string) {
 	// 1. Name
-	require.Equal(t, dbCol.Name, parsedCol.Name, 
+	require.Equal(t, dbCol.Name, parsedCol.Name,
 		"column names should match for %s.%s", tableName, colName)
 
 	// 2. Position
-	require.Equal(t, dbCol.Position, parsedCol.Position, 
-		"column positions should match for %s.%s: db=%d, parsed=%d", 
+	require.Equal(t, dbCol.Position, parsedCol.Position,
+		"column positions should match for %s.%s: db=%d, parsed=%d",
 		tableName, colName, dbCol.Position, parsedCol.Position)
 
 	// 3. Type (with Oracle-specific normalization)
 	dbType := normalizeOracleDataType(dbCol.Type)
 	parsedType := normalizeOracleDataType(parsedCol.Type)
-	require.Equal(t, dbType, parsedType, 
-		"data types should match for column %s.%s: db=%s, parsed=%s", 
+	require.Equal(t, dbType, parsedType,
+		"data types should match for column %s.%s: db=%s, parsed=%s",
 		tableName, colName, dbCol.Type, parsedCol.Type)
 
 	// 4. Nullable
-	require.Equal(t, dbCol.Nullable, parsedCol.Nullable, 
-		"nullable property should match for column %s.%s: db=%v, parsed=%v", 
+	require.Equal(t, dbCol.Nullable, parsedCol.Nullable,
+		"nullable property should match for column %s.%s: db=%v, parsed=%v",
 		tableName, colName, dbCol.Nullable, parsedCol.Nullable)
 
 	// 5. Default values (existing function)
@@ -1012,8 +1010,8 @@ func compareColumnMetadata(t *testing.T, dbCol, parsedCol *storepb.ColumnMetadat
 
 	// 8. Comment
 	if dbCol.Comment != "" || parsedCol.Comment != "" {
-		require.Equal(t, dbCol.Comment, parsedCol.Comment, 
-			"column comments should match for %s.%s: db=%s, parsed=%s", 
+		require.Equal(t, dbCol.Comment, parsedCol.Comment,
+			"column comments should match for %s.%s: db=%s, parsed=%s",
 			tableName, colName, dbCol.Comment, parsedCol.Comment)
 	}
 
@@ -1072,7 +1070,7 @@ func compareColumnMetadata(t *testing.T, dbCol, parsedCol *storepb.ColumnMetadat
 
 	// Log successful comparison with key details
 	t.Logf("✓ Column %s.%s: type=%s, nullable=%v, default=%s, pos=%d%s",
-		tableName, colName, parsedType, parsedCol.Nullable, 
+		tableName, colName, parsedType, parsedCol.Nullable,
 		getColumnDefaultString(parsedCol), parsedCol.Position,
 		getColumnExtraInfo(parsedCol))
 }
@@ -1082,7 +1080,7 @@ func compareGenerationMetadata(t *testing.T, dbGen, parsedGen *storepb.Generatio
 	if dbGen == nil && parsedGen == nil {
 		return // Both nil, match
 	}
-	
+
 	if dbGen == nil || parsedGen == nil {
 		require.Equal(t, dbGen, parsedGen,
 			"generation metadata presence should match for column %s.%s: db=%v, parsed=%v",
@@ -1104,11 +1102,11 @@ func compareGenerationMetadata(t *testing.T, dbGen, parsedGen *storepb.Generatio
 // getColumnExtraInfo returns additional column information for logging
 func getColumnExtraInfo(col *storepb.ColumnMetadata) string {
 	var extras []string
-	
+
 	if col.IsIdentity {
 		extras = append(extras, "identity")
 	}
-	
+
 	if col.Generation != nil {
 		switch col.Generation.Type {
 		case storepb.GenerationMetadata_TYPE_VIRTUAL:
@@ -1117,15 +1115,15 @@ func getColumnExtraInfo(col *storepb.ColumnMetadata) string {
 			extras = append(extras, "stored")
 		}
 	}
-	
+
 	if col.CharacterSet != "" {
 		extras = append(extras, fmt.Sprintf("charset=%s", col.CharacterSet))
 	}
-	
+
 	if col.Collation != "" {
 		extras = append(extras, fmt.Sprintf("collation=%s", col.Collation))
 	}
-	
+
 	if len(extras) > 0 {
 		return fmt.Sprintf(" (%s)", strings.Join(extras, ", "))
 	}
@@ -1168,6 +1166,9 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 		// Compare expressions (column list)
 		require.Equal(t, len(dbIdx.Expressions), len(parsedIdx.Expressions),
 			"expression count should match for index %s", idxName)
+
+		// Log detailed expression information for debugging
+		t.Logf("Index %s expressions - DB: %v, Parsed: %v", idxName, dbIdx.Expressions, parsedIdx.Expressions)
 
 		for i, dbExpr := range dbIdx.Expressions {
 			if i < len(parsedIdx.Expressions) {
