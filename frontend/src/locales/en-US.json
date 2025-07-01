@@ -2062,7 +2062,8 @@
       "no-default": "No default",
       "expression": "Expression",
       "null": "NULL",
-      "value": "Value"
+      "value": "Value",
+      "postgres-placeholder": "Enter default expression (e.g., 'hello', 42, now(), nextval('seq')) or leave empty for no default"
     },
     "message": {
       "invalid-schema-name": "Invalid schema name",
