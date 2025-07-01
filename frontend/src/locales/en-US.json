@@ -1034,6 +1034,14 @@
       "approved": "Approved",
       "rejected": "Rejected",
       "under-review": "Under review"
+    },
+    "approval": {
+      "rejected-title": "Issue Approval Rejected",
+      "pending-title": "Issue Approval Pending",
+      "rejected-description": "This issue has been rejected by approvers. Force rollout is required to proceed.",
+      "pending-description": "This issue is waiting for approval. Force rollout is required to proceed.",
+      "rejected-error": "Issue approval has been rejected. Please enable force rollout to proceed.",
+      "pending-error": "Issue approval is pending. Please enable force rollout to proceed."
     }
   },
   "plan": {
@@ -1114,7 +1122,8 @@
     }
   },
   "rollout": {
-    "rollouts": "Rollouts"
+    "rollouts": "Rollouts",
+    "force-rollout": "Force rollout"
   },
   "quick-action": {
     "create-db": "Create database",

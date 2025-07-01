@@ -1034,6 +1034,14 @@
       "approved": "Tán thành",
       "rejected": "Vật bị loại bỏ",
       "under-review": "Đang xem xét"
+    },
+    "approval": {
+      "rejected-title": "Vấn đề phê duyệt bị từ chối",
+      "pending-title": "Đang chờ phê duyệt vấn đề",
+      "rejected-description": "Vấn đề này đã bị người phê duyệt từ chối. Cần phải triển khai bắt buộc để tiếp tục.",
+      "pending-description": "Sự cố này đang chờ phê duyệt. Cần phải triển khai bắt buộc để tiếp tục.",
+      "rejected-error": "Đã từ chối phê duyệt vấn đề. Vui lòng bật triển khai bắt buộc để tiếp tục.",
+      "pending-error": "Đang chờ phê duyệt vấn đề. Vui lòng bật triển khai bắt buộc để tiếp tục."
     }
   },
   "plan": {
@@ -1114,7 +1122,8 @@
     }
   },
   "rollout": {
-    "rollouts": "Triển khai"
+    "rollouts": "Triển khai",
+    "force-rollout": "Buộc triển khai"
   },
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",
