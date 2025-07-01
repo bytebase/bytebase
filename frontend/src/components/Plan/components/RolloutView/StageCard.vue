@@ -20,8 +20,9 @@
       </div>
       <div class="flex justify-end items-center">
         <RunTasksButton
-          v-if="isCreated && canRunTasks"
+          v-if="isCreated"
           :stage="stage"
+          :disabled="!canRunTasks || runableTasks.length === 0"
           @run-tasks="handleRunAllTasks"
         />
         <NPopconfirm
@@ -48,6 +49,7 @@
       </div>
     </div>
     <NVirtualList
+      v-if="filteredTasks.length > 0"
       style="max-height: 80vh"
       :items="filteredTasks"
       :item-size="40"
@@ -76,12 +78,15 @@
         </div>
       </template>
     </NVirtualList>
+    <div v-else class="text-center text-zinc-500 py-2 text-sm leading-6">
+      {{ $t("task.no-tasks") }}
+    </div>
 
     <!-- Task Rollout Action Panel -->
     <TaskRolloutActionPanel
-      v-if="showRunTasksPanel"
+      :show="showRunTasksPanel"
       action="RUN"
-      :target="{ type: 'tasks', stage }"
+      :target="{ type: 'tasks', stage, tasks: runableTasks }"
       @close="handlePanelClose"
     />
   </div>
@@ -107,8 +112,8 @@ import {
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   Stage,
+  Task_Status,
   type Task,
-  type Task_Status,
 } from "@/types/proto/v1/rollout_service";
 import { extractProjectResourceName } from "@/utils";
 import { extractSchemaVersionFromTask } from "@/utils";
@@ -149,8 +154,22 @@ const filteredTasks = computed(() => {
   );
 });
 
+const runableTasks = computed(() => {
+  return filteredTasks.value.filter(
+    (task) =>
+      task.status === Task_Status.NOT_STARTED ||
+      task.status === Task_Status.PENDING ||
+      task.status === Task_Status.FAILED ||
+      task.status === Task_Status.CANCELED
+  );
+});
+
 const canRunTasks = computed(() => {
-  return canPerformTaskAction(props.stage.tasks, rollout.value, project.value);
+  return canPerformTaskAction(
+    filteredTasks.value,
+    rollout.value,
+    project.value
+  );
 });
 
 const canCreateRollout = computed(() => {

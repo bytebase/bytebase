@@ -281,6 +281,7 @@
     "created": "Created",
     "run-immediately": "Run task immediately | Run tasks immediately",
     "selected-n-tasks": "{n} task selected | {n} tasks selected",
+    "no-tasks": "No tasks",
     "no-tasks-selected": "No tasks selected",
     "no-runnable-tasks": "No runnable tasks",
     "no-skippable-tasks": "No skippable tasks",

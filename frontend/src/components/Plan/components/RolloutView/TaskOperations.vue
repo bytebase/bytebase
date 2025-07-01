@@ -38,12 +38,14 @@
   </NScrollbar>
 
   <!-- Task Rollout Action Panel -->
-  <TaskRolloutActionPanel
-    v-if="state.showActionPanel && state.selectedAction && actionTarget"
-    :action="state.selectedAction"
-    :target="actionTarget"
-    @close="handleActionPanelClose"
-  />
+  <template v-if="state.selectedAction && actionTarget">
+    <TaskRolloutActionPanel
+      :show="state.showActionPanel"
+      :action="state.selectedAction"
+      :target="actionTarget"
+      @close="handleActionPanelClose"
+    />
+  </template>
 </template>
 
 <script lang="ts" setup>
