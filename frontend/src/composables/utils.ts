@@ -243,7 +243,7 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
       if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
         continue;
       }
-      const data = JSON.parse(row.values[0].kind.value as string);
+      const data = JSON.parse(row.values[0].kind.value);
       const values: RowValue[] = Array.from({ length: columns.length }).map(
         (_) =>
           createProto(RowValueSchema, {
@@ -321,7 +321,7 @@ const getNoSQLRows = (row: QueryRow): NoSQLRowData[] | undefined => {
   if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
     return;
   }
-  const parsedRow = JSON.parse(row.values[0].kind.value as string) as {
+  const parsedRow = JSON.parse(row.values[0].kind.value) as {
     [key: string]: any;
   };
   const results: NoSQLRowData[] = [];
