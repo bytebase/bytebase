@@ -43,7 +43,6 @@
 </template>
 
 <script setup lang="ts">
-// Removed @tanstack/vue-query dependency
 import { create } from "@bufbuild/protobuf";
 import {
   refDebounced,
