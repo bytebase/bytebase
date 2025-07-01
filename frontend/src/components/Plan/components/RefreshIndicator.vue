@@ -31,7 +31,6 @@ import { getLastRefreshTime, useResourcePoller } from "../logic/poller";
 const { t } = useI18n();
 const currentTime = ref(Date.now());
 
-// Initialize resource poller with specified resources or let it determine automatically
 const resourcePoller = useResourcePoller();
 
 const isRefreshing = computed(() => {
