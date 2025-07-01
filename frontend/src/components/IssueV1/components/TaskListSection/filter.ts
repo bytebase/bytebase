@@ -20,13 +20,13 @@ export const filterTask = (
   if (status) {
     return task.status === status;
   }
-  if (adviceStatus) {
+  if (adviceStatus !== undefined) {
     if (isCreating.value) {
       const result = sqlCheckResultMap[task.target];
-      if ((adviceStatus as any) === Advice_Status.STATUS_UNSPECIFIED) {
+      if (adviceStatus === Advice_Status.STATUS_UNSPECIFIED) {
         return !Boolean(result);
       }
-      if ((adviceStatus as any) === Advice_Status.SUCCESS) {
+      if (adviceStatus === Advice_Status.SUCCESS) {
         return result && result.advices.length === 0;
       }
       return (
