@@ -8,6 +8,24 @@
   >
     <template #default>
       <div class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1">
+        <!-- Issue Approval Alert -->
+        <div v-if="shouldShowForceRollout" class="shrink-0">
+          <NAlert
+            type="warning"
+            :title="
+              issueApprovalStatus.status === 'rejected'
+                ? $t('issue.approval.rejected-title')
+                : $t('issue.approval.pending-title')
+            "
+          >
+            {{
+              issueApprovalStatus.status === "rejected"
+                ? $t("issue.approval.rejected-description")
+                : $t("issue.approval.pending-description")
+            }}
+          </NAlert>
+        </div>
+
         <div
           class="flex flex-row gap-x-2 shrink-0 overflow-y-hidden justify-start items-center"
         >
@@ -141,7 +159,15 @@
     </template>
     <template #footer>
       <div class="w-full flex flex-row justify-between items-center gap-x-2">
-        <div class="flex justify-end gap-x-3 w-full">
+        <!-- Force rollout checkbox -->
+        <div v-if="shouldShowForceRollout" class="flex items-center">
+          <NCheckbox v-model:checked="forceRollout" :disabled="state.loading">
+            {{ $t("rollout.force-rollout") }}
+          </NCheckbox>
+        </div>
+        <div v-else></div>
+
+        <div class="flex justify-end gap-x-3">
           <NButton @click="$emit('close')">
             {{ $t("common.cancel") }}
           </NButton>
@@ -154,7 +180,7 @@
                 @click="handleConfirm"
               >
                 <template v-if="action === 'RUN'">{{
-                  $t("common.run")
+                  $t("common.rollout")
                 }}</template>
                 <template v-else-if="action === 'SKIP'">{{
                   $t("common.skip")
@@ -177,8 +203,10 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
+import { head } from "lodash-es";
 import Long from "long";
 import {
+  NAlert,
   NButton,
   NDatePicker,
   NInput,
@@ -200,8 +228,11 @@ import {
   BatchSkipTasksRequestSchema,
   BatchCancelTaskRunsRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import type { Stage, Task, TaskRun } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { usePlanContext } from "../../logic";
+import { useIssueReviewContext } from "../../logic/issue-review";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 
 // Default delay for running tasks if not scheduled immediately.
@@ -225,12 +256,58 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { issue } = usePlanContext();
+const reviewContext = useIssueReviewContext();
 const state = reactive<LocalState>({
   loading: false,
 });
 const environmentStore = useEnvironmentV1Store();
 const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
+const forceRollout = ref(false);
+
+// Check issue approval status using the review context
+const issueApprovalStatus = computed(() => {
+  if (!issue?.value) {
+    return { isApproved: true, hasIssue: false };
+  }
+
+  const currentIssue = issue.value;
+  const approvalTemplate = head(currentIssue.approvalTemplates);
+
+  // Check if issue has approval template
+  if (!approvalTemplate || (approvalTemplate.flow?.steps || []).length === 0) {
+    return { isApproved: true, hasIssue: true };
+  }
+
+  // Use the review context to determine approval status
+  const isApproved = reviewContext.done.value;
+
+  // Determine the specific status (rejected vs pending)
+  let status = "pending";
+  if (
+    currentIssue.approvers.some(
+      (app) => app.status === Issue_Approver_Status.REJECTED
+    )
+  ) {
+    status = "rejected";
+  }
+
+  return {
+    isApproved,
+    hasIssue: true,
+    status,
+  };
+});
+
+const shouldShowForceRollout = computed(() => {
+  // Show force rollout checkbox only for RUN action with issue approval
+  return (
+    props.action === "RUN" &&
+    issueApprovalStatus.value.hasIssue &&
+    !issueApprovalStatus.value.isApproved
+  );
+});
 
 // Extract stage from target
 const targetStage = computed(() => {
@@ -256,7 +333,7 @@ const targetTaskRuns = computed(() => {
 const title = computed(() => {
   switch (props.action) {
     case "RUN":
-      return t("common.run");
+      return t("common.rollout");
     case "SKIP":
       return t("common.skip");
     case "CANCEL":
@@ -332,6 +409,20 @@ const confirmErrors = computed(() => {
     }
   }
 
+  // Check issue approval for RUN action
+  if (
+    props.action === "RUN" &&
+    !issueApprovalStatus.value.isApproved &&
+    issueApprovalStatus.value.hasIssue &&
+    !forceRollout.value
+  ) {
+    if (issueApprovalStatus.value.status === "rejected") {
+      errors.push(t("issue.approval.rejected-error"));
+    } else {
+      errors.push(t("issue.approval.pending-error"));
+    }
+  }
+
   // For CANCEL, we need task runs
   if (
     props.action === "CANCEL" &&
@@ -403,5 +494,6 @@ const handleConfirm = async () => {
 const resetState = () => {
   comment.value = "";
   runTimeInMS.value = undefined;
+  forceRollout.value = false;
 };
 </script>

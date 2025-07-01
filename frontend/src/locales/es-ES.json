@@ -1034,6 +1034,14 @@
       "approved": "Aprobado",
       "rejected": "Rechazado",
       "under-review": "Bajo revisión"
+    },
+    "approval": {
+      "rejected-title": "Aprobación de emisión rechazada",
+      "pending-title": "Aprobación de emisión pendiente",
+      "rejected-description": "Este problema ha sido rechazado por los aprobadores. Se requiere una implementación forzada para continuar.",
+      "pending-description": "Este problema está pendiente de aprobación. Se requiere una implementación forzada para continuar.",
+      "rejected-error": "Se ha rechazado la aprobación del problema. Habilite la implementación forzada para continuar.",
+      "pending-error": "La aprobación del problema está pendiente. Habilite la implementación forzada para continuar."
     }
   },
   "plan": {
@@ -1114,7 +1122,8 @@
     }
   },
   "rollout": {
-    "rollouts": "Despliegues"
+    "rollouts": "Despliegues",
+    "force-rollout": "Despliegue de fuerza"
   },
   "quick-action": {
     "create-db": "Crear base de datos",
