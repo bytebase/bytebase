@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
-import { computed, inject, provide, ref } from "vue";
+import { computed, inject, provide, ref, onUnmounted } from "vue";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCurrentProjectV1 } from "@/store";
@@ -70,6 +70,7 @@ export const provideRolloutViewContext = () => {
       // Handle preview errors gracefully
       console.error("Failed to fetch rollout preview:", error);
       rolloutPreview.value = Rollout.fromPartial({});
+    } finally {
     }
   };
 
@@ -77,11 +78,19 @@ export const provideRolloutViewContext = () => {
   fetchRolloutPreview();
 
   // Listen for resource refresh completion
-  events.on("resource-refresh-completed", async ({ resources }) => {
-    // Refresh rollout preview if rollout was refreshed
-    if (resources.includes("rollout")) {
-      await fetchRolloutPreview();
+  const unsubscribe = events.on(
+    "resource-refresh-completed",
+    async ({ resources }) => {
+      // Refresh rollout preview if rollout was refreshed
+      if (resources.includes("rollout")) {
+        await fetchRolloutPreview();
+      }
     }
+  );
+
+  // Clean up event listener when component unmounts.
+  onUnmounted(() => {
+    unsubscribe();
   });
 
   const context: RolloutViewContext = {

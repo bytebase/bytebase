@@ -27,12 +27,14 @@
     </div>
 
     <!-- Task Rollout Action Panel -->
-    <TaskRolloutActionPanel
-      v-if="currentPanelAction && showActionPanel && actionTarget"
-      :action="currentPanelAction"
-      :target="actionTarget"
-      @close="handleActionPanelClose"
-    />
+    <template v-if="currentPanelAction && actionTarget">
+      <TaskRolloutActionPanel
+        :show="showActionPanel"
+        :action="currentPanelAction"
+        :target="actionTarget"
+        @close="handleActionPanelClose"
+      />
+    </template>
   </div>
 </template>
 
