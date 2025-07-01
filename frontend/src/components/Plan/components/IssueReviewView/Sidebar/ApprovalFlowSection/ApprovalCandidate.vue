@@ -23,7 +23,6 @@ import { computedAsync } from "@vueuse/core";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useCurrentUserV1, useUserStore } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToNew } from "@/utils/v1/common-conversions";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 
 const props = defineProps<{
@@ -39,7 +38,7 @@ const candidateUser = computedAsync(async () => {
   if (!user) {
     return;
   }
-  if (user.userType !== UserType.USER || convertStateToNew(user.state) !== State.ACTIVE) {
+  if (user.userType !== UserType.USER || user.state !== State.ACTIVE) {
     return;
   }
   return user;

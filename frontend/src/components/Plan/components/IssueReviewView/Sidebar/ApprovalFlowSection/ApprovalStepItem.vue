@@ -85,7 +85,6 @@ import type {
   Issue_Approver,
 } from "@/types/proto/v1/issue_service";
 import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { memberMapToRolesInProjectIAM } from "@/utils";
 import ApprovalUserView from "./ApprovalUserView.vue";
 import PotentialApprovers from "./PotentialApprovers.vue";
@@ -247,7 +246,7 @@ const potentialApprovers = computedAsync(async () => {
   const users: UserType[] = [];
   for (const email of filteredCandidateEmails.value) {
     const user = await userStore.getOrFetchUserByIdentifier(email);
-    if (user && user.state === convertStateToOld(State.ACTIVE)) {
+    if (user && user.state === State.ACTIVE) {
       users.push(user);
     }
   }

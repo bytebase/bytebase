@@ -115,6 +115,8 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import { emptyProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import WorkspaceMode from "./WorkspaceMode.vue";
 
 interface LocalState {
@@ -213,9 +215,9 @@ const tryFinishSetup = async () => {
       payload: {
         databaseChangeMode: state.mode,
       },
-      updateMask: [
-        "value.workspace_profile_setting_value.database_change_mode",
-      ],
+      updateMask: create(FieldMaskSchema, {
+        paths: ["value.workspace_profile_setting_value.database_change_mode"]
+      }),
     });
     onCancel(getHomePageByMode(state.mode));
   } finally {

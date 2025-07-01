@@ -69,6 +69,7 @@ import {
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 
 interface LocalState {
   selectedTab: Webhook_Type;
@@ -431,7 +432,7 @@ const onSave = async () => {
           value: data,
         },
       }),
-      updateMask,
+      updateMask: create(FieldMaskSchema, { paths: updateMask }),
     });
 
     switch (state.selectedTab) {
