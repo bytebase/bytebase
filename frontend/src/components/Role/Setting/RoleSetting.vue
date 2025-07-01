@@ -60,11 +60,13 @@ import { sortBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
+import { create } from "@bufbuild/protobuf";
 import { BBSpin } from "@/bbkit";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { featureToRef, useRoleStore } from "@/store";
 import { PRESET_ROLES } from "@/types";
-import { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
+import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { RoleDataTable, RolePanel } from "./components";
@@ -117,7 +119,7 @@ const filteredRoleList = computed(() => {
 });
 
 const addRole = () => {
-  selectRole(Role.fromPartial({}), "ADD");
+  selectRole(create(RoleSchema, {}), "ADD");
 };
 
 const selectRole = (role: Role | undefined, mode?: "ADD" | "EDIT") => {

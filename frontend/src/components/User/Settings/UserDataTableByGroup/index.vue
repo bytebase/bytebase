@@ -18,7 +18,7 @@ import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
-import { type User } from "@/types/proto/v1/user_service";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 import GroupMemberNameCell from "./cells/GroupMemberNameCell.vue";
 import GroupNameCell from "./cells/GroupNameCell.vue";
 import GroupOperationsCell from "./cells/GroupOperationsCell.vue";

@@ -6,7 +6,7 @@ import type {
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto-es/v1/org_policy_service_pb";
-import type { User } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 
 export interface MaskData {
   schema: string;

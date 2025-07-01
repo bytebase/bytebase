@@ -10,11 +10,12 @@ import {
   groupBindingPrefix,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { create } from "@bufbuild/protobuf";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
+import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import { User, UserType } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { MemberBinding, GroupBinding } from "./types";
 
 const getMemberBinding = async (
@@ -67,18 +68,18 @@ const getMemberBinding = async (
 
     if (!user) {
       const email = extractUserId(member);
-      user = User.create({
+      user = create(UserSchema, {
         title: member,
         name: `${userNamePrefix}${email}`,
         email: email,
         userType: UserType.USER,
-        state: convertStateToOld(State.DELETED),
+        state: State.DELETED,
       });
     }
     memberBinding = {
       type: "users",
       title: user.title,
-      user,
+      user: user,
       binding: getUserEmailInBinding(user.email),
       workspaceLevelRoles: new Set<string>(),
       projectRoleBindings: [],

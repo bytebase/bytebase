@@ -108,6 +108,7 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton, NInput, NTransfer } from "naive-ui";
 import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { create } from "@bufbuild/protobuf";
 import { BBSpin } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
@@ -115,7 +116,8 @@ import { pushNotification, useRoleStore } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
 import { PERMISSIONS } from "@/types";
-import { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
+import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { extractRoleResourceName } from "@/utils";
 import { displayPermissionTitle } from "@/utils/permission";
@@ -144,7 +146,7 @@ const roleStore = useRoleStore();
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
 const state = reactive<LocalState>({
-  role: Role.fromPartial({}),
+  role: create(RoleSchema, {}),
   dirty: false,
   loading: false,
   showImportPermissionFromRoleModal: false,

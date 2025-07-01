@@ -21,7 +21,7 @@ import {
 } from "@/types";
 import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import type { User } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "./auth";

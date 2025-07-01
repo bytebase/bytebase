@@ -38,7 +38,7 @@ import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import UserView from "@/components/User/UserView.vue";
-import type { User as UserType } from "@/types/proto/v1/user_service";
+import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
 import ApprovalCandidate from "./ApprovalCandidate.vue";
 
 const props = defineProps<{

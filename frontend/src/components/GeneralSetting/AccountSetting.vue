@@ -124,6 +124,8 @@ import {
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { type WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
 import { TriangleAlertIcon } from "lucide-vue-next";
 import { NDivider, NTooltip } from "naive-ui";
@@ -200,7 +202,7 @@ const onUpdate = async () => {
     await signInFrequencySettingRef.value.update();
   }
 
-  const updateMasks = [];
+  const updateMaskPaths = [];
   const payload: Partial<WorkspaceProfileSetting> = {
     disallowSignup: state.disallowSignup,
     require2fa: state.require2fa,
@@ -210,24 +212,26 @@ const onUpdate = async () => {
     state.disallowSignup !==
     settingV1Store.workspaceProfileSetting?.disallowSignup
   ) {
-    updateMasks.push("value.workspace_profile_setting_value.disallow_signup");
+    updateMaskPaths.push("value.workspace_profile_setting_value.disallow_signup");
   }
   if (state.require2fa !== settingV1Store.workspaceProfileSetting?.require2fa) {
-    updateMasks.push("value.workspace_profile_setting_value.require_2fa");
+    updateMaskPaths.push("value.workspace_profile_setting_value.require_2fa");
   }
   if (
     state.disallowPasswordSignin !==
     settingV1Store.workspaceProfileSetting?.disallowPasswordSignin
   ) {
-    updateMasks.push(
+    updateMaskPaths.push(
       "value.workspace_profile_setting_value.disallow_password_signin"
     );
   }
 
-  if (updateMasks.length > 0) {
+  if (updateMaskPaths.length > 0) {
     await settingV1Store.updateWorkspaceProfile({
       payload,
-      updateMask: updateMasks,
+      updateMask: create(FieldMaskSchema, {
+        paths: updateMaskPaths
+      }),
     });
   }
 };

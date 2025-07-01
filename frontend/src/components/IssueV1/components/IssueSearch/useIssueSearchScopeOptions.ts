@@ -19,7 +19,7 @@ import {
 } from "@/store";
 import { SYSTEM_BOT_USER_NAME, UNKNOWN_ID, isValidProjectName } from "@/types";
 import { type Label } from "@/types/proto/v1/project_service";
-import { UserType } from "@/types/proto/v1/user_service";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   getDefaultPagination,

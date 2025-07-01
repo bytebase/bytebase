@@ -18,7 +18,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { getIdentityProviderResourceId } from "@/store/modules/v1/common";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import { identityProviderTypeToString } from "@/utils";
 
 withDefaults(
