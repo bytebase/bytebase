@@ -2,7 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
-import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCurrentProjectV1 } from "@/store";
@@ -12,7 +11,7 @@ import {
   convertNewRolloutToOld,
   convertOldPlanToNew,
 } from "@/utils/v1/rollout-conversions";
-import { usePlanContextWithRollout, usePlanContext } from "../../logic";
+import { usePlanContextWithRollout } from "../../logic";
 
 export type RolloutViewContext = {
   rollout: Ref<Rollout>;
@@ -29,8 +28,7 @@ export const useRolloutViewContext = () => {
 };
 
 export const provideRolloutViewContext = () => {
-  const { plan, rollout } = usePlanContextWithRollout();
-  const { events } = usePlanContext();
+  const { events, plan, rollout } = usePlanContextWithRollout();
   const { project } = useCurrentProjectV1();
 
   const rolloutPreview = ref<Rollout>(Rollout.fromPartial({}));
@@ -78,20 +76,10 @@ export const provideRolloutViewContext = () => {
   // Initial fetch
   fetchRolloutPreview();
 
-  // Poll for updates
-  const poller = useProgressivePoll(fetchRolloutPreview, {
-    interval: {
-      min: 2000,
-      max: 10000,
-      growth: 2,
-      jitter: 500,
-    },
-  });
-  poller.start();
-
-  events.on("status-changed", async (data) => {
-    // Only refresh if the event is eager or if rollout is not yet created
-    if (data.eager) {
+  // Listen for resource refresh completion
+  events.on("resource-refresh-completed", async ({ resources }) => {
+    // Refresh rollout preview if rollout was refreshed
+    if (resources.includes("rollout")) {
       await fetchRolloutPreview();
     }
   });
