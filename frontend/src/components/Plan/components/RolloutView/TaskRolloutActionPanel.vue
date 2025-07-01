@@ -180,7 +180,7 @@
                 @click="handleConfirm"
               >
                 <template v-if="action === 'RUN'">{{
-                  $t("common.run")
+                  $t("common.rollout")
                 }}</template>
                 <template v-else-if="action === 'SKIP'">{{
                   $t("common.skip")
