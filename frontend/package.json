@@ -20,7 +20,7 @@
     "@codingame/monaco-vscode-api": "15.0.3",
     "@codingame/monaco-vscode-javascript-default-extension": "18.2.0",
     "@codingame/monaco-vscode-languages-service-override": "15.0.3",
-    "@codingame/monaco-vscode-sql-default-extension": "15.0.3",
+    "@codingame/monaco-vscode-sql-default-extension": "18.2.0",
     "@codingame/monaco-vscode-textmate-service-override": "15.0.3",
     "@codingame/monaco-vscode-theme-defaults-default-extension": "15.0.3",
     "@codingame/monaco-vscode-theme-service-override": "15.0.3",
