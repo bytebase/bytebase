@@ -31,11 +31,6 @@ import {
   UndeleteProjectRequestSchema,
 } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
-import {
-  convertNewProjectToOld,
-  convertOldProjectToNew,
-} from "@/utils/v1/project-conversions";
 import { projectNamePrefix } from "./common";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
