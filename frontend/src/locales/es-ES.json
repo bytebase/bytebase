@@ -2062,7 +2062,8 @@
       "no-default": "Sin valor predeterminado",
       "expression": "Expresión",
       "null": "NULL",
-      "value": "Valor"
+      "value": "Valor",
+      "postgres-placeholder": "Ingrese una expresión predeterminada (por ejemplo, 'hola', 42, now(), nextval('seq')) o déjela vacía si no hay una expresión predeterminada"
     },
     "message": {
       "invalid-schema-name": "Nombre de esquema inválido",

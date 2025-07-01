@@ -2062,7 +2062,8 @@
       "no-default": "无默认值",
       "expression": "表达式",
       "null": "NULL",
-      "value": "值"
+      "value": "值",
+      "postgres-placeholder": "输入默认表达式（例如，'hello'、42、now()、nextval('seq')）或留空表示无默认值"
     },
     "message": {
       "invalid-schema-name": "无效的 Schema 名称",
