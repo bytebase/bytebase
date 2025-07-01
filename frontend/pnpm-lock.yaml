@@ -89,8 +89,8 @@ importers:
         specifier: ^1.11.13
         version: 1.11.13
       inter-ui:
-        specifier: 4.1.0
-        version: 4.1.0
+        specifier: 4.1.1
+        version: 4.1.1
       is-chinese:
         specifier: ^2.0.0
         version: 2.0.0
@@ -541,11 +541,6 @@ packages:
     resolution: {integrity: sha512-Y+bO6U+I7ZKaM5G5rDUZiYfUvQPUibYmAFe7EnKdnKBbVXDZxvp+MWOH5gYciY0EPk4EScsuFMQBbEfpdRKSCQ==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/parser@7.27.4':
-    resolution: {integrity: sha512-BRmLHGwpUqLFR2jzx9orBuX/ABDkj2jLKOXrHDTN2aOKL+jFDDKaRNo9nyYsIl9h/UE/7lMKdDjKQQyxKKDZ7g==}
-    engines: {node: '>=6.0.0'}
-    hasBin: true
-
   '@babel/parser@7.27.7':
     resolution: {integrity: sha512-qnzXzDXdr/po3bOTbTIQZ7+TxNKxpkN5IifVLXS+r7qwynkZfPyjZfE7hCXbo7IoO9TNcSyibgONsf2HauUd3Q==}
     engines: {node: '>=6.0.0'}
@@ -944,10 +939,6 @@ packages:
 
   '@babel/traverse@7.27.4':
     resolution: {integrity: sha512-oNcu2QbHqts9BtOWJosOVJapWjBDSxGCpFvikNR5TGDYDQf3JwpIoMzIKrvfoti93cLfPJEG4tH9SPVeyCGgdA==}
-    engines: {node: '>=6.9.0'}
-
-  '@babel/types@7.27.3':
-    resolution: {integrity: sha512-Y1GkI4ktrtvmawoSq+4FCVHNryea6uR+qUQy0AGxLSsjCX0nVmkYQMBLHDkXZuo5hGx7eYdnIaslsdBFm7zbUw==}
     engines: {node: '>=6.9.0'}
 
   '@babel/types@7.27.7':
@@ -1767,9 +1758,6 @@ packages:
   '@codingame/monaco-vscode-extension-api@15.0.3':
     resolution: {integrity: sha512-0sOMleFgTJADWSnguEA1VDwdvh1q+asQLVX8Z+AcWl/Z6KeWebqr+/4ZGNS4BVunMR4EUloLNYeEiyioJWAjzA==}
 
-  '@codingame/monaco-vscode-extension-api@17.1.2':
-    resolution: {integrity: sha512-jo5iA5edcskc4M5f7mVwq+dL/pE24d7Kja/80VQbF6VPC0ounfQwTjgOb+bY3FTg6jaFL1Gj6qrgaM8tnW81eQ==}
-
   '@codingame/monaco-vscode-extension-api@17.1.3':
     resolution: {integrity: sha512-jukZX6jXJ2WWlYdNpq0CjGkJ7jpYnAEzK/Vak/LfbSM5R+4Qa4bAMqw+CYReJdkdulwqK46I4RhccCwwzIhgUQ==}
 
@@ -2288,16 +2276,8 @@ packages:
   '@jridgewell/gen-mapping@0.3.11':
     resolution: {integrity: sha512-C512c1ytBTio4MrpWKlJpyFHT6+qfFL8SZ58zBzJ1OOzUEjHeF1BtjY2fH7n4x/g2OV/KiiMLAivOp1DXmiMMw==}
 
-  '@jridgewell/gen-mapping@0.3.8':
-    resolution: {integrity: sha512-imAbBGkb+ebQyxKgzv5Hu2nmROxoDOXHh80evxdoXNOrvAnVx7zimzc1Oo5h9RlfV4vPXaE2iM5pOFbvOCClWA==}
-    engines: {node: '>=6.0.0'}
-
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
-    engines: {node: '>=6.0.0'}
-
-  '@jridgewell/set-array@1.2.1':
-    resolution: {integrity: sha512-R8gLRTZeyp03ymzP/6Lil/28tGeGEzhx1q2k703KGWRAI1VdvPIXdG70VJc2pAMw3NA6JKL5hhFu1sJX0Mnn/A==}
     engines: {node: '>=6.0.0'}
 
   '@jridgewell/source-map@0.3.9':
@@ -2305,9 +2285,6 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.5.3':
     resolution: {integrity: sha512-AiR5uKpFxP3PjO4R19kQGIMwxyRyPuXmKEEy301V1C0+1rVjS94EZQXf1QKZYN8Q0YM+estSPhmx5JwNftv6nw==}
-
-  '@jridgewell/trace-mapping@0.3.25':
-    resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
 
   '@jridgewell/trace-mapping@0.3.28':
     resolution: {integrity: sha512-KNNHHwW3EIp4EDYOvYFGyIFfx36R2dNJYH4knnZlF8T5jdbD5Wx8xmSaQ2gP9URkJ04LGEtlcCtwArKcmFcwKw==}
@@ -2986,11 +2963,6 @@ packages:
   acorn-walk@8.3.4:
     resolution: {integrity: sha512-ueEepnujpqee2o5aIYnvHU6C0A42MNdsIDeqy5BydrkuC5R1ZuUFnm27EeFJGoEHJQgn3uleRvmTXaJgfXbt4g==}
     engines: {node: '>=0.4.0'}
-
-  acorn@8.14.1:
-    resolution: {integrity: sha512-OvQ/2pUDKmgfCg++xsTX1wGxfTaszcHVcTctW4UJB4hibJx2HXxxO5UmVgyjMa+ZDsiaf5wWLXYpRWMmBI0QHg==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
 
   acorn@8.15.0:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
@@ -3954,8 +3926,8 @@ packages:
   ini@1.3.8:
     resolution: {integrity: sha512-JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==}
 
-  inter-ui@4.1.0:
-    resolution: {integrity: sha512-lUJ5YLtpj7jWsrhTbN5w32MLOqISGFGOTMRNn+IGhLrbt67z5yvmBRoqpLCWLVlJ+l7kqnH6su4meEqvLMfAAA==}
+  inter-ui@4.1.1:
+    resolution: {integrity: sha512-451h0J29HyOmA+JXgSi/6M12tL7ZCZ8arYKZUXiOXTJpJbAKqJvFh3k5SiV3x7tKe0C0KyrKUUiQIvvZ2PQDcA==}
     engines: {node: '>=16.0.0'}
 
   internmap@2.0.3:
@@ -5700,8 +5672,8 @@ snapshots:
 
   '@ampproject/remapping@2.3.0':
     dependencies:
-      '@jridgewell/gen-mapping': 0.3.8
-      '@jridgewell/trace-mapping': 0.3.25
+      '@jridgewell/gen-mapping': 0.3.11
+      '@jridgewell/trace-mapping': 0.3.28
 
   '@antfu/install-pkg@1.1.0':
     dependencies:
@@ -5737,7 +5709,7 @@ snapshots:
       '@babel/parser': 7.27.7
       '@babel/template': 7.27.2
       '@babel/traverse': 7.27.4
-      '@babel/types': 7.27.3
+      '@babel/types': 7.27.7
       convert-source-map: 2.0.0
       debug: 4.4.1
       gensync: 1.0.0-beta.2
@@ -5748,10 +5720,10 @@ snapshots:
 
   '@babel/generator@7.27.3':
     dependencies:
-      '@babel/parser': 7.27.4
-      '@babel/types': 7.27.3
-      '@jridgewell/gen-mapping': 0.3.8
-      '@jridgewell/trace-mapping': 0.3.25
+      '@babel/parser': 7.27.7
+      '@babel/types': 7.27.7
+      '@jridgewell/gen-mapping': 0.3.11
+      '@jridgewell/trace-mapping': 0.3.28
       jsesc: 3.1.0
 
   '@babel/helper-annotate-as-pure@7.27.3':
@@ -5807,7 +5779,7 @@ snapshots:
   '@babel/helper-module-imports@7.27.1':
     dependencies:
       '@babel/traverse': 7.27.4
-      '@babel/types': 7.27.3
+      '@babel/types': 7.27.7
     transitivePeerDependencies:
       - supports-color
 
@@ -5868,11 +5840,7 @@ snapshots:
   '@babel/helpers@7.27.4':
     dependencies:
       '@babel/template': 7.27.2
-      '@babel/types': 7.27.3
-
-  '@babel/parser@7.27.4':
-    dependencies:
-      '@babel/types': 7.27.3
+      '@babel/types': 7.27.7
 
   '@babel/parser@7.27.7':
     dependencies:
@@ -6361,24 +6329,19 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.27.1
       '@babel/parser': 7.27.7
-      '@babel/types': 7.27.3
+      '@babel/types': 7.27.7
 
   '@babel/traverse@7.27.4':
     dependencies:
       '@babel/code-frame': 7.27.1
       '@babel/generator': 7.27.3
-      '@babel/parser': 7.27.4
+      '@babel/parser': 7.27.7
       '@babel/template': 7.27.2
-      '@babel/types': 7.27.3
+      '@babel/types': 7.27.7
       debug: 4.4.1
       globals: 11.12.0
     transitivePeerDependencies:
       - supports-color
-
-  '@babel/types@7.27.3':
-    dependencies:
-      '@babel/helper-string-parser': 7.27.1
-      '@babel/helper-validator-identifier': 7.27.1
 
   '@babel/types@7.27.7':
     dependencies:
@@ -8024,13 +7987,6 @@ snapshots:
       '@codingame/monaco-vscode-bd6ad8b7-9db3-51a8-9895-0046508c029d-common': 15.0.3
       '@codingame/monaco-vscode-extensions-service-override': 15.0.3
 
-  '@codingame/monaco-vscode-extension-api@17.1.2':
-    dependencies:
-      '@codingame/monaco-vscode-34a0ffd3-b9f5-5699-b43b-38af5732f38a-common': 17.1.2
-      '@codingame/monaco-vscode-4a3ac544-9a61-534c-88df-756262793ef7-common': 17.1.2
-      '@codingame/monaco-vscode-api': 17.1.2
-      '@codingame/monaco-vscode-extensions-service-override': 17.1.2
-
   '@codingame/monaco-vscode-extension-api@17.1.3':
     dependencies:
       '@codingame/monaco-vscode-34a0ffd3-b9f5-5699-b43b-38af5732f38a-common': 17.1.3
@@ -8720,7 +8676,7 @@ snapshots:
     dependencies:
       '@intlify/message-compiler': 11.1.5
       '@intlify/shared': 11.1.5
-      acorn: 8.14.1
+      acorn: 8.15.0
       escodegen: 2.1.0
       estree-walker: 2.0.2
       jsonc-eslint-parser: 2.4.0
@@ -8829,15 +8785,7 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.3
       '@jridgewell/trace-mapping': 0.3.28
 
-  '@jridgewell/gen-mapping@0.3.8':
-    dependencies:
-      '@jridgewell/set-array': 1.2.1
-      '@jridgewell/sourcemap-codec': 1.5.3
-      '@jridgewell/trace-mapping': 0.3.25
-
   '@jridgewell/resolve-uri@3.1.2': {}
-
-  '@jridgewell/set-array@1.2.1': {}
 
   '@jridgewell/source-map@0.3.9':
     dependencies:
@@ -8845,11 +8793,6 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.28
 
   '@jridgewell/sourcemap-codec@1.5.3': {}
-
-  '@jridgewell/trace-mapping@0.3.25':
-    dependencies:
-      '@jridgewell/resolve-uri': 3.1.2
-      '@jridgewell/sourcemap-codec': 1.5.3
 
   '@jridgewell/trace-mapping@0.3.28':
     dependencies:
@@ -9019,9 +8962,9 @@ snapshots:
   '@trivago/prettier-plugin-sort-imports@5.2.2(@vue/compiler-sfc@3.5.17)(prettier@3.5.3)':
     dependencies:
       '@babel/generator': 7.27.3
-      '@babel/parser': 7.27.4
+      '@babel/parser': 7.27.7
       '@babel/traverse': 7.27.4
-      '@babel/types': 7.27.3
+      '@babel/types': 7.27.7
       javascript-natural-sort: 0.7.1
       lodash: 4.17.21
       prettier: 3.5.3
@@ -9419,7 +9362,7 @@ snapshots:
       '@babel/plugin-syntax-jsx': 7.27.1(@babel/core@7.27.4)
       '@babel/template': 7.27.2
       '@babel/traverse': 7.27.4
-      '@babel/types': 7.27.3
+      '@babel/types': 7.27.7
       '@vue/babel-helper-vue-transform-on': 1.4.0
       '@vue/babel-plugin-resolve-type': 1.4.0(@babel/core@7.27.4)
       '@vue/shared': 3.5.17
@@ -9623,15 +9566,13 @@ snapshots:
       level-supports: 2.1.0
       queue-microtask: 1.2.3
 
-  acorn-jsx@5.3.2(acorn@8.14.1):
+  acorn-jsx@5.3.2(acorn@8.15.0):
     dependencies:
-      acorn: 8.14.1
+      acorn: 8.15.0
 
   acorn-walk@8.3.4:
     dependencies:
-      acorn: 8.14.1
-
-  acorn@8.14.1: {}
+      acorn: 8.15.0
 
   acorn@8.15.0: {}
 
@@ -10365,14 +10306,14 @@ snapshots:
 
   espree@10.3.0:
     dependencies:
-      acorn: 8.14.1
-      acorn-jsx: 5.3.2(acorn@8.14.1)
+      acorn: 8.15.0
+      acorn-jsx: 5.3.2(acorn@8.15.0)
       eslint-visitor-keys: 4.2.0
 
   espree@9.6.1:
     dependencies:
-      acorn: 8.14.1
-      acorn-jsx: 5.3.2(acorn@8.14.1)
+      acorn: 8.15.0
+      acorn-jsx: 5.3.2(acorn@8.15.0)
       eslint-visitor-keys: 3.4.3
 
   esprima@4.0.1: {}
@@ -10617,7 +10558,7 @@ snapshots:
 
   ini@1.3.8: {}
 
-  inter-ui@4.1.0: {}
+  inter-ui@4.1.1: {}
 
   internmap@2.0.3: {}
 
@@ -10741,7 +10682,7 @@ snapshots:
 
   jsonc-eslint-parser@2.4.0:
     dependencies:
-      acorn: 8.14.1
+      acorn: 8.15.0
       eslint-visitor-keys: 3.4.3
       espree: 9.6.1
       semver: 7.7.2
@@ -11253,19 +11194,19 @@ snapshots:
 
   mlly@1.7.4:
     dependencies:
-      acorn: 8.14.1
+      acorn: 8.15.0
       pathe: 2.0.3
       pkg-types: 1.3.1
       ufo: 1.6.1
 
   monaco-languageclient@9.7.0:
     dependencies:
-      '@codingame/monaco-vscode-api': 17.1.2
+      '@codingame/monaco-vscode-api': 17.1.3
       '@codingame/monaco-vscode-configuration-service-override': 17.1.2
       '@codingame/monaco-vscode-editor-api': 17.1.2
       '@codingame/monaco-vscode-editor-service-override': 17.1.2
-      '@codingame/monaco-vscode-extension-api': 17.1.2
-      '@codingame/monaco-vscode-extensions-service-override': 17.1.2
+      '@codingame/monaco-vscode-extension-api': 17.1.3
+      '@codingame/monaco-vscode-extensions-service-override': 17.1.3
       '@codingame/monaco-vscode-languages-service-override': 17.1.3
       '@codingame/monaco-vscode-localization-service-override': 17.1.2
       '@codingame/monaco-vscode-log-service-override': 17.1.2
@@ -11983,7 +11924,7 @@ snapshots:
 
   sucrase@3.35.0:
     dependencies:
-      '@jridgewell/gen-mapping': 0.3.8
+      '@jridgewell/gen-mapping': 0.3.11
       commander: 4.1.1
       glob: 10.4.5
       lines-and-columns: 1.2.4
@@ -12133,7 +12074,7 @@ snapshots:
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
       '@types/node': 22.15.29
-      acorn: 8.14.1
+      acorn: 8.15.0
       acorn-walk: 8.3.4
       arg: 4.1.3
       create-require: 1.1.1
@@ -12246,12 +12187,12 @@ snapshots:
 
   unplugin@1.16.1:
     dependencies:
-      acorn: 8.14.1
+      acorn: 8.15.0
       webpack-virtual-modules: 0.6.2
 
   unplugin@2.3.5:
     dependencies:
-      acorn: 8.14.1
+      acorn: 8.15.0
       picomatch: 4.0.2
       webpack-virtual-modules: 0.6.2
 
