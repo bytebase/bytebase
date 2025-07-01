@@ -38,6 +38,7 @@
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { isValidDatabaseName } from "@/types";
+import { convertNewAdviceArrayToOld } from "@/utils/v1/sql-conversions";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 import SQLCheckButton from "./SQLCheckButton.vue";
 import { usePlanSQLCheckContext } from "./context";
@@ -45,6 +46,12 @@ import { usePlanSQLCheckContext } from "./context";
 const { database, resultMap } = usePlanSQLCheckContext();
 
 const checkResult = computed(() => {
-  return resultMap.value[database.value.name] || undefined;
+  const result = resultMap.value[database.value.name] || undefined;
+  if (!result) return undefined;
+  
+  return {
+    ...result,
+    advices: convertNewAdviceArrayToOld(result.advices)
+  };
 });
 </script>

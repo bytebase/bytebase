@@ -12,7 +12,9 @@ import type {
   SearchQueryHistoriesResponse as OldSearchQueryHistoriesResponse,
   AICompletionRequest as OldAICompletionRequest,
   AICompletionResponse as OldAICompletionResponse,
+  Advice as OldAdvice,
 } from "@/types/proto/v1/sql_service";
+import { Advice_Status as OldAdvice_Status } from "@/types/proto/v1/sql_service";
 import {
   QueryRequest as OldQueryRequestProto,
   QueryResponse as OldQueryResponseProto,
@@ -40,7 +42,9 @@ import type {
   SearchQueryHistoriesResponse as NewSearchQueryHistoriesResponse,
   AICompletionRequest as NewAICompletionRequest,
   AICompletionResponse as NewAICompletionResponse,
+  Advice as NewAdvice,
 } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Status as NewAdvice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import {
   QueryRequestSchema,
   QueryResponseSchema,
@@ -126,4 +130,56 @@ export const convertOldAICompletionRequestToNew = (oldRequest: OldAICompletionRe
 export const convertNewAICompletionResponseToOld = (newResponse: NewAICompletionResponse): OldAICompletionResponse => {
   const json = toJson(AICompletionResponseSchema, newResponse);
   return OldAICompletionResponseProto.fromJSON(json);
+};
+
+// Convert proto-es Advice_Status to old
+export const convertNewAdviceStatusToOld = (newStatus: NewAdvice_Status): OldAdvice_Status => {
+  switch (newStatus) {
+    case NewAdvice_Status.STATUS_UNSPECIFIED:
+      return OldAdvice_Status.STATUS_UNSPECIFIED;
+    case NewAdvice_Status.SUCCESS:
+      return OldAdvice_Status.SUCCESS;
+    case NewAdvice_Status.WARNING:
+      return OldAdvice_Status.WARNING;
+    case NewAdvice_Status.ERROR:
+      return OldAdvice_Status.ERROR;
+    default:
+      return OldAdvice_Status.STATUS_UNSPECIFIED;
+  }
+};
+
+// Convert old Advice_Status to proto-es
+export const convertOldAdviceStatusToNew = (oldStatus: OldAdvice_Status): NewAdvice_Status => {
+  switch (oldStatus) {
+    case OldAdvice_Status.STATUS_UNSPECIFIED:
+      return NewAdvice_Status.STATUS_UNSPECIFIED;
+    case OldAdvice_Status.SUCCESS:
+      return NewAdvice_Status.SUCCESS;
+    case OldAdvice_Status.WARNING:
+      return NewAdvice_Status.WARNING;
+    case OldAdvice_Status.ERROR:
+      return NewAdvice_Status.ERROR;
+    default:
+      return NewAdvice_Status.STATUS_UNSPECIFIED;
+  }
+};
+
+// Convert proto-es Advice array to old
+export const convertNewAdviceArrayToOld = (newAdvices: NewAdvice[]): OldAdvice[] => {
+  return newAdvices.map(advice => {
+    return {
+      ...advice,
+      status: convertNewAdviceStatusToOld(advice.status)
+    } as OldAdvice;
+  });
+};
+
+// Convert old Advice array to proto-es
+export const convertOldAdviceArrayToNew = (oldAdvices: OldAdvice[]): NewAdvice[] => {
+  return oldAdvices.map(advice => {
+    return {
+      ...advice,
+      status: convertOldAdviceStatusToNew(advice.status)
+    } as NewAdvice;
+  });
 };
