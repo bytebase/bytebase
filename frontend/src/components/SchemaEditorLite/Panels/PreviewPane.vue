@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { useQuery } from "@tanstack/vue-query";
+import { create } from "@bufbuild/protobuf";
 import {
   refDebounced,
   useElementSize,
@@ -51,10 +51,9 @@ import {
   useParentElement,
 } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
-import { computed, toRef } from "vue";
+import { computed, toRef, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { create } from "@bufbuild/protobuf";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
@@ -87,28 +86,59 @@ const panelHeight = computed(() => {
   return minmax(flexible, min, max);
 });
 
-const engine = computed(() => props.db.instanceResource.engine);
 const mocked = toRef(props, "mocked");
 const debouncedMocked = refDebounced(mocked, 500);
 
-const { status, data, error } = useQuery({
-  queryKey: [engine, debouncedMocked],
-  queryFn: async () => {
-    if (!expanded.value) return "";
-    if (!debouncedMocked.value) return "";
-    const { metadata } = debouncedMocked.value;
+// Simple replacement for useQuery to avoid @tanstack/vue-query dependency
+const status = ref<"pending" | "success" | "error">("pending");
+const data = ref<string>("");
+const error = ref<Error | null>(null);
 
-    try {
-      const newMetadata = metadata;
-      const request = create(GetSchemaStringRequestSchema, {
-        name: props.db.name,
-        metadata: newMetadata,
-      });
-      const response = await databaseServiceClientConnect.getSchemaString(request);
-      return response.schemaString;
-    } catch (err) {
-      return Promise.reject(new Error(extractGrpcErrorMessage(err)));
+const fetchSchemaString = async (currentMocked = debouncedMocked.value) => {
+  if (!expanded.value) {
+    data.value = "";
+    status.value = "success";
+    return;
+  }
+
+  if (!currentMocked) {
+    data.value = "";
+    status.value = "success";
+    return;
+  }
+
+  status.value = "pending";
+  error.value = null;
+
+  try {
+    const { metadata } = currentMocked;
+    const request = create(GetSchemaStringRequestSchema, {
+      name: props.db.name,
+      metadata: metadata,
+    });
+    const response =
+      await databaseServiceClientConnect.getSchemaString(request);
+
+    // Only update if this is still the latest request (avoid race conditions)
+    if (currentMocked === debouncedMocked.value) {
+      data.value = response.schemaString;
+      status.value = "success";
     }
+  } catch (err) {
+    // Only update error if this is still the latest request
+    if (currentMocked === debouncedMocked.value) {
+      error.value = new Error(extractGrpcErrorMessage(err));
+      status.value = "error";
+    }
+  }
+};
+
+// Watch for changes and refetch
+watch(
+  [debouncedMocked, expanded],
+  ([newMocked]) => {
+    fetchSchemaString(newMocked);
   },
-});
+  { immediate: true }
+);
 </script>
