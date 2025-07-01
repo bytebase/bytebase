@@ -1034,6 +1034,14 @@
       "approved": "承認された",
       "rejected": "拒否",
       "under-review": "審査中"
+    },
+    "approval": {
+      "rejected-title": "問題の承認が拒否されました",
+      "pending-title": "問題の承認が保留中",
+      "rejected-description": "この問題は承認者によって拒否されました。続行するには強制ロールアウトが必要です。",
+      "pending-description": "この問題は承認待ちです。続行するには強制ロールアウトが必要です。",
+      "rejected-error": "問題の承認が拒否されました。続行するには強制ロールアウトを有効にしてください。",
+      "pending-error": "問題の承認が保留中です。続行するには強制ロールアウトを有効にしてください。"
     }
   },
   "plan": {
@@ -1114,7 +1122,8 @@
     }
   },
   "rollout": {
-    "rollouts": "ロールアウト"
+    "rollouts": "ロールアウト",
+    "force-rollout": "強制展開"
   },
   "quick-action": {
     "create-db": "データベースの作成",
