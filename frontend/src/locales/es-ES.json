@@ -281,6 +281,7 @@
     "created": "Creado",
     "run-immediately": "Ejecutar tarea inmediatamente",
     "selected-n-tasks": "{n} tarea seleccionada | {n} tareas seleccionadas",
+    "no-tasks": "Sin tareas",
     "no-tasks-selected": "No hay tareas seleccionadas",
     "no-runnable-tasks": "No hay tareas ejecutables",
     "no-skippable-tasks": "No hay tareas que se puedan omitir",

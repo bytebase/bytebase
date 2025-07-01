@@ -281,6 +281,7 @@
     "created": "Đã tạo",
     "run-immediately": "Chạy nhiệm vụ ngay lập tức",
     "selected-n-tasks": "{n} nhiệm vụ đã chọn | {n} nhiệm vụ đã chọn",
+    "no-tasks": "Không có nhiệm vụ",
     "no-tasks-selected": "Không có nhiệm vụ nào được chọn",
     "no-runnable-tasks": "Không có tác vụ nào có thể chạy được",
     "no-skippable-tasks": "Không có nhiệm vụ nào có thể bỏ qua",

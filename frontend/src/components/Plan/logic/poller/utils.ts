@@ -48,10 +48,6 @@ export const refreshPlan = async (plan: Ref<Plan>): Promise<void> => {
   const response = await planServiceClientConnect.getPlan(request);
   plan.value = convertNewPlanToOld(response);
   lastRefreshTime.plan = Date.now();
-  console.debug(
-    "Plan refreshed at:",
-    new Date(lastRefreshTime.plan).toISOString()
-  );
 };
 
 export const refreshPlanCheckRuns = async (
@@ -70,10 +66,6 @@ export const refreshPlanCheckRuns = async (
   const response = await planServiceClientConnect.listPlanCheckRuns(request);
   planCheckRuns.value = response.planCheckRuns.map(convertNewPlanCheckRunToOld);
   lastRefreshTime.planCheckRuns = Date.now();
-  console.debug(
-    "Plan check runs refreshed at:",
-    new Date(lastRefreshTime.planCheckRuns).toISOString()
-  );
 };
 
 export const refreshRollout = async (
@@ -92,10 +84,6 @@ export const refreshRollout = async (
     await rolloutServiceClientConnect.getRollout(rolloutRequest);
   rollout.value = convertNewRolloutToOld(newRollout);
   lastRefreshTime.rollout = Date.now();
-  console.debug(
-    "Rollout refreshed at:",
-    new Date(lastRefreshTime.rollout).toISOString()
-  );
 };
 
 export const refreshIssue = async (issue: Ref<Issue>): Promise<void> => {
@@ -106,10 +94,6 @@ export const refreshIssue = async (issue: Ref<Issue>): Promise<void> => {
   const updatedIssue = convertNewIssueToOld(newIssue);
   issue.value = updatedIssue;
   lastRefreshTime.issue = Date.now();
-  console.debug(
-    "Issue refreshed at:",
-    new Date(lastRefreshTime.issue).toISOString()
-  );
 };
 
 export const refreshIssueComments = async (issue: Issue): Promise<void> => {
@@ -121,8 +105,4 @@ export const refreshIssueComments = async (issue: Issue): Promise<void> => {
     })
   );
   lastRefreshTime.issueComments = Date.now();
-  console.debug(
-    "Issue comments refreshed at:",
-    new Date(lastRefreshTime.issueComments).toISOString()
-  );
 };
