@@ -20,8 +20,8 @@ importers:
         specifier: 18.2.0
         version: 18.2.0
       '@codingame/monaco-vscode-languages-service-override':
-        specifier: 15.0.3
-        version: 15.0.3
+        specifier: 18.2.0
+        version: 18.2.0
       '@codingame/monaco-vscode-sql-default-extension':
         specifier: 18.2.0
         version: 18.2.0
@@ -1866,11 +1866,11 @@ packages:
   '@codingame/monaco-vscode-javascript-default-extension@18.2.0':
     resolution: {integrity: sha512-X0MyWuUAJzw1h/+YYD/ySHwC9j0T5zUjZkjLuKdhudiKcxUBTG50SxZITAumVnP4moDM/m08Ue5yT3PaM+jztQ==}
 
-  '@codingame/monaco-vscode-languages-service-override@15.0.3':
-    resolution: {integrity: sha512-dRKvjEVBgNFTmrREu3OXnd5eMlzyTtBIApUoXOo8/o46h906f5LRe4G8GMVCIjU8N2Vc2oO8iKh583iNygUD+w==}
+  '@codingame/monaco-vscode-languages-service-override@17.1.3':
+    resolution: {integrity: sha512-UAw/Dos92/3Rx4q+sP3PpLbo6iYQUOsnIHKMtUgXh5kt8H+nmqHNNMastw41lg3cvnYx9V0wSMpWBiriNfmK1A==}
 
-  '@codingame/monaco-vscode-languages-service-override@17.1.2':
-    resolution: {integrity: sha512-bXHl0EreiDGYJ3NnFIxtxiCQx0Dp6xGrCZM70XbgrFHEpkiWEQJixluhR6EHBqvKUhn5gKvlKN3ZV0W0lsHvVA==}
+  '@codingame/monaco-vscode-languages-service-override@18.2.0':
+    resolution: {integrity: sha512-9ri5Fkdo4UTrXqMrOnEbF+VlN7pwpQHVPXigOsxpDl9vwglAfZVJD/xTfxRfHE6r0zp1zz1dYwWtZ2Dwptn/3A==}
 
   '@codingame/monaco-vscode-layout-service-override@15.0.3':
     resolution: {integrity: sha512-AVt0CBG57HIRmyzk4FVROHW4VCR7g8Qr8xxrCdLEFiS6pgwfFLdGozj9TbUREoVn6lV8y6kDcX587Y08/PhPQQ==}
@@ -8379,15 +8379,15 @@ snapshots:
     dependencies:
       '@codingame/monaco-vscode-api': 18.2.0
 
-  '@codingame/monaco-vscode-languages-service-override@15.0.3':
+  '@codingame/monaco-vscode-languages-service-override@17.1.3':
     dependencies:
-      '@codingame/monaco-vscode-api': 15.0.3
-      '@codingame/monaco-vscode-files-service-override': 15.0.3
+      '@codingame/monaco-vscode-api': 17.1.3
+      '@codingame/monaco-vscode-files-service-override': 17.1.3
 
-  '@codingame/monaco-vscode-languages-service-override@17.1.2':
+  '@codingame/monaco-vscode-languages-service-override@18.2.0':
     dependencies:
-      '@codingame/monaco-vscode-api': 17.1.2
-      '@codingame/monaco-vscode-files-service-override': 17.1.2
+      '@codingame/monaco-vscode-api': 18.2.0
+      '@codingame/monaco-vscode-files-service-override': 18.2.0
 
   '@codingame/monaco-vscode-layout-service-override@15.0.3':
     dependencies:
@@ -11266,7 +11266,7 @@ snapshots:
       '@codingame/monaco-vscode-editor-service-override': 17.1.2
       '@codingame/monaco-vscode-extension-api': 17.1.2
       '@codingame/monaco-vscode-extensions-service-override': 17.1.2
-      '@codingame/monaco-vscode-languages-service-override': 17.1.2
+      '@codingame/monaco-vscode-languages-service-override': 17.1.3
       '@codingame/monaco-vscode-localization-service-override': 17.1.2
       '@codingame/monaco-vscode-log-service-override': 17.1.2
       '@codingame/monaco-vscode-model-service-override': 17.1.2
