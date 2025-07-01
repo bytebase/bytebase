@@ -333,7 +333,7 @@ const targetTaskRuns = computed(() => {
 const title = computed(() => {
   switch (props.action) {
     case "RUN":
-      return t("common.run");
+      return t("common.rollout");
     case "SKIP":
       return t("common.skip");
     case "CANCEL":
