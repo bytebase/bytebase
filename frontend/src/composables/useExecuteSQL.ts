@@ -167,10 +167,7 @@ const useExecuteSQL = () => {
         adviceStatus = "WARNING";
       }
 
-      const statusText = (advice.status as any) === Advice_Status.SUCCESS ? 'SUCCESS' :
-                         (advice.status as any) === Advice_Status.WARNING ? 'WARNING' :
-                         (advice.status as any) === Advice_Status.ERROR ? 'ERROR' : 'UNSPECIFIED';
-      adviceNotifyMessage += `${statusText}: ${
+      adviceNotifyMessage += `${Advice_Status[advice.status]}: ${
         advice.title
       }\n`;
       if (advice.content) {
