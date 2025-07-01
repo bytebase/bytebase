@@ -61,10 +61,10 @@ export function useInitializePlan(
   const route = useRoute();
   const router = useRouter();
   const planStore = usePlanStore();
-  const isInitializing = ref(false);
+  const isInitializing = ref(true);
 
   const plan = ref<Plan>(emptyPlan());
-  const planCheckRunList = ref<PlanCheckRun[]>([]);
+  const planCheckRuns = ref<PlanCheckRun[]>([]);
   const issue = ref<Issue | undefined>(undefined);
   const rollout = ref<Rollout | undefined>(undefined);
 
@@ -192,7 +192,7 @@ export function useInitializePlan(
     { immediate: true }
   );
 
-  return { isCreating, plan, planCheckRunList, issue, rollout, isInitializing };
+  return { isCreating, plan, planCheckRuns, issue, rollout, isInitializing };
 }
 
 export const convertRouterQuery = (query: LocationQuery) => {

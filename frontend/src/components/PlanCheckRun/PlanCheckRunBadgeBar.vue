@@ -6,7 +6,7 @@
       :type="group.type"
       :clickable="true"
       :selected="group.type === selectedType"
-      :plan-check-run-list="group.list"
+      :planCheckRuns="group.list"
       @click="$emit('select-type', group.type)"
     />
   </div>

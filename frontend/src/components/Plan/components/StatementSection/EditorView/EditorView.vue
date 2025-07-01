@@ -221,8 +221,7 @@ type LocalState = EditState & {
 const { t } = useI18n();
 const dialog = useDialog();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, events, planCheckRunList, rollout } =
-  usePlanContext();
+const { isCreating, plan, events, planCheckRuns, rollout } = usePlanContext();
 const { selectedSpec } = usePlanSpecContext();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -253,7 +252,7 @@ const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
 });
 const planCheckRunsForSelectedSpec = computed(() =>
-  planCheckRunListForSpec(planCheckRunList.value, selectedSpec.value)
+  planCheckRunListForSpec(planCheckRuns.value, selectedSpec.value)
 );
 const { markers } = useSQLAdviceMarkers(
   isCreating,

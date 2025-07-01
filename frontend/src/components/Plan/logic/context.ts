@@ -16,13 +16,17 @@ export type PlanEvents = Emittery<{
     action: IssueReviewAction;
   };
   "perform-issue-status-action": { action: IssueStatusAction };
+  "resource-refresh-completed": {
+    resources: string[];
+    isManual: boolean;
+  };
 }>;
 
 export type PlanContext = {
   // Basic fields
   isCreating: Ref<boolean>;
   plan: Ref<Plan>;
-  planCheckRunList: Ref<PlanCheckRun[]>;
+  planCheckRuns: Ref<PlanCheckRun[]>;
   issue?: Ref<Issue | undefined>;
   rollout?: Ref<Rollout | undefined>;
 
@@ -33,7 +37,13 @@ export type PlanContext = {
 const KEY = Symbol(`bb.plan.context.${uuidv4()}`) as InjectionKey<PlanContext>;
 
 export const usePlanContext = () => {
-  return inject(KEY)!;
+  const context = inject(KEY);
+  if (!context) {
+    throw new Error(
+      "usePlanContext must be called within a component that provides PlanContext"
+    );
+  }
+  return context;
 };
 
 export const usePlanContextWithIssue = () => {

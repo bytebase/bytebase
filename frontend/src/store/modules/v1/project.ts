@@ -1,9 +1,9 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { useRoute } from "vue-router";
-import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import { projectServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { ComposedProject, MaybeRef, ResourceId } from "@/types";
@@ -17,11 +17,6 @@ import {
   isValidProjectName,
 } from "@/types";
 import { State as NewState } from "@/types/proto-es/v1/common_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
-import type {
-  Project,
-  ListProjectsResponse,
-} from "@/types/proto/v1/project_service";
 import {
   GetProjectRequestSchema,
   ListProjectsRequestSchema,
@@ -32,8 +27,16 @@ import {
   BatchDeleteProjectsRequestSchema,
   UndeleteProjectRequestSchema,
 } from "@/types/proto-es/v1/project_service_pb";
-import { convertNewProjectToOld, convertOldProjectToNew } from "@/utils/v1/project-conversions";
+import type {
+  Project,
+  ListProjectsResponse,
+} from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { convertStateToOld } from "@/utils/v1/common-conversions";
+import {
+  convertNewProjectToOld,
+  convertOldProjectToNew,
+} from "@/utils/v1/project-conversions";
 import { projectNamePrefix } from "./common";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
@@ -121,7 +124,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     projects: ComposedProject[];
     nextPageToken?: string;
   }> => {
-    const contextValues = createContextValues().set(silentContextKey, params.silent ?? true);
+    const contextValues = createContextValues().set(
+      silentContextKey,
+      params.silent ?? true
+    );
 
     let response: ListProjectsResponse | undefined = undefined;
     let pageToken = params.pageToken;
@@ -134,7 +140,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
           filter: getListProjectFilter(params.filter ?? {}),
           showDeleted: params.filter?.state === NewState.DELETED ? true : false,
         });
-        const connectResponse = await projectServiceClientConnect.listProjects(request, { contextValues });
+        const connectResponse = await projectServiceClientConnect.listProjects(
+          request,
+          { contextValues }
+        );
         resp = {
           projects: connectResponse.projects.map(convertNewProjectToOld),
           nextPageToken: connectResponse.nextPageToken,
@@ -146,7 +155,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
           filter: getListProjectFilter(params.filter ?? {}),
           showDeleted: params.filter?.state === NewState.DELETED ? true : false,
         });
-        const connectResponse = await projectServiceClientConnect.searchProjects(request, { contextValues });
+        const connectResponse =
+          await projectServiceClientConnect.searchProjects(request, {
+            contextValues,
+          });
         resp = {
           projects: connectResponse.projects.map(convertNewProjectToOld),
           nextPageToken: connectResponse.nextPageToken,
