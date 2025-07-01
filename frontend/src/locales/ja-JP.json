@@ -2062,7 +2062,8 @@
       "no-default": "デフォルト値なし",
       "expression": "式",
       "null": "NULL",
-      "value": "値"
+      "value": "値",
+      "postgres-placeholder": "デフォルトの式（例：'hello'、42、now()、nextval('seq')）を入力するか、デフォルトがない場合は空白のままにしてください"
     },
     "message": {
       "invalid-schema-name": "無効なスキーマ名",

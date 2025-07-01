@@ -1,10 +1,12 @@
 <template>
+  <!-- TODO: When all engines migrate to simplified input, replace NInput with InlineInput component -->
   <NInput
     v-if="useSimpleInput"
     ref="inputRef"
     :value="postgresInputValue"
     :placeholder="postgresPlaceholder"
     :disabled="disabled"
+    :style="simpleInputStyle"
     @focus="focused = true"
     @blur="focused = false"
     @update:value="handlePostgresInput"
@@ -133,6 +135,26 @@ const postgresInputValue = computed(() => {
 
 const postgresPlaceholder = computed(() => {
   return t("schema-editor.default.postgres-placeholder");
+});
+
+// TODO: This styling mimics InlineInput component. When all engines use simplified input,
+// replace NInput + simpleInputStyle with InlineInput component directly
+const simpleInputStyle = computed(() => {
+  const style: CSSProperties = {
+    cursor: "default",
+    "--n-color": "transparent",
+    "--n-color-disabled": "transparent",
+    "--n-padding-left": "6px",
+    "--n-padding-right": "4px",
+    "--n-text-color-disabled": "rgb(var(--color-main))",
+  };
+  const border = focused.value
+    ? "1px solid rgb(var(--color-control-border))"
+    : "none";
+  style["--n-border"] = border;
+  style["--n-border-disabled"] = border;
+
+  return style;
 });
 
 const options = computed((): DefaultValueSelectOption[] => {
