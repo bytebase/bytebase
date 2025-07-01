@@ -1,4 +1,3 @@
-import { VueQueryPlugin } from "@tanstack/vue-query";
 import Long from "long";
 import protobufjs from "protobufjs";
 import "regenerator-runtime/runtime";
@@ -49,7 +48,7 @@ console.debug("release:", isRelease());
     useAuthStore().fetchCurrentUser(),
   ]);
 
-  app.use(router).use(highlight).use(i18n).use(NaiveUI).use(VueQueryPlugin);
+  app.use(router).use(highlight).use(i18n).use(NaiveUI);
 
   app.mount("#app");
 })();
