@@ -30,7 +30,7 @@ import {
   Changelist_ChangeSchema,
   ChangelistSchema,
 } from "@/types/proto-es/v1/changelist_service_pb";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { setSheetStatement } from "@/utils";
 import { useChangelistDetailContext } from "../context";
 
@@ -42,7 +42,7 @@ const onUploadFiles = async (
 ) => {
   const createdSheets = await Promise.all(
     statementMap.map(async (m) => {
-      const sheet = Sheet.fromPartial({
+      const sheet = create(SheetSchema, {
         title: m.filename,
       });
       setSheetStatement(sheet, m.statement);

@@ -46,17 +46,15 @@ import { usePlanContext } from "@/components/Plan/logic";
 import { planServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   extractPlanUID,
   extractProjectResourceName,
   extractSheetUID,
   hasProjectPermissionV2,
 } from "@/utils";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import {
   convertOldPlanToNew,
   convertNewPlanToOld,
@@ -133,9 +131,7 @@ const createSheets = async () => {
       // The sheet is pending create
       const sheet = getLocalSheetByName(config.sheet);
       const engine = await databaseEngineForSpec(spec);
-      sheet.engine = convertEngineToOld(
-        (engine ?? Engine.ENGINE_UNSPECIFIED) as Engine
-      );
+      sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
     }
   }

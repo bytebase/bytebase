@@ -99,7 +99,7 @@ import {
   useWorkSheetAndTabStore,
 } from "@/store";
 import type { AccessOption } from "@/types";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractProjectResourceName, extractWorksheetUID } from "@/utils";
 
 const { t } = useI18n();
@@ -118,19 +118,19 @@ const accessOptions = computed<AccessOption[]>(() => {
   return [
     {
       label: t("sql-editor.private"),
-      value: Worksheet_Visibility.VISIBILITY_PRIVATE,
+      value: Worksheet_Visibility.PRIVATE,
       description: t("sql-editor.private-desc"),
       icon: h(LockKeyholeIcon),
     },
     {
       label: t("sql-editor.project-read"),
-      value: Worksheet_Visibility.VISIBILITY_PROJECT_READ,
+      value: Worksheet_Visibility.PROJECT_READ,
       description: t("sql-editor.project-read-desc"),
       icon: h(UsersIcon),
     },
     {
       label: t("sql-editor.project-write"),
-      value: Worksheet_Visibility.VISIBILITY_PROJECT_WRITE,
+      value: Worksheet_Visibility.PROJECT_WRITE,
       description: t("sql-editor.project-write-desc"),
       icon: h(UsersIcon),
     },
@@ -153,7 +153,7 @@ const handleChangeAccess = async (option: AccessOption) => {
     currentAccess.value = option;
     await worksheetV1Store.patchWorksheet(
       {
-        name: sheet.value.name,
+        ...sheet.value,
         visibility: currentAccess.value.value,
       },
       ["visibility"]

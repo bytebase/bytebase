@@ -193,17 +193,15 @@ import {
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   getSheetStatement,
   getStatementSize,
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import {
   convertOldPlanToNew,
   convertNewPlanToOld,
@@ -420,12 +418,11 @@ const updateStatement = async (statement: string) => {
     (spec) => spec.id === selectedSpec.value.id
   );
   const specEngine = await databaseEngineForSpec(head(specsToPatch));
-  const sheet = Sheet.fromPartial({
+  const sheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
     title: plan.value.title,
-    engine: convertEngineToOld(
-      (specEngine ?? Engine.ENGINE_UNSPECIFIED) as Engine
-    ),
+    engine: specEngine 
+    ,
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

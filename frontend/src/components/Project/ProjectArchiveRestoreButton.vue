@@ -1,6 +1,6 @@
 <template>
   <template v-if="allowArchiveOrRestore">
-    <template v-if="project.state === convertStateToOld(State.ACTIVE)">
+    <template v-if="project.state === State.ACTIVE">
       <BBButtonConfirm
         :type="'ARCHIVE'"
         :button-text="$t('project.settings.archive.btn-text')"
@@ -21,7 +21,7 @@
         </div>
       </BBButtonConfirm>
     </template>
-    <template v-else-if="project.state === convertStateToOld(State.DELETED)">
+    <template v-else-if="project.state === State.DELETED">
       <BBButtonConfirm
         :type="'RESTORE'"
         :button-text="$t('project.settings.restore.btn-text')"
@@ -47,7 +47,6 @@ import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
@@ -60,7 +59,7 @@ const router = useRouter();
 const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
-  if (props.project.state === convertStateToOld(State.ACTIVE)) {
+  if (props.project.state === State.ACTIVE) {
     return hasWorkspacePermissionV2("bb.projects.delete");
   }
   return hasWorkspacePermissionV2("bb.projects.undelete");

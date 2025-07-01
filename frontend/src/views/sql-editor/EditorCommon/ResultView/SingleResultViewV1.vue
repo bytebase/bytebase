@@ -183,6 +183,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import type { ColumnDef } from "@tanstack/vue-table";
 import {
   getCoreRowModel,
@@ -235,14 +236,14 @@ import {
   isValidInstanceName,
 } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
-import { convertExportFormatToOld } from "@/utils/v1/common-conversions";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
-import type {
-  QueryResult,
-  QueryRow,
-  RowValue,
-} from "@/types/proto/v1/sql_service";
+import {
+  ExportRequestSchema,
+  type QueryResult,
+  type QueryRow,
+  type RowValue,
+} from "@/types/proto-es/v1/sql_service_pb";
 import {
   compareQueryRowValues,
   createExplainToken,
@@ -321,8 +322,8 @@ const { policy: exportDataPolicy } = usePolicyByParentAndType(
 );
 
 const disallowExportQueryData = computed(() => {
-  return exportDataPolicy.value?.policy?.case === "exportDataPolicy" 
-    ? exportDataPolicy.value.policy.value.disable 
+  return exportDataPolicy.value?.policy?.case === "exportDataPolicy"
+    ? exportDataPolicy.value.policy.value.disable
     : false;
 });
 
@@ -481,15 +482,17 @@ const handleExportBtnClick = async ({
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
   try {
-    const content = await useSQLStore().exportData({
-      name: props.database.name,
-      dataSourceId: props.params.connection.dataSourceId ?? "",
-      format: convertExportFormatToOld(options.format),
-      statement,
-      limit,
-      admin,
-      password: options.password,
-    });
+    const content = await useSQLStore().exportData(
+      create(ExportRequestSchema, {
+        name: props.database.name,
+        dataSourceId: props.params.connection.dataSourceId ?? "",
+        format: options.format,
+        statement,
+        limit,
+        admin,
+        password: options.password,
+      })
+    );
 
     resolve([
       {
@@ -564,7 +567,7 @@ const queryTime = computed(() => {
   if (!latency) return "-";
 
   const { seconds, nanos } = latency;
-  const totalSeconds = seconds.toNumber() + nanos / 1e9;
+  const totalSeconds = Number(seconds) + nanos / 1e9;
   if (totalSeconds < 1) {
     const totalMS = Math.round(totalSeconds * 1000);
     return `${totalMS} ms`;

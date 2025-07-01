@@ -33,7 +33,7 @@ import { computed } from "vue";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { CopyButton } from "@/components/v2";
 import { TaskRunLogEntry_Type } from "@/types/proto/v1/rollout_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractSheetCommandByIndex } from "@/utils";
 import type { FlattenLogEntry } from "./common";
 

@@ -56,7 +56,7 @@ import { BBAttention } from "@/bbkit";
 import BBTextField from "@/bbkit/BBTextField.vue";
 import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
 import { useSettingV1Store, pushNotification } from "@/store";
-import { Webhook_Type } from "@/types/proto/v1/project_service";
+import { Webhook_Type } from "@/types/proto-es/v1/project_service_pb";
 import {
   type AppIMSetting,
   AppIMSettingSchema,

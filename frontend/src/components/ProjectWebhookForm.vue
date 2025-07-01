@@ -264,7 +264,7 @@ import {
   Webhook_Type,
   type Activity_Type,
   type Webhook,
-} from "@/types/proto/v1/project_service";
+} from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { projectWebhookV1Slug } from "../utils";
 import WebhookTypeIcon from "./Project/WebhookTypeIcon.vue";

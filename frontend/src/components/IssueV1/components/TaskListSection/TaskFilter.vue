@@ -84,7 +84,7 @@ import { computed } from "vue";
 import AdviceStatusIcon from "@/components/Plan/components/SQLCheckSection/AdviceStatusIcon.vue";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { useIssueContext } from "../../logic";
 import TaskStatusIconV1 from "../TaskStatusIconV1.vue";
 import { filterTask } from "./filter";
@@ -110,7 +110,7 @@ const TASK_STATUS_FILTERS: Task_Status[] = [
   Task_Status.SKIPPED,
 ];
 const ADVICE_STATUS_FILTERS: Advice_Status[] = [
-  Advice_Status.UNRECOGNIZED,
+  Advice_Status.STATUS_UNSPECIFIED,
   Advice_Status.SUCCESS,
   Advice_Status.WARNING,
   Advice_Status.ERROR,

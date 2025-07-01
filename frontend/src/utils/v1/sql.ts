@@ -1,25 +1,26 @@
 import dayjs from "dayjs";
 import Long from "long";
-import { getDateForPbTimestamp } from "@/types";
-import { NullValue } from "@/types/proto/google/protobuf/struct";
+import { toJson } from "@bufbuild/protobuf";
+import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import {
+import type {
   RowValue,
-  type RowValue_Timestamp,
-  type RowValue_TimestampTZ,
-} from "@/types/proto/v1/sql_service";
+  RowValue_Timestamp,
+  RowValue_TimestampTZ,
+} from "@/types/proto-es/v1/sql_service_pb";
+import { RowValueSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { isNullOrUndefined } from "../util";
 
 // extractSQLRowValuePlain extracts a plain value from a RowValue.
 export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   if (
     typeof value === "undefined" ||
-    value.nullValue === NullValue.NULL_VALUE
+    value.kind?.case === "nullValue"
   ) {
     return null;
   }
 
-  const plainObject = RowValue.toJSON(value) as Record<string, any>;
+  const plainObject = toJson(RowValueSchema, value) as Record<string, any>;
   const keys = Object.keys(plainObject);
   if (keys.length === 0) {
     return undefined; // Will be displayed as "UNSET"
@@ -29,8 +30,8 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   }
 
   // First check if there's a formatted stringValue which should take precedence
-  if (value.stringValue) {
-    let stringValue = value.stringValue;
+  if (value.kind?.case === "stringValue") {
+    let stringValue = value.kind.value;
     if (stringValue.startsWith('"') && stringValue.endsWith('"')) {
       stringValue = stringValue.replace(/^"|"$/g, "");
     }
@@ -38,9 +39,9 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   }
 
   // Handle binary data with auto-format detection
-  if (value.bytesValue) {
+  if (value.kind?.case === "bytesValue") {
     // Ensure bytesValue exists before converting to array
-    const byteArray = Array.from(value.bytesValue);
+    const byteArray = Array.from(value.kind.value);
 
     // For single byte/bit values (could be boolean)
     if (byteArray.length === 1) {
@@ -51,7 +52,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     }
 
     // Check if it's readable text
-    const isReadableText = byteArray.every((byte) => byte >= 32 && byte <= 126);
+    const isReadableText = byteArray.every((byte: number) => byte >= 32 && byte <= 126);
     if (isReadableText) {
       try {
         return new TextDecoder().decode(new Uint8Array(byteArray));
@@ -65,19 +66,19 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return (
       "0x" +
       byteArray
-        .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+        .map((byte: number) => byte.toString(16).toUpperCase().padStart(2, "0"))
         .join("")
     );
   }
 
-  if (value.timestampValue && value.timestampValue.googleTimestamp) {
-    return formatTimestamp(value.timestampValue);
+  if (value.kind?.case === "timestampValue" && value.kind.value.googleTimestamp) {
+    return formatTimestamp(value.kind.value);
   }
-  if (value.timestampTzValue && value.timestampTzValue.googleTimestamp) {
-    return formatTimestampWithTz(value.timestampTzValue);
+  if (value.kind?.case === "timestampTzValue" && value.kind.value.googleTimestamp) {
+    return formatTimestampWithTz(value.kind.value);
   }
-  if (value.valueValue) {
-    return JSON.stringify(value.valueValue);
+  if (value.kind?.case === "valueValue") {
+    return JSON.stringify(value.kind.value);
   }
 
   const key = keys[0];
@@ -86,7 +87,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
 
 const formatTimestamp = (timestamp: RowValue_Timestamp) => {
   const fullDayjs = dayjs(
-    getDateForPbTimestamp(timestamp.googleTimestamp)
+    getDateForPbTimestampProtoEs(timestamp.googleTimestamp)
   ).utc();
   const microseconds = Math.floor(
     (timestamp.googleTimestamp?.nanos ?? 0) /
@@ -101,7 +102,7 @@ const formatTimestamp = (timestamp: RowValue_Timestamp) => {
 
 const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
   const fullDayjs = dayjs(
-    getDateForPbTimestamp(timestampTzValue.googleTimestamp)
+    getDateForPbTimestampProtoEs(timestampTzValue.googleTimestamp)
   )
     .utc()
     .add(timestampTzValue.offset, "seconds");
@@ -297,15 +298,15 @@ export const compareQueryRowValues = (
 const extractSQLRowValueRaw = (value: RowValue | undefined) => {
   if (
     typeof value === "undefined" ||
-    value.nullValue === NullValue.NULL_VALUE
+    value.kind?.case === "nullValue"
   ) {
     return null;
   }
-  const keys = Object.keys(RowValue.toJSON(value) as Record<string, any>);
+  const keys = Object.keys(toJson(RowValueSchema, value) as Record<string, any>);
   if (keys.length === 0) {
     return undefined;
   }
-  return (value as any)[keys[0]];
+  return value.kind?.value;
 };
 
 const toInt = (a: any) => {

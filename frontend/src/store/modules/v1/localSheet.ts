@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import type { DeepPartial } from "@/types/proto/v1/sheet_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { create as createProto } from "@bufbuild/protobuf";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { useSheetV1Store } from "./sheet";
 
@@ -22,14 +23,19 @@ export const useLocalSheetStore = defineStore("local_sheet", () => {
 
   const createLocalSheet = (
     name: string,
-    defaults: DeepPartial<Sheet> = {}
+    defaults: Partial<Sheet> = {}
   ) => {
-    return reactive(
-      Sheet.fromPartial({
-        name,
-        ...defaults,
-      })
-    );
+    const sheet = createProto(SheetSchema, {
+      name,
+      title: defaults.title || "",
+      creator: defaults.creator || "",
+      content: defaults.content || new Uint8Array(),
+      contentSize: defaults.contentSize || BigInt(0),
+      engine: defaults.engine,
+      payload: defaults.payload,
+      createTime: defaults.createTime,
+    });
+    return reactive(sheet);
   };
 
   const getOrCreateSheetByName = (name: string) => {

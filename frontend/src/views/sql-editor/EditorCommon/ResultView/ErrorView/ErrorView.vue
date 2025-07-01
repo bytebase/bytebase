@@ -35,7 +35,7 @@ import { BBAttention } from "@/bbkit";
 import { useAppFeature, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLResultViewContext } from "../context";
 import AdviceItem from "./AdviceItem.vue";
 import PostgresError from "./PostgresError.vue";

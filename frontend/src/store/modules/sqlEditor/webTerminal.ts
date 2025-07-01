@@ -1,4 +1,4 @@
-import { create } from "@bufbuild/protobuf";
+import { create, fromJson } from "@bufbuild/protobuf";
 import { type Duration, DurationSchema } from "@bufbuild/protobuf/wkt";
 import Emittery from "emittery";
 import { uniqueId } from "lodash-es";
@@ -18,10 +18,16 @@ import type {
   SQLEditorQueryParams,
 } from "@/types";
 import {
+  AdminExecuteRequestSchema,
+  AdminExecuteResponseSchema,
+  QueryResult_Message_Level,
+  QueryResultSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
+import type {
   AdminExecuteRequest,
   AdminExecuteResponse,
   QueryResult,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto-es/v1/sql_service_pb";
 import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,
@@ -146,7 +152,7 @@ const createStreamingQueryController = () => {
                 result.latency = parseDuration(result.latency);
               });
             }
-            const response = AdminExecuteResponse.fromJSON(data.result);
+            const response = fromJson(AdminExecuteResponseSchema, data.result);
             subscriber.next(response);
           } else if (data.error) {
             const err = new ClientError(
@@ -269,7 +275,7 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
         pushNotification({
           module: "bytebase",
           style: "INFO",
-          title: message.level,
+          title: QueryResult_Message_Level[message.level],
           description: message.content,
         });
       }
@@ -279,7 +285,7 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
 };
 
 export const mockAffectedV1Rows0 = (): QueryResult => {
-  return QueryResult.fromPartial({
+  return create(QueryResultSchema, {
     columnNames: ["Affected Rows"],
     columnTypeNames: ["BIGINT"],
     masked: [false],
@@ -289,7 +295,10 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
       {
         values: [
           {
-            int64Value: 0,
+            kind: {
+              case: "int64Value",
+              value: BigInt(0),
+            },
           },
         ],
       },
@@ -301,7 +310,7 @@ const mapRequest = (params: SQLEditorQueryParams): AdminExecuteRequest => {
   const { connection, statement, explain } = params;
 
   const database = useDatabaseV1Store().getDatabaseByName(connection.database);
-  const request = AdminExecuteRequest.fromPartial({
+  const request = create(AdminExecuteRequestSchema, {
     name: database.name,
     statement: explain ? `EXPLAIN ${statement}` : statement,
     schema: connection.schema,

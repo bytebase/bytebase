@@ -13,7 +13,7 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
-import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain, isDescendantOf, toClipboard } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
 import {
@@ -139,8 +139,8 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
     colIndex: number;
     rowIndex: number;
   }) => {
-    // Special handling for binary data
-    if (value && value.bytesValue) {
+    // Special handling for binary data (proto-es oneof pattern)
+    if (value && value.kind?.case === "bytesValue") {
       // Get the result set index if available
       const setIndex = resultViewContext.detail?.value?.set ?? 0;
 
@@ -153,18 +153,18 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
       if (binaryFormat) {
         // Column format overrides take precedence
         return formatBinaryValue({
-          bytesValue: value.bytesValue,
+          bytesValue: value.kind.value,
           format: binaryFormat,
         });
       }
 
       const header = table.value.getFlatHeaders()[colIndex];
       const detectedFormat = detectBinaryFormat({
-        bytesValue: value.bytesValue,
+        bytesValue: value.kind.value,
         columnType: getColumnType(header),
       });
       return formatBinaryValue({
-        bytesValue: value.bytesValue,
+        bytesValue: value.kind.value,
         format: detectedFormat,
       });
     }

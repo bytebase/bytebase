@@ -144,7 +144,7 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { type QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
+import { type QueryRow, type RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
 import {
@@ -201,13 +201,13 @@ const existBinaryValue = (columnIndex: number) => {
     return false;
   }
 
-  // Check each row in the column for binary data
+  // Check each row in the column for binary data (proto-es oneof pattern)
   for (const row of rows.value) {
     const cell = row.getVisibleCells()[columnIndex];
     if (!cell) continue;
 
     const value = cell.getValue<RowValue>();
-    if (value?.bytesValue) {
+    if (value?.kind?.case === "bytesValue") {
       return true;
     }
   }

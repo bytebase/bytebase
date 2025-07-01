@@ -15,22 +15,16 @@ import {
   SearchWorksheetsRequestSchema,
   UpdateWorksheetOrganizerRequestSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import type { WorksheetOrganizer } from "@/types/proto/v1/worksheet_service";
-import {
-  Worksheet_Visibility,
+import type { WorksheetOrganizer } from "@/types/proto-es/v1/worksheet_service_pb";
+import type {
   Worksheet,
-} from "@/types/proto/v1/worksheet_service";
+} from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   extractWorksheetUID,
   getSheetStatement,
   isWorksheetWritableV1,
   getStatementSize,
 } from "@/utils";
-import {
-  convertOldWorksheetToNew,
-  convertNewWorksheetToOld,
-  convertOldWorksheetOrganizerToNew,
-} from "@/utils/v1/worksheet-conversions";
 import { useSQLEditorTabStore } from "../sqlEditor";
 import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
@@ -108,21 +102,17 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   };
 
   // CRUD
-  const createWorksheet = async (worksheet: Partial<Worksheet>) => {
+  const createWorksheet = async (worksheet: Worksheet) => {
     const fullWorksheet = worksheet.name
       ? worksheet
       : { ...worksheet, name: "" };
-    const newWorksheet = convertOldWorksheetToNew(
-      Worksheet.create(fullWorksheet)
-    );
     const request = create(CreateWorksheetRequestSchema, {
-      worksheet: newWorksheet,
+      worksheet: fullWorksheet,
     });
     const response =
       await worksheetServiceClientConnect.createWorksheet(request);
-    const created = convertNewWorksheetToOld(response);
-    await setCache(created, "FULL");
-    return created;
+    await setCache(response, "FULL");
+    return response;
   };
 
   /**
@@ -165,8 +155,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
           contextValues: createContextValues().set(silentContextKey, silent),
         }
       );
-      const worksheet = convertNewWorksheetToOld(response);
-      return worksheet;
+      return response;
     } catch {
       return undefined;
     }
@@ -209,20 +198,18 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     });
     const response =
       await worksheetServiceClientConnect.searchWorksheets(request);
-    const worksheets = response.worksheets.map(convertNewWorksheetToOld);
-    await setListCache(worksheets);
-    return worksheets;
+    await setListCache(response.worksheets);
+    return response.worksheets;
   };
   const fetchSharedWorksheetList = async () => {
     const me = useCurrentUserV1();
     const request = create(SearchWorksheetsRequestSchema, {
-      filter: `creator != "users/${me.value.email}" && visibility in ["${Worksheet_Visibility.VISIBILITY_PROJECT_READ}","${Worksheet_Visibility.VISIBILITY_PROJECT_WRITE}"]`,
+      filter: `creator != "users/${me.value.email}" && visibility in ["PROJECT_READ","PROJECT_WRITE"]`,
     });
     const response =
       await worksheetServiceClientConnect.searchWorksheets(request);
-    const worksheets = response.worksheets.map(convertNewWorksheetToOld);
-    await setListCache(worksheets);
-    return worksheets;
+    await setListCache(response.worksheets);
+    return response.worksheets;
   };
 
   const fetchStarredWorksheetList = async () => {
@@ -231,30 +218,23 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     });
     const response =
       await worksheetServiceClientConnect.searchWorksheets(request);
-    const worksheets = response.worksheets.map(convertNewWorksheetToOld);
-    await setListCache(worksheets);
-    return worksheets;
+    await setListCache(response.worksheets);
+    return response.worksheets;
   };
 
   const patchWorksheet = async (
-    worksheet: Partial<Worksheet>,
+    worksheet: Worksheet,
     updateMask: string[]
   ) => {
     if (!worksheet.name) return;
-    const fullWorksheet = Worksheet.create({
-      ...worksheet,
-      name: worksheet.name,
-    });
-    const newWorksheet = convertOldWorksheetToNew(fullWorksheet);
     const request = create(UpdateWorksheetRequestSchema, {
-      worksheet: newWorksheet,
+      worksheet: worksheet,
       updateMask: { paths: updateMask },
     });
     const response =
       await worksheetServiceClientConnect.updateWorksheet(request);
-    const updated = convertNewWorksheetToOld(response);
-    await setCache(updated, "FULL");
-    return updated;
+    await setCache(response, "FULL");
+    return response;
   };
 
   const deleteWorksheetByName = async (name: string) => {
@@ -269,9 +249,8 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     organizer: Pick<WorksheetOrganizer, "worksheet" | "starred">
   ) => {
     const fullOrganizer = { ...organizer } as WorksheetOrganizer;
-    const newOrganizer = convertOldWorksheetOrganizerToNew(fullOrganizer);
     const request = create(UpdateWorksheetOrganizerRequestSchema, {
-      organizer: newOrganizer,
+      organizer: fullOrganizer,
       // for now we only support change the `starred` field.
       updateMask: { paths: ["starred"] },
     });

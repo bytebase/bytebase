@@ -1,5 +1,5 @@
 import type { Header } from "@tanstack/vue-table";
-import type { QueryRow } from "@/types/proto/v1/sql_service";
+import type { QueryRow } from "@/types/proto-es/v1/sql_service_pb";
 
 interface ColumnMeta {
   columnType: string;

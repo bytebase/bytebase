@@ -1,5 +1,7 @@
 import { reactive } from "vue";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { create } from "@bufbuild/protobuf";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 
 const state = {
   uid: -101,
@@ -12,7 +14,7 @@ const nextUID = () => {
 const sheetsByName = reactive(new Map<string, Sheet>());
 
 export const createEmptyLocalSheet = () => {
-  return reactive(Sheet.fromPartial({}));
+  return reactive(create(SheetSchema, {}));
 };
 
 export const getNextLocalSheetUID = () => {
