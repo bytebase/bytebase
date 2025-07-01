@@ -47,6 +47,8 @@ const (
 	ErrorTypeAccessOtherDatabase = 201
 	// ErrorTypeDatabaseIsDeleted is the error that try to access the deleted database.
 	ErrorTypeDatabaseIsDeleted = 202
+	// ErrorTypeReferenceOtherDatabase is the error that try to reference other database.
+	ErrorTypeReferenceOtherDatabase = 203
 
 	// 301 ~ 399 table error type.
 
@@ -963,7 +965,12 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughError {
 	targetTable, err := d.findTableState(node.ReferTable)
 	if err != nil {
-		return err
+		if err.Type == ErrorTypeAccessOtherDatabase {
+			return &WalkThroughError{
+				Type:    ErrorTypeReferenceOtherDatabase,
+				Content: fmt.Sprintf("Reference table `%s` in other database `%s`, skip walkthrough", node.ReferTable.Name.O, node.ReferTable.Schema.O),
+			}
+		}
 	}
 
 	schema := d.schemaSet[""]
