@@ -1,5 +1,17 @@
 <template>
+  <NInput
+    v-if="useSimpleInput"
+    ref="inputRef"
+    :value="postgresInputValue"
+    :placeholder="postgresPlaceholder"
+    :disabled="disabled"
+    @focus="focused = true"
+    @blur="focused = false"
+    @update:value="handlePostgresInput"
+  />
+
   <NDropdown
+    v-else
     trigger="click"
     placement="bottom-start"
     :value="dropdownValue"
@@ -69,7 +81,7 @@ import {
   getColumnDefaultDisplayString,
   getColumnDefaultValuePlaceholder,
 } from "@/components/SchemaEditorLite/utils";
-import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { ColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 
 type DefaultValueSelectOption = SelectOption & {
@@ -107,6 +119,20 @@ const inputValue = computed(() => {
 
 const placeholder = computed(() => {
   return getColumnDefaultValuePlaceholder(props.column);
+});
+
+// Computed property for engines that use simple input (currently PostgreSQL)
+const useSimpleInput = computed(() => {
+  return props.engine === Engine.POSTGRES;
+});
+
+const postgresInputValue = computed(() => {
+  // For PostgreSQL, we use defaultString field which contains the schema-qualified expression
+  return props.column.defaultString || "";
+});
+
+const postgresPlaceholder = computed(() => {
+  return t("schema-editor.default.postgres-placeholder");
 });
 
 const options = computed((): DefaultValueSelectOption[] => {
@@ -167,6 +193,23 @@ const handleInput = (value: string) => {
     handleSelect("string");
   }
   emit("input", value);
+};
+
+const handlePostgresInput = (value: string) => {
+  // For PostgreSQL, emit the value for the input handler
+  emit("input", value);
+
+  // Also emit a select event to maintain consistency with the existing API
+  const defaultOption = {
+    key: value.trim() ? "string" : "no-default",
+    value: {
+      hasDefault: !!value.trim(),
+      defaultNull: false,
+      defaultString: value.trim(), // For PostgreSQL, store in defaultString
+      defaultExpression: "",
+    },
+  };
+  emit("select", defaultOption);
 };
 
 const inputStyle = computed(() => {
