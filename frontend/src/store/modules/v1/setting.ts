@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import type { FieldMask } from "@bufbuild/protobuf/wkt";
 import { createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { computed } from "vue";
@@ -148,7 +149,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
       name: Setting_SettingName;
       value: SettingValue;
       validateOnly?: boolean;
-      updateMask?: string[] | undefined;
+      updateMask?: FieldMask | undefined;
     }): Promise<Setting> {
       const setting = create(SettingSchema, {
         name: `${settingNamePrefix}${Setting_SettingName[name]}`,
@@ -159,7 +160,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
         setting,
         validateOnly,
         allowMissing: true,
-        updateMask: updateMask ? { paths: updateMask } : undefined,
+        updateMask: updateMask,
       });
       const response = await settingServiceClientConnect.updateSetting(request);
       this.settingMapByName.set(response.name, response);
@@ -170,7 +171,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
       updateMask,
     }: {
       payload: Partial<WorkspaceProfileSetting>;
-      updateMask: string[];
+      updateMask: FieldMask;
     }): Promise<void> {
       if (!this.workspaceProfileSetting) {
         return;
@@ -190,7 +191,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
             value: profileSetting,
           },
         }),
-        updateMask,
+        updateMask: updateMask,
       });
       // Fetch the latest server info to refresh the disallow signup flag.
       await useActuatorV1Store().fetchServerInfo();

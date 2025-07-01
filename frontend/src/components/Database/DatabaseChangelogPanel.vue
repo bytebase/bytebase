@@ -142,6 +142,7 @@ import {
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { extractProjectResourceName } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
 
@@ -316,7 +317,7 @@ const updateDatabaseDrift = async () => {
   
   await databaseStore.updateDatabase(create(UpdateDatabaseRequestSchema, {
     database: updatedDatabase,
-    updateMask: { paths: ["drifted"] },
+    updateMask: create(FieldMaskSchema, { paths: ["drifted"] }),
   }));
   pushNotification({
     module: "bytebase",

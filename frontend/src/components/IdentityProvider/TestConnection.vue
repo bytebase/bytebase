@@ -94,19 +94,17 @@ import { create } from "@bufbuild/protobuf";
 import { identityProviderServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { OAuthWindowEventPayload } from "@/types";
+import type {
+  IdentityProvider,
+  TestIdentityProviderResponse,
+} from "@/types/proto-es/v1/idp_service_pb";
 import {
   IdentityProviderType,
-  TestIdentityProviderResponse,
-  type IdentityProvider,
-} from "@/types/proto/v1/idp_service";
+} from "@/types/proto-es/v1/idp_service_pb";
 import {
   TestIdentityProviderRequestSchema,
   CreateIdentityProviderRequestSchema,
 } from "@/types/proto-es/v1/idp_service_pb";
-import {
-  convertOldIdentityProviderToNew,
-  convertNewIdentityProviderToOld,
-} from "@/utils/v1/idp-conversions";
 import { openWindowForSSO } from "@/utils";
 
 const props = defineProps<{
@@ -147,7 +145,7 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
   try {
     isTestingInProgress.value = true;
     const request = create(TestIdentityProviderRequestSchema, {
-      identityProvider: convertOldIdentityProviderToNew(props.idp),
+      identityProvider: props.idp,
       context: {
         case: "oauth2Context",
         value: {
@@ -182,16 +180,16 @@ const testConnection = async () => {
     idp.type === IdentityProviderType.OAUTH2 ||
     idp.type === IdentityProviderType.OIDC
   ) {
-    let idpForTesting = idp;
+    let idpForTesting: IdentityProvider = idp;
     // For OIDC, we need to obtain the auth endpoint from the issuer in backend.
     if (isCreating && idp.type === IdentityProviderType.OIDC) {
       const request = create(CreateIdentityProviderRequestSchema, {
         identityProviderId: idp.name,
-        identityProvider: convertOldIdentityProviderToNew(idp),
+        identityProvider: idp,
         validateOnly: true,
       });
       const response = await identityProviderServiceClientConnect.createIdentityProvider(request);
-      idpForTesting = convertNewIdentityProviderToOld(response);
+      idpForTesting = response;
     }
 
     // Ensure event listener is set up for the correct IDP name
@@ -227,7 +225,7 @@ const testConnection = async () => {
     try {
       isTestingInProgress.value = true;
       const request = create(TestIdentityProviderRequestSchema, {
-        identityProvider: convertOldIdentityProviderToNew(idp),
+        identityProvider: idp,
       });
       const response = await identityProviderServiceClientConnect.testIdentityProvider(request);
 

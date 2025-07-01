@@ -252,15 +252,18 @@ import {
   SYSTEM_BOT_USER_NAME,
   unknownUser,
 } from "@/types";
+import { create } from "@bufbuild/protobuf";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import type {
+  User,
+} from "@/types/proto-es/v1/user_service_pb";
 import {
-  UpdateUserRequest,
+  UpdateUserRequestSchema,
   UserType,
-  type User,
-} from "@/types/proto/v1/user_service";
+} from "@/types/proto-es/v1/user_service_pb";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
 
 interface LocalState {
   editing: boolean;
@@ -353,7 +356,7 @@ const allowEdit = computed(() => {
   ) {
     return false;
   }
-  if (user.value.state !== convertStateToOld(State.ACTIVE)) {
+  if (user.value.state !== State.ACTIVE) {
     return false;
   }
   return isSelf.value || hasWorkspacePermissionV2("bb.policies.update");
@@ -390,26 +393,28 @@ const saveEdit = async () => {
   const userPatch = state.editingUser;
   if (!userPatch) return;
 
-  const updateMask: string[] = [];
+  const updateMaskPaths: string[] = [];
   if (userPatch.title !== user.value.title) {
-    updateMask.push("title");
+    updateMaskPaths.push("title");
   }
   if (userPatch.email !== user.value.email) {
-    updateMask.push("email");
+    updateMaskPaths.push("email");
   }
   if (userPatch.phone !== user.value.phone) {
-    updateMask.push("phone");
+    updateMaskPaths.push("phone");
   }
   if (userPatch.password !== "") {
-    updateMask.push("password");
+    updateMaskPaths.push("password");
   }
   try {
-    await userStore.updateUser({
+    await userStore.updateUser(create(UpdateUserRequestSchema, {
       user: userPatch,
-      updateMask,
+      updateMask: create(FieldMaskSchema, {
+        paths: updateMaskPaths
+      }),
       regenerateRecoveryCodes: false,
       regenerateTempMfaSecret: false,
-    });
+    }));
   } catch (error) {
     pushNotification({
       module: "bytebase",
@@ -423,7 +428,7 @@ const saveEdit = async () => {
   state.editing = false;
 
   // If we update email, we need to redirect to the new email.
-  if (updateMask.includes("email") && props.principalEmail) {
+  if (updateMaskPaths.includes("email") && props.principalEmail) {
     router.replace({
       name: WORKSPACE_ROUTE_USER_PROFILE,
       params: {
@@ -458,12 +463,14 @@ const disable2FA = () => {
 
 const handleDisable2FA = async () => {
   await userStore.updateUser(
-    UpdateUserRequest.fromPartial({
+    create(UpdateUserRequestSchema, {
       user: {
         name: user.value.name,
         mfaEnabled: false,
       },
-      updateMask: ["mfa_enabled"],
+      updateMask: create(FieldMaskSchema, {
+        paths: ["mfa_enabled"]
+      }),
     })
   );
   state.showDisable2FAConfirmModal = false;

@@ -22,7 +22,9 @@ import { NButton } from "naive-ui";
 import { onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
-import { UpdateUserRequest } from "@/types/proto/v1/user_service";
+import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import RecoveryCodesView from "./RecoveryCodesView.vue";
 
 interface LocalState {
@@ -53,11 +55,13 @@ onMounted(() => {
 
 const regenerateTempMfaSecret = async () => {
   await userStore.updateUser(
-    UpdateUserRequest.fromPartial({
+    create(UpdateUserRequestSchema, {
       user: {
         name: currentUser.value.name,
       },
-      updateMask: [],
+      updateMask: create(FieldMaskSchema, {
+        paths: []
+      }),
       regenerateTempMfaSecret: true,
     })
   );
@@ -65,11 +69,13 @@ const regenerateTempMfaSecret = async () => {
 
 const regenerateRecoveryCodes = async () => {
   await userStore.updateUser(
-    UpdateUserRequest.fromPartial({
+    create(UpdateUserRequestSchema, {
       user: {
         name: currentUser.value.name,
       },
-      updateMask: [],
+      updateMask: create(FieldMaskSchema, {
+        paths: []
+      }),
       regenerateRecoveryCodes: true,
     })
   );

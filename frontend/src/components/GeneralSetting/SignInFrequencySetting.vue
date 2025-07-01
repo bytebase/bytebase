@@ -58,6 +58,7 @@ import { defaultTokenDurationInHours } from "@/types";
 import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 const getInitialState = (): LocalState => {
@@ -117,7 +118,9 @@ const handleFrequencySettingChange = async () => {
     payload: {
       tokenDuration: create(DurationSchema, { seconds: BigInt(seconds), nanos: 0 }),
     },
-    updateMask: ["value.workspace_profile_setting_value.token_duration"],
+    updateMask: create(FieldMaskSchema, {
+      paths: ["value.workspace_profile_setting_value.token_duration"]
+    }),
   });
 };
 

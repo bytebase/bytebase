@@ -41,7 +41,6 @@ import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { unknownUser, SYSTEM_BOT_USER_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToNew } from "@/utils/v1/common-conversions";
 import type { MemberBinding } from "../../types";
 
 const props = defineProps<{
@@ -73,6 +72,6 @@ const allowUpdate = computed(() => {
     // Cannot edit the member binding for support@bytebase.com, but can edit allUsers
     return false;
   }
-  return convertStateToNew(user.state) === State.ACTIVE;
+  return user.state === State.ACTIVE;
 });
 </script>

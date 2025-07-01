@@ -39,7 +39,7 @@ import { InfoIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { CopyButton } from "@/components/v2";
 import { useActuatorV1Store } from "@/store";
-import { IdentityProviderType } from "@/types/proto/v1/idp_service";
+import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 
 const props = defineProps<{
   type: IdentityProviderType;

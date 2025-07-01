@@ -5,7 +5,7 @@
     <div class="flex flex-row items-center">
       <div class="flex flex-col">
         <div class="flex flex-row items-center space-x-2">
-          <div :class="convertStateToNew(user.state) === State.DELETED ? 'line-through' : ''">
+          <div :class="user.state === State.DELETED ? 'line-through' : ''">
             <span
               v-if="onClickUser"
               class="normal-link truncate max-w-[10rem]"
@@ -28,7 +28,7 @@
             </router-link>
           </div>
           <NTag
-            v-if="convertStateToNew(user.state) === State.DELETED"
+            v-if="user.state === State.DELETED"
             size="small"
             round
             type="error"
@@ -63,8 +63,8 @@ import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToNew } from "@/utils/v1/common-conversions";
-import { User, UserType } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { MemberBinding } from "../../types";
 
 const props = defineProps<{

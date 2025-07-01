@@ -1,7 +1,7 @@
 import { getProjectNameRolloutId } from "@/store/modules/v1/common";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import { Rollout } from "./proto/v1/rollout_service";
-import type { User } from "./proto/v1/user_service";
+import type { User } from "./proto-es/v1/user_service_pb";
 import { emptyUser, unknownUser } from "./v1";
 import {
   EMPTY_PROJECT_NAME,

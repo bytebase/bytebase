@@ -34,7 +34,7 @@ import { isEqual } from "lodash-es";
 import { NInputNumber, NCheckbox } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { create } from "@bufbuild/protobuf";
 
 const DEFAULT_EXPIRATION_DAYS = 90;
@@ -77,9 +77,9 @@ const handleSettingChange = async () => {
     payload: {
       maximumRoleExpiration: create(DurationSchema, { seconds: BigInt(seconds), nanos: 0 }),
     },
-    updateMask: [
-      "value.workspace_profile_setting_value.maximum_role_expiration",
-    ],
+    updateMask: create(FieldMaskSchema, {
+      paths: ["value.workspace_profile_setting_value.maximum_role_expiration"]
+    }),
   });
   Object.assign(state, getInitialState());
 };

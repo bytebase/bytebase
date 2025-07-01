@@ -60,9 +60,8 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore, pushNotification, useCurrentUserV1 } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { type User, UserType } from "@/types/proto/v1/user_service";
+import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
 
 const props = defineProps<{
   user: User;
@@ -91,7 +90,7 @@ const allowUpdateUser = computed(() => {
   if (props.user.userType === UserType.SYSTEM_BOT) {
     return false;
   }
-  return props.user.state === convertStateToOld(State.ACTIVE);
+  return props.user.state === State.ACTIVE;
 });
 
 const allowDeleteUser = computed(() => {
@@ -103,7 +102,7 @@ const allowDeleteUser = computed(() => {
 });
 
 const allowReactiveUser = computed(() => {
-  return allowUndelete.value && props.user.state === convertStateToOld(State.DELETED);
+  return allowUndelete.value && props.user.state === State.DELETED;
 });
 
 const changeRowStatus = async (state: State) => {
