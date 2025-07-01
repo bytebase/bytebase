@@ -132,10 +132,11 @@ const (
 	NoCollation                       Code = 617
 
 	// 701 ~ 799 database advisor error code.
-	DatabaseNotEmpty   Code = 701
-	NotCurrentDatabase Code = 702
-	DatabaseIsDeleted  Code = 703
-	DatabaseNotExists  Code = 704
+	DatabaseNotEmpty       Code = 701
+	NotCurrentDatabase     Code = 702
+	DatabaseIsDeleted      Code = 703
+	DatabaseNotExists      Code = 704
+	ReferenceOtherDatabase Code = 705
 
 	// 801 ~ 899 index error code.
 	NotUseIndex                Code = 801
