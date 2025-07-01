@@ -22,10 +22,11 @@
 </template>
 
 <script lang="ts" setup>
-import { orderBy, uniqBy } from "lodash-es";
+import { orderBy } from "lodash-es";
 import { Building2Icon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { displayRoleTitle, sortRoles, isBindingPolicyExpired } from "@/utils";
 import type { MemberRole } from "../../types";
 
@@ -38,8 +39,22 @@ const workspaceLevelRoles = computed(() => {
 });
 
 const projectRoleBindings = computed(() => {
+  const roleMap = new Map<string, { expired: boolean; binding: Binding }>();
+  for (const binding of props.role.projectRoleBindings) {
+    const isExpired = isBindingPolicyExpired(binding);
+    if (
+      !roleMap.has(binding.role) ||
+      (roleMap.get(binding.role)?.expired && !isExpired)
+    ) {
+      roleMap.set(binding.role, {
+        expired: isExpired,
+        binding,
+      });
+    }
+  }
+
   return orderBy(
-    uniqBy(props.role.projectRoleBindings, (binding) => binding.role),
+    [...roleMap.values()].map((item) => item.binding),
     ["role"]
   );
 });
