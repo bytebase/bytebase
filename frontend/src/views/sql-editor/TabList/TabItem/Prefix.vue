@@ -2,8 +2,8 @@
   <SheetConnectionIcon :tab="tab" class="w-4 h-4" />
   <heroicons-outline:user-group
     v-if="
-      sheet?.visibility === Worksheet_Visibility.VISIBILITY_PROJECT_READ ||
-      sheet?.visibility === Worksheet_Visibility.VISIBILITY_PROJECT_WRITE
+      sheet?.visibility === Worksheet_Visibility.PROJECT_READ ||
+      sheet?.visibility === Worksheet_Visibility.PROJECT_WRITE
     "
     class="w-4 h-4"
   />

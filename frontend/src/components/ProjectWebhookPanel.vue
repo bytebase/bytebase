@@ -32,7 +32,7 @@ import {
 } from "@/router/dashboard/projectV1";
 import { projectWebhookV1ActivityItemList } from "@/types";
 import type { Project, Webhook } from "@/types/proto-es/v1/project_service_pb";
-import { activity_TypeToJSON } from "@/types/proto-es/v1/project_service_pb";
+import { Activity_Type } from "@/types/proto-es/v1/project_service_pb";
 import { projectWebhookV1Slug } from "@/utils";
 
 defineProps<{
@@ -80,7 +80,7 @@ const columnList = computed((): DataTableColumn<Webhook>[] => {
           if (item) {
             return item.title;
           }
-          return activity_TypeToJSON(activity);
+          return Activity_Type[activity] || `ACTIVITY_${activity}`;
         });
 
         return list.join(", ");

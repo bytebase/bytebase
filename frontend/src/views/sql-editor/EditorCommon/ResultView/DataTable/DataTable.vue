@@ -201,13 +201,13 @@ const existBinaryValue = (columnIndex: number) => {
     return false;
   }
 
-  // Check each row in the column for binary data
+  // Check each row in the column for binary data (proto-es oneof pattern)
   for (const row of rows.value) {
     const cell = row.getVisibleCells()[columnIndex];
     if (!cell) continue;
 
     const value = cell.getValue<RowValue>();
-    if (value?.bytesValue) {
+    if (value?.kind?.case === "bytesValue") {
       return true;
     }
   }

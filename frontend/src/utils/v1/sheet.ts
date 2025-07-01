@@ -1,6 +1,5 @@
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
-import { getStatementSize } from "@/utils";
 
 export const extractSheetUID = (name: string) => {
   const pattern = /(?:^|\/)sheets\/([^/]+)(?:$|\/)/;
@@ -17,7 +16,7 @@ export const setSheetStatement = (
   statement: string
 ) => {
   sheet.content = new TextEncoder().encode(statement);
-  sheet.contentSize = getStatementSize(statement);
+  sheet.contentSize = BigInt(new TextEncoder().encode(statement).length);
 };
 
 export const getSheetStatement = (sheet: Sheet | Worksheet) => {

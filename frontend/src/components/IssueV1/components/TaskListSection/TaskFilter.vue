@@ -110,7 +110,7 @@ const TASK_STATUS_FILTERS: Task_Status[] = [
   Task_Status.SKIPPED,
 ];
 const ADVICE_STATUS_FILTERS: Advice_Status[] = [
-  Advice_Status.UNRECOGNIZED,
+  Advice_Status.STATUS_UNSPECIFIED,
   Advice_Status.SUCCESS,
   Advice_Status.WARNING,
   Advice_Status.ERROR,

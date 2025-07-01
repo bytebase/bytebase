@@ -42,10 +42,14 @@ import { isValidDatabaseName } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
-import {
+import type {
   Advice,
+  QueryOption,
+} from "@/types/proto-es/v1/sql_service_pb";
+import {
   Advice_Status,
-  advice_StatusToJSON,
+  QueryOption_RedisRunCommandsOn,
+  QueryOptionSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 import {
   getValidDataSourceByPolicy,
@@ -143,7 +147,8 @@ const useExecuteSQL = () => {
       signal: abortController?.signal,
     });
     const response = convertNewCheckResponseToOld(newResponse);
-    const { advices } = response;
+    const { advices: oldAdvices } = response;
+    const advices = newResponse.advices;
     events.emit("update:advices", { tab, params, advices });
     return { passed: advices.length === 0, advices };
   };
@@ -162,7 +167,10 @@ const useExecuteSQL = () => {
         adviceStatus = "WARNING";
       }
 
-      adviceNotifyMessage += `${advice_StatusToJSON(advice.status)}: ${
+      const statusText = (advice.status as any) === Advice_Status.SUCCESS ? 'SUCCESS' :
+                         (advice.status as any) === Advice_Status.WARNING ? 'WARNING' :
+                         (advice.status as any) === Advice_Status.ERROR ? 'ERROR' : 'UNSPECIFIED';
+      adviceNotifyMessage += `${statusText}: ${
         advice.title
       }\n`;
       if (advice.content) {
@@ -410,10 +418,10 @@ const useExecuteSQL = () => {
         explain: context.params.explain,
         schema: context.params.connection.schema,
         container: context.params.connection.table,
-        queryOption: {
+        queryOption: create(QueryOptionSchema, {
           redisRunCommandsOn: sqlEditorStore.redisCommandOption,
-        },
-      },
+        }),
+      } as any,
       abortController.signal
     );
 

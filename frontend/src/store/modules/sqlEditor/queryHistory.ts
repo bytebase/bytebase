@@ -3,9 +3,6 @@ import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { sqlServiceClientConnect } from "@/grpcweb";
 import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  convertNewSearchQueryHistoriesResponseToOld,
-} from "@/utils/v1/sql-conversions";
 import { isValidProjectName, isValidDatabaseName } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 
@@ -67,8 +64,7 @@ export const useSQLEditorQueryHistoryStore = defineStore(
         pageToken,
         filter: getListQueryHistoryFilter(filter),
       });
-      const newResp = await sqlServiceClientConnect.searchQueryHistories(request);
-      const resp = convertNewSearchQueryHistoriesResponseToOld(newResp);
+      const resp = await sqlServiceClientConnect.searchQueryHistories(request);
 
       queryHistoryMap.get(key)!.nextPageToken = resp.nextPageToken;
       if (pageToken) {

@@ -205,12 +205,12 @@ const binaryFormat = computed(() => {
 // Check if the current value is binary data (using bytesValue)
 const isBinaryData = computed(() => {
   if (!rawValue.value) return false;
-  return !!rawValue.value.bytesValue;
+  return rawValue.value.kind?.case === "bytesValue";
 });
 
 // Format the binary value based on selected format
 const formattedValue = computed(() => {
-  if (!rawValue.value?.bytesValue) {
+  if (rawValue.value?.kind?.case !== "bytesValue") {
     return rawValue.value;
   }
 
@@ -223,7 +223,7 @@ const formattedValue = computed(() => {
   }
 
   const stringValue = formatBinaryValue({
-    bytesValue: rawValue.value.bytesValue,
+    bytesValue: rawValue.value.kind.value,
     format: actualFormat,
   });
   return {

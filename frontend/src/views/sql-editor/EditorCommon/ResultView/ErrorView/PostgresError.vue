@@ -27,8 +27,8 @@ const props = defineProps<{
 const postgresErrors = computed(() => {
   const errors: QueryResult_PostgresError[] = [];
   props.resultSet.results.forEach((result) => {
-    if (result.postgresError) {
-      errors.push(result.postgresError);
+    if (result.detailedError?.case === "postgresError") {
+      errors.push(result.detailedError.value);
     }
   });
   return errors;

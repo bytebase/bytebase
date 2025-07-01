@@ -16,11 +16,9 @@ import {
   DEFAULT_PROJECT_NAME,
   isValidProjectName,
 } from "@/types";
-import { State as NewState } from "@/types/proto-es/v1/common_pb";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type {
   Project,
-  ListProjectsResponse,
 } from "@/types/proto-es/v1/project_service_pb";
 import {
   GetProjectRequestSchema,
@@ -32,10 +30,6 @@ import {
   BatchDeleteProjectsRequestSchema,
   UndeleteProjectRequestSchema,
 } from "@/types/proto-es/v1/project_service_pb";
-import type {
-  Project,
-  ListProjectsResponse,
-} from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
 import {
@@ -48,7 +42,7 @@ import { useProjectIamPolicyStore } from "./projectIamPolicy";
 export interface ProjectFilter {
   query?: string;
   excludeDefault?: boolean;
-  state?: NewState;
+  state?: State;
 }
 
 const getListProjectFilter = (params: ProjectFilter) => {
@@ -62,8 +56,8 @@ const getListProjectFilter = (params: ProjectFilter) => {
   if (params.excludeDefault) {
     list.push("exclude_default == true");
   }
-  if (params.state === NewState.DELETED) {
-    list.push(`state == "${convertStateToOld(params.state)}"`);
+  if (params.state === State.DELETED) {
+    list.push(`state == "${params.state}"`);
   }
   return list.join(" && ");
 };
@@ -101,7 +95,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       return projectList.value;
     }
     return projectList.value.filter(
-      (project) => project.state === convertStateToOld(NewState.ACTIVE)
+      (project) => project.state === State.ACTIVE
     );
   };
   const getProjectByName = (name: string) => {
@@ -115,9 +109,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     const response = await projectServiceClientConnect.getProject(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    const project = convertNewProjectToOld(response);
-    await upsertProjectMap([project]);
-    return project as ComposedProject;
+    await upsertProjectMap([response]);
+    return response as ComposedProject;
   };
 
   const fetchProjectList = async (params: {
@@ -134,7 +127,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       params.silent ?? true
     );
 
-    let response: ListProjectsResponse | undefined = undefined;
+    let response: { projects: Project[]; nextPageToken: string } | undefined = undefined;
     let pageToken = params.pageToken;
     while (true) {
       let resp;
@@ -143,14 +136,14 @@ export const useProjectV1Store = defineStore("project_v1", () => {
           ...params,
           pageToken,
           filter: getListProjectFilter(params.filter ?? {}),
-          showDeleted: params.filter?.state === NewState.DELETED ? true : false,
+          showDeleted: params.filter?.state === State.DELETED ? true : false,
         });
         const connectResponse = await projectServiceClientConnect.listProjects(
           request,
           { contextValues }
         );
         resp = {
-          projects: connectResponse.projects.map(convertNewProjectToOld),
+          projects: connectResponse.projects,
           nextPageToken: connectResponse.nextPageToken,
         };
       } else {
@@ -158,14 +151,14 @@ export const useProjectV1Store = defineStore("project_v1", () => {
           ...params,
           pageToken,
           filter: getListProjectFilter(params.filter ?? {}),
-          showDeleted: params.filter?.state === NewState.DELETED ? true : false,
+          showDeleted: params.filter?.state === State.DELETED ? true : false,
         });
         const connectResponse =
           await projectServiceClientConnect.searchProjects(request, {
             contextValues,
           });
         resp = {
-          projects: connectResponse.projects.map(convertNewProjectToOld),
+          projects: connectResponse.projects,
           nextPageToken: connectResponse.nextPageToken,
         };
       }
@@ -181,7 +174,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 
     return {
       projects: composedProjects,
-      nextPageToken: (response as ListProjectsResponse).nextPageToken,
+      nextPageToken: response.nextPageToken,
     };
   };
 
@@ -201,22 +194,20 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
   const createProject = async (project: Project, resourceId: string) => {
     const request = create(CreateProjectRequestSchema, {
-      project: convertOldProjectToNew(project),
+      project,
       projectId: resourceId,
     });
     const response = await projectServiceClientConnect.createProject(request);
-    const created = convertNewProjectToOld(response);
-    const composed = await upsertProjectMap([created]);
+    const composed = await upsertProjectMap([response]);
     return composed[0];
   };
   const updateProject = async (project: Project, updateMask: string[]) => {
     const request = create(UpdateProjectRequestSchema, {
-      project: convertOldProjectToNew(project),
+      project,
       updateMask: { paths: updateMask },
     });
     const response = await projectServiceClientConnect.updateProject(request);
-    const updated = convertNewProjectToOld(response);
-    const composed = await upsertProjectMap([updated]);
+    const composed = await upsertProjectMap([response]);
     return composed[0];
   };
   const archiveProject = async (project: Project, force = false) => {
@@ -225,7 +216,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       force,
     });
     await projectServiceClientConnect.deleteProject(request);
-    project.state = convertStateToOld(NewState.DELETED);
+    project.state = State.DELETED;
     await upsertProjectMap([project]);
   };
   const batchDeleteProjects = async (projectNames: string[], force = false) => {
@@ -241,7 +232,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
         if (project && project.name !== UNKNOWN_PROJECT_NAME) {
           // Extract Project properties (excluding iamPolicy)
           const { iamPolicy: _iamPolicy, ...projectData } = project;
-          return { ...projectData, state: convertStateToOld(NewState.DELETED) };
+          return { ...projectData, state: State.DELETED };
         }
         return null;
       })
@@ -256,8 +247,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       name: project.name,
     });
     const response = await projectServiceClientConnect.undeleteProject(request);
-    const restored = convertNewProjectToOld(response);
-    await upsertProjectMap([restored]);
+    await upsertProjectMap([response]);
   };
 
   return {
