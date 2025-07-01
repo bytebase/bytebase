@@ -667,6 +667,14 @@ func convertWalkThroughErrorToAdvice(err error) ([]*storepb.Advice, error) {
 			Content:       walkThroughError.Content,
 			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
 		})
+	case catalog.ErrorTypeReferenceOtherDatabase:
+		res = append(res, &storepb.Advice{
+			Status:        storepb.Advice_WARNING,
+			Code:          ReferenceOtherDatabase.Int32(),
+			Title:         "Reference other database",
+			Content:       walkThroughError.Content,
+			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
+		})
 	case catalog.ErrorTypeTableExists:
 		res = append(res, &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
