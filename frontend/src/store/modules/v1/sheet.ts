@@ -44,7 +44,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
   const createSheet = async (parent: string, sheet: Partial<Sheet>) => {
     if (!sheet.engine) {
       console.warn(
-        `[SheetService.CreateSheet] sheet.engine unspecified`
+        `[SheetService.CreateSheet] sheet.engine unspecified: ${sheet.engine}`
       );
       sheet.engine = Engine.ENGINE_UNSPECIFIED;
     }
