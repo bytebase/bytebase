@@ -58,7 +58,7 @@ import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
-import { CheckReleaseResponse } from "@/types/proto/v1/release_service";
+import { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_pb";
 import { CheckReleaseRequestSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
 import { convertNewCheckReleaseResponseToOld, convertOldChangeTypeToNew } from "@/utils/v1/release-conversions";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";

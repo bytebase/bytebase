@@ -168,7 +168,7 @@ import type { ComposedProject } from "@/types";
 import {
   Changelist,
   Changelist_Change as Change,
-} from "@/types/proto/v1/changelist_service";
+} from "@/types/proto-es/v1/changelist_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { convertEngineToOld } from "@/utils/v1/common-conversions";

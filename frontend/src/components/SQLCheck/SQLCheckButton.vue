@@ -80,7 +80,7 @@ import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   CheckReleaseResponse,
   Release_File_ChangeType,
-} from "@/types/proto/v1/release_service";
+} from "@/types/proto-es/v1/release_service_pb";
 import { CheckReleaseRequestSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
 import { convertNewCheckReleaseResponseToOld, convertOldChangeTypeToNew } from "@/utils/v1/release-conversions";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";

@@ -1,5 +1,5 @@
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { Changelist } from "@/types/proto/v1/changelist_service";
+import { Changelist } from "@/types/proto-es/v1/changelist_service_pb";
 
 export const UNKNOWN_CHANGELIST_NAME = "projects/-1/changelists/-1";
 

@@ -7,8 +7,8 @@ import { releaseServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef, ComposedRelease, Pagination } from "@/types";
 import { isValidReleaseName, unknownRelease, unknownUser } from "@/types";
-import type { DeepPartial, Release } from "@/types/proto/v1/release_service";
-import { Release as ReleaseProto } from "@/types/proto/v1/release_service";
+import type { DeepPartial, Release } from "@/types/proto-es/v1/release_service_pb";
+import { Release as ReleaseProto } from "@/types/proto-es/v1/release_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
 import { 

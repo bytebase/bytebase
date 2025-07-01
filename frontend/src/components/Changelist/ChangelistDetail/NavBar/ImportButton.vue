@@ -28,7 +28,7 @@ import { pushNotification, useChangelistStore, useSheetV1Store } from "@/store";
 import {
   Changelist_Change as Change,
   Changelist,
-} from "@/types/proto/v1/changelist_service";
+} from "@/types/proto-es/v1/changelist_service_pb";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { setSheetStatement } from "@/utils";
 import { useChangelistDetailContext } from "../context";

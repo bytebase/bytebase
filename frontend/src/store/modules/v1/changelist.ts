@@ -10,7 +10,7 @@ import type {
   CreateChangelistRequest,
   DeepPartial,
   ListChangelistsRequest,
-} from "@/types/proto/v1/changelist_service";
+} from "@/types/proto-es/v1/changelist_service_pb";
 import {
   GetChangelistRequestSchema,
   CreateChangelistRequestSchema,

@@ -16,7 +16,7 @@
 import { toRef } from "vue";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import type { ComposedDatabase } from "@/types";
-import { Release_File_ChangeType } from "@/types/proto/v1/release_service";
+import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
 import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
 
 const props = defineProps<{

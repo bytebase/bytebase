@@ -22,7 +22,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useReleaseStore } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { Release } from "@/types/proto/v1/release_service";
+import { Release } from "@/types/proto-es/v1/release_service_pb";
 import { useReleaseDetailContext } from "../context";
 import { convertStateToOld } from "@/utils/v1/common-conversions";
 

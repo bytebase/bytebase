@@ -162,8 +162,8 @@ import { BBSpin } from "@/bbkit";
 import { useReleaseByName } from "@/store";
 import { isValidReleaseName, getDateForPbTimestamp } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
-import { ReleaseFileType } from "@/types/proto/v1/release_service";
-import type { Release_File_ChangeType } from "@/types/proto/v1/release_service";
+import { ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
+import type { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
 import { convertVCSTypeToNew } from "@/utils/v1/common-conversions";
 import { usePlanSpecContext } from "../../SpecDetailView/context";
 

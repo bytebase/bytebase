@@ -142,7 +142,7 @@ import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import {
   Release_File_ChangeType,
   type CheckReleaseResponse_CheckResult,
-} from "@/types/proto/v1/release_service";
+} from "@/types/proto-es/v1/release_service_pb";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
 import { getSheetStatement, isNullOrUndefined } from "@/utils";
 import {

@@ -14,7 +14,7 @@
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Release_File } from "@/types/proto/v1/release_service";
+import { Release_File } from "@/types/proto-es/v1/release_service_pb";
 import { bytesToString, getReleaseFileStatement } from "@/utils";
 
 const props = withDefaults(

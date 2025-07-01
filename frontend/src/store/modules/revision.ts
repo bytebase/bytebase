@@ -3,7 +3,7 @@ import { computed, reactive } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { revisionServiceClientConnect } from "@/grpcweb";
 import type { Pagination } from "@/types";
-import { Revision } from "@/types/proto/v1/revision_service";
+import { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { convertNewRevisionToOld } from "@/utils/v1/revision-conversions";
 import {
   ListRevisionsRequestSchema,
