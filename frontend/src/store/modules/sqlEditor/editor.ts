@@ -2,7 +2,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 import { type ComposedDatabase, isValidProjectName } from "@/types";
-import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
+import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export const useSQLEditorStore = defineStore("sqlEditor", () => {

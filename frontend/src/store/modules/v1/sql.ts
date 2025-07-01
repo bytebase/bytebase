@@ -1,4 +1,5 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
+import { create as createProto } from "@bufbuild/protobuf";
 import { Status } from "nice-grpc-common";
 import { defineStore } from "pinia";
 import { sqlServiceClientConnect } from "@/grpcweb";
@@ -8,16 +9,13 @@ import {
 } from "@/grpcweb/context-key";
 import type { SQLResultSetV1 } from "@/types";
 import { PlanCheckRun_ResultSchema } from "@/types/proto-es/v1/plan_service_pb";
-import type { ExportRequest, QueryRequest } from "@/types/proto/v1/sql_service";
-import { Advice } from "@/types/proto/v1/sql_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import type { ExportRequest, QueryRequest } from "@/types/proto-es/v1/sql_service_pb";
+import { 
+  type Advice,
+  AdviceSchema,
+  Advice_Status 
+} from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
-import {
-  convertOldQueryRequestToNew,
-  convertNewQueryResponseToOld,
-  convertOldExportRequestToNew,
-  convertNewExportResponseToOld,
-} from "@/utils/v1/sql-conversions";
 
 const convertCodeToStatus = (code: Code): Status => {
   // Map Connect Code to nice-grpc Status
@@ -51,7 +49,7 @@ export const getSqlReviewReports = (err: unknown): Advice[] => {
         column: report.report.value.column,
       }: undefined
       advices.push(
-        Advice.fromPartial({
+        createProto(AdviceSchema, {
           status: Advice_Status.ERROR,
           code: report.code,
           title: report.title || "SQL Review Failed",
@@ -70,8 +68,7 @@ export const useSQLStore = defineStore("sql", () => {
     signal: AbortSignal
   ): Promise<SQLResultSetV1> => {
     try {
-      const newRequest = convertOldQueryRequestToNew(params);
-      const newResponse = await sqlServiceClientConnect.query(newRequest, {
+      const newResponse = await sqlServiceClientConnect.query(params, {
         // Skip global error handling since we will handle and display
         // errors manually.
         contextValues: createContextValues()
@@ -79,12 +76,10 @@ export const useSQLStore = defineStore("sql", () => {
           .set(silentContextKey, true),
         signal,
       });
-      const response = convertNewQueryResponseToOld(newResponse);
-
       return {
         error: "",
         advices: [],
-        ...response,
+        results: newResponse.results,
       };
     } catch (err) {
       return {
@@ -100,15 +95,13 @@ export const useSQLStore = defineStore("sql", () => {
   };
 
   const exportData = async (params: ExportRequest) => {
-    const newRequest = convertOldExportRequestToNew(params);
-    const newResponse = await sqlServiceClientConnect.export(newRequest, {
+    const newResponse = await sqlServiceClientConnect.export(params, {
       // Won't jump to 403 page when permission denied.
       contextValues: createContextValues().set(ignoredCodesContextKey, [
         Code.PermissionDenied,
       ]),
     });
-    const response = convertNewExportResponseToOld(newResponse);
-    return response.content;
+    return newResponse.content;
   };
 
   return {

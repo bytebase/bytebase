@@ -269,11 +269,16 @@
 import { Switch } from "@/components/v2";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import {
+import type {
   Label,
   Project_ExecutionRetryPolicy,
-} from "@/types/proto/v1/project_service";
+} from "@/types/proto-es/v1/project_service_pb";
+import {
+  LabelSchema,
+  Project_ExecutionRetryPolicySchema,
+} from "@/types/proto-es/v1/project_service_pb";
 import { cloneDeep, isEqual } from "lodash-es";
+import { create as createProto } from "@bufbuild/protobuf";
 import { TriangleAlertIcon } from "lucide-vue-next";
 import {
   NColorPicker,
@@ -344,11 +349,11 @@ const onLabelsUpdate = (values: string[]) => {
   if (new Set(labelValues.value).has(newValue)) {
     return;
   }
-  state.issueLabels.push({
+  state.issueLabels.push(createProto(LabelSchema, {
     color: defaultColor,
     value: newValue,
     group: "",
-  });
+  }));
 };
 
 const renderLabel = (value: string, index: number) => {
@@ -469,7 +474,7 @@ const updateMask = computed(() => {
 const handleInput = (value: number | null) => {
   if (value === null) return;
   if (value === undefined) return;
-  state.executionRetryPolicy = Project_ExecutionRetryPolicy.create({
+  state.executionRetryPolicy = createProto(Project_ExecutionRetryPolicySchema, {
     maximumRetries: value,
   });
 };

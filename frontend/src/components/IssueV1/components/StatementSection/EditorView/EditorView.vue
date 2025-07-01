@@ -194,7 +194,6 @@ import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import { emitWindowEvent } from "@/plugins";
 import {
   pushNotification,
@@ -204,9 +203,8 @@ import {
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { Advice } from "@/types/proto/v1/sql_service";
-import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
   flattenTaskV1List,
   getSheetStatement,
@@ -455,10 +453,10 @@ const updateStatement = async (statement: string) => {
     throw new Error("Plan is not defined. Cannot update statement.");
   }
 
-  const sheet = Sheet.fromPartial({
+  const sheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
     title: issue.value.title,
-    engine: convertEngineToOld(await databaseEngineForSpec(head(planPatch.specs)) as Engine),
+    engine: await databaseEngineForSpec(head(planPatch.specs)),
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

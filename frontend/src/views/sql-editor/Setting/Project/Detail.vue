@@ -77,7 +77,6 @@ import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
 import { DEFAULT_PROJECT_NAME, type ComposedProject } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { convertStateToOld } from "@/utils/v1/common-conversions";
 
 type LocalState = {
   transfer: {
@@ -107,7 +106,7 @@ const showSettingButton = computed(() => {
 });
 const allowEditSetting = computed(() => {
   if (props.project.name === DEFAULT_PROJECT_NAME) return false;
-  if (props.project.state === convertStateToOld(State.DELETED)) {
+  if (props.project.state === State.DELETED) {
     return false;
   }
   return hasProjectPermissionV2(props.project, "bb.projects.update");
@@ -122,7 +121,7 @@ const showMembersButton = computed(() => {
 });
 const allowEditMembers = computed(() => {
   if (props.project.name === DEFAULT_PROJECT_NAME) return false;
-  if (props.project.state === convertStateToOld(State.DELETED)) {
+  if (props.project.state === State.DELETED) {
     return false;
   }
 

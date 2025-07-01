@@ -1,5 +1,5 @@
 import slug from "slug";
-import type { Webhook } from "@/types/proto/v1/project_service";
+import type { Webhook } from "@/types/proto-es/v1/project_service_pb";
 
 export const extractProjectWebhookID = (name: string) => {
   const pattern = /(?:^|\/)webhooks\/([^/]+)(?:$|\/)/;

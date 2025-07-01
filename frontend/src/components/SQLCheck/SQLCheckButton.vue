@@ -84,17 +84,13 @@ import {
   ReleaseFileType,
   Release_File_ChangeType,
 } from "@/types/proto-es/v1/release_service_pb";
-import type { Advice } from "@/types/proto/v1/sql_service";
+import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
-  Advice as AdviceProto,
+  AdviceSchema,
   Advice_Status,
-} from "@/types/proto/v1/sql_service";
+} from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
-import {
-  convertNewAdviceArrayToOld,
-  convertOldAdviceArrayToNew,
-} from "@/utils/v1/sql-conversions";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckPanel from "./SQLCheckPanel.vue";
 import SQLCheckSummary from "./SQLCheckSummary.vue";
@@ -143,11 +139,10 @@ const filteredAdvices = computed(() => {
   const { adviceFilter } = props;
   const advices = checkResult.value?.results.flatMap((r) => r.advices);
   if (!advices) return undefined;
-  const oldAdvices = convertNewAdviceArrayToOld(advices);
   if (!adviceFilter) {
-    return oldAdvices;
+    return advices;
   }
-  return oldAdvices?.filter(adviceFilter);
+  return advices?.filter(adviceFilter);
 });
 
 const statementErrors = asyncComputed(async () => {
@@ -207,14 +202,12 @@ const runChecks = async () => {
     checkResult.value = create(CheckReleaseResponseSchema, {
       results: [
         {
-          advices: convertOldAdviceArrayToNew(
-            errors.map((err) =>
-              AdviceProto.fromPartial({
-                title: "Pre check",
-                status: Advice_Status.WARNING,
-                content: err,
-              })
-            )
+          advices: errors.map((err) =>
+            create(AdviceSchema, {
+              title: "Pre check",
+              status: Advice_Status.WARNING,
+              content: err,
+            })
           ),
         },
       ],

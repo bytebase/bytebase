@@ -11,7 +11,7 @@
       {{ suffix }}
     </slot>
 
-    <NTooltip v-if="convertStateToNew(project.state) === State.DELETED">
+    <NTooltip v-if="project.state === State.DELETED">
       <template #trigger>
         <heroicons-outline:archive class="w-4 h-4 text-control" />
       </template>
@@ -26,8 +26,7 @@
 import { NTooltip } from "naive-ui";
 import { ProjectV1Name } from "@/components/v2";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { convertStateToNew } from "@/utils/v1/common-conversions";
-import type { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Mode } from "../DatabaseV1Table.vue";
 
 withDefaults(

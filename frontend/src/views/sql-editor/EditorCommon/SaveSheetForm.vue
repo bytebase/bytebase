@@ -19,7 +19,7 @@
 import { NButton, NInput } from "naive-ui";
 import { ref, nextTick } from "vue";
 import type { SQLEditorTab } from "@/types";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 
 const props = defineProps<{
   tab: SQLEditorTab;

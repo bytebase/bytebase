@@ -12,7 +12,7 @@ import { computedAsync } from "@vueuse/core";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { isValidInstanceName, unknownInstanceResource } from "@/types";
-import type { QueryHistory } from "@/types/proto/v1/sql_service";
+import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{

@@ -24,10 +24,12 @@ import {
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
+import { create } from "@bufbuild/protobuf";
+import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
-  Worksheet,
+  WorksheetSchema,
   Worksheet_Visibility,
-} from "@/types/proto/v1/worksheet_service";
+} from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractWorksheetUID } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import { useSQLEditorContext } from "../context";
@@ -61,9 +63,12 @@ const doSaveSheet = async (
   const sheetId = Number(extractWorksheetUID(worksheet ?? ""));
 
   if (sheetId !== UNKNOWN_ID) {
+    const currentSheet = await worksheetV1Store.getWorksheetByName(worksheet);
+    if (!currentSheet) return;
+    
     const updatedSheet = await worksheetV1Store.patchWorksheet(
       {
-        name: worksheet,
+        ...currentSheet,
         title: title,
         database: tab.connection.database,
         content: new TextEncoder().encode(statement),
@@ -90,12 +95,12 @@ const doSaveSheet = async (
       true /* silent */
     );
     const createdSheet = await worksheetV1Store.createWorksheet(
-      Worksheet.fromPartial({
+      create(WorksheetSchema, {
         title,
         project: database.project,
         content: new TextEncoder().encode(statement),
         database: database.name,
-        visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
+        visibility: Worksheet_Visibility.PRIVATE,
       })
     );
     if (tabStore.currentTabId === tab.id) {

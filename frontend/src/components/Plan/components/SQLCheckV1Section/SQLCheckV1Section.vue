@@ -143,9 +143,8 @@ import {
   Release_File_ChangeType,
   type CheckReleaseResponse_CheckResult,
 } from "@/types/proto-es/v1/release_service_pb";
-import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
+import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { getSheetStatement, isNullOrUndefined } from "@/utils";
-import { convertNewAdviceArrayToOld } from "@/utils/v1/sql-conversions";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
 import { usePlanSpecContext } from "../SpecDetailView/context";
@@ -188,8 +187,7 @@ const allAdvices = computed(() => {
   }
   const advices: AdviceWithTarget[] = [];
   for (const result of checkResults.value) {
-    const oldAdvices = convertNewAdviceArrayToOld(result.advices);
-    for (const advice of oldAdvices) {
+    for (const advice of result.advices) {
       advices.push({
         ...advice,
         target: result.target,

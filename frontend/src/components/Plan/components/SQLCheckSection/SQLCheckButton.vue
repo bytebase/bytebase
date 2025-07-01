@@ -61,8 +61,7 @@ import { releaseServiceClientConnect } from "@/grpcweb";
 import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_pb";
 import { CheckReleaseRequestSchema, CheckReleaseResponseSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
 import { AdviceSchema, Advice_Status as ProtoESAdvice_Status } from "@/types/proto-es/v1/sql_service_pb";
-import { convertNewAdviceArrayToOld } from "@/utils/v1/sql-conversions";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import { useSpecSheet } from "../StatementSection/useSpecSheet";
@@ -92,8 +91,7 @@ const confirmDialog = ref<Defer<boolean>>();
 const checkResult = ref<CheckReleaseResponse | undefined>();
 
 const advices = computed(() => {
-  const newAdvices = checkResult.value?.results.flatMap((r) => r.advices);
-  return newAdvices ? convertNewAdviceArrayToOld(newAdvices) : undefined;
+  return checkResult.value?.results.flatMap((r) => r.advices);
 });
 
 const changeType = computed(() => getSpecChangeType(selectedSpec.value));

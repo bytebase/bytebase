@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { Webhook_Type } from "@/types/proto/v1/project_service";
+import { Webhook_Type } from "@/types/proto-es/v1/project_service_pb";
 
 defineProps<{
   type: Webhook_Type;

@@ -25,6 +25,7 @@
   </div>
 </template>
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -34,6 +35,7 @@ import {
   useTabViewStateStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
+import { WorksheetSchema } from "@/types/proto-es/v1/worksheet_service_pb";
 import { useTabListContext } from "../context";
 
 type LocalState = {
@@ -93,10 +95,10 @@ const confirmEdit = () => {
   if (tab.worksheet) {
     worksheetV1Store
       .patchWorksheet(
-        {
+        create(WorksheetSchema, {
           name: tab.worksheet,
           title,
-        },
+        }),
         ["title"]
       )
       .then(() => {

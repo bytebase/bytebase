@@ -15,7 +15,7 @@
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import type { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { autoProjectRoute, projectV1Name } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 

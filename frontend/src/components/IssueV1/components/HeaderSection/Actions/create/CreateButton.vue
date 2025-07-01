@@ -31,7 +31,7 @@
     :project="issue.project"
     :database="databaseForTask(project, selectedTask)"
     :advices="
-      convertNewAdviceArrayToOld(checkResultMap[databaseForTask(project, selectedTask).name].advices)
+      checkResultMap[databaseForTask(project, selectedTask).name].advices
     "
     :affected-rows="
       checkResultMap[databaseForTask(project, selectedTask).name].affectedRows
@@ -90,8 +90,8 @@ import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import {
   defer,
   extractIssueUID,
@@ -105,7 +105,6 @@ import {
   sheetNameOfTaskV1,
   type Defer,
 } from "@/utils";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
 import {
   convertOldIssueToNew,
   convertNewIssueToOld,
@@ -114,7 +113,6 @@ import {
   convertOldPlanToNew,
   convertNewPlanToOld,
 } from "@/utils/v1/plan-conversions";
-import { convertNewAdviceArrayToOld, convertNewAdviceStatusToOld } from "@/utils/v1/sql-conversions";
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
@@ -234,7 +232,7 @@ const createSheets = async () => {
       // The sheet is pending create
       const sheet = getLocalSheetByName(config.sheet);
       const engine = await databaseEngineForSpec(spec);
-      sheet.engine = convertEngineToOld(engine as Engine);
+      sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
       await maybeFormatSQL(sheet, engine as Engine);
     }
@@ -364,7 +362,7 @@ const runSQLCheckForIssue = async () => {
 
   for (const checkResult of Object.values(checkResultMap.value)) {
     const hasErrors = checkResult.advices.some((advice) => {
-      return convertNewAdviceStatusToOld(advice.status) === Advice_Status.ERROR;
+      return advice.status === Advice_Status.ERROR;
     });
     // Focus on the first task with error.
     if (hasErrors) {
