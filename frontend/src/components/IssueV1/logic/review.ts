@@ -16,11 +16,11 @@ import type {
   ApprovalNode,
   ApprovalStep,
   Issue,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type,
   Issue_Approver_Status,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import { displayRoleTitle } from "@/utils";
 import { isUserIncludedInList } from "@/utils";
 import type { ReviewContext } from "./context";

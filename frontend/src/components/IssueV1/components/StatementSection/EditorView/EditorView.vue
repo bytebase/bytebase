@@ -209,7 +209,7 @@ import { dialectOfEngineV1 } from "@/types";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   flattenTaskV1List,
@@ -218,10 +218,6 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import {
-  convertOldPlanToNew,
-  convertNewPlanToOld,
-} from "@/utils/v1/plan-conversions";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import EditorActionPopover from "./EditorActionPopover.vue";
 import { provideEditorContext } from "./context";
@@ -287,7 +283,7 @@ const allowEditStatementWhenCreating = computed(() => {
   if (
     (
       issue.value.planEntity?.specs?.filter(
-        (spec) => spec.changeDatabaseConfig?.release
+        (spec) => spec.config?.case === "changeDatabaseConfig" && spec.config.value.release
       ) ?? []
     ).length > 0
   ) {
@@ -345,7 +341,7 @@ const shouldShowEditButton = computed(() => {
   if (
     (
       issue.value.planEntity?.specs?.filter(
-        (spec) => spec.changeDatabaseConfig?.release
+        (spec) => spec.config?.case === "changeDatabaseConfig" && spec.config.value.release
       ) ?? []
     ).length > 0
   ) {
@@ -469,25 +465,20 @@ const updateStatement = async (statement: string) => {
 
   // Update all specs with the created sheet.
   for (const spec of planPatch.specs) {
-    let config = undefined;
-    if (spec.changeDatabaseConfig) {
-      config = spec.changeDatabaseConfig;
-    } else if (spec.exportDataConfig) {
-      config = spec.exportDataConfig;
+    if (spec.config?.case === "changeDatabaseConfig") {
+      spec.config.value.sheet = createdSheet.name;
+    } else if (spec.config?.case === "exportDataConfig") {
+      spec.config.value.sheet = createdSheet.name;
     }
-    if (!config) continue;
-    config.sheet = createdSheet.name;
   }
 
-  const newPlan = convertOldPlanToNew(planPatch);
   const request = create(UpdatePlanRequestSchema, {
-    plan: newPlan,
+    plan: planPatch,
     updateMask: { paths: ["specs"] },
   });
   const response = await planServiceClientConnect.updatePlan(request);
-  const updatedPlan = convertNewPlanToOld(response);
 
-  issue.value.planEntity = updatedPlan;
+  issue.value.planEntity = response;
 
   events.emit("status-changed", { eager: true });
 

@@ -4,7 +4,7 @@ import type {
   TaskRolloutAction,
 } from "@/components/IssueV1/logic";
 import type { ComposedIssue } from "@/types";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 
 export type ExtraAction<T extends "ISSUE" | "TASK" | "TASK-BATCH"> = {
   type: T;

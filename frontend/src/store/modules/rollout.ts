@@ -7,12 +7,11 @@ import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef, Pagination, ComposedRollout } from "@/types";
 import { isValidRolloutName, unknownRollout, unknownUser } from "@/types";
-import type { Rollout } from "@/types/proto/v1/rollout_service";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { 
   GetRolloutRequestSchema, 
   ListRolloutsRequestSchema 
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { convertNewRolloutToOld } from "@/utils/v1/rollout-conversions";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { useUserStore } from "./user";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";
@@ -35,8 +34,7 @@ export const useRolloutStore = defineStore("rollout", () => {
       pageToken: pagination?.pageToken || "",
     });
     const resp = await rolloutServiceClientConnect.listRollouts(request);
-    const oldRollouts = resp.rollouts.map(convertNewRolloutToOld);
-    const composedRolloutList = await batchComposeRollout(oldRollouts);
+    const composedRolloutList = await batchComposeRollout(resp.rollouts);
     composedRolloutList.forEach((rollout) => {
       rolloutMapByName.set(rollout.name, rollout);
     });
@@ -53,8 +51,7 @@ export const useRolloutStore = defineStore("rollout", () => {
     const rollout = await rolloutServiceClientConnect.getRollout(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    const oldRollout = convertNewRolloutToOld(rollout);
-    const [composedRollout] = await batchComposeRollout([oldRollout]);
+    const [composedRollout] = await batchComposeRollout([rollout]);
     rolloutMapByName.set(composedRollout.name, composedRollout);
     return composedRollout;
   };

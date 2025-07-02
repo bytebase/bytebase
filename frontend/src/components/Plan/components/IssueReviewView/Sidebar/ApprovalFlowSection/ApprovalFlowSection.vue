@@ -59,7 +59,7 @@ import { BBSpin } from "@/bbkit";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import { useIssueV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import type { Issue } from "@/types/proto/v1/issue_service";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import ApprovalStepItem from "./ApprovalStepItem.vue";
 
 const props = defineProps<{

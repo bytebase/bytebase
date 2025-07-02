@@ -53,7 +53,7 @@ import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import {
-  getTimeForPbTimestamp,
+  getTimeForPbTimestampProtoEs,
   unknownUser,
   type ComposedIssue,
 } from "@/types";
@@ -219,7 +219,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       width: 150,
       hide: !showExtendedColumns.value,
       render: (issue) =>
-        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
+        humanizeTs(getTimeForPbTimestampProtoEs(issue.updateTime, 0) / 1000),
     },
     {
       key: "approver",

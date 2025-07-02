@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { Task, Task_Status } from "@/types/proto/v1/rollout_service";
+import type { Task, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
 import TaskOperations from "./TaskOperations.vue";
 import TaskTable from "./TaskTable.vue";

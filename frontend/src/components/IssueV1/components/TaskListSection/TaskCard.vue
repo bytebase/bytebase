@@ -59,9 +59,9 @@ import { computed } from "vue";
 import { InstanceV1Name } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
-import { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Type, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
 import { useInstanceForTask, specForTask, useIssueContext } from "../../logic";
@@ -87,7 +87,7 @@ const schemaVersion = computed(() => {
   if (
     (
       issue.value.planEntity?.specs?.filter(
-        (spec) => spec.changeDatabaseConfig?.release
+        (spec) => spec.config?.case === "changeDatabaseConfig" && spec.config.value?.release
       ) ?? []
     ).length > 0
   ) {
@@ -99,9 +99,10 @@ const schemaVersion = computed(() => {
 
 const showGhostTag = computed(() => {
   if (isCreating.value) {
+    const spec = specForTask(issue.value.planEntity, props.task);
     return (
-      specForTask(issue.value.planEntity, props.task)?.changeDatabaseConfig
-        ?.type === Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
+      spec?.config?.case === "changeDatabaseConfig" &&
+      spec.config.value?.type === Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
     );
   }
   return props.task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST;
@@ -112,7 +113,7 @@ const taskClass = computed(() => {
   const classes: string[] = [];
   if (selected.value) classes.push("selected");
   if (isCreating.value) classes.push("create");
-  classes.push(`status_${task_StatusToJSON(task.status).toLowerCase()}`);
+  classes.push(`status_${Task_Status[task.status].toLowerCase()}`);
   return classes;
 });
 

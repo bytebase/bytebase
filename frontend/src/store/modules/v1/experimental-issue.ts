@@ -28,23 +28,10 @@ import {
   ListTaskRunsRequestSchema,
   CreateRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Issue } from "@/types/proto/v1/issue_service";
-import type { Plan } from "@/types/proto/v1/plan_service";
-import { TaskRunLog } from "@/types/proto/v1/rollout_service";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import { TaskRunLogSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
-import {
-  convertNewIssueToOld,
-  convertOldIssueToNew,
-} from "@/utils/v1/issue-conversions";
-import {
-  convertNewPlanToOld,
-  convertNewPlanCheckRunToOld,
-  convertOldPlanToNew,
-} from "@/utils/v1/plan-conversions";
-import {
-  convertNewRolloutToOld,
-  convertNewTaskRunToOld,
-} from "@/utils/v1/rollout-conversions";
 import { DEFAULT_PAGE_SIZE } from "../common";
 
 export interface ComposeIssueConfig {
@@ -75,7 +62,7 @@ export const composeIssue = async (
         name: issue.plan,
       });
       const response = await planServiceClientConnect.getPlan(request);
-      issue.planEntity = convertNewPlanToOld(response);
+      issue.planEntity = response;
     }
 
     if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
@@ -86,9 +73,7 @@ export const composeIssue = async (
       });
       const response =
         await planServiceClientConnect.listPlanCheckRuns(request);
-      const planCheckRuns = response.planCheckRuns.map(
-        convertNewPlanCheckRunToOld
-      );
+      const planCheckRuns = response.planCheckRuns;
       issue.planCheckRunList = orderBy(planCheckRuns, "name", "desc");
     }
   }
@@ -98,7 +83,7 @@ export const composeIssue = async (
         name: issue.rollout,
       });
       const response = await rolloutServiceClientConnect.getRollout(request);
-      issue.rolloutEntity = convertNewRolloutToOld(response);
+      issue.rolloutEntity = response;
     }
 
     if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {
@@ -107,12 +92,12 @@ export const composeIssue = async (
         pageSize: DEFAULT_PAGE_SIZE,
       });
       const response = await rolloutServiceClientConnect.listTaskRuns(request);
-      const taskRuns = response.taskRuns.map(convertNewTaskRunToOld);
+      const taskRuns = response.taskRuns;
       const composedTaskRuns: ComposedTaskRun[] = [];
       for (const taskRun of taskRuns) {
         const composed: ComposedTaskRun = {
           ...taskRun,
-          taskRunLog: TaskRunLog.fromPartial({}),
+          taskRunLog: create(TaskRunLogSchema, {}),
         };
         composedTaskRuns.push(composed);
       }
@@ -149,7 +134,7 @@ export const experimentalFetchIssueByUID = async (
     name: `${project}/issues/${uid}`,
   });
   const newIssue = await issueServiceClientConnect.getIssue(request);
-  const rawIssue = convertNewIssueToOld(newIssue);
+  const rawIssue = newIssue;
 
   return composeIssue(rawIssue);
 };
@@ -159,22 +144,22 @@ export const experimentalCreateIssueByPlan = async (
   issueCreate: Issue,
   planCreate: Plan
 ) => {
-  const newPlan = convertOldPlanToNew(planCreate);
+  const newPlan = planCreate;
   const request = create(CreatePlanRequestSchema, {
     parent: project.name,
     plan: newPlan,
   });
   const response = await planServiceClientConnect.createPlan(request);
-  const createdPlan = convertNewPlanToOld(response);
+  const createdPlan = response;
   issueCreate.plan = createdPlan.name;
 
   const issueRequest = create(CreateIssueRequestSchema, {
     parent: project.name,
-    issue: convertOldIssueToNew(issueCreate),
+    issue: issueCreate,
   });
   const newCreatedIssue =
     await issueServiceClientConnect.createIssue(issueRequest);
-  const createdIssue = convertNewIssueToOld(newCreatedIssue);
+  const createdIssue = newCreatedIssue;
   const rolloutRequest = create(CreateRolloutRequestSchema, {
     parent: project.name,
     rollout: {
@@ -183,7 +168,7 @@ export const experimentalCreateIssueByPlan = async (
   });
   const rolloutResponse =
     await rolloutServiceClientConnect.createRollout(rolloutRequest);
-  const createdRollout = convertNewRolloutToOld(rolloutResponse);
+  const createdRollout = rolloutResponse;
   createdIssue.rollout = createdRollout.name;
 
   return { createdPlan, createdIssue, createdRollout };

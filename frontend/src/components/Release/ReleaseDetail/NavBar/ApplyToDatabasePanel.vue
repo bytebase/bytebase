@@ -67,17 +67,13 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { Plan } from "@/types/proto/v1/plan_service";
+import { PlanSchema, Plan_ChangeDatabaseConfigSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { create } from "@bufbuild/protobuf";
 import {
   extractProjectResourceName,
   generateIssueTitle,
   issueV1Slug,
 } from "@/utils";
-import {
-  convertOldPlanToNew,
-  convertNewPlanToOld,
-} from "@/utils/v1/plan-conversions";
 import { useReleaseDetailContext } from "../context";
 import { createIssueFromPlan } from "./utils";
 import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
@@ -122,23 +118,25 @@ const handleCreate = async () => {
   const databaseGroup = create(DatabaseGroupSchema, dbGroupStore.getDBGroupByName(
     state.targetSelectState.selectedDatabaseGroup || ""
   ));
-  const planData = Plan.fromPartial({
+  const newPlan = create(PlanSchema, {
     title: `Release "${release.value.title}"`,
     description: `Apply release "${release.value.title}" to selected databases.`,
     specs: [
       {
         id: crypto.randomUUID(),
-        changeDatabaseConfig: {
-          targets:
-            (state.targetSelectState.changeSource === "DATABASE"
-              ? state.targetSelectState.selectedDatabaseNameList
-              : [state.targetSelectState.selectedDatabaseGroup!]) || [],
-          release: release.value.name,
+        config: {
+          case: "changeDatabaseConfig",
+          value: create(Plan_ChangeDatabaseConfigSchema, {
+            targets:
+              (state.targetSelectState.changeSource === "DATABASE"
+                ? state.targetSelectState.selectedDatabaseNameList
+                : [state.targetSelectState.selectedDatabaseGroup!]) || [],
+            release: release.value.name,
+          }),
         },
       },
     ],
   });
-  const newPlan = convertOldPlanToNew(planData);
   try {
     const previewRolloutRequest = create(PreviewRolloutRequestSchema, {
       project: project.value.name,
@@ -162,9 +160,8 @@ const handleCreate = async () => {
     plan: newPlan,
   });
   const response = await planServiceClientConnect.createPlan(request);
-  const createdPlan = convertNewPlanToOld(response);
   const createdIssue = await createIssueFromPlan(project.value.name, {
-    ...createdPlan,
+    ...response,
     // Override title and description.
     title: generateIssueTitle(
       "bb.issue.database.schema.update",

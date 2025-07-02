@@ -34,14 +34,15 @@ import { useI18n } from "vue-i18n";
 import { RoleSelect } from "@/components/v2";
 import { SpinnerButton } from "@/components/v2/Form";
 import { PresetRoleType } from "@/types";
-import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
+import type { ApprovalFlow, ApprovalStep } from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type,
-  ApprovalStep,
   ApprovalStep_Type,
-} from "@/types/proto/v1/issue_service";
+  ApprovalNodeSchema,
+  ApprovalStepSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
+import { create } from "@bufbuild/protobuf";
 import { approvalNodeText } from "@/utils";
-import { convertOldApprovalNodeToNew } from "@/utils/workspaceApprovalSetting-conversions";
 import { useCustomApprovalContext } from "../context";
 
 const props = defineProps<{
@@ -79,16 +80,16 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
               style="width: 80%"
               onUpdate:value={(val: string | string[]) => {
                 const role = Array.isArray(val) ? val[0] : val;
-                step.nodes[0] = {
+                step.nodes[0] = create(ApprovalNodeSchema, {
                   type: ApprovalNode_Type.ANY_IN_GROUP,
                   role: role,
-                };
+                });
                 emit("update");
               }}
             />
           );
         }
-        return approvalNodeText(convertOldApprovalNodeToNew(step.nodes[0]));
+        return approvalNodeText(step.nodes[0]);
       },
     },
   ];
@@ -145,17 +146,15 @@ const reorder = (step: ApprovalStep, index: number, offset: -1 | 1) => {
   emit("update");
 };
 const addStep = () => {
-  steps.value.push(
-    ApprovalStep.fromPartial({
-      type: ApprovalStep_Type.ANY,
-      nodes: [
-        {
-          type: ApprovalNode_Type.ANY_IN_GROUP,
-          role: PresetRoleType.WORKSPACE_ADMIN,
-        },
-      ],
-    })
-  );
+  steps.value.push(create(ApprovalStepSchema, {
+    type: ApprovalStep_Type.ANY,
+    nodes: [
+      create(ApprovalNodeSchema, {
+        type: ApprovalNode_Type.ANY_IN_GROUP,
+        role: PresetRoleType.WORKSPACE_ADMIN,
+      }),
+    ],
+  }));
   emit("update");
 };
 

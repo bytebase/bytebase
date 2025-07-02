@@ -81,12 +81,11 @@ import {
   useCurrentUserV1,
   usePolicyV1Store,
 } from "@/store";
-import { emptyIssue } from "@/types";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
+import { IssueSchema, IssueStatus, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import {
   extractProjectResourceName,
   hasProjectPermissionV2,
@@ -94,10 +93,6 @@ import {
   isDev,
   issueV1Slug,
 } from "@/utils";
-import {
-  convertNewIssueToOld,
-  convertOldIssueToNew,
-} from "@/utils/v1/issue-conversions";
 
 type IssueCreationAction = "CREATE";
 
@@ -215,18 +210,16 @@ const doCreateIssue = async () => {
 
   try {
     const issueToCreate = {
-      ...Issue.fromPartial(buildIssue()),
+      ...buildIssue(),
       rollout: "",
       plan: plan.value.name,
     };
-    const newIssue = convertOldIssueToNew(issueToCreate);
     const issueRequest = create(CreateIssueRequestSchema, {
       parent: project.value.name,
-      issue: newIssue,
+      issue: issueToCreate,
     });
     const createdIssue =
       await issueServiceClientConnect.createIssue(issueRequest);
-    convertNewIssueToOld(createdIssue);
 
     // Then create the rollout from the plan
     const rolloutRequest = create(CreateRolloutRequestSchema, {
@@ -268,12 +261,14 @@ const doCreateIssue = async () => {
 };
 
 const buildIssue = () => {
-  const issue = emptyIssue();
-  issue.creator = `users/${currentUser.value.email}`;
-  issue.title = plan.value.title;
-  issue.description = plan.value.description;
-  issue.status = IssueStatus.OPEN;
-  issue.type = Issue_Type.DATABASE_CHANGE;
-  return issue;
+  return create(IssueSchema, {
+    name: "",
+    rollout: "",
+    creator: `users/${currentUser.value.email}`,
+    title: plan.value.title,
+    description: plan.value.description,
+    status: IssueStatus.OPEN,
+    type: Issue_Type.DATABASE_CHANGE,
+  });
 };
 </script>

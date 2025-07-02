@@ -95,7 +95,7 @@ import {
   isValidDatabaseName,
   unknownEnvironment,
 } from "@/types";
-import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { extractInstanceResourceName } from "@/utils";
 

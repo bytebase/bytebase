@@ -27,12 +27,12 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
-import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
+import { getDateForPbTimestampProtoEs, type ComposedDatabase } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { extractPlanCheckRunUID, humanizeDate } from "@/utils";
 import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
 import PlanCheckRunDetail from "./PlanCheckRunDetail.vue";
@@ -102,7 +102,7 @@ const tabItemList = computed(() => {
         i === 0
           ? t("common.latest")
           : planCheckRun.createTime
-            ? humanizeDate(getDateForPbTimestamp(planCheckRun.createTime))
+            ? humanizeDate(getDateForPbTimestampProtoEs(planCheckRun.createTime))
             : `UID(${extractPlanCheckRunUID(planCheckRun.name)})`;
       return {
         label,

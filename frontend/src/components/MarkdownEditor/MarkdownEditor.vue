@@ -100,7 +100,7 @@ import { nextTick, ref, reactive, watch, toRef } from "vue";
 import type { Component } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedIssue, ComposedProject } from "@/types";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   activeTaskInRollout,
   extractIssueUID,
@@ -439,7 +439,7 @@ const issueTaskStatus = (issue: ComposedIssue) => {
     return Task_Status.NOT_STARTED;
   }
 
-  return activeTaskInRollout(issue.rolloutEntity).status;
+  return activeTaskInRollout(issue.rolloutEntity)?.status;
 };
 
 const adjustIssuePanelWithPosition = () => {

@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import { create as createProto } from "@bufbuild/protobuf";
 import { NButton, NTag } from "naive-ui";
 import { computed, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -63,12 +64,13 @@ import { usePolicyV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  PlanCheckRun,
-  PlanCheckRun_Result,
+  PlanCheckRunSchema,
+  PlanCheckRun_ResultSchema,
   PlanCheckRun_Result_Status,
-  PlanCheckRun_Result_SqlReviewReport,
+  PlanCheckRun_Result_SqlReviewReportSchema,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { CheckReleaseResponse_RiskLevel } from "@/types/proto-es/v1/release_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
@@ -150,7 +152,7 @@ watchEffect(async () => {
 });
 
 const planCheckRun = computed((): PlanCheckRun => {
-  return PlanCheckRun.fromPartial({
+  return createProto(PlanCheckRunSchema, {
     status: PlanCheckRun_Status.DONE,
     results: props.advices.map((advice) => {
       let status = PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
@@ -165,15 +167,18 @@ const planCheckRun = computed((): PlanCheckRun => {
           status = PlanCheckRun_Result_Status.ERROR;
           break;
       }
-      return PlanCheckRun_Result.fromPartial({
+      return createProto(PlanCheckRun_ResultSchema, {
         status,
         title: advice.title,
         code: advice.code,
         content: advice.content,
-        sqlReviewReport: PlanCheckRun_Result_SqlReviewReport.fromPartial({
-          line: advice.startPosition?.line ?? 0,
-          column: advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER,
-        }),
+        report: {
+          case: "sqlReviewReport",
+          value: createProto(PlanCheckRun_Result_SqlReviewReportSchema, {
+            line: advice.startPosition?.line ?? 0,
+            column: advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER,
+          }),
+        },
       });
     }),
   });

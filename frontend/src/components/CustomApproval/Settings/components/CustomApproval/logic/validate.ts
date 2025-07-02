@@ -1,11 +1,11 @@
 import type {
   ApprovalFlow,
   ApprovalTemplate,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type,
   ApprovalStep_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 
 const validateApprovalFlow = (flow: ApprovalFlow) => {
   const SupportedStepTypes = new Set([

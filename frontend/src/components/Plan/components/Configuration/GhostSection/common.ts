@@ -4,7 +4,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { semverCompare } from "@/utils";
 
 export const GHOST_AVAILABLE_ENGINES = [Engine.MYSQL, Engine.MARIADB];
@@ -32,7 +32,7 @@ export const allowGhostForDatabase = (database: ComposedDatabase) => {
 };
 
 export const allowGhostForSpec = (spec: Plan_Spec | undefined) => {
-  const config = spec?.changeDatabaseConfig;
+  const config = spec?.config?.case === "changeDatabaseConfig" ? spec.config.value : undefined;
   if (!config) return false;
 
   return [
@@ -47,7 +47,7 @@ export const getGhostEnabledForSpec = (
   if (isDBGroupChangeSpec(spec)) {
     return undefined;
   }
-  const config = spec?.changeDatabaseConfig;
+  const config = spec?.config?.case === "changeDatabaseConfig" ? spec.config.value : undefined;
   if (!config) {
     return undefined;
   }

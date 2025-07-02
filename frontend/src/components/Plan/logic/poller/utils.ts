@@ -13,17 +13,11 @@ import {
   ListPlanCheckRunsRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
-import type { Issue } from "@/types/proto/v1/issue_service";
-import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
-import type { Rollout } from "@/types/proto/v1/rollout_service";
+import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";
-import {
-  convertNewPlanCheckRunToOld,
-  convertNewPlanToOld,
-} from "@/utils/v1/plan-conversions";
-import { convertNewRolloutToOld } from "@/utils/v1/rollout-conversions";
 
 interface RefreshTimestamps {
   plan?: number;
@@ -46,7 +40,7 @@ export const refreshPlan = async (plan: Ref<Plan>): Promise<void> => {
     name: plan.value.name,
   });
   const response = await planServiceClientConnect.getPlan(request);
-  plan.value = convertNewPlanToOld(response);
+  plan.value = response;
   lastRefreshTime.plan = Date.now();
 };
 
@@ -64,7 +58,7 @@ export const refreshPlanCheckRuns = async (
     latestOnly: true,
   });
   const response = await planServiceClientConnect.listPlanCheckRuns(request);
-  planCheckRuns.value = response.planCheckRuns.map(convertNewPlanCheckRunToOld);
+  planCheckRuns.value = response.planCheckRuns;
   lastRefreshTime.planCheckRuns = Date.now();
 };
 
@@ -82,7 +76,7 @@ export const refreshRollout = async (
   });
   const newRollout =
     await rolloutServiceClientConnect.getRollout(rolloutRequest);
-  rollout.value = convertNewRolloutToOld(newRollout);
+  rollout.value = newRollout;
   lastRefreshTime.rollout = Date.now();
 };
 
@@ -91,15 +85,14 @@ export const refreshIssue = async (issue: Ref<Issue>): Promise<void> => {
     name: issue.value.name,
   });
   const newIssue = await issueServiceClientConnect.getIssue(request);
-  const updatedIssue = convertNewIssueToOld(newIssue);
-  issue.value = updatedIssue;
+  issue.value = newIssue;
   lastRefreshTime.issue = Date.now();
 };
 
 export const refreshIssueComments = async (issue: Issue): Promise<void> => {
   const issueCommentStore = useIssueCommentStore();
   await issueCommentStore.listIssueComments(
-    ListIssueCommentsRequest.fromPartial({
+    create(ListIssueCommentsRequestSchema, {
       parent: issue.name,
       pageSize: 100,
     })

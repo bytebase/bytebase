@@ -2,13 +2,12 @@ import { head, includes } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { extractUserId, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { Issue_Type, IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   Task_Status,
-  task_StatusToJSON,
   Task_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { extractDatabaseGroupName, hasProjectPermissionV2 } from "@/utils";
 import { projectOfIssue, specForTask } from ".";
 
@@ -17,7 +16,9 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   if (!spec) {
     return false;
   }
-  const target = head(spec.changeDatabaseConfig?.targets);
+  const target = spec.config?.case === "changeDatabaseConfig" 
+    ? head(spec.config.value.targets) 
+    : undefined;
   const databaseGroup = extractDatabaseGroupName(target ?? "");
   return databaseGroup !== "";
 };
@@ -53,7 +54,7 @@ export const allowUserToEditStatementForTask = (
   // - user is the creator
   // - OR user has plans.update permission in the project
   if (!isTaskEditable(task)) {
-    denyReasons.push(`${task_StatusToJSON(task.status)} task is not editable`);
+    denyReasons.push(`${Task_Status[task.status]} task is not editable`);
   }
 
   if (extractUserId(issue.creator) !== user.value.email) {

@@ -118,7 +118,7 @@ import {
   RejectIssueRequestSchema,
   RequestIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import { databaseForTask } from "@/utils";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";

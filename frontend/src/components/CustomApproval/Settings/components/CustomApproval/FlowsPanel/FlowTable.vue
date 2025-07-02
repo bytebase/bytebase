@@ -28,7 +28,7 @@ import { BBModal } from "@/bbkit";
 import { SpinnerButton } from "@/components/v2/Form";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
-import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
+import type { ApprovalFlow } from "@/types/proto-es/v1/issue_service_pb";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
 

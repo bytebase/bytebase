@@ -9,7 +9,7 @@ import { computed } from "vue";
 import {
   TaskRunLogEntry_TransactionControl_Type,
   TaskRunLogEntry_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import type { FlattenLogEntry } from "../common";
 
 const props = defineProps<{

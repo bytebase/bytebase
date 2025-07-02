@@ -7,8 +7,7 @@ import {
   SearchPlansRequestSchema,
   GetPlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import type { Plan } from "@/types/proto/v1/plan_service";
-import { convertNewPlanToOld } from "@/utils/v1/plan-conversions";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
@@ -83,8 +82,7 @@ export const usePlanStore = defineStore("plan", () => {
       pageToken,
     });
     const resp = await planServiceClientConnect.searchPlans(request);
-    // Convert response to old proto format
-    const plans = resp.plans.map((plan) => convertNewPlanToOld(plan));
+    const plans = resp.plans;
     // Prepare creator for the plans.
     const users = uniq(plans.map((plan) => plan.creator));
     await useUserStore().batchGetUsers(users);
@@ -99,8 +97,7 @@ export const usePlanStore = defineStore("plan", () => {
       name,
     });
     const response = await planServiceClientConnect.getPlan(request);
-    // Convert response to old proto format
-    return convertNewPlanToOld(response);
+    return response;
   };
 
   return {

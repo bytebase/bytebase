@@ -1,3 +1,4 @@
+import { create as createProto } from "@bufbuild/protobuf";
 import type { ComposedTaskRun } from "@/types";
 import {
   EMPTY_PROJECT_NAME,
@@ -5,9 +6,10 @@ import {
   UNKNOWN_PROJECT_NAME,
   UNKNOWN_ROLLOUT_NAME,
 } from "@/types";
-import type { Rollout } from "@/types//proto/v1/rollout_service";
-import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueSchema, IssueStatus, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
 
 // For grant request issue, it has no plan and rollout.
@@ -25,7 +27,7 @@ export const UNKNOWN_ISSUE_NAME = `projects/${UNKNOWN_ID}/issues/${UNKNOWN_ID}`;
 
 export const emptyIssue = (): ComposedIssue => {
   return {
-    ...Issue.fromPartial({
+    ...createProto(IssueSchema, {
       name: EMPTY_ISSUE_NAME,
       rollout: EMPTY_ROLLOUT_NAME,
       type: Issue_Type.DATABASE_CHANGE,
@@ -40,7 +42,7 @@ export const emptyIssue = (): ComposedIssue => {
 
 export const unknownIssue = (): ComposedIssue => {
   return {
-    ...Issue.fromPartial({
+    ...createProto(IssueSchema, {
       name: UNKNOWN_ISSUE_NAME,
       rollout: UNKNOWN_ROLLOUT_NAME,
       type: Issue_Type.DATABASE_CHANGE,

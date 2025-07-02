@@ -13,7 +13,7 @@ import {
 } from "@/components/IssueV1/logic";
 import { useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { isDatabaseDataExportIssue } from "@/utils";
 import { ExportArchiveDownloadButton } from "../request";
 

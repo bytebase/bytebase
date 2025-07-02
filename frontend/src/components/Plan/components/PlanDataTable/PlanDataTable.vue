@@ -21,8 +21,8 @@ import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
-import { getTimeForPbTimestamp, unknownUser } from "@/types";
-import type { Plan } from "@/types/proto/v1/plan_service";
+import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   extractPlanUID,
   extractProjectResourceName,
@@ -79,7 +79,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       title: t("issue.table.updated"),
       width: 150,
       render: (plan) =>
-        humanizeTs(getTimeForPbTimestamp(plan.updateTime, 0) / 1000),
+        humanizeTs(getTimeForPbTimestampProtoEs(plan.updateTime, 0) / 1000),
     },
     {
       key: "creator",

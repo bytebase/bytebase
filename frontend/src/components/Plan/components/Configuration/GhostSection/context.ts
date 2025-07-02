@@ -4,13 +4,11 @@ import { computed, inject, provide, unref } from "vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, type ComposedProject } from "@/types";
-import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
-import {
-  Task,
-  Task_Status,
-  type Rollout,
-} from "@/types/proto/v1/rollout_service";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import type { Task, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   flattenTaskV1List,
   hasProjectPermissionV2,

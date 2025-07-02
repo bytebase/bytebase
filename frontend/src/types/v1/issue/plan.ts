@@ -1,29 +1,30 @@
+import { create as createProto } from "@bufbuild/protobuf";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
-import {
+import type {
   Plan,
-  Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
+import { PlanSchema, Plan_SpecSchema } from "@/types/proto-es/v1/plan_service_pb";
 
 export const EMPTY_PLAN_NAME = `projects/${EMPTY_ID}/plans/${EMPTY_ID}`;
 export const UNKNOWN_PLAN_NAME = `projects/${UNKNOWN_ID}/plans/${UNKNOWN_ID}`;
 export const emptyPlan = (): Plan => {
-  return Plan.fromPartial({
+  return createProto(PlanSchema, {
     name: EMPTY_PLAN_NAME,
   });
 };
 export const unknownPlan = (): Plan => {
-  return Plan.fromPartial({
+  return createProto(PlanSchema, {
     name: UNKNOWN_PLAN_NAME,
   });
 };
 
 export const emptyPlanSpec = () => {
-  return Plan_Spec.fromPartial({
+  return createProto(Plan_SpecSchema, {
     id: String(EMPTY_ID),
   });
 };
 export const unknownPlanSpec = () => {
-  return Plan_Spec.fromPartial({
+  return createProto(Plan_SpecSchema, {
     id: String(UNKNOWN_ID),
   });
 };

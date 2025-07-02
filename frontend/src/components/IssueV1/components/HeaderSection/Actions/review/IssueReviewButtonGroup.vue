@@ -32,7 +32,7 @@ import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
 import {
   IssueStatus,
   Issue_Approver_Status,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   isDatabaseChangeRelatedIssue,
   hasWorkspacePermissionV2,

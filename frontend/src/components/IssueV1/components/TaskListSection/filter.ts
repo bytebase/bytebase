@@ -1,8 +1,8 @@
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
-import type { Task, Task_Status } from "@/types/proto/v1/rollout_service";
+import type { Task, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
-import { type IssueContext } from "../../logic";
+import type { IssueContext } from "../../logic";
 
 export const filterTask = (
   issueContext: IssueContext,
@@ -34,9 +34,8 @@ export const filterTask = (
         result.advices.some((advice) => advice.status === adviceStatus)
       );
     } else {
-      const summary = planCheckRunSummaryForCheckRunList(
-        getPlanCheckRunsForTask(task)
-      );
+      const checkRuns = getPlanCheckRunsForTask(task);
+      const summary = planCheckRunSummaryForCheckRunList(checkRuns);
       if (summary.errorCount > 0) {
         return adviceStatus === Advice_Status.ERROR;
       } else if (summary.warnCount > 0) {

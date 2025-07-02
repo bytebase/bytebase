@@ -11,10 +11,8 @@
 import { PlayIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
-import {
-  PlanCheckRun,
-  PlanCheckRun_Status,
-} from "@/types/proto/v1/plan_service";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
+import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];

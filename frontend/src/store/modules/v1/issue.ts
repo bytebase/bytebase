@@ -13,15 +13,12 @@ import {
   SearchIssuesRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  convertNewIssueToOld,
-} from "@/utils/v1/issue-conversions";
 import { SYSTEM_BOT_EMAIL, type IssueFilter } from "@/types";
-import type { ApprovalStep, Issue } from "@/types/proto/v1/issue_service";
+import type { ApprovalStep, Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  issueStatusToJSON,
+  IssueStatus,
   ApprovalNode_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractProjectResourceName,
   memberMapToRolesInProjectIAM,
@@ -47,7 +44,7 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   }
   if (find.statusList && find.statusList.length > 0) {
     filter.push(
-      `status in [${find.statusList.map((s) => `"${issueStatusToJSON(s)}"`).join(",")}]`
+      `status in [${find.statusList.map((s) => `"${IssueStatus[s]}"`).join(",")}]`
     );
   }
   if (find.createdTsAfter) {
@@ -105,7 +102,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       pageToken,
     });
     const resp = await issueServiceClientConnect.searchIssues(request);
-    const issues = resp.issues.map((newIssue) => convertNewIssueToOld(newIssue));
+    const issues = resp.issues;
     const composedIssues = await Promise.all(
       issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
     );
@@ -127,7 +124,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     const newIssue = await issueServiceClientConnect.getIssue(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    const issue = convertNewIssueToOld(newIssue);
+    const issue = newIssue;
     return shallowComposeIssue(issue, composeIssueConfig);
   };
 

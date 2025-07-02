@@ -26,9 +26,8 @@ import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { pushNotification } from "@/store";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import { allowGhostForDatabase } from "./common";
 import { useGhostSettingContext } from "./context";
 
@@ -129,8 +128,8 @@ const toggleChecked = async (on: boolean) => {
   }
 
   if (isCreating.value) {
-    if (!selectedSpec.value || !selectedSpec.value.changeDatabaseConfig) return;
-    selectedSpec.value.changeDatabaseConfig.type = on
+    if (!selectedSpec.value || selectedSpec.value.config?.case !== "changeDatabaseConfig") return;
+    selectedSpec.value.config.value.type = on
       ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;
   } else {
@@ -138,24 +137,22 @@ const toggleChecked = async (on: boolean) => {
     const spec = (planPatch?.specs || []).find((spec) => {
       return spec.id === selectedSpec.value?.id;
     });
-    if (!planPatch || !spec || !spec.changeDatabaseConfig) {
+    if (!planPatch || !spec || spec.config?.case !== "changeDatabaseConfig") {
       // Should not reach here.
       throw new Error(
         "Plan or spec is not defined. Cannot update gh-ost setting."
       );
     }
 
-    spec.changeDatabaseConfig.type = on
+    spec.config.value.type = on
       ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;
-    const newPlan = convertOldPlanToNew(planPatch);
     const request = create(UpdatePlanRequestSchema, {
-      plan: newPlan,
+      plan: planPatch,
       updateMask: { paths: ["specs"] },
     });
     const response = await planServiceClientConnect.updatePlan(request);
-    const updated = convertNewPlanToOld(response);
-    Object.assign(plan.value, updated);
+    Object.assign(plan.value, response);
 
     pushNotification({
       module: "bytebase",
