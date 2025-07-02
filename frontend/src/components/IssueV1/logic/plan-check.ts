@@ -1,6 +1,5 @@
 import { sheetNameForSpec } from "@/components/Plan";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import type { ComposedIssue } from "@/types";
 import {
   PlanCheckRun_Result_Status,
@@ -8,6 +7,7 @@ import {
 } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import { specForTask, useIssueContext, projectOfIssue } from ".";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {

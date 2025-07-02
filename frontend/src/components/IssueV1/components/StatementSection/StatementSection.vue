@@ -9,15 +9,15 @@
 </template>
 
 <script setup lang="ts">
-import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
-import { useCurrentProjectV1 } from "@/store";
-import { TaskTypeListWithStatement } from "@/types";
-import { isValidTaskName } from "@/utils";
 import { useEventListener } from "@vueuse/core";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
+import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
+import { useCurrentProjectV1 } from "@/store";
+import { TaskTypeListWithStatement } from "@/types";
+import { databaseForTask } from "@/utils";
+import { isValidTaskName } from "@/utils";
 import { useIssueContext } from "../../logic";
 import EditorView from "./EditorView";
 

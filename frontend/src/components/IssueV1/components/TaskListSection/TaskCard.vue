@@ -56,13 +56,13 @@ import { ExternalLinkIcon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { InstanceV1Name } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
 import { useInstanceForTask, specForTask, useIssueContext } from "../../logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
@@ -84,7 +84,13 @@ const schemaVersion = computed(() => {
   }
 
   // Always show the schema version for tasks from a release source.
-  if ((issue.value.planEntity?.specs?.filter(spec => spec.changeDatabaseConfig?.release)??[]).length > 0) {
+  if (
+    (
+      issue.value.planEntity?.specs?.filter(
+        (spec) => spec.changeDatabaseConfig?.release
+      ) ?? []
+    ).length > 0
+  ) {
     return v;
   }
   if (isCreating.value) return "";

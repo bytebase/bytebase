@@ -27,11 +27,11 @@ import IssueLabelSelector, {
 } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/IssueStatusIconWithTaskSummary.vue";
 import { projectOfIssue } from "@/components/IssueV1/logic";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
 import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
+import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,
   humanizeTs,

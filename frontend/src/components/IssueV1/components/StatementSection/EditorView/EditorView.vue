@@ -174,6 +174,14 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
+import { useElementSize } from "@vueuse/core";
+import { cloneDeep, head, isEmpty } from "lodash-es";
+import { ExpandIcon } from "lucide-vue-next";
+import { NButton, NTooltip, useDialog } from "naive-ui";
+import { computed, reactive, ref, toRef, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import { BBAttention, BBModal } from "@/bbkit";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -187,24 +195,22 @@ import {
   createEmptyLocalSheet,
   databaseEngineForSpec,
 } from "@/components/Plan";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { emitWindowEvent } from "@/plugins";
 import {
   pushNotification,
   useCurrentProjectV1,
-  useSheetV1Store
+  useSheetV1Store,
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { databaseForTask } from "@/utils";
 import {
   flattenTaskV1List,
   getSheetStatement,
@@ -212,13 +218,10 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head, isEmpty } from "lodash-es";
-import { ExpandIcon } from "lucide-vue-next";
-import { NButton, NTooltip, useDialog } from "naive-ui";
-import { computed, reactive, ref, toRef, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import {
+  convertOldPlanToNew,
+  convertNewPlanToOld,
+} from "@/utils/v1/plan-conversions";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import EditorActionPopover from "./EditorActionPopover.vue";
 import { provideEditorContext } from "./context";

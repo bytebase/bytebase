@@ -24,12 +24,12 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
-import TaskStatus from "@/components/Rollout/RolloutDetail/Panels/kits/TaskStatus.vue";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail/utils";
+import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
 import type { Task, Task_Status } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,
   extractSchemaVersionFromTask,

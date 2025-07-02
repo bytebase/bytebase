@@ -21,10 +21,10 @@
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed } from "vue";
 import { stageForTask, projectOfIssue } from "@/components/IssueV1/logic";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import type { ComposedIssue } from "@/types";
 import type { Task } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,
   extractSchemaVersionFromTask,
