@@ -689,8 +689,8 @@ export interface SQLQueryRestrictionSetting {
    */
   maximumResultSize: Long;
   /**
-   * The return rows limit.
-   * The default value is -1, means no limit.
+   * The return rows limit. If the value <= 0, will be treated as no limit.
+   * The default value is -1.
    */
   maximumResultRows: number;
 }

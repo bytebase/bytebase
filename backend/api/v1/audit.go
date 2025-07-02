@@ -5,12 +5,14 @@ import (
 	"log/slog"
 	"net/http"
 	"reflect"
+	"time"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/status"
@@ -47,14 +49,16 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			serviceData = a
 		})
 
+		startTime := time.Now()
 		response, rerr := next(ctx, req)
+		latency := time.Since(startTime)
 
 		if needAudit(ctx) {
 			var respMsg any
 			if !common.IsNil(response) {
 				respMsg = response.Any()
 			}
-			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, serviceData, rerr, req.Header()); err != nil {
+			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, serviceData, rerr, req.Header(), latency); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
 			}
 		}
@@ -93,6 +97,7 @@ type auditConnectStreamingConn struct {
 	ctx         context.Context
 	method      string
 	curRequest  any
+	startTime   time.Time
 }
 
 func (c *auditConnectStreamingConn) Receive(msg any) error {
@@ -100,8 +105,9 @@ func (c *auditConnectStreamingConn) Receive(msg any) error {
 	if err != nil {
 		return err
 	}
-	// Store current request for audit log
+	// Store current request for audit log and start time
 	c.curRequest = msg
+	c.startTime = time.Now()
 	return nil
 }
 
@@ -112,14 +118,15 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 	}
 	// Create audit log for each message pair
 	if c.curRequest != nil {
-		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, nil, nil, c.RequestHeader()); auditErr != nil {
+		latency := time.Since(c.startTime)
+		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, nil, nil, c.RequestHeader(), latency); auditErr != nil {
 			return auditErr
 		}
 	}
 	return nil
 }
 
-func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error, headers http.Header) error {
+func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, serviceData *anypb.Any, rerr error, headers http.Header, latency time.Duration) error {
 	requestString, err := getRequestString(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
@@ -172,6 +179,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 			Request:         requestString,
 			Response:        responseString,
 			Status:          st.Proto(),
+			Latency:         durationpb.New(latency),
 			ServiceData:     serviceData,
 			RequestMetadata: requestMetadata,
 		}

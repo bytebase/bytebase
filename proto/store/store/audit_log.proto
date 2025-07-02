@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
 import "google/rpc/status.proto";
 
 option go_package = "generated-go/store";
@@ -34,6 +35,9 @@ message AuditLog {
   string response = 7;
 
   google.rpc.Status status = 8;
+
+  // The latency of the RPC.
+  google.protobuf.Duration latency = 9;
 
   // service-specific data about the request, response, and other activities.
   google.protobuf.Any service_data = 10;

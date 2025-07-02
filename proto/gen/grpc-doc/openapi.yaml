@@ -8482,6 +8482,10 @@ components:
                          Some fields are omitted because they are too large or contain sensitive information.
                 status:
                     $ref: '#/components/schemas/Status'
+                latency:
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: The latency of the RPC.
                 serviceData:
                     allOf:
                         - $ref: '#/components/schemas/GoogleProtobufAny'
@@ -12693,8 +12697,8 @@ components:
                 maximumResultRows:
                     type: integer
                     description: |-
-                        The return rows limit.
-                         The default value is -1, means no limit.
+                        The return rows limit. If the value <= 0, will be treated as no limit.
+                         The default value is -1.
                     format: int32
         SQLReviewRule:
             type: object
