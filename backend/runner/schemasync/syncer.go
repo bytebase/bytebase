@@ -434,7 +434,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	}
 	rawDump := schemaBuf.Bytes()
 
-	todo := common.EngineNeedsColumnDefaultMigration(instance.Metadata.GetEngine())
+	todo := !common.EngineDBSchemaReadyToMigrate(instance.Metadata.GetEngine())
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
 		databaseMetadata, dbModelConfig.BuildDatabaseConfig(), rawDump, todo,
@@ -544,7 +544,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
-	todo := common.EngineNeedsColumnDefaultMigration(instance.Metadata.GetEngine())
+	todo := !common.EngineDBSchemaReadyToMigrate(instance.Metadata.GetEngine())
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
 		databaseMetadata, dbModelConfig.BuildDatabaseConfig(), rawDump, todo,
