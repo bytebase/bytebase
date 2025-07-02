@@ -59,12 +59,12 @@ import { CircleAlertIcon, TriangleAlertIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useCurrentProjectV1 } from "@/store";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { databaseForTask } from "@/utils";
 import { planCheckStatusForTask, useIssueContext } from "../logic";
 
 const props = defineProps<{

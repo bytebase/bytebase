@@ -101,7 +101,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
-import TaskStatus from "@/components/Rollout/RolloutDetail/Panels/kits/TaskStatus.vue";
+import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import {

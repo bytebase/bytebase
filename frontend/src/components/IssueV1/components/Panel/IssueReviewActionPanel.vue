@@ -97,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -110,16 +111,15 @@ import {
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { create } from "@bufbuild/protobuf";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import {
   ApproveIssueRequestSchema,
   RejectIssueRequestSchema,
   RequestIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import { databaseForTask } from "@/utils";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 

@@ -34,12 +34,12 @@
 import { NTag, NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useIssueContext, projectOfIssue } from "@/components/IssueV1";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import {
   PlanCheckRun_Result_Status,
   type PlanCheckRun,
 } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import { flattenTaskV1List } from "@/utils";
 
 const props = defineProps<{

@@ -80,7 +80,6 @@ import { computedAsync } from "@vueuse/core";
 import { ChevronRightIcon, DatabaseIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import {
   DatabaseV1Name,
   EnvironmentV1Name,
@@ -97,6 +96,7 @@ import {
   unknownEnvironment,
 } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import { extractInstanceResourceName } from "@/utils";
 
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";

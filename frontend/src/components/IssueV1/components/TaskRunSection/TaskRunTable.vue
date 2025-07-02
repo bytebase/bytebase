@@ -29,7 +29,6 @@ import { last } from "lodash-es";
 import { NButton, type DataTableColumn, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
@@ -39,6 +38,7 @@ import {
   type ComposedTaskRun,
 } from "@/types";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import { humanizeDurationV1, sheetNameOfTaskV1 } from "@/utils";
 import { useIssueContext } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";
