@@ -79,7 +79,6 @@ import { issueServiceClientConnect } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { IssueSchema, UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";
 import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../logic";
 
@@ -132,8 +131,7 @@ const saveEdit = async () => {
       }),
       updateMask: { paths: ["description"] },
     });
-    const response = await issueServiceClientConnect.updateIssue(request);
-    const updated = convertNewIssueToOld(response);
+    const updated = await issueServiceClientConnect.updateIssue(request);
     Object.assign(issue.value, updated);
     pushNotification({
       module: "bytebase",

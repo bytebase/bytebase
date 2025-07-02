@@ -28,7 +28,7 @@ import {
   isValidInstanceName,
   isValidEnvironmentName,
 } from "@/types";
-import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed for internal operations
 import type {
@@ -73,7 +73,7 @@ const getListInstanceFilter = (params: InstanceFilter) => {
     // engine filter should be:
     // engine in ["MYSQL", "POSTGRES"]
     list.push(
-      `engine in [${params.engines.map((e) => `"${e}"`).join(", ")}]`
+      `engine in [${params.engines.map((e) => `"${Engine[e]}"`).join(", ")}]`
     );
   }
   if (params.state === State.DELETED) {

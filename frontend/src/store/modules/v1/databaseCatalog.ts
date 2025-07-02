@@ -18,9 +18,6 @@ import {
   TableCatalog_ColumnsSchema,
   ColumnCatalogSchema
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { 
-  convertOldDatabaseCatalogToNew 
-} from "@/utils/v1/database-catalog-conversions";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useDatabaseV1Store } from "./database";
 
@@ -87,9 +84,8 @@ export const useDatabaseCatalogV1Store = defineStore(
     };
 
     const updateDatabaseCatalog = async (catalog: DatabaseCatalog) => {
-      const newCatalog = convertOldDatabaseCatalogToNew(catalog);
       const request = create(UpdateDatabaseCatalogRequestSchema, {
-        catalog: newCatalog,
+        catalog: catalog,
       });
       const response = await databaseCatalogServiceClientConnect.updateDatabaseCatalog(request);
       setCache(response);
