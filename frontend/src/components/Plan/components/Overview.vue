@@ -173,7 +173,7 @@ import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { InstanceV1EngineIcon } from "@/components/v2/Model/Instance";
 import { useInstanceV1Store, useDBGroupStore } from "@/store";
-import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
+import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import { instanceV1Name, extractDatabaseResourceName } from "@/utils";
 import { usePlanContext } from "../logic/context";
 import { targetsForSpec } from "../logic/plan";

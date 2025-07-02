@@ -14,7 +14,7 @@ import {
   Plan_ChangeDatabaseConfig_Type,
   Plan_ExportDataConfig,
   Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import {
   extractSheetUID,
   generateSQLForChangeToDatabase,

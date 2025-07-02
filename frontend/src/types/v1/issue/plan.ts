@@ -2,7 +2,7 @@ import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
 import {
   Plan,
   Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 
 export const EMPTY_PLAN_NAME = `projects/${EMPTY_ID}/plans/${EMPTY_ID}`;
 export const UNKNOWN_PLAN_NAME = `projects/${UNKNOWN_ID}/plans/${UNKNOWN_ID}`;

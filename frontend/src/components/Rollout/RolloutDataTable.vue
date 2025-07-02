@@ -21,8 +21,8 @@ import { BBAvatar } from "@/bbkit";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { getTimeForPbTimestamp, type ComposedRollout } from "@/types";
-import { Task_Status as TaskStatusEnum } from "@/types/proto/v1/rollout_service";
-import type { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status as TaskStatusEnum } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractPlanUID,
   extractProjectResourceName,

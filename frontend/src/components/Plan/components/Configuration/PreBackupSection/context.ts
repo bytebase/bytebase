@@ -16,17 +16,17 @@ import { convertOldPlanToNew } from "@/utils/v1/plan-conversions";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, type ComposedProject } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus, type Issue } from "@/types/proto/v1/issue_service";
+import { IssueStatus, type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import {
   Task,
   Task_Status,
   type Rollout,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { flattenTaskV1List, hasProjectPermissionV2 } from "@/utils";
 import { BACKUP_AVAILABLE_ENGINES } from "./common";
 

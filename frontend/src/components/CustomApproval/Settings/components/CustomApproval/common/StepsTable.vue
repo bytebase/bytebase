@@ -34,12 +34,12 @@ import { useI18n } from "vue-i18n";
 import { RoleSelect } from "@/components/v2";
 import { SpinnerButton } from "@/components/v2/Form";
 import { PresetRoleType } from "@/types";
-import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
+import type { ApprovalFlow } from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type,
   ApprovalStep,
   ApprovalStep_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import { approvalNodeText } from "@/utils";
 import { convertOldApprovalNodeToNew } from "@/utils/workspaceApprovalSetting-conversions";
 import { useCustomApprovalContext } from "../context";

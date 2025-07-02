@@ -1,5 +1,5 @@
-import type { ApprovalStep, Issue_Approver } from "./proto/v1/issue_service";
-import { ApprovalTemplate } from "./proto/v1/issue_service";
+import type { ApprovalStep, Issue_Approver } from "./proto-es/v1/issue_service_pb";
+import { ApprovalTemplate } from "./proto-es/v1/issue_service_pb";
 
 export type ReviewFlow = {
   template: ApprovalTemplate;

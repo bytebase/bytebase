@@ -22,7 +22,7 @@ import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   type TaskRun,
   TaskRunLogEntry_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";

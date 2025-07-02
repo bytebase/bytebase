@@ -2,8 +2,8 @@ import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { unknownDatabase, type ComposedProject } from "@/types";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
-import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { databaseForSpec } from "../../logic";
 

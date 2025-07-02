@@ -1,7 +1,7 @@
 import {
   Plan_ChangeDatabaseConfig_Type,
   Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
 
 export const getSpecChangeType = (

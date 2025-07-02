@@ -88,9 +88,9 @@ import {
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
-import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
+import { Issue, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   defer,

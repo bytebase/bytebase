@@ -47,7 +47,7 @@ import { planServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   extractPlanUID,

@@ -37,7 +37,7 @@ import {
   getTimeForPbTimestamp,
   type ComposedTaskRun,
 } from "@/types";
-import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { humanizeDurationV1, sheetNameOfTaskV1 } from "@/utils";
 import { useIssueContext } from "../../logic";

@@ -24,7 +24,7 @@ import { GetTaskRunSessionRequestSchema } from "@/types/proto-es/v1/rollout_serv
 import { convertNewTaskRunSessionToOld } from "@/utils/v1/rollout-conversions";
 import { BBSpin } from "@/bbkit";
 import { rolloutServiceClientConnect } from "@/grpcweb";
-import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status, type TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import PostgresSessionTable from "./PostgresSessionTable.vue";
 
 const props = defineProps<{

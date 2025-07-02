@@ -17,7 +17,7 @@ import {
   Issue,
   IssueStatus,
   Issue_Approver_Status,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import { useIssueReviewContext } from "../../../logic/";
 
 const props = defineProps<{

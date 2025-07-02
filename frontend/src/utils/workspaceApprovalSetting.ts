@@ -21,11 +21,11 @@ import { ExprSchema as CELExprSchema } from "@/types/proto-es/google/api/expr/v1
 import type {
   ApprovalNode as _ApprovalNode,
   ApprovalStep as _ApprovalStep,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type as _ApprovalNode_Type,
   ApprovalStep_Type as _ApprovalStep_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type as ProtoEsApprovalNode_Type,
   ApprovalStep_Type as ProtoEsApprovalStep_Type,

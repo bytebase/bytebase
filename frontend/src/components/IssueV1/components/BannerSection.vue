@@ -53,8 +53,8 @@ import { computed } from "vue";
 import {
   IssueStatus,
   Issue_Approver_Status,
-} from "@/types/proto/v1/issue_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/issue_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   activeTaskInRollout,
   isDatabaseChangeRelatedIssue,

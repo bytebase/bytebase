@@ -1,6 +1,6 @@
 import slug from "slug";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
-import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
+import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 
 export const sheetNameOfSpec = (spec: Plan_Spec): string => {
   return spec.changeDatabaseConfig?.sheet ?? spec.exportDataConfig?.sheet ?? "";

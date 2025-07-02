@@ -20,7 +20,7 @@ import { computed } from "vue";
 import {
   TaskRun_PriorBackupDetail_Item_Table,
   TaskRunLogEntry_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import type { FlattenLogEntry } from "../common";
 
 const props = defineProps<{

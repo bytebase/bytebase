@@ -1,6 +1,6 @@
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import type { Plan } from "@/types/proto/v1/plan_service";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { extractProjectResourceName } from "@/utils";
 
 export const projectOfPlan = (plan: Plan): ComposedProject => {

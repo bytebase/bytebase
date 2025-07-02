@@ -28,7 +28,7 @@ import {
   ListTaskRunsRequestSchema,
   CreateRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Issue } from "@/types/proto/v1/issue_service";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { TaskRunLog } from "@/types/proto/v1/rollout_service";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";

@@ -153,8 +153,8 @@ import { create as createProto } from "@bufbuild/protobuf";
 import {
   Plan_ChangeDatabaseConfig,
   Plan_ChangeDatabaseConfig_Type,
-} from "@/types/proto/v1/plan_service";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 
 defineProps<{

@@ -32,7 +32,7 @@ import {
   getApplicableTaskRolloutActionList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { isDatabaseDataExportIssue } from "@/utils";
 import type { ExtraActionOption } from "../common";
 import {

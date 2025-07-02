@@ -5,7 +5,7 @@ import {
   PlanCheckRun,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 

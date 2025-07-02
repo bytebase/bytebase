@@ -33,7 +33,7 @@ import { useIssueContext } from "@/components/IssueV1";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { BatchUpdateIssuesStatusRequestSchema, IssueStatus as NewIssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { useSQLStore } from "@/store";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import {
   Plan_ExportDataConfig,

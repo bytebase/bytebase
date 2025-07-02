@@ -174,9 +174,9 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
-import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/plan_service";
-import { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
+import { Issue, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
+import { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   enginesSupportCreateDatabase,
   instanceV1HasCollationAndCharacterSet,

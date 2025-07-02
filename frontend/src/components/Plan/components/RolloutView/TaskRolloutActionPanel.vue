@@ -228,9 +228,9 @@ import {
   BatchSkipTasksRequestSchema,
   BatchCancelTaskRunsRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import type { Stage, Task, TaskRun } from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
+import type { Stage, Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContext } from "../../logic";
 import { useIssueReviewContext } from "../../logic/issue-review";
 import TaskDatabaseName from "./TaskDatabaseName.vue";

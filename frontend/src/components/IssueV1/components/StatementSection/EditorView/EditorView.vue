@@ -209,7 +209,7 @@ import { dialectOfEngineV1 } from "@/types";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   flattenTaskV1List,

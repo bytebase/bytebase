@@ -4,7 +4,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { semverCompare } from "@/utils";
 
 export const GHOST_AVAILABLE_ENGINES = [Engine.MYSQL, Engine.MARIADB];

@@ -7,7 +7,7 @@ import {
   SearchPlansRequestSchema,
   GetPlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import type { Plan } from "@/types/proto/v1/plan_service";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import {
   getTsRangeFromSearchParams,

@@ -6,7 +6,7 @@ import {
   UNKNOWN_ROLLOUT_NAME,
 } from "@/types";
 import type { Rollout } from "@/types//proto/v1/rollout_service";
-import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import { Issue, IssueStatus, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
 

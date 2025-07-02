@@ -68,7 +68,7 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Result_SqlReviewReport,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { CheckReleaseResponse_RiskLevel } from "@/types/proto-es/v1/release_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";

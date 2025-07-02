@@ -37,7 +37,7 @@ import { useRoute, useRouter } from "vue-router";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../logic";
 import AddSpecDrawer from "./AddSpecDrawer.vue";
 import { gotoSpec } from "./common/utils";

@@ -10,7 +10,7 @@ import { useCurrentUserV1, useProjectV1Store, useSheetV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { IssueType } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement } from "@/types";
-import { Issue_Type, IssueStatus } from "@/types/proto/v1/issue_service";
+import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Plan } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { Rollout } from "@/types/proto/v1/rollout_service";

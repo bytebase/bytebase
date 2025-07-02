@@ -176,7 +176,7 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { humanizeTs } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";

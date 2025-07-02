@@ -43,12 +43,12 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { TaskSpinner } from "@/components/IssueV1/components/common";
-import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 import { planCheckRunResultStatus } from "./common";
 

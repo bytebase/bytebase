@@ -33,7 +33,7 @@ import {
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
-import { Plan } from "@/types/proto/v1/plan_service";
+import { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 

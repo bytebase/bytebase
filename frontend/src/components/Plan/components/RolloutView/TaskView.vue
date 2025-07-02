@@ -86,7 +86,7 @@ import {
   ListTaskRunsRequestSchema,
   GetRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Task, TaskRun, Rollout } from "@/types/proto/v1/rollout_service";
+import type { Task, TaskRun, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   extractSchemaVersionFromTask,

@@ -58,7 +58,7 @@ import { CopyButton } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useRevisionStore, useSheetV1Store } from "@/store";
 import { getDateForPbTimestampProtoEs, type ComposedDatabase } from "@/types";
-import type { TaskRun } from "@/types/proto/v1/rollout_service";
+import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractIssueUID, getSheetStatement } from "@/utils";
 import TaskRunLogTable from "../IssueV1/components/TaskRunSection/TaskRunLogTable/TaskRunLogTable.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";

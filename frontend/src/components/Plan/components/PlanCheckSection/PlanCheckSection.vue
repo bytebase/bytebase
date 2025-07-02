@@ -172,7 +172,7 @@ import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb"
 import {
   PlanCheckRun_Result_Status,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { planCheckRunListForSpec, planSpecHasPlanChecks } from "../../logic";
 import { usePlanContext } from "../../logic/context";

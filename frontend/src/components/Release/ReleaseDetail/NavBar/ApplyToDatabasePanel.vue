@@ -67,7 +67,7 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { Plan } from "@/types/proto/v1/plan_service";
+import { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { create } from "@bufbuild/protobuf";
 import {
   extractProjectResourceName,

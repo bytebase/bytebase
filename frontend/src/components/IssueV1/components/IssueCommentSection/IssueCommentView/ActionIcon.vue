@@ -130,7 +130,7 @@ import {
   IssueComment_TaskPriorBackup,
   IssueComment_TaskUpdate,
   IssueComment_TaskUpdate_Status,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 
 type ActionIconType =
   | "avatar"

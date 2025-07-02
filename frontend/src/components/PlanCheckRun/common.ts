@@ -4,7 +4,7 @@ import {
   PlanCheckRun_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 
 export const planCheckRunResultStatus = (checkRun: PlanCheckRun) => {

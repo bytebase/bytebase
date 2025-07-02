@@ -11,7 +11,7 @@ import {
 import type {
   IssueComment,
   ListIssueCommentsRequest,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   convertNewIssueCommentToOld,
 } from "@/utils/v1/issue-conversions";

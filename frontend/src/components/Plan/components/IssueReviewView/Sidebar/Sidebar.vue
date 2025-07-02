@@ -47,7 +47,7 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
+import { Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import { usePlanContextWithIssue } from "../../../logic/context";

@@ -17,8 +17,8 @@ import { PlayIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentProjectV1 } from "@/store";
-import type { Stage } from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { useRolloutViewContext } from "./context";
 import { useTaskActionPermissions } from "./taskPermissions";
 

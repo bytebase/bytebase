@@ -138,7 +138,7 @@ import {
   CheckReleaseRequestSchema,
   ReleaseFileType,
 } from "@/types/proto-es/v1/release_service_pb";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Release_File_ChangeType,
   type CheckReleaseResponse_CheckResult,

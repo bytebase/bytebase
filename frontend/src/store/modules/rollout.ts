@@ -7,7 +7,7 @@ import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef, Pagination, ComposedRollout } from "@/types";
 import { isValidRolloutName, unknownRollout, unknownUser } from "@/types";
-import type { Rollout } from "@/types/proto/v1/rollout_service";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { 
   GetRolloutRequestSchema, 
   ListRolloutsRequestSchema 

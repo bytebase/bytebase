@@ -127,7 +127,7 @@ import {
 } from "@/store";
 import { isValidProjectName } from "@/types";
 import type { ComposedIssue } from "@/types";
-import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
+import { ListIssueCommentsRequest } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useIssueContext } from "../../logic";
 import {

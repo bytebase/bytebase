@@ -23,7 +23,7 @@ import { computed } from "vue";
 import { stageForTask, projectOfIssue } from "@/components/IssueV1/logic";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import type { ComposedIssue } from "@/types";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,

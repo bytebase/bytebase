@@ -66,7 +66,7 @@ import {
   GrantRequest,
   Issue,
   Issue_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import { generateIssueTitle, displayRoleTitle } from "@/utils";
 import { convertDurationToOld } from "@/utils/v1/common-conversions";
 import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";

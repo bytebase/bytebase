@@ -4,8 +4,8 @@ import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { convertNewIssueToOld, convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import { useCurrentUserV1 } from "@/store";
 import { emptyIssue, type ComposedIssue } from "@/types";
-import { Issue, Issue_Type, IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Plan } from "@/types/proto/v1/plan_service";
+import { Issue, Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { convertNewRolloutToOld } from "@/utils/v1/rollout-conversions";
 

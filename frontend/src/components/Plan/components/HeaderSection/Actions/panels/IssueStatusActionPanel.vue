@@ -62,7 +62,7 @@ import { usePlanContextWithIssue } from "@/components/Plan/logic";
 import { create } from "@bufbuild/protobuf";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { 
   BatchUpdateIssuesStatusRequestSchema,
   IssueStatus as NewIssueStatus 

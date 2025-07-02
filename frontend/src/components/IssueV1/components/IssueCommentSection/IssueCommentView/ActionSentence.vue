@@ -22,7 +22,7 @@ import {
   IssueComment_TaskUpdate,
   IssueComment_TaskUpdate_Status,
   IssueStatus,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import { findStageByName, findTaskByName } from "@/utils";
 import StageName from "./StageName.vue";
 import StatementUpdate from "./StatementUpdate.vue";

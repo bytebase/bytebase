@@ -83,7 +83,7 @@ import type {
   ApprovalStep,
   Issue,
   Issue_Approver,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
 import { memberMapToRolesInProjectIAM } from "@/utils";
 import ApprovalUserView from "./ApprovalUserView.vue";

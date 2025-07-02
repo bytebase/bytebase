@@ -265,7 +265,7 @@ import {
   PlanCheckRun_Result,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { convertPositionLineToMonacoLine } from "@/utils/v1/position";
 import { usePlanCheckRunContext } from "./context";
 import { OnlineMigrationDetail } from "./detail";

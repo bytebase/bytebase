@@ -28,7 +28,7 @@ import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { pushNotification } from "@/store";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import { allowGhostForDatabase } from "./common";
 import { useGhostSettingContext } from "./context";
 

@@ -2,9 +2,9 @@ import { t } from "@/plugins/i18n";
 import { useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { IssueStatus, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,

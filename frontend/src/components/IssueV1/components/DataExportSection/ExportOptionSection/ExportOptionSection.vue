@@ -73,11 +73,11 @@ import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { convertExportFormatToNew, convertExportFormatToOld } from "@/utils/v1/common-conversions";
 import { pushNotification } from "@/store";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_Spec,
   Plan_ExportDataConfig,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import ExportFormatSelector from "./ExportFormatSelector.vue";
 import ExportPasswordInputer from "./ExportPasswordInputer.vue";
 

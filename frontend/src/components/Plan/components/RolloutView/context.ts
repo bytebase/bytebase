@@ -6,7 +6,7 @@ import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCurrentProjectV1 } from "@/store";
 import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { Rollout, type Stage } from "@/types/proto/v1/rollout_service";
+import { Rollout, type Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   convertNewRolloutToOld,
   convertOldPlanToNew,

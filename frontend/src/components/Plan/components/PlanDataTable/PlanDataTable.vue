@@ -22,7 +22,7 @@ import { BBAvatar } from "@/bbkit";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { getTimeForPbTimestamp, unknownUser } from "@/types";
-import type { Plan } from "@/types/proto/v1/plan_service";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   extractPlanUID,
   extractProjectResourceName,

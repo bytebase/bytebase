@@ -24,8 +24,8 @@ import {
   type Rollout,
   type Stage,
   type Task,
-} from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName } from "../project";
 import { extractIssueUID, flattenTaskV1List, issueV1Slug } from "./issue";
 

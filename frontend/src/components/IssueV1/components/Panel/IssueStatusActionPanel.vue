@@ -103,7 +103,7 @@ import { create } from "@bufbuild/protobuf";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { flattenTaskV1List } from "@/utils";
 import CommonDrawer from "./CommonDrawer.vue";

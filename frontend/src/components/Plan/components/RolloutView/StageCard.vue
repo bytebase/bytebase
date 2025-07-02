@@ -114,7 +114,7 @@ import {
   Stage,
   Task_Status,
   type Task,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { extractSchemaVersionFromTask } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";

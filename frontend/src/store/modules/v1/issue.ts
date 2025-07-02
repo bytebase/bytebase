@@ -17,11 +17,11 @@ import {
   convertNewIssueToOld,
 } from "@/utils/v1/issue-conversions";
 import { SYSTEM_BOT_EMAIL, type IssueFilter } from "@/types";
-import type { ApprovalStep, Issue } from "@/types/proto/v1/issue_service";
+import type { ApprovalStep, Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   issueStatusToJSON,
   ApprovalNode_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractProjectResourceName,
   memberMapToRolesInProjectIAM,

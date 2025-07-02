@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { type Ref } from "vue";
 import { useCurrentProjectV1 } from "@/store";
-import { type Plan_Spec } from "@/types/proto/v1/plan_service";
+import { type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../logic/context";
 import { providePlanSQLCheckContext } from "./SQLCheckSection";
 import SpecDetailView from "./SpecDetailView";
