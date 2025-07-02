@@ -92,7 +92,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "auto_increment",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "AUTO_INCREMENT",
+				Default: "AUTO_INCREMENT",
 			},
 		},
 		{
@@ -101,7 +101,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultNull: true,
+				Default: "NULL",
 			},
 		},
 		{
@@ -180,7 +180,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultNull: true,
+				Default: "NULL",
 			},
 		},
 		{
@@ -196,7 +196,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "DEFAULT_GENERATED",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP",
+				Default: "CURRENT_TIMESTAMP",
 			},
 		},
 		{
@@ -205,8 +205,8 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP",
-				OnUpdate:          "CURRENT_TIMESTAMP",
+				Default:  "CURRENT_TIMESTAMP",
+				OnUpdate: "CURRENT_TIMESTAMP",
 			},
 		},
 		{
@@ -215,8 +215,8 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP",
-				OnUpdate:          "CURRENT_TIMESTAMP",
+				Default:  "CURRENT_TIMESTAMP",
+				OnUpdate: "CURRENT_TIMESTAMP",
 			},
 		},
 		{
@@ -225,7 +225,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "DEFAULT_GENERATED",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP(6)",
+				Default: "CURRENT_TIMESTAMP(6)",
 			},
 		},
 		{
@@ -234,7 +234,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "DEFAULT_GENERATED",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP(6)",
+				Default: "CURRENT_TIMESTAMP(6)",
 			},
 		},
 		{
@@ -243,7 +243,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "DEFAULT_GENERATED",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP",
+				Default: "CURRENT_TIMESTAMP",
 			},
 		},
 		// MySQL 5.7.
@@ -253,7 +253,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			extra:        "auto_increment",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "AUTO_INCREMENT",
+				Default: "AUTO_INCREMENT",
 			},
 		},
 		{
@@ -262,7 +262,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultNull: true,
+				Default: "NULL",
 			},
 		},
 		{
@@ -341,7 +341,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			extra:        "",
 			want: &storepb.ColumnMetadata{
-				DefaultNull: true,
+				Default: "NULL",
 			},
 		},
 		{
@@ -358,7 +358,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			// Different from 8.0, DEFAULT_GENERATED.
 			extra: "",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP",
+				Default: "CURRENT_TIMESTAMP",
 			},
 		},
 		{
@@ -368,8 +368,8 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			// Different from 8.0, DEFAULT_GENERATED on update CURRENT_TIMESTAMP.
 			extra: "on update CURRENT_TIMESTAMP",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP",
-				OnUpdate:          "CURRENT_TIMESTAMP",
+				Default:  "CURRENT_TIMESTAMP",
+				OnUpdate: "CURRENT_TIMESTAMP",
 			},
 		},
 		{
@@ -379,8 +379,8 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			// Different from 8.0, DEFAULT_GENERATED on update CURRENT_TIMESTAMP.
 			extra: "on update CURRENT_TIMESTAMP",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP",
-				OnUpdate:          "CURRENT_TIMESTAMP",
+				Default:  "CURRENT_TIMESTAMP",
+				OnUpdate: "CURRENT_TIMESTAMP",
 			},
 		},
 		{
@@ -390,7 +390,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			// Different from 8.0, DEFAULT_GENERATED.
 			extra: "",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP(6)",
+				Default: "CURRENT_TIMESTAMP(6)",
 			},
 		},
 		{
@@ -400,7 +400,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			// Different from 8.0, DEFAULT_GENERATED.
 			extra: "",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP(6)",
+				Default: "CURRENT_TIMESTAMP(6)",
 			},
 		},
 		{
@@ -410,7 +410,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			// Different from 8.0, DEFAULT_GENERATED.
 			extra: "",
 			want: &storepb.ColumnMetadata{
-				DefaultExpression: "CURRENT_TIMESTAMP",
+				Default: "CURRENT_TIMESTAMP",
 			},
 		},
 	}

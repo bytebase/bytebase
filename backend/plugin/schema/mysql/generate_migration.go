@@ -1057,6 +1057,10 @@ func hasDefaultValue(column *storepb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
+	// Don't treat AUTO_INCREMENT as a default value
+	if strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT") {
+		return false
+	}
 	return column.DefaultNull || column.DefaultExpression != "" || (column.Default != "")
 }
 
@@ -1064,8 +1068,8 @@ func hasAutoIncrement(column *storepb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
-	// Check if column has AUTO_INCREMENT in default expression
-	return strings.EqualFold(column.GetDefaultExpression(), "AUTO_INCREMENT")
+	// Check if column has AUTO_INCREMENT in default field (new logic) or default expression (old logic)
+	return strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT") || strings.EqualFold(column.GetDefaultExpression(), "AUTO_INCREMENT")
 }
 
 func escapeString(s string) string {
