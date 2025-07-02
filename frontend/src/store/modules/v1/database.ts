@@ -26,8 +26,7 @@ import {
   unknownEnvironment,
   unknownInstanceResource,
 } from "@/types";
-import type { Engine } from "@/types/proto-es/v1/common_pb";
-import { convertEngineToOld } from "@/utils/v1/common-conversions";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
   UpdateDatabaseRequest,
@@ -90,13 +89,13 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
     // engine filter should be:
     // engine in ["MYSQL", "POSTGRES"]
     params.push(
-      `engine in [${filter.engines.map((e) => `"${convertEngineToOld(e)}"`).join(", ")}]`
+      `engine in [${filter.engines.map((e) => `"${Engine[e]}"`).join(", ")}]`
     );
   } else if (filter.excludeEngines && filter.excludeEngines.length > 0) {
     // engine filter should be:
     // !(engine in ["REDIS", "MONGODB"])
     params.push(
-      `!(engine in [${filter.excludeEngines.map((e) => `"${convertEngineToOld(e)}"`).join(", ")}])`
+      `!(engine in [${filter.excludeEngines.map((e) => `"${Engine[e]}"`).join(", ")}])`
     );
   }
   if (!isNullOrUndefined(filter.drifted)) {

@@ -34,12 +34,8 @@ import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
 import { create as createProto } from "@bufbuild/protobuf";
 import { sqlServiceClientConnect } from "@/grpcweb";
-import {
-  convertOldAICompletionRequestToNew,
-  convertNewAICompletionResponseToOld,
-} from "@/utils/v1/sql-conversions";
 import { useSQLEditorTabStore } from "@/store";
-import { type AICompletionRequest_Message, AICompletionRequest_MessageSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { type AICompletionRequest_Message, AICompletionRequest_MessageSchema, AICompletionRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { nextAnimationFrame } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
@@ -125,10 +121,8 @@ const requestAI = async (query: string) => {
   });
   state.loading = true;
   try {
-    const oldRequest = { messages };
-    const newRequest = convertOldAICompletionRequestToNew(oldRequest);
-    const newResponse = await sqlServiceClientConnect.aICompletion(newRequest);
-    const response = convertNewAICompletionResponseToOld(newResponse);
+    const request = createProto(AICompletionRequestSchema, { messages });
+    const response = await sqlServiceClientConnect.aICompletion(request);
     const text = head(head(response.candidates)?.content?.parts)?.text?.trim();
     console.debug("[AI Assistant] answer:", text);
     if (text) {

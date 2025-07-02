@@ -4,9 +4,6 @@ import { createContextValues } from "@connectrpc/connect";
 import { sqlServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 
-import {
-  convertNewDiffMetadataResponseToOld,
-} from "@/utils/v1/sql-conversions";
 import { t } from "@/plugins/i18n";
 import { useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -72,10 +69,9 @@ export const generateDiffDDL = async ({
       classificationFromConfig:
         classificationConfig?.classificationFromConfig ?? false,
     });
-    const newResponse = await sqlServiceClientConnect.diffMetadata(newRequest, {
+    const diffResponse = await sqlServiceClientConnect.diffMetadata(newRequest, {
       contextValues: createContextValues().set(silentContextKey, true),
     });
-    const diffResponse = convertNewDiffMetadataResponseToOld(newResponse);
     const { diff } = diffResponse;
     if (diff.length === 0) {
       if (

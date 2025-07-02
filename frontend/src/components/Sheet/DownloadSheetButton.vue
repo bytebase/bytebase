@@ -10,7 +10,6 @@ import { ref } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { sheetServiceClientConnect } from "@/grpcweb";
 import { GetSheetRequestSchema } from "@/types/proto-es/v1/sheet_service_pb";
-import { convertNewSheetToOld } from "@/utils/v1/sheet-conversions";
 
 const props = defineProps<{
   sheet: string;
@@ -26,8 +25,7 @@ const downloadSheet = async () => {
       name: props.sheet,
       raw: true,
     });
-    const newResponse = await sheetServiceClientConnect.getSheet(request);
-    const response = convertNewSheetToOld(newResponse);
+    const response = await sheetServiceClientConnect.getSheet(request);
 
     let filename = response.title;
     if (!filename.endsWith(".sql")) {
