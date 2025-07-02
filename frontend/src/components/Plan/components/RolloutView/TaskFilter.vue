@@ -44,7 +44,7 @@
 import { flatten } from "lodash-es";
 import { NTag } from "naive-ui";
 import { computed } from "vue";
-import TaskStatus from "@/components/Rollout/RolloutDetail/Panels/kits/TaskStatus.vue";
+import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import type { Rollout, Task_Status } from "@/types/proto/v1/rollout_service";
 import { Task_Status as TaskStatusEnum } from "@/types/proto/v1/rollout_service";
 import { stringifyTaskStatus } from "@/utils";

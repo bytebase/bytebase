@@ -1,4 +1,5 @@
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
+import { isEqual } from "lodash-es";
+import { watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import {
   experimentalFetchIssueByUID,
@@ -10,9 +11,8 @@ import { useListCache } from "@/store/modules/v1/cache";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import { extractIssueUID, flattenTaskV1List } from "@/utils";
-import { isEqual } from "lodash-es";
-import { watch } from "vue";
 import { useIssueContext } from "./context";
 import { projectOfIssue } from "./utils";
 

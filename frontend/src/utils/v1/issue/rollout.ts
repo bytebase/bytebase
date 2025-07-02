@@ -1,6 +1,9 @@
 import { last } from "lodash-es";
 import { stringify } from "qs";
 import { useI18n } from "vue-i18n";
+import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1";
+import { mockDatabase } from "@/components/IssueV1/logic/utils";
+import { useDatabaseV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
 import {
   EMPTY_TASK_NAME,
@@ -11,7 +14,17 @@ import {
   EMPTY_ID,
   UNKNOWN_ID,
 } from "@/types";
-import type { Rollout, Stage, Task } from "@/types/proto/v1/rollout_service";
+import {
+  isValidDatabaseName,
+  unknownDatabase,
+  type ComposedProject,
+} from "@/types";
+import {
+  Task_Type,
+  type Rollout,
+  type Stage,
+  type Task,
+} from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { extractProjectResourceName } from "../project";
 import { extractIssueUID, flattenTaskV1List, issueV1Slug } from "./issue";
@@ -219,5 +232,26 @@ export const stringifyTaskStatus = (status: Task_Status): string => {
       return t("task.status.skipped");
     default:
       return status;
+  }
+};
+
+export const databaseForTask = (project: ComposedProject, task: Task) => {
+  switch (task.type) {
+    case Task_Type.DATABASE_CREATE:
+      // The database is not created yet.
+      // extract database info from the task's and payload's properties.
+      return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task);
+    case Task_Type.DATABASE_SCHEMA_UPDATE:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
+    case Task_Type.DATABASE_DATA_UPDATE:
+    case Task_Type.DATABASE_EXPORT:
+      const db = useDatabaseV1Store().getDatabaseByName(task.target);
+      if (!isValidDatabaseName(db.name)) {
+        return mockDatabase(project, task.target);
+      }
+      return db;
+    default:
+      return unknownDatabase();
   }
 };

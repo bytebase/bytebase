@@ -189,6 +189,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { head, uniqBy } from "lodash-es";
 import Long from "long";
 import {
@@ -202,12 +203,6 @@ import {
   NTooltip,
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import { create } from "@bufbuild/protobuf";
-import {
-  BatchRunTasksRequestSchema,
-  BatchSkipTasksRequestSchema,
-  BatchCancelTaskRunsRequestSchema,
-} from "@/types/proto-es/v1/rollout_service_pb";
 import { useI18n } from "vue-i18n";
 import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
@@ -221,18 +216,20 @@ import {
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
   useEnvironmentV1Store,
   useCurrentProjectV1,
 } from "@/store";
-import type {
-  Task,
-  TaskRun,
-} from "@/types/proto/v1/rollout_service";
+import {
+  BatchRunTasksRequestSchema,
+  BatchSkipTasksRequestSchema,
+  BatchCancelTaskRunsRequestSchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
 import { Task_Status, TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 import RolloutTaskDatabaseName from "./RolloutTaskDatabaseName.vue";

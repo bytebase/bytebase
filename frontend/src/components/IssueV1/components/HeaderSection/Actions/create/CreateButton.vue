@@ -66,7 +66,6 @@ import {
 } from "@/components/Plan";
 import { getSpecChangeType } from "@/components/Plan/components/SQLCheckSection/common";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import {
@@ -87,11 +86,12 @@ import {
   ReleaseFileType,
 } from "@/types/proto-es/v1/release_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { databaseForTask } from "@/utils";
 import {
   defer,
   extractIssueUID,
