@@ -2307,7 +2307,8 @@
       "request": "Pedido",
       "response": "Respuesta",
       "status": "Estatus",
-      "service-data": "Datos del Servicio"
+      "service-data": "Datos del Servicio",
+      "latency": "Estado latente"
     },
     "advanced-search": {
       "scope": {

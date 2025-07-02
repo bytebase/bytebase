@@ -37,15 +37,51 @@ export function humanizeTs(ts: number): string {
 
 export const humanizeDurationV1 = (
   duration: Duration | undefined,
-  brief = true
 ) => {
   if (!duration) return "-";
   const { seconds, nanos } = duration;
-  const total = Number(seconds) + nanos / 1e9;
-  if (brief && total <= 1) {
-    return "Less than 1s";
+  const totalMs = Number(seconds) * 1000 + nanos / 1e6;
+  
+  // For durations less than 1 second, show in milliseconds
+  if (totalMs < 1000) {
+    if (totalMs < 0.01) {
+      return "<0.01ms";
+    }
+    // For sub-10ms, show 2 decimal places for higher precision
+    if (totalMs < 10) {
+      return `${totalMs.toFixed(2)}ms`;
+    }
+    // For 10-100ms, show 1 decimal place
+    if (totalMs < 100) {
+      return `${totalMs.toFixed(1)}ms`;
+    }
+    // For 100ms-1s, show no decimal places
+    return `${totalMs.toFixed(0)}ms`;
   }
-  return total.toFixed(2) + "s";
+  
+  // For durations between 1-60 seconds, show in seconds with 1 decimal
+  const totalSeconds = totalMs / 1000;
+  if (totalSeconds < 60) {
+    return `${totalSeconds.toFixed(1)}s`;
+  }
+  
+  // For durations between 1-60 minutes, show in minutes and seconds
+  const minutes = Math.floor(totalSeconds / 60);
+  if (minutes < 60) {
+    const remainingSeconds = Math.floor(totalSeconds % 60);
+    if (remainingSeconds === 0) {
+      return `${minutes}m`;
+    }
+    return `${minutes}m${remainingSeconds}s`;
+  }
+  
+  // For durations over 1 hour, show in hours and minutes
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  return `${hours}h${remainingMinutes}m`;
 };
 
 export function bytesToString(size: number): string {
