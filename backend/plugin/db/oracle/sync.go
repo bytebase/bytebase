@@ -1008,6 +1008,42 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	return result, nil
 }
 
+// getMaterializedViewDependencies gets the dependencies of a materialized view.
+func getMaterializedViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependencyColumn, error) {
+	var result []*storepb.DependencyColumn
+
+	query := fmt.Sprintf(`
+		SELECT 
+			REFERENCED_OWNER as source_schema,
+			REFERENCED_NAME as source_table,
+			'*' as column_name
+		FROM ALL_DEPENDENCIES
+		WHERE OWNER = '%s'
+			AND NAME = '%s'
+			AND TYPE = 'MATERIALIZED VIEW'
+			AND REFERENCED_TYPE IN ('TABLE', 'VIEW')
+		ORDER BY REFERENCED_OWNER, REFERENCED_NAME
+	`, schemaName, viewName)
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		dependencyColumn := &storepb.DependencyColumn{}
+		if err := rows.Scan(&dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
+			return nil, err
+		}
+		result = append(result, dependencyColumn)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // getMaterializedViews gets all materialized views of a database.
 func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*storepb.ColumnMetadata) ([]*storepb.MaterializedViewMetadata, error) {
 	var materializedViews []*storepb.MaterializedViewMetadata
@@ -1057,6 +1093,15 @@ func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*s
 	}
 	if err := rows.Close(); err != nil {
 		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	// Populate dependencies for each materialized view
+	for _, materializedView := range materializedViews {
+		dependencies, err := getMaterializedViewDependencies(txn, schemaName, materializedView.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get materialized view %q dependencies", materializedView.Name)
+		}
+		materializedView.DependencyColumns = dependencies
 	}
 
 	return materializedViews, nil
