@@ -23,6 +23,7 @@ import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuditDataSchema } from "@/types/proto-es/v1/audit_log_service_pb";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { extractProjectResourceName } from "@/utils";
+import { severityToString } from "@/utils/v1";
 import JSONStringView from "./JSONStringView.vue";
 
 type AuditDataTableColumn = DataTableColumn<AuditLog> & {
@@ -61,7 +62,7 @@ const columnList = computed((): AuditDataTableColumn[] => {
         key: "severity",
         width: 96,
         title: t("audit-log.table.level"),
-        render: (auditLog) => auditLog.severity,
+        render: (auditLog) => severityToString(auditLog.severity),
       },
       {
         key: "project",
