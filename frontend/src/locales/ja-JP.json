@@ -2307,7 +2307,8 @@
       "request": "リクエスト",
       "response": "応答",
       "status": "ポジション",
-      "service-data": "サービスデータ"
+      "service-data": "サービスデータ",
+      "latency": "遅延"
     },
     "advanced-search": {
       "scope": {
