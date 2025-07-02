@@ -82,11 +82,11 @@ import { InstanceV1EngineIcon, CopyButton } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { getDateForPbTimestamp, unknownTask } from "@/types";
+import type { Task, TaskRun, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   ListTaskRunsRequestSchema,
   GetRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Task, TaskRun, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   extractSchemaVersionFromTask,
@@ -94,10 +94,6 @@ import {
   sheetNameOfTaskV1,
   isValidTaskName,
 } from "@/utils";
-import {
-  convertNewTaskRunToOld,
-  convertNewRolloutToOld,
-} from "@/utils/v1/rollout-conversions";
 import TaskRunTable from "./TaskRunTable.vue";
 import TaskStatusActions from "./TaskStatusActions.vue";
 
@@ -142,8 +138,7 @@ watchEffect(async () => {
   try {
     const rolloutName = `projects/${project.value.name.split("/")[1]}/rollouts/${rolloutId}`;
     const request = create(GetRolloutRequestSchema, { name: rolloutName });
-    const response = await rolloutServiceClientConnect.getRollout(request);
-    const rollout = convertNewRolloutToOld(response);
+    const rollout = await rolloutServiceClientConnect.getRollout(request);
     rolloutRef.value = rollout;
 
     // Find the specific task
@@ -186,7 +181,7 @@ watchEffect(async () => {
       parent: task.value.name,
     });
     const response = await rolloutServiceClientConnect.listTaskRuns(request);
-    const taskRuns = response.taskRuns.map(convertNewTaskRunToOld);
+    const taskRuns = response.taskRuns;
     const sorted = sortBy(taskRuns, (t) =>
       getDateForPbTimestamp(t.createTime)
     ).reverse();
@@ -221,7 +216,7 @@ const handleTaskActionCompleted = async () => {
         parent: task.value.name,
       });
       const response = await rolloutServiceClientConnect.listTaskRuns(request);
-      const taskRuns = response.taskRuns.map(convertNewTaskRunToOld);
+      const taskRuns = response.taskRuns;
       const sorted = sortBy(taskRuns, (t) =>
         getDateForPbTimestamp(t.createTime)
       ).reverse();
@@ -241,8 +236,7 @@ const handleTaskActionCompleted = async () => {
       try {
         const rolloutName = `projects/${project.value.name.split("/")[1]}/rollouts/${rolloutId}`;
         const request = create(GetRolloutRequestSchema, { name: rolloutName });
-        const response = await rolloutServiceClientConnect.getRollout(request);
-        const rollout = convertNewRolloutToOld(response);
+        const rollout = await rolloutServiceClientConnect.getRollout(request);
         rolloutRef.value = rollout;
 
         // Update the task reference

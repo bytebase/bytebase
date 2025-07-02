@@ -13,8 +13,6 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { emptyPlan } from "@/types/v1/issue/plan";
-import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";
-import { convertNewRolloutToOld } from "@/utils/v1/rollout-conversions";
 import { createPlanSkeleton } from "./create";
 
 export * from "./create";
@@ -87,7 +85,7 @@ export function useInitializePlan(
       });
       const newRollout =
         await rolloutServiceClientConnect.getRollout(rolloutRequest);
-      rolloutResult = convertNewRolloutToOld(newRollout);
+      rolloutResult = newRollout;
 
       if (!rolloutResult.plan) {
         throw new Error(
@@ -106,7 +104,7 @@ export function useInitializePlan(
           });
           const newIssue =
             await issueServiceClientConnect.getIssue(issueRequest);
-          issueResult = convertNewIssueToOld(newIssue);
+          issueResult = newIssue;
         } catch {
           // Issue might not exist or we don't have permission, that's ok
         }
@@ -118,7 +116,7 @@ export function useInitializePlan(
         name: `${projectNamePrefix}${projectId}/issues/${issueUid}`,
       });
       const newIssue = await issueServiceClientConnect.getIssue(request);
-      issueResult = convertNewIssueToOld(newIssue);
+      issueResult = newIssue;
 
       if (!issueResult.plan) {
         // Should not happen, but handle gracefully
@@ -140,7 +138,7 @@ export function useInitializePlan(
             name: planResult.issue,
           });
           const newIssue = await issueServiceClientConnect.getIssue(request);
-          issueResult = convertNewIssueToOld(newIssue);
+          issueResult = newIssue;
         } catch {
           // Issue might not exist or we don't have permission, that's ok
         }
@@ -154,7 +152,7 @@ export function useInitializePlan(
           });
           const newRollout =
             await rolloutServiceClientConnect.getRollout(rolloutRequest);
-          rolloutResult = convertNewRolloutToOld(newRollout);
+          rolloutResult = newRollout;
         } catch {
           // Rollout might not exist or we don't have permission, that's ok
         }

@@ -1,11 +1,13 @@
 import { v4 as uuidv4 } from "uuid";
+import { create as createProto } from "@bufbuild/protobuf";
 import type { LocalApprovalRule } from "@/types";
-import { ApprovalTemplate } from "@/types/proto-es/v1/issue_service_pb";
+import type { ApprovalTemplate } from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalTemplateSchema } from "@/types/proto-es/v1/issue_service_pb";
 
 export const emptyLocalApprovalRule = (): LocalApprovalRule => {
   return {
     uid: uuidv4(),
-    template: ApprovalTemplate.fromPartial({
+    template: createProto(ApprovalTemplateSchema, {
       flow: {
         steps: [],
       },

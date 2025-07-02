@@ -47,7 +47,8 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import { usePlanContextWithIssue } from "../../../logic/context";
@@ -77,10 +78,10 @@ const onIssueLabelsUpdate = async (labels: string[]) => {
     return; // No change, do nothing.
   }
 
-  const issuePatch = Issue.fromPartial({
+  const issuePatch = {
     ...issue.value,
     labels,
-  });
+  };
   const newIssuePatch = convertOldIssueToNew(issuePatch);
   const request = create(UpdateIssueRequestSchema, {
     issue: newIssuePatch,
@@ -100,10 +101,10 @@ const onIssueDescriptionUpdate = async (description: string) => {
     return; // No change, do nothing.
   }
 
-  const issuePatch = Issue.fromPartial({
+  const issuePatch = {
     ...issue.value,
     description,
-  });
+  };
   const newIssuePatch = convertOldIssueToNew(issuePatch);
   const request = create(UpdateIssueRequestSchema, {
     issue: newIssuePatch,

@@ -75,14 +75,14 @@ import { convertExportFormatToNew, convertExportFormatToOld } from "@/utils/v1/c
 import { pushNotification } from "@/store";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  Plan_Spec,
-  Plan_ExportDataConfig,
+  Plan_SpecSchema,
+  Plan_ExportDataConfigSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import ExportFormatSelector from "./ExportFormatSelector.vue";
 import ExportPasswordInputer from "./ExportPasswordInputer.vue";
 
 interface LocalState {
-  config: Plan_ExportDataConfig;
+  config: any;
   isEditing: boolean;
 }
 
@@ -92,11 +92,16 @@ const { issue, isCreating, selectedTask, events } = context;
 const refreshKey = ref(0);
 
 const spec = computed(
-  () => head(issue.value.planEntity?.specs) || Plan_Spec.fromPartial({})
+  () => head(issue.value.planEntity?.specs) || create(Plan_SpecSchema, {})
 );
 
 const state = reactive<LocalState>({
-  config: Plan_ExportDataConfig.fromPartial({ ...spec.value.exportDataConfig }),
+  config: create(Plan_ExportDataConfigSchema, spec.value.config?.case === "exportDataConfig" ? {
+    targets: spec.value.config.value.targets,
+    sheet: spec.value.config.value.sheet,
+    format: spec.value.config.value.format,
+    password: spec.value.config.value.password,
+  } : {}),
   isEditing: false,
 });
 
@@ -124,9 +129,12 @@ const convertedFormat = computed({
 
 const handleCancelEdit = () => {
   state.isEditing = false;
-  state.config = Plan_ExportDataConfig.fromPartial({
-    ...spec.value.exportDataConfig,
-  });
+  state.config = create(Plan_ExportDataConfigSchema, spec.value.config?.case === "exportDataConfig" ? {
+    targets: spec.value.config.value.targets,
+    sheet: spec.value.config.value.sheet,
+    format: spec.value.config.value.format,
+    password: spec.value.config.value.password,
+  } : {});
   // Trigger a re-render of the child components.
   refreshKey.value++;
 };
@@ -144,10 +152,10 @@ const handleSaveEdit = async () => {
   );
   for (let i = 0; i < specsToPatch.length; i++) {
     const spec = specsToPatch[i];
-    const config = spec.exportDataConfig;
-    if (!config) continue;
-    config.format = state.config.format;
-    config.password = state.config.password || undefined;
+    if (spec.config?.case === "exportDataConfig") {
+      spec.config.value.format = state.config.format;
+      spec.config.value.password = state.config.password || undefined;
+    }
   }
 
   const newPlan = convertOldPlanToNew(planPatch);
@@ -175,11 +183,13 @@ watch(
       return;
     }
     for (const spec of issue.value.planEntity?.specs ?? []) {
-      spec.exportDataConfig = Plan_ExportDataConfig.fromPartial({
-        ...spec.exportDataConfig,
-        format: state.config.format,
-        password: state.config.password,
-      });
+      if (spec.config?.case === "exportDataConfig") {
+        spec.config.value = create(Plan_ExportDataConfigSchema, {
+          ...spec.config.value,
+          format: state.config.format,
+          password: state.config.password,
+        });
+      }
     }
   },
   { deep: true }

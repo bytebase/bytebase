@@ -110,10 +110,12 @@ import {
   pushNotification,
 } from "@/store";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import {
+import type {
   Stage,
+  Task,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import {
   Task_Status,
-  type Task,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { extractSchemaVersionFromTask } from "@/utils";

@@ -36,16 +36,17 @@ import { useSQLStore } from "@/store";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import {
-  Plan_ExportDataConfig,
-  Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+  Plan_ExportDataConfigSchema,
+  Plan_SpecSchema,
+  type Plan_ExportDataConfig,
+  type Plan_Spec,
+} from "@/types/proto-es/v1/plan_service_pb";
 import {
   TaskRun_ExportArchiveStatus,
   Task_Status,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { flattenTaskV1List } from "@/utils";
-import { convertExportFormatToNew } from "@/utils/v1/common-conversions";
 
 interface LocalState {
   isExporting: boolean;
@@ -61,10 +62,8 @@ const taskRun = computed(() => {
 });
 
 const exportDataConfig = computed(() => {
-  return (
-    (head(issue.value.planEntity?.specs) || Plan_Spec.fromPartial({}))
-      .exportDataConfig || Plan_ExportDataConfig.fromPartial({})
-  );
+  const spec = head(issue.value.planEntity?.specs) || create(Plan_SpecSchema, {});
+  return spec.config?.value as Plan_ExportDataConfig || create(Plan_ExportDataConfigSchema, {});
 });
 
 watchEffect(async () => {
@@ -111,7 +110,7 @@ const getExportFileType = (exportDataConfig: Plan_ExportDataConfig) => {
   if (exportDataConfig.password) {
     return "application/zip";
   }
-  switch (convertExportFormatToNew(exportDataConfig.format)) {
+  switch (exportDataConfig.format) {
     case ExportFormat.CSV:
       return "text/csv";
     case ExportFormat.JSON:

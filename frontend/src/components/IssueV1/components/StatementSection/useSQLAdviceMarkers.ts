@@ -8,7 +8,6 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
-import { convertOldPlanCheckRunToNew } from "@/utils/v1/plan-conversions";
 import { type IssueContext } from "../../logic";
 
 export const useSQLAdviceMarkers = (
@@ -36,10 +35,7 @@ export const useSQLAdviceMarkers = (
       });
     } else {
       const { selectedTask, getPlanCheckRunsForTask } = context;
-      const oldPlanCheckRunList = getPlanCheckRunsForTask(selectedTask.value);
-      
-      // Convert old proto types to proto-es types at the boundary
-      const planCheckRunList = oldPlanCheckRunList.map(convertOldPlanCheckRunToNew);
+      const planCheckRunList = getPlanCheckRunsForTask(selectedTask.value);
 
       const types: PlanCheckRun_Type[] = [
         PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,

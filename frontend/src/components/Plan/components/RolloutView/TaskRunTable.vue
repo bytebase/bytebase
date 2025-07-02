@@ -33,12 +33,13 @@ import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 import { getDateForPbTimestamp, getTimeForPbTimestamp } from "@/types";
-import { Duration } from "@/types/proto/google/protobuf/duration";
+import { create } from "@bufbuild/protobuf";
+import type { Duration } from "@/types/proto-es/google/protobuf/duration_pb";
+import { DurationSchema } from "@/types/proto-es/google/protobuf/duration_pb";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { humanizeDurationV1 } from "@/utils";
-import { convertDurationToNew } from "@/utils/v1/common-conversions";
 import TaskRunComment from "./TaskRunComment.vue";
 
 defineProps<{
@@ -109,7 +110,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       render: (taskRun: TaskRun) => {
         const duration = executionDurationOfTaskRun(taskRun);
         return duration
-          ? humanizeDurationV1(convertDurationToNew(duration))
+          ? humanizeDurationV1(duration)
           : "-";
       },
     },
@@ -152,21 +153,21 @@ const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
   if (!startTime || !updateTime) {
     return undefined;
   }
-  if (startTime.seconds.toString() === "0") {
+  if (Number(startTime.seconds) === 0) {
     return undefined;
   }
   if (taskRun.status === TaskRun_Status.RUNNING) {
     const elapsedMS = Date.now() - getTimeForPbTimestamp(startTime);
-    return Duration.fromPartial({
-      seconds: Math.floor(elapsedMS / 1000),
+    return create(DurationSchema, {
+      seconds: BigInt(Math.floor(elapsedMS / 1000)),
       nanos: (elapsedMS % 1000) * 1e6,
     });
   }
   const startMS = getTimeForPbTimestamp(startTime);
   const updateMS = getTimeForPbTimestamp(updateTime);
   const elapsedMS = updateMS - startMS;
-  return Duration.fromPartial({
-    seconds: Math.floor(elapsedMS / 1000),
+  return create(DurationSchema, {
+    seconds: BigInt(Math.floor(elapsedMS / 1000)),
     nanos: (elapsedMS % 1000) * 1e6,
   });
 };

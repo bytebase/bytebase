@@ -110,7 +110,7 @@ const availableTabs = computed<TabKey[]>(() => {
   if (!isCreating.value) {
     if (
       plan.value.specs.some(
-        (spec) => !isNullOrUndefined(spec.changeDatabaseConfig)
+        (spec) => spec.config?.case === "changeDatabaseConfig"
       )
     ) {
       tabs.push(TabKey.Checks);

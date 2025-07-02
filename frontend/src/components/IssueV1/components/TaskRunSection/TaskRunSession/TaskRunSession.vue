@@ -21,7 +21,6 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { GetTaskRunSessionRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { convertNewTaskRunSessionToOld } from "@/utils/v1/rollout-conversions";
 import { BBSpin } from "@/bbkit";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { TaskRun_Status, type TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
@@ -51,7 +50,7 @@ const taskRunSession = computedAsync(
         contextValues: createContextValues().set(silentContextKey, true),
       }
     );
-    return convertNewTaskRunSessionToOld(response);
+    return response;
   },
   undefined,
   {

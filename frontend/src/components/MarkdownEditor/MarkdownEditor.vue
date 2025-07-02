@@ -439,7 +439,7 @@ const issueTaskStatus = (issue: ComposedIssue) => {
     return Task_Status.NOT_STARTED;
   }
 
-  return activeTaskInRollout(issue.rolloutEntity).status;
+  return activeTaskInRollout(issue.rolloutEntity)?.status;
 };
 
 const adjustIssuePanelWithPosition = () => {

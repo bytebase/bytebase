@@ -115,6 +115,7 @@ import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
+import { create } from "@bufbuild/protobuf";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import {
@@ -127,7 +128,8 @@ import {
 } from "@/store";
 import { isValidProjectName } from "@/types";
 import type { ComposedIssue } from "@/types";
-import { ListIssueCommentsRequest } from "@/types/proto-es/v1/issue_service_pb";
+import type { ListIssueCommentsRequest } from "@/types/proto-es/v1/issue_service_pb";
+import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useIssueContext } from "../../logic";
 import {
@@ -181,7 +183,7 @@ const prepareIssueListForMarkdownEditor = async () => {
 
 const prepareIssueComments = async () => {
   await issueCommentStore.listIssueComments(
-    ListIssueCommentsRequest.fromPartial({
+    create(ListIssueCommentsRequestSchema, {
       parent: issue.value.name,
       // Try to get all comments at once with max page size.
       pageSize: 1000,

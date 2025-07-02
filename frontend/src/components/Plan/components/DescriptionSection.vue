@@ -73,14 +73,14 @@ import { create } from "@bufbuild/protobuf";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import {
   pushNotification,
   useCurrentUserV1,
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
-import { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../logic";
 
@@ -138,18 +138,16 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     state.isUpdating = true;
-    const planPatch = Plan.fromPartial({
+    const planPatch = create(PlanSchema, {
       ...plan.value,
       description: state.description,
     });
-    const newPlan = convertOldPlanToNew(planPatch);
     const request = create(UpdatePlanRequestSchema, {
-      plan: newPlan,
+      plan: planPatch,
       updateMask: { paths: ["description"] },
     });
     const response = await planServiceClientConnect.updatePlan(request);
-    const updated = convertNewPlanToOld(response);
-    Object.assign(plan.value, updated);
+    Object.assign(plan.value, response);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

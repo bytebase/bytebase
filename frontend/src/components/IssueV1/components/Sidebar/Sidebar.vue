@@ -75,12 +75,9 @@ import { issueServiceClientConnect } from "@/grpcweb";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  convertNewIssueToOld,
-  convertOldIssueToNew,
-} from "@/utils/v1/issue-conversions";
 import { specForTask, useIssueContext } from "../../logic";
 import IssueLabels from "./IssueLabels.vue";
 import PreBackupSection from "./PreBackupSection";
@@ -123,17 +120,15 @@ const onIssueLabelsUpdate = async (labels: string[]) => {
   if (isCreating.value) {
     issue.value.labels = labels;
   } else {
-    const issuePatch = Issue.fromPartial({
+    const issuePatch = create(IssueSchema, {
       ...issue.value,
       labels,
     });
-    const newIssuePatch = convertOldIssueToNew(issuePatch);
     const request = create(UpdateIssueRequestSchema, {
-      issue: newIssuePatch,
+      issue: issuePatch,
       updateMask: { paths: ["labels"] },
     });
-    const newUpdated = await issueServiceClientConnect.updateIssue(request);
-    const updated = convertNewIssueToOld(newUpdated);
+    const updated = await issueServiceClientConnect.updateIssue(request);
     Object.assign(issue.value, updated);
     pushNotification({
       module: "bytebase",

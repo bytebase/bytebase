@@ -84,10 +84,10 @@ const selectedSpec = computed(() => {
 });
 
 const getSpecTypeName = (spec: Plan_Spec): string => {
-  if (spec.createDatabaseConfig) {
+  if (spec.config?.case === "createDatabaseConfig") {
     return t("plan.spec.type.create-database");
-  } else if (spec.changeDatabaseConfig) {
-    const changeType = spec.changeDatabaseConfig.type;
+  } else if (spec.config?.case === "changeDatabaseConfig") {
+    const changeType = spec.config.value.type;
     switch (changeType) {
       case Plan_ChangeDatabaseConfig_Type.MIGRATE:
         return t("plan.spec.type.schema-change");
@@ -98,7 +98,7 @@ const getSpecTypeName = (spec: Plan_Spec): string => {
       default:
         return t("plan.spec.type.database-change");
     }
-  } else if (spec.exportDataConfig) {
+  } else if (spec.config?.case === "exportDataConfig") {
     return t("plan.spec.type.export-data");
   }
   return t("plan.spec.type.unknown");

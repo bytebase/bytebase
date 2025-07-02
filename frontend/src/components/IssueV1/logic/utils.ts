@@ -17,8 +17,9 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import { create } from "@bufbuild/protobuf";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import type { Plan } from "@/types/proto/v1/plan_service";
-import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   defer,
   extractDatabaseResourceName,

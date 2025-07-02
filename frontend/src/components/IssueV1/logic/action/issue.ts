@@ -37,7 +37,6 @@ export const PossibleIssueStatusActionMap: Record<
 
   // Only to make TypeScript compiler happy
   [IssueStatus.ISSUE_STATUS_UNSPECIFIED]: [],
-  [IssueStatus.UNRECOGNIZED]: [],
 };
 
 export const getApplicableIssueStatusActionList = (

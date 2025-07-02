@@ -6,7 +6,6 @@ import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   Task_Status,
-  task_StatusToJSON,
   Task_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractDatabaseGroupName, hasProjectPermissionV2 } from "@/utils";
@@ -53,7 +52,7 @@ export const allowUserToEditStatementForTask = (
   // - user is the creator
   // - OR user has plans.update permission in the project
   if (!isTaskEditable(task)) {
-    denyReasons.push(`${task_StatusToJSON(task.status)} task is not editable`);
+    denyReasons.push(`${Task_Status[task.status]} task is not editable`);
   }
 
   if (extractUserId(issue.creator) !== user.value.email) {

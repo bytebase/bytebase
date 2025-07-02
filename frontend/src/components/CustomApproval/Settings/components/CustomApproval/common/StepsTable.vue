@@ -34,14 +34,12 @@ import { useI18n } from "vue-i18n";
 import { RoleSelect } from "@/components/v2";
 import { SpinnerButton } from "@/components/v2/Form";
 import { PresetRoleType } from "@/types";
-import type { ApprovalFlow } from "@/types/proto-es/v1/issue_service_pb";
+import type { ApprovalFlow, ApprovalStep } from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type,
-  ApprovalStep,
   ApprovalStep_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { approvalNodeText } from "@/utils";
-import { convertOldApprovalNodeToNew } from "@/utils/workspaceApprovalSetting-conversions";
 import { useCustomApprovalContext } from "../context";
 
 const props = defineProps<{
@@ -82,13 +80,14 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
                 step.nodes[0] = {
                   type: ApprovalNode_Type.ANY_IN_GROUP,
                   role: role,
+                  groupValue: "",
                 };
                 emit("update");
               }}
             />
           );
         }
-        return approvalNodeText(convertOldApprovalNodeToNew(step.nodes[0]));
+        return approvalNodeText(step.nodes[0]);
       },
     },
   ];
@@ -145,17 +144,16 @@ const reorder = (step: ApprovalStep, index: number, offset: -1 | 1) => {
   emit("update");
 };
 const addStep = () => {
-  steps.value.push(
-    ApprovalStep.fromPartial({
-      type: ApprovalStep_Type.ANY,
-      nodes: [
-        {
-          type: ApprovalNode_Type.ANY_IN_GROUP,
-          role: PresetRoleType.WORKSPACE_ADMIN,
-        },
-      ],
-    })
-  );
+  steps.value.push({
+    type: ApprovalStep_Type.ANY,
+    nodes: [
+      {
+        type: ApprovalNode_Type.ANY_IN_GROUP,
+        role: PresetRoleType.WORKSPACE_ADMIN,
+        groupValue: "",
+      },
+    ],
+  });
   emit("update");
 };
 

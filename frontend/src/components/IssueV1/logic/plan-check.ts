@@ -4,9 +4,9 @@ import type { ComposedIssue } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/plan_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { specForTask, useIssueContext, projectOfIssue } from ".";
 

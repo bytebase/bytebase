@@ -162,7 +162,7 @@ const checkResults = ref<CheckReleaseResponse_CheckResult[] | undefined>(
 
 const statement = computed(() => {
   if (!selectedSpec.value) return "";
-  const config = selectedSpec.value.changeDatabaseConfig;
+  const config = selectedSpec.value.config?.case === "changeDatabaseConfig" ? selectedSpec.value.config.value : undefined;
   if (!config) return "";
   const sheet = getLocalSheetByName(config.sheet);
   return getSheetStatement(sheet);
@@ -173,7 +173,7 @@ const show = computed(() => {
     return false;
   }
   // Show for change database configs
-  return !!selectedSpec.value.changeDatabaseConfig;
+  return selectedSpec.value.config?.case === "changeDatabaseConfig";
 });
 
 // Enhanced advice type with target information
@@ -234,7 +234,7 @@ const drawerAdvices = computed(() => {
 const runChecks = async () => {
   if (!plan.value.name || !selectedSpec.value) return;
 
-  const config = selectedSpec.value.changeDatabaseConfig;
+  const config = selectedSpec.value.config?.case === "changeDatabaseConfig" ? selectedSpec.value.config.value : undefined;
   if (!config) return;
 
   isRunningChecks.value = true;

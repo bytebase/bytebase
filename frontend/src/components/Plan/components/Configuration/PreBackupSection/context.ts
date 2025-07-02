@@ -12,7 +12,6 @@ import { isDatabaseChangeSpec, targetsForSpec } from "@/components/Plan/logic";
 import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew } from "@/utils/v1/plan-conversions";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, type ComposedProject } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -164,9 +163,8 @@ export const providePreBackupSettingContext = (refs: {
         spec.changeDatabaseConfig.enablePriorBackup = false;
       }
 
-      const newPlan = convertOldPlanToNew(planPatch);
       const request = create(UpdatePlanRequestSchema, {
-        plan: newPlan,
+        plan: planPatch,
         updateMask: { paths: ["specs"] },
       });
       await planServiceClientConnect.updatePlan(request);

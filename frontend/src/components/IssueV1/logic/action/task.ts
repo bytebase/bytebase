@@ -50,7 +50,6 @@ export const TaskRolloutActionMap: Record<Task_Status, TaskRolloutAction[]> = {
 
   // Only to make TypeScript compiler happy
   [Task_Status.STATUS_UNSPECIFIED]: [],
-  [Task_Status.UNRECOGNIZED]: [],
 };
 
 export const getApplicableTaskRolloutActionList = (

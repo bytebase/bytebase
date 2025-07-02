@@ -23,7 +23,7 @@
               <ActionCreator :creator="issue.creator" />
               <span>{{ $t("activity.sentence.created-issue") }}</span>
               <HumanizeTs
-                :ts="getTimeForPbTimestamp(issue.createTime, 0) / 1000"
+                :ts="getTimeForPbTimestampProtoEs(issue.createTime, 0) / 1000"
                 class="ml-1 text-gray-400"
               />
             </div>
@@ -37,7 +37,7 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
+import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
 import ActionCreator from "./ActionCreator.vue";
 import type { DistinctIssueComment } from "./common";
 

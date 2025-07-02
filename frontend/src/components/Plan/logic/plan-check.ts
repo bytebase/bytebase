@@ -2,7 +2,7 @@ import type { Plan_Spec, PlanCheckRun } from "@/types/proto-es/v1/plan_service_p
 import { sheetNameForSpec, targetsForSpec } from "./plan";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
-  if (spec.changeDatabaseConfig !== undefined) {
+  if (spec.config?.case === "changeDatabaseConfig") {
     return true;
   }
   return false;

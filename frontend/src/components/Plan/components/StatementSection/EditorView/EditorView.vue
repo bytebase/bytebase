@@ -202,10 +202,6 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import {
-  convertOldPlanToNew,
-  convertNewPlanToOld,
-} from "@/utils/v1/plan-conversions";
 import { usePlanSpecContext } from "../../SpecDetailView/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import type { EditState } from "./useTempEditState";
@@ -431,10 +427,10 @@ const updateStatement = async (statement: string) => {
   );
 
   for (const spec of specsToPatch) {
-    if (spec.changeDatabaseConfig) {
-      spec.changeDatabaseConfig.sheet = createdSheet.name;
-    } else if (spec.exportDataConfig) {
-      spec.exportDataConfig.sheet = createdSheet.name;
+    if (spec.config?.case === "changeDatabaseConfig") {
+      spec.config.value.sheet = createdSheet.name;
+    } else if (spec.config?.case === "exportDataConfig") {
+      spec.config.value.sheet = createdSheet.name;
     } else {
       throw new Error(
         `Unsupported spec type for plan update ${JSON.stringify(spec)}`
@@ -442,15 +438,13 @@ const updateStatement = async (statement: string) => {
     }
   }
 
-  const newPlan = convertOldPlanToNew(planPatch);
   const request = create(UpdatePlanRequestSchema, {
-    plan: newPlan,
+    plan: planPatch,
     updateMask: { paths: ["specs"] },
   });
   const response = await planServiceClientConnect.updatePlan(request);
-  const updatedPlan = convertNewPlanToOld(response);
 
-  Object.assign(plan.value, updatedPlan);
+  Object.assign(plan.value, response);
   events.emit("status-changed", { eager: true });
   pushNotification({
     module: "bytebase",

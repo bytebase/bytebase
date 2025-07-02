@@ -32,7 +32,7 @@ export const extractInitialSQLFromQuery = async (
 };
 
 export const isValidSpec = (spec: Plan_Spec): boolean => {
-  if (spec.changeDatabaseConfig) {
+  if (spec.config?.case === "changeDatabaseConfig") {
     const sheetName = sheetNameForSpec(spec);
     if (!sheetName) {
       return false;

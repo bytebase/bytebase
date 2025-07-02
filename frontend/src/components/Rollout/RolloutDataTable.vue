@@ -20,7 +20,7 @@ import { RouterLink, useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
-import { getTimeForPbTimestamp, type ComposedRollout } from "@/types";
+import { getTimeForPbTimestampProtoEs, type ComposedRollout } from "@/types";
 import { Task_Status as TaskStatusEnum } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -145,7 +145,7 @@ const columnList = computed(
         title: t("common.created-at"),
         width: 128,
         render: (rollout) =>
-          humanizeTs(getTimeForPbTimestamp(rollout.createTime, 0) / 1000),
+          humanizeTs(getTimeForPbTimestampProtoEs(rollout.createTime, 0) / 1000),
       },
     ];
     return columns.filter((column) => !column.hide);

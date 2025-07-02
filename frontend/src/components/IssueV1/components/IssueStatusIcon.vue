@@ -48,7 +48,7 @@
           isUnfinishedResolvedIssue
             ? $t("issue.unfinished-resolved-issue-tips")
             : $t(
-                `issue.status.${issueStatusToJSON(props.issueStatus).toLowerCase()}`
+                `issue.status.${IssueStatus[props.issueStatus].toLowerCase()}`
               )
         }}
       </div>
@@ -61,7 +61,7 @@ import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus, issueStatusToJSON } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { isUnfinishedResolvedTask as checkUnfinishedResolvedTask } from "../logic";
 
@@ -70,11 +70,11 @@ export type SizeType = "small" | "normal";
 const props = defineProps({
   issueStatus: {
     required: true,
-    type: String as PropType<IssueStatus>,
+    type: Number as PropType<IssueStatus>,
   },
   // Specify taskStatus if we want to show the task specific status when issueStatus is OPEN.
   taskStatus: {
-    type: String as PropType<Task_Status>,
+    type: Number as PropType<Task_Status>,
     default: undefined,
   },
   size: {
