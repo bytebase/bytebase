@@ -337,15 +337,26 @@ func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata
 					return err
 				}
 			}
-			if _, err := buf.WriteString(`"`); err != nil {
-				return err
+
+			// Check if column is already quoted to avoid double quoting
+			if strings.HasPrefix(column, `"`) && strings.HasSuffix(column, `"`) {
+				// Column is already quoted, use as-is
+				if _, err := buf.WriteString(column); err != nil {
+					return err
+				}
+			} else {
+				// Column is not quoted, add quotes
+				if _, err := buf.WriteString(`"`); err != nil {
+					return err
+				}
+				if _, err := buf.WriteString(column); err != nil {
+					return err
+				}
+				if _, err := buf.WriteString(`"`); err != nil {
+					return err
+				}
 			}
-			if _, err := buf.WriteString(column); err != nil {
-				return err
-			}
-			if _, err := buf.WriteString(`"`); err != nil {
-				return err
-			}
+
 			if i < len(index.Descending) && index.Descending[i] {
 				if _, err := buf.WriteString(` DESC`); err != nil {
 					return err
