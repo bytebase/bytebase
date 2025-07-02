@@ -970,7 +970,6 @@
       "sql-review-violations": "SQL Review Violations"
     },
     "error": {
-      "issue-is-not-open": "The issue is not open",
       "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue",
       "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action",
       "cannot-close-issue-with-running-tasks": "Cannot close issue with running tasks"

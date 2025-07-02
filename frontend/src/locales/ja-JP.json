@@ -970,7 +970,6 @@
       "sql-review-violations": "SQL監査ルール違反"
     },
     "error": {
-      "issue-is-not-open": "イシューはオープンになっていません",
       "you-don-have-privilege-to-edit-this-issue": "このイシューを編集する権限がありません",
       "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません",
       "cannot-close-issue-with-running-tasks": "実行中のタスクに関する問題を解決できません"

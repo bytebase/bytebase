@@ -970,7 +970,6 @@
       "sql-review-violations": "Vi phạm đánh giá SQL"
     },
     "error": {
-      "issue-is-not-open": "Vấn đề không mở",
       "you-don-have-privilege-to-edit-this-issue": "Bạn không có quyền chỉnh sửa vấn đề này",
       "you-are-not-allowed-to-perform-this-action": "Bạn không được phép thực hiện hành động này",
       "cannot-close-issue-with-running-tasks": "Không thể đóng vấn đề với các tác vụ đang chạy"

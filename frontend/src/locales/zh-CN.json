@@ -970,7 +970,6 @@
       "sql-review-violations": "违反的 SQL 审核规则"
     },
     "error": {
-      "issue-is-not-open": "工单不是开启状态",
       "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单",
       "you-are-not-allowed-to-perform-this-action": "您无权执行此操作",
       "cannot-close-issue-with-running-tasks": "无法关闭还存在运行中任务的工单"
