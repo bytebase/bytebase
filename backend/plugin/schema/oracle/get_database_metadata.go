@@ -316,7 +316,8 @@ func (*metadataExtractor) extractIndexExpressions(ctx parser.ITable_index_clause
 	}
 
 	// Update index type for function-based indexes
-	if isFunctionBased && index.Type == "NORMAL" {
+	// Oracle treats indexes with DESC columns or functions as "FUNCTION-BASED NORMAL"
+	if (isFunctionBased || hasDescending) && index.Type == "NORMAL" {
 		index.Type = "FUNCTION-BASED NORMAL"
 	}
 }
