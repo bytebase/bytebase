@@ -151,6 +151,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create as createProto } from "@bufbuild/protobuf";
 import { BBSpin } from "@/bbkit";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
 import {
@@ -174,9 +175,10 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
-import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/plan_service";
-import { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
+import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
+import { PlanSchema, Plan_SpecSchema, Plan_CreateDatabaseConfigSchema } from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   enginesSupportCreateDatabase,
   instanceV1HasCollationAndCharacterSet,
@@ -329,7 +331,7 @@ const createV1 = async () => {
   }
 
   const specs: Plan_Spec[] = [];
-  const createDatabaseConfig: Plan_CreateDatabaseConfig = {
+  const createDatabaseConfig: Plan_CreateDatabaseConfig = createProto(Plan_CreateDatabaseConfigSchema, {
     target: state.instanceName,
     database: databaseName,
     table: tableName,
@@ -343,23 +345,26 @@ const createV1 = async () => {
       defaultCollationOfEngineV1(selectedInstance.value.engine),
     cluster: state.cluster,
     owner,
-  };
-  const spec = Plan_Spec.fromPartial({
+  });
+  const spec = createProto(Plan_SpecSchema, {
     id: uuidv4(),
   });
   specs.push(spec);
 
-  const issueCreate = Issue.fromPartial({
+  const issueCreate = createProto(IssueSchema, {
     type: Issue_Type.DATABASE_CHANGE,
     creator: `users/${currentUserV1.value.email}`,
   });
 
   issueCreate.title = `${t("issue.title.create-database")} '${databaseName}'`;
-  spec.createDatabaseConfig = createDatabaseConfig;
+  spec.config = {
+    case: "createDatabaseConfig",
+    value: createDatabaseConfig,
+  };
 
   state.creating = true;
   try {
-    const planCreate = Plan.fromPartial({
+    const planCreate = createProto(PlanSchema, {
       specs: [spec],
       creator: currentUserV1.value.name,
     });

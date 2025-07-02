@@ -47,7 +47,7 @@ import { planServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   extractPlanUID,
@@ -55,10 +55,6 @@ import {
   extractSheetUID,
   hasProjectPermissionV2,
 } from "@/utils";
-import {
-  convertOldPlanToNew,
-  convertNewPlanToOld,
-} from "@/utils/v1/plan-conversions";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -89,13 +85,11 @@ const doCreatePlan = async () => {
 
   try {
     await createSheets();
-    const newPlan = convertOldPlanToNew(plan.value);
     const request = create(CreatePlanRequestSchema, {
       parent: project.value.name,
-      plan: newPlan,
+      plan: plan.value,
     });
-    const response = await planServiceClientConnect.createPlan(request);
-    const createdPlan = convertNewPlanToOld(response);
+    const createdPlan = await planServiceClientConnect.createPlan(request);
     if (!createdPlan) return;
 
     nextTick(() => {
@@ -122,7 +116,7 @@ const createSheets = async () => {
 
   for (let i = 0; i < specs.length; i++) {
     const spec = specs[i];
-    const config = spec.changeDatabaseConfig;
+    const config = spec.config?.case === "changeDatabaseConfig" ? spec.config.value : null;
     if (!config) continue;
     configWithSheetList.push(config);
     if (pendingCreateSheetMap.has(config.sheet)) continue;

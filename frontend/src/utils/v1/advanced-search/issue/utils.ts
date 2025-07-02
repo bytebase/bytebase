@@ -1,7 +1,7 @@
 import { useDatabaseV1Store } from "@/store";
 import type { IssueFilter } from "@/types";
 import { unknownDatabase } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { SearchParams, SemanticIssueStatus } from "../common";
 import {
   type SearchScopeId,

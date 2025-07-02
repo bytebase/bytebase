@@ -11,10 +11,7 @@ import {
 import type {
   IssueComment,
   ListIssueCommentsRequest,
-} from "@/types/proto/v1/issue_service";
-import {
-  convertNewIssueCommentToOld,
-} from "@/utils/v1/issue-conversions";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   getProjectIdIssueIdIssueCommentId,
   issueNamePrefix,
@@ -38,15 +35,15 @@ const composeIssueComment = (
   issueComment: IssueComment
 ): ComposedIssueComment => {
   let type = IssueCommentType.USER_COMMENT;
-  if (issueComment.approval !== undefined) {
+  if (issueComment.event?.case === "approval") {
     type = IssueCommentType.APPROVAL;
-  } else if (issueComment.issueUpdate !== undefined) {
+  } else if (issueComment.event?.case === "issueUpdate") {
     type = IssueCommentType.ISSUE_UPDATE;
-  } else if (issueComment.stageEnd !== undefined) {
+  } else if (issueComment.event?.case === "stageEnd") {
     type = IssueCommentType.STAGE_END;
-  } else if (issueComment.taskUpdate !== undefined) {
+  } else if (issueComment.event?.case === "taskUpdate") {
     type = IssueCommentType.TASK_UPDATE;
-  } else if (issueComment.taskPriorBackup !== undefined) {
+  } else if (issueComment.event?.case === "taskPriorBackup") {
     type = IssueCommentType.TASK_PRIOR_BACKUP;
   }
   return {
@@ -66,9 +63,7 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
       pageToken: request.pageToken,
     });
     const resp = await issueServiceClientConnect.listIssueComments(connectRequest);
-    const issueComments = resp.issueComments.map((newComment) => 
-      convertNewIssueCommentToOld(newComment)
-    );
+    const issueComments = resp.issueComments;
     issueCommentMap.set(
       request.parent,
       issueComments.map(composeIssueComment)
@@ -94,7 +89,7 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
       }),
     });
     const newIssueComment = await issueServiceClientConnect.createIssueComment(request);
-    const issueComment = convertNewIssueCommentToOld(newIssueComment);
+    const issueComment = newIssueComment;
     issueCommentMap.set(issueName, [
       ...(issueCommentMap.get(issueName) ?? []),
       composeIssueComment(issueComment),

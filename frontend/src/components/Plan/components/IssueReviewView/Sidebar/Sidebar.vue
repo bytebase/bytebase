@@ -46,10 +46,8 @@ import {
   useCurrentProjectV1,
   useCurrentUserV1,
 } from "@/store";
-import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
+import { UpdateIssueRequestSchema, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { convertOldIssueToNew } from "@/utils/v1/issue-conversions";
 import { usePlanContextWithIssue } from "../../../logic/context";
 import ApprovalFlowSection from "./ApprovalFlowSection/ApprovalFlowSection.vue";
 import IssueStatusSection from "./IssueStatusSection.vue";
@@ -77,13 +75,12 @@ const onIssueLabelsUpdate = async (labels: string[]) => {
     return; // No change, do nothing.
   }
 
-  const issuePatch = Issue.fromPartial({
+  const issuePatch = {
     ...issue.value,
     labels,
-  });
-  const newIssuePatch = convertOldIssueToNew(issuePatch);
+  };
   const request = create(UpdateIssueRequestSchema, {
-    issue: newIssuePatch,
+    issue: issuePatch,
     updateMask: { paths: ["labels"] },
   });
   await issueServiceClientConnect.updateIssue(request);
@@ -100,13 +97,12 @@ const onIssueDescriptionUpdate = async (description: string) => {
     return; // No change, do nothing.
   }
 
-  const issuePatch = Issue.fromPartial({
+  const issuePatch = {
     ...issue.value,
     description,
-  });
-  const newIssuePatch = convertOldIssueToNew(issuePatch);
+  };
   const request = create(UpdateIssueRequestSchema, {
-    issue: newIssuePatch,
+    issue: issuePatch,
     updateMask: { paths: ["description"] },
   });
   await issueServiceClientConnect.updateIssue(request);

@@ -16,13 +16,12 @@ import { NTooltip, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { convertNewTaskRunLogToOld } from "@/utils/v1/rollout-conversions";
 import { useI18n } from "vue-i18n";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   type TaskRun,
   TaskRunLogEntry_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";
@@ -48,7 +47,7 @@ const taskRunLog = computedAsync(
       parent: props.taskRun.name,
     });
     const response = await rolloutServiceClientConnect.getTaskRunLog(request);
-    return convertNewTaskRunLogToOld(response);
+    return response;
   },
   undefined,
   {

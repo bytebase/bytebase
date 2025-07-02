@@ -32,13 +32,14 @@ import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRu
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
-import { getDateForPbTimestamp, getTimeForPbTimestamp } from "@/types";
-import { Duration } from "@/types/proto/google/protobuf/duration";
-import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
-import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { getDateForPbTimestampProtoEs, getTimeForPbTimestampProtoEs } from "@/types";
+import { create } from "@bufbuild/protobuf";
+import type { Duration } from "@bufbuild/protobuf/wkt";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { humanizeDurationV1 } from "@/utils";
-import { convertDurationToNew } from "@/utils/v1/common-conversions";
 import TaskRunComment from "./TaskRunComment.vue";
 
 defineProps<{
@@ -88,7 +89,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       title: t("task.created"),
       width: 140,
       render: (taskRun: TaskRun) => (
-        <HumanizeDate date={getDateForPbTimestamp(taskRun.createTime)} />
+        <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.createTime)} />
       ),
     },
     {
@@ -97,7 +98,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       width: 140,
       render: (taskRun: TaskRun) =>
         taskRun.startTime ? (
-          <HumanizeDate date={getDateForPbTimestamp(taskRun.startTime)} />
+          <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.startTime)} />
         ) : (
           "-"
         ),
@@ -109,7 +110,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       render: (taskRun: TaskRun) => {
         const duration = executionDurationOfTaskRun(taskRun);
         return duration
-          ? humanizeDurationV1(convertDurationToNew(duration))
+          ? humanizeDurationV1(duration)
           : "-";
       },
     },
@@ -144,7 +145,7 @@ const getStatusType = (status: TaskRun_Status) => {
 };
 
 const getStatusText = (status: TaskRun_Status) => {
-  return status.replace("_", " ");
+  return TaskRun_Status[status].replace("_", " ");
 };
 
 const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
@@ -152,21 +153,21 @@ const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
   if (!startTime || !updateTime) {
     return undefined;
   }
-  if (startTime.seconds.toString() === "0") {
+  if (Number(startTime.seconds) === 0) {
     return undefined;
   }
   if (taskRun.status === TaskRun_Status.RUNNING) {
-    const elapsedMS = Date.now() - getTimeForPbTimestamp(startTime);
-    return Duration.fromPartial({
-      seconds: Math.floor(elapsedMS / 1000),
+    const elapsedMS = Date.now() - getTimeForPbTimestampProtoEs(startTime);
+    return create(DurationSchema, {
+      seconds: BigInt(Math.floor(elapsedMS / 1000)),
       nanos: (elapsedMS % 1000) * 1e6,
     });
   }
-  const startMS = getTimeForPbTimestamp(startTime);
-  const updateMS = getTimeForPbTimestamp(updateTime);
+  const startMS = getTimeForPbTimestampProtoEs(startTime);
+  const updateMS = getTimeForPbTimestampProtoEs(updateTime);
   const elapsedMS = updateMS - startMS;
-  return Duration.fromPartial({
-    seconds: Math.floor(elapsedMS / 1000),
+  return create(DurationSchema, {
+    seconds: BigInt(Math.floor(elapsedMS / 1000)),
     nanos: (elapsedMS % 1000) * 1e6,
   });
 };

@@ -18,8 +18,9 @@ const viewMode = computed((): "NONE" | "EDITOR" | "RELEASE" => {
     const spec = selectedSpec.value;
     // Check if this is a release-based spec (has release but no sheet)
     if (
-      spec.changeDatabaseConfig?.release &&
-      !spec.changeDatabaseConfig?.sheet
+      spec.config?.case === "changeDatabaseConfig" &&
+      spec.config.value.release &&
+      !spec.config.value.sheet
     ) {
       return "RELEASE";
     }

@@ -15,8 +15,8 @@ export const isSimilarIssueComment = (
   }
 
   if (a.type === IssueCommentType.TASK_UPDATE) {
-    const fromTaskUpdate = a.taskUpdate;
-    const toTaskUpdate = b.taskUpdate;
+    const fromTaskUpdate = a.event?.case === "taskUpdate" ? a.event.value : null;
+    const toTaskUpdate = b.event?.case === "taskUpdate" ? b.event.value : null;
     if (!fromTaskUpdate || !toTaskUpdate) {
       return false;
     }
@@ -34,21 +34,23 @@ export const isSimilarIssueComment = (
     }
   }
   if (a.type === IssueCommentType.ISSUE_UPDATE) {
+    const aIssueUpdate = a.event?.case === "issueUpdate" ? a.event.value : null;
+    const bIssueUpdate = b.event?.case === "issueUpdate" ? b.event.value : null;
     if (
-      !isNullOrUndefined(a.issueUpdate?.toTitle) &&
-      !isNullOrUndefined(b.issueUpdate?.toTitle)
+      !isNullOrUndefined(aIssueUpdate?.toTitle) &&
+      !isNullOrUndefined(bIssueUpdate?.toTitle)
     ) {
       return true;
     }
     if (
-      !isNullOrUndefined(a.issueUpdate?.toDescription) &&
-      !isNullOrUndefined(b.issueUpdate?.toDescription)
+      !isNullOrUndefined(aIssueUpdate?.toDescription) &&
+      !isNullOrUndefined(bIssueUpdate?.toDescription)
     ) {
       return true;
     }
     if (
-      !isNullOrUndefined(a.issueUpdate?.toLabels) &&
-      !isNullOrUndefined(b.issueUpdate?.toLabels)
+      !isNullOrUndefined(aIssueUpdate?.toLabels) &&
+      !isNullOrUndefined(bIssueUpdate?.toLabels)
     ) {
       return true;
     }

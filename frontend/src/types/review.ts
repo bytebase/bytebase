@@ -1,5 +1,6 @@
-import type { ApprovalStep, Issue_Approver } from "./proto/v1/issue_service";
-import { ApprovalTemplate } from "./proto/v1/issue_service";
+import { create as createProto } from "@bufbuild/protobuf";
+import type { ApprovalStep, Issue_Approver, ApprovalTemplate } from "./proto-es/v1/issue_service_pb";
+import { ApprovalTemplateSchema } from "./proto-es/v1/issue_service_pb";
 
 export type ReviewFlow = {
   template: ApprovalTemplate;
@@ -17,7 +18,7 @@ export type WrappedReviewStep = {
 
 export const emptyFlow = (): ReviewFlow => {
   return {
-    template: ApprovalTemplate.fromPartial({}),
+    template: createProto(ApprovalTemplateSchema, {}),
     approvers: [],
     currentStepIndex: -1,
   };

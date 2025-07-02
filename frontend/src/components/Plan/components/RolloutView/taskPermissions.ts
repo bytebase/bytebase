@@ -2,9 +2,9 @@ import { uniq } from "lodash-es";
 import { useCurrentUserV1, useCurrentProjectV1 } from "@/store";
 import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import { Issue_Type, type Issue } from "@/types/proto/v1/issue_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
-import type { Rollout } from "@/types/proto/v1/rollout_service";
+import { Issue_Type, type Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,

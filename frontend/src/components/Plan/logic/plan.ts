@@ -8,7 +8,7 @@ import {
   type ComposedProject,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 
 export const databaseForSpec = (project: ComposedProject, spec: Plan_Spec) => {
   const targets = targetsForSpec(spec);
@@ -27,7 +27,13 @@ export const databaseForSpec = (project: ComposedProject, spec: Plan_Spec) => {
  * @returns empty string if no sheet found
  */
 export const sheetNameForSpec = (spec: Plan_Spec): string => {
-  return spec.changeDatabaseConfig?.sheet ?? spec.exportDataConfig?.sheet ?? "";
+  if (spec.config?.case === "changeDatabaseConfig") {
+    return spec.config.value.sheet ?? "";
+  }
+  if (spec.config?.case === "exportDataConfig") {
+    return spec.config.value.sheet ?? "";
+  }
+  return "";
 };
 
 export const databaseEngineForSpec = async (
@@ -72,8 +78,7 @@ export const databaseEngineForSpec = async (
 
 export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
-  const config = spec.changeDatabaseConfig || spec.exportDataConfig;
-  if (config) {
+  if (spec.config?.case === "changeDatabaseConfig" || spec.config?.case === "exportDataConfig") {
     return targetsForSpec(spec).every(isValidDatabaseName);
   }
   return false;
@@ -81,17 +86,18 @@ export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
 
 export const isDBGroupChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
-  const config = spec.changeDatabaseConfig || spec.exportDataConfig;
-  if (config) {
+  if (spec.config?.case === "changeDatabaseConfig" || spec.config?.case === "exportDataConfig") {
     return targetsForSpec(spec).every(isValidDatabaseGroupName);
   }
   return false;
 };
 
 export const targetsForSpec = (spec: Plan_Spec): string[] => {
-  const config = spec.changeDatabaseConfig || spec.exportDataConfig;
-  if (config) {
-    return config.targets || [];
+  if (spec.config?.case === "changeDatabaseConfig") {
+    return spec.config.value.targets || [];
+  }
+  if (spec.config?.case === "exportDataConfig") {
+    return spec.config.value.targets || [];
   }
   return [];
 };

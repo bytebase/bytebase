@@ -51,11 +51,11 @@
 import { AlignHorizontalJustifyStartIcon } from "lucide-vue-next";
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
-import { getDateForPbTimestamp } from "@/types";
-import {
+import { getDateForPbTimestampProtoEs } from "@/types";
+import type {
   TaskRunSession_Postgres,
   TaskRunSession_Postgres_Session,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { StatementCell, TimeCell } from "./Cells";
 
 const props = defineProps<{
@@ -171,7 +171,7 @@ const columns = computed(() => {
       title: () => "backend_start",
       width: 120,
       render: (session) => {
-        return <TimeCell date={getDateForPbTimestamp(session.backendStart)} />;
+        return <TimeCell date={getDateForPbTimestampProtoEs(session.backendStart)} />;
       },
     },
     {
@@ -179,7 +179,7 @@ const columns = computed(() => {
       title: () => "xact_start",
       width: 120,
       render: (session) => {
-        return <TimeCell date={getDateForPbTimestamp(session.xactStart)} />;
+        return <TimeCell date={getDateForPbTimestampProtoEs(session.xactStart)} />;
       },
     },
     {
@@ -187,7 +187,7 @@ const columns = computed(() => {
       title: () => "query_start",
       width: 120,
       render: (session) => {
-        return <TimeCell date={getDateForPbTimestamp(session.queryStart)} />;
+        return <TimeCell date={getDateForPbTimestampProtoEs(session.queryStart)} />;
       },
     },
   ];

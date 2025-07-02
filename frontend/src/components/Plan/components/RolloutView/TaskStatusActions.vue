@@ -43,13 +43,13 @@ import { EllipsisVerticalIcon } from "lucide-vue-next";
 import { NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type {
   Task,
   TaskRun,
   Rollout,
   Stage,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
 
 type TaskStatusAction =
@@ -134,7 +134,7 @@ const stage = computed((): Stage => {
     name: "",
     environment: "",
     tasks: [],
-  } as Stage;
+  } as unknown as Stage;
 });
 
 const primaryAction = computed((): TaskStatusAction | null => {

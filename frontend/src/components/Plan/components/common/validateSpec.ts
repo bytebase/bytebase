@@ -1,7 +1,7 @@
 import { ref, watchEffect } from "vue";
 import { getLocalSheetByName } from "@/components/Plan";
 import { useSheetV1Store } from "@/store";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { extractSheetUID, getSheetStatement, sheetNameOfSpec } from "@/utils";
 
 // Hook to validate all specs in a plan
@@ -11,7 +11,7 @@ export const useSpecsValidation = (specs: Plan_Spec[]) => {
 
   const checkSpecStatement = async (spec: Plan_Spec): Promise<boolean> => {
     // Only changeDatabaseConfig and exportDataConfig specs have statements
-    if (!spec.changeDatabaseConfig && !spec.exportDataConfig) {
+    if (spec.config?.case !== "changeDatabaseConfig" && spec.config?.case !== "exportDataConfig") {
       return false;
     }
 

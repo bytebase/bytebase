@@ -28,9 +28,9 @@
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { getTimeForPbTimestamp, getDateForPbTimestamp } from "@/types";
-import type { TaskRun } from "@/types/proto/v1/rollout_service";
-import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { getTimeForPbTimestampProtoEs, getDateForPbTimestampProtoEs } from "@/types";
+import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 
 export type CommentLink = {
   title: string;
@@ -45,7 +45,7 @@ const { t } = useI18n();
 
 const earliestAllowedTime = computed(() => {
   return props.taskRun.runTime
-    ? getTimeForPbTimestamp(props.taskRun.runTime)
+    ? getTimeForPbTimestampProtoEs(props.taskRun.runTime)
     : null;
 });
 
@@ -59,9 +59,9 @@ const comment = computed(() => {
     }
     if (taskRun.schedulerInfo) {
       const cause = taskRun.schedulerInfo.waitingCause;
-      if (cause?.task) {
+      if (cause?.cause?.case === "task") {
         return t("task-run.status.waiting-task", {
-          time: getDateForPbTimestamp(
+          time: getDateForPbTimestampProtoEs(
             taskRun.schedulerInfo.reportTime
           )?.toLocaleString(),
         });
@@ -71,23 +71,23 @@ const comment = computed(() => {
   } else if (taskRun.status === TaskRun_Status.RUNNING) {
     if (taskRun.schedulerInfo) {
       const cause = taskRun.schedulerInfo.waitingCause;
-      if (cause?.connectionLimit) {
+      if (cause?.cause?.case === "connectionLimit") {
         return t("task-run.status.waiting-connection", {
-          time: getDateForPbTimestamp(
+          time: getDateForPbTimestampProtoEs(
             taskRun.schedulerInfo.reportTime
           )?.toLocaleString(),
         });
       }
-      if (cause?.task) {
+      if (cause?.cause?.case === "task") {
         return t("task-run.status.waiting-task", {
-          time: getDateForPbTimestamp(
+          time: getDateForPbTimestampProtoEs(
             taskRun.schedulerInfo.reportTime
           )?.toLocaleString(),
         });
       }
-      if (cause?.parallelTasksLimit) {
+      if (cause?.cause?.case === "parallelTasksLimit") {
         return t("task-run.status.waiting-max-tasks-per-rollout", {
-          time: getDateForPbTimestamp(
+          time: getDateForPbTimestampProtoEs(
             taskRun.schedulerInfo.reportTime
           )?.toLocaleString(),
         });
@@ -103,7 +103,9 @@ const commentLink = computed((): CommentLink => {
     taskRun.status === TaskRun_Status.PENDING ||
     taskRun.status === TaskRun_Status.RUNNING
   ) {
-    const task = taskRun.schedulerInfo?.waitingCause?.task?.task;
+    const task = taskRun.schedulerInfo?.waitingCause?.cause?.case === "task" 
+      ? taskRun.schedulerInfo.waitingCause.cause.value.task
+      : undefined;
     if (task) {
       return {
         title: t("common.blocking-task"),

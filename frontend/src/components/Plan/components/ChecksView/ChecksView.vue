@@ -142,12 +142,12 @@
                 </div>
                 <div
                   v-if="
-                    result.sqlReviewReport && result.sqlReviewReport.line > 0
+                    result.report?.case === 'sqlReviewReport' && result.report.value.line > 0
                   "
                   class="text-xs text-control-lighter mt-1"
                 >
-                  Line {{ result.sqlReviewReport.line }}, Column
-                  {{ result.sqlReviewReport.column }}
+                  Line {{ result.report.value.line }}, Column
+                  {{ result.report.value.column }}
                 </div>
               </div>
             </div>
@@ -176,7 +176,7 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { humanizeTs } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
@@ -370,6 +370,6 @@ const getStatusLabel = (status: PlanCheckRun_Result_Status) => {
 
 const formatTime = (timestamp: any): string => {
   if (!timestamp) return "";
-  return humanizeTs(new Date(timestamp.seconds * 1000).getTime() / 1000);
+  return humanizeTs(new Date(Number(timestamp.seconds) * 1000).getTime() / 1000);
 };
 </script>

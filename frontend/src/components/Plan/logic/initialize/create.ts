@@ -1,3 +1,4 @@
+import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, head, includes } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { useRoute } from "vue-router";
@@ -8,13 +9,16 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, IssueType } from "@/types";
-import {
-  Plan,
-  Plan_ChangeDatabaseConfig,
-  Plan_ChangeDatabaseConfig_Type,
-  Plan_ExportDataConfig,
+import type {
   Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
+import {
+  PlanSchema,
+  Plan_ChangeDatabaseConfigSchema,
+  Plan_ChangeDatabaseConfig_Type,
+  Plan_ExportDataConfigSchema,
+  Plan_SpecSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import {
   extractSheetUID,
   generateSQLForChangeToDatabase,
@@ -86,7 +90,7 @@ export const buildPlan = async (params: CreatePlanParams) => {
 
   const { project, query } = params;
   const databaseNameList = (query.databaseList ?? "").split(",");
-  const plan = Plan.fromPartial({
+  const plan = createProto(PlanSchema, {
     name: `${project.name}/plans/${nextUID()}`,
     title: query.name,
     description: query.description,
@@ -146,27 +150,33 @@ const buildSpecForTargetsV1 = async (
     }
   }
 
-  const spec = Plan_Spec.fromPartial({
+  const spec = createProto(Plan_SpecSchema, {
     id: uuidv4(),
   });
   switch (template) {
     case "bb.issue.database.data.update":
     case "bb.issue.database.schema.update": {
-      spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromPartial({
-        targets,
-        sheet,
-        type:
-          template === "bb.issue.database.data.update"
-            ? Plan_ChangeDatabaseConfig_Type.DATA
-            : Plan_ChangeDatabaseConfig_Type.MIGRATE,
-      });
+      spec.config = {
+        case: "changeDatabaseConfig",
+        value: createProto(Plan_ChangeDatabaseConfigSchema, {
+          targets,
+          sheet,
+          type:
+            template === "bb.issue.database.data.update"
+              ? Plan_ChangeDatabaseConfig_Type.DATA
+              : Plan_ChangeDatabaseConfig_Type.MIGRATE,
+        }),
+      };
       break;
     }
     case "bb.issue.database.data.export": {
-      spec.exportDataConfig = Plan_ExportDataConfig.fromPartial({
-        targets,
-        sheet,
-      });
+      spec.config = {
+        case: "exportDataConfig",
+        value: createProto(Plan_ExportDataConfigSchema, {
+          targets,
+          sheet,
+        }),
+      };
       break;
     }
   }

@@ -1,5 +1,5 @@
 import { useSheetV1Store, useStorageStore } from "@/store";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { extractSheetUID, getSheetStatement } from "@/utils";
 import { sheetNameForSpec } from "../plan";
 import { getLocalSheetByName } from "../sheet";
@@ -32,7 +32,7 @@ export const extractInitialSQLFromQuery = async (
 };
 
 export const isValidSpec = (spec: Plan_Spec): boolean => {
-  if (spec.changeDatabaseConfig) {
+  if (spec.config?.case === "changeDatabaseConfig") {
     const sheetName = sheetNameForSpec(spec);
     if (!sheetName) {
       return false;

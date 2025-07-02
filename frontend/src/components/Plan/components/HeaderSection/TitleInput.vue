@@ -25,15 +25,13 @@ import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect, issueServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { IssueSchema, UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
-import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";
 import {
   pushNotification,
   useCurrentUserV1,
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
-import { Plan } from "@/types/proto/v1/plan_service";
+import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 
@@ -124,8 +122,7 @@ const onBlur = async () => {
         updateMask: { paths: ["title"] },
       });
       const response = await issueServiceClientConnect.updateIssue(request);
-      const updated = convertNewIssueToOld(response);
-      Object.assign(issue.value, updated);
+      Object.assign(issue.value, response);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -142,18 +139,16 @@ const onBlur = async () => {
     }
     try {
       state.isUpdating = true;
-      const planPatch = Plan.fromPartial({
+      const planPatch = create(PlanSchema, {
         ...plan.value,
         title: state.title,
       });
-      const newPlan = convertOldPlanToNew(planPatch);
       const request = create(UpdatePlanRequestSchema, {
-        plan: newPlan,
+        plan: planPatch,
         updateMask: { paths: ["title"] },
       });
       const response = await planServiceClientConnect.updatePlan(request);
-      const updated = convertNewPlanToOld(response);
-      Object.assign(plan.value, updated);
+      Object.assign(plan.value, response);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

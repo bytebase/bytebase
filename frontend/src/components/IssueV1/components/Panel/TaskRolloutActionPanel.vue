@@ -227,8 +227,8 @@ import {
   BatchSkipTasksRequestSchema,
   BatchCancelTaskRunsRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
-import { Task_Status, TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status, TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";

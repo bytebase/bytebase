@@ -76,7 +76,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedIssue } from "@/types";
-import { Issue_Type } from "@/types/proto/v1/issue_service";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
   extractProjectResourceName,

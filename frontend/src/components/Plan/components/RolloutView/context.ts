@@ -5,12 +5,8 @@ import { computed, inject, provide, ref, onUnmounted } from "vue";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCurrentProjectV1 } from "@/store";
-import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { Rollout, type Stage } from "@/types/proto/v1/rollout_service";
-import {
-  convertNewRolloutToOld,
-  convertOldPlanToNew,
-} from "@/utils/v1/rollout-conversions";
+import { PreviewRolloutRequestSchema, RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
 
 export type RolloutViewContext = {
@@ -31,7 +27,7 @@ export const provideRolloutViewContext = () => {
   const { events, plan, rollout } = usePlanContextWithRollout();
   const { project } = useCurrentProjectV1();
 
-  const rolloutPreview = ref<Rollout>(Rollout.fromPartial({}));
+  const rolloutPreview = ref<Rollout>(create(RolloutSchema, {}));
 
   const mergedStages = computed(() => {
     // Merge preview stages with created rollout stages
@@ -57,7 +53,7 @@ export const provideRolloutViewContext = () => {
   const fetchRolloutPreview = async () => {
     const request = create(PreviewRolloutRequestSchema, {
       project: project.value.name,
-      plan: convertOldPlanToNew(plan.value),
+      plan: plan.value,
     });
 
     try {
@@ -65,11 +61,11 @@ export const provideRolloutViewContext = () => {
         await rolloutServiceClientConnect.previewRollout(request, {
           contextValues: createContextValues().set(silentContextKey, true),
         });
-      rolloutPreview.value = convertNewRolloutToOld(rolloutPreviewNew);
+      rolloutPreview.value = rolloutPreviewNew;
     } catch (error) {
       // Handle preview errors gracefully
       console.error("Failed to fetch rollout preview:", error);
-      rolloutPreview.value = Rollout.fromPartial({});
+      rolloutPreview.value = create(RolloutSchema, {});
     } finally {
     }
   };

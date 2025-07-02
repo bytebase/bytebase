@@ -132,10 +132,6 @@ import {
   extractDatabaseGroupName,
   extractProjectResourceName,
 } from "@/utils";
-import {
-  convertOldPlanToNew,
-  convertNewPlanToOld,
-} from "@/utils/v1/plan-conversions";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
 import AllTargetsDrawer from "./AllTargetsDrawer.vue";
@@ -174,7 +170,7 @@ const targets = computed(() => {
 });
 
 const isCreateDatabaseSpec = computed(() => {
-  return !!selectedSpec.value?.createDatabaseConfig;
+  return selectedSpec.value?.config?.case === "createDatabaseConfig";
 });
 
 const project = computed(() => {
@@ -274,22 +270,19 @@ const handleUpdateTargets = async (targets: string[]) => {
   if (!selectedSpec.value) return;
 
   // Update the targets in the spec.
-  const config =
-    selectedSpec.value.changeDatabaseConfig ||
-    selectedSpec.value.exportDataConfig;
-  if (config) {
-    config.targets = targets;
+  if (selectedSpec.value.config?.case === "changeDatabaseConfig") {
+    selectedSpec.value.config.value.targets = targets;
+  } else if (selectedSpec.value.config?.case === "exportDataConfig") {
+    selectedSpec.value.config.value.targets = targets;
   }
 
   if (!isCreating.value) {
-    const newPlan = convertOldPlanToNew(plan.value);
     const request = create(UpdatePlanRequestSchema, {
-      plan: newPlan,
+      plan: plan.value,
       updateMask: { paths: ["specs"] },
     });
     const response = await planServiceClientConnect.updatePlan(request);
-    const updated = convertNewPlanToOld(response);
-    Object.assign(plan.value, updated);
+    Object.assign(plan.value, response);
     events.emit("status-changed", {
       eager: true,
     });

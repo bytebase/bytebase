@@ -33,11 +33,11 @@ import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import {
-  getDateForPbTimestamp,
-  getTimeForPbTimestamp,
+  getDateForPbTimestampProtoEs,
+  getTimeForPbTimestampProtoEs,
   type ComposedTaskRun,
 } from "@/types";
-import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { humanizeDurationV1, sheetNameOfTaskV1 } from "@/utils";
 import { useIssueContext } from "../../logic";
@@ -123,7 +123,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       title: t("task.created"),
       width: 100,
       render: (taskRun: ComposedTaskRun) => (
-        <HumanizeDate date={getDateForPbTimestamp(taskRun.createTime)} />
+        <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.createTime)} />
       ),
     },
     {
@@ -131,7 +131,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       title: t("task.started"),
       width: 100,
       render: (taskRun: ComposedTaskRun) => (
-        <HumanizeDate date={getDateForPbTimestamp(taskRun.startTime)} />
+        <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.startTime)} />
       ),
     },
     {
@@ -163,18 +163,18 @@ const executionDurationOfTaskRun = (
   if (!startTime || !updateTime) {
     return undefined;
   }
-  if (startTime.seconds.isZero()) {
+  if (startTime.seconds === 0n) {
     return undefined;
   }
   if (taskRun.status === TaskRun_Status.RUNNING) {
-    const elapsedMS = Date.now() - getTimeForPbTimestamp(startTime);
+    const elapsedMS = Date.now() - getTimeForPbTimestampProtoEs(startTime);
     return create(DurationSchema, {
       seconds: BigInt(Math.floor(elapsedMS / 1000)),
       nanos: (elapsedMS % 1000) * 1e6,
     });
   }
-  const startMS = getTimeForPbTimestamp(startTime);
-  const updateMS = getTimeForPbTimestamp(updateTime);
+  const startMS = getTimeForPbTimestampProtoEs(startTime);
+  const updateMS = getTimeForPbTimestampProtoEs(updateTime);
   const elapsedMS = updateMS - startMS;
   return create(DurationSchema, {
     seconds: BigInt(Math.floor(elapsedMS / 1000)),

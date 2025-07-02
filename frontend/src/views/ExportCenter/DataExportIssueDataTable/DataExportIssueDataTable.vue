@@ -30,7 +30,7 @@ import { projectOfIssue } from "@/components/IssueV1/logic";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
-import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
+import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
 import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,
@@ -144,7 +144,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       resizable: true,
       hide: !showExtendedColumns.value,
       render: (issue) =>
-        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
+        humanizeTs(getTimeForPbTimestampProtoEs(issue.updateTime, 0) / 1000),
     },
   ];
   return columns.filter((column) => !column.hide);
@@ -184,7 +184,7 @@ const issueRelatedDatabase = (issue: ComposedIssue) => {
 
 const issueRelatedStatement = (issue: ComposedIssue) => {
   const task = head(flattenTaskV1List(issue.rolloutEntity));
-  const sheetName = task?.databaseDataExport?.sheet;
+  const sheetName = task?.payload?.case === "databaseDataExport" ? task.payload.value.sheet : undefined;
   if (!task || !sheetName) {
     return;
   }
@@ -202,7 +202,7 @@ watch(
     // Prepare the sheet for each issue.
     for (const issue of list) {
       const task = head(flattenTaskV1List(issue.rolloutEntity));
-      const sheetName = task?.databaseDataExport?.sheet;
+      const sheetName = task?.payload?.case === "databaseDataExport" ? task.payload.value.sheet : undefined;
       if (!task || !sheetName) {
         continue;
       }

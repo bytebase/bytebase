@@ -2,9 +2,9 @@ import dayjs from "dayjs";
 import slug from "slug";
 import { t } from "@/plugins/i18n";
 import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
-import { Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Rollout } from "@/types/proto/v1/rollout_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 
 export const issueV1Slug = (name: string, title: string = "issue") => {
   return [slug(title), extractIssueUID(name)].join("-");

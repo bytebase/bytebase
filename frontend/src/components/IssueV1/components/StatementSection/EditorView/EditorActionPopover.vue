@@ -25,7 +25,7 @@ import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import { useCurrentProjectV1 } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { useInstanceV1EditorLanguage } from "@/utils";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";

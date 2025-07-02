@@ -53,7 +53,6 @@ import {
   extractIssueUID,
   extractPlanUID,
   extractRolloutUID,
-  isNullOrUndefined,
 } from "@/utils";
 import { ChecksView, HeaderSection, Overview } from "./components";
 import CurrentSpecSelector from "./components/CurrentSpecSelector.vue";
@@ -110,7 +109,7 @@ const availableTabs = computed<TabKey[]>(() => {
   if (!isCreating.value) {
     if (
       plan.value.specs.some(
-        (spec) => !isNullOrUndefined(spec.changeDatabaseConfig)
+        (spec) => spec.config?.case === "changeDatabaseConfig"
       )
     ) {
       tabs.push(TabKey.Checks);
