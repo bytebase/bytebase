@@ -12,6 +12,7 @@
 <script lang="tsx" setup>
 import { fromBinary } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
+import { humanizeDurationV1 } from "@/utils";
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -132,8 +133,7 @@ const columnList = computed((): AuditDataTableColumn[] => {
       {
         key: "status",
         resizable: true,
-        minWidth: 256,
-        width: 256,
+        width: 96,
         title: t("audit-log.table.status"),
         render: (auditLog) =>
           auditLog.status ? (
@@ -141,6 +141,14 @@ const columnList = computed((): AuditDataTableColumn[] => {
           ) : (
             "-"
           ),
+      },
+      {
+        key: "latency",
+        width: 96,
+        title: t("audit-log.table.latency"),
+        render: (auditLog) => {
+          return <span>{humanizeDurationV1(auditLog.latency)}</span>;
+        },
       },
       {
         key: "service-data",

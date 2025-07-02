@@ -190,6 +190,7 @@ func convertToAuditLog(ctx context.Context, stores *store.Store, l *store.AuditL
 		Request:     l.Payload.Request,
 		Response:    l.Payload.Response,
 		Status:      l.Payload.Status,
+		Latency:     l.Payload.Latency,
 		ServiceData: l.Payload.ServiceData,
 	}, nil
 }
