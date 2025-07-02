@@ -394,6 +394,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 	}
 
 	// Regular query processing for non-EXPLAIN queries
+	startTime := time.Now()
 	var stmtTypes []stmtType
 	batchBuf := new(strings.Builder)
 	for _, singleSQL := range singleSQLs {
@@ -488,6 +489,13 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 			skipRowsAffected = true
 		}
 	}
+
+	latency := time.Since(startTime)
+	for i, res := range ret {
+		res.Latency = durationpb.New(latency)
+		res.Statement = singleSQLs[i].Text
+	}
+
 	return ret, nil
 }
 
