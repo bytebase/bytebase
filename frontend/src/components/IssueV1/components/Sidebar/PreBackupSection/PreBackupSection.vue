@@ -12,10 +12,10 @@ import {
 } from "@/components/IssueV1/logic";
 import { PreBackupSection } from "@/components/Plan/components/Configuration";
 import { providePreBackupSettingContext } from "@/components/Plan/components/Configuration/PreBackupSection/context";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useCurrentProjectV1 } from "@/store";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import TaskRollbackSection from "./TaskRollbackSection.vue";
 import { ROLLBACK_AVAILABLE_ENGINES } from "./common";
 

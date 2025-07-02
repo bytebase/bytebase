@@ -18,7 +18,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
-import TaskStatus from "@/components/Rollout/RolloutDetail/Panels/kits/TaskStatus.vue";
+import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { getTimeForPbTimestamp, type ComposedRollout } from "@/types";
 import { Task_Status as TaskStatusEnum } from "@/types/proto/v1/rollout_service";

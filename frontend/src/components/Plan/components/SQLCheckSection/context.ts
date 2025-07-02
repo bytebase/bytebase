@@ -1,10 +1,10 @@
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { unknownDatabase, type ComposedProject } from "@/types";
-import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
+import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import { databaseForSpec } from "../../logic";
 
 export const KEY = Symbol(

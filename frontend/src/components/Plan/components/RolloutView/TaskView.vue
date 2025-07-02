@@ -77,8 +77,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import TaskStatus from "@/components/Rollout/RolloutDetail/Panels/kits/TaskStatus.vue";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail/utils";
+import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { InstanceV1EngineIcon, CopyButton } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
@@ -88,6 +87,7 @@ import {
   GetRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Task, TaskRun, Rollout } from "@/types/proto/v1/rollout_service";
+import { databaseForTask } from "@/utils";
 import {
   extractSchemaVersionFromTask,
   getSheetStatement,

@@ -29,7 +29,6 @@ import { last } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useCurrentProjectV1 } from "@/store";
 import { getProjectIdRolloutUidStageUidTaskUid } from "@/store/modules/v1/common";
 import {
@@ -38,8 +37,9 @@ import {
   getTimeForPbTimestamp,
   getDateForPbTimestamp,
 } from "@/types";
-import { isPostgresFamily } from "@/types/v1/instance";
 import { TaskRun_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { isPostgresFamily } from "@/types/v1/instance";
+import { databaseForTask } from "@/utils";
 import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import { useIssueContext } from "../../logic";
