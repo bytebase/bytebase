@@ -8310,9 +8310,9 @@ components:
                 level:
                     enum:
                         - ALERT_LEVEL_UNSPECIFIED
-                        - ALERT_LEVEL_INFO
-                        - ALERT_LEVEL_WARNING
-                        - ALERT_LEVEL_CRITICAL
+                        - INFO
+                        - WARNING
+                        - CRITICAL
                     type: string
                     description: The alert level of announcemnt
                     format: enum
@@ -10329,8 +10329,8 @@ components:
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
-                        - TYPE_VIRTUAL
-                        - TYPE_STORED
+                        - VIRTUAL
+                        - STORED
                     type: string
                     format: enum
                 expression:
@@ -13193,8 +13193,8 @@ components:
                          creator != "users/{email}"
                          starred == true
                          starred == false
-                         visibility in ["VISIBILITY_PRIVATE", "VISIBILITY_PROJECT_READ", "VISIBILITY_PROJECT_WRITE"]
-                         visibility == "VISIBILITY_PRIVATE"
+                         visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
+                         visibility == "PRIVATE"
                 pageSize:
                     type: integer
                     description: |-
@@ -14259,15 +14259,15 @@ components:
                     items:
                         enum:
                             - TYPE_UNSPECIFIED
-                            - TYPE_NOTIFY_ISSUE_APPROVED
-                            - TYPE_NOTIFY_PIPELINE_ROLLOUT
-                            - TYPE_ISSUE_CREATE
-                            - TYPE_ISSUE_COMMENT_CREATE
-                            - TYPE_ISSUE_FIELD_UPDATE
-                            - TYPE_ISSUE_STATUS_UPDATE
-                            - TYPE_ISSUE_APPROVAL_NOTIFY
-                            - TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE
-                            - TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
+                            - NOTIFY_ISSUE_APPROVED
+                            - NOTIFY_PIPELINE_ROLLOUT
+                            - ISSUE_CREATE
+                            - ISSUE_COMMENT_CREATE
+                            - ISSUE_FIELD_UPDATE
+                            - ISSUE_STATUS_UPDATE
+                            - ISSUE_APPROVAL_NOTIFY
+                            - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
+                            - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
                         type: string
                         format: enum
                     description: |-
@@ -14339,9 +14339,9 @@ components:
                 visibility:
                     enum:
                         - VISIBILITY_UNSPECIFIED
-                        - VISIBILITY_PROJECT_READ
-                        - VISIBILITY_PROJECT_WRITE
-                        - VISIBILITY_PRIVATE
+                        - PROJECT_READ
+                        - PROJECT_WRITE
+                        - PRIVATE
                     type: string
                     format: enum
                 starred:
