@@ -204,7 +204,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   const fetchSharedWorksheetList = async () => {
     const me = useCurrentUserV1();
     const request = create(SearchWorksheetsRequestSchema, {
-      filter: `creator != "users/${me.value.email}" && visibility in ["PROJECT_READ","PROJECT_WRITE"]`,
+      filter: `creator != "users/${me.value.email}" && visibility in ["VISIBILITY_PROJECT_READ","VISIBILITY_PROJECT_WRITE"]`,
     });
     const response =
       await worksheetServiceClientConnect.searchWorksheets(request);
