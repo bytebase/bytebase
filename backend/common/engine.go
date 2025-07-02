@@ -459,19 +459,19 @@ func BackupDatabaseNameOfEngine(e storepb.Engine) string {
 	}
 }
 
-// EngineNeedsColumnDefaultMigration returns true if the engine needs column default migration.
+// EngineDBSchemaReadyToMigrate returns true if the engine needs column default migration.
 // This is used by both the migrator and the sync process to determine if a database
 // needs the column default migration.
 // When an engine's sync.go is updated to write to the Default field with proper
 // normalization (like schema qualification), we move it to the false case.
-func EngineNeedsColumnDefaultMigration(e storepb.Engine) bool {
+func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 	//exhaustive:enforce
 	switch e {
 	case
 		storepb.Engine_POSTGRES:
 		// PostgreSQL sync.go has been updated to write to Default field with
 		// proper schema qualification, so it doesn't need migration anymore.
-		return false
+		return true
 	case
 		storepb.Engine_MYSQL,
 		storepb.Engine_TIDB,
@@ -491,7 +491,7 @@ func EngineNeedsColumnDefaultMigration(e storepb.Engine) bool {
 		storepb.Engine_STARROCKS,
 		storepb.Engine_DORIS:
 		// These engines still need migration as their sync.go hasn't been updated yet.
-		return true
+		return false
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
@@ -505,8 +505,8 @@ func EngineNeedsColumnDefaultMigration(e storepb.Engine) bool {
 		storepb.Engine_COSMOSDB,
 		storepb.Engine_TRINO:
 		// These engines don't have traditional column defaults or are NoSQL databases.
-		return false
+		return true
 	default:
-		return false
+		return true
 	}
 }

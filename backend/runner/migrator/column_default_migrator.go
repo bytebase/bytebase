@@ -42,7 +42,7 @@ func EnginesNeedingMigration() []storepb.Engine {
 	var engines []storepb.Engine
 	// Check all known engines
 	for _, engine := range storepb.Engine_value {
-		if common.EngineNeedsColumnDefaultMigration(storepb.Engine(engine)) {
+		if common.EngineDBSchemaReadyToMigrate(storepb.Engine(engine)) {
 			engines = append(engines, storepb.Engine(engine))
 		}
 	}
