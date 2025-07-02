@@ -210,9 +210,6 @@ import {
 } from "@/types/proto-es/v1/setting_service_pb";
 import { create as createProto } from "@bufbuild/protobuf";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
-import {
-  convertOldTableCatalogToNew,
-} from "@/utils/v1/database-catalog-conversions";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { cloneDeep, isEqual, pull } from "lodash-es";
 import { PencilIcon, PlusIcon, XIcon } from "lucide-vue-next";
@@ -353,7 +350,7 @@ const onSubmit = async () => {
   const template = rebuildTableTemplateFromMetadata({
     ...editing.value,
     tableCatalog: tableCatalog.value 
-      ? convertOldTableCatalogToNew(tableCatalog.value)
+      ? tableCatalog.value
       : createProto(TableCatalogSchema, {}),
   });
   const setting = await settingStore.fetchSettingByName(

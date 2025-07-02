@@ -70,7 +70,6 @@ import ErrorList from "@/components/misc/ErrorList.vue";
 import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertExportFormatToNew, convertExportFormatToOld } from "@/utils/v1/common-conversions";
 import { pushNotification } from "@/store";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -119,10 +118,10 @@ const denyEditTaskReasons = computed(() =>
 // Convert between old and new ExportFormat types
 const convertedFormat = computed({
   get() {
-    return convertExportFormatToNew(state.config.format);
+    return state.config.format;
   },
   set(value) {
-    state.config.format = convertExportFormatToOld(value);
+    state.config.format = value;
   }
 });
 

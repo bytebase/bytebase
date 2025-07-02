@@ -2,7 +2,7 @@
   <div class="text-sm">
     <NTooltip v-if="duration && entry.startTime && entry.endTime">
       <template #trigger>
-        <span class="cursor-default">{{ humanizeDurationV1(convertDurationToNew(duration)) }}</span>
+        <span class="cursor-default">{{ humanizeDurationV1(duration) }}</span>
       </template>
       <template #default>
         <div>
@@ -28,7 +28,6 @@ import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { humanizeDurationV1 } from "@/utils";
 import type { FlattenLogEntry } from "./common";
 import { create } from "@bufbuild/protobuf";
-import { convertDurationToNew, convertDurationToOld } from "@/utils/v1/common-conversions";
 
 const props = defineProps<{
   entry: FlattenLogEntry;
@@ -38,10 +37,10 @@ const toDuration = (startTime: Date, endTime: Date) => {
   const ms = endTime.getTime() - startTime.getTime();
   const seconds = Math.floor(ms / 1000);
   const nanos = (ms % 1000) * 1e6;
-  return convertDurationToOld(create(DurationSchema,{
+  return create(DurationSchema,{
     seconds: BigInt(seconds),
     nanos,
-  }));
+  });
 };
 
 const duration = computed(() => {

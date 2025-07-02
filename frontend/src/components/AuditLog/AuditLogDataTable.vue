@@ -20,10 +20,9 @@ import { useProjectV1Store, useUserStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
-import { AuditDataSchema } from "@/types/proto-es/v1/audit_log_service_pb";
+import { AuditDataSchema, AuditLog_Severity } from "@/types/proto-es/v1/audit_log_service_pb";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { extractProjectResourceName } from "@/utils";
-import { severityToString } from "@/utils/v1";
 import JSONStringView from "./JSONStringView.vue";
 
 type AuditDataTableColumn = DataTableColumn<AuditLog> & {
@@ -62,7 +61,7 @@ const columnList = computed((): AuditDataTableColumn[] => {
         key: "severity",
         width: 96,
         title: t("audit-log.table.level"),
-        render: (auditLog) => severityToString(auditLog.severity),
+        render: (auditLog) => (AuditLog_Severity[auditLog.severity]),
       },
       {
         key: "project",
