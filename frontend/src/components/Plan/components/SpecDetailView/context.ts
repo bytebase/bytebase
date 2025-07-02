@@ -8,7 +8,7 @@ import {
   type Ref,
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { type Plan } from "@/types/proto/v1/plan_service";
+import { type Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { gotoSpec } from "../common/utils";
 
 const KEY = Symbol("bb.plan.spec.detail") as InjectionKey<PlanSpecContext>;

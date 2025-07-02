@@ -65,7 +65,7 @@ import { FastForwardIcon, PauseIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 
 const props = defineProps<{
   status: Task_Status;

@@ -1,6 +1,6 @@
 import type { ComposedIssue } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Stage, Task } from "@/types/proto/v1/rollout_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import type { TaskRolloutAction } from "./task";
 import { getApplicableTaskRolloutActionList } from "./task";
 

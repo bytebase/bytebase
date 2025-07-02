@@ -4,7 +4,7 @@ import {
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1/logic";
 import type { ComposedIssue } from "@/types";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import { isUserIncludedInList } from "@/utils";
 import type { SearchParams } from "../common";
 import { getValueFromSearchParams } from "../common";

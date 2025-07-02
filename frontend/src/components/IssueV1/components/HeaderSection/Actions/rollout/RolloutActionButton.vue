@@ -93,7 +93,7 @@ const actionList = computed(() => {
     tag: "div",
     disabled: errors.value.length > 0,
   };
-  if (selectedTask.value.databaseDataExport) {
+  if (selectedTask.value.payload?.case === "databaseDataExport") {
     return [
       {
         key: `${action}-STAGE`,

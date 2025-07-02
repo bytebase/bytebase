@@ -16,7 +16,7 @@ import { computed, unref } from "vue";
 import { provideIssueContext, useBaseIssueContext } from "@/components/IssueV1";
 import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../..";
 import { ActivitySection } from "./ActivitySection";

@@ -35,7 +35,7 @@ import { MenuIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useSidebarContext } from "@/components/Plan";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
 import { useIssueContext } from "../../logic";
 import IssueStatusIcon from "../IssueStatusIcon.vue";

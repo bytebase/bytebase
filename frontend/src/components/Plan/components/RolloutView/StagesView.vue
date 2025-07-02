@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Stage, Task_Status } from "@/types/proto/v1/rollout_service";
+import type { Stage, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import StageCard from "./StageCard.vue";
 
 defineProps<{

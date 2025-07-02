@@ -12,8 +12,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import type { Stage } from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { useIssueContext } from "../../logic";
 
 const props = defineProps<{

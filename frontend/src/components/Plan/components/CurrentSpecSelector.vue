@@ -37,7 +37,7 @@ import { useRoute, useRouter } from "vue-router";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../logic";
 import AddSpecDrawer from "./AddSpecDrawer.vue";
 import { gotoSpec } from "./common/utils";
@@ -84,10 +84,10 @@ const selectedSpec = computed(() => {
 });
 
 const getSpecTypeName = (spec: Plan_Spec): string => {
-  if (spec.createDatabaseConfig) {
+  if (spec.config?.case === "createDatabaseConfig") {
     return t("plan.spec.type.create-database");
-  } else if (spec.changeDatabaseConfig) {
-    const changeType = spec.changeDatabaseConfig.type;
+  } else if (spec.config?.case === "changeDatabaseConfig") {
+    const changeType = spec.config.value.type;
     switch (changeType) {
       case Plan_ChangeDatabaseConfig_Type.MIGRATE:
         return t("plan.spec.type.schema-change");
@@ -98,7 +98,7 @@ const getSpecTypeName = (spec: Plan_Spec): string => {
       default:
         return t("plan.spec.type.database-change");
     }
-  } else if (spec.exportDataConfig) {
+  } else if (spec.config?.case === "exportDataConfig") {
     return t("plan.spec.type.export-data");
   }
   return t("plan.spec.type.unknown");

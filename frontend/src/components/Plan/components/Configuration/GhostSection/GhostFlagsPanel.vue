@@ -46,7 +46,6 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { convertOldPlanToNew, convertNewPlanToOld } from "@/utils/v1/plan-conversions";
 import { pushNotification } from "@/store";
 import FlagsForm from "./FlagsForm";
 import { useGhostSettingContext } from "./context";
@@ -67,7 +66,7 @@ const title = computed(() => {
   return t("task.online-migration.configure-ghost-parameters");
 });
 const config = computed(() => {
-  return selectedSpec.value?.changeDatabaseConfig;
+  return selectedSpec.value?.config?.case === "changeDatabaseConfig" ? selectedSpec.value.config.value : undefined;
 });
 const flags = ref<Record<string, string>>({});
 
@@ -98,29 +97,27 @@ const trySave = async () => {
   }
 
   if (isCreating.value) {
-    if (!selectedSpec.value || !selectedSpec.value.changeDatabaseConfig) return;
-    selectedSpec.value.changeDatabaseConfig.ghostFlags = cloneDeep(flags.value);
+    if (!selectedSpec.value || selectedSpec.value.config?.case !== "changeDatabaseConfig") return;
+    selectedSpec.value.config.value.ghostFlags = cloneDeep(flags.value);
   } else {
     const planPatch = cloneDeep(plan.value);
     const spec = (planPatch?.specs || []).find((spec) => {
       return spec.id === selectedSpec.value?.id;
     });
-    if (!planPatch || !spec || !spec.changeDatabaseConfig) {
+    if (!planPatch || !spec || spec.config?.case !== "changeDatabaseConfig") {
       // Should not reach here.
       throw new Error(
         "Plan or spec is not defined. Cannot update gh-ost flags."
       );
     }
 
-    spec.changeDatabaseConfig.ghostFlags = cloneDeep(flags.value);
-    const newPlan = convertOldPlanToNew(planPatch);
+    spec.config.value.ghostFlags = cloneDeep(flags.value);
     const request = create(UpdatePlanRequestSchema, {
-      plan: newPlan,
+      plan: planPatch,
       updateMask: { paths: ["specs"] },
     });
     const response = await planServiceClientConnect.updatePlan(request);
-    const updated = convertNewPlanToOld(response);
-    Object.assign(plan.value, updated);
+    Object.assign(plan.value, response);
 
     pushNotification({
       module: "bytebase",

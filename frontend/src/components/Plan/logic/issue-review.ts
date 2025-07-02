@@ -4,7 +4,7 @@ import { computed, inject, provide, unref } from "vue";
 import {
   Issue_Approver_Status,
   type Issue,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 
 export const KEY = Symbol(
   "bb.plan.issue.review.context"

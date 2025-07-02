@@ -43,7 +43,7 @@
 import { ListIcon, Columns3Icon } from "lucide-vue-next";
 import { NButton, NButtonGroup } from "naive-ui";
 import { ref } from "vue";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import StagesView from "./StagesView.vue";
 import TaskFilter from "./TaskFilter.vue";
 import TaskTableView from "./TaskTableView.vue";

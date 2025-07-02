@@ -64,7 +64,7 @@ import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import {
   extractDatabaseGroupName,
   extractDatabaseResourceName,
@@ -174,7 +174,7 @@ const allowToCreatePlan = computed(() => {
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
   const template =
-    spec.changeDatabaseConfig?.type === Plan_ChangeDatabaseConfig_Type.DATA
+    spec.config?.case === "changeDatabaseConfig" && spec.config.value.type === Plan_ChangeDatabaseConfig_Type.DATA
       ? "bb.issue.database.data.update"
       : "bb.issue.database.schema.update";
   const targets = targetsForSpec(spec);

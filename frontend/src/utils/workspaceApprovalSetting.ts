@@ -21,11 +21,11 @@ import { ExprSchema as CELExprSchema } from "@/types/proto-es/google/api/expr/v1
 import type {
   ApprovalNode as _ApprovalNode,
   ApprovalStep as _ApprovalStep,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type as _ApprovalNode_Type,
   ApprovalStep_Type as _ApprovalStep_Type,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type as ProtoEsApprovalNode_Type,
   ApprovalStep_Type as ProtoEsApprovalStep_Type,
@@ -58,11 +58,6 @@ import {
   batchConvertParsedExprToCELString,
 } from "@/utils";
 import { displayRoleTitle } from "./role";
-import { 
-  convertNewApprovalTemplateToOld,
-  convertNewExprToOld as _convertNewExprToOld,
-  convertOldApprovalTemplateToNew
-} from "./workspaceApprovalSetting-conversions";
 
 export const approvalNodeRoleText = (role: string) => {
   return displayRoleTitle(role);
@@ -103,7 +98,7 @@ export const resolveLocalApprovalConfig = async (
     const localRule: LocalApprovalRule = {
       uid: uuidv4(),
       expr: resolveCELExpr(createProto(CELExprSchema, {})),
-      template: cloneDeep(convertNewApprovalTemplateToOld(rule.template!)),
+      template: cloneDeep(rule.template!),
     };
     ruleMap.set(localRule.uid, localRule);
     if (rule.condition?.expression) {
@@ -208,7 +203,7 @@ export const buildWorkspaceApprovalSetting = async (
     const { uid, template } = rule;
 
     const approvalRule = createProto(ApprovalRuleSchema, {
-      template: convertOldApprovalTemplateToNew(template),
+      template: template,
       condition: createProto(ExprSchema, { expression: "" }),
     });
     approvalRuleMap.set(i, approvalRule);

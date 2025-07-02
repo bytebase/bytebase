@@ -170,7 +170,10 @@ const { t } = useI18n();
 const { selectedSpec } = usePlanSpecContext();
 
 const releaseName = computed(() => {
-  return selectedSpec.value?.changeDatabaseConfig?.release || "";
+  if (selectedSpec.value?.config?.case === "changeDatabaseConfig") {
+    return selectedSpec.value.config.value.release || "";
+  }
+  return "";
 });
 
 const { release, ready: loading } = useReleaseByName(releaseName);

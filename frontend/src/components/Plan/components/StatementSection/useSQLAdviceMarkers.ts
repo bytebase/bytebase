@@ -2,10 +2,10 @@ import { maxBy } from "lodash-es";
 import { computed, type Ref } from "vue";
 import type { AdviceOption } from "@/components/MonacoEditor";
 import {
-  PlanCheckRun,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 
@@ -62,10 +62,11 @@ const getLatestAdviceOptions = (planCheckRuns: PlanCheckRun[]) => {
         result.status === PlanCheckRun_Result_Status.ERROR ||
         result.status === PlanCheckRun_Result_Status.WARNING
     )
-    .filter((result) => result.sqlReviewReport?.line !== undefined)
+    .filter((result) => result.report?.case === "sqlReviewReport" && result.report.value.line !== undefined)
     .map<AdviceOption>((result) => {
-      const line = result.sqlReviewReport!.line;
-      const column = result.sqlReviewReport?.column ?? Number.MAX_SAFE_INTEGER;
+      const sqlReviewReport = result.report?.case === "sqlReviewReport" ? result.report.value : undefined;
+      const line = sqlReviewReport!.line;
+      const column = sqlReviewReport?.column ?? Number.MAX_SAFE_INTEGER;
       const code = result.code;
       return {
         severity:

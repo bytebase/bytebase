@@ -92,6 +92,7 @@ import {
   RejectIssueRequestSchema,
   RequestIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
 import type { IssueReviewAction } from "../unified";
 
 type LocalState = {
@@ -145,10 +146,10 @@ const planCheckErrors = computed(() => {
   if (props.action === "APPROVE") {
     // Check plan check runs for errors
     const failedRuns = planCheckRuns.value.filter(
-      (run) => run.status === "FAILED"
+      (run) => run.status === PlanCheckRun_Status.FAILED
     );
     const runningRuns = planCheckRuns.value.filter(
-      (run) => run.status === "RUNNING"
+      (run) => run.status === PlanCheckRun_Status.RUNNING
     );
 
     if (failedRuns.length > 0) {

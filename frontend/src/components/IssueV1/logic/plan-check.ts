@@ -4,20 +4,20 @@ import type { ComposedIssue } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/plan_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { specForTask, useIssueContext, projectOfIssue } from ".";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
-  if (spec.createDatabaseConfig) {
+  if (spec.config?.case === "createDatabaseConfig") {
     return false;
   }
-  if (spec.changeDatabaseConfig !== undefined) {
+  if (spec.config?.case === "changeDatabaseConfig") {
     return true;
   }
-  if (spec.exportDataConfig !== undefined) {
+  if (spec.config?.case === "exportDataConfig") {
     return true;
   }
   return false;
@@ -49,8 +49,8 @@ export const planCheckStatusForTask = (task: Task) => {
 
 export const planCheckRunSummaryForIssue = (issue: ComposedIssue) => {
   const sheets = issue.planEntity?.specs.reduce((acc, spec) => {
-    if (spec.changeDatabaseConfig?.sheet) {
-      acc.add(spec.changeDatabaseConfig.sheet);
+    if (spec.config?.case === "changeDatabaseConfig" && spec.config.value.sheet) {
+      acc.add(spec.config.value.sheet);
     }
     return acc;
   }, new Set<string>());

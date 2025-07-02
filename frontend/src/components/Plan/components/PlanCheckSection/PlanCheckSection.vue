@@ -121,13 +121,13 @@
                       </div>
                       <div
                         v-if="
-                          result.sqlReviewReport &&
-                          result.sqlReviewReport.line > 0
+                          (result as any).sqlReviewReport &&
+                          (result as any).sqlReviewReport?.line > 0
                         "
                         class="text-xs text-control-lighter mt-0.5"
                       >
-                        Line {{ result.sqlReviewReport.line }}, Column
-                        {{ result.sqlReviewReport.column }}
+                        Line {{ (result as any).sqlReviewReport?.line }}, Column
+                        {{ (result as any).sqlReviewReport?.column }}
                       </div>
                     </div>
                   </div>
@@ -172,7 +172,7 @@ import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb"
 import {
   PlanCheckRun_Result_Status,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { planCheckRunListForSpec, planSpecHasPlanChecks } from "../../logic";
 import { usePlanContext } from "../../logic/context";
@@ -201,11 +201,11 @@ const summary = computed(() => {
   const result = { success: 0, warning: 0, error: 0 };
   for (const checkRun of checkRunsForSpec.value) {
     const status = getCheckRunStatus(checkRun);
-    if (status === "ERROR") {
+    if (status === PlanCheckRun_Result_Status.ERROR) {
       result.error++;
-    } else if (status === "WARNING") {
+    } else if (status === PlanCheckRun_Result_Status.WARNING) {
       result.warning++;
-    } else if (status === "SUCCESS") {
+    } else if (status === PlanCheckRun_Result_Status.SUCCESS) {
       result.success++;
     }
   }
@@ -242,7 +242,7 @@ const drawerCheckRunsByType = computed(() => {
   const groups = new Map<string, PlanCheckRun[]>();
 
   for (const checkRun of drawerCheckRuns.value) {
-    const type = checkRun.type;
+    const type = String(checkRun.type);
     if (!groups.has(type)) {
       groups.set(type, []);
     }
@@ -268,9 +268,9 @@ const getCheckRunStatus = (
   let hasWarning = false;
 
   for (const result of checkRun.results) {
-    if (result.status === "ERROR") {
+    if (result.status === PlanCheckRun_Result_Status.ERROR) {
       hasError = true;
-    } else if (result.status === "WARNING") {
+    } else if (result.status === PlanCheckRun_Result_Status.WARNING) {
       hasWarning = true;
     }
   }

@@ -34,10 +34,10 @@ import { getProjectIdRolloutUidStageUidTaskUid } from "@/store/modules/v1/common
 import {
   unknownTask,
   type ComposedTaskRun,
-  getTimeForPbTimestamp,
-  getDateForPbTimestamp,
+  getTimeForPbTimestampProtoEs,
+  getDateForPbTimestampProtoEs,
 } from "@/types";
-import { TaskRun_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { isPostgresFamily } from "@/types/v1/instance";
 import { databaseForTask } from "@/utils";
 import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";
@@ -60,7 +60,7 @@ const { t } = useI18n();
 
 const earliestAllowedTime = computed(() => {
   return props.taskRun.runTime
-    ? getTimeForPbTimestamp(props.taskRun.runTime)
+    ? getTimeForPbTimestampProtoEs(props.taskRun.runTime)
     : null;
 });
 
@@ -74,9 +74,9 @@ const comment = computed(() => {
     }
     if (taskRun.schedulerInfo) {
       const cause = taskRun.schedulerInfo.waitingCause;
-      if (cause?.task) {
+      if (cause?.cause?.case === "task") {
         return t("task-run.status.waiting-task", {
-          time: getDateForPbTimestamp(
+          time: getDateForPbTimestampProtoEs(
             taskRun.schedulerInfo.reportTime
           )?.toLocaleString(),
         });
@@ -86,23 +86,23 @@ const comment = computed(() => {
   } else if (taskRun.status === TaskRun_Status.RUNNING) {
     if (taskRun.schedulerInfo) {
       const cause = taskRun.schedulerInfo.waitingCause;
-      if (cause?.connectionLimit) {
+      if (cause?.cause?.case === "connectionLimit") {
         return t("task-run.status.waiting-connection", {
-          time: getDateForPbTimestamp(
+          time: getDateForPbTimestampProtoEs(
             taskRun.schedulerInfo.reportTime
           )?.toLocaleString(),
         });
       }
-      if (cause?.task) {
+      if (cause?.cause?.case === "task") {
         return t("task-run.status.waiting-task", {
-          time: getDateForPbTimestamp(
+          time: getDateForPbTimestampProtoEs(
             taskRun.schedulerInfo.reportTime
           )?.toLocaleString(),
         });
       }
-      if (cause?.parallelTasksLimit) {
+      if (cause?.cause?.case === "parallelTasksLimit") {
         return t("task-run.status.waiting-max-tasks-per-rollout", {
-          time: getDateForPbTimestamp(
+          time: getDateForPbTimestampProtoEs(
             taskRun.schedulerInfo.reportTime
           )?.toLocaleString(),
         });
@@ -128,8 +128,9 @@ const commentLink = computed((): CommentLink => {
     taskRun.status === TaskRun_Status.PENDING ||
     taskRun.status === TaskRun_Status.RUNNING
   ) {
-    const task = taskRun.schedulerInfo?.waitingCause?.task;
-    if (task) {
+    const waitingCause = taskRun.schedulerInfo?.waitingCause;
+    if (waitingCause?.cause?.case === "task") {
+      const task = waitingCause.cause.value;
       const [, , stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(
         task.task
       );

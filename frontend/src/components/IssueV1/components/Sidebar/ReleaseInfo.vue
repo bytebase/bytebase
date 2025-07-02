@@ -27,11 +27,13 @@ import { State } from "@/types/proto-es/v1/common_pb";
 
 const { issue, selectedTask } = useIssueContext();
 
-const releaseName = computed(
-  () =>
-    specForTask(issue.value.planEntity, selectedTask.value)
-      ?.changeDatabaseConfig?.release
-);
+const releaseName = computed(() => {
+  const spec = specForTask(issue.value.planEntity, selectedTask.value);
+  if (spec?.config?.case === "changeDatabaseConfig") {
+    return spec.config.value.release;
+  }
+  return "";
+});
 
 const { release, ready } = useReleaseByName(
   computed(() => releaseName.value || "")

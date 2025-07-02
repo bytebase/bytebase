@@ -5,8 +5,8 @@ import type { ComposedIssue } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
-} from "@/types/proto/v1/issue_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/issue_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   flattenTaskV1List,
   hasProjectPermissionV2,
@@ -37,7 +37,6 @@ export const PossibleIssueStatusActionMap: Record<
 
   // Only to make TypeScript compiler happy
   [IssueStatus.ISSUE_STATUS_UNSPECIFIED]: [],
-  [IssueStatus.UNRECOGNIZED]: [],
 };
 
 export const getApplicableIssueStatusActionList = (

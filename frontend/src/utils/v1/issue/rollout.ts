@@ -24,8 +24,8 @@ import {
   type Rollout,
   type Stage,
   type Task,
-} from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName } from "../project";
 import { extractIssueUID, flattenTaskV1List, issueV1Slug } from "./issue";
 
@@ -158,32 +158,40 @@ export const extractSchemaVersionFromTask = (task: Task): string => {
   // The schema version is specified in the filename
   // parsed and stored to the payload.schemaVersion
   // fallback to empty if we can't read the field.
-  return (
-    task.databaseDataUpdate?.schemaVersion ??
-    task.databaseSchemaUpdate?.schemaVersion ??
-    ""
-  );
+  if (task.payload?.case === "databaseDataUpdate") {
+    return task.payload.value.schemaVersion ?? "";
+  }
+  if (task.payload?.case === "databaseSchemaUpdate") {
+    return task.payload.value.schemaVersion ?? "";
+  }
+  return "";
 };
 
 export const sheetNameOfTaskV1 = (task: Task): string => {
-  return (
-    task.databaseCreate?.sheet ??
-    task.databaseDataUpdate?.sheet ??
-    task.databaseSchemaUpdate?.sheet ??
-    task.databaseDataExport?.sheet ??
-    ""
-  );
+  if (task.payload?.case === "databaseCreate") {
+    return task.payload.value.sheet ?? "";
+  }
+  if (task.payload?.case === "databaseDataUpdate") {
+    return task.payload.value.sheet ?? "";
+  }
+  if (task.payload?.case === "databaseSchemaUpdate") {
+    return task.payload.value.sheet ?? "";
+  }
+  if (task.payload?.case === "databaseDataExport") {
+    return task.payload.value.sheet ?? "";
+  }
+  return "";
 };
 
 export const setSheetNameForTask = (task: Task, sheetName: string) => {
-  if (task.databaseCreate) {
-    task.databaseCreate.sheet = sheetName;
-  } else if (task.databaseDataUpdate) {
-    task.databaseDataUpdate.sheet = sheetName;
-  } else if (task.databaseSchemaUpdate) {
-    task.databaseSchemaUpdate.sheet = sheetName;
-  } else if (task.databaseDataExport) {
-    task.databaseDataExport.sheet = sheetName;
+  if (task.payload?.case === "databaseCreate") {
+    task.payload.value.sheet = sheetName;
+  } else if (task.payload?.case === "databaseDataUpdate") {
+    task.payload.value.sheet = sheetName;
+  } else if (task.payload?.case === "databaseSchemaUpdate") {
+    task.payload.value.sheet = sheetName;
+  } else if (task.payload?.case === "databaseDataExport") {
+    task.payload.value.sheet = sheetName;
   }
 };
 
@@ -231,7 +239,7 @@ export const stringifyTaskStatus = (status: Task_Status): string => {
     case Task_Status.SKIPPED:
       return t("task.status.skipped");
     default:
-      return status;
+      return Task_Status[status] || String(status);
   }
 };
 

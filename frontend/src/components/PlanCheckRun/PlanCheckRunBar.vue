@@ -41,7 +41,7 @@ import type { ComposedDatabase } from "@/types";
 import type {
   PlanCheckRun,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { VueClass } from "@/utils";
 import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
 import PlanCheckRunButton from "./PlanCheckRunButton.vue";
