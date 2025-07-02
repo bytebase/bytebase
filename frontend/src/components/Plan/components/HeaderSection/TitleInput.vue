@@ -31,7 +31,7 @@ import {
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
-import { PlanSchema, type Plan } from "@/types/proto-es/v1/plan_service_pb";
+import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 

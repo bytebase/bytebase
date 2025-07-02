@@ -39,7 +39,6 @@ import {
   Plan_ExportDataConfigSchema,
   Plan_SpecSchema,
   type Plan_ExportDataConfig,
-  type Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
   TaskRun_ExportArchiveStatus,

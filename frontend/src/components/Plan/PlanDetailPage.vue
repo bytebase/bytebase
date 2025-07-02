@@ -53,7 +53,6 @@ import {
   extractIssueUID,
   extractPlanUID,
   extractRolloutUID,
-  isNullOrUndefined,
 } from "@/utils";
 import { ChecksView, HeaderSection, Overview } from "./components";
 import CurrentSpecSelector from "./components/CurrentSpecSelector.vue";

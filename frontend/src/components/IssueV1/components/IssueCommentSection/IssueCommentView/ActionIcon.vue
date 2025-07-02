@@ -123,12 +123,6 @@ import {
   type ComposedIssueComment,
 } from "@/store";
 import { extractUserId } from "@/store";
-import type {
-  IssueComment_Approval,
-  IssueComment_IssueUpdate,
-  IssueComment_TaskPriorBackup,
-  IssueComment_TaskUpdate,
-} from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueComment_Approval_Status,
   IssueComment_TaskUpdate_Status,

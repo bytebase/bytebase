@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { create as createProto } from "@bufbuild/protobuf";
 import type { LocalApprovalRule } from "@/types";
-import type { ApprovalTemplate } from "@/types/proto-es/v1/issue_service_pb";
 import { ApprovalTemplateSchema } from "@/types/proto-es/v1/issue_service_pb";
 
 export const emptyLocalApprovalRule = (): LocalApprovalRule => {

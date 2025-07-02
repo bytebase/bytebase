@@ -60,13 +60,10 @@ import {
   IssueSchema,
   Issue_Type as NewIssue_Type,
   GrantRequestSchema,
-  Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { generateIssueTitle, displayRoleTitle } from "@/utils";
-import { convertDurationToOld } from "@/utils/v1/common-conversions";
-import { convertNewIssueToOld } from "@/utils/v1/issue-conversions";
 
 interface LocalState {
   binding: Binding;
@@ -154,10 +151,9 @@ const doCreateIssue = async () => {
     issue: newIssue,
   });
   const response = await issueServiceClientConnect.createIssue(request);
-  const createdIssue = convertNewIssueToOld(response);
 
   // TODO(ed): handle no permission
-  const path = `/${createdIssue.name}`;
+  const path = `/${response.name}`;
 
   window.open(path, "_blank");
 

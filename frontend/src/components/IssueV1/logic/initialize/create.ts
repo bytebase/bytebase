@@ -12,7 +12,6 @@ import type { IssueType } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement } from "@/types";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
-import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { Stage, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";

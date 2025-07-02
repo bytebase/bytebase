@@ -81,11 +81,9 @@ import {
   useCurrentUserV1,
   usePolicyV1Store,
 } from "@/store";
-import { emptyIssue } from "@/types";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueSchema, IssueStatus, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import {
