@@ -142,12 +142,12 @@
                 </div>
                 <div
                   v-if="
-                    result.sqlReviewReport && result.sqlReviewReport.line > 0
+                    result.report?.case === 'sqlReviewReport' && result.report.value.line > 0
                   "
                   class="text-xs text-control-lighter mt-1"
                 >
-                  Line {{ result.sqlReviewReport.line }}, Column
-                  {{ result.sqlReviewReport.column }}
+                  Line {{ result.report.value.line }}, Column
+                  {{ result.report.value.column }}
                 </div>
               </div>
             </div>

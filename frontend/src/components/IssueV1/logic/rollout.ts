@@ -16,7 +16,9 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   if (!spec) {
     return false;
   }
-  const target = head(spec.changeDatabaseConfig?.targets);
+  const target = spec.config?.case === "changeDatabaseConfig" 
+    ? head(spec.config.value.targets) 
+    : undefined;
   const databaseGroup = extractDatabaseGroupName(target ?? "");
   return databaseGroup !== "";
 };

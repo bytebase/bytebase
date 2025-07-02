@@ -140,8 +140,8 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
     };
   };
 
-  if (task.databaseCreate) {
-    const databaseName = task.databaseCreate.database;
+  if (task.payload?.case === "databaseCreate") {
+    const databaseName = task.payload.value.database;
     const instance = task.target;
     return coreDatabaseInfo(instance, databaseName);
   }

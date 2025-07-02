@@ -53,7 +53,7 @@ export const provideRolloutViewContext = () => {
   const fetchRolloutPreview = async () => {
     const request = create(PreviewRolloutRequestSchema, {
       project: project.value.name,
-      plan: plan.value.name,
+      plan: plan.value,
     });
 
     try {

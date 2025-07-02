@@ -58,5 +58,11 @@ const taskRunSession = computedAsync(
   }
 );
 
-const postgresSession = computed(() => taskRunSession.value?.postgres);
+const postgresSession = computed(() => {
+  const session = taskRunSession.value;
+  if (session?.session?.case === "postgres") {
+    return session.session.value;
+  }
+  return undefined;
+});
 </script>

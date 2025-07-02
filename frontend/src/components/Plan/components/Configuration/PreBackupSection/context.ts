@@ -21,11 +21,8 @@ import {
   type Plan,
   type Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  Task,
-  Task_Status,
-  type Rollout,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import type { Task, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { flattenTaskV1List, hasProjectPermissionV2 } from "@/utils";
 import { BACKUP_AVAILABLE_ENGINES } from "./common";
 
@@ -74,8 +71,8 @@ export const providePreBackupSettingContext = (refs: {
   const shouldShow = computed((): boolean => {
     if (
       !selectedSpec.value ||
-      selectedSpec.value.changeDatabaseConfig?.type !==
-        Plan_ChangeDatabaseConfig_Type.DATA
+      selectedSpec.value.config?.case !== "changeDatabaseConfig" ||
+      selectedSpec.value.config.value.type !== Plan_ChangeDatabaseConfig_Type.DATA
     ) {
       return false;
     }
@@ -134,16 +131,21 @@ export const providePreBackupSettingContext = (refs: {
   });
 
   const enabled = computed((): boolean => {
-    return Boolean(selectedSpec.value?.changeDatabaseConfig?.enablePriorBackup);
+    if (
+      selectedSpec.value?.config?.case === "changeDatabaseConfig"
+    ) {
+      return Boolean(selectedSpec.value.config.value.enablePriorBackup);
+    }
+    return false;
   });
 
   const toggle = async (on: boolean) => {
     if (isCreating.value) {
-      if (selectedSpec.value && selectedSpec.value.changeDatabaseConfig) {
+      if (selectedSpec.value?.config?.case === "changeDatabaseConfig") {
         if (on) {
-          selectedSpec.value.changeDatabaseConfig.enablePriorBackup = true;
+          selectedSpec.value.config.value.enablePriorBackup = true;
         } else {
-          selectedSpec.value.changeDatabaseConfig.enablePriorBackup = false;
+          selectedSpec.value.config.value.enablePriorBackup = false;
         }
       }
     } else {
@@ -151,16 +153,16 @@ export const providePreBackupSettingContext = (refs: {
       const spec = (planPatch?.specs || []).find((s) => {
         return s.id === selectedSpec.value?.id;
       });
-      if (!planPatch || !spec || !spec.changeDatabaseConfig) {
+      if (!planPatch || !spec || spec.config?.case !== "changeDatabaseConfig") {
         // Should not reach here.
         throw new Error(
           "Plan or spec is not defined. Cannot update pre-backup setting."
         );
       }
       if (on) {
-        spec.changeDatabaseConfig.enablePriorBackup = true;
+        spec.config.value.enablePriorBackup = true;
       } else {
-        spec.changeDatabaseConfig.enablePriorBackup = false;
+        spec.config.value.enablePriorBackup = false;
       }
 
       const request = create(UpdatePlanRequestSchema, {

@@ -81,7 +81,7 @@ import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { InstanceV1EngineIcon, CopyButton } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
-import { getDateForPbTimestamp, unknownTask } from "@/types";
+import { getDateForPbTimestampProtoEs, unknownTask } from "@/types";
 import type { Task, TaskRun, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   ListTaskRunsRequestSchema,
@@ -183,7 +183,7 @@ watchEffect(async () => {
     const response = await rolloutServiceClientConnect.listTaskRuns(request);
     const taskRuns = response.taskRuns;
     const sorted = sortBy(taskRuns, (t) =>
-      getDateForPbTimestamp(t.createTime)
+      getDateForPbTimestampProtoEs(t.createTime)
     ).reverse();
     if (!isEqual(sorted, taskRunsRef.value)) {
       taskRunsRef.value = sorted;
@@ -218,7 +218,7 @@ const handleTaskActionCompleted = async () => {
       const response = await rolloutServiceClientConnect.listTaskRuns(request);
       const taskRuns = response.taskRuns;
       const sorted = sortBy(taskRuns, (t) =>
-        getDateForPbTimestamp(t.createTime)
+        getDateForPbTimestampProtoEs(t.createTime)
       ).reverse();
       taskRunsRef.value = sorted;
     } catch (error) {

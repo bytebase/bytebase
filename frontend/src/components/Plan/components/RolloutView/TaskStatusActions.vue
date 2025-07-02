@@ -134,7 +134,7 @@ const stage = computed((): Stage => {
     name: "",
     environment: "",
     tasks: [],
-  } as Stage;
+  } as unknown as Stage;
 });
 
 const primaryAction = computed((): TaskStatusAction | null => {

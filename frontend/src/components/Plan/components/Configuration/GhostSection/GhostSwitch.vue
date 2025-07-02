@@ -128,8 +128,8 @@ const toggleChecked = async (on: boolean) => {
   }
 
   if (isCreating.value) {
-    if (!selectedSpec.value || !selectedSpec.value.changeDatabaseConfig) return;
-    selectedSpec.value.changeDatabaseConfig.type = on
+    if (!selectedSpec.value || selectedSpec.value.config?.case !== "changeDatabaseConfig") return;
+    selectedSpec.value.config.value.type = on
       ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;
   } else {
@@ -137,14 +137,14 @@ const toggleChecked = async (on: boolean) => {
     const spec = (planPatch?.specs || []).find((spec) => {
       return spec.id === selectedSpec.value?.id;
     });
-    if (!planPatch || !spec || !spec.changeDatabaseConfig) {
+    if (!planPatch || !spec || spec.config?.case !== "changeDatabaseConfig") {
       // Should not reach here.
       throw new Error(
         "Plan or spec is not defined. Cannot update gh-ost setting."
       );
     }
 
-    spec.changeDatabaseConfig.type = on
+    spec.config.value.type = on
       ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;
     const request = create(UpdatePlanRequestSchema, {

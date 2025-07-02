@@ -32,10 +32,10 @@ import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRu
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
-import { getDateForPbTimestamp, getTimeForPbTimestamp } from "@/types";
+import { getDateForPbTimestampProtoEs, getTimeForPbTimestampProtoEs } from "@/types";
 import { create } from "@bufbuild/protobuf";
-import type { Duration } from "@/types/proto-es/google/protobuf/duration_pb";
-import { DurationSchema } from "@/types/proto-es/google/protobuf/duration_pb";
+import type { Duration } from "@bufbuild/protobuf/wkt";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
@@ -89,7 +89,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       title: t("task.created"),
       width: 140,
       render: (taskRun: TaskRun) => (
-        <HumanizeDate date={getDateForPbTimestamp(taskRun.createTime)} />
+        <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.createTime)} />
       ),
     },
     {
@@ -98,7 +98,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       width: 140,
       render: (taskRun: TaskRun) =>
         taskRun.startTime ? (
-          <HumanizeDate date={getDateForPbTimestamp(taskRun.startTime)} />
+          <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.startTime)} />
         ) : (
           "-"
         ),
@@ -145,7 +145,7 @@ const getStatusType = (status: TaskRun_Status) => {
 };
 
 const getStatusText = (status: TaskRun_Status) => {
-  return status.replace("_", " ");
+  return TaskRun_Status[status].replace("_", " ");
 };
 
 const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
@@ -157,14 +157,14 @@ const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
     return undefined;
   }
   if (taskRun.status === TaskRun_Status.RUNNING) {
-    const elapsedMS = Date.now() - getTimeForPbTimestamp(startTime);
+    const elapsedMS = Date.now() - getTimeForPbTimestampProtoEs(startTime);
     return create(DurationSchema, {
       seconds: BigInt(Math.floor(elapsedMS / 1000)),
       nanos: (elapsedMS % 1000) * 1e6,
     });
   }
-  const startMS = getTimeForPbTimestamp(startTime);
-  const updateMS = getTimeForPbTimestamp(updateTime);
+  const startMS = getTimeForPbTimestampProtoEs(startTime);
+  const updateMS = getTimeForPbTimestampProtoEs(updateTime);
   const elapsedMS = updateMS - startMS;
   return create(DurationSchema, {
     seconds: BigInt(Math.floor(elapsedMS / 1000)),

@@ -11,13 +11,13 @@ import { databaseForTask } from "@/utils";
 import { specForTask, useIssueContext, projectOfIssue } from ".";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
-  if (spec.createDatabaseConfig) {
+  if (spec.config?.case === "createDatabaseConfig") {
     return false;
   }
-  if (spec.changeDatabaseConfig !== undefined) {
+  if (spec.config?.case === "changeDatabaseConfig") {
     return true;
   }
-  if (spec.exportDataConfig !== undefined) {
+  if (spec.config?.case === "exportDataConfig") {
     return true;
   }
   return false;
@@ -49,8 +49,8 @@ export const planCheckStatusForTask = (task: Task) => {
 
 export const planCheckRunSummaryForIssue = (issue: ComposedIssue) => {
   const sheets = issue.planEntity?.specs.reduce((acc, spec) => {
-    if (spec.changeDatabaseConfig?.sheet) {
-      acc.add(spec.changeDatabaseConfig.sheet);
+    if (spec.config?.case === "changeDatabaseConfig" && spec.config.value.sheet) {
+      acc.add(spec.config.value.sheet);
     }
     return acc;
   }, new Set<string>());

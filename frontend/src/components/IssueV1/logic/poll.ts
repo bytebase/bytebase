@@ -33,7 +33,6 @@ const clearCache = (issue: ComposedIssue) => {
           });
         break;
       case Task_Type.DATABASE_EXPORT:
-      case Task_Type.UNRECOGNIZED:
       case Task_Type.TYPE_UNSPECIFIED:
         continue;
       case Task_Type.DATABASE_DATA_UPDATE:
