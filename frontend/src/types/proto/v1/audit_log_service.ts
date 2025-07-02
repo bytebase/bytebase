@@ -8,6 +8,7 @@
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { Any } from "../google/protobuf/any";
+import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Status } from "../google/rpc/status";
 import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToNumber } from "./common";
@@ -134,6 +135,10 @@ export interface AuditLog {
   response: string;
   status:
     | Status
+    | undefined;
+  /** The latency of the RPC. */
+  latency:
+    | Duration
     | undefined;
   /** service-specific data about the request, response, and other activities. */
   serviceData:
@@ -688,6 +693,7 @@ function createBaseAuditLog(): AuditLog {
     request: "",
     response: "",
     status: undefined,
+    latency: undefined,
     serviceData: undefined,
     requestMetadata: undefined,
   };
@@ -722,11 +728,14 @@ export const AuditLog: MessageFns<AuditLog> = {
     if (message.status !== undefined) {
       Status.encode(message.status, writer.uint32(74).fork()).join();
     }
+    if (message.latency !== undefined) {
+      Duration.encode(message.latency, writer.uint32(82).fork()).join();
+    }
     if (message.serviceData !== undefined) {
-      Any.encode(message.serviceData, writer.uint32(82).fork()).join();
+      Any.encode(message.serviceData, writer.uint32(90).fork()).join();
     }
     if (message.requestMetadata !== undefined) {
-      RequestMetadata.encode(message.requestMetadata, writer.uint32(90).fork()).join();
+      RequestMetadata.encode(message.requestMetadata, writer.uint32(98).fork()).join();
     }
     return writer;
   },
@@ -815,11 +824,19 @@ export const AuditLog: MessageFns<AuditLog> = {
             break;
           }
 
-          message.serviceData = Any.decode(reader, reader.uint32());
+          message.latency = Duration.decode(reader, reader.uint32());
           continue;
         }
         case 11: {
           if (tag !== 90) {
+            break;
+          }
+
+          message.serviceData = Any.decode(reader, reader.uint32());
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
             break;
           }
 
@@ -846,6 +863,7 @@ export const AuditLog: MessageFns<AuditLog> = {
       request: isSet(object.request) ? globalThis.String(object.request) : "",
       response: isSet(object.response) ? globalThis.String(object.response) : "",
       status: isSet(object.status) ? Status.fromJSON(object.status) : undefined,
+      latency: isSet(object.latency) ? Duration.fromJSON(object.latency) : undefined,
       serviceData: isSet(object.serviceData) ? Any.fromJSON(object.serviceData) : undefined,
       requestMetadata: isSet(object.requestMetadata) ? RequestMetadata.fromJSON(object.requestMetadata) : undefined,
     };
@@ -880,6 +898,9 @@ export const AuditLog: MessageFns<AuditLog> = {
     if (message.status !== undefined) {
       obj.status = Status.toJSON(message.status);
     }
+    if (message.latency !== undefined) {
+      obj.latency = Duration.toJSON(message.latency);
+    }
     if (message.serviceData !== undefined) {
       obj.serviceData = Any.toJSON(message.serviceData);
     }
@@ -906,6 +927,9 @@ export const AuditLog: MessageFns<AuditLog> = {
     message.response = object.response ?? "";
     message.status = (object.status !== undefined && object.status !== null)
       ? Status.fromPartial(object.status)
+      : undefined;
+    message.latency = (object.latency !== undefined && object.latency !== null)
+      ? Duration.fromPartial(object.latency)
       : undefined;
     message.serviceData = (object.serviceData !== undefined && object.serviceData !== null)
       ? Any.fromPartial(object.serviceData)
