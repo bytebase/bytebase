@@ -5,7 +5,6 @@ import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { instanceServiceClientConnect } from "@/grpcweb";
-import { convertOldInstanceToNew, convertOldDataSourceToNew, convertNewInstanceToOld, convertNewDataSourceToOld } from "@/utils/v1/instance-conversions";
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { silentContextKey } from "@/grpcweb/context-key";
@@ -379,10 +378,8 @@ export const provideInstanceFormContext = (baseContext: {
       const dataSourceCreate = extractDataSourceFromEdit(instance, editingDS);
       instance.dataSources = [dataSourceCreate];
       try {
-        const oldInstance = convertNewInstanceToOld(instance);
-        const newInstance = convertOldInstanceToNew(oldInstance);
         const request = create(CreateInstanceRequestSchema, {
-          instance: newInstance,
+          instance,
           instanceId: extractInstanceResourceName(instance.name),
           validateOnly: true,
         });
@@ -400,11 +397,9 @@ export const provideInstanceFormContext = (baseContext: {
         // When read-only data source is about to be created, use
         // editingDataSource + AddDataSourceRequest.validateOnly = true
         try {
-          const oldDataSource = convertNewDataSourceToOld(ds);
-          const newDataSource = convertOldDataSourceToNew(oldDataSource);
           const request = create(AddDataSourceRequestSchema, {
             name: instance.value!.name,
-            dataSource: newDataSource,
+            dataSource: ds,
             validateOnly: true,
           });
           await instanceServiceClientConnect.addDataSource(request, {
@@ -426,11 +421,9 @@ export const provideInstanceFormContext = (baseContext: {
             throw new Error("should never reach this line");
           }
           const updateMask = calcDataSourceUpdateMask(ds, original, editingDS);
-          const oldDataSource = convertNewDataSourceToOld(ds);
-          const newDataSource = convertOldDataSourceToNew(oldDataSource);
           const request = create(UpdateDataSourceRequestSchema, {
             name: instance.value!.name,
-            dataSource: newDataSource,
+            dataSource: ds,
             updateMask: { paths: updateMask },
             validateOnly: true,
           });
