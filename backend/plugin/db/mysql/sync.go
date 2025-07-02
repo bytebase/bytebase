@@ -983,7 +983,7 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 			unescapedDefault := UnescapeExpressionDefault(unquotedDefault)
 			column.Default = fmt.Sprintf("(%s)", unescapedDefault)
 		default:
-			// For non-generated and non CURRENT_XXX default value, use string.
+			// For non-generated and non CURRENT_XXX default value, preserve quotes for mysqldump compatibility
 			column.Default = defaultStr.String
 		}
 	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
