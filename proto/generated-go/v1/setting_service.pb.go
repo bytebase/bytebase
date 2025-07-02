@@ -1490,8 +1490,8 @@ type SQLQueryRestrictionSetting struct {
 	// The size limit in bytes.
 	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
 	MaximumResultSize int64 `protobuf:"varint,1,opt,name=maximum_result_size,json=maximumResultSize,proto3" json:"maximum_result_size,omitempty"`
-	// The return rows limit.
-	// The default value is -1, means no limit.
+	// The return rows limit. If the value <= 0, will be treated as no limit.
+	// The default value is -1.
 	MaximumResultRows int32 `protobuf:"varint,2,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache

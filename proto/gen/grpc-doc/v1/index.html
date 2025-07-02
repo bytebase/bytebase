@@ -13018,8 +13018,8 @@ The default value is 100MB, we will use the default value if the setting not exi
                   <td>maximum_result_rows</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The return rows limit.
-The default value is -1, means no limit. </p></td>
+                  <td><p>The return rows limit. If the value &lt;= 0, will be treated as no limit.
+The default value is -1. </p></td>
                 </tr>
               
             </tbody>
@@ -15434,6 +15434,13 @@ Some fields are omitted because they are too large or contain sensitive informat
                   <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>latency</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The latency of the RPC. </p></td>
                 </tr>
               
                 <tr>

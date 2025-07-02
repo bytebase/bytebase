@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/rpc/status.proto";
 import "v1/annotation.proto";
@@ -162,11 +163,14 @@ message AuditLog {
 
   google.rpc.Status status = 9;
 
+  // The latency of the RPC.
+  google.protobuf.Duration latency = 10;
+
   // service-specific data about the request, response, and other activities.
-  google.protobuf.Any service_data = 10;
+  google.protobuf.Any service_data = 11;
 
   // Metadata about the operation.
-  RequestMetadata request_metadata = 11;
+  RequestMetadata request_metadata = 12;
 
   enum Severity {
     DEFAULT = 0;
