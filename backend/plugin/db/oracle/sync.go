@@ -856,22 +856,41 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 		index.Unique = unique == "UNIQUE"
 		indexKey := db.IndexKey{Schema: schemaName, Table: tableName, Index: index.Name}
 		// Handle index expressions - preserve Oracle's classification
-		if expressions, ok := indexExpressionMap[indexKey]; ok && len(expressions) > 0 {
-			// This index has function-based expressions from ALL_IND_EXPRESSIONS
-			index.Expressions = expressions
-		} else {
-			// This index uses simple column references from ALL_IND_COLUMNS
-			columns := indexColumnMap[indexKey]
+		columns := indexColumnMap[indexKey]
+		expressions := indexExpressionMap[indexKey]
 
-			// Skip indexes that reference system-generated virtual columns
-			hasVirtualColumn := false
+		// For function-based indexes (including those with DESC columns)
+		if len(expressions) > 0 {
+			// Combine regular columns with expressions
+			// Oracle reports ASC columns in ALL_IND_COLUMNS and DESC columns as expressions
+			var combinedExpressions []string
+			exprIdx := 0
+
+			for i := 0; i < len(columns); i++ {
+				if strings.HasPrefix(columns[i], "SYS_NC") {
+					// This is a virtual column for a DESC column, use the expression
+					if exprIdx < len(expressions) {
+						combinedExpressions = append(combinedExpressions, expressions[exprIdx])
+						exprIdx++
+					}
+				} else {
+					// Regular column
+					combinedExpressions = append(combinedExpressions, fmt.Sprintf(`"%s"`, columns[i]))
+				}
+			}
+
+			index.Expressions = combinedExpressions
+		} else {
+			// Simple column index without expressions
+			// Skip indexes that reference only system-generated virtual columns
+			hasOnlyVirtualColumns := true
 			for _, col := range columns {
-				if strings.HasPrefix(col, "SYS_NC") {
-					hasVirtualColumn = true
+				if !strings.HasPrefix(col, "SYS_NC") {
+					hasOnlyVirtualColumns = false
 					break
 				}
 			}
-			if hasVirtualColumn {
+			if hasOnlyVirtualColumns {
 				continue
 			}
 
