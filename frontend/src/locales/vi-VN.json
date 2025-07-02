@@ -2307,7 +2307,8 @@
       "request": "Yêu cầu",
       "response": "Phản hồi",
       "status": "Trạng thái",
-      "service-data": "Dữ liệu dịch vụ"
+      "service-data": "Dữ liệu dịch vụ",
+      "latency": "Độ trễ"
     },
     "advanced-search": {
       "scope": {
