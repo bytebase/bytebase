@@ -11,6 +11,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -111,6 +112,8 @@ type AuditLog struct {
 	// Some fields are omitted because they are too large or contain sensitive information.
 	Response string         `protobuf:"bytes,7,opt,name=response,proto3" json:"response,omitempty"`
 	Status   *status.Status `protobuf:"bytes,8,opt,name=status,proto3" json:"status,omitempty"`
+	// The latency of the RPC.
+	Latency *durationpb.Duration `protobuf:"bytes,9,opt,name=latency,proto3" json:"latency,omitempty"`
 	// service-specific data about the request, response, and other activities.
 	ServiceData *anypb.Any `protobuf:"bytes,10,opt,name=service_data,json=serviceData,proto3" json:"service_data,omitempty"`
 	// Metadata about the operation.
@@ -205,6 +208,13 @@ func (x *AuditLog) GetStatus() *status.Status {
 	return nil
 }
 
+func (x *AuditLog) GetLatency() *durationpb.Duration {
+	if x != nil {
+		return x.Latency
+	}
+	return nil
+}
+
 func (x *AuditLog) GetServiceData() *anypb.Any {
 	if x != nil {
 		return x.ServiceData
@@ -279,7 +289,7 @@ var File_store_audit_log_proto protoreflect.FileDescriptor
 
 const file_store_audit_log_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x17google/rpc/status.proto\"\x8a\x04\n" +
+	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xbf\x04\n" +
 	"\bAuditLog\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x16\n" +
 	"\x06method\x18\x02 \x01(\tR\x06method\x12\x1a\n" +
@@ -288,7 +298,8 @@ const file_store_audit_log_proto_rawDesc = "" +
 	"\bseverity\x18\x05 \x01(\x0e2!.bytebase.store.AuditLog.SeverityR\bseverity\x12\x18\n" +
 	"\arequest\x18\x06 \x01(\tR\arequest\x12\x1a\n" +
 	"\bresponse\x18\a \x01(\tR\bresponse\x12*\n" +
-	"\x06status\x18\b \x01(\v2\x12.google.rpc.StatusR\x06status\x127\n" +
+	"\x06status\x18\b \x01(\v2\x12.google.rpc.StatusR\x06status\x123\n" +
+	"\alatency\x18\t \x01(\v2\x19.google.protobuf.DurationR\alatency\x127\n" +
 	"\fservice_data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12J\n" +
 	"\x10request_metadata\x18\v \x01(\v2\x1f.bytebase.store.RequestMetadataR\x0frequestMetadata\"x\n" +
@@ -322,22 +333,24 @@ func file_store_audit_log_proto_rawDescGZIP() []byte {
 var file_store_audit_log_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_audit_log_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_audit_log_proto_goTypes = []any{
-	(AuditLog_Severity)(0),  // 0: bytebase.store.AuditLog.Severity
-	(*AuditLog)(nil),        // 1: bytebase.store.AuditLog
-	(*RequestMetadata)(nil), // 2: bytebase.store.RequestMetadata
-	(*status.Status)(nil),   // 3: google.rpc.Status
-	(*anypb.Any)(nil),       // 4: google.protobuf.Any
+	(AuditLog_Severity)(0),      // 0: bytebase.store.AuditLog.Severity
+	(*AuditLog)(nil),            // 1: bytebase.store.AuditLog
+	(*RequestMetadata)(nil),     // 2: bytebase.store.RequestMetadata
+	(*status.Status)(nil),       // 3: google.rpc.Status
+	(*durationpb.Duration)(nil), // 4: google.protobuf.Duration
+	(*anypb.Any)(nil),           // 5: google.protobuf.Any
 }
 var file_store_audit_log_proto_depIdxs = []int32{
 	0, // 0: bytebase.store.AuditLog.severity:type_name -> bytebase.store.AuditLog.Severity
 	3, // 1: bytebase.store.AuditLog.status:type_name -> google.rpc.Status
-	4, // 2: bytebase.store.AuditLog.service_data:type_name -> google.protobuf.Any
-	2, // 3: bytebase.store.AuditLog.request_metadata:type_name -> bytebase.store.RequestMetadata
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4, // 2: bytebase.store.AuditLog.latency:type_name -> google.protobuf.Duration
+	5, // 3: bytebase.store.AuditLog.service_data:type_name -> google.protobuf.Any
+	2, // 4: bytebase.store.AuditLog.request_metadata:type_name -> bytebase.store.RequestMetadata
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_audit_log_proto_init() }

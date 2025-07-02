@@ -4452,7 +4452,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
-| maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
+| maximum_result_rows | [int32](#int32) |  | The return rows limit. If the value &lt;= 0, will be treated as no limit. The default value is -1. |
 
 
 
@@ -5357,6 +5357,7 @@ The type of action performed on a Binding in a policy.
 | request | [string](#string) |  | JSON-encoded request. |
 | response | [string](#string) |  | JSON-encoded response. Some fields are omitted because they are too large or contain sensitive information. |
 | status | [google.rpc.Status](#google-rpc-Status) |  |  |
+| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The latency of the RPC. |
 | service_data | [google.protobuf.Any](#google-protobuf-Any) |  | service-specific data about the request, response, and other activities. |
 | request_metadata | [RequestMetadata](#bytebase-v1-RequestMetadata) |  | Metadata about the operation. |
 

@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { ExportFormat } from "./common_pb";
-import type { Any, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Any, Duration, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { Status } from "../google/rpc/status_pb";
 import type { PolicyDelta } from "./iam_policy_pb";
 
@@ -255,16 +255,23 @@ export declare type AuditLog = Message<"bytebase.v1.AuditLog"> & {
   status?: Status;
 
   /**
+   * The latency of the RPC.
+   *
+   * @generated from field: google.protobuf.Duration latency = 10;
+   */
+  latency?: Duration;
+
+  /**
    * service-specific data about the request, response, and other activities.
    *
-   * @generated from field: google.protobuf.Any service_data = 10;
+   * @generated from field: google.protobuf.Any service_data = 11;
    */
   serviceData?: Any;
 
   /**
    * Metadata about the operation.
    *
-   * @generated from field: bytebase.v1.RequestMetadata request_metadata = 11;
+   * @generated from field: bytebase.v1.RequestMetadata request_metadata = 12;
    */
   requestMetadata?: RequestMetadata;
 };
