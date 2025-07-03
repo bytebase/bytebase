@@ -74,7 +74,7 @@ import { NRadioGroup, NRadio } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, type LocationQueryRaw } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
@@ -133,7 +133,7 @@ const handleClickNext = async () => {
     const databaseGroup = dbGroupStore.getDBGroupByName(
       state.targetSelectState.selectedDatabaseGroup || ""
     );
-    const query: Record<string, any> = {
+    const query: LocationQueryRaw = {
       template:
         state.changeType === "DDL"
           ? "bb.issue.database.schema.update"

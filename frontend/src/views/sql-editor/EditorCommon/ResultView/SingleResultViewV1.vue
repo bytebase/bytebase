@@ -209,7 +209,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, type LocationQueryRaw } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import type {
   DownloadContent,
@@ -515,7 +515,7 @@ const handleRequestExport = async () => {
   const issueType = "bb.issue.database.data.export";
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, props.result.statement);
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: issueType,
     name: generateIssueTitle(issueType, [database.databaseName]),
     databaseList: database.name,
