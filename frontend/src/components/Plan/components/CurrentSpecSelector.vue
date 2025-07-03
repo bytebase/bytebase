@@ -105,12 +105,12 @@ const getSpecTypeName = (spec: Plan_Spec): string => {
 };
 
 const handleSpecChange = (specId: string) => {
-  gotoSpec(router, plan.value, specId);
+  gotoSpec(router, specId);
 };
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
   // Add the new spec to the plan
   plan.value.specs.push(spec);
-  gotoSpec(router, plan.value, spec.id);
+  gotoSpec(router, spec.id);
 };
 </script>
