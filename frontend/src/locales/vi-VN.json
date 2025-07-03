@@ -2077,7 +2077,7 @@
       "expression": "Biểu thức",
       "null": "NULL",
       "value": "Giá trị",
-      "postgres-placeholder": "Nhập biểu thức mặc định (ví dụ: 'hello', 42, now(), nextval('seq')) hoặc để trống nếu không có biểu thức mặc định"
+      "placeholder": "Nhập giá trị mặc định hoặc để trống nếu không có giá trị mặc định"
     },
     "message": {
       "invalid-schema-name": "Tên lược đồ không hợp lệ",
@@ -2307,8 +2307,8 @@
       "request": "Yêu cầu",
       "response": "Phản hồi",
       "status": "Trạng thái",
-      "service-data": "Dữ liệu dịch vụ",
-      "latency": "Độ trễ"
+      "latency": "Độ trễ",
+      "service-data": "Dữ liệu dịch vụ"
     },
     "advanced-search": {
       "scope": {

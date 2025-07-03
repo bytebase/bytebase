@@ -2077,7 +2077,7 @@
       "expression": "表达式",
       "null": "NULL",
       "value": "值",
-      "postgres-placeholder": "输入默认表达式（例如，'hello'、42、now()、nextval('seq')）或留空表示无默认值"
+      "placeholder": "输入默认值或留空以不使用默认值"
     },
     "message": {
       "invalid-schema-name": "无效的 Schema 名称",
@@ -2307,8 +2307,8 @@
       "request": "请求信息",
       "response": "响应信息",
       "status": "状态",
-      "service-data": "服务数据",
-      "latency": "延迟"
+      "latency": "延迟",
+      "service-data": "服务数据"
     },
     "advanced-search": {
       "scope": {

@@ -2077,7 +2077,7 @@
       "expression": "Expresión",
       "null": "NULL",
       "value": "Valor",
-      "postgres-placeholder": "Ingrese una expresión predeterminada (por ejemplo, 'hola', 42, now(), nextval('seq')) o déjela vacía si no hay una expresión predeterminada"
+      "placeholder": "Introduzca un valor predeterminado o déjelo vacío si no hay ningún valor predeterminado"
     },
     "message": {
       "invalid-schema-name": "Nombre de esquema inválido",
@@ -2307,8 +2307,8 @@
       "request": "Pedido",
       "response": "Respuesta",
       "status": "Estatus",
-      "service-data": "Datos del Servicio",
-      "latency": "Estado latente"
+      "latency": "Estado latente",
+      "service-data": "Datos del Servicio"
     },
     "advanced-search": {
       "scope": {
