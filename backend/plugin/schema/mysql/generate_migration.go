@@ -536,8 +536,10 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 			_, _ = buf.WriteString(" AUTO_INCREMENT")
 		} else if hasDefaultValue(col) && !hasAutoIncrement(col) && col.Generation == nil {
 			// Don't add DEFAULT if this is a generated column
-			_, _ = buf.WriteString(" DEFAULT ")
-			_, _ = buf.WriteString(getDefaultExpression(col))
+			if e := getDefaultExpression(col); e != "" {
+				_, _ = buf.WriteString(" DEFAULT ")
+				_, _ = buf.WriteString(e)
+			}
 		}
 
 		// Handle ON UPDATE
@@ -1036,18 +1038,14 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 		return column.DefaultExpression
 	}
 
-	// Check for string default value
-	if column.Default != "" {
-		// Check if it's a numeric value or needs quotes
-		if isNumeric(column.Default) || isKeyword(column.Default) {
-			return column.Default
-		}
-		return fmt.Sprintf("'%s'", escapeString(column.Default))
-	}
-
 	// Check for NULL default
 	if column.DefaultNull {
 		return "NULL"
+	}
+
+	// Check for string default value
+	if column.Default != "" {
+		return column.Default
 	}
 
 	return ""
