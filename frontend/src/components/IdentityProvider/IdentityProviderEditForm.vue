@@ -418,13 +418,13 @@ const getProviderIcon = (type: IdentityProviderType) => {
 };
 
 const buildUpdatedIdentityProvider = (): IdentityProvider => {
-  const result: any = createProto(IdentityProviderSchema, {
+  const result = createProto(IdentityProviderSchema, {
     ...localIdentityProvider.value,
     config: createProto(IdentityProviderConfigSchema, {}),
   });
 
   if (localIdentityProvider.value.type === IdentityProviderType.OAUTH2) {
-    const oauth2Config: any = {
+    const oauth2Config = {
       ...configForOAuth2.value,
       scopes: scopesStringOfConfig.value.split(" ").filter(Boolean),
       fieldMapping: createProto(FieldMappingSchema, fieldMapping),
@@ -437,7 +437,7 @@ const buildUpdatedIdentityProvider = (): IdentityProvider => {
       },
     });
   } else if (localIdentityProvider.value.type === IdentityProviderType.OIDC) {
-    const oidcConfig: any = {
+    const oidcConfig = {
       ...configForOIDC.value,
       scopes: scopesStringOfConfig.value.split(" ").filter(Boolean),
       fieldMapping: createProto(FieldMappingSchema, fieldMapping),
@@ -450,7 +450,7 @@ const buildUpdatedIdentityProvider = (): IdentityProvider => {
       },
     });
   } else if (localIdentityProvider.value.type === IdentityProviderType.LDAP) {
-    const ldapConfig: any = {
+    const ldapConfig = {
       ...configForLDAP.value,
       fieldMapping: createProto(FieldMappingSchema, fieldMapping),
     };

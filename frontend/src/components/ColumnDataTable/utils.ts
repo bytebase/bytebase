@@ -57,7 +57,7 @@ export const updateColumnCatalog = async ({
     pendingUpdateCatalog.schemas.push(targetSchema);
   }
 
-  let targetTable = targetSchema.tables.find((t: any) => t.name === table);
+  let targetTable = targetSchema.tables.find((t) => t.name === table);
   if (!targetTable) {
     targetTable = create(TableCatalogSchema, {
       name: table,
@@ -76,7 +76,7 @@ export const updateColumnCatalog = async ({
   }
 
   const columns = targetTable.kind.value.columns || [];
-  const columnIndex = columns.findIndex((c: any) => c.name === column);
+  const columnIndex = columns.findIndex((c) => c.name === column);
   if (columnIndex < 0) {
     columns.push(
       create(ColumnCatalogSchema, {
@@ -120,16 +120,14 @@ export const updateTableCatalog = async ({
 
   const pendingUpdateCatalog = cloneDeep(catalog);
   let targetSchema = pendingUpdateCatalog.schemas.find(
-    (s: any) => s.name === schema
+    (s) => s.name === schema
   );
   if (!targetSchema) {
     targetSchema = create(SchemaCatalogSchema, { name: schema, tables: [] });
     pendingUpdateCatalog.schemas.push(targetSchema);
   }
 
-  const tableIndex = targetSchema.tables.findIndex(
-    (t: any) => t.name === table
-  );
+  const tableIndex = targetSchema.tables.findIndex((t) => t.name === table);
   if (tableIndex < 0) {
     targetSchema.tables.push(
       create(TableCatalogSchema, {
