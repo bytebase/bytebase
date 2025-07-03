@@ -49,7 +49,9 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 const tab = useRouteHash("rules", TabValueList, "replace");
-const hasCustomApprovalFeature = featureToRef(PlanFeature.FEATURE_APPROVAL_WORKFLOW);
+const hasCustomApprovalFeature = featureToRef(
+  PlanFeature.FEATURE_APPROVAL_WORKFLOW
+);
 
 provideCustomApprovalContext({
   hasFeature: hasCustomApprovalFeature,

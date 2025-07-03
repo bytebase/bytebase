@@ -1,7 +1,7 @@
-import { defineStore } from "pinia";
-import { reactive } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { defineStore } from "pinia";
+import { reactive } from "vue";
 import { changelistServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type {
@@ -64,16 +64,16 @@ export const useChangelistStore = defineStore("changelist", () => {
   };
 
   const createChangelist = async (request: CreateChangelistRequest) => {
-    const created = await changelistServiceClientConnect.createChangelist(request);
+    const created =
+      await changelistServiceClientConnect.createChangelist(request);
     await upsertChangelistMap([created], true /* compose */);
     return created;
   };
 
-  const fetchChangelists = async (
-    request: Partial<ListChangelistsRequest>
-  ) => {
+  const fetchChangelists = async (request: Partial<ListChangelistsRequest>) => {
     const connectRequest = create(ListChangelistsRequestSchema, request as any);
-    const response = await changelistServiceClientConnect.listChangelists(connectRequest);
+    const response =
+      await changelistServiceClientConnect.listChangelists(connectRequest);
     await upsertChangelistMap(response.changelists, false /* !compose */);
     return response;
   };
@@ -86,7 +86,8 @@ export const useChangelistStore = defineStore("changelist", () => {
       changelist: changelist,
       updateMask: { paths: updateMask },
     });
-    const updated = await changelistServiceClientConnect.updateChangelist(connectRequest);
+    const updated =
+      await changelistServiceClientConnect.updateChangelist(connectRequest);
     await upsertChangelistMap([updated], true /* compose */);
     return updated;
   };

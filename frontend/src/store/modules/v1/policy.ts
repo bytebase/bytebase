@@ -1,6 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { Code, ConnectError } from "@connectrpc/connect";
+import { defineStore } from "pinia";
+import { computed, ref, unref, watchEffect } from "vue";
 import { orgPolicyServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
@@ -17,8 +19,6 @@ import {
   DeletePolicyRequestSchema,
   RolloutPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import { defineStore } from "pinia";
-import { computed, ref, unref, watchEffect } from "vue";
 import { useCurrentUserV1 } from "./auth";
 
 interface PolicyState {
@@ -78,7 +78,8 @@ export const usePolicyV1Store = defineStore("policy_v1", {
         policyType: policyType,
         showDeleted,
       });
-      const response = await orgPolicyServiceClientConnect.listPolicies(request);
+      const response =
+        await orgPolicyServiceClientConnect.listPolicies(request);
       const policies = response.policies;
       for (const policy of policies) {
         this.policyMapByName.set(policy.name, policy);
@@ -130,7 +131,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       try {
         const request = create(GetPolicyRequestSchema, { name });
         const policy = await orgPolicyServiceClientConnect.getPolicy(request, {
-          contextValues: createContextValues().set(silentContextKey, true)
+          contextValues: createContextValues().set(silentContextKey, true),
         });
         this.policyMapByName.set(policy.name, policy);
         return policy;
@@ -155,7 +156,9 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       return this.getPolicyByName(name);
     },
     getPolicyByName(name: string) {
-      const policy = this.policyMapByName.get(replacePolicyTypeNameToLowerCase(name));
+      const policy = this.policyMapByName.get(
+        replacePolicyTypeNameToLowerCase(name)
+      );
       return policy;
     },
     async upsertPolicy({
@@ -175,7 +178,8 @@ export const usePolicyV1Store = defineStore("policy_v1", {
         name: policyName,
         inheritFromParent: policy.inheritFromParent ?? false,
         type: policy.type,
-        resourceType: policy.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
+        resourceType:
+          policy.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
         enforce: policy.enforce ?? false,
         policy: policy.policy,
       });
@@ -184,7 +188,8 @@ export const usePolicyV1Store = defineStore("policy_v1", {
         updateMask: { paths: ["payload"] },
         allowMissing: true,
       });
-      const response = await orgPolicyServiceClientConnect.updatePolicy(request);
+      const response =
+        await orgPolicyServiceClientConnect.updatePolicy(request);
       this.policyMapByName.set(response.name, response);
       return response;
     },

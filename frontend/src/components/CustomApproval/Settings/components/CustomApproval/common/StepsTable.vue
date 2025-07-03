@@ -21,6 +21,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
 import {
   ArrowUpIcon,
   ArrowDownIcon,
@@ -34,14 +35,16 @@ import { useI18n } from "vue-i18n";
 import { RoleSelect } from "@/components/v2";
 import { SpinnerButton } from "@/components/v2/Form";
 import { PresetRoleType } from "@/types";
-import type { ApprovalFlow, ApprovalStep } from "@/types/proto-es/v1/issue_service_pb";
+import type {
+  ApprovalFlow,
+  ApprovalStep,
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalNode_Type,
   ApprovalStep_Type,
   ApprovalNodeSchema,
   ApprovalStepSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { create } from "@bufbuild/protobuf";
 import { approvalNodeText } from "@/utils";
 import { useCustomApprovalContext } from "../context";
 
@@ -146,15 +149,17 @@ const reorder = (step: ApprovalStep, index: number, offset: -1 | 1) => {
   emit("update");
 };
 const addStep = () => {
-  steps.value.push(create(ApprovalStepSchema, {
-    type: ApprovalStep_Type.ANY,
-    nodes: [
-      create(ApprovalNodeSchema, {
-        type: ApprovalNode_Type.ANY_IN_GROUP,
-        role: PresetRoleType.WORKSPACE_ADMIN,
-      }),
-    ],
-  }));
+  steps.value.push(
+    create(ApprovalStepSchema, {
+      type: ApprovalStep_Type.ANY,
+      nodes: [
+        create(ApprovalNodeSchema, {
+          type: ApprovalNode_Type.ANY_IN_GROUP,
+          role: PresetRoleType.WORKSPACE_ADMIN,
+        }),
+      ],
+    })
+  );
   emit("update");
 };
 

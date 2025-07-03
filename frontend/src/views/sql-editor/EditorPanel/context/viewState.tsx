@@ -1,5 +1,18 @@
+import { InfoIcon } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
 import { computed, inject, provide, watch, type InjectionKey } from "vue";
+import type { VNodeChild } from "vue";
+import {
+  FunctionIcon,
+  TableIcon,
+  ViewIcon,
+  ProcedureIcon,
+  ExternalTableIcon,
+  PackageIcon,
+  SequenceIcon,
+} from "@/components/Icon";
+import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
+import { t } from "@/plugins/i18n";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
@@ -14,19 +27,6 @@ import {
   instanceV1SupportsPackage,
   instanceV1SupportsSequence,
 } from "@/utils";
-import type { VNodeChild } from "vue";
-import { t } from "@/plugins/i18n";
-import {
-  FunctionIcon,
-  TableIcon,
-  ViewIcon,
-  ProcedureIcon,
-  ExternalTableIcon,
-  PackageIcon,
-  SequenceIcon,
-} from "@/components/Icon";
-import { InfoIcon } from "lucide-vue-next"
-import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 
 const KEY = Symbol(
   "bb.sql-editor.editor-panel"
@@ -45,58 +45,62 @@ export const provideCurrentTabViewStateContext = () => {
   });
 
   const availableActions = computed(() => {
-    const actions: { view: EditorPanelView; title: string; icon: () => VNodeChild }[] = [
+    const actions: {
+      view: EditorPanelView;
+      title: string;
+      icon: () => VNodeChild;
+    }[] = [
       {
         view: "INFO",
         title: t("common.info"),
-        icon: () => <InfoIcon class="w-4 h-4" />
+        icon: () => <InfoIcon class="w-4 h-4" />,
       },
       {
         view: "TABLES",
         title: t("db.tables"),
-        icon: () => <TableIcon class="w-4 h-4" />
+        icon: () => <TableIcon class="w-4 h-4" />,
       },
       {
         view: "VIEWS",
         title: t("db.views"),
-        icon: () => <ViewIcon class="w-4 h-4" />
+        icon: () => <ViewIcon class="w-4 h-4" />,
       },
       {
         view: "FUNCTIONS",
         title: t("db.functions"),
-        icon: () => <FunctionIcon class="w-4 h-4" />
+        icon: () => <FunctionIcon class="w-4 h-4" />,
       },
       {
         view: "PROCEDURES",
         title: t("db.procedures"),
-        icon: () => <ProcedureIcon class="w-4 h-4" />
+        icon: () => <ProcedureIcon class="w-4 h-4" />,
       },
     ];
     if (instanceV1SupportsSequence(instance.value)) {
       actions.push({
         view: "SEQUENCES",
         title: t("db.sequences"),
-        icon: () => <SequenceIcon class="w-4 h-4" />
+        icon: () => <SequenceIcon class="w-4 h-4" />,
       });
     }
     if (instanceV1SupportsExternalTable(instance.value)) {
       actions.push({
         view: "EXTERNAL_TABLES",
         title: t("db.external-tables"),
-        icon: () => <ExternalTableIcon class="w-4 h-4" />
+        icon: () => <ExternalTableIcon class="w-4 h-4" />,
       });
     }
     if (instanceV1SupportsPackage(instance.value)) {
       actions.push({
         view: "PACKAGES",
         title: t("db.packages"),
-        icon: () => <PackageIcon class="w-4 h-4" />
+        icon: () => <PackageIcon class="w-4 h-4" />,
       });
     }
     actions.push({
       view: "DIAGRAM",
       title: t("schema-diagram.self"),
-      icon: () => <SchemaDiagramIcon class="w-4 h-4" />
+      icon: () => <SchemaDiagramIcon class="w-4 h-4" />,
     });
     return actions;
   });

@@ -1,4 +1,7 @@
-import type { Plan_Spec, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
+import type {
+  Plan_Spec,
+  PlanCheckRun,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { sheetNameForSpec, targetsForSpec } from "./plan";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {

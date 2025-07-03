@@ -65,6 +65,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, NDivider, NInput, useDialog } from "naive-ui";
@@ -89,10 +90,12 @@ import {
   getProjectNameAndDatabaseGroupName,
 } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import { create } from "@bufbuild/protobuf";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
-import { DatabaseGroupSchema, type DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
+import {
+  DatabaseGroupSchema,
+  type DatabaseGroup,
+} from "@/types/proto-es/v1/database_group_service_pb";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";

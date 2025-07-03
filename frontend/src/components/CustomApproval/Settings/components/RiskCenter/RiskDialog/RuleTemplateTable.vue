@@ -28,6 +28,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
 import { NButton, NDataTable, useDialog } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
@@ -35,7 +36,6 @@ import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { buildCELExpr } from "@/plugins/cel";
-import { create } from "@bufbuild/protobuf";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";

@@ -17,20 +17,23 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect, issueServiceClientConnect } from "@/grpcweb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { IssueSchema, UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
   pushNotification,
   useCurrentUserV1,
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
+import {
+  IssueSchema,
+  UpdateIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";

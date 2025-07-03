@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
 import { useElementSize } from "@vueuse/core";
 import { head, pull } from "lodash-es";
 import { ChevronDownIcon } from "lucide-vue-next";
@@ -46,7 +47,6 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import type { EditStatus } from "../..";
 import { useSchemaEditorContext } from "../../context";
-import { create } from "@bufbuild/protobuf";
 import { markUUID } from "../common";
 import {
   OperationCell,

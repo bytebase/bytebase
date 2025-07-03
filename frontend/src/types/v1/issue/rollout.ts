@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
 import type {
   TaskRun,
@@ -13,7 +14,6 @@ import {
   EMPTY_ENVIRONMENT_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
 } from "../environment";
-import { create } from "@bufbuild/protobuf";
 
 export const EMPTY_STAGE_NAME = `${EMPTY_ROLLOUT_NAME}/stages/${EMPTY_ID}`;
 export const UNKNOWN_STAGE_NAME = `${UNKNOWN_ROLLOUT_NAME}/stages/${UNKNOWN_ID}`;

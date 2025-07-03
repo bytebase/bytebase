@@ -30,12 +30,12 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
 import { NInputNumber, NCheckbox } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { create } from "@bufbuild/protobuf";
 
 const DEFAULT_EXPIRATION_DAYS = 90;
 
@@ -49,10 +49,12 @@ const getInitialState = (): LocalState => {
     inputValue: DEFAULT_EXPIRATION_DAYS,
     neverExpire: true,
   };
-  const seconds =
-    settingV1Store.workspaceProfileSetting?.maximumRoleExpiration?.seconds
-      ? Number(settingV1Store.workspaceProfileSetting.maximumRoleExpiration.seconds)
-      : undefined;
+  const seconds = settingV1Store.workspaceProfileSetting?.maximumRoleExpiration
+    ?.seconds
+    ? Number(
+        settingV1Store.workspaceProfileSetting.maximumRoleExpiration.seconds
+      )
+    : undefined;
   if (seconds && seconds > 0) {
     defaultState.inputValue =
       Math.floor(seconds / (60 * 60 * 24)) || DEFAULT_EXPIRATION_DAYS;
@@ -75,10 +77,13 @@ const handleSettingChange = async () => {
   }
   await settingV1Store.updateWorkspaceProfile({
     payload: {
-      maximumRoleExpiration: create(DurationSchema, { seconds: BigInt(seconds), nanos: 0 }),
+      maximumRoleExpiration: create(DurationSchema, {
+        seconds: BigInt(seconds),
+        nanos: 0,
+      }),
     },
     updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile_setting_value.maximum_role_expiration"]
+      paths: ["value.workspace_profile_setting_value.maximum_role_expiration"],
     }),
   });
   Object.assign(state, getInitialState());

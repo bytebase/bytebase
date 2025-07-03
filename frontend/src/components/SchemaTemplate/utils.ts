@@ -1,6 +1,6 @@
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { computed, reactive } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { useSettingV1Store } from "@/store";
 import { unknownDatabase, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -29,30 +29,37 @@ import {
 export const engineList = [Engine.MYSQL, Engine.POSTGRES];
 
 // Create empty schema template table template
-export const createEmptyTableTemplate = (): SchemaTemplateSetting_TableTemplate => {
-  return create(SchemaTemplateSetting_TableTemplateSchema, {
-    id: "",
-    category: "",
-    engine: Engine.ENGINE_UNSPECIFIED,
-    table: create(TableMetadataSchema, {}),
-    catalog: create(TableCatalogSchema, {
-      name: "",
-      kind: {
-        case: "columns",
-        value: create(TableCatalog_ColumnsSchema, {}),
-      },
-    }),
-  });
-};
+export const createEmptyTableTemplate =
+  (): SchemaTemplateSetting_TableTemplate => {
+    return create(SchemaTemplateSetting_TableTemplateSchema, {
+      id: "",
+      category: "",
+      engine: Engine.ENGINE_UNSPECIFIED,
+      table: create(TableMetadataSchema, {}),
+      catalog: create(TableCatalogSchema, {
+        name: "",
+        kind: {
+          case: "columns",
+          value: create(TableCatalog_ColumnsSchema, {}),
+        },
+      }),
+    });
+  };
 
 export const categoryList = computed(() => {
   const settingStore = useSettingV1Store();
-  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
-  
-  if (!setting || !setting.value || setting.value.value.case !== "schemaTemplateSettingValue") {
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SCHEMA_TEMPLATE
+  );
+
+  if (
+    !setting ||
+    !setting.value ||
+    setting.value.value.case !== "schemaTemplateSettingValue"
+  ) {
     return [];
   }
-  
+
   const schemaTemplateSetting = setting.value.value.value;
   const fieldTemplateList = schemaTemplateSetting.fieldTemplates ?? [];
   const tableTemplateList = schemaTemplateSetting.tableTemplates ?? [];
@@ -73,12 +80,18 @@ export const categoryList = computed(() => {
 export const classificationConfig = computed(
   (): DataClassificationSetting_DataClassificationConfig | undefined => {
     const settingStore = useSettingV1Store();
-    const setting = settingStore.getSettingByName(Setting_SettingName.DATA_CLASSIFICATION);
-    
-    if (!setting || !setting.value || setting.value.value.case !== "dataClassificationSettingValue") {
+    const setting = settingStore.getSettingByName(
+      Setting_SettingName.DATA_CLASSIFICATION
+    );
+
+    if (
+      !setting ||
+      !setting.value ||
+      setting.value.value.case !== "dataClassificationSettingValue"
+    ) {
       return undefined;
     }
-    
+
     const configs = setting.value.value.value.configs;
     return configs.length > 0 ? configs[0] : undefined;
   }

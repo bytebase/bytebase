@@ -417,8 +417,7 @@ const updateStatement = async (statement: string) => {
   const sheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
     title: plan.value.title,
-    engine: specEngine 
-    ,
+    engine: specEngine,
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

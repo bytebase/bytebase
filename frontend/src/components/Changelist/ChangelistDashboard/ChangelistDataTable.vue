@@ -76,7 +76,9 @@ const columnList = computed((): ChangelistDataTableColumn[] => {
         width: 256,
         render: (changelist) => {
           return (
-            <HumanizeDate date={getDateForPbTimestampProtoEs(changelist.updateTime)} />
+            <HumanizeDate
+              date={getDateForPbTimestampProtoEs(changelist.updateTime)}
+            />
           );
         },
       },

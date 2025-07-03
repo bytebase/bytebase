@@ -17,15 +17,18 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { create } from "@bufbuild/protobuf";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { pushNotification } from "@/store";
-import { IssueSchema, UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueSchema,
+  UpdateIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { useIssueContext } from "../../logic";
 
 type ViewMode = "EDIT" | "VIEW";

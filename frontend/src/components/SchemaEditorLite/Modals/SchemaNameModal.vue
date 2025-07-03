@@ -25,6 +25,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NButton, NInput } from "naive-ui";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -34,7 +35,6 @@ import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { SchemaMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
-import { create } from "@bufbuild/protobuf";
 
 const schemaNameFieldRegexp = /^\S+$/;
 

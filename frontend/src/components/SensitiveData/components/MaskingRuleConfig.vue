@@ -83,6 +83,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
@@ -100,6 +101,7 @@ import {
   emptySimpleExpr,
 } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { MaskingRulePolicy_MaskingRule } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto-es/v1/setting_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
@@ -108,8 +110,6 @@ import {
   batchConvertParsedExprToCELString,
 } from "@/utils";
 import { factorSupportDropdown, factorOperatorOverrideMap } from "./utils";
-import { create } from "@bufbuild/protobuf";
-import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 
 export interface SemanticTypeSelectOption extends SelectOption {
   value: string;

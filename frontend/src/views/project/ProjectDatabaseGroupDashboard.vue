@@ -57,8 +57,8 @@ import {
 import { SearchBox } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE } from "@/router/dashboard/projectV1";
 import { useProjectByName, hasFeature } from "@/store";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {

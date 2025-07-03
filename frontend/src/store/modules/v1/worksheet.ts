@@ -17,9 +17,7 @@ import {
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { WorksheetOrganizer } from "@/types/proto-es/v1/worksheet_service_pb";
-import type {
-  Worksheet,
-} from "@/types/proto-es/v1/worksheet_service_pb";
+import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   extractWorksheetUID,
   getSheetStatement,
@@ -223,10 +221,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     return response.worksheets;
   };
 
-  const patchWorksheet = async (
-    worksheet: Worksheet,
-    updateMask: string[]
-  ) => {
+  const patchWorksheet = async (worksheet: Worksheet, updateMask: string[]) => {
     if (!worksheet.name) return;
     const request = create(UpdateWorksheetRequestSchema, {
       worksheet: worksheet,

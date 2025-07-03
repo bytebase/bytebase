@@ -3,6 +3,10 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import Emittery from "emittery";
+import { storeToRefs } from "pinia";
+import { computed, reactive, ref, toRef } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -10,12 +14,11 @@ import {
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { AISettingSchema, Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
+import {
+  AISettingSchema,
+  Setting_SettingName,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { wrapRefAsPromise } from "@/utils";
-import Emittery from "emittery";
-import { storeToRefs } from "pinia";
-import { computed, reactive, ref, toRef } from "vue";
 import { provideAIContext, useChatByTab, useCurrentChat } from "../logic";
 import { useConversationStore } from "../store";
 import type { AIContext, AIContextEvents } from "../types";

@@ -80,7 +80,11 @@ import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CheckReleaseRequestSchema,
   ReleaseFileType,
@@ -88,10 +92,6 @@ import {
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
-import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   defer,
@@ -215,8 +215,12 @@ const createSheets = async () => {
 
   const specList = issue.value.planEntity?.specs ?? [];
   for (const spec of specList) {
-    const config = spec.config?.case === "changeDatabaseConfig" ? spec.config.value : 
-                    spec.config?.case === "exportDataConfig" ? spec.config.value : null;
+    const config =
+      spec.config?.case === "changeDatabaseConfig"
+        ? spec.config.value
+        : spec.config?.case === "exportDataConfig"
+          ? spec.config.value
+          : null;
     if (!config) continue;
     configWithSheetList.push(config);
     if (pendingCreateSheetMap.has(config.sheet)) continue;

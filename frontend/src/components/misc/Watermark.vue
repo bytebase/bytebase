@@ -35,7 +35,12 @@
 <script lang="ts" setup>
 import { NWatermark } from "naive-ui";
 import { computed } from "vue";
-import { featureToRef, useCurrentUserV1, extractUserId, useActuatorV1Store } from "@/store";
+import {
+  featureToRef,
+  useCurrentUserV1,
+  extractUserId,
+  useActuatorV1Store,
+} from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { UNKNOWN_USER_NAME } from "@/types";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
@@ -46,7 +51,12 @@ const SIZE = 16;
 const PADDING = 6;
 
 const currentUserV1 = useCurrentUserV1();
-const version = computed(() => useActuatorV1Store().version + "-" + useActuatorV1Store().gitCommitBE.substring(0, 7));
+const version = computed(
+  () =>
+    useActuatorV1Store().version +
+    "-" +
+    useActuatorV1Store().gitCommitBE.substring(0, 7)
+);
 const setting = computed(() =>
   useSettingV1Store().getSettingByName(Setting_SettingName.WATERMARK)
 );
@@ -57,7 +67,11 @@ const lines = computed(() => {
   const uid = extractUserId(user.name);
   if (user.name === UNKNOWN_USER_NAME) return [];
   if (!hasWatermarkFeature.value) return [];
-  if (setting.value?.value?.value?.case !== "stringValue" || setting.value.value.value.value !== "1") return [];
+  if (
+    setting.value?.value?.value?.case !== "stringValue" ||
+    setting.value.value.value.value !== "1"
+  )
+    return [];
 
   const lines: string[] = [];
   lines.push(`${user.title} (${uid})`);

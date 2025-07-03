@@ -49,7 +49,10 @@ export const planCheckStatusForTask = (task: Task) => {
 
 export const planCheckRunSummaryForIssue = (issue: ComposedIssue) => {
   const sheets = issue.planEntity?.specs.reduce((acc, spec) => {
-    if (spec.config?.case === "changeDatabaseConfig" && spec.config.value.sheet) {
+    if (
+      spec.config?.case === "changeDatabaseConfig" &&
+      spec.config.value.sheet
+    ) {
       acc.add(spec.config.value.sheet);
     }
     return acc;

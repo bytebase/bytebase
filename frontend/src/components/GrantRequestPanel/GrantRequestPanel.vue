@@ -55,14 +55,14 @@ import { issueServiceClientConnect } from "@/grpcweb";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { getUserEmailInBinding } from "@/types";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   CreateIssueRequestSchema,
   IssueSchema,
   Issue_Type as NewIssue_Type,
   GrantRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
-import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { generateIssueTitle, displayRoleTitle } from "@/utils";
 
 interface LocalState {

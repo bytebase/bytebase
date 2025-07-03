@@ -20,6 +20,7 @@
 <script lang="ts" setup>
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed } from "vue";
+import type { LocationQueryRaw } from "vue-router";
 import { stageForTask, projectOfIssue } from "@/components/IssueV1/logic";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import type { ComposedIssue } from "@/types";
@@ -32,7 +33,6 @@ import {
   extractTaskUID,
   issueV1Slug,
 } from "@/utils";
-import type { LocationQueryRaw } from "vue-router";
 
 const props = defineProps<{
   issue: ComposedIssue;

@@ -27,7 +27,9 @@
         >
           <span class="opacity-80">({{ $t("common.edited") }}</span>
           <HumanizeTs
-            :ts="getTimeForPbTimestampProtoEs(issueComment.updateTime, 0) / 1000"
+            :ts="
+              getTimeForPbTimestampProtoEs(issueComment.updateTime, 0) / 1000
+            "
             class="ml-1"
           />)
         </span>

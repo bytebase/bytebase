@@ -5,9 +5,7 @@ import {
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, QueryPermission } from "@/types";
 import { QueryPermissionQueryAny, UNKNOWN_ID } from "@/types";
-import {
-  hasWorkspacePermissionV2
-} from "../iam";
+import { hasWorkspacePermissionV2 } from "../iam";
 import { extractProjectResourceName } from "./project";
 
 export const databaseV1Url = (db: ComposedDatabase) => {

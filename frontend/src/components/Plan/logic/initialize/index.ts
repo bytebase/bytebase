@@ -8,9 +8,9 @@ import {
 import { projectNamePrefix, usePlanStore } from "@/store";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
+import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { emptyPlan } from "@/types/v1/issue/plan";
 import { createPlanSkeleton } from "./create";

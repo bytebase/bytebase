@@ -93,7 +93,7 @@ const updateEnvironmentSetting = async (
     name: `settings/${Setting_SettingName[Setting_SettingName.ENVIRONMENT]}`,
     value: {
       value: {
-        case: "environmentSetting", 
+        case: "environmentSetting",
         value: environment,
       },
     },

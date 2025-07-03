@@ -23,7 +23,9 @@
               {{ $t("common.version") }} {{ changelog.version }}
             </NTag>
             <span class="text-xl">{{
-              getDateForPbTimestampProtoEs(changelog.createTime)?.toLocaleString()
+              getDateForPbTimestampProtoEs(
+                changelog.createTime
+              )?.toLocaleString()
             }}</span>
           </div>
           <dl
@@ -141,9 +143,7 @@ import {
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
-import {
-  ChangelogView,
-} from "@/types/proto-es/v1/database_service_pb";
+import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractIssueUID,
   getStatementSize,

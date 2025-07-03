@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
@@ -43,10 +44,9 @@ import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { pushNotification } from "@/store";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import FlagsForm from "./FlagsForm";
 import { useGhostSettingContext } from "./context";
 
@@ -66,7 +66,9 @@ const title = computed(() => {
   return t("task.online-migration.configure-ghost-parameters");
 });
 const config = computed(() => {
-  return selectedSpec.value?.config?.case === "changeDatabaseConfig" ? selectedSpec.value.config.value : undefined;
+  return selectedSpec.value?.config?.case === "changeDatabaseConfig"
+    ? selectedSpec.value.config.value
+    : undefined;
 });
 const flags = ref<Record<string, string>>({});
 
@@ -97,7 +99,11 @@ const trySave = async () => {
   }
 
   if (isCreating.value) {
-    if (!selectedSpec.value || selectedSpec.value.config?.case !== "changeDatabaseConfig") return;
+    if (
+      !selectedSpec.value ||
+      selectedSpec.value.config?.case !== "changeDatabaseConfig"
+    )
+      return;
     selectedSpec.value.config.value.ghostFlags = cloneDeep(flags.value);
   } else {
     const planPatch = cloneDeep(plan.value);

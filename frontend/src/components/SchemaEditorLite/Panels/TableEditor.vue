@@ -185,6 +185,12 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { cloneDeep, head, pull } from "lodash-es";
+import { ArrowLeftIcon, PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
+import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store/modules";
@@ -216,12 +222,6 @@ import {
   randomString,
 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import { cloneDeep, head, pull } from "lodash-es";
-import { create } from "@bufbuild/protobuf";
-import { ArrowLeftIcon, PlusIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
-import { computed, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { useSchemaEditorContext } from "../context";
 import {
@@ -280,9 +280,10 @@ const {
   selectionEnabled,
 } = useSchemaEditorContext();
 
-
 // Conversion function for ColumnMetadata at service boundaries
-const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => {
+const convertNewColumnToOld = (
+  newColumn: NewColumnMetadata
+): ColumnMetadata => {
   return create(ColumnMetadataSchema, {
     name: newColumn.name,
     position: newColumn.position,

@@ -63,7 +63,9 @@ export const useBaseIssueContext = (
       const taskUID = String(uidFromSlug(taskSlug));
       for (const stage of stageList) {
         if (
-          stage.tasks.findIndex((task) => extractTaskUID(task.name) === taskUID) >= 0
+          stage.tasks.findIndex(
+            (task) => extractTaskUID(task.name) === taskUID
+          ) >= 0
         ) {
           return stage;
         }

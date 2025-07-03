@@ -20,17 +20,15 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { onMounted, ref, computed } from "vue";
 import { nextTick } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
-import { create } from "@bufbuild/protobuf";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
-import { 
-  GetSchemaStringRequestSchema,
-} from "@/types/proto-es/v1/database_service_pb";
+import { GetSchemaStringRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
 
 const props = defineProps<{
@@ -68,7 +66,8 @@ onMounted(async () => {
       schema: props.schema,
       object: props.object,
     });
-    const response = await databaseServiceClientConnect.getSchemaString(request);
+    const response =
+      await databaseServiceClientConnect.getSchemaString(request);
     schemaString.value = response.schemaString.trim();
   });
 });

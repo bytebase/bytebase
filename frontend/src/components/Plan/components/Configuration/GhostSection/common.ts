@@ -32,7 +32,10 @@ export const allowGhostForDatabase = (database: ComposedDatabase) => {
 };
 
 export const allowGhostForSpec = (spec: Plan_Spec | undefined) => {
-  const config = spec?.config?.case === "changeDatabaseConfig" ? spec.config.value : undefined;
+  const config =
+    spec?.config?.case === "changeDatabaseConfig"
+      ? spec.config.value
+      : undefined;
   if (!config) return false;
 
   return [
@@ -47,7 +50,10 @@ export const getGhostEnabledForSpec = (
   if (isDBGroupChangeSpec(spec)) {
     return undefined;
   }
-  const config = spec?.config?.case === "changeDatabaseConfig" ? spec.config.value : undefined;
+  const config =
+    spec?.config?.case === "changeDatabaseConfig"
+      ? spec.config.value
+      : undefined;
   if (!config) {
     return undefined;
   }

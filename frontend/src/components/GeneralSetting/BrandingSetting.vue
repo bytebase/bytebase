@@ -62,13 +62,16 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { Setting_SettingName, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
+import {
+  Setting_SettingName,
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import SingleFileSelector from "../SingleFileSelector.vue";

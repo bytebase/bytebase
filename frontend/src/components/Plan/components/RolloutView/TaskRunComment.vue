@@ -28,7 +28,10 @@
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { getTimeForPbTimestampProtoEs, getDateForPbTimestampProtoEs } from "@/types";
+import {
+  getTimeForPbTimestampProtoEs,
+  getDateForPbTimestampProtoEs,
+} from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 
@@ -103,9 +106,10 @@ const commentLink = computed((): CommentLink => {
     taskRun.status === TaskRun_Status.PENDING ||
     taskRun.status === TaskRun_Status.RUNNING
   ) {
-    const task = taskRun.schedulerInfo?.waitingCause?.cause?.case === "task" 
-      ? taskRun.schedulerInfo.waitingCause.cause.value.task
-      : undefined;
+    const task =
+      taskRun.schedulerInfo?.waitingCause?.cause?.case === "task"
+        ? taskRun.schedulerInfo.waitingCause.cause.value.task
+        : undefined;
     if (task) {
       return {
         title: t("common.blocking-task"),

@@ -37,7 +37,10 @@ import {
   getTimeForPbTimestampProtoEs,
   getDateForPbTimestampProtoEs,
 } from "@/types";
-import { TaskRun_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  TaskRun_Status,
+  Task_Type,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { isPostgresFamily } from "@/types/v1/instance";
 import { databaseForTask } from "@/utils";
 import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";

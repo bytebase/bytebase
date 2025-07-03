@@ -1,7 +1,7 @@
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { workspaceServiceClientConnect } from "@/grpcweb";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { groupBindingPrefix, ALL_USERS_USER_EMAIL } from "@/types";
@@ -18,7 +18,7 @@ import { extractGroupEmail } from "./group";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const _workspaceIamPolicy = ref<IamPolicy>(create(IamPolicySchema, {}));
-  
+
   const workspaceIamPolicy = computed(() => {
     return _workspaceIamPolicy.value;
   });

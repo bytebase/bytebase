@@ -138,6 +138,7 @@
 </template>
 
 <script setup lang="ts">
+import { create as createProto } from "@bufbuild/protobuf";
 import { asyncComputed } from "@vueuse/core";
 import { UploadIcon } from "lucide-vue-next";
 import {
@@ -154,7 +155,6 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { create as createProto } from "@bufbuild/protobuf";
 import { BBSpin } from "@/bbkit";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import {

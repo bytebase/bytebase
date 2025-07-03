@@ -143,6 +143,18 @@
 </template>
 
 <script lang="tsx" setup>
+import { useTitle } from "@vueuse/core";
+import { NButton } from "naive-ui";
+import {
+  computed,
+  nextTick,
+  onMounted,
+  reactive,
+  watch,
+  watchEffect,
+} from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import {
   BBAlert,
   BBAttention,
@@ -172,18 +184,6 @@ import {
 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { hasWorkspacePermissionV2, sqlReviewNameFromSlug } from "@/utils";
-import { useTitle } from "@vueuse/core";
-import { NButton } from "naive-ui";
-import {
-  computed,
-  nextTick,
-  onMounted,
-  reactive,
-  watch,
-  watchEffect,
-} from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
 
 const props = defineProps<{
   sqlReviewPolicySlug: string;

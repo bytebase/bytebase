@@ -35,16 +35,16 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { useI18n } from "vue-i18n";
 import { LabelListEditor } from "@/components/Label/";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { type ComposedDatabase } from "@/types";
-import { convertKVListToLabels, convertLabelsToKVList } from "@/utils";
 import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import { convertKVListToLabels, convertLabelsToKVList } from "@/utils";
 
 type LocalState = {
   kvList: { key: string; value: string }[];
@@ -91,13 +91,15 @@ const handleSave = async () => {
     // Otherwise the server API won't update the labels field correctly.
     const labels = convertKVListToLabels(state.kvList, false /* !omitEmpty */);
 
-    await useDatabaseV1Store().updateDatabase(create(UpdateDatabaseRequestSchema,{
-      database: {
-        ...props.database,
-        labels,
-      },
-      updateMask: { paths: ["labels"] },
-    }));
+    await useDatabaseV1Store().updateDatabase(
+      create(UpdateDatabaseRequestSchema, {
+        database: {
+          ...props.database,
+          labels,
+        },
+        updateMask: { paths: ["labels"] },
+      })
+    );
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

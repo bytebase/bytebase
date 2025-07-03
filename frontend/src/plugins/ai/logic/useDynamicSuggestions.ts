@@ -1,11 +1,13 @@
+import { create as createProto } from "@bufbuild/protobuf";
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
-import { create as createProto } from "@bufbuild/protobuf";
-
 import { hashCode } from "@/bbkit/BBUtil";
 import { sqlServiceClientConnect } from "@/grpcweb";
-
-import { type AICompletionRequest_Message, AICompletionRequest_MessageSchema, AICompletionRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  type AICompletionRequest_Message,
+  AICompletionRequest_MessageSchema,
+  AICompletionRequestSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { WebStorageHelper } from "@/utils";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";

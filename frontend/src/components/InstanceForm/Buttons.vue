@@ -49,6 +49,12 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
+import { cloneDeep, isEqual } from "lodash-es";
+import { NButton } from "naive-ui";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -67,12 +73,6 @@ import {
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { defer, isValidSpannerHost } from "@/utils";
-import { cloneDeep, isEqual } from "lodash-es";
-import { create } from "@bufbuild/protobuf";
-import { NButton } from "naive-ui";
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import {
   calcDataSourceUpdateMask,
@@ -363,18 +363,10 @@ const doUpdate = async () => {
     ) {
       updateMask.push("sync_interval");
     }
-    if (
-      instancePatch.maximumConnections !==
-      inst.maximumConnections
-    ) {
+    if (instancePatch.maximumConnections !== inst.maximumConnections) {
       updateMask.push("maximum_connections");
     }
-    if (
-      !isEqual(
-        instancePatch.syncDatabases,
-        inst.syncDatabases
-      )
-    ) {
+    if (!isEqual(instancePatch.syncDatabases, inst.syncDatabases)) {
       updateMask.push("sync_databases");
     }
     if (updateMask.length === 0) {

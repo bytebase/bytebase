@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -68,11 +69,10 @@ import {
   issueStatusActionDisplayName,
   IssueStatusActionToIssueStatusMap,
 } from "@/components/IssueV1/logic";
-import { create } from "@bufbuild/protobuf";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { ComposedIssue } from "@/types";
+import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import CommonDrawer from "./CommonDrawer.vue";
 
 type LocalState = {

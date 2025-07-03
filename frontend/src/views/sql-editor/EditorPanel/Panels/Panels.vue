@@ -64,12 +64,12 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractDatabaseResourceName,
   nextAnimationFrame,
   type VueClass,
 } from "@/utils";
-import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useCurrentTabViewStateContext } from "../context/viewState.tsx";
 import DiagramPanel from "./DiagramPanel";
@@ -80,9 +80,9 @@ import PackagesPanel from "./PackagesPanel";
 import ProceduresPanel from "./ProceduresPanel";
 import SequencesPanel from "./SequencesPanel";
 import TablesPanel from "./TablesPanel";
+import TriggersPanel from "./TriggersPanel/TriggersPanel.vue";
 import ViewsPanel from "./ViewsPanel";
 import { SchemaSelectToolbar } from "./common";
-import TriggersPanel from "./TriggersPanel/TriggersPanel.vue";
 
 defineProps<{
   contentClass?: VueClass;
@@ -106,7 +106,11 @@ const databaseMetadata = computedAsync(() => {
 
 watch(
   [() => tab.value?.id, databaseMetadata, selectedSchemaName],
-  ([id, database, schema]: [string | undefined, DatabaseMetadata | undefined, string | undefined]) => {
+  ([id, database, schema]: [
+    string | undefined,
+    DatabaseMetadata | undefined,
+    string | undefined,
+  ]) => {
     if (!id) return;
     if (!database) return;
     if (
@@ -114,7 +118,10 @@ watch(
     ) {
       return;
     }
-    if (!schema || database.schemas.findIndex((s: any) => s.name === schema) < 0) {
+    if (
+      !schema ||
+      database.schemas.findIndex((s: any) => s.name === schema) < 0
+    ) {
       selectedSchemaName.value = first(database.schemas)?.name;
     }
   },

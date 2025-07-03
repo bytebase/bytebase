@@ -30,7 +30,10 @@ import { computed, reactive, ref, watch } from "vue";
 import { useSheetV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { TaskRun_Status, type TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  TaskRun_Status,
+  type TaskRun,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import TaskRunLogTable from "./TaskRunLogTable";
 import TaskRunSession from "./TaskRunSession";
 

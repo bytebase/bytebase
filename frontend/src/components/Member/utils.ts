@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import { extractGroupEmail, useGroupStore, useUserStore } from "@/store";
 import {
   extractUserId,
@@ -10,10 +11,9 @@ import {
   groupBindingPrefix,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { create } from "@bufbuild/protobuf";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
-import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { MemberBinding, GroupBinding } from "./types";

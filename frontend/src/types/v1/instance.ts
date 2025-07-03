@@ -1,10 +1,16 @@
+import { create } from "@bufbuild/protobuf";
 import { environmentNamePrefix } from "@/store";
 import type { Environment } from "@/types/v1/environment";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { Engine, State } from "../proto-es/v1/common_pb";
-import type { Instance, InstanceResource } from "../proto-es/v1/instance_service_pb";
-import { create } from "@bufbuild/protobuf";
-import { InstanceSchema, InstanceResourceSchema } from "../proto-es/v1/instance_service_pb";
+import type {
+  Instance,
+  InstanceResource,
+} from "../proto-es/v1/instance_service_pb";
+import {
+  InstanceSchema,
+  InstanceResourceSchema,
+} from "../proto-es/v1/instance_service_pb";
 import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "./environment";
 
 export const EMPTY_INSTANCE_NAME = `instances/${EMPTY_ID}`;
@@ -35,7 +41,7 @@ export const unknownInstanceResource = (): InstanceResource => {
     name: UNKNOWN_INSTANCE_NAME,
     engine: instance.engine,
     title: "<<Unknown instance>>",
-    activation: true,    
+    activation: true,
     dataSources: [],
     environment: UNKNOWN_ENVIRONMENT_NAME,
   });

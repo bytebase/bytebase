@@ -1,12 +1,12 @@
+import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { roleServiceClientConnect } from "@/grpcweb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
-import { 
+import {
   ListRolesRequestSchema,
   UpdateRoleRequestSchema,
-  DeleteRoleRequestSchema
+  DeleteRoleRequestSchema,
 } from "@/types/proto-es/v1/role_service_pb";
 import { useGracefulRequest } from "./utils";
 

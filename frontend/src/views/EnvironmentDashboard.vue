@@ -85,6 +85,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -119,7 +120,6 @@ import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { EnvironmentSetting_EnvironmentSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { create } from "@bufbuild/protobuf";
 import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
 import { type VueClass } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";

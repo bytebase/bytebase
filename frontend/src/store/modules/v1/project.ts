@@ -17,9 +17,7 @@ import {
   isValidProjectName,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type {
-  Project,
-} from "@/types/proto-es/v1/project_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   GetProjectRequestSchema,
   ListProjectsRequestSchema,
@@ -122,7 +120,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       params.silent ?? true
     );
 
-    let response: { projects: Project[]; nextPageToken: string } | undefined = undefined;
+    let response: { projects: Project[]; nextPageToken: string } | undefined =
+      undefined;
     let pageToken = params.pageToken;
     while (true) {
       let resp;

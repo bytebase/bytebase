@@ -8,14 +8,14 @@ import {
 import { useIssueCommentStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanRequestSchema,
   ListPlanCheckRunsRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
+import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 

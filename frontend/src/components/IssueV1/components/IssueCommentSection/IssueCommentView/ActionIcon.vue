@@ -156,7 +156,10 @@ const user = computedAsync(() => {
 
 const icon = computed((): ActionIconType => {
   const { issueComment } = props;
-  if (issueComment.type === IssueCommentType.APPROVAL && issueComment.event?.case === "approval") {
+  if (
+    issueComment.type === IssueCommentType.APPROVAL &&
+    issueComment.event?.case === "approval"
+  ) {
     const { status } = issueComment.event.value;
     switch (status) {
       case IssueComment_Approval_Status.APPROVED:
@@ -168,7 +171,10 @@ const icon = computed((): ActionIconType => {
     }
   } else if (issueComment.type === IssueCommentType.STAGE_END) {
     return "complete";
-  } else if (issueComment.type === IssueCommentType.TASK_UPDATE && issueComment.event?.case === "taskUpdate") {
+  } else if (
+    issueComment.type === IssueCommentType.TASK_UPDATE &&
+    issueComment.event?.case === "taskUpdate"
+  ) {
     const { toStatus } = issueComment.event.value;
     let action: ActionIconType = "update";
     if (toStatus !== undefined) {
@@ -200,8 +206,12 @@ const icon = computed((): ActionIconType => {
       }
     }
     return action;
-  } else if (issueComment.type === IssueCommentType.ISSUE_UPDATE && issueComment.event?.case === "issueUpdate") {
-    const { toTitle, toDescription, toLabels, fromLabels } = issueComment.event.value;
+  } else if (
+    issueComment.type === IssueCommentType.ISSUE_UPDATE &&
+    issueComment.event?.case === "issueUpdate"
+  ) {
+    const { toTitle, toDescription, toLabels, fromLabels } =
+      issueComment.event.value;
     if (
       toTitle !== undefined ||
       toDescription !== undefined ||
@@ -211,7 +221,10 @@ const icon = computed((): ActionIconType => {
       return "update";
     }
     // Otherwise, show avatar icon based on the creator.
-  } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP && issueComment.event?.case === "taskPriorBackup") {
+  } else if (
+    issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP &&
+    issueComment.event?.case === "taskPriorBackup"
+  ) {
     const taskPriorBackup = issueComment.event.value;
     if (taskPriorBackup.error !== "") {
       return "fail";

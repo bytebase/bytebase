@@ -49,16 +49,16 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
 import { NInputNumber, NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { defaultTokenDurationInHours } from "@/types";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
-import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 const getInitialState = (): LocalState => {
@@ -67,10 +67,9 @@ const getInitialState = (): LocalState => {
     timeFormat: "DAYS",
     showFeatureModal: false,
   };
-  const seconds =
-    settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds
-      ? Number(settingV1Store.workspaceProfileSetting.tokenDuration.seconds)
-      : undefined;
+  const seconds = settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds
+    ? Number(settingV1Store.workspaceProfileSetting.tokenDuration.seconds)
+    : undefined;
   if (seconds && seconds > 0) {
     if (seconds < 60 * 60 * 24) {
       defaultState.inputValue = Math.floor(seconds / (60 * 60)) || 1;
@@ -96,7 +95,9 @@ const props = defineProps<{
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
 
-const hasSecureTokenFeature = featureToRef(PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL);
+const hasSecureTokenFeature = featureToRef(
+  PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL
+);
 
 const allowChangeSetting = computed(() => {
   return hasSecureTokenFeature.value && props.allowEdit;
@@ -116,10 +117,13 @@ const handleFrequencySettingChange = async () => {
       : state.inputValue * 24 * 60 * 60;
   await settingV1Store.updateWorkspaceProfile({
     payload: {
-      tokenDuration: create(DurationSchema, { seconds: BigInt(seconds), nanos: 0 }),
+      tokenDuration: create(DurationSchema, {
+        seconds: BigInt(seconds),
+        nanos: 0,
+      }),
     },
     updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile_setting_value.token_duration"]
+      paths: ["value.workspace_profile_setting_value.token_duration"],
     }),
   });
 };

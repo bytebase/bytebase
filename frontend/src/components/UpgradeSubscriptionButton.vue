@@ -16,14 +16,14 @@
 </template>
 
 <script lang="ts" setup>
-import { useLanguage } from "@/composables/useLanguage";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
-import { useSubscriptionV1Store } from "@/store";
-import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { useLanguage } from "@/composables/useLanguage";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
+import { useSubscriptionV1Store } from "@/store";
+import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import WeChatQRModal from "./WeChatQRModal.vue";
 
 interface LocalState {

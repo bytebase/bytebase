@@ -66,6 +66,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create as createProto } from "@bufbuild/protobuf";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -77,14 +78,13 @@ import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { TableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { TableCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { TableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
-import { 
+import {
   Setting_SettingName,
-  SchemaTemplateSetting_TableTemplateSchema
+  SchemaTemplateSetting_TableTemplateSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { create as createProto } from "@bufbuild/protobuf";
 
 interface LocalState {
   template: SchemaTemplateSetting_TableTemplate;
@@ -103,17 +103,18 @@ defineEmits<{
   (event: "apply", item: SchemaTemplateSetting_TableTemplate): void;
 }>();
 
-const initialTemplate = (): SchemaTemplateSetting_TableTemplate => createProto(SchemaTemplateSetting_TableTemplateSchema, {
-  id: uuidv1(),
-  engine: props.engine ?? Engine.MYSQL,
-  category: "",
-  table: createProto(TableMetadataSchema, {
-    name: "",
-    userComment: "",
-    columns: [],
-  }),
-  catalog: createProto(TableCatalogSchema, {}),
-});
+const initialTemplate = (): SchemaTemplateSetting_TableTemplate =>
+  createProto(SchemaTemplateSetting_TableTemplateSchema, {
+    id: uuidv1(),
+    engine: props.engine ?? Engine.MYSQL,
+    category: "",
+    table: createProto(TableMetadataSchema, {
+      name: "",
+      userComment: "",
+      columns: [],
+    }),
+    catalog: createProto(TableCatalogSchema, {}),
+  });
 
 const state = reactive<LocalState>({
   showDrawer: false,
@@ -149,10 +150,13 @@ const toggleEngineCheck = (engine: Engine) => {
 const settingStore = useSettingV1Store();
 
 const schemaTemplateList = computed(() => {
-  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
-  const settingValue = setting?.value?.value?.case === "schemaTemplateSettingValue" 
-    ? setting.value.value.value 
-    : undefined;
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SCHEMA_TEMPLATE
+  );
+  const settingValue =
+    setting?.value?.value?.case === "schemaTemplateSettingValue"
+      ? setting.value.value.value
+      : undefined;
   return settingValue?.tableTemplates ?? [];
 });
 

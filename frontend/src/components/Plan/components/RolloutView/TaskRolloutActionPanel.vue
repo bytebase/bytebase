@@ -223,13 +223,17 @@ import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue
 import { ErrorList } from "@/components/IssueV1/components/common";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { pushNotification, useEnvironmentV1Store } from "@/store";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import {
   BatchRunTasksRequestSchema,
   BatchSkipTasksRequestSchema,
   BatchCancelTaskRunsRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
-import type { Stage, Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  Stage,
+  Task,
+  TaskRun,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContext } from "../../logic";
 import { useIssueReviewContext } from "../../logic/issue-review";

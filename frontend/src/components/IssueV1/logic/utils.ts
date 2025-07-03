@@ -1,3 +1,6 @@
+import { create } from "@bufbuild/protobuf";
+import { NButton } from "naive-ui";
+import { h } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   useDatabaseV1Store,
@@ -14,7 +17,6 @@ import {
   unknownInstance,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { create } from "@bufbuild/protobuf";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
@@ -26,8 +28,6 @@ import {
   flattenTaskV1List,
   isValidIssueName,
 } from "@/utils";
-import { NButton } from "naive-ui";
-import { h } from "vue";
 import type { IssueContext } from "./context";
 
 export const projectOfIssue = (issue: ComposedIssue): ComposedProject =>
@@ -112,7 +112,8 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
     }
 
     const environmentStore = useEnvironmentV1Store();
-    const { instance: instanceFromStore } = useInstanceResourceByName(instanceName);
+    const { instance: instanceFromStore } =
+      useInstanceResourceByName(instanceName);
     // Create InstanceResource from the instance data
     const instanceData = instanceFromStore.value;
     const instanceResource = create(InstanceResourceSchema, {
@@ -135,7 +136,8 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       project: project.name,
       projectEntity: project,
       effectiveEnvironment: instanceResource.environment,
-      effectiveEnvironmentEntity: effectiveEnvironmentEntity ?? unknownEnvironment(),
+      effectiveEnvironmentEntity:
+        effectiveEnvironmentEntity ?? unknownEnvironment(),
       instanceResource,
     };
   };

@@ -29,6 +29,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import type { InputInst } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -43,7 +44,6 @@ import type {
 import type { ProcedureMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { ProcedureMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
-import { create } from "@bufbuild/protobuf";
 
 // Procedure name must start with a non-space character, end with a non-space character.
 const procedureNameFieldRegexp = /^\S\S*\S?$/;

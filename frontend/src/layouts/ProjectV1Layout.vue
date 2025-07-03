@@ -60,6 +60,7 @@
 </template>
 
 <script lang="tsx" setup>
+import type { ConnectError } from "@connectrpc/connect";
 import { UsersIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NSpin } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
@@ -92,11 +93,10 @@ import {
   PresetRoleType,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useBodyLayoutContext } from "./common";
-import type { ConnectError } from "@connectrpc/connect";
 
 interface LocalState {
   showRequestRolePanel: boolean;

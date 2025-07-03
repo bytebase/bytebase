@@ -9,8 +9,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { BBAvatarSizeType } from "@/bbkit/types";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import UserAvatar from "./UserAvatar.vue";
 
 type SizeType = "tiny" | "small" | "normal" | "large";

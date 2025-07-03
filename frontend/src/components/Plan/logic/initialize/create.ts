@@ -9,9 +9,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, IssueType } from "@/types";
-import type {
-  Plan_Spec,
-} from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanSchema,
   Plan_ChangeDatabaseConfigSchema,

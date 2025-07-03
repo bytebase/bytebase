@@ -43,6 +43,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
@@ -54,7 +55,6 @@ import {
   useProjectIamPolicyStore,
 } from "@/store";
 import { PresetRoleType, type ComposedProject } from "@/types";
-import { create } from "@bufbuild/protobuf";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { getBindingIdentifier } from "../utils";

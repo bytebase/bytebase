@@ -1,10 +1,12 @@
+import { create } from "@bufbuild/protobuf";
+import { reactive } from "vue";
+import { useRoute } from "vue-router";
 import {
   buildPlan,
   extractInitialSQLFromQuery,
   getLocalSheetByName,
   type CreatePlanParams,
 } from "@/components/Plan";
-import { create } from "@bufbuild/protobuf";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useCurrentUserV1, useProjectV1Store, useSheetV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -23,8 +25,6 @@ import {
   sheetNameOfTaskV1,
   extractEnvironmentResourceName,
 } from "@/utils";
-import { reactive } from "vue";
-import { useRoute } from "vue-router";
 import { nextUID } from "../base";
 
 export const createIssueSkeleton = async (

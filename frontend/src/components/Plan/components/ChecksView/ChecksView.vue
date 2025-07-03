@@ -142,7 +142,8 @@
                 </div>
                 <div
                   v-if="
-                    result.report?.case === 'sqlReviewReport' && result.report.value.line > 0
+                    result.report?.case === 'sqlReviewReport' &&
+                    result.report.value.line > 0
                   "
                   class="text-xs text-control-lighter mt-1"
                 >
@@ -370,6 +371,8 @@ const getStatusLabel = (status: PlanCheckRun_Result_Status) => {
 
 const formatTime = (timestamp: any): string => {
   if (!timestamp) return "";
-  return humanizeTs(new Date(Number(timestamp.seconds) * 1000).getTime() / 1000);
+  return humanizeTs(
+    new Date(Number(timestamp.seconds) * 1000).getTime() / 1000
+  );
 };
 </script>

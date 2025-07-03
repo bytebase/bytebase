@@ -28,9 +28,7 @@
           <span class="textlabel">{{
             $t("environment.access-control.restrict-admin-connection.self")
           }}</span>
-          <FeatureBadge
-            :feature="PlanFeature.FEATURE_QUERY_POLICY"
-          />
+          <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
         </div>
         <div v-if="adminDataSourceQueryRestrictionEnabled" class="ml-12">
           <NRadioGroup
@@ -72,9 +70,7 @@
       <label>
         {{ $t("environment.statement-execution.title") }}
       </label>
-      <FeatureBadge
-        :feature="PlanFeature.FEATURE_QUERY_POLICY"
-      />
+      <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
     </div>
     <div>
       <div class="w-full inline-flex items-center gap-x-2">

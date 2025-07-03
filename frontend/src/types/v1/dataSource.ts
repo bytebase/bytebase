@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from "uuid";
 import { create } from "@bufbuild/protobuf";
+import { v4 as uuidv4 } from "uuid";
 // DataSource type used in function signatures, imported in value imports
 import {
   DataSourceSchema,
