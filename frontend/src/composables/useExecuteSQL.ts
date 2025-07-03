@@ -399,6 +399,9 @@ const useExecuteSQL = () => {
       });
     }
 
+    const queryOption = create(QueryOptionSchema, {
+      redisRunCommandsOn: sqlEditorStore.redisCommandOption,
+    });
     const resultSet = await sqlStore.query(
       create(QueryRequestSchema, {
         name: database.name,
@@ -408,9 +411,7 @@ const useExecuteSQL = () => {
         explain: context.params.explain,
         schema: context.params.connection.schema,
         container: context.params.connection.table,
-        queryOption: create(QueryOptionSchema, {
-          redisRunCommandsOn: sqlEditorStore.redisCommandOption,
-        }),
+        queryOption: queryOption,
       }),
       abortController.signal
     );
