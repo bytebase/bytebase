@@ -3,12 +3,15 @@
     <template v-if="readonly || !state.manualEdit">
       <div class="textinfolabel text-sm gap-x-1 flex items-center">
         {{ $t("resource-id.self", { resource: resourceName }) }}:
-        <div v-if="state.resourceId" class="text-gray-600 font-medium mr-1 flex items-center gap-x-1">
+        <div
+          v-if="state.resourceId"
+          class="text-gray-600 font-medium mr-1 flex items-center gap-x-1"
+        >
           {{ state.resourceId }}
-          <CopyButton v-if="readonly" :content="value"/>
+          <CopyButton v-if="readonly" :content="value" />
         </div>
         <span v-else class="text-control-placeholder italic">
-          {{ "<EMPTY>" }}
+          &lt;EMPTY&gt;
         </span>
         <template v-if="!readonly">
           <span>
@@ -59,14 +62,14 @@
 </template>
 
 <script lang="ts" setup>
+import { Code } from "@connectrpc/connect";
 import { NInput, type InputProps } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { CopyButton } from "@/components/v2";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { randomString } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
-import { CopyButton } from "@/components/v2"
-import { Code } from "@connectrpc/connect";
 
 // characters is the validated characters for resource id.
 const characters = "abcdefghijklmnopqrstuvwxyz1234567890-";
