@@ -176,24 +176,24 @@ type Announcement_AlertLevel int32
 
 const (
 	Announcement_ALERT_LEVEL_UNSPECIFIED Announcement_AlertLevel = 0
-	Announcement_ALERT_LEVEL_INFO        Announcement_AlertLevel = 1
-	Announcement_ALERT_LEVEL_WARNING     Announcement_AlertLevel = 2
-	Announcement_ALERT_LEVEL_CRITICAL    Announcement_AlertLevel = 3
+	Announcement_INFO                    Announcement_AlertLevel = 1
+	Announcement_WARNING                 Announcement_AlertLevel = 2
+	Announcement_CRITICAL                Announcement_AlertLevel = 3
 )
 
 // Enum value maps for Announcement_AlertLevel.
 var (
 	Announcement_AlertLevel_name = map[int32]string{
 		0: "ALERT_LEVEL_UNSPECIFIED",
-		1: "ALERT_LEVEL_INFO",
-		2: "ALERT_LEVEL_WARNING",
-		3: "ALERT_LEVEL_CRITICAL",
+		1: "INFO",
+		2: "WARNING",
+		3: "CRITICAL",
 	}
 	Announcement_AlertLevel_value = map[string]int32{
 		"ALERT_LEVEL_UNSPECIFIED": 0,
-		"ALERT_LEVEL_INFO":        1,
-		"ALERT_LEVEL_WARNING":     2,
-		"ALERT_LEVEL_CRITICAL":    3,
+		"INFO":                    1,
+		"WARNING":                 2,
+		"CRITICAL":                3,
 	}
 )
 
@@ -3134,17 +3134,17 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x17enforce_identity_domain\x18\n" +
 	" \x01(\bR\x15enforceIdentityDomain\x12Q\n" +
 	"\x14database_change_mode\x18\v \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
-	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\"\xe6\x01\n" +
+	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\"\xc2\x01\n" +
 	"\fAnnouncement\x12:\n" +
 	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
-	"\x04link\x18\x03 \x01(\tR\x04link\"r\n" +
+	"\x04link\x18\x03 \x01(\tR\x04link\"N\n" +
 	"\n" +
 	"AlertLevel\x12\x1b\n" +
-	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\x14\n" +
-	"\x10ALERT_LEVEL_INFO\x10\x01\x12\x17\n" +
-	"\x13ALERT_LEVEL_WARNING\x10\x02\x12\x18\n" +
-	"\x14ALERT_LEVEL_CRITICAL\x10\x03\"\xd0\x01\n" +
+	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\b\n" +
+	"\x04INFO\x10\x01\x12\v\n" +
+	"\aWARNING\x10\x02\x12\f\n" +
+	"\bCRITICAL\x10\x03\"\xd0\x01\n" +
 	"\x18WorkspaceApprovalSetting\x12@\n" +
 	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1ar\n" +
 	"\x04Rule\x129\n" +

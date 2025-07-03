@@ -30,26 +30,26 @@ type Worksheet_Visibility int32
 const (
 	Worksheet_VISIBILITY_UNSPECIFIED Worksheet_Visibility = 0
 	// Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read.
-	Worksheet_VISIBILITY_PROJECT_READ Worksheet_Visibility = 1
+	Worksheet_PROJECT_READ Worksheet_Visibility = 1
 	// Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet.
-	Worksheet_VISIBILITY_PROJECT_WRITE Worksheet_Visibility = 2
+	Worksheet_PROJECT_WRITE Worksheet_Visibility = 2
 	// Private, only worksheet OWNER can read/write.
-	Worksheet_VISIBILITY_PRIVATE Worksheet_Visibility = 3
+	Worksheet_PRIVATE Worksheet_Visibility = 3
 )
 
 // Enum value maps for Worksheet_Visibility.
 var (
 	Worksheet_Visibility_name = map[int32]string{
 		0: "VISIBILITY_UNSPECIFIED",
-		1: "VISIBILITY_PROJECT_READ",
-		2: "VISIBILITY_PROJECT_WRITE",
-		3: "VISIBILITY_PRIVATE",
+		1: "PROJECT_READ",
+		2: "PROJECT_WRITE",
+		3: "PRIVATE",
 	}
 	Worksheet_Visibility_value = map[string]int32{
-		"VISIBILITY_UNSPECIFIED":   0,
-		"VISIBILITY_PROJECT_READ":  1,
-		"VISIBILITY_PROJECT_WRITE": 2,
-		"VISIBILITY_PRIVATE":       3,
+		"VISIBILITY_UNSPECIFIED": 0,
+		"PROJECT_READ":           1,
+		"PROJECT_WRITE":          2,
+		"PRIVATE":                3,
 	}
 )
 
@@ -411,8 +411,8 @@ type SearchWorksheetsRequest struct {
 	// creator != "users/{email}"
 	// starred == true
 	// starred == false
-	// visibility in ["VISIBILITY_PRIVATE", "VISIBILITY_PROJECT_READ", "VISIBILITY_PROJECT_WRITE"]
-	// visibility == "VISIBILITY_PRIVATE"
+	// visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
+	// visibility == "PRIVATE"
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Not used.
 	// The maximum number of worksheets to return. The service may return fewer than
@@ -710,7 +710,7 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\n" +
 	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +
 	"worksheets\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xd3\x04\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb2\x04\n" +
 	"\tWorksheet\x12\x19\n" +
 	"\x04name\x18\x01 \x01(\tB\x05\xe2A\x02\x02\x05R\x04name\x12\x1e\n" +
 	"\aproject\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\aproject\x12\x1a\n" +
@@ -727,13 +727,13 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"visibility\x18\n" +
 	" \x01(\x0e2!.bytebase.v1.Worksheet.VisibilityB\x04\xe2A\x01\x02R\n" +
 	"visibility\x12\x1e\n" +
-	"\astarred\x18\v \x01(\bB\x04\xe2A\x01\x03R\astarred\"{\n" +
+	"\astarred\x18\v \x01(\bB\x04\xe2A\x01\x03R\astarred\"Z\n" +
 	"\n" +
 	"Visibility\x12\x1a\n" +
-	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x1b\n" +
-	"\x17VISIBILITY_PROJECT_READ\x10\x01\x12\x1c\n" +
-	"\x18VISIBILITY_PROJECT_WRITE\x10\x02\x12\x16\n" +
-	"\x12VISIBILITY_PRIVATE\x10\x032\x87\a\n" +
+	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x10\n" +
+	"\fPROJECT_READ\x10\x01\x12\x11\n" +
+	"\rPROJECT_WRITE\x10\x02\x12\v\n" +
+	"\aPRIVATE\x10\x032\x87\a\n" +
 	"\x10WorksheetService\x12\x88\x01\n" +
 	"\x0fCreateWorksheet\x12#.bytebase.v1.CreateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"8\xdaA\x10parent,worksheet\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1b:\tworksheet\"\x0e/v1/worksheets\x12t\n" +
 	"\fGetWorksheet\x12 .bytebase.v1.GetWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"*\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/{name=worksheets/*}\x12\x85\x01\n" +

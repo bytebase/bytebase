@@ -489,9 +489,9 @@ func convertStoreGenerationMetadata(generation *storepb.GenerationMetadata) *v1p
 	}
 	switch generation.Type {
 	case storepb.GenerationMetadata_TYPE_VIRTUAL:
-		meta.Type = v1pb.GenerationMetadata_TYPE_VIRTUAL
+		meta.Type = v1pb.GenerationMetadata_VIRTUAL
 	case storepb.GenerationMetadata_TYPE_STORED:
-		meta.Type = v1pb.GenerationMetadata_TYPE_STORED
+		meta.Type = v1pb.GenerationMetadata_STORED
 	default:
 		meta.Type = v1pb.GenerationMetadata_TYPE_UNSPECIFIED
 	}
@@ -935,9 +935,9 @@ func convertV1GenerationMetadata(generation *v1pb.GenerationMetadata) *storepb.G
 		Expression: generation.Expression,
 	}
 	switch generation.Type {
-	case v1pb.GenerationMetadata_TYPE_VIRTUAL:
+	case v1pb.GenerationMetadata_VIRTUAL:
 		meta.Type = storepb.GenerationMetadata_TYPE_VIRTUAL
-	case v1pb.GenerationMetadata_TYPE_STORED:
+	case v1pb.GenerationMetadata_STORED:
 		meta.Type = storepb.GenerationMetadata_TYPE_STORED
 	default:
 		meta.Type = storepb.GenerationMetadata_TYPE_UNSPECIFIED

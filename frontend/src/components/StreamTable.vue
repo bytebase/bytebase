@@ -51,7 +51,7 @@ const stringifyStreamMode = (mode: StreamMetadata_Mode): string => {
     return "Append only";
   } else if (mode === StreamMetadata_Mode.INSERT_ONLY) {
     return "Insert only";
-  } else if (mode === StreamMetadata_Mode.UNSPECIFIED) {
+  } else if (mode === StreamMetadata_Mode.MODE_UNSPECIFIED) {
     return "default";
   }
   return "-";

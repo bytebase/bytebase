@@ -806,72 +806,72 @@ export enum Activity_Type {
   /**
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = 0,
 
   /**
    * Notifications via webhooks.
    *
-   * TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+   * NOTIFY_ISSUE_APPROVED represents the issue approved notification.
    *
-   * @generated from enum value: TYPE_NOTIFY_ISSUE_APPROVED = 23;
+   * @generated from enum value: NOTIFY_ISSUE_APPROVED = 23;
    */
   NOTIFY_ISSUE_APPROVED = 23,
 
   /**
-   * TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+   * NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
    *
-   * @generated from enum value: TYPE_NOTIFY_PIPELINE_ROLLOUT = 24;
+   * @generated from enum value: NOTIFY_PIPELINE_ROLLOUT = 24;
    */
   NOTIFY_PIPELINE_ROLLOUT = 24,
 
   /**
    * Issue related activity types.
    *
-   * TYPE_ISSUE_CREATE represents creating an issue.
+   * ISSUE_CREATE represents creating an issue.
    *
-   * @generated from enum value: TYPE_ISSUE_CREATE = 1;
+   * @generated from enum value: ISSUE_CREATE = 1;
    */
   ISSUE_CREATE = 1,
 
   /**
-   * TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue.
+   * ISSUE_COMMENT_CREATE represents commenting on an issue.
    *
-   * @generated from enum value: TYPE_ISSUE_COMMENT_CREATE = 2;
+   * @generated from enum value: ISSUE_COMMENT_CREATE = 2;
    */
   ISSUE_COMMENT_CREATE = 2,
 
   /**
-   * TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
+   * ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
    *
-   * @generated from enum value: TYPE_ISSUE_FIELD_UPDATE = 3;
+   * @generated from enum value: ISSUE_FIELD_UPDATE = 3;
    */
   ISSUE_FIELD_UPDATE = 3,
 
   /**
-   * TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
+   * ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
    *
-   * @generated from enum value: TYPE_ISSUE_STATUS_UPDATE = 4;
+   * @generated from enum value: ISSUE_STATUS_UPDATE = 4;
    */
   ISSUE_STATUS_UPDATE = 4,
 
   /**
-   * TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
+   * ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
    *
-   * @generated from enum value: TYPE_ISSUE_APPROVAL_NOTIFY = 21;
+   * @generated from enum value: ISSUE_APPROVAL_NOTIFY = 21;
    */
   ISSUE_APPROVAL_NOTIFY = 21,
 
   /**
-   * TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
+   * ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
    *
-   * @generated from enum value: TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
+   * @generated from enum value: ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
    */
   ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5,
 
   /**
-   * TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
+   * ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
    *
-   * @generated from enum value: TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
+   * @generated from enum value: ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
    */
   ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22,
 }

@@ -9476,13 +9476,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_VIRTUAL</td>
+                <td>VIRTUAL</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>TYPE_STORED</td>
+                <td>STORED</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
@@ -9570,19 +9570,19 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>MODE_DEFAULT</td>
+                <td>DEFAULT</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>MODE_APPEND_ONLY</td>
+                <td>APPEND_ONLY</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>MODE_INSERT_ONLY</td>
+                <td>INSERT_ONLY</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
@@ -9605,7 +9605,7 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_DELTA</td>
+                <td>DELTA</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
@@ -9693,13 +9693,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>STATE_STARTED</td>
+                <td>STARTED</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>STATE_SUSPENDED</td>
+                <td>SUSPENDED</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
@@ -13696,19 +13696,19 @@ For examples:
               </tr>
             
               <tr>
-                <td>ALERT_LEVEL_INFO</td>
+                <td>INFO</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ALERT_LEVEL_WARNING</td>
+                <td>WARNING</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ALERT_LEVEL_CRITICAL</td>
+                <td>CRITICAL</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
@@ -22252,61 +22252,61 @@ It should not be empty, and should be a subset of the following:
               </tr>
             
               <tr>
-                <td>TYPE_NOTIFY_ISSUE_APPROVED</td>
+                <td>NOTIFY_ISSUE_APPROVED</td>
                 <td>23</td>
                 <td><p>Notifications via webhooks.
 
-TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.</p></td>
+NOTIFY_ISSUE_APPROVED represents the issue approved notification.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_NOTIFY_PIPELINE_ROLLOUT</td>
+                <td>NOTIFY_PIPELINE_ROLLOUT</td>
                 <td>24</td>
-                <td><p>TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.</p></td>
+                <td><p>NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_CREATE</td>
+                <td>ISSUE_CREATE</td>
                 <td>1</td>
                 <td><p>Issue related activity types.
 
-TYPE_ISSUE_CREATE represents creating an issue.</p></td>
+ISSUE_CREATE represents creating an issue.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_COMMENT_CREATE</td>
+                <td>ISSUE_COMMENT_CREATE</td>
                 <td>2</td>
-                <td><p>TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue.</p></td>
+                <td><p>ISSUE_COMMENT_CREATE represents commenting on an issue.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_FIELD_UPDATE</td>
+                <td>ISSUE_FIELD_UPDATE</td>
                 <td>3</td>
-                <td><p>TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.</p></td>
+                <td><p>ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_STATUS_UPDATE</td>
+                <td>ISSUE_STATUS_UPDATE</td>
                 <td>4</td>
-                <td><p>TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.</p></td>
+                <td><p>ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_APPROVAL_NOTIFY</td>
+                <td>ISSUE_APPROVAL_NOTIFY</td>
                 <td>21</td>
-                <td><p>TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.</p></td>
+                <td><p>ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE</td>
+                <td>ISSUE_PIPELINE_STAGE_STATUS_UPDATE</td>
                 <td>5</td>
-                <td><p>TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.</p></td>
+                <td><p>ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE</td>
+                <td>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE</td>
                 <td>22</td>
-                <td><p>TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.</p></td>
+                <td><p>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.</p></td>
               </tr>
             
           </tbody>
@@ -30712,8 +30712,8 @@ creator == &#34;users/{email}&#34;
 creator != &#34;users/{email}&#34;
 starred == true
 starred == false
-visibility in [&#34;VISIBILITY_PRIVATE&#34;, &#34;VISIBILITY_PROJECT_READ&#34;, &#34;VISIBILITY_PROJECT_WRITE&#34;]
-visibility == &#34;VISIBILITY_PRIVATE&#34; </p></td>
+visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;]
+visibility == &#34;PRIVATE&#34; </p></td>
                 </tr>
               
                 <tr>
@@ -31007,19 +31007,19 @@ Format: worksheets/{worksheet} </p></td>
               </tr>
             
               <tr>
-                <td>VISIBILITY_PROJECT_READ</td>
+                <td>PROJECT_READ</td>
                 <td>1</td>
                 <td><p>Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read.</p></td>
               </tr>
             
               <tr>
-                <td>VISIBILITY_PROJECT_WRITE</td>
+                <td>PROJECT_WRITE</td>
                 <td>2</td>
                 <td><p>Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet.</p></td>
               </tr>
             
               <tr>
-                <td>VISIBILITY_PRIVATE</td>
+                <td>PRIVATE</td>
                 <td>3</td>
                 <td><p>Private, only worksheet OWNER can read/write.</p></td>
               </tr>
