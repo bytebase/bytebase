@@ -1772,7 +1772,7 @@
         },
         "max-retries": {
           "self": "Số lần thử lại tối đa cho thời gian chờ khóa",
-          "description": "Tối đa nhớ lại số lượng thời gian chờ khóa khi chạy tác vụ. Giá trị mặc định là 0."
+          "description": "Tối đa nhớ lại số lượng thời gian chờ khóa khi chạy tác vụ. \nGiá trị mặc định là 0. Chỉ áp dụng cho Postgres."
         },
         "ci-sampling-size": {
           "self": "Kích thước lấy mẫu dữ liệu CI",
