@@ -82,9 +82,9 @@
                     :is="getCheckTypeIcon(checkType)"
                     class="w-5 h-5"
                   />
-                  <span class="font-medium">{{
-                    getCheckTypeLabel(checkType)
-                  }}</span>
+                  <span class="font-medium">
+                    {{ getCheckTypeLabel(checkType) }}
+                  </span>
                   <span class="text-control-light"
                     >({{ checkRuns.length }})</span
                   >
@@ -168,7 +168,10 @@ import {
   pushNotification,
   extractUserId,
 } from "@/store";
-import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  PlanCheckRun_Type,
+  RunPlanChecksRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanCheckRun_Result_Status,
   type PlanCheckRun,
@@ -242,7 +245,7 @@ const drawerCheckRunsByType = computed(() => {
   const groups = new Map<string, PlanCheckRun[]>();
 
   for (const checkRun of drawerCheckRuns.value) {
-    const type = String(checkRun.type);
+    const type = PlanCheckRun_Type[checkRun.type];
     if (!groups.has(type)) {
       groups.set(type, []);
     }
