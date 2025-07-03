@@ -468,7 +468,7 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 	//exhaustive:enforce
 	switch e {
 	case
-		storepb.Engine_POSTGRES, storepb.Engine_MYSQL:
+		storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MSSQL:
 		return true
 	case
 
@@ -479,7 +479,6 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 		storepb.Engine_OCEANBASE,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_DM,
-		storepb.Engine_MSSQL,
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_COCKROACHDB,
 		storepb.Engine_SPANNER,
