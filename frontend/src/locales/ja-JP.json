@@ -2077,7 +2077,7 @@
       "expression": "式",
       "null": "NULL",
       "value": "値",
-      "postgres-placeholder": "デフォルトの式（例：'hello'、42、now()、nextval('seq')）を入力するか、デフォルトがない場合は空白のままにしてください"
+      "placeholder": "デフォルト値を入力するか、デフォルト値がない場合は空白のままにします"
     },
     "message": {
       "invalid-schema-name": "無効なスキーマ名",
@@ -2307,8 +2307,8 @@
       "request": "リクエスト",
       "response": "応答",
       "status": "ポジション",
-      "service-data": "サービスデータ",
-      "latency": "遅延"
+      "latency": "遅延",
+      "service-data": "サービスデータ"
     },
     "advanced-search": {
       "scope": {
