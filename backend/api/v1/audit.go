@@ -15,7 +15,8 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/status"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/grpc/codes"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -145,8 +146,6 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 		}
 	}
 
-	st, _ := status.FromError(rerr)
-
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
@@ -178,7 +177,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 			User:            user,
 			Request:         requestString,
 			Response:        responseString,
-			Status:          st.Proto(),
+			Status:          convertErrToStatus(rerr),
 			Latency:         durationpb.New(latency),
 			ServiceData:     serviceData,
 			RequestMetadata: requestMetadata,
@@ -542,4 +541,32 @@ func getRequestMetadataFromHeaders(headers http.Header) *storepb.RequestMetadata
 		CallerIp:                callerIP,
 		CallerSuppliedUserAgent: userAgent,
 	}
+}
+
+// expect
+// 1. connect.Error
+// 2. other unknown errors
+func convertErrToStatus(err error) *spb.Status {
+	if err == nil {
+		return nil
+	}
+	var connectErr *connect.Error
+	if !errors.As(err, &connectErr) {
+		return &spb.Status{
+			Code:    int32(codes.Unknown),
+			Message: err.Error(),
+		}
+	}
+
+	st := &spb.Status{
+		Code:    int32(connectErr.Code()),
+		Message: connectErr.Message(),
+	}
+	for _, detail := range connectErr.Details() {
+		st.Details = append(st.Details, &anypb.Any{
+			TypeUrl: detail.Type(),
+			Value:   detail.Bytes(),
+		})
+	}
+	return st
 }
