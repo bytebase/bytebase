@@ -152,6 +152,12 @@
 
 <script lang="ts" setup>
 import { create as createProto } from "@bufbuild/protobuf";
+import { isEmpty } from "lodash-es";
+import { NInput } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
 import {
@@ -159,6 +165,7 @@ import {
   InstanceSelect,
   ProjectSelect,
 } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   useCurrentUserV1,
@@ -177,18 +184,18 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
-import { PlanSchema, Plan_SpecSchema, Plan_CreateDatabaseConfigSchema } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  PlanSchema,
+  Plan_SpecSchema,
+  Plan_CreateDatabaseConfigSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   enginesSupportCreateDatabase,
+  extractProjectResourceName,
   instanceV1HasCollationAndCharacterSet,
+  issueV1Slug,
 } from "@/utils";
-import { isEmpty } from "lodash-es";
-import { NInput } from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 
 const INTERNAL_RDS_INSTANCE_USER_LIST = ["rds_ad", "rdsadmin", "rds_iam"];
 
@@ -238,9 +245,7 @@ const isReservedName = computed(() => {
   return state.databaseName.toLowerCase() == "bytebase";
 });
 
-const supportedEngines = computed(() => 
-  enginesSupportCreateDatabase()
-);
+const supportedEngines = computed(() => enginesSupportCreateDatabase());
 
 const allowCreate = computed(() => {
   return (
@@ -331,21 +336,24 @@ const createV1 = async () => {
   }
 
   const specs: Plan_Spec[] = [];
-  const createDatabaseConfig: Plan_CreateDatabaseConfig = createProto(Plan_CreateDatabaseConfigSchema, {
-    target: state.instanceName,
-    database: databaseName,
-    table: tableName,
-    environment: state.environmentName,
+  const createDatabaseConfig: Plan_CreateDatabaseConfig = createProto(
+    Plan_CreateDatabaseConfigSchema,
+    {
+      target: state.instanceName,
+      database: databaseName,
+      table: tableName,
+      environment: state.environmentName,
 
-    characterSet:
-      state.characterSet ||
-      defaultCharsetOfEngineV1(selectedInstance.value.engine),
-    collation:
-      state.collation ||
-      defaultCollationOfEngineV1(selectedInstance.value.engine),
-    cluster: state.cluster,
-    owner,
-  });
+      characterSet:
+        state.characterSet ||
+        defaultCharsetOfEngineV1(selectedInstance.value.engine),
+      collation:
+        state.collation ||
+        defaultCollationOfEngineV1(selectedInstance.value.engine),
+      cluster: state.cluster,
+      owner,
+    }
+  );
   const spec = createProto(Plan_SpecSchema, {
     id: uuidv4(),
   });
@@ -374,7 +382,11 @@ const createV1 = async () => {
       planCreate
     );
     router.push({
-      path: `/${createdIssue.name}`,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(createdIssue.name),
+        issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
+      },
     });
   } finally {
     state.creating = false;
