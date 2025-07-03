@@ -95,6 +95,7 @@ import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
 import { create } from "@bufbuild/protobuf";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import type { ConnectError } from "@connectrpc/connect";
 
 const issuerName = "Bytebase";
 
@@ -173,11 +174,11 @@ const verifyTOPCode = async () => {
         otpCode: state.otpCode,
       })
     );
-  } catch (error: any) {
+  } catch (error) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: error.details,
+      title: (error as ConnectError).message,
     });
     return false;
   }
