@@ -997,10 +997,42 @@ func (s *DatabaseService) getTargetDBSchema(ctx context.Context, request *v1pb.D
 		return dbSchema, nil
 	}
 
-	// If schema is provided, we need to parse it - for now, return an error as this case needs more implementation
-	schema := request.GetSchema()
-	if schema != "" {
-		return nil, errors.Errorf("schema string target not yet supported with metadata-based diffing")
+	// If schema is provided, we need to parse it using GetDatabaseMetadata
+	schemaStr := request.GetSchema()
+	if schemaStr != "" {
+		// Get the engine from the source database
+		engine, err := s.getParserEngine(ctx, request)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get parser engine")
+		}
+
+		// Parse the schema string into metadata
+		metadata, err := schema.GetDatabaseMetadata(engine, schemaStr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse target schema")
+		}
+
+		// Get instance to determine case sensitivity
+		instanceID, _, err := common.GetInstanceDatabaseID(request.Name)
+		if err != nil {
+			return nil, err
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return nil, err
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance %s not found", instanceID)
+		}
+
+		// Create DatabaseSchema from the parsed metadata
+		return model.NewDatabaseSchema(
+			metadata,
+			[]byte(schemaStr),
+			&storepb.DatabaseConfig{},
+			engine,
+			store.IsObjectCaseSensitive(instance),
+		), nil
 	}
 
 	return nil, errors.Errorf("must set the schema or change history id as the target")
