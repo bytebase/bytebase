@@ -1,5 +1,5 @@
 <template>
-  <div class="textlabel">
+  <div>
     <div
       class="flex flex-col md:flex-row md:items-center gap-y-2 justify-between"
     >
