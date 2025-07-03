@@ -1,35 +1,37 @@
 <template>
   <div class="relative overflow-x-hidden h-full">
     <template v-if="ready">
-      <div class="h-full flex flex-col">
-        <HeaderSection />
-        <NTabs
-          type="line"
-          :value="tabKey"
-          tab-class="first:ml-4"
-          @update-value="handleTabChange"
-        >
-          <NTab
-            v-for="tab in availableTabs"
-            :key="tab"
-            :name="tab"
-            :tab="tabRender(tab)"
-            @click="handleTabChange(tab)"
-          />
+      <PollerProvider>
+        <div class="h-full flex flex-col">
+          <HeaderSection />
+          <NTabs
+            type="line"
+            :value="tabKey"
+            tab-class="first:ml-4"
+            @update-value="handleTabChange"
+          >
+            <NTab
+              v-for="tab in availableTabs"
+              :key="tab"
+              :name="tab"
+              :tab="tabRender(tab)"
+              @click="handleTabChange(tab)"
+            />
 
-          <!-- Suffix slot -->
-          <template #suffix>
-            <div class="pr-4 flex flex-row justify-end items-center gap-4">
-              <CurrentSpecSelector v-if="tabKey === TabKey.Specifications" />
-              <RefreshIndicator v-if="!isCreating" />
-            </div>
-          </template>
-        </NTabs>
+            <!-- Suffix slot -->
+            <template #suffix>
+              <div class="pr-4 flex flex-row justify-end items-center gap-4">
+                <CurrentSpecSelector v-if="tabKey === TabKey.Specifications" />
+                <RefreshIndicator v-if="!isCreating" />
+              </div>
+            </template>
+          </NTabs>
 
-        <div class="flex-1 flex">
-          <router-view />
+          <div class="flex-1 flex">
+            <router-view />
+          </div>
         </div>
-      </div>
+      </PollerProvider>
     </template>
     <div v-else class="w-full h-full flex flex-col items-center justify-center">
       <NSpin />
@@ -49,6 +51,7 @@ import {
   useBasePlanContext,
   useInitializePlan,
 } from "@/components/Plan";
+import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { HeaderSection } from "@/components/Plan/components";
 import CurrentSpecSelector from "@/components/Plan/components/CurrentSpecSelector.vue";
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";

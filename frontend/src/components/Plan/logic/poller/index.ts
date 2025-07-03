@@ -1,2 +1,2 @@
 export { getLastRefreshTime } from "./utils";
-export { type ResourceType, useResourcePoller } from "./poller";
+export { provideResourcePoller, useResourcePoller } from "./poller";
