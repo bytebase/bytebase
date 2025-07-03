@@ -26,17 +26,14 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import {
-  usePolicyByParentAndType,
-  usePolicyV1Store
-} from "@/store";
+import { computed, ref, watch } from "vue";
+import { usePolicyByParentAndType, usePolicyV1Store } from "@/store";
 import {
   PolicyResourceType,
   PolicyType,
   RestrictIssueCreationForSQLReviewPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { computed, ref, watch } from "vue";
 import { Switch } from "../v2";
 
 const props = withDefaults(
@@ -53,10 +50,7 @@ const props = withDefaults(
 const policyV1Store = usePolicyV1Store();
 
 const allowEdit = computed(() => {
-  return (
-    props.allowEdit &&
-    hasWorkspacePermissionV2("bb.policies.update")
-  );
+  return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const { policy, ready } = usePolicyByParentAndType(

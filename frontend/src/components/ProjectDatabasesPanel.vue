@@ -163,7 +163,9 @@ const selectedEngines = computed(() => {
     .map((scope) => {
       // Convert string engine name to Engine enum
       const engineKey = scope.value.toUpperCase();
-      return Engine[engineKey as keyof typeof Engine] ?? Engine.ENGINE_UNSPECIFIED;
+      return (
+        Engine[engineKey as keyof typeof Engine] ?? Engine.ENGINE_UNSPECIFIED
+      );
     });
 });
 

@@ -131,8 +131,8 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual } from "lodash-es";
 import { create } from "@bufbuild/protobuf";
+import { cloneDeep, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -151,10 +151,7 @@ import {
   groupNamePrefix,
   extractUserId,
 } from "@/store/modules/v1/common";
-import type {
-  Group,
-  GroupMember,
-} from "@/types/proto-es/v1/group_service_pb";
+import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
 import {
   GroupSchema,
   GroupMemberSchema,

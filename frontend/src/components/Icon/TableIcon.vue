@@ -1,6 +1,6 @@
 <template>
   <div class="relative">
-    <TableIcon v-bind="$attrs"/>
+    <TableIcon v-bind="$attrs" />
   </div>
 </template>
 <script setup lang="ts">

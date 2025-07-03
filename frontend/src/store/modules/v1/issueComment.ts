@@ -1,6 +1,6 @@
+import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { issueServiceClientConnect } from "@/grpcweb";
 import {
   CreateIssueCommentRequestSchema,
@@ -62,12 +62,10 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
       pageSize: request.pageSize,
       pageToken: request.pageToken,
     });
-    const resp = await issueServiceClientConnect.listIssueComments(connectRequest);
+    const resp =
+      await issueServiceClientConnect.listIssueComments(connectRequest);
     const issueComments = resp.issueComments;
-    issueCommentMap.set(
-      request.parent,
-      issueComments.map(composeIssueComment)
-    );
+    issueCommentMap.set(request.parent, issueComments.map(composeIssueComment));
 
     return {
       nextPageToken: resp.nextPageToken,
@@ -88,7 +86,8 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
         comment,
       }),
     });
-    const newIssueComment = await issueServiceClientConnect.createIssueComment(request);
+    const newIssueComment =
+      await issueServiceClientConnect.createIssueComment(request);
     const issueComment = newIssueComment;
     issueCommentMap.set(issueName, [
       ...(issueCommentMap.get(issueName) ?? []),

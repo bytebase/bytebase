@@ -11,9 +11,9 @@
       <span v-if="instance.lastSyncTime" class="textinfolabel"
         >({{
           $t("sql-editor.last-synced", {
-            time: dayjs(getDateForPbTimestampProtoEs(instance.lastSyncTime)).format(
-              "YYYY-MM-DD HH:mm:ss"
-            ),
+            time: dayjs(
+              getDateForPbTimestampProtoEs(instance.lastSyncTime)
+            ).format("YYYY-MM-DD HH:mm:ss"),
           })
         }})</span
       >
@@ -67,13 +67,13 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
+import type { Duration } from "@bufbuild/protobuf/wkt";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { NInputNumber, NRadio } from "naive-ui";
 import { reactive, watch } from "vue";
 import { getDateForPbTimestampProtoEs, type ComposedInstance } from "@/types";
-import type { Duration } from "@bufbuild/protobuf/wkt";
-import { create } from "@bufbuild/protobuf";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { useInstanceFormContext } from "./context";
 
 type Mode = "DEFAULT" | "CUSTOM";

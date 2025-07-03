@@ -112,6 +112,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Code } from "@connectrpc/connect";
 import { Info } from "lucide-vue-next";
 import {
   darkTheme,
@@ -148,7 +149,6 @@ import RequestQueryButton from "./RequestQueryButton.vue";
 import SingleResultViewV1 from "./SingleResultViewV1.vue";
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
-import { Code } from "@connectrpc/connect";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
@@ -252,7 +252,10 @@ const disallowCopyingData = computed(() => {
       parentPath: props.database?.project,
       policyType: PolicyType.DISABLE_COPY_DATA,
     });
-    if (projectLevelPolicy?.policy?.case === "disableCopyDataPolicy" && projectLevelPolicy.policy.value.active) {
+    if (
+      projectLevelPolicy?.policy?.case === "disableCopyDataPolicy" &&
+      projectLevelPolicy.policy.value.active
+    ) {
       return true;
     }
     // If the database is provided, use its effective environment.
@@ -264,7 +267,10 @@ const disallowCopyingData = computed(() => {
     parentPath: environment,
     policyType: PolicyType.DISABLE_COPY_DATA,
   });
-  if (policy?.policy?.case === "disableCopyDataPolicy" && policy.policy.value.active) {
+  if (
+    policy?.policy?.case === "disableCopyDataPolicy" &&
+    policy.policy.value.active
+  ) {
     return true;
   }
   return false;

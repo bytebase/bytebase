@@ -1,9 +1,16 @@
 import { create } from "@bufbuild/protobuf";
-import { issueServiceClientConnect, rolloutServiceClientConnect } from "@/grpcweb";
-import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  issueServiceClientConnect,
+  rolloutServiceClientConnect,
+} from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import { emptyIssue, type ComposedIssue } from "@/types";
-import { IssueSchema, Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueSchema,
+  Issue_Type,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 
@@ -28,7 +35,8 @@ export const createIssueFromPlan = async (project: string, plan: Plan) => {
       plan: plan.name,
     },
   });
-  const createdRollout = await rolloutServiceClientConnect.createRollout(rolloutRequest);
+  const createdRollout =
+    await rolloutServiceClientConnect.createRollout(rolloutRequest);
   const composedIssue: ComposedIssue = {
     ...emptyIssue(),
     ...createdIssue,

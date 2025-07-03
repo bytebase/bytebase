@@ -183,7 +183,8 @@ const panelTitle = computed(() => {
 });
 
 const maximumRoleExpiration = computed(() => {
-  const seconds = settingStore.workspaceProfileSetting?.maximumRoleExpiration?.seconds
+  const seconds = settingStore.workspaceProfileSetting?.maximumRoleExpiration
+    ?.seconds
     ? Number(settingStore.workspaceProfileSetting.maximumRoleExpiration.seconds)
     : undefined;
   if (!seconds) {

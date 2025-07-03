@@ -5,7 +5,10 @@ import { computed, inject, provide, ref, onUnmounted } from "vue";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCurrentProjectV1 } from "@/store";
-import { PreviewRolloutRequestSchema, RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  PreviewRolloutRequestSchema,
+  RolloutSchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
 

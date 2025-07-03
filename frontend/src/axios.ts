@@ -1,7 +1,7 @@
 import axios from "axios";
-import { isDev } from "./utils";
 import { isSilent } from "./plugins/silent-request";
 import { pushNotification } from "./store";
+import { isDev } from "./utils";
 
 axios.defaults.timeout = 30000;
 axios.interceptors.request.use((request) => {

@@ -58,6 +58,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep, head } from "lodash-es";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, watch, reactive, ref } from "vue";
@@ -67,11 +68,10 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { pushNotification } from "@/store";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Plan_SpecSchema,
   Plan_ExportDataConfigSchema,
@@ -94,12 +94,17 @@ const spec = computed(
 );
 
 const state = reactive<LocalState>({
-  config: create(Plan_ExportDataConfigSchema, spec.value.config?.case === "exportDataConfig" ? {
-    targets: spec.value.config.value.targets,
-    sheet: spec.value.config.value.sheet,
-    format: spec.value.config.value.format,
-    password: spec.value.config.value.password,
-  } : {}),
+  config: create(
+    Plan_ExportDataConfigSchema,
+    spec.value.config?.case === "exportDataConfig"
+      ? {
+          targets: spec.value.config.value.targets,
+          sheet: spec.value.config.value.sheet,
+          format: spec.value.config.value.format,
+          password: spec.value.config.value.password,
+        }
+      : {}
+  ),
   isEditing: false,
 });
 
@@ -122,17 +127,22 @@ const convertedFormat = computed({
   },
   set(value) {
     state.config.format = value;
-  }
+  },
 });
 
 const handleCancelEdit = () => {
   state.isEditing = false;
-  state.config = create(Plan_ExportDataConfigSchema, spec.value.config?.case === "exportDataConfig" ? {
-    targets: spec.value.config.value.targets,
-    sheet: spec.value.config.value.sheet,
-    format: spec.value.config.value.format,
-    password: spec.value.config.value.password,
-  } : {});
+  state.config = create(
+    Plan_ExportDataConfigSchema,
+    spec.value.config?.case === "exportDataConfig"
+      ? {
+          targets: spec.value.config.value.targets,
+          sheet: spec.value.config.value.sheet,
+          format: spec.value.config.value.format,
+          password: spec.value.config.value.password,
+        }
+      : {}
+  );
   // Trigger a re-render of the child components.
   refreshKey.value++;
 };

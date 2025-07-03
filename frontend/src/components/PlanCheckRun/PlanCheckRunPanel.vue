@@ -102,7 +102,9 @@ const tabItemList = computed(() => {
         i === 0
           ? t("common.latest")
           : planCheckRun.createTime
-            ? humanizeDate(getDateForPbTimestampProtoEs(planCheckRun.createTime))
+            ? humanizeDate(
+                getDateForPbTimestampProtoEs(planCheckRun.createTime)
+              )
             : `UID(${extractPlanCheckRunUID(planCheckRun.name)})`;
       return {
         label,

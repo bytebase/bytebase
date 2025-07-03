@@ -98,6 +98,8 @@
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NRadio, NRadioGroup, NSpace } from "naive-ui";
 import { ref, computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -114,9 +116,10 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { emptyProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { DatabaseChangeMode, Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import {
+  DatabaseChangeMode,
+  Setting_SettingName,
+} from "@/types/proto-es/v1/setting_service_pb";
 import WorkspaceMode from "./WorkspaceMode.vue";
 
 interface LocalState {
@@ -216,7 +219,7 @@ const tryFinishSetup = async () => {
         databaseChangeMode: state.mode,
       },
       updateMask: create(FieldMaskSchema, {
-        paths: ["value.workspace_profile_setting_value.database_change_mode"]
+        paths: ["value.workspace_profile_setting_value.database_change_mode"],
       }),
     });
     onCancel(getHomePageByMode(state.mode));
@@ -232,8 +235,8 @@ onMounted(async () => {
     );
     return onCancel(
       getHomePageByMode(
-        profileSetting?.value?.value?.case === "workspaceProfileSettingValue" 
-          ? profileSetting.value.value.value.databaseChangeMode 
+        profileSetting?.value?.value?.case === "workspaceProfileSettingValue"
+          ? profileSetting.value.value.value.databaseChangeMode
           : undefined
       )
     );

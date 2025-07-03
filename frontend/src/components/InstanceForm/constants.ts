@@ -10,7 +10,7 @@ export const defaultPortForEngine = (engine: OldEngine) => {
       return "3306";
     case OldEngine.POSTGRES:
       return "5432";
-    case  OldEngine.SNOWFLAKE:
+    case OldEngine.SNOWFLAKE:
       return "";
     case OldEngine.SQLITE:
       return "";
@@ -35,7 +35,7 @@ export const defaultPortForEngine = (engine: OldEngine) => {
     case OldEngine.DM:
       return "5236";
     case OldEngine.RISINGWAVE:
-        return "4566";
+      return "4566";
     case OldEngine.OCEANBASE_ORACLE:
       return "1521";
     case OldEngine.STARROCKS:
@@ -61,7 +61,7 @@ export const defaultPortForEngine = (engine: OldEngine) => {
     case OldEngine.TRINO:
       return "8080";
   }
-    throw new Error("engine port unknown");
+  throw new Error("engine port unknown");
 };
 
 export const EngineList = computed(() => {
@@ -70,7 +70,8 @@ export const EngineList = computed(() => {
 
 export const EngineIconPath: Record<string, string> = {
   [OldEngine.MYSQL]: new URL("@/assets/db/mysql.png", import.meta.url).href,
-  [OldEngine.POSTGRES]: new URL("@/assets/db/postgres.png", import.meta.url).href,
+  [OldEngine.POSTGRES]: new URL("@/assets/db/postgres.png", import.meta.url)
+    .href,
   [OldEngine.TIDB]: new URL("@/assets/db/tidb.png", import.meta.url).href,
   [OldEngine.SNOWFLAKE]: new URL("@/assets/db/snowflake.png", import.meta.url)
     .href,
@@ -82,7 +83,8 @@ export const EngineIconPath: Record<string, string> = {
   [OldEngine.ORACLE]: new URL("@/assets/db/oracle.svg", import.meta.url).href,
   [OldEngine.DM]: new URL("@/assets/db/dm.png", import.meta.url).href,
   [OldEngine.MSSQL]: new URL("@/assets/db/mssql.svg", import.meta.url).href,
-  [OldEngine.REDSHIFT]: new URL("@/assets/db/redshift.svg", import.meta.url).href,
+  [OldEngine.REDSHIFT]: new URL("@/assets/db/redshift.svg", import.meta.url)
+    .href,
   [OldEngine.MARIADB]: new URL("@/assets/db/mariadb.png", import.meta.url).href,
   [OldEngine.OCEANBASE]: new URL(
     "@/assets/db/oceanbase-mysql.svg",
@@ -102,14 +104,20 @@ export const EngineIconPath: Record<string, string> = {
     "@/assets/db/elasticsearch.svg",
     import.meta.url
   ).href,
-  [OldEngine.BIGQUERY]: new URL("@/assets/db/bigquery.svg", import.meta.url).href,
-  [OldEngine.DYNAMODB]: new URL("@/assets/db/dynamodb.svg", import.meta.url).href,
+  [OldEngine.BIGQUERY]: new URL("@/assets/db/bigquery.svg", import.meta.url)
+    .href,
+  [OldEngine.DYNAMODB]: new URL("@/assets/db/dynamodb.svg", import.meta.url)
+    .href,
   [OldEngine.DATABRICKS]: new URL("@/assets/db/databricks.svg", import.meta.url)
     .href,
-  [OldEngine.COCKROACHDB]: new URL("@/assets/db/cockroachdb.png", import.meta.url)
+  [OldEngine.COCKROACHDB]: new URL(
+    "@/assets/db/cockroachdb.png",
+    import.meta.url
+  ).href,
+  [OldEngine.COSMOSDB]: new URL("@/assets/db/cosmosdb.svg", import.meta.url)
     .href,
-  [OldEngine.COSMOSDB]: new URL("@/assets/db/cosmosdb.svg", import.meta.url).href,
-  [OldEngine.CASSANDRA]: new URL("@/assets/db/cassandra.svg", import.meta.url).href,
+  [OldEngine.CASSANDRA]: new URL("@/assets/db/cassandra.svg", import.meta.url)
+    .href,
   [OldEngine.TRINO]: new URL("@/assets/db/trino.svg", import.meta.url).href,
 };
 

@@ -30,6 +30,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { DotIcon, EllipsisIcon } from "lucide-vue-next";
 import type { DropdownProps } from "naive-ui";
 import {
@@ -41,7 +42,6 @@ import {
 } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { create } from "@bufbuild/protobuf";
 import {
   useWorkSheetStore,
   pushNotification,

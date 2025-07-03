@@ -1,7 +1,7 @@
+import { create } from "@bufbuild/protobuf";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
-import { create } from "@bufbuild/protobuf";
 import type { Database } from "../proto-es/v1/database_service_pb";
 import { DatabaseSchema$ } from "../proto-es/v1/database_service_pb";
 import type { InstanceResource } from "../proto-es/v1/instance_service_pb";

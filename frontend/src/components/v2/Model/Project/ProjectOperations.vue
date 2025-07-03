@@ -4,7 +4,7 @@
     class="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-x-auto"
   >
     <span class="whitespace-nowrap">
-      {{ $t('project.batch.selected', { count: projectList.length }) }}
+      {{ $t("project.batch.selected", { count: projectList.length }) }}
     </span>
     <div class="flex items-center">
       <template v-for="action in actions" :key="action.text">
@@ -25,7 +25,7 @@
       </template>
     </div>
   </div>
-  
+
   <BBAlert
     v-model:show="state.showArchiveConfirm"
     type="warning"
@@ -42,32 +42,43 @@
           {{ $t("project.batch.force-archive-description") }}
         </div>
       </NCheckbox>
-      
+
       <!-- Project List -->
       <div class="max-h-40 overflow-y-auto border rounded p-2 bg-gray-50">
         <div class="text-xs font-medium text-gray-600 mb-2">
-          {{ $t('project.batch.projects-to-archive') }}:
+          {{ $t("project.batch.projects-to-archive") }}:
         </div>
         <div class="space-y-1">
-          <div v-for="project in projectList" :key="project.name" 
-               class="text-sm flex items-center space-x-2">
+          <div
+            v-for="project in projectList"
+            :key="project.name"
+            class="text-sm flex items-center space-x-2"
+          >
             <CheckIcon class="w-3 h-3 text-green-600" />
             <span>{{ project.title }}</span>
-            <span class="text-gray-500">({{ extractProjectResourceName(project.name) }})</span>
+            <span class="text-gray-500"
+              >({{ extractProjectResourceName(project.name) }})</span
+            >
           </div>
         </div>
       </div>
 
       <!-- Warning for projects with resources -->
-      <NAlert v-if="projectsWithResources.length > 0" type="warning" size="small">
+      <NAlert
+        v-if="projectsWithResources.length > 0"
+        type="warning"
+        size="small"
+      >
         <template #header>
-          {{ $t('project.batch.resource-warning.title') }}
+          {{ $t("project.batch.resource-warning.title") }}
         </template>
         <div class="text-sm">
-          {{ $t('project.batch.resource-warning.description') }}
+          {{ $t("project.batch.resource-warning.description") }}
           <ul class="mt-1 list-disc list-inside">
             <li v-for="project in projectsWithResources" :key="project.name">
-              {{ project.title }} ({{ extractProjectResourceName(project.name) }})
+              {{ project.title }} ({{
+                extractProjectResourceName(project.name)
+              }})
             </li>
           </ul>
         </div>
@@ -130,7 +141,7 @@ const actions = computed((): Action[] => {
   if (hasWorkspacePermissionV2("bb.projects.delete")) {
     list.push({
       icon: h(ArchiveIcon),
-      text: t('common.archive'),
+      text: t("common.archive"),
       disabled: props.projectList.length === 0,
       click: () => (state.showArchiveConfirm = true),
     });
@@ -138,26 +149,28 @@ const actions = computed((): Action[] => {
 
   // Add more batch operations here in the future
   // For example: batch update settings, batch export, etc.
-  
+
   return list;
 });
 
 const handleBatchArchive = async () => {
   try {
     state.loading = true;
-    
+
     // Use the batch delete API
     await projectStore.batchDeleteProjects(
-      props.projectList.map(p => p.name),
+      props.projectList.map((p) => p.name),
       state.force
     );
-    
+
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: t('project.batch.archive.success', { count: props.projectList.length }),
+      title: t("project.batch.archive.success", {
+        count: props.projectList.length,
+      }),
     });
-    
+
     state.showArchiveConfirm = false;
     state.force = false;
     emit("update");
@@ -165,7 +178,7 @@ const handleBatchArchive = async () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t('project.batch.archive.error'),
+      title: t("project.batch.archive.error"),
       description: error.message,
     });
   } finally {

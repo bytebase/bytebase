@@ -24,12 +24,12 @@ import {
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import ClassificationCell from "./ClassificationCell.vue";
 import LabelsCell from "./LabelsCell.vue";

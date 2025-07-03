@@ -93,13 +93,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const {
-  tabList,
-  currentTab,
-  setCurrentTab,
-  closeTab,
-  getTableStatus,
-} = useSchemaEditorContext();
+const { tabList, currentTab, setCurrentTab, closeTab, getTableStatus } =
+  useSchemaEditorContext();
 const tabsContainerRef = ref();
 const searchPattern = ref("");
 const originalTabContext = ref<TabContext | undefined>(undefined);

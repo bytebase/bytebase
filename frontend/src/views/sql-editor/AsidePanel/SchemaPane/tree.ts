@@ -519,19 +519,17 @@ const mapTableNodes = (
       );
       node.children.push(triggerNode);
     }
-    
+
     // Map checks
     if (table.checkConstraints.length > 0) {
-      const checksFolderNode = createExpandableTextNode(
-        "check",
-        node.key,
-        () => t("database.checks")
+      const checksFolderNode = createExpandableTextNode("check", node.key, () =>
+        t("database.checks")
       );
       checksFolderNode.children = mapCheckNodes(
         node.meta.target,
         table.checkConstraints,
         checksFolderNode.key
-      )
+      );
       node.children.push(checksFolderNode);
     }
 

@@ -6,9 +6,12 @@ import {
   UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
-import type { DataSource, Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import type {
+  DataSource,
+  Instance,
+} from "@/types/proto-es/v1/instance_service_pb";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
 

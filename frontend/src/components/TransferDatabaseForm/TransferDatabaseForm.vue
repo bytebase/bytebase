@@ -77,6 +77,8 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { toRef } from "vue";
@@ -97,8 +99,6 @@ import {
   UpdateDatabaseRequestSchema,
   BatchUpdateDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { hasProjectPermissionV2 } from "@/utils";

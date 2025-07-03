@@ -134,8 +134,8 @@
 </template>
 
 <script lang="tsx" setup>
-import { cloneDeep, isEqual } from "lodash-es";
 import { create } from "@bufbuild/protobuf";
+import { cloneDeep, isEqual } from "lodash-es";
 import { Building2Icon, PenIcon, TrashIcon } from "lucide-vue-next";
 import { NButton, NTag, NTooltip, NDataTable, useDialog } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";

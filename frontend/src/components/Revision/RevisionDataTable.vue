@@ -128,7 +128,9 @@ const columnList = computed(() => {
       width: 128,
       resizable: true,
       render: (revision) => (
-        <HumanizeDate date={getDateForPbTimestampProtoEs(revision.createTime)} />
+        <HumanizeDate
+          date={getDateForPbTimestampProtoEs(revision.createTime)}
+        />
       ),
     },
   ];

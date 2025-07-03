@@ -1,3 +1,5 @@
+import type { InjectionKey, Ref } from "vue";
+import { computed, inject, provide, ref } from "vue";
 import { useAppFeature, useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
@@ -8,10 +10,8 @@ import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   hasPermissionToCreateChangeDatabaseIssue,
   hasProjectPermissionV2,
-  instanceV1HasAlterSchema
+  instanceV1HasAlterSchema,
 } from "@/utils";
-import type { InjectionKey, Ref } from "vue";
-import { computed, inject, provide, ref } from "vue";
 
 export type DatabaseDetailContext = {
   database: Ref<ComposedDatabase>;
@@ -59,9 +59,8 @@ export const provideDatabaseDetailContext = (
   };
 
   const allowGetDatabase = computed(() => checkPermission("bb.databases.get"));
-  const allowUpdateDatabase = computed(
-    () =>
-      checkPermission("bb.databases.update")
+  const allowUpdateDatabase = computed(() =>
+    checkPermission("bb.databases.update")
   );
   const allowSyncDatabase = computed(() => {
     return (

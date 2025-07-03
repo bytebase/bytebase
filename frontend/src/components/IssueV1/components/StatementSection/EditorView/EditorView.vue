@@ -206,10 +206,10 @@ import {
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   flattenTaskV1List,
@@ -283,7 +283,9 @@ const allowEditStatementWhenCreating = computed(() => {
   if (
     (
       issue.value.planEntity?.specs?.filter(
-        (spec) => spec.config?.case === "changeDatabaseConfig" && spec.config.value.release
+        (spec) =>
+          spec.config?.case === "changeDatabaseConfig" &&
+          spec.config.value.release
       ) ?? []
     ).length > 0
   ) {
@@ -341,7 +343,9 @@ const shouldShowEditButton = computed(() => {
   if (
     (
       issue.value.planEntity?.specs?.filter(
-        (spec) => spec.config?.case === "changeDatabaseConfig" && spec.config.value.release
+        (spec) =>
+          spec.config?.case === "changeDatabaseConfig" &&
+          spec.config.value.release
       ) ?? []
     ).length > 0
   ) {

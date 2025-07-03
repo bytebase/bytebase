@@ -10,9 +10,7 @@
       <div class="flex flex-col gap-y-4">
         <!-- Steps indicator -->
         <NSteps :current="currentStep">
-          <NStep
-            :title="stepTitle"
-          />
+          <NStep :title="stepTitle" />
           <NStep :title="$t('plan.select-targets')" />
         </NSteps>
 
@@ -132,6 +130,7 @@
 </template>
 
 <script setup lang="ts">
+import { create as createProto } from "@bufbuild/protobuf";
 import { FileDiffIcon, EditIcon } from "lucide-vue-next";
 import { NButton, NRadio, NRadioGroup, NSteps, NStep } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
@@ -143,12 +142,14 @@ import type { DatabaseSelectState } from "@/components/DatabaseAndGroupSelector"
 import { getLocalSheetByName, getNextLocalSheetUID } from "@/components/Plan";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
-import { create as createProto } from "@bufbuild/protobuf";
 import {
   Plan_ChangeDatabaseConfig_Type,
   Plan_ChangeDatabaseConfigSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { Plan_SpecSchema, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  Plan_SpecSchema,
+  type Plan_Spec,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 
 defineProps<{
@@ -163,7 +164,9 @@ const { project } = useCurrentProjectV1();
 const { t } = useI18n();
 const show = defineModel<boolean>("show", { default: false });
 
-const selectedChangeType: Ref<Plan_ChangeDatabaseConfig_Type> = ref(Plan_ChangeDatabaseConfig_Type.MIGRATE);
+const selectedChangeType: Ref<Plan_ChangeDatabaseConfig_Type> = ref(
+  Plan_ChangeDatabaseConfig_Type.MIGRATE
+);
 const isCreating = ref(false);
 const currentStep = ref(1);
 
@@ -186,11 +189,11 @@ const canSubmit = computed(() => {
 
 const stepTitle = computed(() => {
   if (currentStep.value === 1) {
-    return t('plan.change-type');
+    return t("plan.change-type");
   }
   return selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.DATA
-    ? t('plan.data-change')
-    : t('plan.schema-migration');
+    ? t("plan.data-change")
+    : t("plan.schema-migration");
 });
 
 const isMigrateSelected = computed(() => {
@@ -250,7 +253,9 @@ const handleConfirm = async () => {
     const sheet = createProto(SheetSchema, {
       ...getLocalSheetByName(`${project.value.name}/sheets/${sheetUID}`),
       title:
-        selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.MIGRATE ? "Schema Migration" : "Data Change",
+        selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.MIGRATE
+          ? "Schema Migration"
+          : "Data Change",
     });
 
     // Create spec

@@ -1,6 +1,6 @@
+import { create as createProto } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { create as createProto } from "@bufbuild/protobuf";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractProjectResourceName } from "@/utils";
@@ -21,10 +21,7 @@ export const useLocalSheetStore = defineStore("local_sheet", () => {
     return state.uid--;
   };
 
-  const createLocalSheet = (
-    name: string,
-    defaults: Partial<Sheet> = {}
-  ) => {
+  const createLocalSheet = (name: string, defaults: Partial<Sheet> = {}) => {
     const sheet = createProto(SheetSchema, {
       name,
       title: defaults.title || "",

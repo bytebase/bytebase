@@ -43,6 +43,8 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { GraduationCapIcon, SquareStackIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import type { VNode } from "vue";
@@ -57,11 +59,9 @@ import {
   pushNotification,
 } from "@/store";
 import type { ComposedInstance } from "@/types";
+import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 
 interface Action {
   icon?: VNode;
@@ -149,13 +149,15 @@ const syncSchema = async (enableFullSync: boolean) => {
 
 const onEnvironmentUpdate = async (environment: string) => {
   const updated = await instanceStore.batchUpdateInstances(
-    props.instanceList.map((instance) => create(UpdateInstanceRequestSchema, {
-      instance: {
-        ...instance,
-        environment,
-      },
-      updateMask: create(FieldMaskSchema, { paths: ["environment"] }),
-    }))
+    props.instanceList.map((instance) =>
+      create(UpdateInstanceRequestSchema, {
+        instance: {
+          ...instance,
+          environment,
+        },
+        updateMask: create(FieldMaskSchema, { paths: ["environment"] }),
+      })
+    )
   );
   emit("update", updated);
   pushNotification({

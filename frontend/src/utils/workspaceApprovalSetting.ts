@@ -1,5 +1,5 @@
-import { cloneDeep, isNumber } from "lodash-es";
 import { create as createProto } from "@bufbuild/protobuf";
+import { cloneDeep, isNumber } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import type { EqualityExpr, LogicalExpr, SimpleExpr } from "@/plugins/cel";
 import {
@@ -14,10 +14,10 @@ import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
 import { DEFAULT_RISK_LEVEL, PresetRoleType } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
-import type { Expr as _Expr } from "@/types/proto-es/google/type/expr_pb";
-import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema as CELExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import type { Expr as _Expr } from "@/types/proto-es/google/type/expr_pb";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
   ApprovalNode as _ApprovalNode,
   ApprovalStep as _ApprovalStep,
@@ -42,9 +42,7 @@ import {
   ApprovalStepSchema as ProtoEsApprovalStepSchema,
   ApprovalNodeSchema as ProtoEsApprovalNodeSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  Risk_Source,
-} from "@/types/proto-es/v1/risk_service_pb";
+import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import type {
   WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
@@ -216,9 +214,7 @@ export const buildWorkspaceApprovalSetting = async (
     }
   }
 
-  const expressionList = await batchConvertParsedExprToCELString(
-    exprList
-  );
+  const expressionList = await batchConvertParsedExprToCELString(exprList);
   for (let i = 0; i < expressionList.length; i++) {
     const ruleIndex = ruleIndexList[i];
     approvalRuleMap.get(ruleIndex)!.condition = createProto(ExprSchema, {
@@ -247,9 +243,11 @@ const resolveSourceExpr = (expr: SimpleExpr): Risk_Source => {
     return Risk_Source.SOURCE_UNSPECIFIED;
   }
   const sourceValue = args[1];
-  const source = typeof sourceValue === 'string' ? 
-    (Risk_Source[sourceValue as keyof typeof Risk_Source] ?? Risk_Source.SOURCE_UNSPECIFIED) :
-    sourceValue as Risk_Source;
+  const source =
+    typeof sourceValue === "string"
+      ? (Risk_Source[sourceValue as keyof typeof Risk_Source] ??
+        Risk_Source.SOURCE_UNSPECIFIED)
+      : (sourceValue as Risk_Source);
   if (!useSupportedSourceList().value.includes(source)) {
     return Risk_Source.SOURCE_UNSPECIFIED;
   }
@@ -326,7 +324,7 @@ export const seedWorkspaceApprovalSetting = () => {
         title,
         description,
         flow: {
-          steps: roles.map((role) => 
+          steps: roles.map((role) =>
             createProto(ProtoEsApprovalStepSchema, {
               type: ProtoEsApprovalStep_Type.ANY,
               nodes: [

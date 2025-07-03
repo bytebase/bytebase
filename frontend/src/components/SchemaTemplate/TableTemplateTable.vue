@@ -10,6 +10,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { create as createProto } from "@bufbuild/protobuf";
 import { pullAt } from "lodash-es";
 import { PencilIcon, TrashIcon } from "lucide-vue-next";
 import { NPopconfirm, NDataTable } from "naive-ui";
@@ -25,7 +26,6 @@ import {
   Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { create as createProto } from "@bufbuild/protobuf";
 import { EngineIcon } from "../Icon";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import { classificationConfig } from "./utils";
@@ -140,9 +140,10 @@ const deleteTemplate = async (id: string) => {
     Setting_SettingName.SCHEMA_TEMPLATE
   );
 
-  const existingValue = setting?.value?.value?.case === "schemaTemplateSettingValue" 
-    ? setting.value.value.value 
-    : undefined;
+  const existingValue =
+    setting?.value?.value?.case === "schemaTemplateSettingValue"
+      ? setting.value.value.value
+      : undefined;
   const settingValue = createProto(SchemaTemplateSettingSchema, {
     fieldTemplates: existingValue?.fieldTemplates || [],
     columnTypes: existingValue?.columnTypes || [],

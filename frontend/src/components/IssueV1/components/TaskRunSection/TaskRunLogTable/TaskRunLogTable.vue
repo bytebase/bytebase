@@ -9,15 +9,15 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { last } from "lodash-es";
 import { CircleAlertIcon } from "lucide-vue-next";
 import { NTooltip, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
-import { create } from "@bufbuild/protobuf";
-import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { useI18n } from "vue-i18n";
 import { rolloutServiceClientConnect } from "@/grpcweb";
+import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   type TaskRun,
   TaskRunLogEntry_Type,

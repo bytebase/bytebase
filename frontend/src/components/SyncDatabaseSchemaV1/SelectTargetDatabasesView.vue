@@ -156,10 +156,10 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import { NEllipsis, NTabs, NTabPane } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { BBSpin } from "@/bbkit";
@@ -344,7 +344,7 @@ watch(
               },
               sdlFormat: false,
             });
-        
+
         const diffResp = await databaseStore.diffSchema(diffRequest);
         const schemaDiff = diffResp.diff ?? "";
         schemaDiffCache.value[name] = {

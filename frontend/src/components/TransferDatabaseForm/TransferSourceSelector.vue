@@ -98,6 +98,9 @@ const changeInstanceFilter = (name: string | undefined) => {
     return emit("update:instance", undefined);
   }
 
-  emit("update:instance", useInstanceResourceByName(name).instance.value as InstanceResource);
+  emit(
+    "update:instance",
+    useInstanceResourceByName(name).instance.value as InstanceResource
+  );
 };
 </script>

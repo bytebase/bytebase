@@ -43,7 +43,13 @@
         {{ $t("database.last-successful-sync") }}
       </dt>
       <dd class="mt-1 text-sm text-main">
-        {{ humanizeDate(database.successfulSyncTime ? new Date(Number(database.successfulSyncTime.seconds) * 1000) : undefined) }}
+        {{
+          humanizeDate(
+            database.successfulSyncTime
+              ? new Date(Number(database.successfulSyncTime.seconds) * 1000)
+              : undefined
+          )
+        }}
       </dd>
     </div>
   </dl>

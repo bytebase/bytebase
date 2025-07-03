@@ -217,6 +217,8 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { computedAsync, useTitle } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import type { DropdownOption } from "naive-ui";
@@ -252,13 +254,9 @@ import {
   SYSTEM_BOT_USER_NAME,
   unknownUser,
 } from "@/types";
-import { create } from "@bufbuild/protobuf";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import type {
-  User,
-} from "@/types/proto-es/v1/user_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   UpdateUserRequestSchema,
   UserType,
@@ -407,14 +405,16 @@ const saveEdit = async () => {
     updateMaskPaths.push("password");
   }
   try {
-    await userStore.updateUser(create(UpdateUserRequestSchema, {
-      user: userPatch,
-      updateMask: create(FieldMaskSchema, {
-        paths: updateMaskPaths
-      }),
-      regenerateRecoveryCodes: false,
-      regenerateTempMfaSecret: false,
-    }));
+    await userStore.updateUser(
+      create(UpdateUserRequestSchema, {
+        user: userPatch,
+        updateMask: create(FieldMaskSchema, {
+          paths: updateMaskPaths,
+        }),
+        regenerateRecoveryCodes: false,
+        regenerateTempMfaSecret: false,
+      })
+    );
   } catch (error) {
     pushNotification({
       module: "bytebase",
@@ -469,7 +469,7 @@ const handleDisable2FA = async () => {
         mfaEnabled: false,
       },
       updateMask: create(FieldMaskSchema, {
-        paths: ["mfa_enabled"]
+        paths: ["mfa_enabled"],
       }),
     })
   );

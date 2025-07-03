@@ -6,7 +6,9 @@ export const useSemanticType = (semanticTypeId: MaybeRef<string>) => {
   const settingV1Store = useSettingV1Store();
 
   const semanticTypeList = computed(() => {
-    const setting = settingV1Store.getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
+    const setting = settingV1Store.getSettingByName(
+      Setting_SettingName.SEMANTIC_TYPES
+    );
     if (setting?.value?.value?.case === "semanticTypeSettingValue") {
       return setting.value.value.value.types ?? [];
     }

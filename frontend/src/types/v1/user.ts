@@ -1,8 +1,8 @@
+import { create } from "@bufbuild/protobuf";
 import { t } from "@/plugins/i18n";
 import { SYSTEM_BOT_ID } from "../common";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
-import { create } from "@bufbuild/protobuf";
 import type { User } from "../proto-es/v1/user_service_pb";
 import { UserType, UserSchema } from "../proto-es/v1/user_service_pb";
 

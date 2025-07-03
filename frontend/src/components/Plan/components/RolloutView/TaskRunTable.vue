@@ -24,6 +24,9 @@
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
+import type { Duration } from "@bufbuild/protobuf/wkt";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import type { DataTableColumn } from "naive-ui";
 import { NButton, NDataTable, NTag } from "naive-ui";
 import { computed, ref } from "vue";
@@ -32,10 +35,10 @@ import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRu
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
-import { getDateForPbTimestampProtoEs, getTimeForPbTimestampProtoEs } from "@/types";
-import { create } from "@bufbuild/protobuf";
-import type { Duration } from "@bufbuild/protobuf/wkt";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import {
+  getDateForPbTimestampProtoEs,
+  getTimeForPbTimestampProtoEs,
+} from "@/types";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
@@ -98,7 +101,9 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       width: 140,
       render: (taskRun: TaskRun) =>
         taskRun.startTime ? (
-          <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.startTime)} />
+          <HumanizeDate
+            date={getDateForPbTimestampProtoEs(taskRun.startTime)}
+          />
         ) : (
           "-"
         ),
@@ -109,9 +114,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       width: 120,
       render: (taskRun: TaskRun) => {
         const duration = executionDurationOfTaskRun(taskRun);
-        return duration
-          ? humanizeDurationV1(duration)
-          : "-";
+        return duration ? humanizeDurationV1(duration) : "-";
       },
     },
     {

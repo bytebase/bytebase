@@ -37,6 +37,7 @@
   />
 </template>
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
@@ -44,8 +45,11 @@ import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import type { SemanticTypeSetting_SemanticType } from "@/types/proto-es/v1/setting_service_pb";
-import { SemanticTypeSetting_SemanticTypeSchema, Setting_SettingName, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
+import {
+  SemanticTypeSetting_SemanticTypeSchema,
+  Setting_SettingName,
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
@@ -75,8 +79,8 @@ const semanticTypeSettingValue = computed(() => {
   const semanticTypeSetting = settingStore.getSettingByName(
     Setting_SettingName.SEMANTIC_TYPES
   );
-  return semanticTypeSetting?.value?.value?.case === "semanticTypeSettingValue" 
-    ? semanticTypeSetting.value.value.value.types ?? []
+  return semanticTypeSetting?.value?.value?.case === "semanticTypeSettingValue"
+    ? (semanticTypeSetting.value.value.value.types ?? [])
     : [];
 });
 
@@ -181,9 +185,10 @@ const onCancel = (index: number) => {
     const semanticTypeSetting = settingStore.getSettingByName(
       Setting_SettingName.SEMANTIC_TYPES
     );
-    const types = semanticTypeSetting?.value?.value?.case === "semanticTypeSettingValue" 
-      ? semanticTypeSetting.value.value.value.types ?? []
-      : [];
+    const types =
+      semanticTypeSetting?.value?.value?.case === "semanticTypeSettingValue"
+        ? (semanticTypeSetting.value.value.value.types ?? [])
+        : [];
     const origin = types.find((s) => s.id === item.item.id);
     if (!origin) {
       return;

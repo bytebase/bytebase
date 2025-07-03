@@ -29,6 +29,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import type { InputInst } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -41,16 +42,13 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type {
-  TableMetadata,
-} from "@/types/proto-es/v1/database_service_pb";
+import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   ColumnMetadataSchema,
   TableMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 import { upsertColumnPrimaryKey } from "../edit";
-import { create } from "@bufbuild/protobuf";
 
 // Table name must start with a non-space character, end with a non-space character, and can contain space in between.
 const tableNameFieldRegexp = /^\S[\S ]*\S?$/;

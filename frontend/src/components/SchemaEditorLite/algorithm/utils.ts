@@ -1,12 +1,10 @@
+import { create } from "@bufbuild/protobuf";
 import type {
   TableCatalog,
   SchemaCatalog,
   DatabaseCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import {
-  TableCatalog_ColumnsSchema,
-} from "@/types/proto-es/v1/database_catalog_service_pb";
-import { create } from "@bufbuild/protobuf";
+import { TableCatalog_ColumnsSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
@@ -27,11 +25,11 @@ export const cleanupUnusedCatalog = (
     if (tableCatalog.kind?.case !== "columns") {
       tableCatalog.kind = {
         case: "columns",
-        value: create(TableCatalog_ColumnsSchema, {})
+        value: create(TableCatalog_ColumnsSchema, {}),
       };
     }
-    tableCatalog.kind.value.columns = tableCatalog.kind.value.columns.filter((cc) =>
-      columnMap.has(cc.name)
+    tableCatalog.kind.value.columns = tableCatalog.kind.value.columns.filter(
+      (cc) => columnMap.has(cc.name)
     );
   };
   const cleanupTableCatalog = (

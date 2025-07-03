@@ -19,6 +19,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { Code } from "@connectrpc/connect";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -28,7 +29,6 @@ import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { useCustomRoleSettingContext } from "../../../context";
-import { Code } from "@connectrpc/connect";
 
 const props = defineProps<{
   role: Role;

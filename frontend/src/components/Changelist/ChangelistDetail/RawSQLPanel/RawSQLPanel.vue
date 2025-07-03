@@ -60,6 +60,7 @@
 </template>
 
 <script setup lang="ts">
+import { create as createProto } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
@@ -70,7 +71,6 @@ import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { pushNotification, useSheetV1Store } from "@/store";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
-import { create as createProto } from "@bufbuild/protobuf";
 import {
   getSheetStatement,
   setSheetStatement,

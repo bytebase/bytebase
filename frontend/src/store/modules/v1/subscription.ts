@@ -1,8 +1,8 @@
+import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { defineStore } from "pinia";
 import type { Ref } from "vue";
 import { computed } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { subscriptionServiceClientConnect } from "@/grpcweb";
 import {
   PLANS,
@@ -202,7 +202,8 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     async fetchSubscription() {
       try {
         const request = create(GetSubscriptionRequestSchema, {});
-        const subscription = await subscriptionServiceClientConnect.getSubscription(request);
+        const subscription =
+          await subscriptionServiceClientConnect.getSubscription(request);
         this.setSubscription(subscription);
         return subscription;
       } catch (e) {
@@ -213,7 +214,8 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       const request = create(UpdateSubscriptionRequestSchema, {
         license,
       });
-      const subscription = await subscriptionServiceClientConnect.updateSubscription(request);
+      const subscription =
+        await subscriptionServiceClientConnect.updateSubscription(request);
       this.setSubscription(subscription);
       return subscription;
     },

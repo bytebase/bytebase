@@ -5,10 +5,7 @@
     keypath="custom-approval.approval-flow.risk-not-configured-tips"
   >
     <template #link>
-      <router-link
-        :to="{ name: WORKSPACE_ROUTE_RISKS }"
-        class="normal-link"
-      >
+      <router-link :to="{ name: WORKSPACE_ROUTE_RISKS }" class="normal-link">
         {{ $t("custom-approval.approval-flow.the-related-risk-rules") }}
       </router-link>
     </template>

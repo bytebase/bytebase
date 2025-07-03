@@ -171,7 +171,9 @@ const columns = computed(() => {
       title: () => "backend_start",
       width: 120,
       render: (session) => {
-        return <TimeCell date={getDateForPbTimestampProtoEs(session.backendStart)} />;
+        return (
+          <TimeCell date={getDateForPbTimestampProtoEs(session.backendStart)} />
+        );
       },
     },
     {
@@ -179,7 +181,9 @@ const columns = computed(() => {
       title: () => "xact_start",
       width: 120,
       render: (session) => {
-        return <TimeCell date={getDateForPbTimestampProtoEs(session.xactStart)} />;
+        return (
+          <TimeCell date={getDateForPbTimestampProtoEs(session.xactStart)} />
+        );
       },
     },
     {
@@ -187,7 +191,9 @@ const columns = computed(() => {
       title: () => "query_start",
       width: 120,
       render: (session) => {
-        return <TimeCell date={getDateForPbTimestampProtoEs(session.queryStart)} />;
+        return (
+          <TimeCell date={getDateForPbTimestampProtoEs(session.queryStart)} />
+        );
       },
     },
   ];

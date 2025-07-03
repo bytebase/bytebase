@@ -1,5 +1,8 @@
 <template>
-  <NButton type="primary" style="--n-height: 7rem; --n-padding: 0 6px; min-width: 7rem;">
+  <NButton
+    type="primary"
+    style="--n-height: 7rem; --n-padding: 0 6px; min-width: 7rem"
+  >
     <div>
       <slot name="icon" />
     </div>

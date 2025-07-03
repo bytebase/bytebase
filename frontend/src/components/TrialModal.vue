@@ -15,9 +15,7 @@
           </template>
           <template #plan>
             <span class="font-bold text-accent">
-              {{
-                $t(`subscription.plan.enterprise.title`)
-              }}
+              {{ $t(`subscription.plan.enterprise.title`) }}
             </span>
           </template>
         </i18n-t>
@@ -48,14 +46,14 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
+import { reactive } from "vue";
+import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
-import { NButton } from "naive-ui";
-import { reactive } from "vue";
-import { useRouter } from "vue-router";
 import WeChatQRModal from "./WeChatQRModal.vue";
 
 interface LocalState {

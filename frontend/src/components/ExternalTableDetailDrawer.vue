@@ -126,6 +126,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { computed, ref, reactive } from "vue";
 import {
@@ -145,7 +146,6 @@ import {
   hasSchemaProperty,
   isDatabaseV1Queryable,
 } from "@/utils";
-import { create } from "@bufbuild/protobuf";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 

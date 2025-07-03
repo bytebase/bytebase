@@ -1,10 +1,10 @@
 <template>
-    <CommonNode
-        :text="target.check"
-        :keyword="keyword"
-        :highlight="true"
-        :indent="0"
-    >
+  <CommonNode
+    :text="target.check"
+    :keyword="keyword"
+    :highlight="true"
+    :indent="0"
+  >
     <template #icon>
       <CheckIcon class="!w-3.5 !h-3.5 text-gray-500" />
     </template>
@@ -21,15 +21,15 @@
         </NTag>
       </div>
     </template>
-    </CommonNode>
+  </CommonNode>
 </template>
 
 <script setup lang="ts">
 import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { CheckIcon } from "@/components/Icon";
-import type { TreeNode } from "../tree";
 import { useDBSchemaV1Store } from "@/store";
+import type { TreeNode } from "../tree";
 import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{
@@ -38,9 +38,7 @@ const props = defineProps<{
 }>();
 
 const dbSchema = useDBSchemaV1Store();
-const target = computed(
-  () => (props.node as TreeNode<"check">).meta.target
-);
+const target = computed(() => (props.node as TreeNode<"check">).meta.target);
 
 const tableMetadata = computed(() => {
   if ("table" in target.value) {

@@ -152,6 +152,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NSelect, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
@@ -166,7 +167,6 @@ import {
   Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
 
 interface LocalState {
   enabled: boolean;

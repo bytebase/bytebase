@@ -1,3 +1,4 @@
+import type { Duration } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import dayOfYear from "dayjs/plugin/dayOfYear";
 import duration from "dayjs/plugin/duration";
@@ -6,7 +7,6 @@ import utc from "dayjs/plugin/utc";
 import { escapeRegExp, round } from "lodash-es";
 import semver from "semver";
 import { watchEffect, type Ref } from "vue";
-import type { Duration } from "@bufbuild/protobuf/wkt";
 
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);
@@ -35,13 +35,11 @@ export function humanizeTs(ts: number): string {
   return time.local().format("MMM D YYYY");
 }
 
-export const humanizeDurationV1 = (
-  duration: Duration | undefined,
-) => {
+export const humanizeDurationV1 = (duration: Duration | undefined) => {
   if (!duration) return "-";
   const { seconds, nanos } = duration;
   const totalMs = Number(seconds) * 1000 + nanos / 1e6;
-  
+
   // For durations less than 1 second, show in milliseconds
   if (totalMs < 1000) {
     if (totalMs < 0.01) {
@@ -58,13 +56,13 @@ export const humanizeDurationV1 = (
     // For 100ms-1s, show no decimal places
     return `${totalMs.toFixed(0)}ms`;
   }
-  
+
   // For durations between 1-60 seconds, show in seconds with 1 decimal
   const totalSeconds = totalMs / 1000;
   if (totalSeconds < 60) {
     return `${totalSeconds.toFixed(1)}s`;
   }
-  
+
   // For durations between 1-60 minutes, show in minutes and seconds
   const minutes = Math.floor(totalSeconds / 60);
   if (minutes < 60) {
@@ -74,7 +72,7 @@ export const humanizeDurationV1 = (
     }
     return `${minutes}m${remainingSeconds}s`;
   }
-  
+
   // For durations over 1 hour, show in hours and minutes
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;

@@ -1,3 +1,6 @@
+import { CheckIcon } from "lucide-vue-next";
+import type { SelectOption } from "naive-ui";
+import { h, type VNode } from "vue";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { SQLTypeList, type Factor } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
@@ -23,9 +26,6 @@ import {
   getDefaultPagination,
   supportedEngineV1List,
 } from "@/utils";
-import { CheckIcon } from "lucide-vue-next";
-import type { SelectOption } from "naive-ui";
-import { h, type VNode } from "vue";
 
 export const sourceText = (source: Risk_Source) => {
   switch (source) {
