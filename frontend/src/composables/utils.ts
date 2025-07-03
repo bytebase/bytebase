@@ -48,19 +48,20 @@ const flattenNoSQLColumn = (value: unknown): unknown => {
       case "$oid":
         return dict[key];
       case "$date":
-        if (typeof dict[key] !== "object") {
+        if (typeof dict[key] !== "object" || dict[key] === null) {
           return dict[key];
         }
-        if (!dict[key]["$numberLong"]) {
+        const dateObj = dict[key] as Record<string, unknown>;
+        if (!dateObj["$numberLong"]) {
           return dict[key];
         }
-        return new Date(parseInt(dict[key]["$numberLong"]));
+        return new Date(parseInt(dateObj["$numberLong"] as string));
       case "$numberLong":
-        return parseInt(dict[key]);
+        return parseInt(dict[key] as string);
       case "$numberDouble":
-        return parseFloat(dict[key]);
+        return parseFloat(dict[key] as string);
       case "$numberInt":
-        return parseInt(dict[key]);
+        return parseInt(dict[key] as string);
       case "$numberDecimal":
         return Number(dict[key]);
       case "$timestamp":
