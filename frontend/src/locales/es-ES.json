@@ -1772,7 +1772,7 @@
         },
         "max-retries": {
           "self": "Los reintentos máximos cuentan para el tiempo de espera de bloqueo",
-          "description": "Las reintentos máximas cuentan para el tiempo de espera de bloqueo al ejecutar la tarea. El valor predeterminado es 0."
+          "description": "Las reintentos máximas cuentan para el tiempo de espera de bloqueo al ejecutar la tarea. \nEl valor predeterminado es 0. Solo aplicable a Postgres."
         },
         "ci-sampling-size": {
           "self": "Tamaño de muestreo de datos de CI",
