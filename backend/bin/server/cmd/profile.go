@@ -11,8 +11,8 @@ import (
 
 func getBaseProfile(dataDir string) *config.Profile {
 	sampleDatabasePort := 0
-	if !flags.disableSample {
-		// Using flags.port + 3 as our sample database port if not disabled.
+	if !flags.disableSample && !flags.saas {
+		// Using flags.port + 3 as our sample database port if not disabled and not in SaaS mode.
 		sampleDatabasePort = flags.port + 3
 	}
 
