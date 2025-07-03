@@ -1,19 +1,20 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
-import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
+import { SYSTEM_BOT_EMAIL, type IssueFilter } from "@/types";
 import {
   GetIssueRequestSchema,
+  Issue_Type,
   IssueSchema,
   SearchIssuesRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { SYSTEM_BOT_EMAIL, type IssueFilter } from "@/types";
 import type { ApprovalStep, Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueStatus,
@@ -58,7 +59,7 @@ export const buildIssueFilter = (find: IssueFilter): string => {
     );
   }
   if (find.type) {
-    filter.push(`type == "${find.type}"`);
+    filter.push(`type == "${Issue_Type[find.type]}"`);
   }
   if (find.taskType) {
     filter.push(`task_type == "${find.taskType}"`);
