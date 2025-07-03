@@ -467,7 +467,7 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 			column.Collation = collationName.String
 		}
 		if defaultValue.Valid {
-			column.DefaultExpression = defaultValue.String
+			column.Default = defaultValue.String
 		}
 		if defaultName.Valid {
 			column.DefaultConstraintName = defaultName.String
