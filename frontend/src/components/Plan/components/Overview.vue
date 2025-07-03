@@ -173,6 +173,7 @@ import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { InstanceV1EngineIcon } from "@/components/v2/Model/Instance";
 import { useInstanceV1Store, useDBGroupStore } from "@/store";
+import type { ComposedDatabaseGroup, ComposedInstance } from "@/types";
 import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import { instanceV1Name, extractDatabaseResourceName } from "@/utils";
 import { usePlanContext } from "../logic/context";
@@ -213,13 +214,20 @@ const statistics = computed(() => {
 // Get affected resources
 const affectedResources = computed(() => {
   const specs = plan.value?.specs || [];
-  const resourceList: Array<{
-    type: "instance" | "databaseGroup";
-    name: string;
-    instance?: any;
-    databaseGroup?: any;
-    databases: string[];
-  }> = [];
+  const resourceList: Array<
+    | {
+        type: "instance";
+        name: string;
+        instance: ComposedInstance;
+        databases: string[];
+      }
+    | {
+        type: "databaseGroup";
+        name: string;
+        databaseGroup?: ComposedDatabaseGroup;
+        databases: string[];
+      }
+  > = [];
 
   const instanceMap = new Map<string, Set<string>>();
   const dbGroupSet = new Set<string>();

@@ -11,7 +11,7 @@ import {
 
 type NoSQLRowData = {
   key: string;
-  value: any;
+  value: unknown;
 };
 
 const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
@@ -28,7 +28,7 @@ const decodeBase64ToUUID = (base64Encoded: string): string => {
   return stringify(uint8Array);
 };
 
-const flattenNoSQLColumn = (value: any): any => {
+const flattenNoSQLColumn = (value: unknown): unknown => {
   if (typeof value !== "object") {
     return value;
   }
@@ -39,7 +39,7 @@ const flattenNoSQLColumn = (value: any): any => {
     return value.map(flattenNoSQLColumn);
   }
 
-  const dict = value as { [key: string]: any };
+  const dict = value as { [key: string]: unknown };
   if (Object.keys(dict).length === 1 && Object.keys(dict)[0].startsWith("$")) {
     // Used by the MongoDB response.
     // https://www.mongodb.com/zh-cn/docs/manual/reference/mongodb-extended-json/#bson-data-types-and-associated-representations
@@ -48,19 +48,20 @@ const flattenNoSQLColumn = (value: any): any => {
       case "$oid":
         return dict[key];
       case "$date":
-        if (typeof dict[key] !== "object") {
+        if (typeof dict[key] !== "object" || dict[key] === null) {
           return dict[key];
         }
-        if (!dict[key]["$numberLong"]) {
+        const dateObj = dict[key] as Record<string, unknown>;
+        if (!dateObj["$numberLong"]) {
           return dict[key];
         }
-        return new Date(parseInt(dict[key]["$numberLong"]));
+        return new Date(parseInt(dateObj["$numberLong"] as string));
       case "$numberLong":
-        return parseInt(dict[key]);
+        return parseInt(dict[key] as string);
       case "$numberDouble":
-        return parseFloat(dict[key]);
+        return parseFloat(dict[key] as string);
       case "$numberInt":
-        return parseInt(dict[key]);
+        return parseInt(dict[key] as string);
       case "$numberDecimal":
         return Number(dict[key]);
       case "$timestamp":

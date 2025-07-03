@@ -19,25 +19,25 @@ import {
   isStringExpr,
 } from "../types";
 
-const validateString = (str: any): boolean => {
+const validateString = (str: unknown): boolean => {
   if (typeof str !== "string") return false;
   return str.trim().length > 0;
 };
-const validateNumber = (num: any): boolean => {
+const validateNumber = (num: unknown): boolean => {
   return isNumber(num);
 };
 const validateArrayValues = (
-  array: any,
-  predicate: (value: any) => boolean
+  array: unknown,
+  predicate: (value: unknown) => boolean
 ): boolean => {
   if (!Array.isArray(array)) return false;
   if (array.length === 0) return false;
   return array.every(predicate);
 };
-const validateStringArray = (array: any) => {
+const validateStringArray = (array: unknown) => {
   return validateArrayValues(array, validateString);
 };
-const validateNumberArray = (array: any) => {
+const validateNumberArray = (array: unknown) => {
   return validateArrayValues(array, validateNumber);
 };
 
