@@ -716,11 +716,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		} else if queryContext.Limit > 0 {
-			// Quick fix for do not add limit to non-select statement.
-			t := util.TrimStatement(statement)
-			if strings.HasPrefix(strings.ToUpper(t), "SELECT") || strings.HasPrefix(strings.ToUpper(t), "WITH") {
-				statement = getStatementWithResultLimit(statement, queryContext.Limit)
-			}
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_POSTGRES, statement)
@@ -816,13 +812,6 @@ func getPgError(e error) *v1pb.QueryResult_PostgresError_ {
 		}
 	}
 	return nil
-}
-
-func getStatementWithResultLimit(stmt string, limit int) string {
-	// To handle cases where there are comments in the query.
-	// eg. select * from t1 -- this is comment;
-	// Add two new line symbol here.
-	return fmt.Sprintf("WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;", util.TrimStatement(stmt), limit)
 }
 
 func isPlSQLBlock(stmt string) bool {
