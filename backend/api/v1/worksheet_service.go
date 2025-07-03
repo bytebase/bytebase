@@ -630,11 +630,11 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 	visibility := v1pb.Worksheet_VISIBILITY_UNSPECIFIED
 	switch worksheet.Visibility {
 	case store.ProjectReadWorkSheet:
-		visibility = v1pb.Worksheet_VISIBILITY_PROJECT_READ
+		visibility = v1pb.Worksheet_PROJECT_READ
 	case store.ProjectWriteWorkSheet:
-		visibility = v1pb.Worksheet_VISIBILITY_PROJECT_WRITE
+		visibility = v1pb.Worksheet_PROJECT_WRITE
 	case store.PrivateWorkSheet:
-		visibility = v1pb.Worksheet_VISIBILITY_PRIVATE
+		visibility = v1pb.Worksheet_PRIVATE
 	}
 
 	creator, err := s.store.GetUserByID(ctx, worksheet.CreatorID)
@@ -689,11 +689,11 @@ func convertToStoreWorksheetVisibility(visibility v1pb.Worksheet_Visibility) (st
 	switch visibility {
 	case v1pb.Worksheet_VISIBILITY_UNSPECIFIED:
 		return store.WorkSheetVisibility(""), connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility %q", visibility))
-	case v1pb.Worksheet_VISIBILITY_PROJECT_READ:
+	case v1pb.Worksheet_PROJECT_READ:
 		return store.ProjectReadWorkSheet, nil
-	case v1pb.Worksheet_VISIBILITY_PROJECT_WRITE:
+	case v1pb.Worksheet_PROJECT_WRITE:
 		return store.ProjectWriteWorkSheet, nil
-	case v1pb.Worksheet_VISIBILITY_PRIVATE:
+	case v1pb.Worksheet_PRIVATE:
 		return store.PrivateWorkSheet, nil
 	default:
 		return store.WorkSheetVisibility(""), connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid visibility %q", visibility))
