@@ -53,11 +53,11 @@
         ref="maximumSQLResultSizeSettingRef"
         :allow-edit="allowEdit"
       />
+      <QueryDataPolicySetting ref="queryDataPolicySettingRef" />
       <MaximumRoleExpirationSetting
         ref="maximumRoleExpirationSettingRef"
         :allow-edit="allowEdit"
       />
-      <QueryDataPolicySetting ref="queryDataPolicySettingRef" />
       <DomainRestrictionSetting
         ref="domainRestrictionSettingRef"
         :allow-edit="allowEdit"
@@ -67,6 +67,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { Switch } from "@/components/v2";
@@ -81,8 +82,10 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import { Setting_SettingName, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
+import {
+  Setting_SettingName,
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
@@ -132,14 +135,19 @@ const { policy: exportDataPolicy } = usePolicyByParentAndType(
 );
 
 const getInitialState = (): LocalState => {
-  const watermarkSetting = settingV1Store.getSettingByName(Setting_SettingName.WATERMARK);
+  const watermarkSetting = settingV1Store.getSettingByName(
+    Setting_SettingName.WATERMARK
+  );
   let enableWatermark = false;
   if (watermarkSetting?.value?.value?.case === "stringValue") {
     enableWatermark = watermarkSetting.value.value.value === "1";
   }
   return {
     enableWatermark,
-    enableDataExport: exportDataPolicy.value?.policy?.case === "exportDataPolicy" ? !exportDataPolicy.value.policy.value.disable : true,
+    enableDataExport:
+      exportDataPolicy.value?.policy?.case === "exportDataPolicy"
+        ? !exportDataPolicy.value.policy.value.disable
+        : true,
   };
 };
 
