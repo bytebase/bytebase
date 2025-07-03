@@ -11,7 +11,7 @@
           <button
             v-if="summary.error > 0"
             class="flex items-center gap-1 hover:opacity-80"
-            @click="openDrawer('ERROR')"
+            @click="openDrawer(PlanCheckRun_Result_Status.ERROR)"
           >
             <XCircleIcon class="w-5 h-5 text-error" />
             <span class="text-error">{{ summary.error }}</span>
@@ -19,7 +19,7 @@
           <button
             v-if="summary.warning > 0"
             class="flex items-center gap-1 hover:opacity-80"
-            @click="openDrawer('WARNING')"
+            @click="openDrawer(PlanCheckRun_Result_Status.WARNING)"
           >
             <AlertCircleIcon class="w-5 h-5 text-warning" />
             <span class="text-warning">{{ summary.warning }}</span>
@@ -27,7 +27,7 @@
           <button
             v-if="summary.success > 0"
             class="flex items-center gap-1 hover:opacity-80"
-            @click="openDrawer('SUCCESS')"
+            @click="openDrawer(PlanCheckRun_Result_Status.SUCCESS)"
           >
             <CheckCircleIcon class="w-5 h-5 text-success" />
             <span class="text-success">{{ summary.success }}</span>
@@ -49,118 +49,21 @@
       </div>
     </div>
 
-    <!-- Status Drawer -->
-    <Drawer v-model:show="drawerVisible">
-      <DrawerContent
-        :title="drawerTitle"
-        class="w-[40rem] max-w-[100vw] relative"
-      >
-        <div class="w-full h-full flex flex-col">
-          <!-- Drawer Header -->
-          <div class="flex items-center justify-between px-4 py-3 border-b">
-            <div class="flex items-center gap-2">
-              <component
-                :is="getStatusIcon(selectedStatus)"
-                class="w-5 h-5"
-                :class="getStatusColor(selectedStatus)"
-              />
-              <h3 class="text-lg font-medium">{{ drawerTitle }}</h3>
-            </div>
-          </div>
-
-          <!-- Drawer Content -->
-          <div class="flex-1 overflow-y-auto px-4 py-3">
-            <div v-if="drawerCheckRuns.length > 0" class="space-y-4">
-              <!-- Group by Check Type -->
-              <div
-                v-for="[checkType, checkRuns] in drawerCheckRunsByType"
-                :key="checkType"
-                class="space-y-2"
-              >
-                <div class="flex items-center gap-2 mb-3">
-                  <component
-                    :is="getCheckTypeIcon(checkType)"
-                    class="w-5 h-5"
-                  />
-                  <span class="font-medium">
-                    {{ getCheckTypeLabel(checkType) }}
-                  </span>
-                  <span class="text-control-light"
-                    >({{ checkRuns.length }})</span
-                  >
-                </div>
-
-                <div class="space-y-3 pl-6">
-                  <div
-                    v-for="checkRun in checkRuns"
-                    :key="checkRun.name"
-                    class="space-y-2"
-                  >
-                    <div class="text-sm font-medium text-control">
-                      <DatabaseDisplay :database="checkRun.target" />
-                    </div>
-                    <div
-                      v-for="(result, idx) in getResultsByStatus(
-                        checkRun,
-                        selectedStatus
-                      )"
-                      :key="idx"
-                      class="px-3 py-1 border rounded-lg bg-gray-50"
-                    >
-                      <div
-                        class="text-sm"
-                        :class="getStatusColor(selectedStatus)"
-                      >
-                        {{ result.title }}
-                      </div>
-                      <div
-                        v-if="result.content"
-                        class="text-xs text-control-light mt-0.5"
-                      >
-                        {{ result.content }}
-                      </div>
-                      <div
-                        v-if="
-                          (result as any).sqlReviewReport &&
-                          (result as any).sqlReviewReport?.line > 0
-                        "
-                        class="text-xs text-control-lighter mt-0.5"
-                      >
-                        Line {{ (result as any).sqlReviewReport?.line }}, Column
-                        {{ (result as any).sqlReviewReport?.column }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="text-center py-8 text-control-light">
-              No {{ selectedStatus.toLowerCase() }} results
-            </div>
-          </div>
-        </div>
-      </DrawerContent>
-    </Drawer>
+    <ChecksDrawer v-model:show="drawerVisible" :status="selectedStatus" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import { isNumber } from "lodash-es";
 import {
   CheckCircleIcon,
   AlertCircleIcon,
   XCircleIcon,
   PlayIcon,
-  FileCodeIcon,
-  DatabaseIcon,
-  ShieldIcon,
-  SearchCodeIcon,
 } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import Drawer from "@/components/v2/Container/Drawer.vue";
-import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
   useCurrentUserV1,
@@ -169,90 +72,53 @@ import {
   extractUserId,
 } from "@/store";
 import {
-  PlanCheckRun_Type,
+  PlanCheckRun_Result_Status,
   RunPlanChecksRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  PlanCheckRun_Result_Status,
-  type PlanCheckRun,
-} from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { planCheckRunListForSpec, planSpecHasPlanChecks } from "../../logic";
+import { planSpecHasPlanChecks } from "../../logic";
 import { usePlanContext } from "../../logic/context";
+import { useResourcePoller } from "../../logic/poller";
+import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
 import { usePlanSpecContext } from "../SpecDetailView/context";
-import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
-const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { plan, planCheckRuns } = usePlanContext();
+const { plan } = usePlanContext();
 const { selectedSpec } = usePlanSpecContext();
+const { requestEnhancedPolling } = useResourcePoller();
 
 const isRunningChecks = ref(false);
 const drawerVisible = ref(false);
-const selectedStatus = ref<"ERROR" | "WARNING" | "SUCCESS">("ERROR");
+const selectedStatus = ref<PlanCheckRun_Result_Status>(
+  PlanCheckRun_Result_Status.SUCCESS
+);
 
 const show = computed(() => {
   return planSpecHasPlanChecks(selectedSpec.value);
 });
 
-const checkRunsForSpec = computed(() => {
-  return planCheckRunListForSpec(planCheckRuns.value, selectedSpec.value);
-});
-
 const summary = computed(() => {
   const result = { success: 0, warning: 0, error: 0 };
-  for (const checkRun of checkRunsForSpec.value) {
-    const status = getCheckRunStatus(checkRun);
-    if (status === PlanCheckRun_Result_Status.ERROR) {
-      result.error++;
-    } else if (status === PlanCheckRun_Result_Status.WARNING) {
-      result.warning++;
-    } else if (status === PlanCheckRun_Result_Status.SUCCESS) {
-      result.success++;
-    }
+  if (
+    plan.value.planCheckRunStatusCount["ERROR"] &&
+    isNumber(plan.value.planCheckRunStatusCount["ERROR"])
+  ) {
+    result.error = plan.value.planCheckRunStatusCount["ERROR"];
+  }
+  if (
+    plan.value.planCheckRunStatusCount["WARNING"] &&
+    isNumber(plan.value.planCheckRunStatusCount["WARNING"])
+  ) {
+    result.warning = plan.value.planCheckRunStatusCount["WARNING"];
+  }
+  if (
+    plan.value.planCheckRunStatusCount["SUCCESS"] &&
+    isNumber(plan.value.planCheckRunStatusCount["SUCCESS"])
+  ) {
+    result.success = plan.value.planCheckRunStatusCount["SUCCESS"];
   }
   return result;
-});
-
-const drawerTitle = computed(() => {
-  if (selectedStatus.value === "ERROR") return "Error Details";
-  if (selectedStatus.value === "WARNING") return "Warning Details";
-  return "Success Details";
-});
-
-const drawerCheckRuns = computed(() => {
-  const result: PlanCheckRun[] = [];
-
-  for (const checkRun of checkRunsForSpec.value) {
-    const status = getCheckRunStatus(checkRun);
-    if (
-      (selectedStatus.value === "ERROR" &&
-        status === PlanCheckRun_Result_Status.ERROR) ||
-      (selectedStatus.value === "WARNING" &&
-        status === PlanCheckRun_Result_Status.WARNING) ||
-      (selectedStatus.value === "SUCCESS" &&
-        status === PlanCheckRun_Result_Status.SUCCESS)
-    ) {
-      result.push(checkRun);
-    }
-  }
-
-  return result;
-});
-
-const drawerCheckRunsByType = computed(() => {
-  const groups = new Map<string, PlanCheckRun[]>();
-
-  for (const checkRun of drawerCheckRuns.value) {
-    const type = PlanCheckRun_Type[checkRun.type];
-    if (!groups.has(type)) {
-      groups.set(type, []);
-    }
-    groups.get(type)!.push(checkRun);
-  }
-
-  return groups;
 });
 
 const allowRunChecks = computed(() => {
@@ -264,55 +130,6 @@ const allowRunChecks = computed(() => {
   return hasProjectPermissionV2(project.value, "bb.planCheckRuns.run");
 });
 
-const getCheckRunStatus = (
-  checkRun: PlanCheckRun
-): PlanCheckRun_Result_Status => {
-  let hasError = false;
-  let hasWarning = false;
-
-  for (const result of checkRun.results) {
-    if (result.status === PlanCheckRun_Result_Status.ERROR) {
-      hasError = true;
-    } else if (result.status === PlanCheckRun_Result_Status.WARNING) {
-      hasWarning = true;
-    }
-  }
-
-  if (hasError) return PlanCheckRun_Result_Status.ERROR;
-  if (hasWarning) return PlanCheckRun_Result_Status.WARNING;
-  return PlanCheckRun_Result_Status.SUCCESS;
-};
-
-const getCheckTypeIcon = (type: string) => {
-  switch (type) {
-    case "DATABASE_STATEMENT_ADVISE":
-      return SearchCodeIcon;
-    case "DATABASE_STATEMENT_SUMMARY_REPORT":
-      return FileCodeIcon;
-    case "DATABASE_CONNECT":
-      return DatabaseIcon;
-    case "DATABASE_GHOST_SYNC":
-      return ShieldIcon;
-    default:
-      return FileCodeIcon;
-  }
-};
-
-const getCheckTypeLabel = (type: string) => {
-  switch (type) {
-    case "DATABASE_STATEMENT_ADVISE":
-      return t("task.check-type.sql-review");
-    case "DATABASE_STATEMENT_SUMMARY_REPORT":
-      return t("task.check-type.summary-report");
-    case "DATABASE_CONNECT":
-      return t("task.check-type.connection");
-    case "DATABASE_GHOST_SYNC":
-      return t("task.check-type.ghost-sync");
-    default:
-      return type;
-  }
-};
-
 const runChecks = async () => {
   if (!plan.value.name || !selectedSpec.value) return;
 
@@ -322,6 +139,10 @@ const runChecks = async () => {
       name: plan.value.name,
     });
     await planServiceClientConnect.runPlanChecks(request);
+
+    // After running checks, we need to refresh the plan and plan check runs.
+    requestEnhancedPolling(["plan", "planCheckRuns"], true /** once */);
+
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -339,30 +160,10 @@ const runChecks = async () => {
   }
 };
 
-const openDrawer = (status: "ERROR" | "WARNING" | "SUCCESS") => {
+const openDrawer = (status: PlanCheckRun_Result_Status) => {
+  // Fetch the latest plan check runs for the selected status.
+  requestEnhancedPolling(["planCheckRuns"], true /** once */);
   selectedStatus.value = status;
   drawerVisible.value = true;
-};
-
-const getStatusIcon = (status: string) => {
-  if (status === "ERROR") return XCircleIcon;
-  if (status === "WARNING") return AlertCircleIcon;
-  return CheckCircleIcon;
-};
-
-const getStatusColor = (status: string) => {
-  if (status === "ERROR") return "text-error";
-  if (status === "WARNING") return "text-warning";
-  return "text-success";
-};
-
-const getResultsByStatus = (checkRun: PlanCheckRun, status: string) => {
-  return checkRun.results.filter(
-    (result) =>
-      result.status ===
-      PlanCheckRun_Result_Status[
-        status as keyof typeof PlanCheckRun_Result_Status
-      ]
-  );
 };
 </script>
