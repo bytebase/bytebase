@@ -30,6 +30,7 @@ export const upsertColumnPrimaryKey = (
         name,
         primary: true,
         unique: true,
+        isConstraint: true,
         expressions: [columnName],
       })
     );
