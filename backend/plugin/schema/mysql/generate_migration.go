@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -1124,19 +1123,6 @@ func writeCreateTemporaryView(buf *strings.Builder, viewName string, view *store
 
 	_, _ = buf.WriteString(";\n")
 	return nil
-}
-
-func isNumeric(s string) bool {
-	// Simple check for numeric values
-	_, err := fmt.Sscanf(s, "%f", new(float64))
-	return err == nil
-}
-
-func isKeyword(s string) bool {
-	// Check for common MySQL keywords that don't need quotes
-	keywords := []string{"CURRENT_TIMESTAMP", "CURRENT_DATE", "CURRENT_TIME", "NULL"}
-	upper := strings.ToUpper(s)
-	return slices.Contains(keywords, upper)
 }
 
 func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *storepb.TriggerMetadata) error {
