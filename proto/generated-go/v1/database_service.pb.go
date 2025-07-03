@@ -203,21 +203,21 @@ type GenerationMetadata_Type int32
 
 const (
 	GenerationMetadata_TYPE_UNSPECIFIED GenerationMetadata_Type = 0
-	GenerationMetadata_TYPE_VIRTUAL     GenerationMetadata_Type = 1
-	GenerationMetadata_TYPE_STORED      GenerationMetadata_Type = 2
+	GenerationMetadata_VIRTUAL          GenerationMetadata_Type = 1
+	GenerationMetadata_STORED           GenerationMetadata_Type = 2
 )
 
 // Enum value maps for GenerationMetadata_Type.
 var (
 	GenerationMetadata_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
-		1: "TYPE_VIRTUAL",
-		2: "TYPE_STORED",
+		1: "VIRTUAL",
+		2: "STORED",
 	}
 	GenerationMetadata_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
-		"TYPE_VIRTUAL":     1,
-		"TYPE_STORED":      2,
+		"VIRTUAL":          1,
+		"STORED":           2,
 	}
 )
 
@@ -252,21 +252,21 @@ type TaskMetadata_State int32
 
 const (
 	TaskMetadata_STATE_UNSPECIFIED TaskMetadata_State = 0
-	TaskMetadata_STATE_STARTED     TaskMetadata_State = 1
-	TaskMetadata_STATE_SUSPENDED   TaskMetadata_State = 2
+	TaskMetadata_STARTED           TaskMetadata_State = 1
+	TaskMetadata_SUSPENDED         TaskMetadata_State = 2
 )
 
 // Enum value maps for TaskMetadata_State.
 var (
 	TaskMetadata_State_name = map[int32]string{
 		0: "STATE_UNSPECIFIED",
-		1: "STATE_STARTED",
-		2: "STATE_SUSPENDED",
+		1: "STARTED",
+		2: "SUSPENDED",
 	}
 	TaskMetadata_State_value = map[string]int32{
 		"STATE_UNSPECIFIED": 0,
-		"STATE_STARTED":     1,
-		"STATE_SUSPENDED":   2,
+		"STARTED":           1,
+		"SUSPENDED":         2,
 	}
 )
 
@@ -301,18 +301,18 @@ type StreamMetadata_Type int32
 
 const (
 	StreamMetadata_TYPE_UNSPECIFIED StreamMetadata_Type = 0
-	StreamMetadata_TYPE_DELTA       StreamMetadata_Type = 1
+	StreamMetadata_DELTA            StreamMetadata_Type = 1
 )
 
 // Enum value maps for StreamMetadata_Type.
 var (
 	StreamMetadata_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
-		1: "TYPE_DELTA",
+		1: "DELTA",
 	}
 	StreamMetadata_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
-		"TYPE_DELTA":       1,
+		"DELTA":            1,
 	}
 )
 
@@ -347,24 +347,24 @@ type StreamMetadata_Mode int32
 
 const (
 	StreamMetadata_MODE_UNSPECIFIED StreamMetadata_Mode = 0
-	StreamMetadata_MODE_DEFAULT     StreamMetadata_Mode = 1
-	StreamMetadata_MODE_APPEND_ONLY StreamMetadata_Mode = 2
-	StreamMetadata_MODE_INSERT_ONLY StreamMetadata_Mode = 3
+	StreamMetadata_DEFAULT          StreamMetadata_Mode = 1
+	StreamMetadata_APPEND_ONLY      StreamMetadata_Mode = 2
+	StreamMetadata_INSERT_ONLY      StreamMetadata_Mode = 3
 )
 
 // Enum value maps for StreamMetadata_Mode.
 var (
 	StreamMetadata_Mode_name = map[int32]string{
 		0: "MODE_UNSPECIFIED",
-		1: "MODE_DEFAULT",
-		2: "MODE_APPEND_ONLY",
-		3: "MODE_INSERT_ONLY",
+		1: "DEFAULT",
+		2: "APPEND_ONLY",
+		3: "INSERT_ONLY",
 	}
 	StreamMetadata_Mode_value = map[string]int32{
 		"MODE_UNSPECIFIED": 0,
-		"MODE_DEFAULT":     1,
-		"MODE_APPEND_ONLY": 2,
-		"MODE_INSERT_ONLY": 3,
+		"DEFAULT":          1,
+		"APPEND_ONLY":      2,
+		"INSERT_ONLY":      3,
 	}
 )
 
@@ -5872,16 +5872,17 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06ALWAYS\x10\x01\x12\x0e\n" +
 	"\n" +
-	"BY_DEFAULT\x10\x02\"\xaf\x01\n" +
+	"BY_DEFAULT\x10\x02\"\xa5\x01\n" +
 	"\x12GenerationMetadata\x128\n" +
 	"\x04type\x18\x01 \x01(\x0e2$.bytebase.v1.GenerationMetadata.TypeR\x04type\x12\x1e\n" +
 	"\n" +
 	"expression\x18\x02 \x01(\tR\n" +
-	"expression\"?\n" +
+	"expression\"5\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fTYPE_VIRTUAL\x10\x01\x12\x0f\n" +
-	"\vTYPE_STORED\x10\x02\"\xb8\x02\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aVIRTUAL\x10\x01\x12\n" +
+	"\n" +
+	"\x06STORED\x10\x02\"\xb8\x02\n" +
 	"\fViewMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
@@ -5939,7 +5940,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
 	"definition\x18\x02 \x01(\tR\n" +
-	"definition\"\xfd\x02\n" +
+	"definition\"\xf1\x02\n" +
 	"\fTaskMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
@@ -5953,11 +5954,11 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"definition\x18\n" +
 	" \x01(\tR\n" +
-	"definition\"F\n" +
+	"definition\":\n" +
 	"\x05State\x12\x15\n" +
-	"\x11STATE_UNSPECIFIED\x10\x00\x12\x11\n" +
-	"\rSTATE_STARTED\x10\x01\x12\x13\n" +
-	"\x0fSTATE_SUSPENDED\x10\x02\"\x9f\x03\n" +
+	"\x11STATE_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aSTARTED\x10\x01\x12\r\n" +
+	"\tSUSPENDED\x10\x02\"\x8b\x03\n" +
 	"\x0eStreamMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
@@ -5969,16 +5970,15 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x04mode\x18\a \x01(\x0e2 .bytebase.v1.StreamMetadata.ModeR\x04mode\x12\x1e\n" +
 	"\n" +
 	"definition\x18\b \x01(\tR\n" +
-	"definition\",\n" +
+	"definition\"'\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x0e\n" +
-	"\n" +
-	"TYPE_DELTA\x10\x01\"Z\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
+	"\x05DELTA\x10\x01\"K\n" +
 	"\x04Mode\x12\x14\n" +
-	"\x10MODE_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fMODE_DEFAULT\x10\x01\x12\x14\n" +
-	"\x10MODE_APPEND_ONLY\x10\x02\x12\x14\n" +
-	"\x10MODE_INSERT_ONLY\x10\x03\"\xc1\x03\n" +
+	"\x10MODE_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aDEFAULT\x10\x01\x12\x0f\n" +
+	"\vAPPEND_ONLY\x10\x02\x12\x0f\n" +
+	"\vINSERT_ONLY\x10\x03\"\xc1\x03\n" +
 	"\rIndexMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vexpressions\x18\x02 \x03(\tR\vexpressions\x12\x1d\n" +

@@ -157,8 +157,8 @@ message SearchWorksheetsRequest {
   // creator != "users/{email}"
   // starred == true
   // starred == false
-  // visibility in ["VISIBILITY_PRIVATE", "VISIBILITY_PROJECT_READ", "VISIBILITY_PROJECT_WRITE"]
-  // visibility == "VISIBILITY_PRIVATE"
+  // visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
+  // visibility == "PRIVATE"
   string filter = 1;
 
   // Not used.
@@ -228,11 +228,11 @@ message Worksheet {
   enum Visibility {
     VISIBILITY_UNSPECIFIED = 0;
     // Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read.
-    VISIBILITY_PROJECT_READ = 1;
+    PROJECT_READ = 1;
     // Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet.
-    VISIBILITY_PROJECT_WRITE = 2;
+    PROJECT_WRITE = 2;
     // Private, only worksheet OWNER can read/write.
-    VISIBILITY_PRIVATE = 3;
+    PRIVATE = 3;
   }
   Visibility visibility = 10 [(google.api.field_behavior) = REQUIRED];
 

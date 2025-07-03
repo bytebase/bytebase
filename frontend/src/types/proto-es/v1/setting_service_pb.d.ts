@@ -671,20 +671,20 @@ export enum Announcement_AlertLevel {
   /**
    * @generated from enum value: ALERT_LEVEL_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  ALERT_LEVEL_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: ALERT_LEVEL_INFO = 1;
+   * @generated from enum value: INFO = 1;
    */
   INFO = 1,
 
   /**
-   * @generated from enum value: ALERT_LEVEL_WARNING = 2;
+   * @generated from enum value: WARNING = 2;
    */
   WARNING = 2,
 
   /**
-   * @generated from enum value: ALERT_LEVEL_CRITICAL = 3;
+   * @generated from enum value: CRITICAL = 3;
    */
   CRITICAL = 3,
 }

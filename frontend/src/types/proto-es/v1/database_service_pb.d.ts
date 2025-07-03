@@ -1594,15 +1594,15 @@ export enum GenerationMetadata_Type {
   /**
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: TYPE_VIRTUAL = 1;
+   * @generated from enum value: VIRTUAL = 1;
    */
   VIRTUAL = 1,
 
   /**
-   * @generated from enum value: TYPE_STORED = 2;
+   * @generated from enum value: STORED = 2;
    */
   STORED = 2,
 }
@@ -2052,15 +2052,15 @@ export enum TaskMetadata_State {
   /**
    * @generated from enum value: STATE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  STATE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: STATE_STARTED = 1;
+   * @generated from enum value: STARTED = 1;
    */
   STARTED = 1,
 
   /**
-   * @generated from enum value: STATE_SUSPENDED = 2;
+   * @generated from enum value: SUSPENDED = 2;
    */
   SUSPENDED = 2,
 }
@@ -2144,10 +2144,10 @@ export enum StreamMetadata_Type {
   /**
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: TYPE_DELTA = 1;
+   * @generated from enum value: DELTA = 1;
    */
   DELTA = 1,
 }
@@ -2164,20 +2164,20 @@ export enum StreamMetadata_Mode {
   /**
    * @generated from enum value: MODE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  MODE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: MODE_DEFAULT = 1;
+   * @generated from enum value: DEFAULT = 1;
    */
   DEFAULT = 1,
 
   /**
-   * @generated from enum value: MODE_APPEND_ONLY = 2;
+   * @generated from enum value: APPEND_ONLY = 2;
    */
   APPEND_ONLY = 2,
 
   /**
-   * @generated from enum value: MODE_INSERT_ONLY = 3;
+   * @generated from enum value: INSERT_ONLY = 3;
    */
   INSERT_ONLY = 3,
 }
