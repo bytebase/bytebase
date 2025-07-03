@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import type { LocationQueryRaw } from "vue-router";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
@@ -21,7 +22,7 @@ export const generateDatabaseGroupIssueRoute = (
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
 
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: type,
     name: issueNameParts.join(" "),
     databaseGroupName: databaseGroup.name,

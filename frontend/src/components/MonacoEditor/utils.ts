@@ -98,27 +98,19 @@ export const formatEditorContent = async (
 export const createUrl = (
   host: string,
   path: string,
-  searchParams: Record<string, any> = {},
   secure: boolean = location.protocol === "https:"
 ) => {
   const protocol = secure ? "wss" : "ws";
   const url = new URL(`${protocol}://${host}${path}`);
-
-  for (const [key, value] of Object.entries(searchParams)) {
-    const v = value instanceof Array ? value.join(",") : value;
-    if (v) {
-      url.searchParams.set(key, v);
-    }
-  }
   return url;
 };
 
-const extractErrorMessage = (err: any) => {
+const extractErrorMessage = (err: unknown) => {
   if (typeof err === "string") {
     return err;
   }
-  if (typeof err.message === "string") {
-    return err.message;
+  if (typeof (err as Error).message === "string") {
+    return (err as Error).message;
   }
   return String(err);
 };

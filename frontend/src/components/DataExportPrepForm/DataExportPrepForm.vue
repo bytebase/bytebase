@@ -41,7 +41,7 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, type LocationQueryRaw } from "vue-router";
 import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
 } from "@/components/DatabaseAndGroupSelector/";
@@ -81,7 +81,7 @@ const navigateToIssuePage = async () => {
   }
 
   const issueType = "bb.issue.database.data.export";
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: issueType,
     name: generateIssueTitle(issueType),
   };
