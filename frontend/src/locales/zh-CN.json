@@ -1772,7 +1772,7 @@
         },
         "max-retries": {
           "self": "锁超时的最大重试数",
-          "description": "运行任务时锁超时的最大重试数。默认值为0。"
+          "description": "运行任务时锁超时的最大重试数。默认值为0。只对 PostgreSQL 有效。"
         },
         "ci-sampling-size": {
           "self": "CI 数据采样大小",
