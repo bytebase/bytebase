@@ -1581,6 +1581,57 @@ DROP FUNCTION GetAverageStat;
 			`,
 			description: "Reverse: Drop events and advanced features",
 		},
+		{
+			name: "no_diff_identical_schemas",
+			initialSchema: `
+-- Test that identical schemas don't generate unnecessary migrations
+-- This tests the fixes for primary key, index type, check constraints, and DEFAULT NULL
+
+CREATE TABLE test_table (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) DEFAULT NULL,
+    email VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'active',
+    age INT DEFAULT NULL,
+    score DECIMAL(5,2),
+    PRIMARY KEY (id),
+    INDEX idx_name (name),
+    INDEX idx_status_hash (status) USING HASH,
+    UNIQUE KEY uk_email (email),
+    CONSTRAINT chk_age CHECK (age >= 18),
+    CONSTRAINT chk_status CHECK (status IN ('active', 'inactive', 'pending'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Table with various column types and defaults
+CREATE TABLE t (
+    id INT NOT NULL AUTO_INCREMENT,
+    name CHAR(255) DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE t1 (
+    id INT NOT NULL,
+    a INT NOT NULL,
+    b INT DEFAULT NULL,
+    c INT,
+    PRIMARY KEY (id),
+    INDEX b (b) USING HASH
+) ENGINE=InnoDB;
+
+-- Table with check constraint that has spaces
+CREATE TABLE some_table (
+    id INT PRIMARY KEY,
+    a INT NOT NULL,
+    CONSTRAINT some_table_chk_1 CHECK (a IN (1, 2, 3))
+) ENGINE=InnoDB;
+			`,
+			migrationDDL: `
+-- No changes - schemas should be identical
+-- This simulates running the exact same CREATE statements again
+-- The test verifies that no migration DDL is generated
+			`,
+			description: "Verify no migration generated for identical schemas (tests primary key, index, check constraints, DEFAULT NULL fixes)",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1653,6 +1704,15 @@ DROP FUNCTION GetAverageStat;
 			require.NoError(t, err)
 
 			t.Logf("Rollback DDL:\n%s", rollbackDDL)
+
+			// Special handling for the no-diff test case
+			if tc.name == "no_diff_identical_schemas" {
+				// For identical schemas, we expect no migration DDL to be generated
+				if strings.TrimSpace(rollbackDDL) != "" {
+					t.Errorf("Expected no migration DDL for identical schemas, but got:\n%s", rollbackDDL)
+				}
+				return
+			}
 
 			// Step 4: Run rollback DDL and get schema result C
 			if err := executeStatements(db, rollbackDDL); err != nil {
