@@ -196,6 +196,7 @@ import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 import { openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
+import type { ConnectError } from "@connectrpc/connect";
 
 const props = withDefaults(
   defineProps<{
@@ -268,7 +269,7 @@ onMounted(async () => {
       module: "bytebase",
       style: "CRITICAL",
       title: `Request error occurred`,
-      description: (error as any).message,
+      description: (error as ConnectError).message,
     });
   }
   // Check if there is an identity provider in the query string and try to sign in with it.
@@ -322,7 +323,7 @@ const trySigninWithIdentityProvider = async (
       module: "bytebase",
       style: "CRITICAL",
       title: `Request error occurred`,
-      description: (error as any).message,
+      description: (error as ConnectError).message,
     });
   }
 };
