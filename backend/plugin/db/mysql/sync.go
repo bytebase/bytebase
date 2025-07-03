@@ -353,11 +353,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, err
 		}
 		// Quoted string has a single quote around it and is escaped by QUOTE().
-		column.Comment = unquoteMySQLString(column.Comment)
-		if defaultStr.Valid {
-			defaultStr.String = stripSingleQuote(defaultStr.String)
-		}
-
+		column.Comment = UnquoteMySQLString(column.Comment)
 		nullableBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
@@ -548,7 +544,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, err
 		}
 		// Quoted string has a single quote around it and is escaped by QUOTE().
-		comment = unquoteMySQLString(comment)
+		comment = UnquoteMySQLString(comment)
 
 		// Note: We should NOT skip partitioned tables here.
 		// The CREATE_OPTIONS might contain 'partitioned' for partitioned tables,
@@ -979,24 +975,26 @@ func (d *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, funct
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
 	if defaultStr.Valid {
 		// In MySQL 5.7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
+		unquotedDefault := UnquoteMySQLString(defaultStr.String)
 		switch {
-		case isCurrentTimestampLike(defaultStr.String):
-			column.DefaultExpression = defaultStr.String
+		case IsCurrentTimestampLike(unquotedDefault):
+			column.Default = unquotedDefault
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
-			column.DefaultExpression = fmt.Sprintf("(%s)", defaultStr.String)
+			unescapedDefault := UnescapeExpressionDefault(unquotedDefault)
+			column.Default = fmt.Sprintf("(%s)", unescapedDefault)
 		default:
-			// For non-generated and non CURRENT_XXX default value, use string.
+			// For non-generated and non CURRENT_XXX default value, preserve quotes for mysqldump compatibility
 			column.Default = defaultStr.String
 		}
 	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 		// TODO(zp): refactor column default value.
 		// Use the upper case to consistent with MySQL Dump.
-		column.DefaultExpression = autoIncrementSymbol
+		column.Default = autoIncrementSymbol
 	} else if nullableBool {
 		// This is NULL if the column has an explicit default of NULL,
 		// or if the column definition includes no DEFAULT clause.
 		// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
-		column.DefaultNull = true
+		column.Default = "NULL"
 	}
 
 	if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {
@@ -1011,7 +1009,14 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 	}
 }
 
-func isCurrentTimestampLike(s string) bool {
+// UnescapeExpressionDefault unescapes the default expression for MySQL.
+func UnescapeExpressionDefault(s string) string {
+	s = strings.ReplaceAll(s, `\'`, `'`) // unescape single quote
+	s = strings.ReplaceAll(s, `\\`, `\`) // unescape backslash
+	return s
+}
+
+func IsCurrentTimestampLike(s string) bool {
 	upper := strings.ToUpper(s)
 	if strings.HasPrefix(upper, "CURRENT_TIMESTAMP") {
 		return true
@@ -1349,13 +1354,13 @@ func stripSingleQuote(s string) string {
 	return s
 }
 
-// unquoteMySQLString unescapes a string that was escaped by MySQL's QUOTE() function.
+// UnquoteMySQLString unescapes a string that was escaped by MySQL's QUOTE() function.
 // MySQL's QUOTE() function escapes:
 // - \ → \\
 // - ' → \'
 // - ASCII NUL (0x00) → \0
 // - Control-Z (0x1A) → \Z
-func unquoteMySQLString(s string) string {
+func UnquoteMySQLString(s string) string {
 	if len(s) == 0 {
 		return s
 	}

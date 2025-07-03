@@ -468,12 +468,10 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 	//exhaustive:enforce
 	switch e {
 	case
-		storepb.Engine_POSTGRES:
-		// PostgreSQL sync.go has been updated to write to Default field with
-		// proper schema qualification, so it doesn't need migration anymore.
+		storepb.Engine_POSTGRES, storepb.Engine_MYSQL:
 		return true
 	case
-		storepb.Engine_MYSQL,
+
 		storepb.Engine_TIDB,
 		storepb.Engine_MARIADB,
 		storepb.Engine_ORACLE,

@@ -333,7 +333,7 @@ func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionConte
 	// For generated columns, MySQL stores them as having NULL default, not the generation expression
 	if ctx.GENERATED_SYMBOL() != nil && ctx.ALWAYS_SYMBOL() != nil && ctx.AS_SYMBOL() != nil && ctx.ExprWithParentheses() != nil {
 		// Generated columns have no default value in the traditional sense
-		column.DefaultNull = true
+		column.Default = "NULL"
 		hasExplicitDefault = true
 	}
 
@@ -361,9 +361,16 @@ func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionConte
 			hasExplicitDefault = true
 			if attr.SignedLiteral() != nil {
 				defaultValue := mysqlparser.NormalizeMySQLSignedLiteral(attr.SignedLiteral())
-				column.DefaultExpression = normalizeDefaultValue(defaultValue)
+				normalizedValue := normalizeDefaultValue(defaultValue)
+				// For literal values, add quotes to match database sync format
+				if isLiteralValue(normalizedValue) {
+					column.Default = fmt.Sprintf("'%s'", normalizedValue)
+				} else {
+					column.Default = normalizedValue
+				}
 			} else if attr.ExprWithParentheses() != nil {
-				column.DefaultExpression = attr.ExprWithParentheses().GetText()
+				// Expression - wrap in parentheses like sync logic does for DEFAULT_GENERATED
+				column.Default = fmt.Sprintf("(%s)", attr.ExprWithParentheses().GetText())
 			} else {
 				// Check for special keywords like CURRENT_TIMESTAMP
 				// Parse the entire attribute text to find DEFAULT keyword and what follows
@@ -374,7 +381,7 @@ func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionConte
 				if defaultIdx >= 0 && len(attrTextUpper) > defaultIdx+7 {
 					remaining := attrTextUpper[defaultIdx+7:]
 					if strings.HasPrefix(remaining, "CURRENT_TIMESTAMP") || strings.HasPrefix(remaining, "NOW()") {
-						column.DefaultExpression = "CURRENT_TIMESTAMP"
+						column.Default = "CURRENT_TIMESTAMP"
 					}
 				}
 			}
@@ -383,15 +390,15 @@ func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionConte
 		// Check for AUTO_INCREMENT
 		if attr.AUTO_INCREMENT_SYMBOL() != nil {
 			hasExplicitDefault = true
-			if column.DefaultExpression == "" {
-				column.DefaultExpression = "AUTO_INCREMENT"
+			if column.Default == "" {
+				column.Default = "AUTO_INCREMENT"
 			}
 		}
 	}
 
-	// If column is nullable and has no explicit default, set DefaultNull to true
-	if column.Nullable && !hasExplicitDefault && column.DefaultExpression == "" {
-		column.DefaultNull = true
+	// If column is nullable and has no explicit default, set Default to NULL
+	if column.Nullable && !hasExplicitDefault && column.Default == "" {
+		column.Default = "NULL"
 	}
 }
 
@@ -1061,4 +1068,30 @@ func normalizeDefaultValue(defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+// isLiteralValue determines if a default value is a literal that needs quotes
+func isLiteralValue(value string) bool {
+	if value == "" {
+		return false
+	}
+
+	upper := strings.ToUpper(value)
+
+	// These are keywords/functions that don't need quotes
+	if strings.HasPrefix(upper, "CURRENT_TIMESTAMP") ||
+		strings.HasPrefix(upper, "CURRENT_DATE") ||
+		strings.HasPrefix(upper, "NOW") ||
+		upper == "NULL" ||
+		upper == "AUTO_INCREMENT" {
+		return false
+	}
+
+	// Check if it's a numeric value (don't quote numbers)
+	if _, err := strconv.ParseFloat(value, 64); err == nil {
+		return true // Numbers are literals but need quotes for consistency with sync
+	}
+
+	// Everything else (strings, etc.) is a literal
+	return true
 }
