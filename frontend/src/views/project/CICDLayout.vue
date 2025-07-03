@@ -160,7 +160,9 @@ const availableTabs = computed<TabKey[]>(() => {
   if (!isCreating.value) {
     if (
       plan.value.specs.some(
-        (spec) => !isNullOrUndefined(spec.config) && spec.config.case === "changeDatabaseConfig"
+        (spec) =>
+          !isNullOrUndefined(spec.config) &&
+          spec.config.case === "changeDatabaseConfig"
       )
     ) {
       tabs.push(TabKey.Checks);
@@ -243,7 +245,7 @@ const handleTabChange = (tab: TabKey) => {
     // Auto select the first spec when switching to Specifications tab.
     const spec = head(plan.value.specs);
     if (spec) {
-      gotoSpec(router, spec.id);
+      gotoSpec(router, plan.value, spec.id);
     } else {
       router.push({
         name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
