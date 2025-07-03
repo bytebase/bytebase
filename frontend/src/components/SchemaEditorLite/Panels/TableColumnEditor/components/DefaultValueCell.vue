@@ -3,13 +3,13 @@
   <NInput
     v-if="useSimpleInput"
     ref="inputRef"
-    :value="postgresInputValue"
-    :placeholder="postgresPlaceholder"
+    :value="simpleInputValue"
+    :placeholder="simpleInputPlaceholder"
     :disabled="disabled"
     :style="simpleInputStyle"
     @focus="focused = true"
     @blur="focused = false"
-    @update:value="handlePostgresInput"
+    @update:value="handleSimpleInput"
   />
 
   <NDropdown
@@ -123,18 +123,22 @@ const placeholder = computed(() => {
   return getColumnDefaultValuePlaceholder(props.column);
 });
 
-// Computed property for engines that use simple input (currently PostgreSQL)
+// Computed property for engines that use simple input (PostgreSQL and MySQL)
 const useSimpleInput = computed(() => {
-  return props.engine === Engine.POSTGRES;
+  return props.engine === Engine.POSTGRES || props.engine === Engine.MYSQL;
 });
 
-const postgresInputValue = computed(() => {
+const simpleInputValue = computed(() => {
   // For PostgreSQL, we use defaultString field which contains the schema-qualified expression
-  return props.column.defaultString || "";
+  // For MySQL, we also use defaultString for now (until proto types are updated)
+  if (props.engine === Engine.POSTGRES || props.engine === Engine.MYSQL) {
+    return props.column.defaultString || "";
+  }
+  return "";
 });
 
-const postgresPlaceholder = computed(() => {
-  return t("schema-editor.default.postgres-placeholder");
+const simpleInputPlaceholder = computed(() => {
+  return t("schema-editor.default.placeholder");
 });
 
 // TODO: This styling mimics InlineInput component. When all engines use simplified input,
@@ -217,8 +221,8 @@ const handleInput = (value: string) => {
   emit("input", value);
 };
 
-const handlePostgresInput = (value: string) => {
-  // For PostgreSQL, emit the value for the input handler
+const handleSimpleInput = (value: string) => {
+  // Emit the value for the input handler
   emit("input", value);
 
   // Also emit a select event to maintain consistency with the existing API
@@ -227,7 +231,7 @@ const handlePostgresInput = (value: string) => {
     value: {
       hasDefault: !!value.trim(),
       defaultNull: false,
-      defaultString: value.trim(), // For PostgreSQL, store in defaultString
+      defaultString: value.trim(), // Both PostgreSQL and MySQL use defaultString for now
       defaultExpression: "",
     },
   };
