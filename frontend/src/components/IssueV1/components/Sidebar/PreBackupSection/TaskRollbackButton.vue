@@ -28,6 +28,7 @@ import {
   hasProjectPermissionV2,
   sheetNameOfTaskV1,
 } from "@/utils";
+import type { LocationQueryRaw } from "vue-router";
 
 const router = useRouter();
 const { issue, selectedTask } = useIssueContext();
@@ -72,7 +73,7 @@ const createRestoreIssue = async () => {
 
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, statement);
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: "bb.issue.database.data.update",
     name: `Rollback ${selectedTask.value.target} in issue#${extractIssueUID(issue.value.name)}`,
     databaseList: selectedTask.value.target,

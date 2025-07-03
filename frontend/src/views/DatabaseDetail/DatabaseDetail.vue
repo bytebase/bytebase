@@ -198,7 +198,7 @@ import dayjs from "dayjs";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { useRouter, useRoute, type LocationQueryRaw } from "vue-router";
 import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
@@ -356,7 +356,7 @@ const createMigration = async (
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
 
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: type,
     name: issueNameParts.join(" "),
     databaseList: database.value.name,

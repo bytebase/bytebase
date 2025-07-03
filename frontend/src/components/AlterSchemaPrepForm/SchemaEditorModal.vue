@@ -129,7 +129,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { PropType } from "vue";
 import { computed, onMounted, h, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, type LocationQuery } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
@@ -439,7 +439,7 @@ const handlePreviewIssue = async () => {
     // generating one more time below. useful for large schemas
   }
 
-  const query: Record<string, any> = {
+  const query: LocationQuery = {
     template: "bb.issue.database.schema.update",
   };
   query.databaseList = databaseList.value.map((db) => db.name).join(",");
