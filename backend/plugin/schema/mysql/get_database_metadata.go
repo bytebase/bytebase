@@ -370,7 +370,7 @@ func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionConte
 				}
 			} else if attr.ExprWithParentheses() != nil {
 				// Expression - wrap in parentheses like sync logic does for DEFAULT_GENERATED
-				column.Default = fmt.Sprintf("(%s)", attr.ExprWithParentheses().GetText())
+				column.Default = fmt.Sprintf("(%s)", attr.GetParser().GetTokenStream().GetTextFromRuleContext(attr.ExprWithParentheses()))
 			} else {
 				// Check for special keywords like CURRENT_TIMESTAMP
 				// Parse the entire attribute text to find DEFAULT keyword and what follows
@@ -499,7 +499,7 @@ func (*metadataExtractor) extractPrimaryKey(ctx mysql.ITableConstraintDefContext
 
 		index := &storepb.IndexMetadata{
 			Name:        "PRIMARY",
-			Type:        "PRIMARY",
+			Type:        "BTREE",
 			Expressions: keyColumns,
 			Primary:     true,
 			Unique:      true,
@@ -595,7 +595,7 @@ func (*metadataExtractor) extractForeignKey(ctx mysql.ITableConstraintDefContext
 }
 
 // extractIndex extracts regular index
-func (*metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
+func (e *metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
 	if ctx.KeyList() == nil {
 		return
 	}
@@ -622,7 +622,7 @@ func (*metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, tab
 	}
 
 	if len(expressions) > 0 {
-		indexType := "BTREE"
+		indexType := e.getIndexType(ctx)
 
 		index := &storepb.IndexMetadata{
 			Name:        indexName,
@@ -680,8 +680,8 @@ func (*metadataExtractor) extractCheckConstraint(ctx mysql.ICheckConstraintConte
 		return
 	}
 
-	// Extract expression
-	expression := ctx.ExprWithParentheses().GetText()
+	// Extract expression with proper spacing
+	expression := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.ExprWithParentheses())
 
 	// If no constraint name provided, generate one like MySQL does
 	if constraintName == "" {
@@ -1051,6 +1051,19 @@ func (e *metadataExtractor) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		}
 		table.Indexes = append(table.Indexes, index)
 	}
+}
+
+// getIndexType extracts the index type from the table constraint definition
+func (*metadataExtractor) getIndexType(_ mysql.ITableConstraintDefContext) string {
+	// Default to BTREE if no type specified
+	indexType := "BTREE"
+
+	// Try to extract index type from various possible locations in the parse tree
+	// This depends on the specific MySQL parser implementation
+	// For now, we'll return the default BTREE
+	// TODO: Implement proper index type extraction when parser methods are available
+
+	return indexType
 }
 
 // normalizeDefaultValue normalizes default values to match MySQL's internal representation
