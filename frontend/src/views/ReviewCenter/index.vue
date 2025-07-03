@@ -48,7 +48,7 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
-import { useRouter } from "vue-router";
+import { useRouter, type LocationQuery } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { targetsForSpec } from "@/components/Plan";
@@ -181,7 +181,7 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
   const isDatabaseGroup = targets.every((target) =>
     isValidDatabaseGroupName(target)
   );
-  const query: Record<string, any> = {
+  const query: LocationQuery = {
     template,
   };
   if (isDatabaseGroup) {

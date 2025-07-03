@@ -79,7 +79,7 @@ import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, onMounted, reactive, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute, useRouter, type LocationQueryRaw } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -294,7 +294,7 @@ const tryFinishSetup = async () => {
   }
 
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: "bb.issue.database.schema.update",
     mode: "normal",
   };

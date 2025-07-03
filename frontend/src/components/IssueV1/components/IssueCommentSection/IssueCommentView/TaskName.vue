@@ -32,6 +32,7 @@ import {
   extractTaskUID,
   issueV1Slug,
 } from "@/utils";
+import type { LocationQueryRaw } from "vue-router";
 
 const props = defineProps<{
   issue: ComposedIssue;
@@ -45,7 +46,7 @@ const schemaVersion = computed(() => {
 const link = computed(() => {
   const { issue, task } = props;
 
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     task: extractTaskUID(task.name),
   };
 

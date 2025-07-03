@@ -100,6 +100,8 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema as FieldMaskProtoEsSchema } from "@bufbuild/protobuf/wkt";
 import { computedAsync } from "@vueuse/core";
 import {
   ArrowRightLeftIcon,
@@ -117,6 +119,7 @@ import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import type { LocationQueryRaw } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
@@ -140,8 +143,6 @@ import {
   UpdateDatabaseRequestSchema,
   BatchUpdateDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema as FieldMaskProtoEsSchema } from "@bufbuild/protobuf/wkt";
 import {
   allowUsingSchemaEditor,
   extractProjectResourceName,
@@ -336,7 +337,7 @@ const generateMultiDb = async (
     return;
   }
 
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: type,
     name: generateIssueTitle(
       type,
@@ -395,18 +396,20 @@ const unAssignDatabases = async () => {
   }
   try {
     state.loading = true;
-    await databaseStore.batchUpdateDatabases(create(BatchUpdateDatabasesRequestSchema, {
-      parent: "-",
-      requests: assignedDatabases.value.map((database) => {
-        return create(UpdateDatabaseRequestSchema, {
-          database: create(DatabaseSchema$, {
-            name: database.name,
-            project: DEFAULT_PROJECT_NAME,
-          }),
-          updateMask: create(FieldMaskProtoEsSchema, { paths: ["project"] }),
-        });
-      }),
-    }));
+    await databaseStore.batchUpdateDatabases(
+      create(BatchUpdateDatabasesRequestSchema, {
+        parent: "-",
+        requests: assignedDatabases.value.map((database) => {
+          return create(UpdateDatabaseRequestSchema, {
+            database: create(DatabaseSchema$, {
+              name: database.name,
+              project: DEFAULT_PROJECT_NAME,
+            }),
+            updateMask: create(FieldMaskProtoEsSchema, { paths: ["project"] }),
+          });
+        }),
+      })
+    );
     emit("refresh");
     pushNotification({
       module: "bytebase",
@@ -613,10 +616,12 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
         ...database,
         labels: label,
       });
-      return await databaseStore.updateDatabase(create(UpdateDatabaseRequestSchema, {
-        database: patch,
-        updateMask: create(FieldMaskProtoEsSchema, { paths: ["labels"] }),
-      }));
+      return await databaseStore.updateDatabase(
+        create(UpdateDatabaseRequestSchema, {
+          database: patch,
+          updateMask: create(FieldMaskProtoEsSchema, { paths: ["labels"] }),
+        })
+      );
     })
   );
   emit("update", updatedDatabases);
@@ -629,18 +634,22 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
 };
 
 const onEnvironmentUpdate = async (environment: string) => {
-  const updatedDatabases = await databaseStore.batchUpdateDatabases(create(BatchUpdateDatabasesRequestSchema, {
-    parent: "-",
-    requests: props.databases.map((database) => {
-      return create(UpdateDatabaseRequestSchema, {
-        database: create(DatabaseSchema$, {
-          name: database.name,
-          environment: environment,
-        }),
-        updateMask: create(FieldMaskProtoEsSchema, { paths: ["environment"] }),
-      });
-    }),
-  }));
+  const updatedDatabases = await databaseStore.batchUpdateDatabases(
+    create(BatchUpdateDatabasesRequestSchema, {
+      parent: "-",
+      requests: props.databases.map((database) => {
+        return create(UpdateDatabaseRequestSchema, {
+          database: create(DatabaseSchema$, {
+            name: database.name,
+            environment: environment,
+          }),
+          updateMask: create(FieldMaskProtoEsSchema, {
+            paths: ["environment"],
+          }),
+        });
+      }),
+    })
+  );
   emit("update", updatedDatabases);
 
   pushNotification({
