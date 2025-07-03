@@ -12,7 +12,8 @@ export const overrideAppProfile = () => {
   const databaseChangeMode = computed(() => {
     if (setting.value?.value?.value?.case === "workspaceProfileSettingValue") {
       const mode = setting.value.value.value.value.databaseChangeMode;
-      if (mode === NewDatabaseChangeMode.EDITOR) return NewDatabaseChangeMode.EDITOR;
+      if (mode === NewDatabaseChangeMode.EDITOR)
+        return NewDatabaseChangeMode.EDITOR;
     }
     return NewDatabaseChangeMode.PIPELINE;
   });
@@ -28,7 +29,9 @@ export const overrideAppProfile = () => {
 };
 
 const overrideAppFeatures = (
-  databaseChangeMode: NewDatabaseChangeMode.PIPELINE | NewDatabaseChangeMode.EDITOR
+  databaseChangeMode:
+    | NewDatabaseChangeMode.PIPELINE
+    | NewDatabaseChangeMode.EDITOR
 ) => {
   const actuatorStore = useActuatorV1Store();
 

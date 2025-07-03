@@ -78,7 +78,10 @@ export const databaseEngineForSpec = async (
 
 export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
-  if (spec.config?.case === "changeDatabaseConfig" || spec.config?.case === "exportDataConfig") {
+  if (
+    spec.config?.case === "changeDatabaseConfig" ||
+    spec.config?.case === "exportDataConfig"
+  ) {
     return targetsForSpec(spec).every(isValidDatabaseName);
   }
   return false;
@@ -86,7 +89,10 @@ export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
 
 export const isDBGroupChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
-  if (spec.config?.case === "changeDatabaseConfig" || spec.config?.case === "exportDataConfig") {
+  if (
+    spec.config?.case === "changeDatabaseConfig" ||
+    spec.config?.case === "exportDataConfig"
+  ) {
     return targetsForSpec(spec).every(isValidDatabaseGroupName);
   }
   return false;

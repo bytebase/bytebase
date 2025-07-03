@@ -34,13 +34,13 @@
           >
             {{
               (() => {
-                switch(role) {
+                switch (role) {
                   case GroupMember_Role.OWNER:
-                    return $t('settings.members.groups.form.role.owner');
+                    return $t("settings.members.groups.form.role.owner");
                   case GroupMember_Role.MEMBER:
-                    return $t('settings.members.groups.form.role.member');
+                    return $t("settings.members.groups.form.role.member");
                   default:
-                    return 'ROLE UNRECOGNIZED';
+                    return "ROLE UNRECOGNIZED";
                 }
               })()
             }}
@@ -62,10 +62,8 @@ import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
+import { GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
 import { UserType, type User } from "@/types/proto-es/v1/user_service_pb";
-import {
-  GroupMember_Role,
-} from "@/types/proto-es/v1/group_service_pb";
 
 withDefaults(
   defineProps<{

@@ -4,10 +4,7 @@ import { extractUserId, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  Task_Status,
-  Task_Type,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractDatabaseGroupName, hasProjectPermissionV2 } from "@/utils";
 import { projectOfIssue, specForTask } from ".";
 
@@ -16,9 +13,10 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   if (!spec) {
     return false;
   }
-  const target = spec.config?.case === "changeDatabaseConfig" 
-    ? head(spec.config.value.targets) 
-    : undefined;
+  const target =
+    spec.config?.case === "changeDatabaseConfig"
+      ? head(spec.config.value.targets)
+      : undefined;
   const databaseGroup = extractDatabaseGroupName(target ?? "");
   return databaseGroup !== "";
 };

@@ -11,6 +11,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
 import { TrashIcon } from "lucide-vue-next";
 import { NDataTable, NPopconfirm, type DataTableColumn } from "naive-ui";
 import { computed, h, ref, watch, withModifiers } from "vue";
@@ -27,7 +28,6 @@ import {
   useDatabaseCatalog,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { create } from "@bufbuild/protobuf";
 import { DataClassificationSetting_DataClassificationConfigSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { autoDatabaseRoute } from "@/utils";
 

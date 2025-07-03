@@ -23,9 +23,7 @@ function stringifyExpr(expr: Expr): string {
     const functionName = callExpr.function.replace(/_/g, "");
     if (callExpr.target) {
       const target = stringifyExpr(callExpr.target);
-      const args = callExpr.args
-        .map((arg) => stringifyExpr(arg))
-        .join(", ");
+      const args = callExpr.args.map((arg) => stringifyExpr(arg)).join(", ");
       return `${target}.${functionName}(${args})`;
     } else {
       const args = callExpr.args.map((arg) => stringifyExpr(arg));
@@ -45,9 +43,12 @@ function stringifyExpr(expr: Expr): string {
     const structExpr = expr.exprKind.value;
     const entries = structExpr.entries
       .map((entry) => {
-        const key = entry.keyKind?.case === "fieldKey"
-          ? entry.keyKind.value
-          : entry.keyKind?.case === "mapKey" ? stringifyExpr(entry.keyKind.value) : "";
+        const key =
+          entry.keyKind?.case === "fieldKey"
+            ? entry.keyKind.value
+            : entry.keyKind?.case === "mapKey"
+              ? stringifyExpr(entry.keyKind.value)
+              : "";
         const value = stringifyExpr(entry.value!);
         return `${key}: ${value}`;
       })

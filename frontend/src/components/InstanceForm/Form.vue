@@ -442,7 +442,7 @@
           rel="noopener noreferrer"
           class="normal-link"
         >
-          {{ $t('instance.sentence.firewall-info') }}
+          {{ $t("instance.sentence.firewall-info") }}
         </a>
       </BBAttention>
 
@@ -479,12 +479,14 @@
 
     <InstanceArchiveRestoreButton
       v-if="!hideArchiveRestore && !isCreating && instance"
-      :instance="(instance as ComposedInstance)"
+      :instance="instance as ComposedInstance"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
+import type { Duration } from "@bufbuild/protobuf/wkt";
 import { TrashIcon } from "lucide-vue-next";
 import {
   NButton,
@@ -519,7 +521,10 @@ import {
 import { type ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DataSource_AuthenticationType, DataSource_AddressSchema } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  DataSource_AuthenticationType,
+  DataSource_AddressSchema,
+} from "@/types/proto-es/v1/instance_service_pb";
 import { DataSource_RedisType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -530,8 +535,6 @@ import {
   urlfy,
   supportedEngineV1List,
 } from "@/utils";
-
-
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
@@ -545,8 +548,6 @@ import {
   RedisConnectionType,
 } from "./constants";
 import { useInstanceFormContext } from "./context";
-import { create } from "@bufbuild/protobuf";
-import type { Duration } from "@bufbuild/protobuf/wkt";
 
 defineProps<{
   hideArchiveRestore?: boolean;
@@ -636,7 +637,6 @@ const showAdditionalAddresses = computed(() => {
   }
   return false;
 });
-
 
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.

@@ -18,18 +18,18 @@ import {
   CreateIssueRequestSchema,
   GetIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanRequestSchema,
   ListPlanCheckRunsRequestSchema,
   CreatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   GetRolloutRequestSchema,
   ListTaskRunsRequestSchema,
   CreateRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { TaskRunLogSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "../common";

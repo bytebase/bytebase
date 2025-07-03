@@ -60,6 +60,7 @@
 </template>
 
 <script lang="ts" setup>
+import type { ConnectError } from "@connectrpc/connect";
 import { useDebounceFn } from "@vueuse/core";
 import { NButton, NEllipsis, NCollapse, NCollapseItem } from "naive-ui";
 import { watch, reactive } from "vue";
@@ -70,7 +71,6 @@ import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, isValidDatabaseName } from "@/types";
-import type { ConnectError } from "@connectrpc/connect";
 
 interface DatabaseMatchList {
   index: number;

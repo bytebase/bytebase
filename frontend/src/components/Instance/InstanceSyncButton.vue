@@ -28,6 +28,7 @@
 </template>
 
 <script lang="tsx" setup>
+import type { ConnectError } from "@connectrpc/connect";
 import { ChevronDownIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NTooltip } from "naive-ui";
@@ -35,7 +36,6 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import type { ConnectError } from "@connectrpc/connect";
 
 withDefaults(
   defineProps<{

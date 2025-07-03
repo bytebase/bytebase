@@ -266,6 +266,17 @@
 </template>
 
 <script setup lang="tsx">
+import { create as createProto } from "@bufbuild/protobuf";
+import { cloneDeep, isEqual } from "lodash-es";
+import { TriangleAlertIcon } from "lucide-vue-next";
+import {
+  NColorPicker,
+  NDynamicTags,
+  NInputNumber,
+  NTag,
+  NTooltip,
+} from "naive-ui";
+import { computed, reactive, ref } from "vue";
 import { Switch } from "@/components/v2";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
@@ -277,17 +288,6 @@ import {
   LabelSchema,
   Project_ExecutionRetryPolicySchema,
 } from "@/types/proto-es/v1/project_service_pb";
-import { cloneDeep, isEqual } from "lodash-es";
-import { create as createProto } from "@bufbuild/protobuf";
-import { TriangleAlertIcon } from "lucide-vue-next";
-import {
-  NColorPicker,
-  NDynamicTags,
-  NInputNumber,
-  NTag,
-  NTooltip,
-} from "naive-ui";
-import { computed, reactive, ref } from "vue";
 
 interface LocalState {
   issueLabels: Label[];
@@ -349,11 +349,13 @@ const onLabelsUpdate = (values: string[]) => {
   if (new Set(labelValues.value).has(newValue)) {
     return;
   }
-  state.issueLabels.push(createProto(LabelSchema, {
-    color: defaultColor,
-    value: newValue,
-    group: "",
-  }));
+  state.issueLabels.push(
+    createProto(LabelSchema, {
+      color: defaultColor,
+      value: newValue,
+      group: "",
+    })
+  );
 };
 
 const renderLabel = (value: string, index: number) => {

@@ -1,5 +1,5 @@
-import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { create as createProto } from "@bufbuild/protobuf";
+import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { sqlServiceClientConnect } from "@/grpcweb";
 import {
@@ -8,11 +8,14 @@ import {
 } from "@/grpcweb/context-key";
 import type { SQLResultSetV1 } from "@/types";
 import { PlanCheckRun_ResultSchema } from "@/types/proto-es/v1/plan_service_pb";
-import type { ExportRequest, QueryRequest } from "@/types/proto-es/v1/sql_service_pb";
-import { 
+import type {
+  ExportRequest,
+  QueryRequest,
+} from "@/types/proto-es/v1/sql_service_pb";
+import {
   type Advice,
   AdviceSchema,
-  Advice_Status 
+  Advice_Status,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
@@ -20,10 +23,13 @@ export const getSqlReviewReports = (err: unknown): Advice[] => {
   const advices: Advice[] = [];
   if (err instanceof ConnectError) {
     for (const report of err.findDetails(PlanCheckRun_ResultSchema)) {
-      const startPosition = report.report.case === 'sqlReviewReport' ? {
-        line: report.report.value.line,
-        column: report.report.value.column,
-      }: undefined
+      const startPosition =
+        report.report.case === "sqlReviewReport"
+          ? {
+              line: report.report.value.line,
+              column: report.report.value.column,
+            }
+          : undefined;
       advices.push(
         createProto(AdviceSchema, {
           status: Advice_Status.ERROR,
@@ -62,10 +68,7 @@ export const useSQLStore = defineStore("sql", () => {
         error: extractGrpcErrorMessage(err),
         results: [],
         advices: getSqlReviewReports(err),
-        status:
-          err instanceof ConnectError
-            ? err.code
-            : Code.Unknown,
+        status: err instanceof ConnectError ? err.code : Code.Unknown,
       };
     }
   };

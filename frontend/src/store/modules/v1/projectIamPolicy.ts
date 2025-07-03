@@ -1,16 +1,8 @@
+import { create } from "@bufbuild/protobuf";
 import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { projectServiceClientConnect } from "@/grpcweb";
-import {
-  GetIamPolicyRequestSchema,
-  SetIamPolicyRequestSchema,
-  IamPolicySchema,
-} from "@/types/proto-es/v1/iam_policy_pb";
-import {
-  BatchGetIamPolicyRequestSchema,
-} from "@/types/proto-es/v1/project_service_pb";
 import {
   ALL_USERS_USER_EMAIL,
   QueryPermissionQueryAny,
@@ -20,13 +12,19 @@ import {
   type QueryPermission,
 } from "@/types";
 import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import {
+  GetIamPolicyRequestSchema,
+  SetIamPolicyRequestSchema,
+  IamPolicySchema,
+} from "@/types/proto-es/v1/iam_policy_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import { BatchGetIamPolicyRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
-import { useCurrentUserV1 } from "./auth";
 import { useRoleStore } from "../role";
 import { useUserStore } from "../user";
+import { useCurrentUserV1 } from "./auth";
 import { usePermissionStore } from "./permission";
 
 export const useProjectIamPolicyStore = defineStore(
@@ -77,7 +75,8 @@ export const useProjectIamPolicyStore = defineStore(
         scope: "projects/-",
         names: projectList,
       });
-      const response = await projectServiceClientConnect.batchGetIamPolicy(request);
+      const response =
+        await projectServiceClientConnect.batchGetIamPolicy(request);
       for (const item of response.policyResults) {
         if (item.policy) {
           await setIamPolicy(item.project, item.policy);

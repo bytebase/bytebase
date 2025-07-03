@@ -46,7 +46,10 @@ import {
   useCurrentProjectV1,
   useCurrentUserV1,
 } from "@/store";
-import { UpdateIssueRequestSchema, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  UpdateIssueRequestSchema,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../../../logic/context";
 import ApprovalFlowSection from "./ApprovalFlowSection/ApprovalFlowSection.vue";

@@ -88,9 +88,9 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NButton, NModal } from "naive-ui";
 import { ref, onUnmounted, watch } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { identityProviderServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { OAuthWindowEventPayload } from "@/types";
@@ -98,9 +98,7 @@ import type {
   IdentityProvider,
   TestIdentityProviderResponse,
 } from "@/types/proto-es/v1/idp_service_pb";
-import {
-  IdentityProviderType,
-} from "@/types/proto-es/v1/idp_service_pb";
+import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 import {
   TestIdentityProviderRequestSchema,
   CreateIdentityProviderRequestSchema,
@@ -153,7 +151,8 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
         },
       },
     });
-    const response = await identityProviderServiceClientConnect.testIdentityProvider(request);
+    const response =
+      await identityProviderServiceClientConnect.testIdentityProvider(request);
 
     testIdentityProviderResponse.value = response;
     showClaimsDialog.value = true;
@@ -188,7 +187,10 @@ const testConnection = async () => {
         identityProvider: idp,
         validateOnly: true,
       });
-      const response = await identityProviderServiceClientConnect.createIdentityProvider(request);
+      const response =
+        await identityProviderServiceClientConnect.createIdentityProvider(
+          request
+        );
       idpForTesting = response;
     }
 
@@ -227,7 +229,10 @@ const testConnection = async () => {
       const request = create(TestIdentityProviderRequestSchema, {
         identityProvider: idp,
       });
-      const response = await identityProviderServiceClientConnect.testIdentityProvider(request);
+      const response =
+        await identityProviderServiceClientConnect.testIdentityProvider(
+          request
+        );
 
       // Show claims in dialog (LDAP will have empty claims)
       testIdentityProviderResponse.value = response;

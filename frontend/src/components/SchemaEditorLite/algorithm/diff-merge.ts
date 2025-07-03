@@ -1,5 +1,5 @@
-import { cloneDeep, isEqual, pick } from "lodash-es";
 import { create } from "@bufbuild/protobuf";
+import { cloneDeep, isEqual, pick } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseCatalog,
@@ -822,7 +822,7 @@ export class DiffMerge {
               name: table.name,
               kind: {
                 case: "columns",
-                value: create(TableCatalog_ColumnsSchema, {})
+                value: create(TableCatalog_ColumnsSchema, {}),
               },
             }),
           targetTableCatalog ??
@@ -830,7 +830,7 @@ export class DiffMerge {
               name: table.name,
               kind: {
                 case: "columns",
-                value: create(TableCatalog_ColumnsSchema, {})
+                value: create(TableCatalog_ColumnsSchema, {}),
               },
             })
         );
@@ -907,7 +907,7 @@ export class DiffMerge {
       case: "columns",
       value: create(TableCatalog_ColumnsSchema, {
         columns: mergedColumnCatalogs,
-      })
+      }),
     };
     this.timer.end("mergeColumnCatalog", table.columns.length);
   }

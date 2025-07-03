@@ -1,8 +1,8 @@
+import type Emittery from "emittery";
+import type { Ref } from "vue";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { AISetting } from "@/types/proto-es/v1/setting_service_pb";
-import type Emittery from "emittery";
-import type { Ref } from "vue";
 import type { Conversation } from "./conversation";
 
 export type AIContextEvents = Emittery<{

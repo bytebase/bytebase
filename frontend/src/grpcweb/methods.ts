@@ -1,4 +1,4 @@
-import { getOption } from '@bufbuild/protobuf';
+import { getOption } from "@bufbuild/protobuf";
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
 import { audit } from "@/types/proto-es/v1/annotation_pb";
 import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
@@ -17,8 +17,8 @@ import { OrgPolicyService } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanService } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectService } from "@/types/proto-es/v1/project_service_pb";
 import { ReleaseService } from "@/types/proto-es/v1/release_service_pb";
-import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
 import { ReviewConfigService } from "@/types/proto-es/v1/review_config_service_pb";
+import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
 import { RiskService } from "@/types/proto-es/v1/risk_service_pb";
 import { RoleService } from "@/types/proto-es/v1/role_service_pb";
 import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";

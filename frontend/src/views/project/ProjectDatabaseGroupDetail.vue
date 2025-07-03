@@ -4,7 +4,10 @@
     v-bind="$attrs"
     class="h-full flex-1 relative space-y-4"
   >
-    <FeatureAttention :feature="PlanFeature.FEATURE_DATABASE_GROUPS" class="mb-4" />
+    <FeatureAttention
+      :feature="PlanFeature.FEATURE_DATABASE_GROUPS"
+      class="mb-4"
+    />
 
     <div
       v-if="hasDatabaseGroupFeature && !state.editing"
@@ -105,7 +108,9 @@ const hasMatchedDatabases = computed(
   () => (databaseGroup.value?.matchedDatabases.length ?? 0) > 0
 );
 
-const hasDatabaseGroupFeature = featureToRef(PlanFeature.FEATURE_DATABASE_GROUPS);
+const hasDatabaseGroupFeature = featureToRef(
+  PlanFeature.FEATURE_DATABASE_GROUPS
+);
 
 watchEffect(async () => {
   await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value, {

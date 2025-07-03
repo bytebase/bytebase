@@ -101,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { useLocalStorage } from "@vueuse/core";
 import dayjs from "dayjs";
 import { head } from "lodash-es";
@@ -124,12 +125,9 @@ import {
   useSQLStore,
 } from "@/store";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
-import { create } from "@bufbuild/protobuf";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hexToRgb } from "@/utils";
-
-
 
 const MAX_EXPORT = 20;
 

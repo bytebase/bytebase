@@ -1,6 +1,6 @@
+import { toJson } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import Long from "long";
-import { toJson } from "@bufbuild/protobuf";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -13,10 +13,7 @@ import { isNullOrUndefined } from "../util";
 
 // extractSQLRowValuePlain extracts a plain value from a RowValue.
 export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
-  if (
-    typeof value === "undefined" ||
-    value.kind?.case === "nullValue"
-  ) {
+  if (typeof value === "undefined" || value.kind?.case === "nullValue") {
     return null;
   }
 
@@ -52,7 +49,9 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     }
 
     // Check if it's readable text
-    const isReadableText = byteArray.every((byte: number) => byte >= 32 && byte <= 126);
+    const isReadableText = byteArray.every(
+      (byte: number) => byte >= 32 && byte <= 126
+    );
     if (isReadableText) {
       try {
         return new TextDecoder().decode(new Uint8Array(byteArray));
@@ -71,10 +70,16 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     );
   }
 
-  if (value.kind?.case === "timestampValue" && value.kind.value.googleTimestamp) {
+  if (
+    value.kind?.case === "timestampValue" &&
+    value.kind.value.googleTimestamp
+  ) {
     return formatTimestamp(value.kind.value);
   }
-  if (value.kind?.case === "timestampTzValue" && value.kind.value.googleTimestamp) {
+  if (
+    value.kind?.case === "timestampTzValue" &&
+    value.kind.value.googleTimestamp
+  ) {
     return formatTimestampWithTz(value.kind.value);
   }
   if (value.kind?.case === "valueValue") {
@@ -296,13 +301,12 @@ export const compareQueryRowValues = (
 
 // extractSQLRowValueRaw extracts a raw value from a RowValue.
 const extractSQLRowValueRaw = (value: RowValue | undefined) => {
-  if (
-    typeof value === "undefined" ||
-    value.kind?.case === "nullValue"
-  ) {
+  if (typeof value === "undefined" || value.kind?.case === "nullValue") {
     return null;
   }
-  const keys = Object.keys(toJson(RowValueSchema, value) as Record<string, any>);
+  const keys = Object.keys(
+    toJson(RowValueSchema, value) as Record<string, any>
+  );
   if (keys.length === 0) {
     return undefined;
   }

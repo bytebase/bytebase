@@ -14,6 +14,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { reactive } from "vue";
 import { BBModal } from "@/bbkit";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -24,7 +25,6 @@ import {
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { create } from "@bufbuild/protobuf";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   WorksheetSchema,
@@ -65,7 +65,7 @@ const doSaveSheet = async (
   if (sheetId !== UNKNOWN_ID) {
     const currentSheet = await worksheetV1Store.getWorksheetByName(worksheet);
     if (!currentSheet) return;
-    
+
     const updatedSheet = await worksheetV1Store.patchWorksheet(
       {
         ...currentSheet,

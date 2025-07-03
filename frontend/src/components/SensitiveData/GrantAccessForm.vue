@@ -97,6 +97,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
 import { isUndefined } from "lodash-es";
 import { NButton, NCheckbox, NDatePicker, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -106,7 +107,6 @@ import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { usePolicyV1Store, pushNotification } from "@/store";
 import type { DatabaseResource } from "@/types";
-import { create } from "@bufbuild/protobuf";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
   Policy,
@@ -254,7 +254,7 @@ const getPendingUpdatePolicy = async (
     parentPath,
     policyType: PolicyType.MASKING_EXCEPTION,
   });
-  const existed = 
+  const existed =
     policy?.policy?.case === "maskingExceptionPolicy"
       ? policy.policy.value.maskingExceptions
       : [];

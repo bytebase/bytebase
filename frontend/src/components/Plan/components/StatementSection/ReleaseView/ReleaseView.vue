@@ -110,9 +110,7 @@
           </h4>
           <div class="text-xs">
             <span class="text-gray-500"
-              >{{
-                getVCSTypeText(release.vcsSource.vcsType)
-              }}:</span
+              >{{ getVCSTypeText(release.vcsSource.vcsType) }}:</span
             >
             <a
               v-if="release.vcsSource.url"

@@ -11,7 +11,9 @@
     >
       <span>
         {{ $t("database.revision.applied-at") }}:
-        <HumanizeDate :date="getDateForPbTimestampProtoEs(revision.createTime)" />
+        <HumanizeDate
+          :date="getDateForPbTimestampProtoEs(revision.createTime)"
+        />
       </span>
       <span v-if="relatedIssueUID">
         {{ $t("common.issue") }}:
@@ -48,15 +50,15 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
-import { create } from "@bufbuild/protobuf";
-import { GetTaskRunRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useRevisionStore, useSheetV1Store } from "@/store";
 import { getDateForPbTimestampProtoEs, type ComposedDatabase } from "@/types";
+import { GetTaskRunRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractIssueUID, getSheetStatement } from "@/utils";
 import TaskRunLogTable from "../IssueV1/components/TaskRunSection/TaskRunLogTable/TaskRunLogTable.vue";

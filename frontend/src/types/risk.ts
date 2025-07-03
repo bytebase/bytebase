@@ -29,9 +29,6 @@ export const useSupportedSourceList = () => {
       ];
     }
 
-    return [
-      Risk_Source.DATA_EXPORT,
-      Risk_Source.REQUEST_ROLE,
-    ];
+    return [Risk_Source.DATA_EXPORT, Risk_Source.REQUEST_ROLE];
   });
 };

@@ -2,12 +2,12 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { celServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-import { 
-  BatchParseRequestSchema, 
-  BatchDeparseRequestSchema
-} from "@/types/proto-es/v1/cel_service_pb";
 import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import {
+  BatchParseRequestSchema,
+  BatchDeparseRequestSchema,
+} from "@/types/proto-es/v1/cel_service_pb";
 
 export const batchConvertCELStringToParsedExpr = async (
   celList: string[]
@@ -19,7 +19,7 @@ export const batchConvertCELStringToParsedExpr = async (
     const response = await celServiceClientConnect.batchParse(request, {
       contextValues: createContextValues().set(silentContextKey, true),
     });
-    
+
     // Convert new Expr array to old Expr array for compatibility
     return response.expressions;
   } catch (error) {

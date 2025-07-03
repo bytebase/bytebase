@@ -49,16 +49,15 @@
     <div class="pl-4 my-2">
       <ul class="list-disc list-inside">
         <li v-for="feature in unlicensedFeatures" :key="feature">
-          {{
-            $t(`dynamic.subscription.features.${feature}.title`)
-          }}
+          {{ $t(`dynamic.subscription.features.${feature}.title`) }}
           ({{
             $t(
-              `subscription.plan.${
-                PlanType[subscriptionStore.getMinimumRequiredPlan(
-                  PlanFeature[feature as keyof typeof PlanFeature] ?? PlanFeature.FEATURE_UNSPECIFIED
-                )].toLowerCase()
-              }.title`
+              `subscription.plan.${PlanType[
+                subscriptionStore.getMinimumRequiredPlan(
+                  PlanFeature[feature as keyof typeof PlanFeature] ??
+                    PlanFeature.FEATURE_UNSPECIFIED
+                )
+              ].toLowerCase()}.title`
             )
           }})
         </li>
@@ -73,14 +72,17 @@
 </template>
 
 <script lang="ts" setup>
-import { BBModal } from "@/bbkit";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
-import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
-import { PlanFeature, PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBModal } from "@/bbkit";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
+import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
+import {
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
 
 interface LocalState {
   showModal: boolean;
@@ -109,7 +111,9 @@ const neededPlan = computed(() => {
   let plan = PlanType.FREE;
 
   for (const feature of unlicensedFeatures.value) {
-    const featureEnum = PlanFeature[feature as keyof typeof PlanFeature] ?? PlanFeature.FEATURE_UNSPECIFIED;
+    const featureEnum =
+      PlanFeature[feature as keyof typeof PlanFeature] ??
+      PlanFeature.FEATURE_UNSPECIFIED;
     const requiredPlan = subscriptionStore.getMinimumRequiredPlan(featureEnum);
     if (requiredPlan > plan) {
       plan = requiredPlan;

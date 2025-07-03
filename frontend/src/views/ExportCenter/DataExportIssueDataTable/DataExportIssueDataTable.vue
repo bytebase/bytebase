@@ -184,7 +184,10 @@ const issueRelatedDatabase = (issue: ComposedIssue) => {
 
 const issueRelatedStatement = (issue: ComposedIssue) => {
   const task = head(flattenTaskV1List(issue.rolloutEntity));
-  const sheetName = task?.payload?.case === "databaseDataExport" ? task.payload.value.sheet : undefined;
+  const sheetName =
+    task?.payload?.case === "databaseDataExport"
+      ? task.payload.value.sheet
+      : undefined;
   if (!task || !sheetName) {
     return;
   }
@@ -202,7 +205,10 @@ watch(
     // Prepare the sheet for each issue.
     for (const issue of list) {
       const task = head(flattenTaskV1List(issue.rolloutEntity));
-      const sheetName = task?.payload?.case === "databaseDataExport" ? task.payload.value.sheet : undefined;
+      const sheetName =
+        task?.payload?.case === "databaseDataExport"
+          ? task.payload.value.sheet
+          : undefined;
       if (!task || !sheetName) {
         continue;
       }

@@ -1,18 +1,16 @@
-import { isEqual } from "lodash-es";
-
+import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { isEqual } from "lodash-es";
 import { sqlServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-
 import { t } from "@/plugins/i18n";
 import { useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { validateDatabaseMetadata } from "./utils";
-import { create } from "@bufbuild/protobuf";
-import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 
 export type GenerateDiffDDLResult = {
   statement: string;
@@ -60,7 +58,7 @@ export const generateDiffDDL = async ({
       database.projectEntity.dataClassificationConfigId
     );
 
-    const newRequest = create(DiffMetadataRequestSchema,{
+    const newRequest = create(DiffMetadataRequestSchema, {
       sourceMetadata: sourceMetadata,
       targetMetadata: targetMetadata,
       sourceCatalog,
@@ -69,9 +67,12 @@ export const generateDiffDDL = async ({
       classificationFromConfig:
         classificationConfig?.classificationFromConfig ?? false,
     });
-    const diffResponse = await sqlServiceClientConnect.diffMetadata(newRequest, {
-      contextValues: createContextValues().set(silentContextKey, true),
-    });
+    const diffResponse = await sqlServiceClientConnect.diffMetadata(
+      newRequest,
+      {
+        contextValues: createContextValues().set(silentContextKey, true),
+      }
+    );
     const { diff } = diffResponse;
     if (diff.length === 0) {
       if (

@@ -131,11 +131,11 @@ import {
   DataSourceType,
   DataSource_RedisType,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";

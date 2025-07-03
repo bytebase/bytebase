@@ -26,11 +26,14 @@ import {
   LoginRequestSchema,
   type LoginRequest,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { CreateUserRequestSchema, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import {
   DatabaseChangeMode,
   Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  CreateUserRequestSchema,
+  UserSchema,
+} from "@/types/proto-es/v1/user_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 

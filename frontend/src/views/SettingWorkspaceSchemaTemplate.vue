@@ -34,12 +34,12 @@
 import { NTabs, NTabPane } from "naive-ui";
 import { reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { FeatureAttention } from "@/components/FeatureGuard";
 import { featureToRef } from "@/store";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import ColumnTypes from "@/views/SchemaTemplate/ColumnTypes.vue";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
-import { FeatureAttention } from "@/components/FeatureGuard";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 interface LocalState {
   selectedTab: "FIELD_TEMPLATE" | "COLUMN_TYPE_RESTRICTION" | "TABLE_TEMPLATE";

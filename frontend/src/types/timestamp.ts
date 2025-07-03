@@ -1,6 +1,5 @@
 import type { Timestamp as TimestampProtoEs } from "@bufbuild/protobuf/wkt";
 
-
 // Helper functions for proto-es timestamps (which use bigint for seconds)
 export const getTimeForPbTimestampProtoEs = (
   timestamp?: TimestampProtoEs,

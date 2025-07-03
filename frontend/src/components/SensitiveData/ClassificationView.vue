@@ -92,6 +92,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { head, isEqual, isEmpty } from "lodash-es";
 import { UploadIcon } from "lucide-vue-next";
 import { NSwitch, useDialog, NDivider, NButton } from "naive-ui";
@@ -112,7 +113,6 @@ import {
   Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
@@ -155,13 +155,16 @@ const hasClassificationConfig = computed(
 
 const state = reactive<LocalState>({
   showExampleModal: false,
-  classification: create(DataClassificationSetting_DataClassificationConfigSchema, {
-    id: uuidv4(),
-    title: "",
-    levels: [],
-    classification: {},
-    classificationFromConfig: false,
-  }),
+  classification: create(
+    DataClassificationSetting_DataClassificationConfigSchema,
+    {
+      id: uuidv4(),
+      title: "",
+      levels: [],
+      classification: {},
+      classificationFromConfig: false,
+    }
+  ),
 });
 
 // Initialize state with formerConfig
@@ -307,11 +310,17 @@ const onFileSelect = (file: File) => {
     Object.assign(state.classification, {
       title: data.title || state.classification.title || "",
       levels: data.levels.map((level) =>
-        create(DataClassificationSetting_DataClassificationConfig_LevelSchema, level)
+        create(
+          DataClassificationSetting_DataClassificationConfig_LevelSchema,
+          level
+        )
       ),
       classification: Object.values(data.classification).reduce(
         (map, data) => {
-          map[data.id] = create(DataClassificationSetting_DataClassificationConfig_DataClassificationSchema, data);
+          map[data.id] = create(
+            DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
+            data
+          );
           return map;
         },
         {} as { [key: string]: DataClassification }
@@ -365,46 +374,67 @@ const example = {
     }),
   ],
   classification: {
-    "1": create(DataClassificationSetting_DataClassificationConfig_DataClassificationSchema, {
-      id: "1",
-      title: "Basic",
-      description: "",
-    }),
-    "1-1": create(DataClassificationSetting_DataClassificationConfig_DataClassificationSchema, {
-      id: "1-1",
-      title: "Basic",
-      description: "",
-      levelId: "1",
-    }),
-    "1-2": create(DataClassificationSetting_DataClassificationConfig_DataClassificationSchema, {
-      id: "1-2",
-      title: "Contact",
-      description: "",
-      levelId: "2",
-    }),
-    "1-3": create(DataClassificationSetting_DataClassificationConfig_DataClassificationSchema, {
-      id: "1-3",
-      title: "Health",
-      description: "",
-      levelId: "4",
-    }),
-    "2": create(DataClassificationSetting_DataClassificationConfig_DataClassificationSchema, {
-      id: "2",
-      title: "Relationship",
-      description: "",
-    }),
-    "2-1": create(DataClassificationSetting_DataClassificationConfig_DataClassificationSchema, {
-      id: "2-1",
-      title: "Social",
-      description: "",
-      levelId: "1",
-    }),
-    "2-2": create(DataClassificationSetting_DataClassificationConfig_DataClassificationSchema, {
-      id: "2-2",
-      title: "Business",
-      description: "",
-      levelId: "3",
-    }),
+    "1": create(
+      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
+      {
+        id: "1",
+        title: "Basic",
+        description: "",
+      }
+    ),
+    "1-1": create(
+      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
+      {
+        id: "1-1",
+        title: "Basic",
+        description: "",
+        levelId: "1",
+      }
+    ),
+    "1-2": create(
+      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
+      {
+        id: "1-2",
+        title: "Contact",
+        description: "",
+        levelId: "2",
+      }
+    ),
+    "1-3": create(
+      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
+      {
+        id: "1-3",
+        title: "Health",
+        description: "",
+        levelId: "4",
+      }
+    ),
+    "2": create(
+      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
+      {
+        id: "2",
+        title: "Relationship",
+        description: "",
+      }
+    ),
+    "2-1": create(
+      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
+      {
+        id: "2-1",
+        title: "Social",
+        description: "",
+        levelId: "1",
+      }
+    ),
+    "2-2": create(
+      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
+      {
+        id: "2-2",
+        title: "Business",
+        description: "",
+        levelId: "3",
+      }
+    ),
   },
 } satisfies UploadClassificationConfig;
 </script>

@@ -1,5 +1,6 @@
 import vueI18n from "@intlify/eslint-plugin-vue-i18n";
 import vueTsEslintConfig from "@vue/eslint-config-typescript";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import pluginVue from "eslint-plugin-vue";
 
 export default [
@@ -13,6 +14,7 @@ export default [
     rootDir: import.meta.dirname,
   }),
   ...vueI18n.configs["flat/recommended"],
+  eslintPluginPrettierRecommended,
   {
     ignores: [
       "**/dist/**",

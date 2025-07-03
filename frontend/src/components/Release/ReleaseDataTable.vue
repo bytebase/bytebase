@@ -112,7 +112,9 @@ const columnList = computed(
         title: t("common.created-at"),
         width: 128,
         render: (release) =>
-          humanizeTs(getTimeForPbTimestampProtoEs(release.createTime, 0) / 1000),
+          humanizeTs(
+            getTimeForPbTimestampProtoEs(release.createTime, 0) / 1000
+          ),
       },
     ];
     return columns.filter((column) => !column.hide);

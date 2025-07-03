@@ -5,14 +5,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
 import { create } from "@bufbuild/protobuf";
-import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { computed, watchEffect } from "vue";
 import {
   useIssueContext,
   taskRunListForTask,
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClientConnect } from "@/grpcweb";
+import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import TaskRunTable from "./TaskRunTable.vue";
 

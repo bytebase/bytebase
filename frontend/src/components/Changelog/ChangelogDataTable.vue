@@ -169,7 +169,9 @@ const columnList = computed(() => {
       ellipsis: true,
       render: (changelog) => {
         return (
-          <HumanizeDate date={getDateForPbTimestampProtoEs(changelog.createTime)} />
+          <HumanizeDate
+            date={getDateForPbTimestampProtoEs(changelog.createTime)}
+          />
         );
       },
     },

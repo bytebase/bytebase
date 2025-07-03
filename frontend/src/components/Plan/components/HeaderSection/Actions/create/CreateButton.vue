@@ -116,7 +116,8 @@ const createSheets = async () => {
 
   for (let i = 0; i < specs.length; i++) {
     const spec = specs[i];
-    const config = spec.config?.case === "changeDatabaseConfig" ? spec.config.value : null;
+    const config =
+      spec.config?.case === "changeDatabaseConfig" ? spec.config.value : null;
     if (!config) continue;
     configWithSheetList.push(config);
     if (pendingCreateSheetMap.has(config.sheet)) continue;

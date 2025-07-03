@@ -142,10 +142,14 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { head, sumBy } from "lodash-es";
+import { PlusIcon } from "lucide-vue-next";
+import { NButton, NSelect, NTooltip } from "naive-ui";
+import { computed, nextTick, reactive, watch } from "vue";
 import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
-
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnMetadata,
@@ -157,17 +161,12 @@ import type {
   TableMetadata as NewTableMetadata,
   ColumnMetadata as NewColumnMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { 
+import {
   TableMetadataSchema,
   ColumnMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
-import { head, sumBy } from "lodash-es";
-import { create } from "@bufbuild/protobuf";
-import { PlusIcon } from "lucide-vue-next";
-import { NButton, NSelect, NTooltip } from "naive-ui";
-import { computed, nextTick, reactive, watch } from "vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import TableList from "./TableList";
@@ -192,7 +191,6 @@ const emit = defineEmits<{
   (event: "update:selected-schema-name", schema: string | undefined): void;
 }>();
 
-
 // Conversion function for TableMetadata at service boundaries
 const convertNewTableToOld = (newTable: NewTableMetadata): TableMetadata => {
   return create(TableMetadataSchema, {
@@ -209,7 +207,9 @@ const convertNewTableToOld = (newTable: NewTableMetadata): TableMetadata => {
 };
 
 // Conversion function for ColumnMetadata at service boundaries
-const convertNewColumnToOld = (newColumn: NewColumnMetadata): ColumnMetadata => {
+const convertNewColumnToOld = (
+  newColumn: NewColumnMetadata
+): ColumnMetadata => {
   return create(ColumnMetadataSchema, {
     name: newColumn.name,
     position: newColumn.position,

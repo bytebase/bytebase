@@ -15,7 +15,8 @@ export const isSimilarIssueComment = (
   }
 
   if (a.type === IssueCommentType.TASK_UPDATE) {
-    const fromTaskUpdate = a.event?.case === "taskUpdate" ? a.event.value : null;
+    const fromTaskUpdate =
+      a.event?.case === "taskUpdate" ? a.event.value : null;
     const toTaskUpdate = b.event?.case === "taskUpdate" ? b.event.value : null;
     if (!fromTaskUpdate || !toTaskUpdate) {
       return false;

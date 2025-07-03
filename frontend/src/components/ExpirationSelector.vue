@@ -6,7 +6,7 @@
       :options="selectOptions"
       @update:value="onSelect"
     />
-    
+
     <template v-if="state.selected === -1">
       <div class="space-y-2">
         <NDatePicker
@@ -27,8 +27,11 @@
         </div>
       </div>
     </template>
-    
-    <div v-if="state.expirationTimestampInMS && state.selected !== -1" class="p-3 bg-gray-50 rounded-md">
+
+    <div
+      v-if="state.expirationTimestampInMS && state.selected !== -1"
+      class="p-3 bg-gray-50 rounded-md"
+    >
       <div class="text-sm text-gray-600">
         {{ $t("common.access-expires") }}:
         <span class="font-medium text-gray-900">
@@ -99,8 +102,11 @@ const maximumRoleExpiration = computed(() => {
   if (props.role === PresetRoleType.PROJECT_OWNER) {
     return undefined;
   }
-  const seconds = settingV1Store.workspaceProfileSetting?.maximumRoleExpiration?.seconds
-    ? Number(settingV1Store.workspaceProfileSetting.maximumRoleExpiration.seconds)
+  const seconds = settingV1Store.workspaceProfileSetting?.maximumRoleExpiration
+    ?.seconds
+    ? Number(
+        settingV1Store.workspaceProfileSetting.maximumRoleExpiration.seconds
+      )
     : undefined;
   if (!seconds) {
     return undefined;
@@ -153,9 +159,9 @@ const options = computed((): ExpirationOption[] => {
       label: t("common.date.year", { years: 1 }),
     },
   ];
-  
+
   const availableOptions: ExpirationOption[] = [];
-  
+
   // Add "Never expires" at the top if no maximum role expiration is set
   if (!maximumRoleExpiration.value) {
     availableOptions.push({
@@ -163,22 +169,24 @@ const options = computed((): ExpirationOption[] => {
       label: t("project.members.never-expires"),
     });
   }
-  
+
   // Add custom date option prominently after "Never expires"
   availableOptions.push({
     value: -1,
     label: t("issue.grant-request.custom-date"),
   });
-  
+
   // Add time-based options
   if (maximumRoleExpiration.value) {
-    availableOptions.push(...baseOptions.filter(
-      (option) => option.value <= maximumRoleExpiration.value!
-    ));
+    availableOptions.push(
+      ...baseOptions.filter(
+        (option) => option.value <= maximumRoleExpiration.value!
+      )
+    );
   } else {
     availableOptions.push(...baseOptions);
   }
-  
+
   return availableOptions;
 });
 
@@ -203,7 +211,7 @@ const onSelect = (value: number) => {
   // For value === -1 (custom date), the timestamp is set by the date picker
   // Don't save custom date selection as it's not reusable
   state.selected = value;
-  
+
   // Emit the change immediately for pre-defined options
   if (value !== -1) {
     emit("update:timestampInMs", state.expirationTimestampInMS);

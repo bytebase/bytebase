@@ -1,6 +1,6 @@
 <template>
   <div class="relative">
-    <TableIcon v-bind="$attrs" class="text-gray-400"/>
+    <TableIcon v-bind="$attrs" class="text-gray-400" />
     <GlassesIcon
       class="absolute bottom-0 right-0 w-3/4 h-3/4"
       stroke="rgb(var(--color-accent))"

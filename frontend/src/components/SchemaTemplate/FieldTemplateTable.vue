@@ -10,6 +10,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { create as createProto } from "@bufbuild/protobuf";
 import { pullAt } from "lodash-es";
 import { PencilIcon, TrashIcon } from "lucide-vue-next";
 import { NPopconfirm, NDataTable } from "naive-ui";
@@ -20,7 +21,6 @@ import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite"
 import { MiniActionButton } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useSettingV1Store } from "@/store";
-import { create as createProto } from "@bufbuild/protobuf";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
@@ -176,7 +176,10 @@ const deleteTemplate = async (id: string) => {
   );
 
   let settingValue = createProto(SchemaTemplateSettingSchema, {});
-  if (setting?.value?.value && setting.value.value.case === "schemaTemplateSettingValue") {
+  if (
+    setting?.value?.value &&
+    setting.value.value.case === "schemaTemplateSettingValue"
+  ) {
     settingValue = setting.value.value.value;
   }
 
@@ -197,7 +200,9 @@ const deleteTemplate = async (id: string) => {
 };
 
 const semanticTypeList = computed(() => {
-  const setting = settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SEMANTIC_TYPES
+  );
   if (!setting?.value?.value) return [];
   const value = setting.value.value;
   if (value.case === "semanticTypeSettingValue") {

@@ -1,5 +1,9 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import type { ApprovalStep, Issue_Approver, ApprovalTemplate } from "./proto-es/v1/issue_service_pb";
+import type {
+  ApprovalStep,
+  Issue_Approver,
+  ApprovalTemplate,
+} from "./proto-es/v1/issue_service_pb";
 import { ApprovalTemplateSchema } from "./proto-es/v1/issue_service_pb";
 
 export type ReviewFlow = {

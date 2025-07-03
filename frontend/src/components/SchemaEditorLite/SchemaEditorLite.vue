@@ -63,7 +63,9 @@ const state = reactive<LocalState>({
 
 // Prepare schema template contexts.
 onMounted(async () => {
-  await settingStore.getOrFetchSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
+  await settingStore.getOrFetchSettingByName(
+    Setting_SettingName.SCHEMA_TEMPLATE
+  );
   state.initialized = true;
 });
 

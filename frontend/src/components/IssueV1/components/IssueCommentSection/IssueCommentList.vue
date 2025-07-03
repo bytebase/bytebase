@@ -111,11 +111,11 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
-import { create } from "@bufbuild/protobuf";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import {

@@ -1,3 +1,5 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import Emittery from "emittery";
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { useDialog } from "naive-ui";
@@ -5,14 +7,7 @@ import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { instanceServiceClientConnect } from "@/grpcweb";
-import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import { silentContextKey } from "@/grpcweb/context-key";
-import { 
-  CreateInstanceRequestSchema,
-  AddDataSourceRequestSchema,
-  UpdateDataSourceRequestSchema
-} from "@/types/proto-es/v1/instance_service_pb";
 import {
   environmentNamePrefix,
   pushNotification,
@@ -20,9 +15,17 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { isValidEnvironmentName, unknownEnvironment } from "@/types";
-import type { Instance, DataSource } from "@/types/proto-es/v1/instance_service_pb";
-import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import {
+  CreateInstanceRequestSchema,
+  AddDataSourceRequestSchema,
+  UpdateDataSourceRequestSchema,
+} from "@/types/proto-es/v1/instance_service_pb";
+import type {
+  Instance,
+  DataSource,
+} from "@/types/proto-es/v1/instance_service_pb";
+import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
@@ -150,7 +153,7 @@ export const provideInstanceFormContext = (baseContext: {
         }
       }
 
-      if (ds.saslConfig?.mechanism?.case === 'krbConfig') {
+      if (ds.saslConfig?.mechanism?.case === "krbConfig") {
         const krbConfig = ds.saslConfig.mechanism.value;
         if (
           !krbConfig.primary ||
@@ -195,10 +198,13 @@ export const provideInstanceFormContext = (baseContext: {
 
       switch (ds.externalSecret.authType) {
         case DataSourceExternalSecret_AuthType.TOKEN:
-          return !!(ds.externalSecret.authOption?.case === 'token' && ds.externalSecret.authOption.value);
+          return !!(
+            ds.externalSecret.authOption?.case === "token" &&
+            ds.externalSecret.authOption.value
+          );
         case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
           return !!(
-            ds.externalSecret.authOption?.case === 'appRole' &&
+            ds.externalSecret.authOption?.case === "appRole" &&
             ds.externalSecret.authOption.value?.roleId &&
             ds.externalSecret.authOption.value.secretId
           );
@@ -404,8 +410,7 @@ export const provideInstanceFormContext = (baseContext: {
           });
           await instanceServiceClientConnect.addDataSource(request, {
             contextValues: createContextValues().set(silentContextKey, true),
-            }
-          );
+          });
           return ok();
         } catch (err) {
           return fail(ds.host, err);

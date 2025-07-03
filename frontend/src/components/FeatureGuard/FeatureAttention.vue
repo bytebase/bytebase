@@ -21,6 +21,9 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
@@ -29,11 +32,11 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { PlanFeature, PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
-import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import InstanceAssignment from "../InstanceAssignment.vue";
 import WeChatQRModal from "../WeChatQRModal.vue";
 
@@ -135,14 +138,19 @@ const descriptionText = computed(() => {
 
   if (!hasFeature.value) {
     const startTrial = subscriptionStore.isTrialing
-        ? ""
-        : t("subscription.trial-for-days", {
-            days: subscriptionStore.trialingDays,
-          });
+      ? ""
+      : t("subscription.trial-for-days", {
+          days: subscriptionStore.trialingDays,
+        });
     // Check if feature is available in any plan
     // TODO(d): simplify the check.
-    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
-    if (requiredPlan === PlanType.FREE && subscriptionStore.hasFeature(props.feature)) {
+    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(
+      props.feature
+    );
+    if (
+      requiredPlan === PlanType.FREE &&
+      subscriptionStore.hasFeature(props.feature)
+    ) {
       return `${description}\n${startTrial}`;
     }
     const trialText = t("subscription.required-plan-with-trial", {

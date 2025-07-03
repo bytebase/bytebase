@@ -11,12 +11,10 @@ import {
   LinkIcon,
   SquarePenIcon,
 } from "lucide-vue-next";
-import {
-  TableIcon,
-} from "@/components/Icon";
 import { NButton, useDialog, type DropdownOption } from "naive-ui";
 import { computed, h, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
+import { TableIcon } from "@/components/Icon";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { t } from "@/plugins/i18n";
@@ -41,9 +39,7 @@ import {
   typeToView,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import {
-  GetSchemaStringRequest_ObjectType,
-} from "@/types/proto-es/v1/database_service_pb";
+import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import {
@@ -62,12 +58,10 @@ import {
   isSimilarSQLEditorTab,
 } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
-import {
-  useCurrentTabViewStateContext,
-} from "../../EditorPanel";
+import { useCurrentTabViewStateContext } from "../../EditorPanel";
 import { useSQLEditorContext } from "../../context";
 import type { NodeTarget, NodeType, TreeNode } from "./tree";
-import { readableTextForNodeTarget } from "./tree"
+import { readableTextForNodeTarget } from "./tree";
 
 type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect?: () => void;
@@ -168,7 +162,17 @@ export const useActions = () => {
     runQuery(db, schema, tableOrViewName, query);
   };
 
-  const openNewTab = ({ title, view, schema, table }: { title?: string; schema?: string; table?: string, view?: EditorPanelView }) => {
+  const openNewTab = ({
+    title,
+    view,
+    schema,
+    table,
+  }: {
+    title?: string;
+    schema?: string;
+    table?: string;
+    view?: EditorPanelView;
+  }) => {
     const tabStore = useSQLEditorTabStore();
     const tabViewStateStore = useTabViewStateStore();
 
@@ -200,8 +204,8 @@ export const useActions = () => {
     }
 
     tabStore.addTab(clonedTab);
-    updateViewState({ view, schema, table});
-  }
+    updateViewState({ view, schema, table });
+  };
 
   const viewDetail = async (node: TreeNode) => {
     const { type, target } = node.meta;
@@ -243,12 +247,14 @@ export const useActions = () => {
         detail.procedure = keyWithPosition(procedure, position);
         break;
       case "function":
-        const { function: func, position: funcPosition } = target as NodeTarget<"function">;
+        const { function: func, position: funcPosition } =
+          target as NodeTarget<"function">;
         name = func;
         detail.func = keyWithPosition(func, funcPosition);
-        break
+        break;
       case "trigger":
-        const { trigger, position: triggerPosition } = target as NodeTarget<"trigger">;
+        const { trigger, position: triggerPosition } =
+          target as NodeTarget<"trigger">;
         name = trigger;
         detail.trigger = keyWithPosition(trigger, triggerPosition);
         break;
@@ -258,7 +264,9 @@ export const useActions = () => {
       detail,
     });
     if (name) {
-      useSQLEditorTabStore().updateCurrentTab({ title: `Detail for ${type} ${name}` })
+      useSQLEditorTabStore().updateCurrentTab({
+        title: `Detail for ${type} ${name}`,
+      });
     }
   };
 
@@ -311,14 +319,17 @@ export const useDropdown = () => {
               title: `[${db.databaseName}] ${action.title}`,
               view: action.view,
               schema,
-            })
-          }
-        })
+            });
+          },
+        });
       }
     }
 
     if (type === "table" || type === "view") {
-      const tableOrView = readableTextForNodeTarget(type, target as NodeTarget<"table" | "view">);
+      const tableOrView = readableTextForNodeTarget(
+        type,
+        target as NodeTarget<"table" | "view">
+      );
       items.push({
         key: "copy-name",
         label: t("sql-editor.copy-name"),
@@ -328,9 +339,9 @@ export const useDropdown = () => {
           copyToClipboard(name);
         },
       });
-      if (type === 'view') {
-       const { view } = target as NodeTarget<"view">;
-       if (supportGetStringSchema(db.instanceResource.engine)) {
+      if (type === "view") {
+        const { view } = target as NodeTarget<"view">;
+        if (supportGetStringSchema(db.instanceResource.engine)) {
           items.push({
             key: "view-schema-text",
             label: t("sql-editor.view-schema-text"),
@@ -339,7 +350,7 @@ export const useDropdown = () => {
               schemaViewer.value = {
                 schema,
                 object: view,
-                type: GetSchemaStringRequest_ObjectType.VIEW
+                type: GetSchemaStringRequest_ObjectType.VIEW,
               };
             },
           });
@@ -354,8 +365,14 @@ export const useDropdown = () => {
           label: t("sql-editor.copy-all-column-names"),
           icon: () => <CopyIcon class="w-4 h-4" />,
           onSelect: () => {
-            const tableMetadata = dbSchema.getTableMetadata({ database, schema, table })
-            const name = tableMetadata.columns.map((col) => col.name).join(", ");
+            const tableMetadata = dbSchema.getTableMetadata({
+              database,
+              schema,
+              table,
+            });
+            const name = tableMetadata.columns
+              .map((col) => col.name)
+              .join(", ");
             copyToClipboard(name);
           },
         });
@@ -447,7 +464,11 @@ export const useDropdown = () => {
         });
         if (type === "table") {
           const { table } = target as NodeTarget<"table">;
-          const tableMetadata = dbSchema.getTableMetadata({ database, schema, table })
+          const tableMetadata = dbSchema.getTableMetadata({
+            database,
+            schema,
+            table,
+          });
           const columns = tableMetadata.columns.map((column) => column.name);
 
           generateSQLChildren.push({
@@ -456,12 +477,7 @@ export const useDropdown = () => {
             icon: () => <FilePlusIcon class="w-4 h-4" />,
             onSelect: async () => {
               const statement = await formatCode(
-                generateSimpleInsertStatement(
-                  engine,
-                  schema,
-                  table,
-                  columns
-                ),
+                generateSimpleInsertStatement(engine, schema, table, columns),
                 engine
               );
               applyContentToCurrentTabOrCopyToClipboard(statement, $d);
@@ -473,12 +489,7 @@ export const useDropdown = () => {
             icon: () => <FileDiffIcon class="w-4 h-4" />,
             onSelect: async () => {
               const statement = await formatCode(
-                generateSimpleUpdateStatement(
-                  engine,
-                  schema,
-                  table,
-                  columns
-                ),
+                generateSimpleUpdateStatement(engine, schema, table, columns),
                 engine
               );
               applyContentToCurrentTabOrCopyToClipboard(statement, $d);
@@ -574,8 +585,9 @@ export const useDropdown = () => {
 };
 
 const engineForTarget = (target: NodeTarget) => {
-  const { database } = target as NodeTarget<"database">
-  return useDatabaseV1Store().getDatabaseByName(database).instanceResource.engine;
+  const { database } = target as NodeTarget<"database">;
+  return useDatabaseV1Store().getDatabaseByName(database).instanceResource
+    .engine;
 };
 
 const targetSupportsGenerateSQL = (target: NodeTarget) => {

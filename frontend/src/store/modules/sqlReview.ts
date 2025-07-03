@@ -13,16 +13,16 @@ import type {
   ComposedDatabase,
 } from "@/types";
 import {
+  PolicyType,
+  TagPolicySchema,
+  SQLReviewRuleSchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import {
   DeleteReviewConfigRequestSchema,
   UpdateReviewConfigRequestSchema,
   ListReviewConfigsRequestSchema,
   GetReviewConfigRequestSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
-import {
-  PolicyType,
-  TagPolicySchema,
-  SQLReviewRuleSchema,
-} from "@/types/proto-es/v1/org_policy_service_pb";
 import type { ReviewConfig } from "@/types/proto-es/v1/review_config_service_pb";
 import { ReviewConfigSchema } from "@/types/proto-es/v1/review_config_service_pb";
 import { usePolicyV1Store } from "./v1/policy";
@@ -302,9 +302,10 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       if (!policy) {
         return;
       }
-      const sqlReviewName = policy.policy?.case === "tagPolicy" 
-        ? policy.policy.value.tags[reviewConfigTagName]
-        : undefined;
+      const sqlReviewName =
+        policy.policy?.case === "tagPolicy"
+          ? policy.policy.value.tags[reviewConfigTagName]
+          : undefined;
       if (!sqlReviewName) {
         return;
       }

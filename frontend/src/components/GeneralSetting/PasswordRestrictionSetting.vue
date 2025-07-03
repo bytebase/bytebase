@@ -139,9 +139,7 @@
           <template #day>
             <NInputNumber
               v-if="state.passwordRotation"
-              :value="
-                Number(state.passwordRotation.seconds) / (24 * 60 * 60)
-              "
+              :value="Number(state.passwordRotation.seconds) / (24 * 60 * 60)"
               :readonly="!allowEdit"
               :min="1"
               class="w-24 mx-2"
@@ -174,15 +172,19 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NInputNumber, NCheckbox } from "naive-ui";
 import { computed, ref, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import type { PasswordRestrictionSetting } from "@/types/proto-es/v1/setting_service_pb";
-import { Setting_SettingName, PasswordRestrictionSettingSchema, ValueSchema as SettingValueSchema } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
+import {
+  Setting_SettingName,
+  PasswordRestrictionSettingSchema,
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
@@ -194,10 +196,14 @@ defineProps<{
 
 const settingV1Store = useSettingV1Store();
 const showFeatureModal = ref<boolean>(false);
-const hasPasswordFeature = featureToRef(PlanFeature.FEATURE_PASSWORD_RESTRICTIONS);
+const hasPasswordFeature = featureToRef(
+  PlanFeature.FEATURE_PASSWORD_RESTRICTIONS
+);
 
 const passwordRestrictionSetting = computed(() => {
-  const setting = settingV1Store.getSettingByName(Setting_SettingName.PASSWORD_RESTRICTION);
+  const setting = settingV1Store.getSettingByName(
+    Setting_SettingName.PASSWORD_RESTRICTION
+  );
   if (setting?.value?.value?.case === "passwordRestrictionSetting") {
     return setting.value.value.value;
   }

@@ -38,7 +38,10 @@ import {
 } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
 import { getGroupEmailInBinding } from "@/types";
-import { type Group, GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
+import {
+  type Group,
+  GroupMember_Role,
+} from "@/types/proto-es/v1/group_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -92,7 +95,7 @@ const resourcesOccupied = computedAsync(async () => {
       policyType: PolicyType.MASKING_EXCEPTION,
     });
 
-    const exceptions = 
+    const exceptions =
       policy?.policy?.case === "maskingExceptionPolicy"
         ? policy.policy.value.maskingExceptions
         : [];

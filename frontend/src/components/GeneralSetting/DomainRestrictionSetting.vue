@@ -72,12 +72,12 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual, cloneDeep } from "lodash-es";
 import { PlusIcon, XIcon } from "lucide-vue-next";
 import { NCheckbox, NInput, NButton } from "naive-ui";
 import { computed, reactive } from "vue";
-import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";

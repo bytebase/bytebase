@@ -26,6 +26,12 @@
 </template>
 
 <script lang="ts" setup>
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
+import type { PropType } from "vue";
+import { computed, h, onMounted, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
 import {
@@ -39,12 +45,6 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { bytesToString, hasSchemaProperty } from "@/utils";
-import type { DataTableColumn } from "naive-ui";
-import { NDataTable } from "naive-ui";
-import type { PropType } from "vue";
-import { computed, h, onMounted, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
 type LocalState = {

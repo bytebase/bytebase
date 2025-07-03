@@ -254,11 +254,11 @@ watch(
     if (database) {
       try {
         isPreparingSchemaVersionOptions.value = true;
-        const changelogList = await changelogStore.getOrFetchChangelogListOfDatabase(database.name);
-        const filteredChangelogList = changelogList
-          .filter((changelog) =>
-            ALLOWED_CHANGELOG_TYPES.includes(changelog.type)
-          );
+        const changelogList =
+          await changelogStore.getOrFetchChangelogListOfDatabase(database.name);
+        const filteredChangelogList = changelogList.filter((changelog) =>
+          ALLOWED_CHANGELOG_TYPES.includes(changelog.type)
+        );
 
         if (filteredChangelogList.length > 0) {
           // Default select the first changelog.

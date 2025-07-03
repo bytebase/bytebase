@@ -174,7 +174,8 @@ const allowToCreatePlan = computed(() => {
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
   const template =
-    spec.config?.case === "changeDatabaseConfig" && spec.config.value.type === Plan_ChangeDatabaseConfig_Type.DATA
+    spec.config?.case === "changeDatabaseConfig" &&
+    spec.config.value.type === Plan_ChangeDatabaseConfig_Type.DATA
       ? "bb.issue.database.data.update"
       : "bb.issue.database.schema.update";
   const targets = targetsForSpec(spec);

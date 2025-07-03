@@ -1,24 +1,23 @@
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { settingServiceClientConnect } from "@/grpcweb";
+import { type LocalApprovalConfig, type LocalApprovalRule } from "@/types";
+import type { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import type { Setting } from "@/types/proto-es/v1/setting_service_pb";
-import { 
-  GetSettingRequestSchema, 
+import {
+  GetSettingRequestSchema,
   UpdateSettingRequestSchema,
   SettingSchema,
   Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { type LocalApprovalConfig, type LocalApprovalRule } from "@/types";
-import type { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import {
   resolveLocalApprovalConfig,
   buildWorkspaceApprovalSetting,
   seedWorkspaceApprovalSetting,
 } from "@/utils";
-
 import { useGracefulRequest } from "./utils";
 
 const SETTING_NAME = `settings/${Setting_SettingName[Setting_SettingName.WORKSPACE_APPROVAL]}`;
@@ -56,7 +55,7 @@ export const useWorkspaceApprovalSettingStore = defineStore(
 
     const updateConfig = async () => {
       const approvalSetting = await buildWorkspaceApprovalSetting(config.value);
-      
+
       const setting = create(SettingSchema, {
         name: SETTING_NAME,
         value: create(SettingValueSchema, {
@@ -66,7 +65,7 @@ export const useWorkspaceApprovalSettingStore = defineStore(
           },
         }),
       });
-      
+
       const request = create(UpdateSettingRequestSchema, {
         allowMissing: true,
         setting,

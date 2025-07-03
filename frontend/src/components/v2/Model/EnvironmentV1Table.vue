@@ -18,7 +18,10 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { formatEnvironmentName, type Environment } from "@/types/v1/environment";
+import {
+  formatEnvironmentName,
+  type Environment,
+} from "@/types/v1/environment";
 import { EnvironmentV1Name } from ".";
 
 withDefaults(

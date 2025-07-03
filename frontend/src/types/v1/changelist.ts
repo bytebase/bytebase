@@ -1,6 +1,6 @@
+import { create } from "@bufbuild/protobuf";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { ChangelistSchema } from "@/types/proto-es/v1/changelist_service_pb";
-import { create } from "@bufbuild/protobuf";
 
 export const UNKNOWN_CHANGELIST_NAME = "projects/-1/changelists/-1";
 

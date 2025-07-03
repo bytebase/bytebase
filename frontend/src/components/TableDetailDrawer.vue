@@ -166,7 +166,9 @@
                 </div>
 
                 <template
-                  v-if="instanceV1HasCollationAndCharacterSet(instanceEngineNew)"
+                  v-if="
+                    instanceV1HasCollationAndCharacterSet(instanceEngineNew)
+                  "
                 >
                   <div class="col-span-1">
                     <dt class="text-sm font-medium text-control-light">
@@ -301,6 +303,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { CodeIcon } from "lucide-vue-next";
@@ -327,17 +330,14 @@ import {
   useDatabaseCatalogV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type {
-  TableCatalog,
-} from "@/types/proto-es/v1/database_catalog_service_pb";
+import type { TableCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
   TableCatalogSchema,
   SchemaCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
-import { create } from "@bufbuild/protobuf";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import {
   bytesToString,
   instanceV1HasCollationAndCharacterSet,

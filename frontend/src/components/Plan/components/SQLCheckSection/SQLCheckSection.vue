@@ -47,7 +47,7 @@ const { database, resultMap } = usePlanSQLCheckContext();
 const checkResult = computed(() => {
   const result = resultMap.value[database.value.name] || undefined;
   if (!result) return undefined;
-  
+
   return result;
 });
 </script>

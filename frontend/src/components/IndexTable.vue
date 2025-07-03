@@ -37,10 +37,7 @@ const props = defineProps({
 const { t } = useI18n();
 const showVisibleColumn = computed(() => {
   const engine = props.database.instanceResource.engine;
-  return (
-    engine !== Engine.POSTGRES &&
-    engine !== Engine.MONGODB
-  );
+  return engine !== Engine.POSTGRES && engine !== Engine.MONGODB;
 });
 const showCommentColumn = computed(() => {
   const engine = props.database.instanceResource.engine;

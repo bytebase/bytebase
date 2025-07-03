@@ -92,6 +92,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep, head, uniq, flatten } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, watch } from "vue";
@@ -107,10 +108,9 @@ import {
   emptySimpleExpr,
 } from "@/plugins/cel";
 import { useSupportedSourceList } from "@/types";
-import { create } from "@bufbuild/protobuf";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
 import { Risk_Source, RiskSchema } from "@/types/proto-es/v1/risk_service_pb";
-import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,

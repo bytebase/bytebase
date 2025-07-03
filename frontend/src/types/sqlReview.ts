@@ -1,10 +1,8 @@
 import { t, te } from "@/plugins/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { engineToString } from "@/utils/v1/common-conversions";
-import {
-  SQLReviewRuleLevel,
-} from "@/types/proto-es/v1/org_policy_service_pb";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { engineToString } from "@/utils/v1/common-conversions";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
@@ -177,28 +175,28 @@ export const getRuleMapByEngine = (
   }, new Map<Engine, Map<string, RuleTemplateV2>>());
 };
 
-const convertRuleTemplateV2Raw = (sqlReviewSchema: RuleTemplateV2Raw[]): RuleTemplateV2[] => {
+const convertRuleTemplateV2Raw = (
+  sqlReviewSchema: RuleTemplateV2Raw[]
+): RuleTemplateV2[] => {
   return sqlReviewSchema.map((rawRule) => {
     // Convert engine string key to enum value
     const engineKey = rawRule.engine as keyof typeof Engine;
     const engine = Engine[engineKey] ?? Engine.ENGINE_UNSPECIFIED;
-    
+
     // Convert level string key to enum value
     const levelKey = rawRule.level as keyof typeof SQLReviewRuleLevel;
     const level = SQLReviewRuleLevel[levelKey] ?? SQLReviewRuleLevel.DISABLED;
-    
+
     return {
       ...rawRule,
       engine,
       level,
     };
   });
-}
+};
 
 export const ruleTemplateMapV2 = getRuleMapByEngine(
-  convertRuleTemplateV2Raw(
-    sqlReviewSchema as RuleTemplateV2Raw[]
-  )
+  convertRuleTemplateV2Raw(sqlReviewSchema as RuleTemplateV2Raw[])
 );
 
 // Build the frontend template list based on schema and template.
@@ -227,10 +225,8 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
       // Convert engine string to enum for map lookup
       const engineKey = rule.engine as keyof typeof Engine;
       const engine = Engine[engineKey] ?? Engine.ENGINE_UNSPECIFIED;
-      
-      const ruleTemplate = ruleTemplateMapV2
-        .get(engine)
-        ?.get(rule.type);
+
+      const ruleTemplate = ruleTemplateMapV2.get(engine)?.get(rule.type);
       if (!ruleTemplate) {
         continue;
       }

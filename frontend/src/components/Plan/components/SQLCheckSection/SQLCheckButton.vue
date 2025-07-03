@@ -48,19 +48,26 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { asyncComputed } from "@vueuse/core";
 import { NButton, NPopover } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { create } from "@bufbuild/protobuf";
 import { BBSpin } from "@/bbkit";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_pb";
-import { CheckReleaseRequestSchema, CheckReleaseResponseSchema, ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
-import { AdviceSchema, Advice_Status as ProtoESAdvice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  CheckReleaseRequestSchema,
+  CheckReleaseResponseSchema,
+  ReleaseFileType,
+} from "@/types/proto-es/v1/release_service_pb";
+import {
+  AdviceSchema,
+  Advice_Status as ProtoESAdvice_Status,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";

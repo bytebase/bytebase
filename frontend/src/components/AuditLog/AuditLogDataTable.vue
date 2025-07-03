@@ -12,7 +12,6 @@
 <script lang="tsx" setup>
 import { fromBinary } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import { humanizeDurationV1 } from "@/utils";
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -21,8 +20,12 @@ import { useProjectV1Store, useUserStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
-import { AuditDataSchema, AuditLog_Severity } from "@/types/proto-es/v1/audit_log_service_pb";
+import {
+  AuditDataSchema,
+  AuditLog_Severity,
+} from "@/types/proto-es/v1/audit_log_service_pb";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { humanizeDurationV1 } from "@/utils";
 import { extractProjectResourceName } from "@/utils";
 import JSONStringView from "./JSONStringView.vue";
 
@@ -62,7 +65,7 @@ const columnList = computed((): AuditDataTableColumn[] => {
         key: "severity",
         width: 96,
         title: t("audit-log.table.level"),
-        render: (auditLog) => (AuditLog_Severity[auditLog.severity]),
+        render: (auditLog) => AuditLog_Severity[auditLog.severity],
       },
       {
         key: "project",

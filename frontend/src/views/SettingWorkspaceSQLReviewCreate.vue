@@ -9,9 +9,9 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, watchEffect } from "vue";
 import { SQLReviewCreation } from "@/components/SQLReview";
 import { useSQLReviewStore } from "@/store";
-import { computed, watchEffect } from "vue";
 
 const attachedResources = computed(() => {
   const url = new URL(window.location.href);

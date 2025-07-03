@@ -1,11 +1,21 @@
-import { defineStore } from "pinia";
-import { reactive } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { defineStore } from "pinia";
+import { reactive } from "vue";
 import { instanceServiceClientConnect } from "@/grpcweb";
 // Removed conversion imports - using proto-es types directly
 import { silentContextKey } from "@/grpcweb/context-key";
-import { 
+import type { ComposedInstance } from "@/types";
+import {
+  unknownEnvironment,
+  unknownInstance,
+  isValidProjectName,
+  isValidInstanceName,
+  isValidEnvironmentName,
+} from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { State } from "@/types/proto-es/v1/common_pb";
+import {
   CreateInstanceRequestSchema,
   UpdateInstanceRequestSchema,
   DeleteInstanceRequestSchema,
@@ -18,18 +28,8 @@ import {
   AddDataSourceRequestSchema,
   UpdateDataSourceRequestSchema,
   RemoveDataSourceRequestSchema,
-  ListInstancesRequestSchema
+  ListInstancesRequestSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import type { ComposedInstance } from "@/types";
-import {
-  unknownEnvironment,
-  unknownInstance,
-  isValidProjectName,
-  isValidInstanceName,
-  isValidEnvironmentName,
-} from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import { State } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed for internal operations
 import type {
   DataSource,
@@ -86,15 +86,15 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   // Store uses proto-es types directly
   const instanceMapByName = reactive(new Map<string, ComposedInstance>());
   const instanceRequestCache = new Map<string, Promise<ComposedInstance>>();
-  
-
 
   const reset = () => {
     instanceMapByName.clear();
   };
 
   // Actions
-  const upsertInstances = async (list: Instance[]): Promise<ComposedInstance[]> => {
+  const upsertInstances = async (
+    list: Instance[]
+  ): Promise<ComposedInstance[]> => {
     const composedInstances = await Promise.all(
       list.map((instance) => composeInstance(instance))
     );
@@ -169,12 +169,16 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const request = create(BatchUpdateInstancesRequestSchema, {
       requests: requests,
     });
-    const response = await instanceServiceClientConnect.batchUpdateInstances(request);
+    const response =
+      await instanceServiceClientConnect.batchUpdateInstances(request);
     const composed = await upsertInstances(response.instances);
     return composed;
   };
 
-  const fetchInstanceByName = async (name: string, silent = false): Promise<ComposedInstance> => {
+  const fetchInstanceByName = async (
+    name: string,
+    silent = false
+  ): Promise<ComposedInstance> => {
     const request = create(GetInstanceRequestSchema, {
       name,
     });
@@ -188,7 +192,10 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const instance = instanceMapByName.get(name);
     return instance ?? unknownInstance();
   };
-  const getOrFetchInstanceByName = async (name: string, silent = false): Promise<ComposedInstance> => {
+  const getOrFetchInstanceByName = async (
+    name: string,
+    silent = false
+  ): Promise<ComposedInstance> => {
     const cachedData = instanceMapByName.get(name);
     if (cachedData) {
       return cachedData;
@@ -227,7 +234,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       dataSource: dataSource,
       updateMask: { paths: updateMask },
     });
-    const response = await instanceServiceClientConnect.updateDataSource(request);
+    const response =
+      await instanceServiceClientConnect.updateDataSource(request);
     const [composed] = await upsertInstances([response]);
     return composed;
   };
@@ -239,7 +247,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       name: instance.name,
       dataSource: dataSource,
     });
-    const response = await instanceServiceClientConnect.removeDataSource(request);
+    const response =
+      await instanceServiceClientConnect.removeDataSource(request);
     const [composed] = await upsertInstances([response]);
     return composed;
   };
@@ -271,8 +280,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     };
   };
 
-
-
   return {
     reset,
     upsertInstances,
@@ -294,7 +301,9 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
 });
 
 // Compose function for proto-es types
-const composeInstance = async (instance: Instance): Promise<ComposedInstance> => {
+const composeInstance = async (
+  instance: Instance
+): Promise<ComposedInstance> => {
   const composed = instance as ComposedInstance;
   const environmentEntity =
     (await useEnvironmentV1Store().getOrFetchEnvironmentByName(
@@ -303,5 +312,3 @@ const composeInstance = async (instance: Instance): Promise<ComposedInstance> =>
   composed.environmentEntity = environmentEntity;
   return composed;
 };
-
-

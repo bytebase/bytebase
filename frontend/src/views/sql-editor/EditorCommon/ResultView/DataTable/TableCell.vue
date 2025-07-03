@@ -114,16 +114,19 @@ watchEffect(() => {
     return;
   }
   if (!binaryFormat.value) {
-    const bytesValue = props.value.kind?.case === "bytesValue" ? props.value.kind.value : undefined;
+    const bytesValue =
+      props.value.kind?.case === "bytesValue"
+        ? props.value.kind.value
+        : undefined;
     if (bytesValue) {
       const binaryFormat = detectBinaryFormat({
         bytesValue,
         columnType: props.columnType,
       });
-    setBinaryFormat({
-      rowIndex: props.rowIndex,
-      colIndex: props.colIndex,
-      setIndex: props.setIndex,
+      setBinaryFormat({
+        rowIndex: props.rowIndex,
+        colIndex: props.colIndex,
+        setIndex: props.setIndex,
         format: binaryFormat,
       });
     }
@@ -187,7 +190,10 @@ const classes = computed(() => {
 
 // Format the binary value based on selected format (proto-es oneof pattern)
 const formattedValue = computed(() => {
-  const bytesValue = props.value.kind?.case === "bytesValue" ? props.value.kind.value : undefined;
+  const bytesValue =
+    props.value.kind?.case === "bytesValue"
+      ? props.value.kind.value
+      : undefined;
   if (!bytesValue) {
     return props.value;
   }

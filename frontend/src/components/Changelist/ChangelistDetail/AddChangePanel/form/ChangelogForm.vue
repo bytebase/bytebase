@@ -45,10 +45,10 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
 import { NCheckbox, NCheckboxGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { ChangelogDataTable } from "@/components/Changelog";
 import { DatabaseSelect } from "@/components/v2";
 import {

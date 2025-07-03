@@ -1,21 +1,21 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
-import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef, ComposedRelease, Pagination } from "@/types";
 import { isValidReleaseName, unknownRelease, unknownUser } from "@/types";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import { ReleaseSchema } from "@/types/proto-es/v1/release_service_pb";
-import { State } from "@/types/proto-es/v1/common_pb";
-import { 
+import {
   GetReleaseRequestSchema,
   ListReleasesRequestSchema,
   UpdateReleaseRequestSchema,
   DeleteReleaseRequestSchema,
-  UndeleteReleaseRequestSchema
+  UndeleteReleaseRequestSchema,
 } from "@/types/proto-es/v1/release_service_pb";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { useUserStore } from "./user";
@@ -77,7 +77,7 @@ export const useReleaseStore = defineStore("release", () => {
       ...create(ReleaseSchema, {}),
       ...release,
     };
-    
+
     const request = create(UpdateReleaseRequestSchema, {
       release: fullRelease,
       updateMask: { paths: updateMask },
@@ -142,7 +142,9 @@ export const useReleaseByName = (name: MaybeRef<string>) => {
   };
 };
 
-export const batchComposeRelease = async (releaseList: Release[]): Promise<ComposedRelease[]> => {
+export const batchComposeRelease = async (
+  releaseList: Release[]
+): Promise<ComposedRelease[]> => {
   const userStore = useUserStore();
   await userStore.batchGetUsers(releaseList.map((release) => release.creator));
 

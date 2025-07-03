@@ -2,9 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { riskServiceClientConnect } from "@/grpcweb";
-import type { 
-  Risk,
-} from "@/types/proto-es/v1/risk_service_pb";
+import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
 import {
   CreateRiskRequestSchema,
   DeleteRiskRequestSchema,
@@ -15,7 +13,7 @@ import {
 export const useRiskStore = defineStore("risk", () => {
   // Internal state uses proto-es types
   const _riskList = ref<Risk[]>([]);
-  
+
   const riskList = computed(() => {
     return _riskList.value;
   });
@@ -35,7 +33,9 @@ export const useRiskStore = defineStore("risk", () => {
       // update
       const request = create(UpdateRiskRequestSchema, {
         risk: risk,
-        updateMask: { paths: ["title", "level", "active", "condition", "source"] },
+        updateMask: {
+          paths: ["title", "level", "active", "condition", "source"],
+        },
       });
       const updated = await riskServiceClientConnect.updateRisk(request);
       Object.assign(existedRisk, updated);

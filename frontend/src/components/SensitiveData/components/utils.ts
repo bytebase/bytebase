@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import { uniq } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/components/common";
@@ -6,11 +7,10 @@ import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
-import { 
+import {
   Setting_SettingName,
   AlgorithmSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
 import { extractInstanceResourceName } from "@/utils";
 
 export const getClassificationLevelOptions = () => {
@@ -21,10 +21,11 @@ export const getClassificationLevelOptions = () => {
   if (!setting || !setting.value) {
     return [];
   }
-  
-  const config = setting.value.value.case === "dataClassificationSettingValue" 
-    ? setting.value.value.value.configs 
-    : [];
+
+  const config =
+    setting.value.value.case === "dataClassificationSettingValue"
+      ? setting.value.value.value.configs
+      : [];
   if (config.length === 0) {
     return [];
   }
@@ -93,7 +94,9 @@ export const createFullMaskAlgorithm = (substitution = "*"): Algorithm => {
   });
 };
 
-export const createRangeMaskAlgorithm = (slices: { start: number; end: number; substitution: string }[]): Algorithm => {
+export const createRangeMaskAlgorithm = (
+  slices: { start: number; end: number; substitution: string }[]
+): Algorithm => {
   return create(AlgorithmSchema, {
     mask: {
       case: "rangeMask",
@@ -111,7 +114,11 @@ export const createMd5MaskAlgorithm = (salt = ""): Algorithm => {
   });
 };
 
-export const createInnerOuterMaskAlgorithm = (prefixLen = 0, suffixLen = 0, substitution = "*"): Algorithm => {
+export const createInnerOuterMaskAlgorithm = (
+  prefixLen = 0,
+  suffixLen = 0,
+  substitution = "*"
+): Algorithm => {
   return create(AlgorithmSchema, {
     mask: {
       case: "innerOuterMask",
