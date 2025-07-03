@@ -53,7 +53,6 @@ import { HeaderSection } from "@/components/Plan/components";
 import CurrentSpecSelector from "@/components/Plan/components/CurrentSpecSelector.vue";
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
 import { useSpecsValidation } from "@/components/Plan/components/common";
-import { gotoSpec } from "@/components/Plan/components/common/utils";
 import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
@@ -245,7 +244,14 @@ const handleTabChange = (tab: TabKey) => {
     // Auto select the first spec when switching to Specifications tab.
     const spec = head(plan.value.specs);
     if (spec) {
-      gotoSpec(router, plan.value, spec.id);
+      router.push({
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+        params: {
+          ...params,
+          specId: spec.id,
+        },
+        query: query,
+      });
     } else {
       router.push({
         name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
