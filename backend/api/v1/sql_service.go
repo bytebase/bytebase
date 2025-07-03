@@ -285,7 +285,7 @@ func getMaximumSQLResultLimit(
 		value = stores.GetSQLQueryRestriction(ctx)
 	}
 
-	if limit > 0 && limit < value.MaximumResultRows {
+	if limit > 0 && (value.GetMaximumResultRows() < 0 || limit < value.GetMaximumResultRows()) {
 		value.MaximumResultRows = limit
 	}
 	return value
