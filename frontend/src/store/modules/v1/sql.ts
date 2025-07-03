@@ -1,6 +1,5 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { create as createProto } from "@bufbuild/protobuf";
-import { Status } from "nice-grpc-common";
 import { defineStore } from "pinia";
 import { sqlServiceClientConnect } from "@/grpcweb";
 import {
@@ -16,29 +15,6 @@ import {
   Advice_Status 
 } from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
-
-const convertCodeToStatus = (code: Code): Status => {
-  // Map Connect Code to nice-grpc Status
-  const codeToStatusMap: Record<Code, Status> = {
-    [Code.Canceled]: Status.CANCELLED,
-    [Code.Unknown]: Status.UNKNOWN,
-    [Code.InvalidArgument]: Status.INVALID_ARGUMENT,
-    [Code.DeadlineExceeded]: Status.DEADLINE_EXCEEDED,
-    [Code.NotFound]: Status.NOT_FOUND,
-    [Code.AlreadyExists]: Status.ALREADY_EXISTS,
-    [Code.PermissionDenied]: Status.PERMISSION_DENIED,
-    [Code.ResourceExhausted]: Status.RESOURCE_EXHAUSTED,
-    [Code.FailedPrecondition]: Status.FAILED_PRECONDITION,
-    [Code.Aborted]: Status.ABORTED,
-    [Code.OutOfRange]: Status.OUT_OF_RANGE,
-    [Code.Unimplemented]: Status.UNIMPLEMENTED,
-    [Code.Internal]: Status.INTERNAL,
-    [Code.Unavailable]: Status.UNAVAILABLE,
-    [Code.DataLoss]: Status.DATA_LOSS,
-    [Code.Unauthenticated]: Status.UNAUTHENTICATED,
-  };
-  return codeToStatusMap[code] ?? Status.UNKNOWN;
-};
 
 export const getSqlReviewReports = (err: unknown): Advice[] => {
   const advices: Advice[] = [];
@@ -88,8 +64,8 @@ export const useSQLStore = defineStore("sql", () => {
         advices: getSqlReviewReports(err),
         status:
           err instanceof ConnectError
-            ? convertCodeToStatus(err.code)
-            : Status.UNKNOWN,
+            ? err.code
+            : Code.Unknown,
       };
     }
   };

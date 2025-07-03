@@ -62,7 +62,6 @@
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { NButton, NEllipsis, NCollapse, NCollapseItem } from "naive-ui";
-import { ClientError } from "nice-grpc-web";
 import { watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
@@ -71,6 +70,7 @@ import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, isValidDatabaseName } from "@/types";
+import type { ConnectError } from "@connectrpc/connect";
 
 interface DatabaseMatchList {
   index: number;
@@ -183,7 +183,7 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
     state.databaseMatchLists[1].databaseNameList = result.unmatchedDatabaseList;
     await Promise.all(state.databaseMatchLists.map((_, i) => loadMore(i)));
   } catch (error) {
-    state.matchingError = (error as ClientError).details;
+    state.matchingError = (error as ConnectError).message;
     state.databaseMatchLists = getInitialState();
   } finally {
     state.loading = false;

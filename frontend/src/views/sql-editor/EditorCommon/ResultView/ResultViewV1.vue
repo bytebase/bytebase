@@ -120,7 +120,6 @@ import {
   NTabs,
   NTooltip,
 } from "naive-ui";
-import { Status } from "nice-grpc-common";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
@@ -149,6 +148,7 @@ import RequestQueryButton from "./RequestQueryButton.vue";
 import SingleResultViewV1 from "./SingleResultViewV1.vue";
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
+import { Code } from "@connectrpc/connect";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
@@ -186,7 +186,7 @@ const detail: SQLResultViewContext["detail"] = ref(undefined);
 provideBinaryFormatContext(computed(() => props.contextId));
 
 const missingResource = computed((): DatabaseResource | undefined => {
-  if (props.resultSet?.status !== Status.PERMISSION_DENIED) {
+  if (props.resultSet?.status !== Code.PermissionDenied) {
     return;
   }
   const prefix = "permission denied to access resource: ";
