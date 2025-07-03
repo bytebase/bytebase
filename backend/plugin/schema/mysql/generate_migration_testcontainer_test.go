@@ -409,6 +409,36 @@ CREATE UNIQUE INDEX uk_name_category ON products(name, category);
 			description: "Alter table with column additions, type changes, and constraints",
 		},
 		{
+			name: "primary_key_operations",
+			initialSchema: `
+CREATE TABLE test_pk (
+    id INT NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE test_composite_pk (
+    user_id INT NOT NULL,
+    role_id INT NOT NULL,
+    assigned_date DATE NOT NULL,
+    PRIMARY KEY (user_id, role_id)
+) ENGINE=InnoDB;
+`,
+			migrationDDL: `
+-- Drop primary key and add a different one
+ALTER TABLE test_pk DROP PRIMARY KEY;
+ALTER TABLE test_pk ADD COLUMN new_id BIGINT NOT NULL FIRST;
+ALTER TABLE test_pk ADD PRIMARY KEY (new_id, id);
+
+-- Drop composite primary key and replace with single column
+ALTER TABLE test_composite_pk DROP PRIMARY KEY;
+ALTER TABLE test_composite_pk ADD COLUMN id INT NOT NULL FIRST;
+ALTER TABLE test_composite_pk ADD PRIMARY KEY (id);
+ALTER TABLE test_composite_pk ADD UNIQUE KEY uk_user_role (user_id, role_id);
+`,
+			description: "Primary key operations including dropping and recreating",
+		},
+		{
 			name: "drop_and_recreate_constraints",
 			initialSchema: `
 CREATE TABLE authors (

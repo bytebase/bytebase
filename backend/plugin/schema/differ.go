@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"strings"
+
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -809,7 +811,28 @@ func compareCheckConstraints(oldChecks, newChecks []*storepb.CheckConstraintMeta
 
 // checkConstraintsEqual checks if two check constraints are equal.
 func checkConstraintsEqual(check1, check2 *storepb.CheckConstraintMetadata) bool {
-	return check1.Expression == check2.Expression
+	// Normalize expressions for comparison
+	// MySQL parser may produce expressions with different formatting/spacing
+	expr1 := normalizeCheckExpression(check1.Expression)
+	expr2 := normalizeCheckExpression(check2.Expression)
+	return expr1 == expr2
+}
+
+// normalizeCheckExpression normalizes a check constraint expression for comparison
+func normalizeCheckExpression(expr string) string {
+	// Remove all spaces for comparison
+	// This handles cases where the parser produces "(statusIN('active','inactive'))"
+	// vs "(status IN ('active', 'inactive'))"
+	// A more sophisticated approach would parse the expression tree, but this
+	// works for most practical cases
+	normalized := strings.ReplaceAll(expr, " ", "")
+	// Also normalize different levels of parentheses by removing outer ones if doubled
+	// e.g., "((expr))" becomes "(expr)"
+	for strings.HasPrefix(normalized, "((") && strings.HasSuffix(normalized, "))") &&
+		strings.Count(normalized, "(") == strings.Count(normalized, ")") {
+		normalized = normalized[1 : len(normalized)-1]
+	}
+	return normalized
 }
 
 // comparePartitions compares two lists of partitions.

@@ -358,13 +358,36 @@ func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionConte
 
 		// Check for DEFAULT value
 		if attr.DEFAULT_SYMBOL() != nil {
-			hasExplicitDefault = true
+			// Check if the DEFAULT value is NULL
+			isDefaultNull := false
 			if attr.SignedLiteral() != nil {
 				defaultValue := mysqlparser.NormalizeMySQLSignedLiteral(attr.SignedLiteral())
-				column.DefaultExpression = normalizeDefaultValue(defaultValue)
-			} else if attr.ExprWithParentheses() != nil {
+				if strings.ToUpper(defaultValue) == "NULL" {
+					// This is DEFAULT NULL
+					isDefaultNull = true
+				} else {
+					// Non-NULL default value
+					// Check if it's a string literal (already stripped of quotes by NormalizeMySQLSignedLiteral)
+					// or a numeric/expression value
+					if isNumericOrExpression(defaultValue) {
+						column.DefaultExpression = normalizeDefaultValue(defaultValue)
+					} else {
+						// String default value
+						column.Default = defaultValue
+					}
+				}
+			}
+
+			// Only mark as explicit default if it's not DEFAULT NULL
+			// MySQL treats DEFAULT NULL the same as no DEFAULT clause for nullable columns
+			if !isDefaultNull {
+				hasExplicitDefault = true
+			}
+
+			if attr.ExprWithParentheses() != nil {
 				column.DefaultExpression = attr.ExprWithParentheses().GetText()
-			} else {
+				hasExplicitDefault = true
+			} else if !isDefaultNull && attr.SignedLiteral() == nil {
 				// Check for special keywords like CURRENT_TIMESTAMP
 				// Parse the entire attribute text to find DEFAULT keyword and what follows
 				attrText := attr.GetText()
@@ -375,6 +398,7 @@ func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionConte
 					remaining := attrTextUpper[defaultIdx+7:]
 					if strings.HasPrefix(remaining, "CURRENT_TIMESTAMP") || strings.HasPrefix(remaining, "NOW()") {
 						column.DefaultExpression = "CURRENT_TIMESTAMP"
+						hasExplicitDefault = true
 					}
 				}
 			}
@@ -443,21 +467,46 @@ func (e *metadataExtractor) extractTableConstraint(ctx mysql.ITableConstraintDef
 	// Extract PRIMARY KEY
 	if ctx.GetType_() != nil && ctx.GetType_().GetTokenType() == mysql.MySQLParserPRIMARY_SYMBOL {
 		e.extractPrimaryKey(ctx, table)
+		return
 	}
 
 	// Extract FOREIGN KEY
 	if ctx.FOREIGN_SYMBOL() != nil && ctx.KEY_SYMBOL() != nil {
 		e.extractForeignKey(ctx, table)
+		return
 	}
 
-	// Extract INDEX/KEY
-	if (ctx.INDEX_SYMBOL() != nil || ctx.KEY_SYMBOL() != nil) && ctx.FOREIGN_SYMBOL() == nil && ctx.PRIMARY_SYMBOL() == nil {
+	// Extract INDEX/KEY constraints
+	if ctx.GetType_() != nil {
+		tokenType := ctx.GetType_().GetTokenType()
+		switch tokenType {
+		case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL:
+			// Handle regular index
+			e.extractIndex(ctx, table)
+			return
+		case mysql.MySQLParserUNIQUE_SYMBOL:
+			// Handle unique index - UNIQUE KEY or UNIQUE INDEX
+			e.extractUniqueIndex(ctx, table)
+			return
+		}
+	}
+
+	// Also check for KEY without GetType_()
+	if ctx.KEY_SYMBOL() != nil && ctx.FOREIGN_SYMBOL() == nil && ctx.PRIMARY_SYMBOL() == nil {
 		e.extractIndex(ctx, table)
+		return
 	}
 
-	// Extract UNIQUE constraint
+	// Check for INDEX without GetType_()
+	if ctx.INDEX_SYMBOL() != nil {
+		e.extractIndex(ctx, table)
+		return
+	}
+
+	// Check for UNIQUE without GetType_()
 	if ctx.UNIQUE_SYMBOL() != nil {
 		e.extractUniqueIndex(ctx, table)
+		return
 	}
 
 	// Extract CHECK constraint
@@ -492,7 +541,7 @@ func (*metadataExtractor) extractPrimaryKey(ctx mysql.ITableConstraintDefContext
 
 		index := &storepb.IndexMetadata{
 			Name:        "PRIMARY",
-			Type:        "PRIMARY",
+			Type:        "BTREE",
 			Expressions: keyColumns,
 			Primary:     true,
 			Unique:      true,
@@ -587,9 +636,49 @@ func (*metadataExtractor) extractForeignKey(ctx mysql.ITableConstraintDefContext
 	table.ForeignKeys = append(table.ForeignKeys, fk)
 }
 
+// getIndexType extracts the index type (BTREE, HASH, etc.) from the table constraint context
+func getIndexType(ctx mysql.ITableConstraintDefContext) string {
+	// Check IndexNameAndType for index type
+	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexType() != nil {
+		indexType := ctx.IndexNameAndType().IndexType().GetText()
+		return strings.ToUpper(indexType)
+	}
+
+	// Check IndexOptions for index type
+	for _, option := range ctx.AllIndexOption() {
+		if option != nil && option.IndexTypeClause() != nil && option.IndexTypeClause().IndexType() != nil {
+			indexType := option.IndexTypeClause().IndexType().GetText()
+			return strings.ToUpper(indexType)
+		}
+	}
+
+	// Default to BTREE if no type is specified
+	return "BTREE"
+}
+
 // extractIndex extracts regular index
 func (*metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
-	if ctx.KeyList() == nil {
+	// Try both KeyListVariants and KeyList
+	var keyColumns []string
+
+	if ctx.KeyListVariants() != nil {
+		keyColumns = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
+	} else if ctx.KeyList() != nil {
+		for _, keyPart := range ctx.KeyList().AllKeyPart() {
+			if keyPart.Identifier() != nil {
+				columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
+				// Check for order (ASC/DESC)
+				if keyPart.Direction() != nil {
+					if keyPart.Direction().DESC_SYMBOL() != nil {
+						columnName += " DESC"
+					}
+				}
+				keyColumns = append(keyColumns, columnName)
+			}
+		}
+	}
+
+	if len(keyColumns) == 0 {
 		return
 	}
 
@@ -597,40 +686,45 @@ func (*metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, tab
 	indexName := ""
 	if ctx.IndexName() != nil {
 		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	} else if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
 	}
 
-	// Extract columns/expressions
-	var expressions []string
-	for _, keyPart := range ctx.KeyList().AllKeyPart() {
-		if keyPart.Identifier() != nil {
-			columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
-			// Check for order (ASC/DESC)
-			if keyPart.Direction() != nil {
-				if keyPart.Direction().DESC_SYMBOL() != nil {
-					columnName += " DESC"
-				}
-			}
-			expressions = append(expressions, columnName)
-		}
-	}
+	indexType := getIndexType(ctx)
 
-	if len(expressions) > 0 {
-		indexType := "BTREE"
-
-		index := &storepb.IndexMetadata{
-			Name:        indexName,
-			Type:        indexType,
-			Expressions: expressions,
-			Primary:     false,
-			Unique:      false,
-		}
-		table.Indexes = append(table.Indexes, index)
+	index := &storepb.IndexMetadata{
+		Name:        indexName,
+		Type:        indexType,
+		Expressions: keyColumns,
+		Primary:     false,
+		Unique:      false,
 	}
+	table.Indexes = append(table.Indexes, index)
 }
 
 // extractUniqueIndex extracts unique index
 func (*metadataExtractor) extractUniqueIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
-	if ctx.KeyList() == nil {
+	// Try both KeyListVariants and KeyList
+	var keyColumns []string
+
+	if ctx.KeyListVariants() != nil {
+		keyColumns = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
+	} else if ctx.KeyList() != nil {
+		for _, keyPart := range ctx.KeyList().AllKeyPart() {
+			if keyPart.Identifier() != nil {
+				columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
+				// Check for order (ASC/DESC)
+				if keyPart.Direction() != nil {
+					if keyPart.Direction().DESC_SYMBOL() != nil {
+						columnName += " DESC"
+					}
+				}
+				keyColumns = append(keyColumns, columnName)
+			}
+		}
+	}
+
+	if len(keyColumns) == 0 {
 		return
 	}
 
@@ -638,33 +732,20 @@ func (*metadataExtractor) extractUniqueIndex(ctx mysql.ITableConstraintDefContex
 	indexName := ""
 	if ctx.IndexName() != nil {
 		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	} else if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
 	}
 
-	// Extract columns
-	var expressions []string
-	for _, keyPart := range ctx.KeyList().AllKeyPart() {
-		if keyPart.Identifier() != nil {
-			columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
-			// Check for order (ASC/DESC)
-			if keyPart.Direction() != nil {
-				if keyPart.Direction().DESC_SYMBOL() != nil {
-					columnName += " DESC"
-				}
-			}
-			expressions = append(expressions, columnName)
-		}
-	}
+	indexType := getIndexType(ctx)
 
-	if len(expressions) > 0 {
-		index := &storepb.IndexMetadata{
-			Name:        indexName,
-			Type:        "BTREE",
-			Expressions: expressions,
-			Primary:     false,
-			Unique:      true,
-		}
-		table.Indexes = append(table.Indexes, index)
+	index := &storepb.IndexMetadata{
+		Name:        indexName,
+		Type:        indexType,
+		Expressions: keyColumns,
+		Primary:     false,
+		Unique:      true,
 	}
+	table.Indexes = append(table.Indexes, index)
 }
 
 // extractCheckConstraint extracts check constraint
@@ -673,8 +754,8 @@ func (*metadataExtractor) extractCheckConstraint(ctx mysql.ICheckConstraintConte
 		return
 	}
 
-	// Extract expression
-	expression := ctx.ExprWithParentheses().GetText()
+	// Extract expression and normalize it
+	expression := normalizeCheckConstraintExpression(ctx.ExprWithParentheses())
 
 	// If no constraint name provided, generate one like MySQL does
 	if constraintName == "" {
@@ -1046,6 +1127,31 @@ func (e *metadataExtractor) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 	}
 }
 
+// isNumericOrExpression checks if a default value is numeric or an expression (not a string literal)
+func isNumericOrExpression(value string) bool {
+	// Check if it's numeric
+	if _, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return true
+	}
+	if _, err := strconv.ParseFloat(value, 64); err == nil {
+		return true
+	}
+	// Check for boolean values
+	if strings.ToLower(value) == "true" || strings.ToLower(value) == "false" {
+		return true
+	}
+	// Check for expressions (containing parentheses, operators, or function calls)
+	if strings.ContainsAny(value, "()+-*/") {
+		return true
+	}
+	// Check for special keywords
+	upperValue := strings.ToUpper(value)
+	if upperValue == "CURRENT_TIMESTAMP" || upperValue == "CURRENT_DATE" || upperValue == "CURRENT_TIME" {
+		return true
+	}
+	return false
+}
+
 // normalizeDefaultValue normalizes default values to match MySQL's internal representation
 func normalizeDefaultValue(defaultValue string) string {
 	if defaultValue == "" {
@@ -1061,4 +1167,21 @@ func normalizeDefaultValue(defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+// normalizeCheckConstraintExpression normalizes check constraint expressions
+// to handle differences in formatting and parentheses from the parser
+func normalizeCheckConstraintExpression(ctx mysql.IExprWithParenthesesContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	// Get the full text including parentheses
+	text := ctx.GetText()
+
+	// MySQL's parser concatenates tokens without spaces when using GetText()
+	// This is a known issue with ANTLR's GetText() method
+	// For check constraints, we'll use the raw text as MySQL stores it
+	// The actual normalization should happen in the comparison function
+	return text
 }

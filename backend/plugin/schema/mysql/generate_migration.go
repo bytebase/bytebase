@@ -13,7 +13,7 @@ import (
 // tableDrop holds drop operations for deduplication
 type tableDrop struct {
 	checkConstraints map[string]string
-	indexes          map[string]string
+	indexes          map[string]*storepb.IndexMetadata
 	columns          map[string]string
 }
 
@@ -144,7 +144,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			if _, exists := dropsPerTable[tableName]; !exists {
 				dropsPerTable[tableName] = &tableDrop{
 					checkConstraints: make(map[string]string),
-					indexes:          make(map[string]string),
+					indexes:          make(map[string]*storepb.IndexMetadata),
 					columns:          make(map[string]string),
 				}
 			}
@@ -159,7 +159,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			// Collect indexes to drop
 			for _, indexDiff := range tableDiff.IndexChanges {
 				if indexDiff.Action == schema.MetadataDiffActionDrop {
-					dropsPerTable[tableName].indexes[indexDiff.OldIndex.Name] = indexDiff.OldIndex.Name
+					dropsPerTable[tableName].indexes[indexDiff.OldIndex.Name] = indexDiff.OldIndex
 				}
 			}
 
@@ -181,10 +181,16 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			}
 		}
 
-		// Drop indexes
-		for indexName := range drops.indexes {
-			if err := writeDropIndex(buf, tableName, indexName); err != nil {
-				return err
+		// Drop indexes (handle primary key specially)
+		for _, index := range drops.indexes {
+			if index.Primary {
+				if err := writeDropPrimaryKey(buf, tableName); err != nil {
+					return err
+				}
+			} else {
+				if err := writeDropIndex(buf, tableName, index.Name); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -479,7 +485,7 @@ func writeDropTable(buf *strings.Builder, table string) error {
 func writeDropCheckConstraint(buf *strings.Builder, table, constraint string) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
-	_, _ = buf.WriteString("` DROP CHECK `")
+	_, _ = buf.WriteString("` DROP CONSTRAINT `")
 	_, _ = buf.WriteString(constraint)
 	_, _ = buf.WriteString("`;\n\n")
 	return nil
@@ -491,6 +497,13 @@ func writeDropIndex(buf *strings.Builder, table, index string) error {
 	_, _ = buf.WriteString("` ON `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("`;\n\n")
+	return nil
+}
+
+func writeDropPrimaryKey(buf *strings.Builder, table string) error {
+	_, _ = buf.WriteString("ALTER TABLE `")
+	_, _ = buf.WriteString(table)
+	_, _ = buf.WriteString("` DROP PRIMARY KEY;\n\n")
 	return nil
 }
 
@@ -871,9 +884,10 @@ func writeAddCheckConstraint(buf *strings.Builder, table string, check *storepb.
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD CONSTRAINT `")
 	_, _ = buf.WriteString(check.Name)
-	_, _ = buf.WriteString("` CHECK (")
+	_, _ = buf.WriteString("` CHECK ")
+	// The expression already includes parentheses from the parser
 	_, _ = buf.WriteString(check.Expression)
-	_, _ = buf.WriteString(");\n")
+	_, _ = buf.WriteString(";\n")
 	return nil
 }
 
