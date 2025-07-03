@@ -1772,7 +1772,7 @@
         },
         "max-retries": {
           "self": "Maximum retries count for lock timeout",
-          "description": "The maximum retries count for lock timeout when running the task. The default value is 0."
+          "description": "The maximum retries count for lock timeout when running the task. The default value is 0. Only applicable to Postgres."
         },
         "ci-sampling-size": {
           "self": "CI Data Sampling Size",
