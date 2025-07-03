@@ -51,7 +51,7 @@
                 :key="format"
                 :value="format"
               >
-                {{ exportFormatToJSON(format) }}
+                {{ ExportFormat[format] }}
               </NRadio>
             </NRadioGroup>
           </NFormItem>
@@ -143,11 +143,6 @@ import { isNullOrUndefined } from "@/utils";
 import MaxRowCountSelect from "./GrantRequestPanel/MaxRowCountSelect.vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "./v2";
 
-// Helper function to convert ExportFormat to string
-function exportFormatToJSON(format: ExportFormat): string {
-  return ExportFormat[format];
-}
-
 interface LocalState {
   isRequesting: boolean;
   showDrawer: boolean;
@@ -237,7 +232,7 @@ const rules: FormRules = {
 const exportDropdownOptions = computed(() => {
   return props.supportFormats.map((format) => ({
     label: t("sql-editor.download-as-file", {
-      file: exportFormatToJSON(format),
+      file: ExportFormat[format],
     }),
     key: format,
   }));
@@ -380,7 +375,7 @@ const doDownloadSingleFile = async (
   const isZip = downloadFileAsZip(options);
   const url = window.URL.createObjectURL(blob);
 
-  const fileFormat = exportFormatToJSON(options.format).toLowerCase();
+  const fileFormat = ExportFormat[options.format].toLowerCase();
   const link = document.createElement("a");
   link.download = `${filename}.${isZip ? "zip" : fileFormat}`;
   link.href = url;
@@ -392,7 +387,7 @@ const doDownload = async (content: DownloadContent, options: ExportOption) => {
     return doDownloadSingleFile(content[0], options);
   }
 
-  const fileFormat = exportFormatToJSON(options.format).toLowerCase();
+  const fileFormat = ExportFormat[options.format].toLowerCase();
   const zip = new JSZip();
   for (const c of content) {
     const blob = await cnovertSingleFile(c.content, options);
