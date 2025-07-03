@@ -31,11 +31,11 @@
 import { ChevronDownIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NTooltip } from "naive-ui";
-import type { ClientError } from "nice-grpc-web";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import type { ConnectError } from "@connectrpc/connect";
 
 withDefaults(
   defineProps<{
@@ -112,7 +112,7 @@ const syncSchema = async (option: SyncInstanceOption) => {
       module: "bytebase",
       style: "CRITICAL",
       title: t("db.failed-to-sync-schema"),
-      description: (error as ClientError).details,
+      description: (error as ConnectError).message,
     });
   } finally {
     syncingSchema.value = false;

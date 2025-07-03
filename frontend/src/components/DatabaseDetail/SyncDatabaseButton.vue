@@ -13,7 +13,6 @@
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
-import type { ClientError } from "nice-grpc-web";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -24,6 +23,7 @@ import {
 import { isValidDatabaseName } from "@/types";
 import type { ComposedDatabase } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
+import { ConnectError } from "@connectrpc/connect";
 
 const props = defineProps<{
   text: boolean;
@@ -77,7 +77,7 @@ const syncDatabaseSchema = async () => {
       title: t("db.failed-to-sync-schema-for-database-database-value-name", [
         props.database.databaseName,
       ]),
-      description: (error as ClientError).details,
+      description: (error as ConnectError).message,
     });
   } finally {
     syncingSchema.value = false;
