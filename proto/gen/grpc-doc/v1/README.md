@@ -3138,8 +3138,8 @@ ViewMetadata is the metadata for views.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_VIRTUAL | 1 |  |
-| TYPE_STORED | 2 |  |
+| VIRTUAL | 1 |  |
+| STORED | 2 |  |
 
 
 
@@ -3170,9 +3170,9 @@ ViewMetadata is the metadata for views.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | MODE_UNSPECIFIED | 0 |  |
-| MODE_DEFAULT | 1 |  |
-| MODE_APPEND_ONLY | 2 |  |
-| MODE_INSERT_ONLY | 3 |  |
+| DEFAULT | 1 |  |
+| APPEND_ONLY | 2 |  |
+| INSERT_ONLY | 3 |  |
 
 
 
@@ -3184,7 +3184,7 @@ ViewMetadata is the metadata for views.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_DELTA | 1 |  |
+| DELTA | 1 |  |
 
 
 
@@ -3221,8 +3221,8 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATE_UNSPECIFIED | 0 |  |
-| STATE_STARTED | 1 |  |
-| STATE_SUSPENDED | 2 |  |
+| STARTED | 1 |  |
+| SUSPENDED | 2 |  |
 
 
  
@@ -4723,9 +4723,9 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | ALERT_LEVEL_UNSPECIFIED | 0 |  |
-| ALERT_LEVEL_INFO | 1 |  |
-| ALERT_LEVEL_WARNING | 2 |  |
-| ALERT_LEVEL_CRITICAL | 3 |  |
+| INFO | 1 |  |
+| WARNING | 2 |  |
+| CRITICAL | 3 |  |
 
 
 
@@ -8026,19 +8026,19 @@ The project&#39;s `name` field is used to identify the project to update. Format
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
+| NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
 
-TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
-| TYPE_NOTIFY_PIPELINE_ROLLOUT | 24 | TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
-| TYPE_ISSUE_CREATE | 1 | Issue related activity types.
+NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
+| NOTIFY_PIPELINE_ROLLOUT | 24 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
+| ISSUE_CREATE | 1 | Issue related activity types.
 
-TYPE_ISSUE_CREATE represents creating an issue. |
-| TYPE_ISSUE_COMMENT_CREATE | 2 | TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue. |
-| TYPE_ISSUE_FIELD_UPDATE | 3 | TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
-| TYPE_ISSUE_STATUS_UPDATE | 4 | TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
-| TYPE_ISSUE_APPROVAL_NOTIFY | 21 | TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
-| TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
-| TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
+ISSUE_CREATE represents creating an issue. |
+| ISSUE_COMMENT_CREATE | 2 | ISSUE_COMMENT_CREATE represents commenting on an issue. |
+| ISSUE_FIELD_UPDATE | 3 | ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
+| ISSUE_STATUS_UPDATE | 4 | ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
+| ISSUE_APPROVAL_NOTIFY | 21 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
+| ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
+| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
 
 
 
@@ -11089,7 +11089,7 @@ PlanFeature represents the available features in Bytebase
 
 Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 
-For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;VISIBILITY_PRIVATE&#34;, &#34;VISIBILITY_PROJECT_READ&#34;, &#34;VISIBILITY_PROJECT_WRITE&#34;] visibility == &#34;VISIBILITY_PRIVATE&#34; |
+For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; |
 | page_size | [int32](#int32) |  | Not used. The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchWorksheets` call. Provide this to retrieve the subsequent page.
 
@@ -11203,9 +11203,9 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | VISIBILITY_UNSPECIFIED | 0 |  |
-| VISIBILITY_PROJECT_READ | 1 | Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read. |
-| VISIBILITY_PROJECT_WRITE | 2 | Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet. |
-| VISIBILITY_PRIVATE | 3 | Private, only worksheet OWNER can read/write. |
+| PROJECT_READ | 1 | Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read. |
+| PROJECT_WRITE | 2 | Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet. |
+| PRIVATE | 3 | Private, only worksheet OWNER can read/write. |
 
 
  

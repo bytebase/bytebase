@@ -1091,23 +1091,23 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 		switch tp {
 		case v1pb.Activity_TYPE_UNSPECIFIED:
 			return nil, common.Errorf(common.Invalid, "activity type must not be unspecified")
-		case v1pb.Activity_TYPE_ISSUE_CREATE:
+		case v1pb.Activity_ISSUE_CREATE:
 			result = append(result, string(common.EventTypeIssueCreate))
-		case v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE:
+		case v1pb.Activity_ISSUE_COMMENT_CREATE:
 			result = append(result, string(common.EventTypeIssueCommentCreate))
-		case v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE:
+		case v1pb.Activity_ISSUE_FIELD_UPDATE:
 			result = append(result, string(common.EventTypeIssueUpdate))
-		case v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE:
+		case v1pb.Activity_ISSUE_STATUS_UPDATE:
 			result = append(result, string(common.EventTypeIssueStatusUpdate))
-		case v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY:
+		case v1pb.Activity_ISSUE_APPROVAL_NOTIFY:
 			result = append(result, string(common.EventTypeIssueApprovalCreate))
-		case v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
+		case v1pb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
 			result = append(result, string(common.EventTypeStageStatusUpdate))
-		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
+		case v1pb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
 			result = append(result, string(common.EventTypeTaskRunStatusUpdate))
-		case v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED:
+		case v1pb.Activity_NOTIFY_ISSUE_APPROVED:
 			result = append(result, string(common.EventTypeIssueApprovalPass))
-		case v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT:
+		case v1pb.Activity_NOTIFY_PIPELINE_ROLLOUT:
 			result = append(result, string(common.EventTypeIssueRolloutReady))
 		default:
 			return nil, common.Errorf(common.Invalid, "unsupported activity type: %v", tp)
@@ -1121,23 +1121,23 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 	for _, tp := range types {
 		switch tp {
 		case string(common.EventTypeIssueCreate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_CREATE)
+			result = append(result, v1pb.Activity_ISSUE_CREATE)
 		case string(common.EventTypeIssueCommentCreate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE)
+			result = append(result, v1pb.Activity_ISSUE_COMMENT_CREATE)
 		case string(common.EventTypeIssueUpdate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE)
+			result = append(result, v1pb.Activity_ISSUE_FIELD_UPDATE)
 		case string(common.EventTypeIssueStatusUpdate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE)
+			result = append(result, v1pb.Activity_ISSUE_STATUS_UPDATE)
 		case string(common.EventTypeIssueApprovalCreate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY)
+			result = append(result, v1pb.Activity_ISSUE_APPROVAL_NOTIFY)
 		case string(common.EventTypeStageStatusUpdate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
+			result = append(result, v1pb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
 		case string(common.EventTypeTaskRunStatusUpdate):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
+			result = append(result, v1pb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
 		case string(common.EventTypeIssueApprovalPass):
-			result = append(result, v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED)
+			result = append(result, v1pb.Activity_NOTIFY_ISSUE_APPROVED)
 		case string(common.EventTypeIssueRolloutReady):
-			result = append(result, v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT)
+			result = append(result, v1pb.Activity_NOTIFY_PIPELINE_ROLLOUT)
 		default:
 			result = append(result, v1pb.Activity_TYPE_UNSPECIFIED)
 		}

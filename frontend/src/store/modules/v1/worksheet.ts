@@ -14,6 +14,7 @@ import {
   DeleteWorksheetRequestSchema,
   SearchWorksheetsRequestSchema,
   UpdateWorksheetOrganizerRequestSchema,
+  Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { WorksheetOrganizer } from "@/types/proto-es/v1/worksheet_service_pb";
 import type {
@@ -204,7 +205,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   const fetchSharedWorksheetList = async () => {
     const me = useCurrentUserV1();
     const request = create(SearchWorksheetsRequestSchema, {
-      filter: `creator != "users/${me.value.email}" && visibility in ["VISIBILITY_PROJECT_READ","VISIBILITY_PROJECT_WRITE"]`,
+      filter: `creator != "users/${me.value.email}" && visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
     });
     const response =
       await worksheetServiceClientConnect.searchWorksheets(request);

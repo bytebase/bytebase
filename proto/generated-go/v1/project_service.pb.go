@@ -94,53 +94,53 @@ const (
 	Activity_TYPE_UNSPECIFIED Activity_Type = 0
 	// Notifications via webhooks.
 	//
-	// TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.
-	Activity_TYPE_NOTIFY_ISSUE_APPROVED Activity_Type = 23
-	// TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
-	Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT Activity_Type = 24
+	// NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+	Activity_NOTIFY_ISSUE_APPROVED Activity_Type = 23
+	// NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+	Activity_NOTIFY_PIPELINE_ROLLOUT Activity_Type = 24
 	// Issue related activity types.
 	//
-	// TYPE_ISSUE_CREATE represents creating an issue.
-	Activity_TYPE_ISSUE_CREATE Activity_Type = 1
-	// TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue.
-	Activity_TYPE_ISSUE_COMMENT_CREATE Activity_Type = 2
-	// TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
-	Activity_TYPE_ISSUE_FIELD_UPDATE Activity_Type = 3
-	// TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
-	Activity_TYPE_ISSUE_STATUS_UPDATE Activity_Type = 4
-	// TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
-	Activity_TYPE_ISSUE_APPROVAL_NOTIFY Activity_Type = 21
-	// TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
-	Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE Activity_Type = 5
-	// TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
-	Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 22
+	// ISSUE_CREATE represents creating an issue.
+	Activity_ISSUE_CREATE Activity_Type = 1
+	// ISSUE_COMMENT_CREATE represents commenting on an issue.
+	Activity_ISSUE_COMMENT_CREATE Activity_Type = 2
+	// ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
+	Activity_ISSUE_FIELD_UPDATE Activity_Type = 3
+	// ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
+	Activity_ISSUE_STATUS_UPDATE Activity_Type = 4
+	// ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
+	Activity_ISSUE_APPROVAL_NOTIFY Activity_Type = 21
+	// ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
+	Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE Activity_Type = 5
+	// ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
+	Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 22
 )
 
 // Enum value maps for Activity_Type.
 var (
 	Activity_Type_name = map[int32]string{
 		0:  "TYPE_UNSPECIFIED",
-		23: "TYPE_NOTIFY_ISSUE_APPROVED",
-		24: "TYPE_NOTIFY_PIPELINE_ROLLOUT",
-		1:  "TYPE_ISSUE_CREATE",
-		2:  "TYPE_ISSUE_COMMENT_CREATE",
-		3:  "TYPE_ISSUE_FIELD_UPDATE",
-		4:  "TYPE_ISSUE_STATUS_UPDATE",
-		21: "TYPE_ISSUE_APPROVAL_NOTIFY",
-		5:  "TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
-		22: "TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
+		23: "NOTIFY_ISSUE_APPROVED",
+		24: "NOTIFY_PIPELINE_ROLLOUT",
+		1:  "ISSUE_CREATE",
+		2:  "ISSUE_COMMENT_CREATE",
+		3:  "ISSUE_FIELD_UPDATE",
+		4:  "ISSUE_STATUS_UPDATE",
+		21: "ISSUE_APPROVAL_NOTIFY",
+		5:  "ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
+		22: "ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
 	}
 	Activity_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED":                           0,
-		"TYPE_NOTIFY_ISSUE_APPROVED":                 23,
-		"TYPE_NOTIFY_PIPELINE_ROLLOUT":               24,
-		"TYPE_ISSUE_CREATE":                          1,
-		"TYPE_ISSUE_COMMENT_CREATE":                  2,
-		"TYPE_ISSUE_FIELD_UPDATE":                    3,
-		"TYPE_ISSUE_STATUS_UPDATE":                   4,
-		"TYPE_ISSUE_APPROVAL_NOTIFY":                 21,
-		"TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE":    5,
-		"TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 22,
+		"TYPE_UNSPECIFIED":                      0,
+		"NOTIFY_ISSUE_APPROVED":                 23,
+		"NOTIFY_PIPELINE_ROLLOUT":               24,
+		"ISSUE_CREATE":                          1,
+		"ISSUE_COMMENT_CREATE":                  2,
+		"ISSUE_FIELD_UPDATE":                    3,
+		"ISSUE_STATUS_UPDATE":                   4,
+		"ISSUE_APPROVAL_NOTIFY":                 21,
+		"ISSUE_PIPELINE_STAGE_STATUS_UPDATE":    5,
+		"ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 22,
 	}
 )
 
@@ -1726,19 +1726,19 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
 	"\x04LARK\x10\b:@\xeaA=\n" +
-	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xd9\x02\n" +
-	"\bActivity\"\xcc\x02\n" +
+	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xac\x02\n" +
+	"\bActivity\"\x9f\x02\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x1e\n" +
-	"\x1aTYPE_NOTIFY_ISSUE_APPROVED\x10\x17\x12 \n" +
-	"\x1cTYPE_NOTIFY_PIPELINE_ROLLOUT\x10\x18\x12\x15\n" +
-	"\x11TYPE_ISSUE_CREATE\x10\x01\x12\x1d\n" +
-	"\x19TYPE_ISSUE_COMMENT_CREATE\x10\x02\x12\x1b\n" +
-	"\x17TYPE_ISSUE_FIELD_UPDATE\x10\x03\x12\x1c\n" +
-	"\x18TYPE_ISSUE_STATUS_UPDATE\x10\x04\x12\x1e\n" +
-	"\x1aTYPE_ISSUE_APPROVAL_NOTIFY\x10\x15\x12+\n" +
-	"'TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12.\n" +
-	"*TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x162\x8b\x12\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15NOTIFY_ISSUE_APPROVED\x10\x17\x12\x1b\n" +
+	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\x18\x12\x10\n" +
+	"\fISSUE_CREATE\x10\x01\x12\x18\n" +
+	"\x14ISSUE_COMMENT_CREATE\x10\x02\x12\x16\n" +
+	"\x12ISSUE_FIELD_UPDATE\x10\x03\x12\x17\n" +
+	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12\x19\n" +
+	"\x15ISSUE_APPROVAL_NOTIFY\x10\x15\x12&\n" +
+	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12)\n" +
+	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x162\x8b\x12\n" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x84\x01\n" +

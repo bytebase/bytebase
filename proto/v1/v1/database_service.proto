@@ -861,8 +861,8 @@ message ColumnMetadata {
 message GenerationMetadata {
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    TYPE_VIRTUAL = 1;
-    TYPE_STORED = 2;
+    VIRTUAL = 1;
+    STORED = 2;
   }
 
   Type type = 1;
@@ -1027,8 +1027,8 @@ message TaskMetadata {
 
   enum State {
     STATE_UNSPECIFIED = 0;
-    STATE_STARTED = 1;
-    STATE_SUSPENDED = 2;
+    STARTED = 1;
+    SUSPENDED = 2;
   }
   // The state of the task.
   State state = 8;
@@ -1055,7 +1055,7 @@ message StreamMetadata {
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    TYPE_DELTA = 1;
+    DELTA = 1;
   }
   // The type of the stream.
   Type type = 5;
@@ -1065,9 +1065,9 @@ message StreamMetadata {
 
   enum Mode {
     MODE_UNSPECIFIED = 0;
-    MODE_DEFAULT = 1;
-    MODE_APPEND_ONLY = 2;
-    MODE_INSERT_ONLY = 3;
+    DEFAULT = 1;
+    APPEND_ONLY = 2;
+    INSERT_ONLY = 3;
   }
   // The mode of the stream.
   Mode mode = 7;
