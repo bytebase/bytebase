@@ -77,7 +77,10 @@
               >{{ $t("sql-review.rule-detail") }}</span
             >
           </div>
-          <div v-if="(row.checkResult as any).sqlSummaryReport" class="pl-2 first:pl-0">
+          <div
+            v-if="(row.checkResult as any).sqlSummaryReport"
+            class="pl-2 first:pl-0"
+          >
             <span>
               {{ (row.checkResult as any).sqlSummaryReport?.affectedRows }}
             </span>
@@ -96,7 +99,9 @@
 
           <!-- Only show the error line for latest plan check run -->
           <div
-            v-if="showCodeLocation && (row.checkResult as any).sqlReviewReport?.line"
+            v-if="
+              showCodeLocation && (row.checkResult as any).sqlReviewReport?.line
+            "
             class="pl-2 first:pl-0"
           >
             <span
@@ -184,7 +189,9 @@
 
         <!-- Only show the error line for latest plan check run -->
         <template
-          v-if="showCodeLocation && (row.checkResult as any).sqlReviewReport?.line"
+          v-if="
+            showCodeLocation && (row.checkResult as any).sqlReviewReport?.line
+          "
         >
           <span class="border-r border-control-border ml-1"></span>
           <span
@@ -235,15 +242,14 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { XIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { create } from "@bufbuild/protobuf";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { planServiceClientConnect } from "@/grpcweb";
-import { BatchCancelPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
 import {
@@ -260,6 +266,7 @@ import {
   convertPolicyRuleToRuleTemplate,
 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
+import { BatchCancelPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type {
   PlanCheckRun,
   PlanCheckRun_Result,
@@ -399,7 +406,9 @@ const categoryAndTitle = (
     return ["", messageWithCode(checkResult.title, code)];
   }
   if ((checkResult as any).sqlSummaryReport) {
-    if (typeof (checkResult as any).sqlSummaryReport?.affectedRows === "number") {
+    if (
+      typeof (checkResult as any).sqlSummaryReport?.affectedRows === "number"
+    ) {
       return [
         "",
         `${t("task.check-type.affected-rows.self")} (${t("task.check-type.affected-rows.description")})`,

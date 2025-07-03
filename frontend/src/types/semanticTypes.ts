@@ -1,9 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { t } from "@/plugins/i18n";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
-import {
-  SemanticTypeSetting_SemanticTypeSchema,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { SemanticTypeSetting_SemanticTypeSchema } from "@/types/proto-es/v1/setting_service_pb";
 import buildInSemanticTypes from "./semantic-types.yaml";
 
 interface BuildInSemantic {
@@ -16,7 +14,9 @@ export const getSemanticTemplateList = () => {
     const key = buildInSemantic.id.split(".").join("-");
     return create(SemanticTypeSetting_SemanticTypeSchema, {
       id: buildInSemantic.id,
-      title: t(`dynamic.settings.sensitive-data.semantic-types.template.${key}.title`),
+      title: t(
+        `dynamic.settings.sensitive-data.semantic-types.template.${key}.title`
+      ),
       description: t(
         `dynamic.settings.sensitive-data.semantic-types.template.${key}.description`
       ),

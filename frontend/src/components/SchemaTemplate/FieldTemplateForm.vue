@@ -238,6 +238,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create as createProto } from "@bufbuild/protobuf";
 import { isEqual, cloneDeep } from "lodash-es";
 import { XIcon, PencilIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
@@ -261,12 +262,9 @@ import {
   MiniActionButton,
 } from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
-import { create as createProto } from "@bufbuild/protobuf";
 import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
-import type {
-  SchemaTemplateSetting_FieldTemplate,
-} from "@/types/proto-es/v1/setting_service_pb";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
   SchemaTemplateSetting_FieldTemplateSchema,
   SchemaTemplateSettingSchema,
@@ -297,27 +295,26 @@ interface LocalState extends SchemaTemplateSetting_FieldTemplate {
   kvList: { key: string; value: string }[];
 }
 
-const state = reactive<LocalState>(
-  
-
-  {
-    ...createProto(SchemaTemplateSetting_FieldTemplateSchema, {
-      id: props.template.id,
-      engine: props.template.engine,
-      category: props.template.category,
-      column: createProto(ColumnMetadataSchema, props.template.column ?? {}),
-      catalog: createProto(ColumnCatalogSchema, props.template.catalog ?? {}),
-    }),
-    showClassificationDrawer: false,
-    showSemanticTypesDrawer: false,
-    showColumnDefaultValueExpressionModal: false,
+const state = reactive<LocalState>({
+  ...createProto(SchemaTemplateSetting_FieldTemplateSchema, {
+    id: props.template.id,
+    engine: props.template.engine,
+    category: props.template.category,
+    column: createProto(ColumnMetadataSchema, props.template.column ?? {}),
+    catalog: createProto(ColumnCatalogSchema, props.template.catalog ?? {}),
+  }),
+  showClassificationDrawer: false,
+  showSemanticTypesDrawer: false,
+  showColumnDefaultValueExpressionModal: false,
   kvList: [],
 });
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
 const semanticTypeList = computed(() => {
-  const setting = settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SEMANTIC_TYPES
+  );
   if (!setting?.value?.value) return [];
   const value = setting.value.value;
   if (value.case === "semanticTypeSettingValue") {
@@ -390,7 +387,9 @@ const defaultValueOptions = computed(() => {
 });
 
 const schemaTemplateColumnTypes = computed(() => {
-  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SCHEMA_TEMPLATE
+  );
   if (!setting?.value?.value) return [];
   const value = setting.value.value;
   if (value.case !== "schemaTemplateSettingValue") return [];
@@ -443,7 +442,10 @@ const submit = async () => {
   );
 
   let settingValue = createProto(SchemaTemplateSettingSchema, {});
-  if (setting?.value?.value && setting.value.value.case === "schemaTemplateSettingValue") {
+  if (
+    setting?.value?.value &&
+    setting.value.value.case === "schemaTemplateSettingValue"
+  ) {
     settingValue = cloneDeep(setting.value.value.value);
   }
 

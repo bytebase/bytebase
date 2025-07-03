@@ -1,11 +1,14 @@
-import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
 import { create } from "@bufbuild/protobuf";
+import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { type AffectedTable, EmptyAffectedTable } from "@/types";
-import { Changelog_Type, ChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  Changelog_Type,
+  ChangelogSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 

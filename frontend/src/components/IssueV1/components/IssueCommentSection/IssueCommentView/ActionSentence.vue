@@ -35,7 +35,10 @@ const userStore = useUserStore();
 
 const renderActionSentence = () => {
   const { issueComment, issue } = props;
-  if (issueComment.type === IssueCommentType.APPROVAL && issueComment.event?.case === "approval") {
+  if (
+    issueComment.type === IssueCommentType.APPROVAL &&
+    issueComment.event?.case === "approval"
+  ) {
     const { status } = issueComment.event.value;
     let verb = "";
     if (status === IssueComment_Approval_Status.APPROVED) {
@@ -48,7 +51,10 @@ const renderActionSentence = () => {
     if (verb) {
       return maybeAutomaticallyVerb(issueComment, verb);
     }
-  } else if (issueComment.type === IssueCommentType.ISSUE_UPDATE && issueComment.event?.case === "issueUpdate") {
+  } else if (
+    issueComment.type === IssueCommentType.ISSUE_UPDATE &&
+    issueComment.event?.case === "issueUpdate"
+  ) {
     const {
       fromTitle,
       toTitle,
@@ -79,7 +85,10 @@ const renderActionSentence = () => {
     } else if (fromLabels.length !== 0 || toLabels.length !== 0) {
       return t("activity.sentence.changed-labels");
     }
-  } else if (issueComment.type === IssueCommentType.STAGE_END && issueComment.event?.case === "stageEnd") {
+  } else if (
+    issueComment.type === IssueCommentType.STAGE_END &&
+    issueComment.event?.case === "stageEnd"
+  ) {
     const { stage } = issueComment.event.value;
     const stageEntity = findStageByName(issue.rolloutEntity, stage);
     const params: VerbTypeTarget = {
@@ -89,7 +98,10 @@ const renderActionSentence = () => {
       verb: t("activity.sentence.completed"),
     };
     return renderVerbTypeTarget(params);
-  } else if (issueComment.type === IssueCommentType.TASK_UPDATE && issueComment.event?.case === "taskUpdate") {
+  } else if (
+    issueComment.type === IssueCommentType.TASK_UPDATE &&
+    issueComment.event?.case === "taskUpdate"
+  ) {
     const { tasks, fromSheet, toSheet, toStatus } = issueComment.event.value;
 
     if (toStatus !== undefined) {
@@ -149,8 +161,12 @@ const renderActionSentence = () => {
         </Translation>
       );
     }
-  } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP && issueComment.event?.case === "taskPriorBackup") {
-    const { task, tables, originalLine, database, error } = issueComment.event.value;
+  } else if (
+    issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP &&
+    issueComment.event?.case === "taskPriorBackup"
+  ) {
+    const { task, tables, originalLine, database, error } =
+      issueComment.event.value;
     if (error) {
       return t("activity.sentence.failed-to-backup", { error });
     }

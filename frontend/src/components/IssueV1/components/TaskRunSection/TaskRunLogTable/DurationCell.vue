@@ -22,12 +22,12 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { humanizeDurationV1 } from "@/utils";
 import type { FlattenLogEntry } from "./common";
-import { create } from "@bufbuild/protobuf";
 
 const props = defineProps<{
   entry: FlattenLogEntry;
@@ -37,7 +37,7 @@ const toDuration = (startTime: Date, endTime: Date) => {
   const ms = endTime.getTime() - startTime.getTime();
   const seconds = Math.floor(ms / 1000);
   const nanos = (ms % 1000) * 1e6;
-  return create(DurationSchema,{
+  return create(DurationSchema, {
     seconds: BigInt(seconds),
     nanos,
   });

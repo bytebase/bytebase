@@ -78,11 +78,9 @@ import { useI18n } from "vue-i18n";
 import { useCurrentUserV1, useUserStore, useCurrentProjectV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { SYSTEM_BOT_EMAIL } from "@/types";
-import { ApprovalNode_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import {
-  Issue_Approver_Status,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalNode_Type } from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import type {
   ApprovalStep,
   Issue,
@@ -125,7 +123,8 @@ const status = computed((): "approved" | "rejected" | "current" | "pending" => {
     const prevApprover = props.issue.approvers[i];
     if (
       !prevApprover ||
-      (prevApprover.status !== Issue_Approver_Status.APPROVED && prevApprover.status !== Issue_Approver_Status.REJECTED)
+      (prevApprover.status !== Issue_Approver_Status.APPROVED &&
+        prevApprover.status !== Issue_Approver_Status.REJECTED)
     ) {
       return "pending";
     }

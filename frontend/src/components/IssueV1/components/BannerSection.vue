@@ -55,10 +55,7 @@ import {
   Issue_Approver_Status,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  activeTaskInRollout,
-  isDatabaseChangeRelatedIssue,
-} from "@/utils";
+import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
 import {
   useIssueContext,
   isUnfinishedResolvedTask as checkUnfinishedResolvedTask,

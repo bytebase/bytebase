@@ -87,7 +87,9 @@ const schemaVersion = computed(() => {
   if (
     (
       issue.value.planEntity?.specs?.filter(
-        (spec) => spec.config?.case === "changeDatabaseConfig" && spec.config.value?.release
+        (spec) =>
+          spec.config?.case === "changeDatabaseConfig" &&
+          spec.config.value?.release
       ) ?? []
     ).length > 0
   ) {

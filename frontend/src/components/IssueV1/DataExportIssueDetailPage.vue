@@ -64,9 +64,9 @@
 import { computed, ref } from "vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { useCurrentProjectV1 } from "@/store";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { SQLCheckSection } from "../Plan/components";
 import { providePlanSQLCheckContext } from "../Plan/components/SQLCheckSection";
 import { provideSidebarContext } from "../Plan/logic";

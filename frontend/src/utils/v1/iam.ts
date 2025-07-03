@@ -5,7 +5,6 @@ import { groupBindingPrefix, ALL_USERS_USER_EMAIL } from "@/types";
 import type { IamPolicy, Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { convertFromExpr } from "@/utils/issue/cel";
 
-
 export const isBindingPolicyExpired = (binding: Binding): boolean => {
   if (binding.parsedExpr) {
     const conditionExpr = convertFromExpr(binding.parsedExpr);

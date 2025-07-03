@@ -1,14 +1,14 @@
-import { defineStore } from "pinia";
-import { computed, unref, watchEffect } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { defineStore } from "pinia";
+import { computed, unref, watchEffect } from "vue";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-import { GetDatabaseMetadataRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 // Removed conversion imports as part of Bold Migration Strategy
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
+import { GetDatabaseMetadataRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import type {
   TableMetadata,
   DatabaseMetadata,
@@ -191,12 +191,9 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     const request = create(GetDatabaseMetadataRequestSchema, {
       name: metadataResourceName,
     });
-    const promise = databaseServiceClientConnect.getDatabaseMetadata(
-      request,
-      {
-        contextValues: createContextValues().set(silentContextKey, silent),
-      }
-    ); // Work directly with proto-es types
+    const promise = databaseServiceClientConnect.getDatabaseMetadata(request, {
+      contextValues: createContextValues().set(silentContextKey, silent),
+    }); // Work directly with proto-es types
     setRequestCache(metadataResourceName, promise);
     promise.then((res) => {
       mergeCache(res, true);
@@ -253,7 +250,9 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     schema?: string;
   }) => {
     const tableList = getTableList({ database, schema });
-    return tableList.find((t) => t.name === table) ?? create(TableMetadataSchema, {});
+    return (
+      tableList.find((t) => t.name === table) ?? create(TableMetadataSchema, {})
+    );
   };
 
   const getOrFetchTableMetadata = async ({

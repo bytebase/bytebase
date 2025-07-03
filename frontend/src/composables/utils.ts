@@ -1,10 +1,13 @@
+import { create as createProto } from "@bufbuild/protobuf";
+import { NullValue } from "@bufbuild/protobuf/wkt";
 import { orderBy } from "lodash-es";
 import { stringify } from "uuid";
-import { create as createProto } from "@bufbuild/protobuf";
 import type { SQLResultSetV1 } from "@/types";
-import { NullValue } from "@bufbuild/protobuf/wkt";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import { QueryRowSchema, RowValueSchema } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  QueryRowSchema,
+  RowValueSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 
 type NoSQLRowData = {
   key: string;
@@ -240,7 +243,10 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
     }).map((_) => "TEXT");
 
     for (const row of result.rows) {
-      if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
+      if (
+        row.values.length !== 1 ||
+        row.values[0].kind.case !== "stringValue"
+      ) {
         continue;
       }
       const data = JSON.parse(row.values[0].kind.value);

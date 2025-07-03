@@ -13,6 +13,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
 import { TrashIcon, InfoIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
@@ -48,7 +49,6 @@ import {
   isValidDatabaseName,
   type ComposedProject,
 } from "@/types";
-import { create } from "@bufbuild/protobuf";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto-es/v1/org_policy_service_pb";

@@ -429,6 +429,7 @@
 </template>
 
 <script setup lang="ts">
+import { create as createProto } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import {
   KeyIcon,
@@ -452,7 +453,6 @@ import {
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { create as createProto } from "@bufbuild/protobuf";
 import { BBAttention, BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -533,7 +533,9 @@ const configForLDAP = ref<LDAPIdentityProviderConfig>(
   })
 );
 const scopesStringOfConfig = ref<string>("");
-const fieldMapping = reactive<FieldMapping>(createProto(FieldMappingSchema, {}));
+const fieldMapping = reactive<FieldMapping>(
+  createProto(FieldMappingSchema, {})
+);
 
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const resourceIdValue = ref<string>("");
@@ -892,7 +894,8 @@ const handleTemplateSelect = (template: IdentityProviderTemplate) => {
       scopes: template.config.scopes || [],
       skipTlsVerify: template.config.skipTlsVerify || false,
       authStyle: template.config.authStyle || OAuth2AuthStyle.IN_PARAMS,
-      fieldMapping: template.config.fieldMapping || createProto(FieldMappingSchema, {}),
+      fieldMapping:
+        template.config.fieldMapping || createProto(FieldMappingSchema, {}),
     });
     configForOAuth2.value = newConfig;
 

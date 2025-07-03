@@ -296,6 +296,7 @@
   </Drawer>
 </template>
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
 import {
@@ -331,7 +332,6 @@ import {
   Algorithm_RangeMask_SliceSchema,
   Algorithm_InnerOuterMask_MaskType,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
 import type { MaskingType } from "./utils";
 import { getMaskingType } from "./utils";
 
@@ -415,10 +415,22 @@ watch(
   () => props.algorithm,
   (algorithm) => {
     state.maskingType = getMaskingType(algorithm) ?? "full-mask";
-    state.fullMask = algorithm?.mask?.case === "fullMask" ? algorithm.mask.value : create(FullMaskSchema, {});
-    state.rangeMask = algorithm?.mask?.case === "rangeMask" ? algorithm.mask.value : cloneDeep(defaultRangeMask.value);
-    state.md5Mask = algorithm?.mask?.case === "md5Mask" ? algorithm.mask.value : create(MD5MaskSchema, {});
-    state.innerOuterMask = algorithm?.mask?.case === "innerOuterMask" ? algorithm.mask.value : cloneDeep(defaultInnerOuterMask.value);
+    state.fullMask =
+      algorithm?.mask?.case === "fullMask"
+        ? algorithm.mask.value
+        : create(FullMaskSchema, {});
+    state.rangeMask =
+      algorithm?.mask?.case === "rangeMask"
+        ? algorithm.mask.value
+        : cloneDeep(defaultRangeMask.value);
+    state.md5Mask =
+      algorithm?.mask?.case === "md5Mask"
+        ? algorithm.mask.value
+        : create(MD5MaskSchema, {});
+    state.innerOuterMask =
+      algorithm?.mask?.case === "innerOuterMask"
+        ? algorithm.mask.value
+        : cloneDeep(defaultInnerOuterMask.value);
   }
 );
 

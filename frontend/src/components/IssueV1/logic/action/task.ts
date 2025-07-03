@@ -1,3 +1,5 @@
+import { head } from "lodash-es";
+import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
@@ -10,8 +12,6 @@ import {
   hasWorkspacePermissionV2,
   isUserIncludedInList,
 } from "@/utils";
-import { head } from "lodash-es";
-import type { ButtonProps } from "naive-ui";
 import { projectOfIssue } from "../utils";
 
 export type TaskRolloutAction =

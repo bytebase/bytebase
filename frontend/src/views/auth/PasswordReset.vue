@@ -34,6 +34,8 @@
 </template>
 
 <script lang="ts" setup>
+import { create as createProto } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -46,11 +48,9 @@ import {
   useAuthStore,
   useCurrentUserV1,
 } from "@/store";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { create as createProto } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 
 interface LocalState {
   password: string;
@@ -108,7 +108,7 @@ const onConfirm = async () => {
     createProto(UpdateUserRequestSchema, {
       user: patch,
       updateMask: createProto(FieldMaskSchema, {
-        paths: ["password"]
+        paths: ["password"],
       }),
     })
   );

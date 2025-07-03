@@ -27,6 +27,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Code } from "@connectrpc/connect";
 import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
@@ -38,7 +39,6 @@ import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLResultViewContext } from "../context";
 import AdviceItem from "./AdviceItem.vue";
 import PostgresError from "./PostgresError.vue";
-import { Code } from "@connectrpc/connect";
 
 const props = defineProps<{
   error: string | undefined;

@@ -80,6 +80,9 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import type { ConnectError } from "@connectrpc/connect";
 import * as QRCode from "qrcode";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -92,10 +95,7 @@ import { StepTab } from "@/components/v2";
 import { AUTH_2FA_SETUP_MODULE } from "@/router/auth";
 import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
-import { create } from "@bufbuild/protobuf";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import type { ConnectError } from "@connectrpc/connect";
 
 const issuerName = "Bytebase";
 
@@ -154,7 +154,7 @@ const regenerateTempMfaSecret = async () => {
         name: currentUser.value.name,
       },
       updateMask: create(FieldMaskSchema, {
-        paths: []
+        paths: [],
       }),
       regenerateTempMfaSecret: true,
     })
@@ -169,8 +169,8 @@ const verifyTOPCode = async () => {
           name: currentUser.value.name,
         },
         updateMask: create(FieldMaskSchema, {
-        paths: []
-      }),
+          paths: [],
+        }),
         otpCode: state.otpCode,
       })
     );
@@ -213,7 +213,7 @@ const tryFinishSetup = async () => {
         mfaEnabled: true,
       },
       updateMask: create(FieldMaskSchema, {
-        paths: ["mfa_enabled"]
+        paths: ["mfa_enabled"],
       }),
     })
   );

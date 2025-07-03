@@ -1,7 +1,7 @@
-import { defineStore } from "pinia";
-import { reactive } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { createContextValues, Code } from "@connectrpc/connect";
+import { defineStore } from "pinia";
+import { reactive } from "vue";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import { ignoredCodesContextKey } from "@/grpcweb/context-key";
 import {
@@ -24,12 +24,12 @@ export const useDatabaseSecretStore = defineStore("database-secret", () => {
     const request = create(ListSecretsRequestSchema, {
       parent,
     });
-    const response = await databaseServiceClientConnect.listSecrets(
-      request,
-      {
-        contextValues: createContextValues().set(ignoredCodesContextKey, [Code.NotFound, Code.PermissionDenied]),
-      }
-    );
+    const response = await databaseServiceClientConnect.listSecrets(request, {
+      contextValues: createContextValues().set(ignoredCodesContextKey, [
+        Code.NotFound,
+        Code.PermissionDenied,
+      ]),
+    });
     const secrets = response.secrets; // Work directly with proto-es types
     secretMapByDatabase.set(parent, secrets);
     return secrets;
@@ -46,7 +46,8 @@ export const useDatabaseSecretStore = defineStore("database-secret", () => {
       updateMask: { paths: updateMask },
       allowMissing,
     });
-    const updatedSecret = await databaseServiceClientConnect.updateSecret(request);
+    const updatedSecret =
+      await databaseServiceClientConnect.updateSecret(request);
     if (secretMapByDatabase.has(database)) {
       const list = secretMapByDatabase.get(database) ?? [];
       const index = list.findIndex((s) => s.name === secret.name);

@@ -239,6 +239,7 @@
 </template>
 
 <script setup lang="ts">
+import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import {
   ArrowRightIcon,
@@ -251,7 +252,6 @@ import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { create as createProto } from "@bufbuild/protobuf";
 import { BBTextField, BBButtonConfirm } from "@/bbkit";
 import { ResourceIdField } from "@/components/v2";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/router/dashboard/workspaceRoutes";
@@ -326,7 +326,9 @@ const configForLDAP = ref<LDAPIdentityProviderConfig>(
   )
 );
 const scopesStringOfConfig = ref<string>("");
-const fieldMapping = reactive<FieldMapping>(createProto(FieldMappingSchema, {}));
+const fieldMapping = reactive<FieldMapping>(
+  createProto(FieldMappingSchema, {})
+);
 
 // Computed
 const resourceId = computed(() => {
@@ -477,36 +479,23 @@ const initializeFromProps = () => {
       OAuth2IdentityProviderConfigSchema,
       oauth2Config
     );
-    Object.assign(
-      fieldMapping,
-      oauth2Config.fieldMapping || {}
-    );
-    scopesStringOfConfig.value = (
-      oauth2Config.scopes || []
-    ).join(" ");
+    Object.assign(fieldMapping, oauth2Config.fieldMapping || {});
+    scopesStringOfConfig.value = (oauth2Config.scopes || []).join(" ");
   } else if (props.identityProvider.config?.config?.case === "oidcConfig") {
     const oidcConfig = props.identityProvider.config.config.value;
     configForOIDC.value = createProto(
       OIDCIdentityProviderConfigSchema,
       oidcConfig
     );
-    Object.assign(
-      fieldMapping,
-      oidcConfig.fieldMapping || {}
-    );
-    scopesStringOfConfig.value = (
-      oidcConfig.scopes || []
-    ).join(" ");
+    Object.assign(fieldMapping, oidcConfig.fieldMapping || {});
+    scopesStringOfConfig.value = (oidcConfig.scopes || []).join(" ");
   } else if (props.identityProvider.config?.config?.case === "ldapConfig") {
     const ldapConfig = props.identityProvider.config.config.value;
     configForLDAP.value = createProto(
       LDAPIdentityProviderConfigSchema,
       ldapConfig
     );
-    Object.assign(
-      fieldMapping,
-      ldapConfig.fieldMapping || {}
-    );
+    Object.assign(fieldMapping, ldapConfig.fieldMapping || {});
   }
 };
 

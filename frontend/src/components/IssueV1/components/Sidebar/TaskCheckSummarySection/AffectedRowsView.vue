@@ -62,21 +62,20 @@ const affectedTaskMap = computed(() => {
   props.taskSummaryReportMap.forEach((planCheckRun, task) => {
     if (
       planCheckRun.results.every(
-        (result) => result.report?.case !== "sqlSummaryReport" || result.report.value.affectedRows === undefined
+        (result) =>
+          result.report?.case !== "sqlSummaryReport" ||
+          result.report.value.affectedRows === undefined
       )
     ) {
       return;
     }
 
-    const count = planCheckRun.results.reduce(
-      (acc, result) => {
-        if (result.report?.case === "sqlSummaryReport") {
-          return acc + (result.report.value.affectedRows || 0);
-        }
-        return acc;
-      },
-      0
-    );
+    const count = planCheckRun.results.reduce((acc, result) => {
+      if (result.report?.case === "sqlSummaryReport") {
+        return acc + (result.report.value.affectedRows || 0);
+      }
+      return acc;
+    }, 0);
     tempMap.set(task, count);
   });
   return new Map(Array.from(tempMap.entries()).sort((a, b) => b[1] - a[1]));
@@ -96,20 +95,19 @@ const summaryReportResults = computed(() =>
 );
 
 const affectedRows = computed(() =>
-  summaryReportResults.value.reduce(
-    (acc, result) => {
-      if (result.report?.case === "sqlSummaryReport") {
-        return acc + (result.report.value.affectedRows || 0);
-      }
-      return acc;
-    },
-    0
-  )
+  summaryReportResults.value.reduce((acc, result) => {
+    if (result.report?.case === "sqlSummaryReport") {
+      return acc + (result.report.value.affectedRows || 0);
+    }
+    return acc;
+  }, 0)
 );
 
 const shouldShow = computed(() =>
   summaryReportResults.value.some(
-    (result) => result.report?.case === "sqlSummaryReport" && result.report.value.affectedRows !== undefined
+    (result) =>
+      result.report?.case === "sqlSummaryReport" &&
+      result.report.value.affectedRows !== undefined
   )
 );
 

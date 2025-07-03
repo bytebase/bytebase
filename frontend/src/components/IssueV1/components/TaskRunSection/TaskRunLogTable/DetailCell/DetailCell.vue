@@ -24,9 +24,9 @@ import AffectedRowsCell from "./AffectedRowsCell.vue";
 import DatabaseSyncCell from "./DatabaseSyncCell.vue";
 import ErrorCell from "./ErrorCell.vue";
 import PriorBackupCell from "./PriorBackupCell.vue";
+import RetryInfoCell from "./RetryInfoCell.vue";
 import StatusUpdateCell from "./StatusUpdateCell.vue";
 import TransactionControlCell from "./TransactionControlCell.vue";
-import RetryInfoCell from "./RetryInfoCell.vue";
 
 type View =
   | "N/A"
@@ -51,7 +51,7 @@ const view = computed((): View => {
     transactionControl,
     databaseSync,
     priorBackup,
-    retryInfo, 
+    retryInfo,
   } = props.entry;
   if (type === TaskRunLogEntry_Type.COMMAND_EXECUTE && commandExecute) {
     if (!commandExecute.raw.response) {

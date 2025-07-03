@@ -12,13 +12,13 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { create } from "@bufbuild/protobuf";
 import { issueServiceClientConnect } from "@/grpcweb";
-import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { isValidIssueName } from "@/utils";
 
 type DescriptionType = "TEXT" | "ISSUE";

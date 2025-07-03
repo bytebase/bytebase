@@ -16,8 +16,8 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { featureToRef } from "@/store";
-import type { Environment } from "@/types/v1/environment";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import type { Environment } from "@/types/v1/environment";
 
 const props = withDefaults(
   defineProps<{
@@ -37,6 +37,6 @@ const enabled = computed((): boolean => {
   if (!hasEnvironmentTierPolicyFeature.value) {
     return false;
   }
-  return props.environment?.tags?.protected === "protected"
+  return props.environment?.tags?.protected === "protected";
 });
 </script>

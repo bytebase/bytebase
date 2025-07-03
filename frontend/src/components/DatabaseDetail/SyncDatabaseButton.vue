@@ -12,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+import { ConnectError } from "@connectrpc/connect";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -23,7 +24,6 @@ import {
 import { isValidDatabaseName } from "@/types";
 import type { ComposedDatabase } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
-import { ConnectError } from "@connectrpc/connect";
 
 const props = defineProps<{
   text: boolean;

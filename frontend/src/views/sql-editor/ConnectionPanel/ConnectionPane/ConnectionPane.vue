@@ -206,9 +206,9 @@ import {
   getDataSourceTypeI18n,
   isValidProjectName,
 } from "@/types";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   findAncestor,
   isDescendantOf,
@@ -555,7 +555,9 @@ const selectedEngines = computed(() => {
     .map((scope) => {
       // Convert from string engine name to proto-es enum value
       const engineName = scope.value.toUpperCase();
-      return Engine[engineName as keyof typeof Engine] ?? Engine.ENGINE_UNSPECIFIED;
+      return (
+        Engine[engineName as keyof typeof Engine] ?? Engine.ENGINE_UNSPECIFIED
+      );
     });
 });
 

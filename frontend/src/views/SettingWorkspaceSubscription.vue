@@ -217,8 +217,12 @@ const userLimit = computed((): string => {
 const workspaceIdField = ref<HTMLInputElement | null>(null);
 
 const workspaceId = computed(() => {
-  const setting = settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID);
-  return setting?.value?.value?.case === "stringValue" ? setting.value.value.value : "";
+  const setting = settingV1Store.getSettingByName(
+    Setting_SettingName.WORKSPACE_ID
+  );
+  return setting?.value?.value?.case === "stringValue"
+    ? setting.value.value.value
+    : "";
 });
 
 const selectWorkspaceId = () => {

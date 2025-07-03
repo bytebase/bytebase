@@ -1,22 +1,20 @@
-import { defineStore } from "pinia";
-import { computed, unref, watchEffect } from "vue";
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { defineStore } from "pinia";
+import { computed, unref, watchEffect } from "vue";
 import { databaseCatalogServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
-import type {
-  DatabaseCatalog,
-} from "@/types/proto-es/v1/database_catalog_service_pb";
-import { 
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
+import {
   GetDatabaseCatalogRequestSchema,
   UpdateDatabaseCatalogRequestSchema,
   DatabaseCatalogSchema,
   TableCatalogSchema,
   TableCatalog_ColumnsSchema,
-  ColumnCatalogSchema
+  ColumnCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useDatabaseV1Store } from "./database";
@@ -73,12 +71,14 @@ export const useDatabaseCatalogV1Store = defineStore(
       const request = create(GetDatabaseCatalogRequestSchema, {
         name: catalogResourceName,
       });
-      const promise = databaseCatalogServiceClientConnect.getDatabaseCatalog(request, {
-        contextValues: createContextValues().set(silentContextKey, silent),
-      }).then((res) => {
-        setCache(res);
-        return res
-      });
+      const promise = databaseCatalogServiceClientConnect
+        .getDatabaseCatalog(request, {
+          contextValues: createContextValues().set(silentContextKey, silent),
+        })
+        .then((res) => {
+          setCache(res);
+          return res;
+        });
 
       return promise;
     };
@@ -87,7 +87,10 @@ export const useDatabaseCatalogV1Store = defineStore(
       const request = create(UpdateDatabaseCatalogRequestSchema, {
         catalog: catalog,
       });
-      const response = await databaseCatalogServiceClientConnect.updateDatabaseCatalog(request);
+      const response =
+        await databaseCatalogServiceClientConnect.updateDatabaseCatalog(
+          request
+        );
       setCache(response);
       return response;
     };
@@ -161,7 +164,10 @@ export const getColumnCatalog = (
   column: string
 ) => {
   const tableCatalog = getTableCatalog(catalog, schema, table);
-  const columns = tableCatalog.kind?.case === "columns" ? tableCatalog.kind.value.columns : [];
+  const columns =
+    tableCatalog.kind?.case === "columns"
+      ? tableCatalog.kind.value.columns
+      : [];
   return (
     columns.find((c: any) => c.name === column) ??
     create(ColumnCatalogSchema, {

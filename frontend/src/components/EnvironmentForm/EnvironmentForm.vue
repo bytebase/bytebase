@@ -9,6 +9,10 @@
 </template>
 
 <script lang="ts" setup>
+import { useEventListener } from "@vueuse/core";
+import { toRef } from "vue";
+import { useI18n } from "vue-i18n";
+import { onBeforeRouteLeave } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { hasFeature } from "@/store";
 import { VirtualRoleType } from "@/types";
@@ -16,10 +20,6 @@ import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { useEventListener } from "@vueuse/core";
-import { toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import { onBeforeRouteLeave } from "vue-router";
 import { FeatureModal } from "../FeatureGuard";
 import { provideEnvironmentFormContext } from "./context";
 
@@ -88,7 +88,10 @@ useEmitteryEventListener(events, "create", (params) => {
       return;
     }
   }
-  const rp = rolloutPolicy.policy.case === "rolloutPolicy" ? rolloutPolicy.policy.value : undefined;
+  const rp =
+    rolloutPolicy.policy.case === "rolloutPolicy"
+      ? rolloutPolicy.policy.value
+      : undefined;
   if (rp?.automatic === false) {
     if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
       if (!hasFeature(PlanFeature.FEATURE_APPROVAL_WORKFLOW)) {
@@ -114,7 +117,8 @@ useEmitteryEventListener(events, "update", (environment) => {
 useEmitteryEventListener(events, "update-policy", (params) => {
   const { policyType, policy } = params;
   if (policyType === PolicyType.ROLLOUT_POLICY) {
-    const rp = policy.policy.case === "rolloutPolicy" ? policy.policy.value : undefined;
+    const rp =
+      policy.policy.case === "rolloutPolicy" ? policy.policy.value : undefined;
     if (rp?.automatic === false) {
       if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
         if (!hasFeature(PlanFeature.FEATURE_APPROVAL_WORKFLOW)) {

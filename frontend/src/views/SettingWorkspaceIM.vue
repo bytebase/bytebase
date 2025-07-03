@@ -48,6 +48,8 @@
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NTabs, NTabPane, NButton } from "naive-ui";
 import { computed, watch, reactive } from "vue";
@@ -68,8 +70,6 @@ import {
   Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 
 interface LocalState {
   selectedTab: Webhook_Type;
@@ -438,27 +438,37 @@ const onSave = async () => {
     switch (state.selectedTab) {
       case Webhook_Type.SLACK:
         if (setting.value?.value?.case === "appImSettingValue") {
-          state.setting.slack = setting.value.value.value.slack ?? create(AppIMSetting_SlackSchema, {});
+          state.setting.slack =
+            setting.value.value.value.slack ??
+            create(AppIMSetting_SlackSchema, {});
         }
         break;
       case Webhook_Type.FEISHU:
         if (setting.value?.value?.case === "appImSettingValue") {
-          state.setting.feishu = setting.value.value.value.feishu ?? create(AppIMSetting_FeishuSchema, {});
+          state.setting.feishu =
+            setting.value.value.value.feishu ??
+            create(AppIMSetting_FeishuSchema, {});
         }
         break;
       case Webhook_Type.WECOM:
         if (setting.value?.value?.case === "appImSettingValue") {
-          state.setting.wecom = setting.value.value.value.wecom ?? create(AppIMSetting_WecomSchema, {});
+          state.setting.wecom =
+            setting.value.value.value.wecom ??
+            create(AppIMSetting_WecomSchema, {});
         }
         break;
       case Webhook_Type.LARK:
         if (setting.value?.value?.case === "appImSettingValue") {
-          state.setting.lark = setting.value.value.value.lark ?? create(AppIMSetting_LarkSchema, {});
+          state.setting.lark =
+            setting.value.value.value.lark ??
+            create(AppIMSetting_LarkSchema, {});
         }
         break;
       case Webhook_Type.DINGTALK:
         if (setting.value?.value?.case === "appImSettingValue") {
-          state.setting.dingtalk = setting.value.value.value.dingtalk ?? create(AppIMSetting_DingTalkSchema, {});
+          state.setting.dingtalk =
+            setting.value.value.value.dingtalk ??
+            create(AppIMSetting_DingTalkSchema, {});
         }
         break;
     }

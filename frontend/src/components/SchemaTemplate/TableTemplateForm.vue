@@ -177,6 +177,13 @@
 </template>
 
 <script lang="ts" setup>
+import { create as createProto } from "@bufbuild/protobuf";
+import { cloneDeep, isEqual, pull } from "lodash-es";
+import { PencilIcon, PlusIcon, XIcon } from "lucide-vue-next";
+import type { SelectOption } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
+import { computed, reactive, ref, toRef } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   TableColumnEditor,
   provideSchemaEditorContext,
@@ -196,9 +203,9 @@ import {
 import { pushNotification, useSettingV1Store } from "@/store";
 import { unknownProject } from "@/types";
 import { TableCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { 
+import {
   ColumnMetadataSchema,
-  type ColumnMetadata 
+  type ColumnMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { type ColumnMetadata as OldColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -208,15 +215,8 @@ import {
   type SchemaTemplateSetting_TableTemplate,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { create as createProto } from "@bufbuild/protobuf";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import { cloneDeep, isEqual, pull } from "lodash-es";
-import { PencilIcon, PlusIcon, XIcon } from "lucide-vue-next";
-import type { SelectOption } from "naive-ui";
-import { NButton, NInput } from "naive-ui";
-import { computed, reactive, ref, toRef } from "vue";
-import { useI18n } from "vue-i18n";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
 import {
@@ -349,7 +349,7 @@ const submitDisabled = computed(() => {
 const onSubmit = async () => {
   const template = rebuildTableTemplateFromMetadata({
     ...editing.value,
-    tableCatalog: tableCatalog.value 
+    tableCatalog: tableCatalog.value
       ? tableCatalog.value
       : createProto(TableCatalogSchema, {}),
   });
@@ -357,9 +357,10 @@ const onSubmit = async () => {
     Setting_SettingName.SCHEMA_TEMPLATE
   );
 
-  const existingValue = setting?.value?.value?.case === "schemaTemplateSettingValue" 
-    ? setting.value.value.value 
-    : undefined;
+  const existingValue =
+    setting?.value?.value?.case === "schemaTemplateSettingValue"
+      ? setting.value.value.value
+      : undefined;
   const settingValue = createProto(SchemaTemplateSettingSchema, {
     columnTypes: existingValue?.columnTypes ?? [],
     fieldTemplates: existingValue?.fieldTemplates ?? [],

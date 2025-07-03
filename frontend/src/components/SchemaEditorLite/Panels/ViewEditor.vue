@@ -19,6 +19,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
@@ -27,11 +28,8 @@ import type {
   ViewMetadata,
   SchemaMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import {
-  DatabaseMetadataSchema,
-} from "@/types/proto-es/v1/database_service_pb";
+import { DatabaseMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
-import { create } from "@bufbuild/protobuf";
 import type { EditStatus } from "../types";
 import CommonCodeEditor from "./CommonCodeEditor.vue";
 import PreviewPane from "./PreviewPane.vue";

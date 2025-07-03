@@ -82,7 +82,11 @@ import { InstanceV1EngineIcon, CopyButton } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { getDateForPbTimestampProtoEs, unknownTask } from "@/types";
-import type { Task, TaskRun, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  Task,
+  TaskRun,
+  Rollout,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import {
   ListTaskRunsRequestSchema,
   GetRolloutRequestSchema,

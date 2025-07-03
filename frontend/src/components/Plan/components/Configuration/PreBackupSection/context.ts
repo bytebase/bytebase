@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import Emittery from "emittery";
 import { cloneDeep } from "lodash-es";
 import {
@@ -9,13 +10,12 @@ import {
   type Ref,
 } from "vue";
 import { isDatabaseChangeSpec, targetsForSpec } from "@/components/Plan/logic";
-import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, type ComposedProject } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus, type Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan,
@@ -72,7 +72,8 @@ export const providePreBackupSettingContext = (refs: {
     if (
       !selectedSpec.value ||
       selectedSpec.value.config?.case !== "changeDatabaseConfig" ||
-      selectedSpec.value.config.value.type !== Plan_ChangeDatabaseConfig_Type.DATA
+      selectedSpec.value.config.value.type !==
+        Plan_ChangeDatabaseConfig_Type.DATA
     ) {
       return false;
     }
@@ -131,9 +132,7 @@ export const providePreBackupSettingContext = (refs: {
   });
 
   const enabled = computed((): boolean => {
-    if (
-      selectedSpec.value?.config?.case === "changeDatabaseConfig"
-    ) {
+    if (selectedSpec.value?.config?.case === "changeDatabaseConfig") {
       return Boolean(selectedSpec.value.config.value.enablePriorBackup);
     }
     return false;

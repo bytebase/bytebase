@@ -175,6 +175,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import type { ConnectError } from "@connectrpc/connect";
 import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
 import { NButton, NCard, NTabPane, NTabs } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -196,7 +197,6 @@ import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 import { openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
-import type { ConnectError } from "@connectrpc/connect";
 
 const props = withDefaults(
   defineProps<{

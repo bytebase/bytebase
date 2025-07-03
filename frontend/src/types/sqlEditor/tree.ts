@@ -27,7 +27,7 @@ export type LabelTarget = {
 
 export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
   T extends "instance"
-    ? Omit<InstanceResource, '$typeName'>
+    ? Omit<InstanceResource, "$typeName">
     : T extends "environment"
       ? Environment
       : T extends "database"

@@ -18,13 +18,13 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton } from "naive-ui";
 import { onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
-import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import RecoveryCodesView from "./RecoveryCodesView.vue";
 
 interface LocalState {
@@ -60,7 +60,7 @@ const regenerateTempMfaSecret = async () => {
         name: currentUser.value.name,
       },
       updateMask: create(FieldMaskSchema, {
-        paths: []
+        paths: [],
       }),
       regenerateTempMfaSecret: true,
     })
@@ -74,7 +74,7 @@ const regenerateRecoveryCodes = async () => {
         name: currentUser.value.name,
       },
       updateMask: create(FieldMaskSchema, {
-        paths: []
+        paths: [],
       }),
       regenerateRecoveryCodes: true,
     })

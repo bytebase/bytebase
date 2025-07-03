@@ -16,6 +16,7 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { NSwitch, NTooltip } from "naive-ui";
 import { computed } from "vue";
@@ -23,10 +24,9 @@ import { useI18n } from "vue-i18n";
 import { targetsForSpec } from "@/components/Plan/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
-import { create } from "@bufbuild/protobuf";
 import { planServiceClientConnect } from "@/grpcweb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { pushNotification } from "@/store";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import { allowGhostForDatabase } from "./common";
 import { useGhostSettingContext } from "./context";
@@ -128,7 +128,11 @@ const toggleChecked = async (on: boolean) => {
   }
 
   if (isCreating.value) {
-    if (!selectedSpec.value || selectedSpec.value.config?.case !== "changeDatabaseConfig") return;
+    if (
+      !selectedSpec.value ||
+      selectedSpec.value.config?.case !== "changeDatabaseConfig"
+    )
+      return;
     selectedSpec.value.config.value.type = on
       ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;

@@ -1,13 +1,13 @@
+import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { databaseServiceClientConnect } from "@/grpcweb";
-import { 
+import { useCache } from "@/store/cache";
+import { UNKNOWN_ID } from "@/types";
+import {
   ListChangelogsRequestSchema,
   GetChangelogRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { useCache } from "@/store/cache";
-import { UNKNOWN_ID } from "@/types";
 import {
   ChangelogView,
   type GetChangelogRequest,
@@ -29,10 +29,7 @@ export const useChangelogStore = defineStore("changelog", () => {
   ) => {
     changelogsMapByDatabase.set(parent, changelogs);
     changelogs.forEach((changelog) => {
-      cache.setEntity(
-        [changelog.name, ChangelogView.BASIC],
-        changelog
-      );
+      cache.setEntity([changelog.name, ChangelogView.BASIC], changelog);
     });
   };
 

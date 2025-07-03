@@ -41,12 +41,12 @@ import {
   usePolicyByParentAndType,
   usePolicyV1Store,
 } from "@/store";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   PolicyResourceType,
   PolicyType,
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 

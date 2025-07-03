@@ -47,9 +47,7 @@
         {{
           isUnfinishedResolvedIssue
             ? $t("issue.unfinished-resolved-issue-tips")
-            : $t(
-                `issue.status.${IssueStatus[props.issueStatus].toLowerCase()}`
-              )
+            : $t(`issue.status.${IssueStatus[props.issueStatus].toLowerCase()}`)
         }}
       </div>
     </template>

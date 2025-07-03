@@ -48,12 +48,15 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep, uniq } from "lodash-es";
 import { NCheckbox } from "naive-ui";
 import { ref, watch, computed } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { VirtualRoleType } from "@/types";
-import type { Policy, RolloutPolicy } from "@/types/proto-es/v1/org_policy_service_pb";
+import type {
+  Policy,
+  RolloutPolicy,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { RolloutPolicySchema } from "@/types/proto-es/v1/org_policy_service_pb";
 import { RoleSelect } from "../v2";
 
@@ -128,7 +131,10 @@ const updateRoles = (roles: string[]) => {
 };
 
 watch(
-  () => props.policy.policy?.case === "rolloutPolicy" ? props.policy.policy.value : undefined,
+  () =>
+    props.policy.policy?.case === "rolloutPolicy"
+      ? props.policy.policy.value
+      : undefined,
   (p) => {
     if (p) {
       rolloutPolicy.value = cloneDeep(p);

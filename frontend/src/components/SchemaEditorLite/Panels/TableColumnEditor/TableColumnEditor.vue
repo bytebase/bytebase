@@ -56,24 +56,22 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { useElementSize } from "@vueuse/core";
 import { pick } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
-import { create } from "@bufbuild/protobuf";
 import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, hasFeature } from "@/store";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { ColumnCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -81,6 +79,8 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
 import type { EditStatus } from "../../types";
@@ -239,7 +239,9 @@ const markColumnStatus = (
 };
 
 const semanticTypeList = computed(() => {
-  const setting = settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SEMANTIC_TYPES
+  );
   if (setting?.value?.value?.case === "semanticTypeSettingValue") {
     return setting.value.value.value.types ?? [];
   }
@@ -627,7 +629,9 @@ const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
 };
 
 const schemaTemplateColumnTypes = computed(() => {
-  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SCHEMA_TEMPLATE
+  );
   if (setting?.value?.value?.case === "schemaTemplateSettingValue") {
     const columnTypes = setting.value.value.value.columnTypes;
     if (columnTypes && columnTypes.length > 0) {

@@ -1,7 +1,11 @@
 import { computed, type Ref } from "vue";
-import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { instanceV1HasExtraParameters, instanceV1HasSSH, instanceV1HasSSL } from "@/utils";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  instanceV1HasExtraParameters,
+  instanceV1HasSSH,
+  instanceV1HasSSL,
+} from "@/utils";
 import type { BasicInfo, EditDataSource } from "./common";
 import { defaultPortForEngine } from "./constants";
 
@@ -76,7 +80,7 @@ export const useInstanceSpecs = (
     showAuthenticationDatabase,
     hasReadonlyReplicaHost,
     hasReadonlyReplicaPort,
-    hasExtraParameters
+    hasExtraParameters,
   };
 };
 

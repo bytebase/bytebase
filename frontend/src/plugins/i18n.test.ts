@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import { TEMPLATE_LIST_V2, getRuleLocalizationKey } from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 
 describe("Test i18n messages", () => {
   for (const keyA of Object.keys(mergedLocalMessage)) {
@@ -48,8 +48,14 @@ describe("Test i18n for SQL review", () => {
         test(`check i18n for rule ${rule.type}`, () => {
           const key = getRuleLocalizationKey(rule.type);
           expect(!!i18nForSQLReview["rule"][key], "rule-key").toBe(true);
-          expect(!!i18nForSQLReview["rule"][key]["title"], "rule-key-title").toBe(true);
-          expect(!!i18nForSQLReview["rule"][key]["description"], "rule-key-description").toBe(true);
+          expect(
+            !!i18nForSQLReview["rule"][key]["title"],
+            "rule-key-title"
+          ).toBe(true);
+          expect(
+            !!i18nForSQLReview["rule"][key]["description"],
+            "rule-key-description"
+          ).toBe(true);
           expect(
             !!i18nForSQLReview["category"][rule.category.toLowerCase()],
             "category-rule.category"
@@ -58,20 +64,22 @@ describe("Test i18n for SQL review", () => {
             !!i18nForSQLReview["level"][
               sqlReviewRuleLevelToString(rule.level).toLowerCase()
             ],
-            'level-rule.level'
+            "level-rule.level"
           ).toBe(true);
 
           expect(
-            !!i18nForSQLReview["engine"][
-              Engine[rule.engine].toLowerCase()
-            ],
-            'engine.rule-engine'
+            !!i18nForSQLReview["engine"][Engine[rule.engine].toLowerCase()],
+            "engine.rule-engine"
           ).toBe(true);
 
           for (const component of rule.componentList) {
-            expect(!!i18nForSQLReview["rule"][key]["component"], 'rule-key-component').toBe(true);
             expect(
-              !!i18nForSQLReview["rule"][key]["component"][component.key], 'rule-key-component-component.key'
+              !!i18nForSQLReview["rule"][key]["component"],
+              "rule-key-component"
+            ).toBe(true);
+            expect(
+              !!i18nForSQLReview["rule"][key]["component"][component.key],
+              "rule-key-component-component.key"
             ).toBe(true);
           }
         });

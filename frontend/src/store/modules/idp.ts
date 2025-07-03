@@ -1,5 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { isEqual, isUndefined } from "lodash-es";
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
 import { identityProviderServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
@@ -10,9 +13,6 @@ import {
   ListIdentityProvidersRequestSchema,
   UpdateIdentityProviderRequestSchema,
 } from "@/types/proto-es/v1/idp_service_pb";
-import { isEqual, isUndefined } from "lodash-es";
-import { defineStore } from "pinia";
-import { ref, computed } from "vue";
 
 export const useIdentityProviderStore = defineStore("idp", () => {
   const identityProviderMapByName = ref(new Map<string, IdentityProvider>());
@@ -23,7 +23,8 @@ export const useIdentityProviderStore = defineStore("idp", () => {
 
   const fetchIdentityProviderList = async () => {
     const request = create(ListIdentityProvidersRequestSchema, {});
-    const response = await identityProviderServiceClientConnect.listIdentityProviders(request);
+    const response =
+      await identityProviderServiceClientConnect.listIdentityProviders(request);
     for (const identityProvider of response.identityProviders) {
       identityProviderMapByName.value.set(
         identityProvider.name,
@@ -33,16 +34,19 @@ export const useIdentityProviderStore = defineStore("idp", () => {
     return response.identityProviders;
   };
 
-  const getOrFetchIdentityProviderByName = async (name: string, silent = false) => {
+  const getOrFetchIdentityProviderByName = async (
+    name: string,
+    silent = false
+  ) => {
     const cachedData = identityProviderMapByName.value.get(name);
     if (cachedData) {
       return cachedData;
     }
     const request = create(GetIdentityProviderRequestSchema, { name });
-    const identityProvider = await identityProviderServiceClientConnect.getIdentityProvider(
-      request,
-      { contextValues: createContextValues().set(silentContextKey, silent) }
-    );
+    const identityProvider =
+      await identityProviderServiceClientConnect.getIdentityProvider(request, {
+        contextValues: createContextValues().set(silentContextKey, silent),
+      });
     identityProviderMapByName.value.set(
       identityProvider.name,
       identityProvider
@@ -59,7 +63,10 @@ export const useIdentityProviderStore = defineStore("idp", () => {
       identityProvider: createProvider,
       identityProviderId: createProvider.name,
     });
-    const identityProvider = await identityProviderServiceClientConnect.createIdentityProvider(request);
+    const identityProvider =
+      await identityProviderServiceClientConnect.createIdentityProvider(
+        request
+      );
     identityProviderMapByName.value.set(
       identityProvider.name,
       identityProvider
@@ -78,9 +85,14 @@ export const useIdentityProviderStore = defineStore("idp", () => {
     const fullProvider = { ...originData, ...update } as IdentityProvider;
     const request = create(UpdateIdentityProviderRequestSchema, {
       identityProvider: fullProvider,
-      updateMask: { paths: getUpdateMaskFromIdentityProviders(originData, update) },
+      updateMask: {
+        paths: getUpdateMaskFromIdentityProviders(originData, update),
+      },
     });
-    const identityProvider = await identityProviderServiceClientConnect.updateIdentityProvider(request);
+    const identityProvider =
+      await identityProviderServiceClientConnect.updateIdentityProvider(
+        request
+      );
     identityProviderMapByName.value.set(
       identityProvider.name,
       identityProvider

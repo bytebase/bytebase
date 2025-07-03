@@ -134,11 +134,11 @@ import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import { getRuleLocalization, ruleTemplateMapV2 } from "@/types";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CheckReleaseRequestSchema,
   ReleaseFileType,
 } from "@/types/proto-es/v1/release_service_pb";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Release_File_ChangeType,
   type CheckReleaseResponse_CheckResult,
@@ -162,7 +162,10 @@ const checkResults = ref<CheckReleaseResponse_CheckResult[] | undefined>(
 
 const statement = computed(() => {
   if (!selectedSpec.value) return "";
-  const config = selectedSpec.value.config?.case === "changeDatabaseConfig" ? selectedSpec.value.config.value : undefined;
+  const config =
+    selectedSpec.value.config?.case === "changeDatabaseConfig"
+      ? selectedSpec.value.config.value
+      : undefined;
   if (!config) return "";
   const sheet = getLocalSheetByName(config.sheet);
   return getSheetStatement(sheet);
@@ -234,7 +237,10 @@ const drawerAdvices = computed(() => {
 const runChecks = async () => {
   if (!plan.value.name || !selectedSpec.value) return;
 
-  const config = selectedSpec.value.config?.case === "changeDatabaseConfig" ? selectedSpec.value.config.value : undefined;
+  const config =
+    selectedSpec.value.config?.case === "changeDatabaseConfig"
+      ? selectedSpec.value.config.value
+      : undefined;
   if (!config) return;
 
   isRunningChecks.value = true;
@@ -260,9 +266,10 @@ const runChecks = async () => {
             version: "0",
             type: ReleaseFileType.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType: config.type === Plan_ChangeDatabaseConfig_Type.DATA
-              ? Release_File_ChangeType.DML
-              : Release_File_ChangeType.DDL,
+            changeType:
+              config.type === Plan_ChangeDatabaseConfig_Type.DATA
+                ? Release_File_ChangeType.DML
+                : Release_File_ChangeType.DDL,
           },
         ],
       },

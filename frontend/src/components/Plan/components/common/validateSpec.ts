@@ -11,7 +11,10 @@ export const useSpecsValidation = (specs: Plan_Spec[]) => {
 
   const checkSpecStatement = async (spec: Plan_Spec): Promise<boolean> => {
     // Only changeDatabaseConfig and exportDataConfig specs have statements
-    if (spec.config?.case !== "changeDatabaseConfig" && spec.config?.case !== "exportDataConfig") {
+    if (
+      spec.config?.case !== "changeDatabaseConfig" &&
+      spec.config?.case !== "exportDataConfig"
+    ) {
       return false;
     }
 

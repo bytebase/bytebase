@@ -1,4 +1,4 @@
-import { 
+import {
   DataSourceType as NewDataSourceType,
   DataSource_AuthenticationType as NewDataSource_AuthenticationType,
 } from "@/types/proto-es/v1/instance_service_pb";
@@ -6,7 +6,9 @@ import {
 // ========== SCOPE VALUE CONVERSIONS (for AdvancedSearch components) ==========
 
 // Convert scope value (string or number) to proto-es DataSourceType
-export const convertScopeValueToDataSourceType = (value: string | number): NewDataSourceType => {
+export const convertScopeValueToDataSourceType = (
+  value: string | number
+): NewDataSourceType => {
   switch (value) {
     case 0:
     case "DATA_SOURCE_UNSPECIFIED":
@@ -25,7 +27,9 @@ export const convertScopeValueToDataSourceType = (value: string | number): NewDa
 };
 
 // Convert scope value (string or number) to proto-es DataSource_AuthenticationType
-export const convertScopeValueToDataSourceAuthenticationType = (value: string | number): NewDataSource_AuthenticationType => {
+export const convertScopeValueToDataSourceAuthenticationType = (
+  value: string | number
+): NewDataSource_AuthenticationType => {
   switch (value) {
     case 0:
     case "AUTHENTICATION_UNSPECIFIED":

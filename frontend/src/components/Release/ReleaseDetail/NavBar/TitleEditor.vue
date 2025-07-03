@@ -16,11 +16,11 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { create } from "@bufbuild/protobuf";
 import { pushNotification, useReleaseStore } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { ReleaseSchema } from "@/types/proto-es/v1/release_service_pb";

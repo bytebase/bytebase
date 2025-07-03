@@ -72,8 +72,8 @@
 </template>
 
 <script setup lang="ts">
-import { asyncComputed } from "@vueuse/core";
 import { create } from "@bufbuild/protobuf";
+import { asyncComputed } from "@vueuse/core";
 import { FileIcon, HistoryIcon } from "lucide-vue-next";
 import { NButton, NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";

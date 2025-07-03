@@ -68,8 +68,8 @@ import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSec
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import { batchGetOrFetchDatabases, useCurrentProjectV1 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
-import type { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { databaseForTask } from "@/utils";
 import { isDev } from "@/utils";
 import { useIssueContext } from "../../logic";

@@ -112,6 +112,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import {
   PlusIcon,
   PencilIcon,
@@ -137,10 +138,12 @@ import {
   useProjectV1Store,
   useInstanceV1Store,
 } from "@/store";
-import { create } from "@bufbuild/protobuf";
 import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { MaskingRulePolicy_MaskingRule } from "@/types/proto-es/v1/org_policy_service_pb";
-import { MaskingRulePolicySchema, MaskingRulePolicy_MaskingRuleSchema } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  MaskingRulePolicySchema,
+  MaskingRulePolicy_MaskingRuleSchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   PolicyType,
   PolicyResourceType,
@@ -203,9 +206,7 @@ const updateList = async () => {
   }
 
   state.maskingRuleItemList = (
-    policy.policy?.case === "maskingRulePolicy"
-      ? policy.policy.value.rules
-      : []
+    policy.policy?.case === "maskingRulePolicy" ? policy.policy.value.rules : []
   ).map((rule) => {
     return {
       mode: "NORMAL",

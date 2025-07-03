@@ -54,18 +54,18 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { usePlanContextWithIssue } from "@/components/Plan/logic";
-import { create } from "@bufbuild/protobuf";
 import { issueServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1 } from "@/store";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import { 
+import {
   BatchUpdateIssuesStatusRequestSchema,
-  IssueStatus as NewIssueStatus 
+  IssueStatus as NewIssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { IssueStatusAction } from "../unified";
 
@@ -115,8 +115,11 @@ const handleConfirm = async () => {
         throw new Error(`Unsupported action: ${action}`);
     }
     // Convert old enum to new enum (values match)
-    const newStatus = issueStatus === IssueStatus.OPEN ? NewIssueStatus.OPEN : NewIssueStatus.CANCELED;
-    
+    const newStatus =
+      issueStatus === IssueStatus.OPEN
+        ? NewIssueStatus.OPEN
+        : NewIssueStatus.CANCELED;
+
     const request = create(BatchUpdateIssuesStatusRequestSchema, {
       parent: project.value.name,
       issues: [issue.value.name],

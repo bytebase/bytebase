@@ -167,6 +167,7 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { NButton, NInput, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
@@ -179,7 +180,6 @@ import {
   FeatureModal,
 } from "@/components/FeatureGuard";
 import { Drawer, DrawerContent, SpinnerButton } from "@/components/v2";
-import { create } from "@bufbuild/protobuf";
 import {
   pushNotification,
   useDatabaseSecretStore,

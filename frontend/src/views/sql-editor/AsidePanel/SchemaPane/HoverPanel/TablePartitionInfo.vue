@@ -16,13 +16,13 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
 import {
   TablePartitionMetadata_Type,
   TablePartitionMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { create } from "@bufbuild/protobuf";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{

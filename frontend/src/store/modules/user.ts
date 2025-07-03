@@ -15,7 +15,10 @@ import {
   userBindingPrefix,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { UpdateUserRequest, User } from "@/types/proto-es/v1/user_service_pb";
+import type {
+  UpdateUserRequest,
+  User,
+} from "@/types/proto-es/v1/user_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   GetUserRequestSchema,
