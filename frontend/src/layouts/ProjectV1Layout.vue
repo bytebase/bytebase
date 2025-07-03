@@ -62,7 +62,6 @@
 <script lang="tsx" setup>
 import { UsersIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NSpin } from "naive-ui";
-import type { ClientError } from "nice-grpc-web";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -97,6 +96,7 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useBodyLayoutContext } from "./common";
+import type { ConnectError } from "@connectrpc/connect";
 
 interface LocalState {
   showRequestRolePanel: boolean;
@@ -132,7 +132,7 @@ watchEffect(async () => {
       module: "bytebase",
       style: "CRITICAL",
       title: `Failed to fetch project ${props.projectId}`,
-      description: (err as ClientError).details,
+      description: (err as ConnectError).message,
     });
 
     const projectRoute = router.resolve({

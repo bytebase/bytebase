@@ -28,7 +28,6 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { Status } from "nice-grpc-common";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { BBAttention } from "@/bbkit";
@@ -39,6 +38,7 @@ import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLResultViewContext } from "../context";
 import AdviceItem from "./AdviceItem.vue";
 import PostgresError from "./PostgresError.vue";
+import { Code } from "@connectrpc/connect";
 
 const props = defineProps<{
   error: string | undefined;
@@ -63,7 +63,7 @@ const showRunAnywayButton = computed(() => {
   if (!executeParams) return false;
   if (sqlCheckStyle.value !== "PREFLIGHT") return false;
   if (databaseChangeMode.value !== DatabaseChangeMode.EDITOR) return false;
-  if (resultSet.status === Status.PERMISSION_DENIED) return false;
+  if (resultSet.status === Code.PermissionDenied) return false;
   if (resultSet.error.includes("resource not found")) return false;
   return resultSet.advices.some(
     (advice) => advice.status === Advice_Status.WARNING
