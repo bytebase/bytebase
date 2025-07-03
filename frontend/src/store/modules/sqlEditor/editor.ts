@@ -1,4 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
+import { includes } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 import { type ComposedDatabase, isValidProjectName } from "@/types";
@@ -12,7 +13,25 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   );
   const redisCommandOption = useLocalStorage<QueryOption_RedisRunCommandsOn>(
     "bb.sql-editor.redis-command-node",
-    QueryOption_RedisRunCommandsOn.SINGLE_NODE
+    QueryOption_RedisRunCommandsOn.SINGLE_NODE,
+    {
+      // Use a custom merge function to ensure the value is valid.
+      mergeDefaults(storageValue, defaults) {
+        if (
+          !includes(
+            [
+              QueryOption_RedisRunCommandsOn.SINGLE_NODE,
+              QueryOption_RedisRunCommandsOn.ALL_NODES,
+            ],
+            storageValue
+          )
+        ) {
+          return defaults;
+        }
+        // Otherwise, return the storage value
+        return storageValue;
+      },
+    }
   );
 
   // empty to "ALL" projects for high-privileged users
