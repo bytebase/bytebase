@@ -52,7 +52,7 @@ export const providePlanSpecContext = (refs: {
       if (!foundSpec) {
         throw new Error("No specs available in the plan to redirect to.");
       }
-      gotoSpec(router, plan.value, foundSpec.id);
+      gotoSpec(router, foundSpec.id);
     }
   });
 
