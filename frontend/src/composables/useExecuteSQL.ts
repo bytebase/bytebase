@@ -3,7 +3,6 @@ import { Code } from "@connectrpc/connect";
 import { createContextValues } from "@connectrpc/connect";
 import Emittery from "emittery";
 import { head, isEmpty, cloneDeep } from "lodash-es";
-import { Status } from "nice-grpc-common";
 import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
 import { sqlServiceClientConnect } from "@/grpcweb";
@@ -339,7 +338,7 @@ const useExecuteSQL = () => {
         error,
         results: [],
         advices,
-        status: Status.ABORTED,
+        status: Code.Aborted,
       });
     };
 
@@ -384,7 +383,7 @@ const useExecuteSQL = () => {
         advices: [],
         error: t("sql-editor.no-data-source"),
         results: [],
-        status: Status.NOT_FOUND,
+        status: Code.NotFound,
       });
     }
 
@@ -395,7 +394,7 @@ const useExecuteSQL = () => {
         advices: [],
         error: t("sql-editor.request-aborted"),
         results: [],
-        status: Status.ABORTED,
+        status: Code.Aborted,
       });
     }
 
@@ -473,13 +472,13 @@ const useExecuteSQL = () => {
 const isOnlySelectError = (resultSet: SQLResultSetV1) => {
   if (
     resultSet.error === "Support SELECT sql statement only" &&
-    resultSet.status === Status.INVALID_ARGUMENT
+    resultSet.status === Code.InvalidArgument 
   ) {
     return true;
   }
   if (
     resultSet.error.match(/disallow execute (DML|DDL) statement/) &&
-    resultSet.status === Status.PERMISSION_DENIED
+    resultSet.status === Code.PermissionDenied
   ) {
     return true;
   }
