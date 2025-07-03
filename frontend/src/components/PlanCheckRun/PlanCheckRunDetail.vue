@@ -381,7 +381,7 @@ const builtinRuleLevel = (type: string): SQLReviewRuleLevel => {
 const categoryAndTitle = (
   checkResult: PlanCheckRun_Result
 ): [string, string] => {
-  if ((checkResult as any).sqlReviewReport) {
+  if (checkResult.report.case === "sqlReviewReport") {
     const code = checkResult.code;
     if (!code) {
       return ["", checkResult.title];
@@ -405,10 +405,8 @@ const categoryAndTitle = (
     }
     return ["", messageWithCode(checkResult.title, code)];
   }
-  if ((checkResult as any).sqlSummaryReport) {
-    if (
-      typeof (checkResult as any).sqlSummaryReport?.affectedRows === "number"
-    ) {
+  if (checkResult.report.case === "sqlSummaryReport") {
+    if (typeof checkResult.report.value?.affectedRows === "number") {
       return [
         "",
         `${t("task.check-type.affected-rows.self")} (${t("task.check-type.affected-rows.description")})`,
@@ -443,7 +441,7 @@ const errorCodeLink = (
       };
     default: {
       const errorCodeNamespace =
-        (checkResult as any).sqlReviewReport !== undefined ? "advisor" : "core";
+        checkResult.report.case === "sqlReviewReport" ? "advisor" : "core";
       const domain = "https://www.bytebase.com";
       const path = `/docs/reference/error-code/${errorCodeNamespace}/`;
       const query = `source=console#${code}`;
