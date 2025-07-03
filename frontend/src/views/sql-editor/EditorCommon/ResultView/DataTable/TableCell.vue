@@ -194,7 +194,7 @@ const formattedValue = computed(() => {
 
   // Determine the format to use - column override, cell override, or auto-detected format
   let actualFormat = binaryFormat.value ?? "DEFAULT";
-  
+
   // If format is DEFAULT, use the auto-detected format
   if (actualFormat === "DEFAULT") {
     actualFormat = detectBinaryFormat({
@@ -207,7 +207,7 @@ const formattedValue = computed(() => {
     bytesValue,
     format: actualFormat,
   });
-  
+
   // Return proto-es oneof structure with stringValue
   return {
     ...props.value,
