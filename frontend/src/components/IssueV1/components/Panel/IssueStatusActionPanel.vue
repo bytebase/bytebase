@@ -179,7 +179,7 @@ const handleConfirm = async (
     const request = create(BatchUpdateIssuesStatusRequestSchema, {
       parent: issue.value.project,
       issues: [issue.value.name],
-      status: IssueStatusActionToIssueStatusMap[action] as any,
+      status: IssueStatusActionToIssueStatusMap[action],
       reason: comment ?? "",
     });
     await issueServiceClientConnect.batchUpdateIssuesStatus(request);

@@ -190,8 +190,8 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { head, uniqBy } from "lodash-es";
-import Long from "long";
 import {
   NAlert,
   NButton,
@@ -407,21 +407,20 @@ const handleConfirm = async (action: TaskRolloutAction) => {
     if (!stage) return;
     if (action === "ROLLOUT" || action === "RETRY" || action === "RESTART") {
       // Prepare the request parameters
-      const requestParams: any = {
+      const request = create(BatchRunTasksRequestSchema, {
         parent: stage.name,
         tasks: filteredTasks.value.map((task) => task.name),
         reason: comment.value,
-      };
+      });
       if (runTimeInMS.value !== undefined) {
         // Convert timestamp to protobuf Timestamp format
         const runTimeSeconds = Math.floor(runTimeInMS.value / 1000);
         const runTimeNanos = (runTimeInMS.value % 1000) * 1000000;
-        requestParams.runTime = {
-          seconds: Long.fromNumber(runTimeSeconds),
+        request.runTime = create(TimestampSchema, {
+          seconds: BigInt(runTimeSeconds),
           nanos: runTimeNanos,
-        };
+        });
       }
-      const request = create(BatchRunTasksRequestSchema, requestParams);
       await rolloutServiceClientConnect.batchRunTasks(request);
     } else if (action === "SKIP") {
       const request = create(BatchSkipTasksRequestSchema, {

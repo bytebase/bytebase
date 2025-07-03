@@ -160,6 +160,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import {
   CheckCircleIcon,
   AlertCircleIcon,
@@ -209,7 +210,7 @@ const filteredCheckRuns = computed(() => {
 });
 
 const filteredResults = computed(() => {
-  const results: Array<{ checkRun: PlanCheckRun; result: any }> = [];
+  const results = [];
 
   for (const checkRun of filteredCheckRuns.value) {
     for (const result of checkRun.results) {
@@ -369,7 +370,7 @@ const getStatusLabel = (status: PlanCheckRun_Result_Status) => {
   }
 };
 
-const formatTime = (timestamp: any): string => {
+const formatTime = (timestamp: Timestamp | undefined): string => {
   if (!timestamp) return "";
   return humanizeTs(
     new Date(Number(timestamp.seconds) * 1000).getTime() / 1000

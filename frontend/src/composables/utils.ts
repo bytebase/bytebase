@@ -11,7 +11,7 @@ import {
 
 type NoSQLRowData = {
   key: string;
-  value: any;
+  value: unknown;
 };
 
 const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
@@ -28,7 +28,7 @@ const decodeBase64ToUUID = (base64Encoded: string): string => {
   return stringify(uint8Array);
 };
 
-const flattenNoSQLColumn = (value: any): any => {
+const flattenNoSQLColumn = (value: unknown): unknown => {
   if (typeof value !== "object") {
     return value;
   }
@@ -39,7 +39,7 @@ const flattenNoSQLColumn = (value: any): any => {
     return value.map(flattenNoSQLColumn);
   }
 
-  const dict = value as { [key: string]: any };
+  const dict = value as { [key: string]: unknown };
   if (Object.keys(dict).length === 1 && Object.keys(dict)[0].startsWith("$")) {
     // Used by the MongoDB response.
     // https://www.mongodb.com/zh-cn/docs/manual/reference/mongodb-extended-json/#bson-data-types-and-associated-representations
