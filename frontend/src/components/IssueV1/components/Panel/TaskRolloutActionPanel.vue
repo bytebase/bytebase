@@ -38,19 +38,19 @@
           class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
         >
           <label class="font-medium text-control">
-            <template v-if="taskList.length === 1">
+            <template v-if="filteredTasks.length === 1">
               {{ $t("common.task") }}
             </template>
             <template v-else>{{ $t("common.tasks") }}</template>
-            <span class="font-mono opacity-80" v-if="taskList.length > 1"
-              >({{ taskList.length }})</span
+            <span class="font-mono opacity-80" v-if="filteredTasks.length > 1"
+              >({{ filteredTasks.length }})</span
             >
           </label>
           <div class="flex-1 overflow-y-auto">
             <NScrollbar class="max-h-64">
               <ul class="text-sm space-y-2">
                 <li
-                  v-for="task in taskList"
+                  v-for="task in filteredTasks"
                   :key="task.name"
                   class="flex items-center"
                 >
@@ -129,7 +129,7 @@
           </div>
           <div v-if="runTimeInMS !== undefined" class="flex flex-col gap-y-1">
             <p class="font-medium text-control">
-              {{ $t("task.scheduled-time", taskList.length) }}
+              {{ $t("task.scheduled-time", filteredTasks.length) }}
             </p>
             <NDatePicker
               v-model:value="runTimeInMS"
@@ -228,7 +228,10 @@ import {
   BatchCancelTaskRunsRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status, TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  Task_Status,
+  TaskRun_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
@@ -265,7 +268,7 @@ const title = computed(() => {
   if (!props.action) return "";
 
   const action = taskRolloutActionDisplayName(props.action, selectedTask.value);
-  if (props.taskList.length > 1) {
+  if (filteredTasks.value.length > 1) {
     return t("task.action-all-tasks-in-current-stage", { action });
   }
   return action;
@@ -289,6 +292,41 @@ const showScheduledTimePicker = computed(() => {
   );
 });
 
+const filteredTasks = computed(() => {
+  let filteredTaskList = props.taskList;
+  if (props.action === "RETRY") {
+    // For RETRY action, we only want to retry tasks that are not done or skipped.
+    filteredTaskList = filteredTaskList.filter(
+      (task) => task.status === Task_Status.FAILED
+    );
+  } else if (props.action === "RESTART") {
+    // For RESTART action, we only want to restart tasks that are running or pending.
+    filteredTaskList = filteredTaskList.filter(
+      (task) => task.status === Task_Status.CANCELED
+    );
+  } else if (props.action === "CANCEL") {
+    // For CANCEL action, we only want to cancel tasks that are running or pending.
+    filteredTaskList = filteredTaskList.filter((task) =>
+      [Task_Status.RUNNING, Task_Status.PENDING].includes(task.status)
+    );
+  } else if (props.action === "SKIP") {
+    // For SKIP action, we only want to skip tasks that are not done or skipped.
+    filteredTaskList = filteredTaskList.filter(
+      (task) => ![Task_Status.DONE, Task_Status.SKIPPED].includes(task.status)
+    );
+  } else if (props.action === "ROLLOUT") {
+    filteredTaskList = filteredTaskList.filter(
+      (task) =>
+        ![
+          Task_Status.DONE,
+          Task_Status.SKIPPED,
+          TaskRun_Status.RUNNING,
+        ].includes(task.status)
+    );
+  }
+  return filteredTaskList;
+});
+
 const hasPreviousUnrolledStages = computed(() => {
   if (!stage.value) return false;
   const stages = issue.value.rolloutEntity?.stages;
@@ -308,7 +346,7 @@ const showPerformActionAnyway = computed(() => {
 });
 
 const planCheckRunList = computed(() => {
-  const list = props.taskList.flatMap(getPlanCheckRunsForTask);
+  const list = filteredTasks.value.flatMap(getPlanCheckRunsForTask);
   return uniqBy(list, (checkRun) => checkRun.name);
 });
 
@@ -371,7 +409,7 @@ const handleConfirm = async (action: TaskRolloutAction) => {
       // Prepare the request parameters
       const requestParams: any = {
         parent: stage.name,
-        tasks: props.taskList.map((task) => task.name),
+        tasks: filteredTasks.value.map((task) => task.name),
         reason: comment.value,
       };
       if (runTimeInMS.value !== undefined) {
@@ -388,12 +426,12 @@ const handleConfirm = async (action: TaskRolloutAction) => {
     } else if (action === "SKIP") {
       const request = create(BatchSkipTasksRequestSchema, {
         parent: stage.name,
-        tasks: props.taskList.map((task) => task.name),
+        tasks: filteredTasks.value.map((task) => task.name),
         reason: comment.value,
       });
       await rolloutServiceClientConnect.batchSkipTasks(request);
     } else if (action === "CANCEL") {
-      const taskRunListToCancel = props.taskList
+      const taskRunListToCancel = filteredTasks.value
         .map((task) => {
           const taskRunList = taskRunListForTask(issue.value, task);
           const currentRunningTaskRun = taskRunList.find(
