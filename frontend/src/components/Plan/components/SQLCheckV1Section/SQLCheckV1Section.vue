@@ -54,64 +54,48 @@
     <!-- Status Drawer -->
     <Drawer v-model:show="drawerVisible">
       <DrawerContent
-        :title="drawerTitle"
+        :title="$t('plan.navigator.checks')"
         class="w-[40rem] max-w-[100vw] relative"
       >
         <div class="w-full h-full flex flex-col">
-          <!-- Drawer Header -->
-          <div class="flex items-center justify-between px-2 py-2 border-b">
-            <div class="flex items-center gap-2">
-              <component
-                :is="getStatusIcon(selectedStatus)"
-                class="w-5 h-5"
-                :class="getStatusColor(selectedStatus)"
-              />
-              <h3 class="text-lg font-medium">{{ drawerTitle }}</h3>
-            </div>
-          </div>
-
           <!-- Drawer Content -->
-          <div class="flex-1 overflow-y-auto py-2">
-            <div v-if="drawerAdvices.length > 0" class="space-y-2">
+          <div v-if="drawerAdvices.length > 0" class="w-full space-y-2">
+            <div
+              v-for="(advice, idx) in drawerAdvices"
+              :key="idx"
+              class="space-y-1 p-3 border rounded-lg bg-gray-50"
+            >
+              <div class="flex items-start justify-between">
+                <div class="text-sm font-medium text-main">
+                  {{ getAdviceTitle(advice) }}
+                </div>
+                <component
+                  :is="getStatusIcon(advice.status)"
+                  class="w-4 h-4 flex-shrink-0"
+                  :class="getStatusColor(advice.status)"
+                />
+              </div>
+
+              <!-- Target Database -->
+              <DatabaseDisplay :database="advice.target" />
+
+              <!-- Advice Content -->
+              <div v-if="advice.content" class="text-xs text-control-light">
+                {{ advice.content }}
+              </div>
+
+              <!-- Location Info -->
               <div
-                v-for="(advice, idx) in drawerAdvices"
-                :key="idx"
-                class="space-y-1 p-3 border rounded-lg bg-gray-50"
+                v-if="advice.startPosition && advice.startPosition.line > 0"
+                class="text-xs text-control-lighter"
               >
-                <div class="flex items-start justify-between">
-                  <div class="text-sm font-medium text-main">
-                    {{ getAdviceTitle(advice) }}
-                  </div>
-                  <component
-                    :is="getStatusIcon(advice.status)"
-                    class="w-4 h-4 flex-shrink-0"
-                    :class="getStatusColor(advice.status)"
-                  />
-                </div>
-
-                <!-- Target Database -->
-                <div>
-                  <DatabaseDisplay :database="advice.target" />
-                </div>
-
-                <!-- Advice Content -->
-                <div v-if="advice.content" class="text-xs text-control-light">
-                  {{ advice.content }}
-                </div>
-
-                <!-- Location Info -->
-                <div
-                  v-if="advice.startPosition && advice.startPosition.line > 0"
-                  class="text-xs text-control-lighter"
-                >
-                  Line {{ advice.startPosition.line }}, Column
-                  {{ advice.startPosition.column }}
-                </div>
+                Line {{ advice.startPosition.line }}, Column
+                {{ advice.startPosition.column }}
               </div>
             </div>
-            <div v-else class="text-center py-8 text-control-light">
-              No {{ selectedStatus.toLowerCase() }} results
-            </div>
+          </div>
+          <div v-else class="w-full text-center py-8 text-control-light">
+            No check results
           </div>
         </div>
       </DrawerContent>
@@ -214,12 +198,6 @@ const summary = computed(() => {
   }
 
   return result;
-});
-
-const drawerTitle = computed(() => {
-  if (selectedStatus.value === "ERROR") return "Error Details";
-  if (selectedStatus.value === "WARNING") return "Warning Details";
-  return "Success Details";
 });
 
 const drawerAdvices = computed(() => {

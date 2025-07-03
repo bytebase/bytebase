@@ -161,8 +161,6 @@ const availableActions = computed(() => {
     actions.push("CLOSE");
   }
 
-  // No separate rollout creation - handled when creating issue
-
   return actions;
 });
 

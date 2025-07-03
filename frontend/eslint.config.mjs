@@ -16,12 +16,7 @@ export default [
   ...vueI18n.configs["flat/recommended"],
   eslintPluginPrettierRecommended,
   {
-    ignores: [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/proto/**",
-      "**/proto-es/**",
-    ],
+    ignores: ["**/dist/**", "**/node_modules/**", "**/proto-es/**"],
   },
   {
     rules: {

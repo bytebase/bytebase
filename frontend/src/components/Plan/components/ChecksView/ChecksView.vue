@@ -6,22 +6,22 @@
         <!-- Check result summary with icons -->
         <div class="flex items-center gap-3">
           <div
-            v-if="statusCounts.success > 0"
+            v-if="statusCounts.error > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
             :class="[
               selectedStatus &&
-                selectedStatus === PlanCheckRun_Result_Status.SUCCESS &&
+                selectedStatus === PlanCheckRun_Result_Status.ERROR &&
                 'bg-gray-100 rounded-lg',
-              'text-lg text-success',
+              'text-lg text-error',
             ]"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.SUCCESS)"
+            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.ERROR)"
           >
-            <CheckCircleIcon class="w-6 h-6" />
+            <XCircleIcon class="w-6 h-6" />
             <span>
-              {{ $t("common.success") }}
+              {{ $t("common.error") }}
             </span>
             <span class="font-semibold">
-              {{ statusCounts.success }}
+              {{ statusCounts.error }}
             </span>
           </div>
           <div
@@ -44,22 +44,22 @@
             </span>
           </div>
           <div
-            v-if="statusCounts.error > 0"
+            v-if="statusCounts.success > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
             :class="[
               selectedStatus &&
-                selectedStatus === PlanCheckRun_Result_Status.ERROR &&
+                selectedStatus === PlanCheckRun_Result_Status.SUCCESS &&
                 'bg-gray-100 rounded-lg',
-              'text-lg text-error',
+              'text-lg text-success',
             ]"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.ERROR)"
+            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.SUCCESS)"
           >
-            <XCircleIcon class="w-6 h-6" />
+            <CheckCircleIcon class="w-6 h-6" />
             <span>
-              {{ $t("common.error") }}
+              {{ $t("common.success") }}
             </span>
             <span class="font-semibold">
-              {{ statusCounts.error }}
+              {{ statusCounts.success }}
             </span>
           </div>
         </div>
@@ -68,12 +68,8 @@
 
     <!-- Results List -->
     <div class="flex-1 overflow-y-auto">
-      <div v-if="isLoading" class="flex items-center justify-center py-12">
-        <BBSpin />
-      </div>
-
       <div
-        v-else-if="filteredResults.length === 0"
+        v-if="filteredResults.length === 0"
         class="flex flex-col items-center justify-center py-12"
       >
         <CheckCircleIcon class="w-12 h-12 text-control-light opacity-50 mb-4" />
@@ -107,11 +103,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <NBadge
-                :type="getStatusBadgeType(getCheckRunStatus(checkRun))"
-                :value="getStatusLabel(getCheckRunStatus(checkRun))"
-              />
-              <span class="text-xs text-control-lighter">
+              <span class="text-xs text-control">
                 {{ formatTime(checkRun.createTime) }}
               </span>
             </div>
@@ -126,7 +118,7 @@
             >
               <component
                 :is="getStatusIcon(result.status)"
-                class="w-4 h-4 mt-0.5 flex-shrink-0"
+                class="w-5 h-5 flex-shrink-0"
                 :class="getStatusColor(result.status)"
               />
 
@@ -169,10 +161,8 @@ import {
   ShieldIcon,
   SearchCodeIcon,
 } from "lucide-vue-next";
-import { NBadge } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBSpin } from "@/bbkit";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
@@ -182,11 +172,16 @@ import { humanizeTs } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
+const props = defineProps<{
+  defaultStatus?: PlanCheckRun_Result_Status;
+}>();
+
 const { t } = useI18n();
 const { planCheckRuns } = usePlanContext();
 
-const isLoading = ref(false);
-const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(undefined);
+const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(
+  props.defaultStatus
+);
 
 const hasFilters = computed(() => {
   return selectedStatus.value !== undefined;
@@ -268,25 +263,6 @@ const getFilteredResults = (checkRun: PlanCheckRun) => {
   });
 };
 
-const getCheckRunStatus = (
-  checkRun: PlanCheckRun
-): PlanCheckRun_Result_Status => {
-  let hasError = false;
-  let hasWarning = false;
-
-  for (const result of checkRun.results) {
-    if (result.status === PlanCheckRun_Result_Status.ERROR) {
-      hasError = true;
-    } else if (result.status === PlanCheckRun_Result_Status.WARNING) {
-      hasWarning = true;
-    }
-  }
-
-  if (hasError) return PlanCheckRun_Result_Status.ERROR;
-  if (hasWarning) return PlanCheckRun_Result_Status.WARNING;
-  return PlanCheckRun_Result_Status.SUCCESS;
-};
-
 const getCheckTypeIcon = (type: PlanCheckRun_Type) => {
   switch (type) {
     case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
@@ -340,32 +316,6 @@ const getStatusColor = (status: PlanCheckRun_Result_Status) => {
       return "text-success";
     default:
       return "text-control";
-  }
-};
-
-const getStatusBadgeType = (status: PlanCheckRun_Result_Status) => {
-  switch (status) {
-    case PlanCheckRun_Result_Status.ERROR:
-      return "error";
-    case PlanCheckRun_Result_Status.WARNING:
-      return "warning";
-    case PlanCheckRun_Result_Status.SUCCESS:
-      return "success";
-    default:
-      return "default";
-  }
-};
-
-const getStatusLabel = (status: PlanCheckRun_Result_Status) => {
-  switch (status) {
-    case PlanCheckRun_Result_Status.ERROR:
-      return "Error";
-    case PlanCheckRun_Result_Status.WARNING:
-      return "Warning";
-    case PlanCheckRun_Result_Status.SUCCESS:
-      return "Success";
-    default:
-      return "Unknown";
   }
 };
 
