@@ -56,7 +56,9 @@
             )
           "
         >
-          <template #suffix> Rows </template>
+          <template #suffix>{{
+            $t("settings.general.workspace.maximum-sql-result.rows.rows")
+          }}</template>
         </NInputNumber>
       </div>
     </div>
