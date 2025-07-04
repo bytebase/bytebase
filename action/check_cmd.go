@@ -3,12 +3,13 @@ package main
 import (
 	"log/slog"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"github.com/bytebase/bytebase/action/args"
 	"github.com/bytebase/bytebase/action/github"
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 func NewCheckCommand(w *world.World) *cobra.Command {
@@ -25,7 +26,7 @@ func NewCheckCommand(w *world.World) *cobra.Command {
 }
 
 func validateCheckFlags(w *world.World) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) error {
+	return func(*cobra.Command, []string) error {
 		switch w.CheckRelease {
 		case "SKIP", "FAIL_ON_WARNING", "FAIL_ON_ERROR":
 		default:
@@ -36,7 +37,7 @@ func validateCheckFlags(w *world.World) func(*cobra.Command, []string) error {
 }
 
 func runCheck(w *world.World) func(*cobra.Command, []string) error {
-	return func(c *cobra.Command, s []string) error {
+	return func(*cobra.Command, []string) error {
 		platform := getJobPlatform()
 		slog.Info("running on platform", "platform", platform.String())
 		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)

@@ -9,13 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytebase/bytebase/action/args"
-	"github.com/bytebase/bytebase/action/world"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
+
+	"github.com/bytebase/bytebase/action/args"
+	"github.com/bytebase/bytebase/action/world"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func NewRolloutCommand(w *world.World) *cobra.Command {
@@ -37,7 +38,7 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 }
 
 func validateRolloutFlags(w *world.World) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) error {
+	return func(*cobra.Command, []string) error {
 		switch w.CheckPlan {
 		case "SKIP", "FAIL_ON_WARNING", "FAIL_ON_ERROR":
 		default:

@@ -8,9 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bytebase/bytebase/action/world"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/bytebase/bytebase/action/world"
 )
 
 func NewRootCommand(w *world.World) *cobra.Command {
@@ -67,7 +68,7 @@ func validateSharedFlagsWithWorld(w *world.World) func(cmd *cobra.Command, args 
 }
 
 func writeOutputJSON(w *world.World) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
+	return func(*cobra.Command, []string) error {
 		if w.Output == "" {
 			return nil
 		}
