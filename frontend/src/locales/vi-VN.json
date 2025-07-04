@@ -581,6 +581,7 @@
           },
           "rows": {
             "self": "Số lượng hàng kết quả SQL tối đa",
+            "rows": "Hàng",
             "description": "Giới hạn số hàng đầu ra trong kết quả truy vấn SQL, giá trị <= 0 nghĩa là không giới hạn."
           }
         },
@@ -589,7 +590,8 @@
             "self": "Thời gian truy vấn tối đa",
             "description": "Thời gian tối đa được phép chạy truy vấn trong SQL Editor.",
             "no-time-limit": "Không giới hạn thời gian cho truy vấn khi đặt thành 0."
-          }
+          },
+          "seconds": "Giây"
         },
         "domain-restriction": {
           "self": "Tên miền không gian làm việc",

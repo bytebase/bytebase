@@ -18,19 +18,20 @@
       <NRadioGroup
         :disabled="disabled"
         :value="mode"
+        :size="'large'"
         @update:value="$emit('update:mode', $event)"
       >
         <NSpace vertical size="large">
           <NRadio :value="DatabaseChangeMode.PIPELINE">
             <div class="flex flex-col gap-1">
-              <div class="font-medium">
+              <div class="font-medium text-base">
                 {{
                   $t(
                     "settings.general.workspace.database-change-mode.issue-mode.self"
                   )
                 }}
               </div>
-              <div>
+              <div class="text-control">
                 {{
                   $t(
                     "settings.general.workspace.database-change-mode.issue-mode.description"
@@ -41,14 +42,14 @@
           </NRadio>
           <NRadio :value="DatabaseChangeMode.EDITOR">
             <div class="flex flex-col gap-1">
-              <div class="font-medium">
+              <div class="font-medium text-base">
                 {{
                   $t(
                     "settings.general.workspace.database-change-mode.sql-editor-mode.self"
                   )
                 }}
               </div>
-              <div>
+              <div class="text-control">
                 {{
                   $t(
                     "settings.general.workspace.database-change-mode.sql-editor-mode.description"
