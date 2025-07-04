@@ -532,9 +532,9 @@ watch(
 );
 
 // Helper methods to update configurations
-const updateOAuth2Config = (
-  key: keyof OAuth2IdentityProviderConfig,
-  value: OAuth2IdentityProviderConfig[keyof OAuth2IdentityProviderConfig]
+const updateOAuth2Config = <T extends keyof OAuth2IdentityProviderConfig>(
+  key: T,
+  value: OAuth2IdentityProviderConfig[T]
 ) => {
   emit("update:config-for-oauth2", {
     ...props.configForOauth2,
@@ -542,9 +542,9 @@ const updateOAuth2Config = (
   });
 };
 
-const updateOIDCConfig = (
-  key: keyof OIDCIdentityProviderConfig,
-  value: OIDCIdentityProviderConfig[keyof OIDCIdentityProviderConfig]
+const updateOIDCConfig = <T extends keyof OIDCIdentityProviderConfig>(
+  key: T,
+  value: OIDCIdentityProviderConfig[T]
 ) => {
   emit("update:config-for-oidc", {
     ...props.configForOidc,
@@ -552,9 +552,9 @@ const updateOIDCConfig = (
   });
 };
 
-const updateLDAPConfig = (
-  key: keyof LDAPIdentityProviderConfig,
-  value: LDAPIdentityProviderConfig[keyof LDAPIdentityProviderConfig] | null
+const updateLDAPConfig = <T extends keyof LDAPIdentityProviderConfig>(
+  key: T,
+  value: LDAPIdentityProviderConfig[T] | null
 ) => {
   emit("update:config-for-ldap", {
     ...props.configForLdap,
