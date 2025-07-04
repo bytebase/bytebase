@@ -19,9 +19,9 @@ var (
 		ColumnNames:     []string{"id", "name", "author"},
 		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
 		Masked: []*v1pb.MaskingReason{
-			{SemanticTypeId: "default", Algorithm: "Full mask", Context: "Column-level semantic type: instance-c1f61866-7.sensitive_data.tech_book.id", SemanticTypeTitle: "Default"},
+			{SemanticTypeId: "default", Algorithm: "Full mask"},
 			nil,
-			{SemanticTypeId: "default", Algorithm: "Full mask", Context: "Column-level semantic type: instance-c1f61866-7.sensitive_data.tech_book.author", SemanticTypeTitle: "Default"},
+			{SemanticTypeId: "default", Algorithm: "Full mask"},
 		},
 		Rows: []*v1pb.QueryRow{
 			{
@@ -257,7 +257,33 @@ func TestSensitiveData(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Msg.Results))
-	diff := cmp.Diff(maskedData, queryResp.Msg.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
+	
+	// Build expected masked data dynamically with the correct instance name
+	expectedMaskedData := &v1pb.QueryResult{
+		ColumnNames:     []string{"id", "name", "author"},
+		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
+		Masked: []*v1pb.MaskingReason{
+			{
+				SemanticTypeId: "default", 
+				Algorithm: "Full mask",
+				Context: fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instance.Name, databaseName, tableName, "id"),
+				SemanticTypeTitle: "Default",
+			},
+			nil,
+			{
+				SemanticTypeId: "default", 
+				Algorithm: "Full mask",
+				Context: fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instance.Name, databaseName, tableName, "author"),
+				SemanticTypeTitle: "Default",
+			},
+		},
+		Rows: maskedData.Rows,
+		Statement:   "SELECT * FROM tech_book",
+		RowsCount:   3,
+		AllowExport: true,
+	}
+	
+	diff := cmp.Diff(expectedMaskedData, queryResp.Msg.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Empty(diff)
 
 	// Query origin data.
