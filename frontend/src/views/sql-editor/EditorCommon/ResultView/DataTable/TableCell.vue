@@ -199,20 +199,28 @@ const formattedValue = computed(() => {
   }
 
   // Determine the format to use - column override, cell override, or auto-detected format
-  const actualFormat = binaryFormat.value ?? "DEFAULT";
+  let actualFormat = binaryFormat.value ?? "DEFAULT";
 
-  // Skip formatting for DEFAULT (auto) format
+  // If format is DEFAULT, use the auto-detected format
   if (actualFormat === "DEFAULT") {
-    return props.value;
+    actualFormat = detectBinaryFormat({
+      bytesValue,
+      columnType: props.columnType,
+    });
   }
 
   const stringValue = formatBinaryValue({
     bytesValue,
     format: actualFormat,
   });
+
+  // Return proto-es oneof structure with stringValue
   return {
     ...props.value,
-    stringValue,
+    kind: {
+      case: "stringValue" as const,
+      value: stringValue,
+    },
   };
 });
 
