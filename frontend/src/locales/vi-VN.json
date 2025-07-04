@@ -2807,6 +2807,16 @@
       "built-in-desc": "Tạo dự án mẫu và các trường hợp"
     }
   },
+  "masking": {
+    "reason": {
+      "title": "Tại sao dữ liệu này bị che?",
+      "semantic-type": "Loại ngữ nghĩa",
+      "algorithm": "Phương pháp che dữ liệu",
+      "context": "Quy tắc",
+      "classification": "Mức phân loại"
+    },
+    "algorithms": {}
+  },
   "landing": {
     "quick-link": {
       "self": "Liên kết nhanh",

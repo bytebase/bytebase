@@ -2807,6 +2807,16 @@
       "built-in-desc": "生成示例项目和实例"
     }
   },
+  "masking": {
+    "reason": {
+      "title": "为什么这些数据被遮盖？",
+      "semantic-type": "语义类型",
+      "algorithm": "遮盖方法",
+      "context": "规则",
+      "classification": "分类级别"
+    },
+    "algorithms": {}
+  },
   "landing": {
     "quick-link": {
       "self": "快捷访问",

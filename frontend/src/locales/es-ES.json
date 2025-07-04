@@ -2807,6 +2807,16 @@
       "built-in-desc": "Generar proyecto de muestra e instancias"
     }
   },
+  "masking": {
+    "reason": {
+      "title": "¿Por qué están enmascarados estos datos?",
+      "semantic-type": "Tipo semántico",
+      "algorithm": "Método de enmascaramiento",
+      "context": "Regla",
+      "classification": "Nivel de clasificación"
+    },
+    "algorithms": {}
+  },
   "landing": {
     "quick-link": {
       "self": "Enlace rápido",

@@ -2807,6 +2807,16 @@
       "built-in-desc": "サンプルプロジェクトとインスタンスを生成する"
     }
   },
+  "masking": {
+    "reason": {
+      "title": "なぜこのデータはマスクされていますか？",
+      "semantic-type": "セマンティックタイプ",
+      "algorithm": "マスキング方法",
+      "context": "ルール",
+      "classification": "分類レベル"
+    },
+    "algorithms": {}
+  },
   "landing": {
     "quick-link": {
       "self": "クイックリンク",
