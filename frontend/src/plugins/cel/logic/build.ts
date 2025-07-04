@@ -4,7 +4,13 @@ import { head } from "lodash-es";
 import { celServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
-import { ExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import {
+  ConstantSchema,
+  Expr_CallSchema,
+  Expr_CreateListSchema,
+  Expr_IdentSchema,
+  ExprSchema,
+} from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { BatchParseRequestSchema } from "@/types/proto-es/v1/cel_service_pb";
 import type { ConditionExpr, ConditionGroupExpr, SimpleExpr } from "../types";
 import {
@@ -121,7 +127,7 @@ export const buildCELExpr = async (
   }
 };
 
-const wrapCELExpr = (object: any): CELExpr => {
+const wrapCELExpr = (object: CELExpr["exprKind"]): CELExpr => {
   return create(ExprSchema, {
     id: BigInt(seq.next()),
     exprKind: object,
@@ -133,17 +139,23 @@ const wrapConstExpr = (value: number | string | Date): CELExpr => {
   if (typeof value === "string") {
     return wrapCELExpr({
       case: "constExpr",
-      value: {
-        stringValue: value,
-      },
+      value: create(ConstantSchema, {
+        constantKind: {
+          case: "stringValue",
+          value,
+        },
+      }),
     });
   }
   if (typeof value === "number") {
     return wrapCELExpr({
       case: "constExpr",
-      value: {
-        int64Value: BigInt(value),
-      },
+      value: create(ConstantSchema, {
+        constantKind: {
+          case: "int64Value",
+          value: BigInt(value),
+        },
+      }),
     });
   }
   throw new Error(`unexpected value "${value}"`);
@@ -152,18 +164,18 @@ const wrapConstExpr = (value: number | string | Date): CELExpr => {
 const wrapListExpr = (values: string[] | number[]): CELExpr => {
   return wrapCELExpr({
     case: "listExpr",
-    value: {
+    value: create(Expr_CreateListSchema, {
       elements: values.map(wrapConstExpr),
-    },
+    }),
   });
 };
 
 const wrapIdentExpr = (name: string): CELExpr => {
   return wrapCELExpr({
     case: "identExpr",
-    value: {
+    value: create(Expr_IdentSchema, {
       name,
-    },
+    }),
   });
 };
 
@@ -172,10 +184,10 @@ const wrapCallExpr = (
   args: CELExpr[],
   target?: CELExpr
 ): CELExpr => {
-  const object: Record<string, any> = {
+  const object = create(Expr_CallSchema, {
     function: operator,
     args,
-  };
+  });
   if (target) {
     object.target = target;
   }
