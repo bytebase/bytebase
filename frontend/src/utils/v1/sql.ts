@@ -17,7 +17,10 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return null;
   }
 
-  const plainObject = toJson(RowValueSchema, value) as Record<string, any>;
+  const plainObject = toJson(RowValueSchema, value);
+  if (plainObject === null) {
+    return undefined;
+  }
   const keys = Object.keys(plainObject);
   if (keys.length === 0) {
     return undefined; // Will be displayed as "UNSET"
@@ -86,8 +89,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return JSON.stringify(value.kind.value);
   }
 
-  const key = keys[0];
-  return plainObject[key];
+  return Object.values(plainObject)[0];
 };
 
 const formatTimestamp = (timestamp: RowValue_Timestamp) => {
@@ -304,16 +306,18 @@ const extractSQLRowValueRaw = (value: RowValue | undefined) => {
   if (typeof value === "undefined" || value.kind?.case === "nullValue") {
     return null;
   }
-  const keys = Object.keys(
-    toJson(RowValueSchema, value) as Record<string, any>
-  );
+  const j = toJson(RowValueSchema, value);
+  if (j === null) {
+    return undefined;
+  }
+  const keys = Object.keys(j);
   if (keys.length === 0) {
     return undefined;
   }
   return value.kind?.value;
 };
 
-const toInt = (a: any) => {
+const toInt = (a: unknown) => {
   return typeof a === "number"
     ? a
     : typeof a === "string"
@@ -321,7 +325,7 @@ const toInt = (a: any) => {
       : Number(a);
 };
 
-const toFloat = (a: any) => {
+const toFloat = (a: unknown) => {
   return typeof a === "number"
     ? a
     : typeof a === "string"
