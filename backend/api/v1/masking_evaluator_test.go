@@ -79,7 +79,10 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		filteredMaskingExceptions               []*storepb.MaskingExceptionPolicy_MaskingException
 		dataClassification                      *storepb.DataClassificationSetting
 
-		want string
+		want           string
+		wantAlgorithm  string
+		wantContext    string
+		wantClassLevel string
 	}{
 		{
 			description:     "Follow The Global Masking Rule",
@@ -103,7 +106,9 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: "default",
+			want:           "default",
+			wantAlgorithm:  "Full mask",
+			wantClassLevel: "S2",
 		},
 		{
 			description:     "Respect The Exception",
@@ -150,7 +155,8 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: "salary-amount",
+			want:          "salary-amount",
+			wantAlgorithm: "Hash (MD5)",
 		},
 	}
 
@@ -160,6 +166,20 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		m := newEmptyMaskingLevelEvaluator().withMaskingRulePolicy(tc.maskingRulePolicy).withDataClassificationSetting(tc.dataClassification).withSemanticTypeSetting(defaultSemanticType)
 		result, err := m.evaluateSemanticTypeOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.columnName, tc.databaseProjectDatabaseClassificationID, tc.columnCatalog, tc.filteredMaskingExceptions)
 		a.NoError(err, tc.description)
-		a.Equal(tc.want, result, tc.description)
+		if tc.want == "" {
+			a.Nil(result, tc.description)
+		} else {
+			a.NotNil(result, tc.description)
+			a.Equal(tc.want, result.SemanticTypeID, tc.description)
+			if tc.wantAlgorithm != "" {
+				a.Equal(tc.wantAlgorithm, result.Algorithm, tc.description)
+			}
+			if tc.wantContext != "" {
+				a.Equal(tc.wantContext, result.Context, tc.description)
+			}
+			if tc.wantClassLevel != "" {
+				a.Equal(tc.wantClassLevel, result.ClassificationLevel, tc.description)
+			}
+		}
 	}
 }

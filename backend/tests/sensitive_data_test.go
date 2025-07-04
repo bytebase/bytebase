@@ -19,9 +19,9 @@ var (
 		ColumnNames:     []string{"id", "name", "author"},
 		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
 		Masked: []*v1pb.MaskingReason{
-			{SemanticTypeId: "test", Algorithm: "full-mask"},
+			{SemanticTypeId: "default", Algorithm: "Full mask"},
 			nil,
-			{SemanticTypeId: "test", Algorithm: "full-mask"},
+			{SemanticTypeId: "default", Algorithm: "Full mask"},
 		},
 		Rows: []*v1pb.QueryRow{
 			{

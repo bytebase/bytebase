@@ -87,7 +87,7 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of column")
 	}
-	
+
 	if eval == nil || eval.SemanticTypeID == "" {
 		// Check column-level semantic type
 		semanticTypeID := columnConfig.GetSemanticType()
@@ -100,16 +100,18 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 				} else {
 					context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, tableName, columnName)
 				}
+				algorithmName := getAlgorithmNameFromSemanticType(semanticType)
 				eval = &MaskingEvaluation{
 					SemanticTypeID:    semanticTypeID,
 					SemanticTypeTitle: semanticType.Title,
 					SemanticTypeIcon:  semanticType.Icon,
+					Algorithm:         algorithmName,
 					Context:           context,
 				}
 			}
 		}
 	}
-	
+
 	if eval != nil && eval.SemanticTypeID != "" {
 		pass, err := evaluateExceptionOfColumn(databaseMessage, schemaName, tableName, columnName, filteredMaskingExceptions)
 		if err != nil {
@@ -166,11 +168,14 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 			if maskingRule.Condition != nil && maskingRule.Condition.Title != "" {
 				ruleTitle = maskingRule.Condition.Title
 			}
+			// Get algorithm name from semantic type
+			algorithmName := getAlgorithmNameFromSemanticType(semanticType)
 			return &MaskingEvaluation{
 				SemanticTypeID:      semanticTypeID,
 				SemanticTypeTitle:   semanticType.Title,
 				SemanticTypeIcon:    semanticType.Icon,
 				MaskingRuleID:       maskingRule.Id,
+				Algorithm:           algorithmName,
 				Context:             fmt.Sprintf("Global masking rule: %s", ruleTitle),
 				ClassificationLevel: classificationLevel,
 			}, nil
@@ -255,6 +260,25 @@ func evaluateMaskingExceptionPolicyCondition(expression *expr.Expr, attributes m
 	return boolVar, nil
 }
 
+func getAlgorithmNameFromSemanticType(semanticType *storepb.SemanticTypeSetting_SemanticType) string {
+	if semanticType == nil || semanticType.Algorithm == nil {
+		return ""
+	}
+
+	switch semanticType.Algorithm.Mask.(type) {
+	case *storepb.Algorithm_FullMask_:
+		return "Full mask"
+	case *storepb.Algorithm_RangeMask_:
+		return "Partial mask"
+	case *storepb.Algorithm_Md5Mask:
+		return "Hash (MD5)"
+	case *storepb.Algorithm_InnerOuterMask_:
+		return "Inner/Outer mask"
+	default:
+		return "Unknown"
+	}
+}
+
 func evaluateMaskingRulePolicyCondition(expression string, attributes map[string]any) (bool, error) {
 	if expression == "" {
 		return true, nil
@@ -286,6 +310,7 @@ func evaluateMaskingRulePolicyCondition(expression string, attributes map[string
 	return boolVar, nil
 }
 
+// nolint:unused
 func evaluateQueryExportPolicyCondition(expression string, attributes map[string]any) (bool, error) {
 	if expression == "" {
 		return true, nil
