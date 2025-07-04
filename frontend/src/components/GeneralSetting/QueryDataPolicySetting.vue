@@ -20,7 +20,9 @@
         :precision="0"
         @update:value="handleInput"
       >
-        <template #suffix>Seconds</template>
+        <template #suffix>{{
+          $t("settings.general.workspace.query-data-policy.seconds")
+        }}</template>
       </NInputNumber>
     </div>
     <p class="text-sm textinfolabel mt-1" v-if="seconds <= 0">

@@ -581,6 +581,7 @@
           },
           "rows": {
             "self": "Maximum SQL result rows",
+            "rows": "Rows",
             "description": "Limit the output rows in SQL query result, the value <= 0 means no limit."
           }
         },
@@ -589,7 +590,8 @@
             "self": "Maximum query time",
             "description": "The maximum time allowed for a query to run in SQL Editor.",
             "no-time-limit": "No time limit for queries when set to 0."
-          }
+          },
+          "seconds": "Seconds"
         },
         "domain-restriction": {
           "self": "Workspace Domain",
