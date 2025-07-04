@@ -31,10 +31,10 @@ export const createMonacoEditor = async (config: {
 
   // Create monaco editor.
   const editor = monaco.editor.create(config.container, {
-    ...({
+    ...{
       // https://github.com/microsoft/vscode/blob/main/src/vs/monaco.d.ts#L3824
       experimentalEditContextEnabled: false,
-    } as any),
+    },
     ...defaultEditorOptions(),
     ...config.options,
   });
@@ -53,10 +53,10 @@ export const createMonacoDiffEditor = async (config: {
 
   // Create monaco diff editor.
   const editor = monaco.editor.createDiffEditor(config.container, {
-    ...({
+    ...{
       // https://github.com/microsoft/vscode/blob/main/src/vs/monaco.d.ts#L3824
       experimentalEditContextEnabled: false,
-    } as any),
+    },
     ...defaultDiffEditorOptions(),
     ...config.options,
   });
