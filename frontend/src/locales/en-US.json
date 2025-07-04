@@ -174,6 +174,7 @@
     "will-override-current-data": "Will override current data.",
     "rollout": "Rollout",
     "upload": "Upload",
+    "clear": "Clear",
     "added": "Added",
     "revoke": "Revoke",
     "cannot-undo-this-action": "You cannot undo this action",
@@ -694,6 +695,7 @@
         "use-predefined-type": "Use Predefined Type",
         "add-from-template": "Add from template",
         "table": {
+          "icon": "Icon",
           "semantic-type": "Semantic Type",
           "description": "Description",
           "masking-algorithm": "Masking Algorithm",
@@ -2808,6 +2810,16 @@
       "built-in": "Use built-in sample",
       "built-in-desc": "Generate sample project and instances"
     }
+  },
+  "masking": {
+    "reason": {
+      "title": "Why is this data masked?",
+      "semantic-type": "Semantic type",
+      "algorithm": "Masking method",
+      "context": "Rule",
+      "classification": "Classification level"
+    },
+    "algorithms": {}
   },
   "landing": {
     "quick-link": {

@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -18,8 +19,11 @@ var (
 	maskedData = &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
 		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
-		Masked:          []bool{true, false, true},
-		Sensitive:       []bool{true, false, true},
+		Masked: []*v1pb.MaskingReason{
+			{SemanticTypeId: "default", Algorithm: "Full mask"},
+			nil,
+			{SemanticTypeId: "default", Algorithm: "Full mask"},
+		},
 		Rows: []*v1pb.QueryRow{
 			{
 				Values: []*v1pb.RowValue{
@@ -254,7 +258,37 @@ func TestSensitiveData(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Msg.Results))
-	diff := cmp.Diff(maskedData, queryResp.Msg.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
+
+	// Build expected masked data dynamically with the correct instance name
+	// Extract instance ID from instance.Name (which is in format "instances/instance-id")
+	instanceParts := strings.Split(instance.Name, "/")
+	instanceID := instanceParts[len(instanceParts)-1]
+
+	expectedMaskedData := &v1pb.QueryResult{
+		ColumnNames:     []string{"id", "name", "author"},
+		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
+		Masked: []*v1pb.MaskingReason{
+			{
+				SemanticTypeId:    "default",
+				Algorithm:         "Full mask",
+				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instanceID, databaseName, tableName, "id"),
+				SemanticTypeTitle: "Default",
+			},
+			nil,
+			{
+				SemanticTypeId:    "default",
+				Algorithm:         "Full mask",
+				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instanceID, databaseName, tableName, "author"),
+				SemanticTypeTitle: "Default",
+			},
+		},
+		Rows:        maskedData.Rows,
+		Statement:   "SELECT * FROM tech_book",
+		RowsCount:   3,
+		AllowExport: true,
+	}
+
+	diff := cmp.Diff(expectedMaskedData, queryResp.Msg.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Empty(diff)
 
 	// Query origin data.

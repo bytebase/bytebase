@@ -1033,6 +1033,13 @@ export declare type SemanticTypeSetting_SemanticType = Message<"bytebase.v1.Sema
    * @generated from field: bytebase.v1.Algorithm algorithm = 6;
    */
   algorithm?: Algorithm;
+
+  /**
+   * icon is the icon for semantic type, it can be emoji or base64 encoded image.
+   *
+   * @generated from field: string icon = 7;
+   */
+  icon: string;
 };
 
 /**
