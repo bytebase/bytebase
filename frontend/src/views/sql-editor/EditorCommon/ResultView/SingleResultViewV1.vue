@@ -129,6 +129,7 @@
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :is-column-missing-sensitive="isColumnMissingSensitive"
+        :get-masking-reason="getMaskingReason"
       />
       <DataTable
         v-else
@@ -137,6 +138,7 @@
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :is-column-missing-sensitive="isColumnMissingSensitive"
+        :get-masking-reason="getMaskingReason"
       />
     </div>
 
@@ -429,6 +431,16 @@ const isColumnMissingSensitive = (columnIndex: number): boolean => {
     (props.result.sensitive[columnIndex] ?? false) &&
     !isSensitiveColumn(columnIndex)
   );
+};
+
+const getMaskingReason = (columnIndex: number) => {
+  if (
+    !props.result.maskingReasons ||
+    columnIndex >= props.result.maskingReasons.length
+  ) {
+    return undefined;
+  }
+  return props.result.maskingReasons[columnIndex];
 };
 
 const table = useVueTable<QueryRow>({

@@ -40,8 +40,18 @@
                 <br v-else class="min-h-[1rem] inline-flex" />
               </span>
 
+              <MaskingReasonPopover
+                v-if="
+                  isSensitiveColumn(header.index) &&
+                  getMaskingReason &&
+                  getMaskingReason(header.index) &&
+                  getMaskingReason(header.index).semanticTypeId
+                "
+                :reason="getMaskingReason(header.index)"
+                class="ml-0.5 shrink-0"
+              />
               <SensitiveDataIcon
-                v-if="isSensitiveColumn(header.index)"
+                v-else-if="isSensitiveColumn(header.index)"
                 class="ml-0.5 shrink-0"
               />
               <FeatureBadge
@@ -157,6 +167,7 @@ import {
 } from "./binary-format-store";
 import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
+import MaskingReasonPopover from "./common/MaskingReasonPopover.vue";
 import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
 import { useSelectionContext } from "./common/selection-logic";
 import { getColumnType } from "./common/utils";
@@ -168,6 +179,7 @@ const props = defineProps<{
   offset: number;
   isSensitiveColumn: (index: number) => boolean;
   isColumnMissingSensitive: (index: number) => boolean;
+  getMaskingReason?: (index: number) => any;
   maxHeight?: number;
 }>();
 

@@ -134,6 +134,7 @@
     "copy": "Copy",
     "copied": "Copied",
     "click-to-copy": "Click to copy",
+    "click-to-edit": "Click to edit",
     "manage": "Manage",
     "table": "Table",
     "search": "Search",
@@ -174,6 +175,7 @@
     "will-override-current-data": "Will override current data.",
     "rollout": "Rollout",
     "upload": "Upload",
+    "clear": "Clear",
     "added": "Added",
     "revoke": "Revoke",
     "cannot-undo-this-action": "You cannot undo this action",
@@ -692,6 +694,8 @@
         "use-predefined-type": "Use Predefined Type",
         "add-from-template": "Add from template",
         "table": {
+          "icon": "Icon",
+          "click-to-add-icon": "Click to add icon",
           "semantic-type": "Semantic Type",
           "description": "Description",
           "masking-algorithm": "Masking Algorithm",
@@ -2806,6 +2810,17 @@
       "built-in": "Use built-in sample",
       "built-in-desc": "Generate sample project and instances"
     }
+  },
+  "masking": {
+    "reason": {
+      "title": "Why is this data masked?",
+      "semantic-type": "Data type",
+      "algorithm": "Masking method",
+      "context": "Rule",
+      "classification": "Classification level"
+    },
+    "view-rules": "View masking rules",
+    "algorithms": {}
   },
   "landing": {
     "quick-link": {

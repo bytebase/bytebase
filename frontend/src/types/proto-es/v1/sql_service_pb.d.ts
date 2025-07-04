@@ -304,6 +304,13 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
    * @generated from field: repeated bytebase.v1.QueryResult.Message messages = 12;
    */
   messages: QueryResult_Message[];
+
+  /**
+   * Masking reasons for each masked column.
+   *
+   * @generated from field: repeated bytebase.v1.MaskingReason masking_reasons = 13;
+   */
+  maskingReasons: MaskingReason[];
 };
 
 /**
@@ -478,6 +485,66 @@ export enum QueryResult_Message_Level {
  * Describes the enum bytebase.v1.QueryResult.Message.Level.
  */
 export declare const QueryResult_Message_LevelSchema: GenEnum<QueryResult_Message_Level>;
+
+/**
+ * @generated from message bytebase.v1.MaskingReason
+ */
+export declare type MaskingReason = Message<"bytebase.v1.MaskingReason"> & {
+  /**
+   * The semantic type that triggered masking (e.g., "SSN", "email", "phone").
+   *
+   * @generated from field: string semantic_type_id = 1;
+   */
+  semanticTypeId: string;
+
+  /**
+   * Human-readable semantic type title.
+   *
+   * @generated from field: string semantic_type_title = 2;
+   */
+  semanticTypeTitle: string;
+
+  /**
+   * The masking rule ID that matched (if applicable).
+   *
+   * @generated from field: string masking_rule_id = 3;
+   */
+  maskingRuleId: string;
+
+  /**
+   * The masking algorithm used.
+   *
+   * @generated from field: string algorithm = 4;
+   */
+  algorithm: string;
+
+  /**
+   * Additional context (e.g., "Matched global rule: PII Protection").
+   *
+   * @generated from field: string context = 5;
+   */
+  context: string;
+
+  /**
+   * Whether masking was due to classification level.
+   *
+   * @generated from field: string classification_level = 6;
+   */
+  classificationLevel: string;
+
+  /**
+   * Icon associated with the semantic type (if any).
+   *
+   * @generated from field: string semantic_type_icon = 7;
+   */
+  semanticTypeIcon: string;
+};
+
+/**
+ * Describes the message bytebase.v1.MaskingReason.
+ * Use `create(MaskingReasonSchema)` to create a new message.
+ */
+export declare const MaskingReasonSchema: GenMessage<MaskingReason>;
 
 /**
  * @generated from message bytebase.v1.QueryRow

@@ -2613,8 +2613,10 @@ type SemanticTypeSetting_SemanticType struct {
 	// the title of the semantic type, it should not be empty.
 	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// the description of the semantic type, it can be empty.
-	Description   string     `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Algorithm     *Algorithm `protobuf:"bytes,6,opt,name=algorithm,proto3" json:"algorithm,omitempty"`
+	Description string     `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Algorithm   *Algorithm `protobuf:"bytes,6,opt,name=algorithm,proto3" json:"algorithm,omitempty"`
+	// icon is the icon for semantic type, it can be emoji or base64 encoded image.
+	Icon          string `protobuf:"bytes,7,opt,name=icon,proto3" json:"icon,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2675,6 +2677,13 @@ func (x *SemanticTypeSetting_SemanticType) GetAlgorithm() *Algorithm {
 		return x.Algorithm
 	}
 	return nil
+}
+
+func (x *SemanticTypeSetting_SemanticType) GetIcon() string {
+	if x != nil {
+		return x.Icon
+	}
+	return ""
 }
 
 type Algorithm_FullMask struct {
@@ -3191,14 +3200,15 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\t_level_id\x1a\x95\x01\n" +
 	"\x13ClassificationEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12h\n" +
-	"\x05value\x18\x02 \x01(\v2R.bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassificationR\x05value:\x028\x01\"\xe9\x01\n" +
+	"\x05value\x18\x02 \x01(\v2R.bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassificationR\x05value:\x028\x01\"\xfd\x01\n" +
 	"\x13SemanticTypeSetting\x12C\n" +
-	"\x05types\x18\x01 \x03(\v2-.bytebase.v1.SemanticTypeSetting.SemanticTypeR\x05types\x1a\x8c\x01\n" +
+	"\x05types\x18\x01 \x03(\v2-.bytebase.v1.SemanticTypeSetting.SemanticTypeR\x05types\x1a\xa0\x01\n" +
 	"\fSemanticType\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x124\n" +
-	"\talgorithm\x18\x06 \x01(\v2\x16.bytebase.v1.AlgorithmR\talgorithm\"\x8e\x06\n" +
+	"\talgorithm\x18\x06 \x01(\v2\x16.bytebase.v1.AlgorithmR\talgorithm\x12\x12\n" +
+	"\x04icon\x18\a \x01(\tR\x04icon\"\x8e\x06\n" +
 	"\tAlgorithm\x12>\n" +
 	"\tfull_mask\x18\x05 \x01(\v2\x1f.bytebase.v1.Algorithm.FullMaskH\x00R\bfullMask\x12A\n" +
 	"\n" +
