@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
@@ -93,11 +94,17 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 		if semanticTypeID != "" {
 			semanticType, ok := m.semanticTypesMap[semanticTypeID]
 			if ok {
+				context := ""
+				if schemaName != "" {
+					context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, schemaName, tableName, columnName)
+				} else {
+					context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, tableName, columnName)
+				}
 				eval = &MaskingEvaluation{
 					SemanticTypeID:    semanticTypeID,
 					SemanticTypeTitle: semanticType.Title,
 					SemanticTypeIcon:  semanticType.Icon,
-					Context:           "Column-level semantic type",
+					Context:           context,
 				}
 			}
 		}
@@ -144,19 +151,27 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 			semanticTypeID := maskingRule.GetSemanticType()
 			semanticType, ok := m.semanticTypesMap[semanticTypeID]
 			if !ok {
+				ruleTitle := ""
+				if maskingRule.Condition != nil && maskingRule.Condition.Title != "" {
+					ruleTitle = maskingRule.Condition.Title
+				}
 				return &MaskingEvaluation{
 					SemanticTypeID:      semanticTypeID,
 					MaskingRuleID:       maskingRule.Id,
-					Context:             "Global masking rule",
+					Context:             fmt.Sprintf("Global masking rule: %s", ruleTitle),
 					ClassificationLevel: classificationLevel,
 				}, nil
+			}
+			ruleTitle := ""
+			if maskingRule.Condition != nil && maskingRule.Condition.Title != "" {
+				ruleTitle = maskingRule.Condition.Title
 			}
 			return &MaskingEvaluation{
 				SemanticTypeID:      semanticTypeID,
 				SemanticTypeTitle:   semanticType.Title,
 				SemanticTypeIcon:    semanticType.Icon,
 				MaskingRuleID:       maskingRule.Id,
-				Context:             "Global masking rule",
+				Context:             fmt.Sprintf("Global masking rule: %s", ruleTitle),
 				ClassificationLevel: classificationLevel,
 			}, nil
 		}

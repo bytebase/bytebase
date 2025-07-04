@@ -2814,7 +2814,7 @@
   "masking": {
     "reason": {
       "title": "Why is this data masked?",
-      "semantic-type": "Data type",
+      "semantic-type": "Semantic type",
       "algorithm": "Masking method",
       "context": "Rule",
       "classification": "Classification level"

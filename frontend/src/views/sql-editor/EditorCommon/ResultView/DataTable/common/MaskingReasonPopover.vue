@@ -3,19 +3,12 @@
     <template #trigger>
       <div class="inline-flex items-center gap-0.5">
         <!-- Show semantic type icon if available -->
-        <template v-if="props.reason.semanticTypeIcon">
-          <!-- Handle base64 image data -->
-          <img
-            v-if="isBase64Image(props.reason.semanticTypeIcon)"
-            :src="props.reason.semanticTypeIcon"
-            class="w-3 h-3 object-contain"
-            alt=""
-          />
-          <!-- Handle emoji/text icon -->
-          <span v-else class="text-xs">
-            {{ props.reason.semanticTypeIcon }}
-          </span>
-        </template>
+        <img
+          v-if="props.reason.semanticTypeIcon"
+          :src="props.reason.semanticTypeIcon"
+          class="w-3 h-3 object-contain"
+          alt=""
+        />
         <heroicons:eye-slash
           class="w-3 h-3 cursor-pointer text-gray-500 hover:text-gray-700"
           @click="handleClick"
@@ -56,23 +49,14 @@
         >
         <span class="ml-1">{{ props.reason.classificationLevel }}</span>
       </div>
-
-      <div v-if="hasPermission" class="pt-2 border-t">
-        <NButton size="tiny" @click="navigateToSettings">
-          {{ $t("masking.view-rules") }}
-        </NButton>
-      </div>
     </div>
   </NPopover>
 </template>
 
 <script setup lang="ts">
-import { NPopover, NButton } from "naive-ui";
-import { computed } from "vue";
+import { NPopover } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   reason: MaskingReason;
@@ -83,15 +67,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const router = useRouter();
-
-const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.settings.set");
-});
-
-const isBase64Image = (str: string): boolean => {
-  return str.startsWith("data:image");
-};
 
 const formatAlgorithm = (algorithm: string): string => {
   const algorithmKey = algorithm.toLowerCase().replace(/\s+/g, "-");
@@ -107,9 +82,5 @@ const formatAlgorithm = (algorithm: string): string => {
 
 const handleClick = () => {
   emit("click");
-};
-
-const navigateToSettings = () => {
-  router.push("/setting/workspace/sensitive-data/semantic-types");
 };
 </script>
