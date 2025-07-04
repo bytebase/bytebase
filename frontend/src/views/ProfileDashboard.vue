@@ -219,6 +219,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import type { ConnectError } from "@connectrpc/connect";
 import { computedAsync, useTitle } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import type { DropdownOption } from "naive-ui";
@@ -419,7 +420,7 @@ const saveEdit = async () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: (error as any).details || "Failed to update user",
+      title: (error as ConnectError).message || "Failed to update user",
     });
     return;
   }

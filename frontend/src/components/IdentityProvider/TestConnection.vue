@@ -89,6 +89,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import type { ConnectError } from "@connectrpc/connect";
 import { NButton, NModal } from "naive-ui";
 import { ref, onUnmounted, watch } from "vue";
 import { identityProviderServiceClientConnect } from "@/grpcweb";
@@ -161,7 +162,7 @@ const loginWithIdentityProviderEventListener = async (event: Event) => {
       module: "bytebase",
       style: "CRITICAL",
       title: `Request error occurred`,
-      description: (error as any).details,
+      description: (error as ConnectError).message,
     });
   } finally {
     isTestingInProgress.value = false;
@@ -220,7 +221,7 @@ const testConnection = async () => {
         module: "bytebase",
         style: "CRITICAL",
         title: `Request error occurred`,
-        description: (error as any).message,
+        description: (error as ConnectError).message,
       });
     }
   } else if (idp.type === IdentityProviderType.LDAP) {
@@ -242,7 +243,7 @@ const testConnection = async () => {
         module: "bytebase",
         style: "CRITICAL",
         title: `Request error occurred`,
-        description: (error as any).details,
+        description: (error as ConnectError).message,
       });
     } finally {
       isTestingInProgress.value = false;
