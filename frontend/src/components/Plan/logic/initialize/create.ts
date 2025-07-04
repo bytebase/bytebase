@@ -164,7 +164,7 @@ const buildSpecForTargetsV1 = async (
               ? Plan_ChangeDatabaseConfig_Type.DATA
               : Plan_ChangeDatabaseConfig_Type.MIGRATE,
           enablePriorBackup:
-            template == "bb.issue.database.data.update" &&
+            template === "bb.issue.database.data.update" &&
             project.autoEnableBackup,
         }),
       };
