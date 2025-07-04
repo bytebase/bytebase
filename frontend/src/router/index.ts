@@ -1,6 +1,10 @@
 import { useTitle } from "@vueuse/core";
 import { nextTick, ref } from "vue";
-import { createRouter, createWebHistory } from "vue-router";
+import {
+  createRouter,
+  createWebHistory,
+  type LocationQueryRaw,
+} from "vue-router";
 import {
   hasFeature,
   useAuthStore,
@@ -128,7 +132,7 @@ router.beforeEach((to, from, next) => {
     return;
   } else {
     if (!authStore.isLoggedIn) {
-      const query: any = {
+      const query: LocationQueryRaw = {
         ...(to.query || {}),
       };
       if (to.fullPath !== "/") {

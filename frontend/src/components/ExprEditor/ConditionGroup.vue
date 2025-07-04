@@ -211,7 +211,7 @@ const addRawString = () => {
   args.value.push({
     type: ExprType.RawString,
     content: "",
-  } as any);
+  });
   emit("update");
 };
 

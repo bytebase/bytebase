@@ -758,6 +758,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				}
 
 				// Get environment order from plan deployment config or global settings
+				// Some environments may have zero tasks. We need to filter them out.
 				var environmentOrder []string
 				if plan != nil && len(plan.Config.GetDeployment().GetEnvironments()) > 0 {
 					environmentOrder = plan.Config.Deployment.GetEnvironments()
@@ -769,15 +770,32 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 				}
 
+				allTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &task.PipelineID})
+				if err != nil {
+					return errors.Wrapf(err, "failed to list tasks")
+				}
+				allTaskEnvironments := map[string]bool{}
+				for _, task := range allTasks {
+					allTaskEnvironments[task.Environment] = true
+				}
+
+				// Filter out environments that have zero tasks
+				filteredEnvironmentOrder := []string{}
+				for _, env := range environmentOrder {
+					if allTaskEnvironments[env] {
+						filteredEnvironmentOrder = append(filteredEnvironmentOrder, env)
+					}
+				}
+
 				currentEnvironment := task.Environment
 				var nextEnvironment string
 				var pipelineDone bool
-				for i, env := range environmentOrder {
+				for i, env := range filteredEnvironmentOrder {
 					if env == currentEnvironment {
-						if i < len(environmentOrder)-1 {
-							nextEnvironment = environmentOrder[i+1]
+						if i < len(filteredEnvironmentOrder)-1 {
+							nextEnvironment = filteredEnvironmentOrder[i+1]
 						}
-						if i == len(environmentOrder)-1 {
+						if i == len(filteredEnvironmentOrder)-1 {
 							pipelineDone = true
 						}
 						break
