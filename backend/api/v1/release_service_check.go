@@ -225,7 +225,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 						"db_engine":     engine.String(),
 						"sql_statement": statement,
 					}
-					riskLevel, err := CalculateRiskLevelWithSummaryReport(ctx, risks, commonArgs, getRiskSourceFromChangeType(changeType), summaryReport)
+					riskLevel, err := CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, getRiskSourceFromChangeType(changeType), summaryReport)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to calculate risk level"))
 					}

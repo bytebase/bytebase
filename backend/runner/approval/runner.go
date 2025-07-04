@@ -407,7 +407,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 	if planCheckRunCount < common.MinimumCompletedPlanCheckRun && planCheckRunCount != planCheckRunDone {
 		return 0, store.RiskSourceUnknown, false, nil
 	}
-	// We have not less than 5 planCheckRuns in total.
+	// We have 5 or more planCheckRuns in total.
 	// We need at least 5 completed plan check run.
 	if planCheckRunCount >= common.MinimumCompletedPlanCheckRun && planCheckRunDone < common.MinimumCompletedPlanCheckRun {
 		return 0, store.RiskSourceUnknown, false, nil
@@ -466,6 +466,17 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 			"sql_statement": taskStatement,
 		}
 		risk, err := func() (int32, error) {
+			// The summary report is not always available.
+			// Use the greatest risk.
+			var greatestRiskLevel int32
+			riskLevel, err := apiv1.CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, riskSource, nil)
+			if err != nil {
+				return 0, err
+			}
+			if riskLevel > greatestRiskLevel {
+				greatestRiskLevel = riskLevel
+			}
+
 			if run, ok := latestPlanCheckRun[Key{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: databaseName,
@@ -475,17 +486,16 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 					if report == nil {
 						continue
 					}
-					riskLevel, err := apiv1.CalculateRiskLevelWithSummaryReport(ctx, risks, commonArgs, riskSource, report)
+					riskLevel, err := apiv1.CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, riskSource, report)
 					if err != nil {
 						return 0, err
 					}
-					if riskLevel == 0 {
-						continue
+					if riskLevel > greatestRiskLevel {
+						greatestRiskLevel = riskLevel
 					}
-					return riskLevel, nil
 				}
 			}
-			return 0, nil
+			return greatestRiskLevel, nil
 		}()
 		if err != nil {
 			return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
