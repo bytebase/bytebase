@@ -14,7 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func CalculateRiskLevelWithSummaryReport(
+func CalculateRiskLevelWithOptionalSummaryReport(
 	_ context.Context,
 	risks []*store.RiskMessage,
 	commonArgs map[string]any,
