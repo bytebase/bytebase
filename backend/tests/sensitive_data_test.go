@@ -257,32 +257,32 @@ func TestSensitiveData(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Msg.Results))
-	
+
 	// Build expected masked data dynamically with the correct instance name
 	expectedMaskedData := &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
 		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
 		Masked: []*v1pb.MaskingReason{
 			{
-				SemanticTypeId: "default", 
-				Algorithm: "Full mask",
-				Context: fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instance.Name, databaseName, tableName, "id"),
+				SemanticTypeId:    "default",
+				Algorithm:         "Full mask",
+				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instance.Name, databaseName, tableName, "id"),
 				SemanticTypeTitle: "Default",
 			},
 			nil,
 			{
-				SemanticTypeId: "default", 
-				Algorithm: "Full mask",
-				Context: fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instance.Name, databaseName, tableName, "author"),
+				SemanticTypeId:    "default",
+				Algorithm:         "Full mask",
+				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instance.Name, databaseName, tableName, "author"),
 				SemanticTypeTitle: "Default",
 			},
 		},
-		Rows: maskedData.Rows,
+		Rows:        maskedData.Rows,
 		Statement:   "SELECT * FROM tech_book",
 		RowsCount:   3,
 		AllowExport: true,
 	}
-	
+
 	diff := cmp.Diff(expectedMaskedData, queryResp.Msg.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Empty(diff)
 
