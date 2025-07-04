@@ -71,8 +71,9 @@ import ErrorList from "@/components/misc/ErrorList.vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { type Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
 import {
+  UpdatePlanRequestSchema,
   Plan_SpecSchema,
   Plan_ExportDataConfigSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
@@ -80,7 +81,7 @@ import ExportFormatSelector from "./ExportFormatSelector.vue";
 import ExportPasswordInputer from "./ExportPasswordInputer.vue";
 
 interface LocalState {
-  config: any;
+  config: Plan_ExportDataConfig;
   isEditing: boolean;
 }
 

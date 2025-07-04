@@ -55,6 +55,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import type { ConnectError } from "@connectrpc/connect";
 import { isNumber } from "lodash-es";
 import {
   CheckCircleIcon,
@@ -148,12 +149,12 @@ const runChecks = async () => {
       style: "SUCCESS",
       title: "Plan checks started",
     });
-  } catch (error: any) {
+  } catch (error) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: "Failed to run plan checks",
-      description: error.message,
+      description: (error as ConnectError).message,
     });
   } finally {
     isRunningChecks.value = false;
