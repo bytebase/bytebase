@@ -180,6 +180,9 @@ message SemanticTypeSetting {
     string description = 3;
 
     Algorithm algorithm = 6;
+
+    // icon is the icon for semantic type, it can be emoji or base64 encoded image.
+    string icon = 7;
   }
 
   repeated SemanticType types = 1;

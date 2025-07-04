@@ -281,7 +281,7 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
   return create(QueryResultSchema, {
     columnNames: ["Affected Rows"],
     columnTypeNames: ["BIGINT"],
-    masked: [false],
+    masked: [],
     error: "",
     statement: "",
     rows: [

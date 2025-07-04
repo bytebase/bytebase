@@ -229,8 +229,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		wantQueryResult = &v1pb.QueryResult{
 			ColumnNames:     []string{"count(*)"},
 			ColumnTypeNames: []string{"BIGINT"},
-			Masked:          []bool{false},
-			Sensitive:       []bool{false},
+			Masked:          []*v1pb.MaskingReason{nil},
 			Rows: []*v1pb.QueryRow{
 				{
 					Values: []*v1pb.RowValue{
