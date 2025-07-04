@@ -44,7 +44,7 @@
       </Pane>
     </Splitpanes>
 
-    <Quickstart />
+    <Quickstart v-if="actuatorStore.info?.enableSample" />
 
     <Drawer v-model:show="showSheetPanel">
       <DrawerContent :title="$t('sql-editor.sheet.self')">
@@ -79,6 +79,7 @@ import {
   useDatabaseV1Store,
   useSQLEditorTabStore,
   useSQLEditorStore,
+  useActuatorV1Store,
 } from "@/store";
 import { extractProjectResourceName } from "@/utils";
 import AsidePanel from "./AsidePanel";
@@ -99,6 +100,7 @@ const state = reactive<LocalState>({
 });
 
 const router = useRouter();
+const actuatorStore = useActuatorV1Store();
 const databaseStore = useDatabaseV1Store();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
