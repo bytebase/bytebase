@@ -123,7 +123,7 @@ const handleConfirm = async (
     const request = create(BatchUpdateIssuesStatusRequestSchema, {
       parent: "projects/-",
       issues: props.issueList.map((issue) => issue.name),
-      status: IssueStatusActionToIssueStatusMap[action] as any,
+      status: IssueStatusActionToIssueStatusMap[action],
       reason: comment ?? "",
     });
     await issueServiceClientConnect.batchUpdateIssuesStatus(request);
