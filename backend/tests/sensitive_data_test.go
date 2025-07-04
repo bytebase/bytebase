@@ -19,9 +19,9 @@ var (
 		ColumnNames:     []string{"id", "name", "author"},
 		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
 		Masked: []*v1pb.MaskingReason{
-			{SemanticTypeId: "default", Algorithm: "Full mask"},
+			{SemanticTypeId: "default", Algorithm: "Full mask", Context: "Column-level semantic type: instance-c1f61866-7.sensitive_data.tech_book.id", SemanticTypeTitle: "Default"},
 			nil,
-			{SemanticTypeId: "default", Algorithm: "Full mask"},
+			{SemanticTypeId: "default", Algorithm: "Full mask", Context: "Column-level semantic type: instance-c1f61866-7.sensitive_data.tech_book.author", SemanticTypeTitle: "Default"},
 		},
 		Rows: []*v1pb.QueryRow{
 			{
