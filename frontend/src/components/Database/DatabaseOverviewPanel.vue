@@ -282,7 +282,7 @@ const streamList = computed(() => {
   }
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
-    .schemas.map((schema: any) => schema.streams)
+    .schemas.map((schema) => schema.streams)
     .flat();
 });
 
@@ -296,7 +296,7 @@ const taskList = computed(() => {
   }
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
-    .schemas.map((schema: any) => schema.tasks)
+    .schemas.map((schema) => schema.tasks)
     .flat();
 });
 
@@ -310,7 +310,7 @@ const packageList = computed(() => {
   }
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
-    .schemas.map((schema: any) => schema.packages)
+    .schemas.map((schema) => schema.packages)
     .flat();
 });
 
@@ -324,7 +324,7 @@ const sequenceList = computed(() => {
   }
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
-    .schemas.map((schema: any) => schema.sequences)
+    .schemas.map((schema) => schema.sequences)
     .flat();
 });
 
