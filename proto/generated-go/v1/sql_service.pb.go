@@ -635,10 +635,6 @@ type QueryResult struct {
 	// Rows of the query result.
 	Rows      []*QueryRow `protobuf:"bytes,3,rep,name=rows,proto3" json:"rows,omitempty"`
 	RowsCount int64       `protobuf:"varint,10,opt,name=rows_count,json=rowsCount,proto3" json:"rows_count,omitempty"`
-	// Columns are masked or not.
-	Masked []bool `protobuf:"varint,4,rep,packed,name=masked,proto3" json:"masked,omitempty"`
-	// Columns are sensitive or not.
-	Sensitive []bool `protobuf:"varint,5,rep,packed,name=sensitive,proto3" json:"sensitive,omitempty"`
 	// The error message if the query failed.
 	Error string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
 	// The time it takes to execute the query.
@@ -654,10 +650,10 @@ type QueryResult struct {
 	// Informational or debug messages returned by the database engine during query execution.
 	// Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
 	Messages []*QueryResult_Message `protobuf:"bytes,12,rep,name=messages,proto3" json:"messages,omitempty"`
-	// Masking reasons for each masked column.
-	MaskingReasons []*MaskingReason `protobuf:"bytes,13,rep,name=masking_reasons,json=maskingReasons,proto3" json:"masking_reasons,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Masking reasons for each column (empty for non-masked columns).
+	Masked        []*MaskingReason `protobuf:"bytes,4,rep,name=masked,proto3" json:"masked,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *QueryResult) Reset() {
@@ -718,20 +714,6 @@ func (x *QueryResult) GetRowsCount() int64 {
 	return 0
 }
 
-func (x *QueryResult) GetMasked() []bool {
-	if x != nil {
-		return x.Masked
-	}
-	return nil
-}
-
-func (x *QueryResult) GetSensitive() []bool {
-	if x != nil {
-		return x.Sensitive
-	}
-	return nil
-}
-
 func (x *QueryResult) GetError() string {
 	if x != nil {
 		return x.Error
@@ -783,9 +765,9 @@ func (x *QueryResult) GetMessages() []*QueryResult_Message {
 	return nil
 }
 
-func (x *QueryResult) GetMaskingReasons() []*MaskingReason {
+func (x *QueryResult) GetMasked() []*MaskingReason {
 	if x != nil {
-		return x.MaskingReasons
+		return x.Masked
 	}
 	return nil
 }
@@ -2816,24 +2798,21 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12RedisRunCommandsOn\x12%\n" +
 	"!REDIS_RUN_COMMANDS_ON_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vSINGLE_NODE\x10\x01\x12\r\n" +
-	"\tALL_NODES\x10\x02\"\x98\n" +
-	"\n" +
+	"\tALL_NODES\x10\x02\"\xd1\t\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
 	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12)\n" +
 	"\x04rows\x18\x03 \x03(\v2\x15.bytebase.v1.QueryRowR\x04rows\x12\x1d\n" +
 	"\n" +
 	"rows_count\x18\n" +
-	" \x01(\x03R\trowsCount\x12\x16\n" +
-	"\x06masked\x18\x04 \x03(\bR\x06masked\x12\x1c\n" +
-	"\tsensitive\x18\x05 \x03(\bR\tsensitive\x12\x14\n" +
+	" \x01(\x03R\trowsCount\x12\x14\n" +
 	"\x05error\x18\x06 \x01(\tR\x05error\x123\n" +
 	"\alatency\x18\a \x01(\v2\x19.google.protobuf.DurationR\alatency\x12\x1c\n" +
 	"\tstatement\x18\b \x01(\tR\tstatement\x12O\n" +
 	"\x0epostgres_error\x18\t \x01(\v2&.bytebase.v1.QueryResult.PostgresErrorH\x00R\rpostgresError\x12!\n" +
 	"\fallow_export\x18\v \x01(\bR\vallowExport\x12<\n" +
-	"\bmessages\x18\f \x03(\v2 .bytebase.v1.QueryResult.MessageR\bmessages\x12C\n" +
-	"\x0fmasking_reasons\x18\r \x03(\v2\x1a.bytebase.v1.MaskingReasonR\x0emaskingReasons\x1a\xfd\x03\n" +
+	"\bmessages\x18\f \x03(\v2 .bytebase.v1.QueryResult.MessageR\bmessages\x122\n" +
+	"\x06masked\x18\x04 \x03(\v2\x1a.bytebase.v1.MaskingReasonR\x06masked\x1a\xfd\x03\n" +
 	"\rPostgresError\x12\x1a\n" +
 	"\bseverity\x18\x01 \x01(\tR\bseverity\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\tR\x04code\x12\x18\n" +
@@ -3094,7 +3073,7 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	38, // 5: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
 	30, // 6: bytebase.v1.QueryResult.postgres_error:type_name -> bytebase.v1.QueryResult.PostgresError
 	31, // 7: bytebase.v1.QueryResult.messages:type_name -> bytebase.v1.QueryResult.Message
-	11, // 8: bytebase.v1.QueryResult.masking_reasons:type_name -> bytebase.v1.MaskingReason
+	11, // 8: bytebase.v1.QueryResult.masked:type_name -> bytebase.v1.MaskingReason
 	13, // 9: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
 	39, // 10: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
 	40, // 11: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value

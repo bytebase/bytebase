@@ -23651,20 +23651,6 @@ The types come from the Golang SQL driver. </p></td>
                 </tr>
               
                 <tr>
-                  <td>masked</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td>repeated</td>
-                  <td><p>Columns are masked or not. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sensitive</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td>repeated</td>
-                  <td><p>Columns are sensitive or not. </p></td>
-                </tr>
-              
-                <tr>
                   <td>error</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -23708,10 +23694,10 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                 </tr>
               
                 <tr>
-                  <td>masking_reasons</td>
+                  <td>masked</td>
                   <td><a href="#bytebase.v1.MaskingReason">MaskingReason</a></td>
                   <td>repeated</td>
-                  <td><p>Masking reasons for each masked column. </p></td>
+                  <td><p>Masking reasons for each column (empty for non-masked columns). </p></td>
                 </tr>
               
             </tbody>

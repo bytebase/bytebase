@@ -134,7 +134,6 @@
     "copy": "Copy",
     "copied": "Copied",
     "click-to-copy": "Click to copy",
-    "click-to-edit": "Click to edit",
     "manage": "Manage",
     "table": "Table",
     "search": "Search",
@@ -695,7 +694,6 @@
         "add-from-template": "Add from template",
         "table": {
           "icon": "Icon",
-          "click-to-add-icon": "Click to add icon",
           "semantic-type": "Semantic Type",
           "description": "Description",
           "masking-algorithm": "Masking Algorithm",
@@ -2819,7 +2817,6 @@
       "context": "Rule",
       "classification": "Classification level"
     },
-    "view-rules": "View masking rules",
     "algorithms": {}
   },
   "landing": {

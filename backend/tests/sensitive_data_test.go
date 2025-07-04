@@ -18,8 +18,11 @@ var (
 	maskedData = &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
 		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
-		Masked:          []bool{true, false, true},
-		Sensitive:       []bool{true, false, true},
+		Masked: []*v1pb.MaskingReason{
+			{SemanticTypeId: "test", Algorithm: "full-mask"},
+			nil,
+			{SemanticTypeId: "test", Algorithm: "full-mask"},
+		},
 		Rows: []*v1pb.QueryRow{
 			{
 				Values: []*v1pb.RowValue{

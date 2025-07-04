@@ -105,11 +105,14 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 			// Skip the built-in default semantic types.
 			continue
 		}
-		masker, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+		m, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
 		if err != nil {
 			return nil, err
 		}
-		semanticTypeToMasker[semanticType.GetId()] = masker
+		// Only add semantic types that have actual masking configured (not NoneMasker)
+		if _, isNoneMasker := m.(*masker.NoneMasker); !isNoneMasker {
+			semanticTypeToMasker[semanticType.GetId()] = m
+		}
 	}
 
 	return semanticTypeToMasker, nil
@@ -121,7 +124,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 		return nil, nil, nil
 	}
 	maskers := make([]masker.Masker, 0, len(span.Results))
-	maskingReasons := make([]*v1pb.MaskingReason, 0, len(span.Results))
+	masked := make([]*v1pb.MaskingReason, 0, len(span.Results))
 
 	semanticTypesToMasker, err := buildSemanticTypeToMaskerMap(ctx, s.store)
 	if err != nil {
@@ -135,7 +138,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 		// Likes constant expression, we use the none masker.
 		if len(spanResult.SourceColumns) == 0 {
 			maskers = append(maskers, masker.NewNoneMasker())
-			maskingReasons = append(maskingReasons, nil)
+			masked = append(masked, nil)
 			continue
 		}
 
@@ -161,7 +164,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 		switch len(effectiveMaskers) {
 		case 0:
 			maskers = append(maskers, masker.NewNoneMasker())
-			maskingReasons = append(maskingReasons, nil)
+			masked = append(masked, nil)
 		case 1:
 			// If there is only one source column, and comes from the expression, we fall back to the default full masker.
 			if !spanResult.IsPlainField && common.EngineSupportQuerySpanPlainField(instance.Metadata.GetEngine()) {
@@ -169,7 +172,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 				// For expression-based columns, add a generic reason
 				if len(effectiveReasons) > 0 {
 					reason := effectiveReasons[0]
-					maskingReasons = append(maskingReasons, &v1pb.MaskingReason{
+					masked = append(masked, &v1pb.MaskingReason{
 						SemanticTypeId:      reason.SemanticTypeID,
 						SemanticTypeTitle:   reason.SemanticTypeTitle,
 						SemanticTypeIcon:    reason.SemanticTypeIcon,
@@ -179,13 +182,13 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 						ClassificationLevel: reason.ClassificationLevel,
 					})
 				} else {
-					maskingReasons = append(maskingReasons, nil)
+					masked = append(masked, nil)
 				}
 			} else {
 				maskers = append(maskers, effectiveMaskers[0])
 				if len(effectiveReasons) > 0 {
 					reason := effectiveReasons[0]
-					maskingReasons = append(maskingReasons, &v1pb.MaskingReason{
+					masked = append(masked, &v1pb.MaskingReason{
 						SemanticTypeId:      reason.SemanticTypeID,
 						SemanticTypeTitle:   reason.SemanticTypeTitle,
 						SemanticTypeIcon:    reason.SemanticTypeIcon,
@@ -195,20 +198,20 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 						ClassificationLevel: reason.ClassificationLevel,
 					})
 				} else {
-					maskingReasons = append(maskingReasons, nil)
+					masked = append(masked, nil)
 				}
 			}
 		default:
 			// If there are more than one source columns, we fall back to the default full masker,
 			// because we don't know how the data be made up.
 			maskers = append(maskers, masker.NewDefaultFullMasker())
-			maskingReasons = append(maskingReasons, &v1pb.MaskingReason{
+			masked = append(masked, &v1pb.MaskingReason{
 				Algorithm: "Full mask",
 				Context:   "Multiple source columns",
 			})
 		}
 	}
-	return maskers, maskingReasons, nil
+	return maskers, masked, nil
 }
 
 func (s *QueryResultMasker) getMaskerForColumnResource(
@@ -296,6 +299,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 
 	result, ok := semanticTypeToMasker[evaluation.SemanticTypeID]
 	if !ok {
+		// No masker configured for this semantic type, return NoneMasker without evaluation
 		return masker.NewNoneMasker(), nil, nil
 	}
 
@@ -416,7 +420,5 @@ func doMaskResult(maskers []masker.Masker, reasons []*v1pb.MaskingReason, result
 		}
 	}
 
-	result.Sensitive = sensitive
-	result.Masked = sensitive
-	result.MaskingReasons = reasons
+	result.Masked = reasons
 }

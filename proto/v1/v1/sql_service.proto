@@ -210,12 +210,6 @@ message QueryResult {
 
   int64 rows_count = 10;
 
-  // Columns are masked or not.
-  repeated bool masked = 4;
-
-  // Columns are sensitive or not.
-  repeated bool sensitive = 5;
-
   // The error message if the query failed.
   string error = 6;
 
@@ -274,8 +268,8 @@ message QueryResult {
   // Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
   repeated Message messages = 12;
 
-  // Masking reasons for each masked column.
-  repeated MaskingReason masking_reasons = 13;
+  // Masking reasons for each column (empty for non-masked columns).
+  repeated MaskingReason masked = 4;
 }
 
 message MaskingReason {

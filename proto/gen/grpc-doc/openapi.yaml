@@ -12048,16 +12048,6 @@ components:
                     description: Rows of the query result.
                 rowsCount:
                     type: string
-                masked:
-                    type: array
-                    items:
-                        type: boolean
-                    description: Columns are masked or not.
-                sensitive:
-                    type: array
-                    items:
-                        type: boolean
-                    description: Columns are sensitive or not.
                 error:
                     type: string
                     description: The error message if the query failed.
@@ -12080,11 +12070,11 @@ components:
                     description: |-
                         Informational or debug messages returned by the database engine during query execution.
                          Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
-                maskingReasons:
+                masked:
                     type: array
                     items:
                         $ref: '#/components/schemas/MaskingReason'
-                    description: Masking reasons for each masked column.
+                    description: Masking reasons for each column (empty for non-masked columns).
         QueryResult_Message:
             type: object
             properties:

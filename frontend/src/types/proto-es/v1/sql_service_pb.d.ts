@@ -245,20 +245,6 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
   rowsCount: bigint;
 
   /**
-   * Columns are masked or not.
-   *
-   * @generated from field: repeated bool masked = 4;
-   */
-  masked: boolean[];
-
-  /**
-   * Columns are sensitive or not.
-   *
-   * @generated from field: repeated bool sensitive = 5;
-   */
-  sensitive: boolean[];
-
-  /**
    * The error message if the query failed.
    *
    * @generated from field: string error = 6;
@@ -306,11 +292,11 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
   messages: QueryResult_Message[];
 
   /**
-   * Masking reasons for each masked column.
+   * Masking reasons for each column (empty for non-masked columns).
    *
-   * @generated from field: repeated bytebase.v1.MaskingReason masking_reasons = 13;
+   * @generated from field: repeated bytebase.v1.MaskingReason masked = 4;
    */
-  maskingReasons: MaskingReason[];
+  masked: MaskingReason[];
 };
 
 /**

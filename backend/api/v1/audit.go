@@ -462,13 +462,11 @@ func redactAdminExecuteResponse(r *v1pb.AdminExecuteResponse) *v1pb.AdminExecute
 			ColumnNames:     result.ColumnNames,
 			ColumnTypeNames: result.ColumnTypeNames,
 			Rows:            nil, // Redacted
-			Masked:          result.Masked,
-			Sensitive:       result.Sensitive,
 			Error:           result.Error,
 			Latency:         result.Latency,
 			Statement:       result.Statement,
 			DetailedError:   result.DetailedError,
-			MaskingReasons:  redactMaskingReasons(result.MaskingReasons), // Redact icon data
+			Masked:          redactMaskingReasons(result.Masked), // Redact icon data
 		})
 	}
 
@@ -488,14 +486,12 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 			ColumnTypeNames: result.ColumnTypeNames,
 			Rows:            nil, // Redacted
 			RowsCount:       result.RowsCount,
-			Masked:          result.Masked,
-			Sensitive:       result.Sensitive,
 			Error:           result.Error,
 			Latency:         result.Latency,
 			Statement:       result.Statement,
 			DetailedError:   result.DetailedError,
 			AllowExport:     result.AllowExport,
-			MaskingReasons:  redactMaskingReasons(result.MaskingReasons), // Redact icon data
+			Masked:          redactMaskingReasons(result.Masked), // Redact icon data
 		})
 	}
 	return n

@@ -8519,15 +8519,13 @@ ISSUE_CREATE represents creating an issue. |
 | column_type_names | [string](#string) | repeated | Column types of the query result. The types come from the Golang SQL driver. |
 | rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
 | rows_count | [int64](#int64) |  |  |
-| masked | [bool](#bool) | repeated | Columns are masked or not. |
-| sensitive | [bool](#bool) | repeated | Columns are sensitive or not. |
 | error | [string](#string) |  | The error message if the query failed. |
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
 | statement | [string](#string) |  | The query statement for the result. |
 | postgres_error | [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError) |  |  |
 | allow_export | [bool](#bool) |  | The query result is allowed to be exported or not. |
 | messages | [QueryResult.Message](#bytebase-v1-QueryResult-Message) | repeated | Informational or debug messages returned by the database engine during query execution. Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. |
-| masking_reasons | [MaskingReason](#bytebase-v1-MaskingReason) | repeated | Masking reasons for each masked column. |
+| masked | [MaskingReason](#bytebase-v1-MaskingReason) | repeated | Masking reasons for each column (empty for non-masked columns). |
 
 
 

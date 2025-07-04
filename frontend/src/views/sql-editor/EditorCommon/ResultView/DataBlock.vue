@@ -20,24 +20,13 @@
           <div class="min-w-[7rem] text-left flex items-center font-medium">
             {{ header.column.columnDef.header }}
             <MaskingReasonPopover
-              v-if="
-                isSensitiveColumn(header.index) &&
-                getMaskingReason &&
-                getMaskingReason(header.index) &&
-                getMaskingReason(header.index).semanticTypeId
-              "
+              v-if="getMaskingReason && getMaskingReason(header.index)"
               :reason="getMaskingReason(header.index)"
               class="ml-0.5 shrink-0"
             />
             <SensitiveDataIcon
               v-else-if="isSensitiveColumn(header.index)"
               class="ml-0.5 shrink-0"
-            />
-            <FeatureBadge
-              v-else-if="isColumnMissingSensitive(header.index)"
-              :feature="PlanFeature.FEATURE_DATA_MASKING"
-              class="ml-0.5 shrink-0"
-              :instance="database.instanceResource"
             />
             :
           </div>
@@ -67,10 +56,7 @@
 import type { Table } from "@tanstack/vue-table";
 import { NScrollbar } from "naive-ui";
 import { computed, watch, ref } from "vue";
-import { FeatureBadge } from "@/components/FeatureGuard";
-import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import TableCell from "./DataTable/TableCell.vue";
 import MaskingReasonPopover from "./DataTable/common/MaskingReasonPopover.vue";
 import SensitiveDataIcon from "./DataTable/common/SensitiveDataIcon.vue";
@@ -82,12 +68,10 @@ const props = defineProps<{
   setIndex: number;
   offset: number;
   isSensitiveColumn: (index: number) => boolean;
-  isColumnMissingSensitive: (index: number) => boolean;
   getMaskingReason?: (index: number) => any;
 }>();
 
 const { keyword } = useSQLResultViewContext();
-const { database } = useConnectionOfCurrentSQLEditorTab();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 
 const rows = computed(() => props.table.getRowModel().rows);

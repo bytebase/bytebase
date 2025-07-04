@@ -128,7 +128,6 @@
         :set-index="setIndex"
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
-        :is-column-missing-sensitive="isColumnMissingSensitive"
         :get-masking-reason="getMaskingReason"
       />
       <DataTable
@@ -137,7 +136,6 @@
         :set-index="setIndex"
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
-        :is-column-missing-sensitive="isColumnMissingSensitive"
         :get-masking-reason="getMaskingReason"
       />
     </div>
@@ -423,24 +421,26 @@ const data = computed(() => {
 });
 
 const isSensitiveColumn = (columnIndex: number): boolean => {
-  return props.result.masked[columnIndex] ?? false;
-};
-
-const isColumnMissingSensitive = (columnIndex: number): boolean => {
+  const maskingReason = props.result.masked?.[columnIndex];
+  // Check if maskingReason exists and has actual content (not empty object)
   return (
-    (props.result.sensitive[columnIndex] ?? false) &&
-    !isSensitiveColumn(columnIndex)
+    maskingReason !== null &&
+    maskingReason !== undefined &&
+    maskingReason.semanticTypeId !== undefined &&
+    maskingReason.semanticTypeId !== ""
   );
 };
 
 const getMaskingReason = (columnIndex: number) => {
-  if (
-    !props.result.maskingReasons ||
-    columnIndex >= props.result.maskingReasons.length
-  ) {
+  if (!props.result.masked || columnIndex >= props.result.masked.length) {
     return undefined;
   }
-  return props.result.maskingReasons[columnIndex];
+  const reason = props.result.masked[columnIndex];
+  // Return undefined for empty masking reasons
+  if (!reason || !reason.semanticTypeId) {
+    return undefined;
+  }
+  return reason;
 };
 
 const table = useVueTable<QueryRow>({
