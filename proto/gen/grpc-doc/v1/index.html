@@ -2106,6 +2106,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.MaskingReason"><span class="badge">M</span>MaskingReason</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ParseMyBatisMapperRequest"><span class="badge">M</span>ParseMyBatisMapperRequest</a>
                 </li>
               
@@ -13271,6 +13275,13 @@ The default value is -1. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>icon</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>icon is the icon for semantic type, it can be emoji or base64 encoded image. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23212,6 +23223,72 @@ data source. </p></td>
 
         
       
+        <h3 id="bytebase.v1.MaskingReason">MaskingReason</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>semantic_type_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The semantic type that triggered masking (e.g., &#34;SSN&#34;, &#34;email&#34;, &#34;phone&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>semantic_type_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Human-readable semantic type title. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>masking_rule_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The masking rule ID that matched (if applicable). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>algorithm</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The masking algorithm used. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>context</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Additional context (e.g., &#34;Matched global rule: PII Protection&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_level</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Whether masking was due to classification level. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>semantic_type_icon</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Icon associated with the semantic type (if any). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ParseMyBatisMapperRequest">ParseMyBatisMapperRequest</h3>
         <p></p>
 
@@ -23574,20 +23651,6 @@ The types come from the Golang SQL driver. </p></td>
                 </tr>
               
                 <tr>
-                  <td>masked</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td>repeated</td>
-                  <td><p>Columns are masked or not. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sensitive</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td>repeated</td>
-                  <td><p>Columns are sensitive or not. </p></td>
-                </tr>
-              
-                <tr>
                   <td>error</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -23628,6 +23691,13 @@ The types come from the Golang SQL driver. </p></td>
                   <td>repeated</td>
                   <td><p>Informational or debug messages returned by the database engine during query execution.
 Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>masked</td>
+                  <td><a href="#bytebase.v1.MaskingReason">MaskingReason</a></td>
+                  <td>repeated</td>
+                  <td><p>Masking reasons for each column (empty for non-masked columns). </p></td>
                 </tr>
               
             </tbody>

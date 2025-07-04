@@ -504,6 +504,7 @@
     - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
+    - [MaskingReason](#bytebase-v1-MaskingReason)
     - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
     - [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
@@ -4558,6 +4559,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | title | [string](#string) |  | the title of the semantic type, it should not be empty. |
 | description | [string](#string) |  | the description of the semantic type, it can be empty. |
 | algorithm | [Algorithm](#bytebase-v1-Algorithm) |  |  |
+| icon | [string](#string) |  | icon is the icon for semantic type, it can be emoji or base64 encoded image. |
 
 
 
@@ -8347,6 +8349,27 @@ ISSUE_CREATE represents creating an issue. |
 
 
 
+<a name="bytebase-v1-MaskingReason"></a>
+
+### MaskingReason
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| semantic_type_id | [string](#string) |  | The semantic type that triggered masking (e.g., &#34;SSN&#34;, &#34;email&#34;, &#34;phone&#34;). |
+| semantic_type_title | [string](#string) |  | Human-readable semantic type title. |
+| masking_rule_id | [string](#string) |  | The masking rule ID that matched (if applicable). |
+| algorithm | [string](#string) |  | The masking algorithm used. |
+| context | [string](#string) |  | Additional context (e.g., &#34;Matched global rule: PII Protection&#34;). |
+| classification_level | [string](#string) |  | Whether masking was due to classification level. |
+| semantic_type_icon | [string](#string) |  | Icon associated with the semantic type (if any). |
+
+
+
+
+
+
 <a name="bytebase-v1-ParseMyBatisMapperRequest"></a>
 
 ### ParseMyBatisMapperRequest
@@ -8496,14 +8519,13 @@ ISSUE_CREATE represents creating an issue. |
 | column_type_names | [string](#string) | repeated | Column types of the query result. The types come from the Golang SQL driver. |
 | rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
 | rows_count | [int64](#int64) |  |  |
-| masked | [bool](#bool) | repeated | Columns are masked or not. |
-| sensitive | [bool](#bool) | repeated | Columns are sensitive or not. |
 | error | [string](#string) |  | The error message if the query failed. |
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
 | statement | [string](#string) |  | The query statement for the result. |
 | postgres_error | [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError) |  |  |
 | allow_export | [bool](#bool) |  | The query result is allowed to be exported or not. |
 | messages | [QueryResult.Message](#bytebase-v1-QueryResult-Message) | repeated | Informational or debug messages returned by the database engine during query execution. Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. |
+| masked | [MaskingReason](#bytebase-v1-MaskingReason) | repeated | Masking reasons for each column (empty for non-masked columns). |
 
 
 

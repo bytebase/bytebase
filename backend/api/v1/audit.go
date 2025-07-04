@@ -462,12 +462,11 @@ func redactAdminExecuteResponse(r *v1pb.AdminExecuteResponse) *v1pb.AdminExecute
 			ColumnNames:     result.ColumnNames,
 			ColumnTypeNames: result.ColumnTypeNames,
 			Rows:            nil, // Redacted
-			Masked:          result.Masked,
-			Sensitive:       result.Sensitive,
 			Error:           result.Error,
 			Latency:         result.Latency,
 			Statement:       result.Statement,
 			DetailedError:   result.DetailedError,
+			Masked:          redactMaskingReasons(result.Masked), // Redact icon data
 		})
 	}
 
@@ -487,16 +486,38 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 			ColumnTypeNames: result.ColumnTypeNames,
 			Rows:            nil, // Redacted
 			RowsCount:       result.RowsCount,
-			Masked:          result.Masked,
-			Sensitive:       result.Sensitive,
 			Error:           result.Error,
 			Latency:         result.Latency,
 			Statement:       result.Statement,
 			DetailedError:   result.DetailedError,
 			AllowExport:     result.AllowExport,
+			Masked:          redactMaskingReasons(result.Masked), // Redact icon data
 		})
 	}
 	return n
+}
+
+func redactMaskingReasons(reasons []*v1pb.MaskingReason) []*v1pb.MaskingReason {
+	if reasons == nil {
+		return nil
+	}
+	var redacted []*v1pb.MaskingReason
+	for _, reason := range reasons {
+		if reason == nil {
+			redacted = append(redacted, nil)
+			continue
+		}
+		redacted = append(redacted, &v1pb.MaskingReason{
+			SemanticTypeId:      reason.SemanticTypeId,
+			SemanticTypeTitle:   reason.SemanticTypeTitle,
+			MaskingRuleId:       reason.MaskingRuleId,
+			Algorithm:           reason.Algorithm,
+			Context:             reason.Context,
+			ClassificationLevel: reason.ClassificationLevel,
+			// Omit SemanticTypeIcon to avoid polluting audit logs with base64 data
+		})
+	}
+	return redacted
 }
 
 func redactLoginResponse(r *v1pb.LoginResponse) *v1pb.LoginResponse {

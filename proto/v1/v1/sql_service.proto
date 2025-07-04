@@ -210,12 +210,6 @@ message QueryResult {
 
   int64 rows_count = 10;
 
-  // Columns are masked or not.
-  repeated bool masked = 4;
-
-  // Columns are sensitive or not.
-  repeated bool sensitive = 5;
-
   // The error message if the query failed.
   string error = 6;
 
@@ -273,6 +267,32 @@ message QueryResult {
   // Informational or debug messages returned by the database engine during query execution.
   // Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
   repeated Message messages = 12;
+
+  // Masking reasons for each column (empty for non-masked columns).
+  repeated MaskingReason masked = 4;
+}
+
+message MaskingReason {
+  // The semantic type that triggered masking (e.g., "SSN", "email", "phone").
+  string semantic_type_id = 1;
+
+  // Human-readable semantic type title.
+  string semantic_type_title = 2;
+
+  // The masking rule ID that matched (if applicable).
+  string masking_rule_id = 3;
+
+  // The masking algorithm used.
+  string algorithm = 4;
+
+  // Additional context (e.g., "Matched global rule: PII Protection").
+  string context = 5;
+
+  // Whether masking was due to classification level.
+  string classification_level = 6;
+
+  // Icon associated with the semantic type (if any).
+  string semantic_type_icon = 7;
 }
 
 message QueryRow {

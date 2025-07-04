@@ -43,6 +43,7 @@ import {
   type Algorithm,
   type SemanticTypeSetting_SemanticType,
 } from "@/types/proto-es/v1/setting_service_pb";
+import IconSelector from "./IconSelector.vue";
 import MaskingAlgorithmsCreateDrawer from "./MaskingAlgorithmsCreateDrawer.vue";
 import { getMaskingType } from "./utils";
 
@@ -112,6 +113,41 @@ const onAlgorithmUpsert = async (maskingAlgorithm: Algorithm) => {
 
 const columnList = computed(() => {
   const columns: DataTableColumn<SemanticItem>[] = [
+    {
+      key: "icon",
+      title: t("settings.sensitive-data.semantic-types.table.icon"),
+      width: 80,
+      align: "center",
+      render: (item, row) => {
+        if (item.mode === "NORMAL") {
+          if (item.item.icon) {
+            return (
+              <div class="flex items-center justify-center">
+                <img
+                  src={item.item.icon}
+                  class="w-6 h-6 object-contain"
+                  alt=""
+                />
+              </div>
+            );
+          }
+          return (
+            <div class="flex items-center justify-center">
+              <span class="text-gray-400">-</span>
+            </div>
+          );
+        }
+        // For edit mode, show IconSelector
+        return (
+          <IconSelector
+            modelValue={item.item.icon || ""}
+            onUpdate:modelValue={(val: string) =>
+              onInput(row, (data) => (data.item.icon = val))
+            }
+          />
+        );
+      },
+    },
     {
       key: "id",
       title: "ID",
