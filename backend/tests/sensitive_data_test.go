@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -259,6 +260,10 @@ func TestSensitiveData(t *testing.T) {
 	a.Equal(1, len(queryResp.Msg.Results))
 
 	// Build expected masked data dynamically with the correct instance name
+	// Extract instance ID from instance.Name (which is in format "instances/instance-id")
+	instanceParts := strings.Split(instance.Name, "/")
+	instanceID := instanceParts[len(instanceParts)-1]
+
 	expectedMaskedData := &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
 		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
@@ -266,14 +271,14 @@ func TestSensitiveData(t *testing.T) {
 			{
 				SemanticTypeId:    "default",
 				Algorithm:         "Full mask",
-				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instance.Name, databaseName, tableName, "id"),
+				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instanceID, databaseName, tableName, "id"),
 				SemanticTypeTitle: "Default",
 			},
 			nil,
 			{
 				SemanticTypeId:    "default",
 				Algorithm:         "Full mask",
-				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instance.Name, databaseName, tableName, "author"),
+				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instanceID, databaseName, tableName, "author"),
 				SemanticTypeTitle: "Default",
 			},
 		},
