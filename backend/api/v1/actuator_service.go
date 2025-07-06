@@ -318,7 +318,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		Demo:                   s.profile.Demo,
 		NeedAdminSetup:         count == 0,
 		ExternalUrl:            setting.ExternalUrl,
-		DisallowSignup:         setting.DisallowSignup,
+		DisallowSignup:         setting.DisallowSignup || s.profile.SaaS,
 		Require_2Fa:            setting.Require_2Fa,
 		LastActiveTime:         timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
 		WorkspaceId:            workspaceID,

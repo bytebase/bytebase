@@ -87,7 +87,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 		if !settingInWhitelist(setting.Name) {
 			continue
 		}
-		settingMessage, err := convertToSettingMessage(setting)
+		settingMessage, err := convertToSettingMessage(setting, s.profile)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 		}
@@ -121,7 +121,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// Only return whitelisted setting.
-	settingMessage, err := convertToSettingMessage(setting)
+	settingMessage, err := convertToSettingMessage(setting, s.profile)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}
@@ -158,7 +158,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 	// audit log.
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && existedSetting != nil {
-		v1pbSetting, err := convertToSettingMessage(existedSetting)
+		v1pbSetting, err := convertToSettingMessage(existedSetting, s.profile)
 		if err != nil {
 			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
 		}
@@ -495,7 +495,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
 			}
 			if existedSetting != nil {
-				existedAISetting, err := convertToSettingMessage(existedSetting)
+				existedAISetting, err := convertToSettingMessage(existedSetting, s.profile)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal existed ai setting with error: %v", err))
 				}
@@ -564,7 +564,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
 	}
 
-	settingMessage, err := convertToSettingMessage(setting)
+	settingMessage, err := convertToSettingMessage(setting, s.profile)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}
@@ -601,7 +601,7 @@ func convertProtoToProto(inputPB, outputPB protoreflect.ProtoMessage) error {
 	return nil
 }
 
-func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, error) {
+func convertToSettingMessage(setting *store.SettingMessage, profile *config.Profile) (*v1pb.Setting, error) {
 	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, convertStoreSettingNameToV1(setting.Name).String())
 	switch setting.Name {
 	case storepb.SettingName_APP_IM:
@@ -638,6 +638,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
+		v1Value.DisallowSignup = v1Value.DisallowSignup || profile.SaaS
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
