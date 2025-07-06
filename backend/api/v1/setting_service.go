@@ -638,6 +638,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
+		v1Value.DisallowSignup = v1Value.DisallowSignup || s.profile.SaaS
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
