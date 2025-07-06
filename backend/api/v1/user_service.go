@@ -313,17 +313,19 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find workspace setting, error: %v", err))
 	}
 
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil && setting.DisallowSignup {
-		callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed"))
-		}
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersCreate, callerUser)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
-		}
-		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersCreate))
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil {
+		if setting.DisallowSignup || s.profile.SaaS {
+			callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed"))
+			}
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersCreate, callerUser)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersCreate))
+			}
 		}
 	}
 	if request.Msg.User == nil {
