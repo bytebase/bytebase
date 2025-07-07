@@ -81,12 +81,12 @@ import { planSpecHasPlanChecks } from "../../logic";
 import { usePlanContext } from "../../logic/context";
 import { useResourcePoller } from "../../logic/poller";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
-import { usePlanSpecContext } from "../SpecDetailView/context";
+import { useSelectedSpec } from "../SpecDetailView/context";
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const { plan } = usePlanContext();
-const { selectedSpec } = usePlanSpecContext();
+const selectedSpec = useSelectedSpec();
 const { requestEnhancedPolling } = useResourcePoller();
 
 const isRunningChecks = ref(false);

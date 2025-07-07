@@ -12,6 +12,7 @@
           >
             <NTab
               v-for="tab in availableTabs"
+              class="select-none"
               :key="tab"
               :name="tab"
               :tab="tabRender(tab)"
@@ -41,7 +42,6 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { head } from "lodash-es";
 import { NSpin, NTab, NTabs } from "naive-ui";
 import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
@@ -65,6 +65,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
@@ -109,17 +110,14 @@ const ready = computed(() => {
 const route = useRoute();
 const router = useRouter();
 
-providePlanContext(
-  {
-    isCreating,
-    plan,
-    planCheckRuns,
-    issue,
-    rollout,
-    ...planBaseContext,
-  },
-  true /* root */
-);
+providePlanContext({
+  isCreating,
+  plan,
+  planCheckRuns,
+  issue,
+  rollout,
+  ...planBaseContext,
+});
 
 provideIssueReviewContext(issue);
 
@@ -148,6 +146,7 @@ const tabKey = computed(() => {
   } else if (
     [
       PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+      PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
       PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
     ].includes(routeName)
   ) {
@@ -244,24 +243,11 @@ const handleTabChange = (tab: TabKey) => {
       query: query,
     });
   } else if (tab === TabKey.Specifications) {
-    // Auto select the first spec when switching to Specifications tab.
-    const spec = head(plan.value.specs);
-    if (spec) {
-      router.push({
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-        params: {
-          ...params,
-          specId: spec.id,
-        },
-        query: query,
-      });
-    } else {
-      router.push({
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-        params: params,
-        query: query,
-      });
-    }
+    router.push({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+      params: params,
+      query: query,
+    });
   } else if (tab === TabKey.Checks) {
     router.push({
       name: PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,

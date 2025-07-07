@@ -13,12 +13,26 @@
 </template>
 
 <script setup lang="ts">
+import type { Ref } from "vue";
+import { useCurrentProjectV1 } from "@/store";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../../logic/context";
 import Configuration from "../Configuration";
 import PlanCheckSection from "../PlanCheckSection";
+import { providePlanSQLCheckContext } from "../SQLCheckSection";
 import SQLCheckV1Section from "../SQLCheckV1Section";
 import StatementSection from "../StatementSection";
 import TargetListSection from "./TargetListSection.vue";
+import { useSelectedSpec } from "./context";
 
-const { isCreating } = usePlanContext();
+const { project } = useCurrentProjectV1();
+const { isCreating, plan } = usePlanContext();
+
+const selectedSpec = useSelectedSpec();
+
+providePlanSQLCheckContext({
+  project,
+  plan,
+  selectedSpec: selectedSpec as Ref<Plan_Spec>,
+});
 </script>

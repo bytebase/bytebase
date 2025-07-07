@@ -8,17 +8,17 @@
     <template #default>
       <div v-if="action" class="flex flex-col gap-y-4 px-1">
         <div class="flex flex-col gap-y-1">
-          <div class="font-medium text-control">{{ $t("plan.self") }}</div>
-          <div class="textinfolabel">
+          <div class="text-control">{{ $t("plan.self") }}</div>
+          <div class="font-medium">
             {{ plan.title }}
           </div>
         </div>
 
         <div class="flex flex-col gap-y-1">
-          <div class="font-medium text-control">
+          <div class="text-control">
             {{ $t("common.description") }}
           </div>
-          <div class="textinfolabel">
+          <div class="textlabel">
             {{ plan.description || "No description" }}
           </div>
         </div>
@@ -30,7 +30,7 @@
         class="w-full flex flex-row justify-end items-center gap-2"
       >
         <div class="flex justify-end gap-x-3">
-          <NButton @click="$emit('close')">
+          <NButton @click="$emit('close')" quaternary>
             {{ $t("common.cancel") }}
           </NButton>
 
@@ -41,7 +41,7 @@
                 :disabled="confirmErrors.length > 0"
                 @click="handleConfirm"
               >
-                {{ $t("common.create") }}
+                {{ $t("common.confirm") }}
               </NButton>
             </template>
             <template #default>

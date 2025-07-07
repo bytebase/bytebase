@@ -28,7 +28,11 @@ import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
-import type { Task, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  Task,
+  Task_Status,
+  Stage,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,
@@ -40,6 +44,7 @@ const props = withDefaults(
   defineProps<{
     taskStatusFilter: Task_Status[];
     selectedTasks?: Task[];
+    stage?: Stage;
   }>(),
   {
     selectedTasks: () => [],
@@ -58,7 +63,15 @@ const environmentStore = useEnvironmentV1Store();
 const { rollout, mergedStages } = useRolloutViewContext();
 
 const taskList = computed(() => {
-  const allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
+  let allTasks: Task[];
+  if (props.stage) {
+    // If a specific stage is provided, use only its tasks
+    allTasks = props.stage.tasks;
+  } else {
+    // Otherwise, use all tasks from all stages
+    allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
+  }
+
   if (props.taskStatusFilter.length === 0) {
     return allTasks;
   }
@@ -152,21 +165,26 @@ const columnList = computed((): DataTableColumn<Task>[] => {
         return <TaskStatus status={task.status} size="small" />;
       },
     },
-    {
-      key: "stage",
-      title: t("common.stage"),
-      width: 120,
-      render: (task) => {
-        const stage = stageMap.value.get(task.name);
-        if (stage) {
-          const environment = environmentStore.getEnvironmentByName(
-            stage.environment
-          );
-          return environment.title;
-        }
-        return "-";
-      },
-    },
+    // Only show stage column if not already filtering by stage
+    ...(!props.stage
+      ? [
+          {
+            key: "stage",
+            title: t("common.stage"),
+            width: 120,
+            render: (task: Task) => {
+              const stage = stageMap.value.get(task.name);
+              if (stage) {
+                const environment = environmentStore.getEnvironmentByName(
+                  stage.environment
+                );
+                return environment.title;
+              }
+              return "-";
+            },
+          },
+        ]
+      : []),
     {
       key: "type",
       width: 120,

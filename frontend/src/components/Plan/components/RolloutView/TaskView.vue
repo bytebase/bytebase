@@ -102,11 +102,9 @@ import TaskRunTable from "./TaskRunTable.vue";
 import TaskStatusActions from "./TaskStatusActions.vue";
 
 const props = defineProps<{
-  task?: Task;
-  // Route parameters for when used in router
-  stageId?: string;
-  taskId?: string;
-  rolloutId?: string;
+  rolloutId: string;
+  stageId: string;
+  taskId: string;
 }>();
 
 const { t: _t } = useI18n();
@@ -117,22 +115,14 @@ const taskRunsRef = ref<TaskRun[]>([]);
 const rolloutRef = ref<Rollout>();
 const routeTaskRef = ref<Task>();
 
-// Determine if we're in route mode or prop mode
-const isRouteMode = computed(
-  () => !props.task && (props.stageId || props.taskId)
-);
-
 // Get the task - either from props or from fetched rollout
 const task = computed(() => {
-  if (props.task) return props.task;
   if (routeTaskRef.value) return routeTaskRef.value;
   return unknownTask();
 });
 
 // Fetch rollout and task when in route mode
 watchEffect(async () => {
-  if (!isRouteMode.value) return;
-
   const rolloutId = props.rolloutId || (route.params.rolloutId as string);
   const stageId = props.stageId || (route.params.stageId as string);
   const taskId = props.taskId || (route.params.taskId as string);
@@ -230,33 +220,30 @@ const handleTaskActionCompleted = async () => {
     }
   }
 
-  // Refresh rollout data in route mode
-  if (isRouteMode.value) {
-    const rolloutId = props.rolloutId || (route.params.rolloutId as string);
-    const stageId = props.stageId || (route.params.stageId as string);
-    const taskId = props.taskId || (route.params.taskId as string);
+  const rolloutId = props.rolloutId || (route.params.rolloutId as string);
+  const stageId = props.stageId || (route.params.stageId as string);
+  const taskId = props.taskId || (route.params.taskId as string);
 
-    if (rolloutId && stageId && taskId) {
-      try {
-        const rolloutName = `projects/${project.value.name.split("/")[1]}/rollouts/${rolloutId}`;
-        const request = create(GetRolloutRequestSchema, { name: rolloutName });
-        const rollout = await rolloutServiceClientConnect.getRollout(request);
-        rolloutRef.value = rollout;
+  if (rolloutId && stageId && taskId) {
+    try {
+      const rolloutName = `projects/${project.value.name.split("/")[1]}/rollouts/${rolloutId}`;
+      const request = create(GetRolloutRequestSchema, { name: rolloutName });
+      const rollout = await rolloutServiceClientConnect.getRollout(request);
+      rolloutRef.value = rollout;
 
-        // Update the task reference
-        for (const stage of rollout.stages) {
-          if (stage.name.endsWith(`/${stageId}`)) {
-            for (const stageTask of stage.tasks) {
-              if (stageTask.name.endsWith(`/${taskId}`)) {
-                routeTaskRef.value = stageTask;
-                return;
-              }
+      // Update the task reference
+      for (const stage of rollout.stages) {
+        if (stage.name.endsWith(`/${stageId}`)) {
+          for (const stageTask of stage.tasks) {
+            if (stageTask.name.endsWith(`/${taskId}`)) {
+              routeTaskRef.value = stageTask;
+              return;
             }
           }
         }
-      } catch (error) {
-        console.error("Failed to refresh rollout:", error);
       }
+    } catch (error) {
+      console.error("Failed to refresh rollout:", error);
     }
   }
 };

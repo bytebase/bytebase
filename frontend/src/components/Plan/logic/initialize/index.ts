@@ -190,7 +190,14 @@ export function useInitializePlan(
     { immediate: true }
   );
 
-  return { isCreating, plan, planCheckRuns, issue, rollout, isInitializing };
+  return {
+    isCreating,
+    plan,
+    planCheckRuns,
+    issue,
+    rollout,
+    isInitializing,
+  };
 }
 
 export const convertRouterQuery = (query: LocationQuery) => {
