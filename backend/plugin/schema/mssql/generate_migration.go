@@ -853,6 +853,24 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 			_, _ = buf.WriteString(")")
 		}
 		return buf.String()
+	case "SPATIAL":
+		_, _ = buf.WriteString(" SPATIAL INDEX [")
+		_, _ = buf.WriteString(index.Name)
+		_, _ = buf.WriteString("] ON [")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("].[")
+		_, _ = buf.WriteString(tableName)
+		_, _ = buf.WriteString("] (")
+		for i, expr := range index.Expressions {
+			if i > 0 {
+				_, _ = buf.WriteString(", ")
+			}
+			_, _ = buf.WriteString("[")
+			_, _ = buf.WriteString(expr)
+			_, _ = buf.WriteString("]")
+		}
+		_, _ = buf.WriteString(")")
+		return buf.String()
 	default:
 		// Regular indexes
 		if index.Unique {

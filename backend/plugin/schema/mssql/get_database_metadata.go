@@ -198,15 +198,21 @@ func (e *metadataExtractor) EnterCreate_index(ctx *parser.Create_indexContext) {
 		index.Name, _ = tsql.NormalizeTSQLIdentifier(idList[0])
 	}
 
-	// Index type
-	if ctx.UNIQUE() != nil {
-		index.Unique = true
-	}
-	if clustered := ctx.Clustered(); clustered != nil {
-		if clustered.CLUSTERED() != nil {
-			index.Type = "CLUSTERED"
-		} else if clustered.NONCLUSTERED() != nil {
-			index.Type = "NONCLUSTERED"
+	// Check if this is a SPATIAL index by examining the full context text
+	contextText := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	if strings.Contains(strings.ToUpper(contextText), "SPATIAL INDEX") {
+		index.Type = "SPATIAL"
+	} else {
+		// Regular index type handling
+		if ctx.UNIQUE() != nil {
+			index.Unique = true
+		}
+		if clustered := ctx.Clustered(); clustered != nil {
+			if clustered.CLUSTERED() != nil {
+				index.Type = "CLUSTERED"
+			} else if clustered.NONCLUSTERED() != nil {
+				index.Type = "NONCLUSTERED"
+			}
 		}
 	}
 

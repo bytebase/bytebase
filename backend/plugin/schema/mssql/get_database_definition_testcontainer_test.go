@@ -152,6 +152,160 @@ GO
 `,
 			wantMatch: true,
 		},
+		{
+			name: "spatial_indexes",
+			setupSQL: `
+CREATE TABLE dbo.spatial_data (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name NVARCHAR(100) NOT NULL,
+    location GEOMETRY NOT NULL,
+    boundary GEOGRAPHY,
+    area AS location.STArea() PERSISTED
+);
+GO
+
+CREATE SPATIAL INDEX idx_spatial_location ON dbo.spatial_data(location);
+CREATE SPATIAL INDEX idx_spatial_boundary ON dbo.spatial_data(boundary);
+CREATE INDEX idx_spatial_name ON dbo.spatial_data(name);
+GO
+`,
+			wantMatch: true,
+		},
+		{
+			name: "comprehensive_spatial_data_types",
+			setupSQL: `
+CREATE SCHEMA spatial_test;
+GO
+
+-- Table with all spatial scenarios
+CREATE TABLE spatial_test.geo_features (
+    feature_id INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
+    feature_name NVARCHAR(200) NOT NULL,
+    
+    -- GEOMETRY columns for planar data
+    point_location GEOMETRY NOT NULL,
+    line_path GEOMETRY,
+    polygon_area GEOMETRY NOT NULL,
+    multi_point GEOMETRY,
+    multi_line GEOMETRY,
+    multi_polygon GEOMETRY,
+    geometry_collection GEOMETRY,
+    
+    -- GEOGRAPHY columns for geodetic data
+    geo_point GEOGRAPHY NOT NULL,
+    geo_line GEOGRAPHY,
+    geo_polygon GEOGRAPHY NOT NULL,
+    geo_multi_point GEOGRAPHY,
+    geo_multi_line GEOGRAPHY,
+    geo_multi_polygon GEOGRAPHY,
+    geo_collection GEOGRAPHY,
+    
+    -- Regular columns
+    feature_type VARCHAR(50),
+    created_date DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+-- Create spatial indexes for GEOMETRY columns
+CREATE SPATIAL INDEX idx_point_loc ON spatial_test.geo_features(point_location);
+CREATE SPATIAL INDEX idx_line_path ON spatial_test.geo_features(line_path);
+CREATE SPATIAL INDEX idx_polygon_area ON spatial_test.geo_features(polygon_area);
+CREATE SPATIAL INDEX idx_multi_point ON spatial_test.geo_features(multi_point);
+CREATE SPATIAL INDEX idx_multi_polygon ON spatial_test.geo_features(multi_polygon);
+GO
+
+-- Create spatial indexes for GEOGRAPHY columns
+CREATE SPATIAL INDEX idx_geo_point ON spatial_test.geo_features(geo_point);
+CREATE SPATIAL INDEX idx_geo_line ON spatial_test.geo_features(geo_line);
+CREATE SPATIAL INDEX idx_geo_polygon ON spatial_test.geo_features(geo_polygon);
+CREATE SPATIAL INDEX idx_geo_multi_polygon ON spatial_test.geo_features(geo_multi_polygon);
+GO
+
+-- Create regular indexes for comparison
+CREATE NONCLUSTERED INDEX idx_feature_name ON spatial_test.geo_features(feature_name);
+CREATE INDEX idx_feature_type ON spatial_test.geo_features(feature_type) WHERE feature_type IS NOT NULL;
+GO
+
+-- Another table to test spatial indexes with constraints
+CREATE TABLE spatial_test.locations_with_constraints (
+    location_id INT IDENTITY(1,1),
+    location_name NVARCHAR(100) NOT NULL UNIQUE,
+    coords GEOMETRY NOT NULL,
+    geo_coords GEOGRAPHY NOT NULL,
+    parent_id INT,
+    CONSTRAINT PK_locations PRIMARY KEY NONCLUSTERED (location_id),
+    CONSTRAINT FK_locations_parent FOREIGN KEY (parent_id) REFERENCES spatial_test.locations_with_constraints(location_id),
+    CONSTRAINT CHK_location_name CHECK (LEN(location_name) > 0)
+);
+GO
+
+-- Create clustered index on non-primary key column
+CREATE CLUSTERED INDEX idx_locations_parent ON spatial_test.locations_with_constraints(parent_id);
+GO
+
+-- Create spatial indexes
+CREATE SPATIAL INDEX idx_coords ON spatial_test.locations_with_constraints(coords);
+CREATE SPATIAL INDEX idx_geo_coords ON spatial_test.locations_with_constraints(geo_coords);
+GO
+
+-- Table with computed columns using spatial functions
+CREATE TABLE spatial_test.computed_spatial_data (
+    id INT PRIMARY KEY,
+    shape GEOMETRY NOT NULL,
+    centroid AS shape.STCentroid() PERSISTED,
+    envelope AS shape.STEnvelope() PERSISTED,
+    area_size AS shape.STArea(),
+    perimeter AS shape.STLength()
+);
+GO
+
+CREATE SPATIAL INDEX idx_shape ON spatial_test.computed_spatial_data(shape);
+GO
+`,
+			wantMatch: true,
+		},
+		{
+			name: "spatial_indexes_edge_cases",
+			setupSQL: `
+-- Edge case: Table with only spatial columns and indexes
+CREATE TABLE dbo.pure_spatial (
+    geo1 GEOMETRY NOT NULL,
+    geo2 GEOMETRY,
+    geog1 GEOGRAPHY NOT NULL,
+    geog2 GEOGRAPHY
+);
+GO
+
+CREATE SPATIAL INDEX idx_pure_geo1 ON dbo.pure_spatial(geo1);
+CREATE SPATIAL INDEX idx_pure_geo2 ON dbo.pure_spatial(geo2);
+CREATE SPATIAL INDEX idx_pure_geog1 ON dbo.pure_spatial(geog1);
+CREATE SPATIAL INDEX idx_pure_geog2 ON dbo.pure_spatial(geog2);
+GO
+
+-- Edge case: Very long index names
+CREATE TABLE dbo.long_names (
+    id INT PRIMARY KEY,
+    location GEOMETRY NOT NULL
+);
+GO
+
+CREATE SPATIAL INDEX idx_this_is_a_very_long_spatial_index_name_for_testing_purposes ON dbo.long_names(location);
+GO
+
+-- Edge case: Mixed case names
+CREATE TABLE dbo.MixedCaseTable (
+    Id INT PRIMARY KEY,
+    Location GEOMETRY NOT NULL,
+    [Some Column With Spaces] GEOGRAPHY
+);
+GO
+
+CREATE SPATIAL INDEX IDX_MixedCase_Location ON dbo.MixedCaseTable(Location);
+CREATE SPATIAL INDEX [Index With Spaces] ON dbo.MixedCaseTable([Some Column With Spaces]);
+GO
+`,
+			wantMatch: true,
+		},
 	}
 
 	for _, tc := range testCases {
