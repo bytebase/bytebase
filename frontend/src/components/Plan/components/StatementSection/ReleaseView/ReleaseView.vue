@@ -162,10 +162,10 @@ import { isValidReleaseName, getDateForPbTimestampProtoEs } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
 import { ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
 import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
-import { usePlanSpecContext } from "../../SpecDetailView/context";
+import { useSelectedSpec } from "../../SpecDetailView/context";
 
 const { t } = useI18n();
-const { selectedSpec } = usePlanSpecContext();
+const selectedSpec = useSelectedSpec();
 
 const releaseName = computed(() => {
   if (selectedSpec.value?.config?.case === "changeDatabaseConfig") {
