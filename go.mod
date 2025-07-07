@@ -298,7 +298,7 @@ require (
 	github.com/aws/smithy-go v1.22.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c
-	github.com/bytebase/tsql-parser v0.0.0-20250603072002-329b1b7f99a7
+	github.com/bytebase/tsql-parser v0.0.0-20250704100832-7b20f2173b45
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250326154945-ae57f3c0d45f // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.0

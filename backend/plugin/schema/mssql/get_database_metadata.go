@@ -218,6 +218,45 @@ func (e *metadataExtractor) EnterCreate_index(ctx *parser.Create_indexContext) {
 	tableMetadata.Indexes = append(tableMetadata.Indexes, index)
 }
 
+// EnterCreate_spatial_index is called when entering a create spatial index parse tree node
+func (e *metadataExtractor) EnterCreate_spatial_index(ctx *parser.Create_spatial_indexContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Extract table reference
+	if ctx.Table_name() == nil {
+		return
+	}
+
+	schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
+
+	tableMetadata := e.getOrCreateTable(schema, table)
+
+	// Extract index metadata
+	index := &storepb.IndexMetadata{
+		Type:         "SPATIAL",
+		Expressions:  []string{},
+		Descending:   []bool{},
+		IsConstraint: false,
+	}
+
+	// Index name
+	idList := ctx.AllId_()
+	if len(idList) > 0 {
+		index.Name, _ = tsql.NormalizeTSQLIdentifier(idList[0])
+	}
+
+	// Extract column - spatial indexes have a single column
+	if len(idList) > 1 {
+		colName, _ := tsql.NormalizeTSQLIdentifier(idList[1])
+		index.Expressions = append(index.Expressions, colName)
+		index.Descending = append(index.Descending, false)
+	}
+
+	tableMetadata.Indexes = append(tableMetadata.Indexes, index)
+}
+
 // EnterCreate_view is called when entering a create view parse tree node
 func (e *metadataExtractor) EnterCreate_view(ctx *parser.Create_viewContext) {
 	if e.err != nil {

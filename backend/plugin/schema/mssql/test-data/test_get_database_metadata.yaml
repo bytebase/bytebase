@@ -1944,3 +1944,245 @@
         }
       ]
     }
+- input: |
+    CREATE TABLE dbo.locations (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(100) NOT NULL,
+        position GEOMETRY NOT NULL,
+        area GEOGRAPHY
+    );
+    
+    CREATE SPATIAL INDEX idx_locations_position ON dbo.locations (position);
+    CREATE SPATIAL INDEX idx_locations_area ON dbo.locations (area);
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "locations",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "INT",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "name",
+                  "type": "NVARCHAR(100)"
+                },
+                {
+                  "name": "position",
+                  "type": "GEOMETRY"
+                },
+                {
+                  "name": "area",
+                  "nullable": true,
+                  "type": "GEOGRAPHY"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_locations_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "idx_locations_position",
+                  "expressions": [
+                    "position"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL"
+                },
+                {
+                  "name": "idx_locations_area",
+                  "expressions": [
+                    "area"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- input: |
+    CREATE SCHEMA geo;
+    
+    -- Multiple spatial indexes on same table
+    CREATE TABLE geo.world_map (
+        feature_id INT IDENTITY(1,1) PRIMARY KEY,
+        feature_name NVARCHAR(200) NOT NULL,
+        feature_type NVARCHAR(50),
+        geometry_data GEOMETRY NOT NULL,
+        geography_data GEOGRAPHY NOT NULL,
+        bbox_geometry GEOMETRY,
+        center_point GEOMETRY NOT NULL,
+        area_polygon GEOGRAPHY
+    );
+    
+    -- Create multiple spatial indexes
+    CREATE SPATIAL INDEX idx_geometry ON geo.world_map (geometry_data);
+    CREATE SPATIAL INDEX idx_geography ON geo.world_map (geography_data);
+    CREATE SPATIAL INDEX idx_bbox ON geo.world_map (bbox_geometry);
+    CREATE SPATIAL INDEX idx_center ON geo.world_map (center_point);
+    CREATE SPATIAL INDEX idx_area ON geo.world_map (area_polygon);
+    
+    -- Also create regular indexes
+    CREATE INDEX idx_feature_name ON geo.world_map (feature_name);
+    CREATE INDEX idx_feature_type ON geo.world_map (feature_type);
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "geo",
+          "tables": [
+            {
+              "name": "world_map",
+              "columns": [
+                {
+                  "name": "feature_id",
+                  "type": "INT",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "feature_name",
+                  "type": "NVARCHAR(200)"
+                },
+                {
+                  "name": "feature_type",
+                  "nullable": true,
+                  "type": "NVARCHAR(50)"
+                },
+                {
+                  "name": "geometry_data",
+                  "type": "GEOMETRY"
+                },
+                {
+                  "name": "geography_data",
+                  "type": "GEOGRAPHY"
+                },
+                {
+                  "name": "bbox_geometry",
+                  "nullable": true,
+                  "type": "GEOMETRY"
+                },
+                {
+                  "name": "center_point",
+                  "type": "GEOMETRY"
+                },
+                {
+                  "name": "area_polygon",
+                  "nullable": true,
+                  "type": "GEOGRAPHY"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_world_map_1",
+                  "expressions": [
+                    "feature_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "idx_geometry",
+                  "expressions": [
+                    "geometry_data"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL"
+                },
+                {
+                  "name": "idx_geography",
+                  "expressions": [
+                    "geography_data"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL"
+                },
+                {
+                  "name": "idx_bbox",
+                  "expressions": [
+                    "bbox_geometry"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL"
+                },
+                {
+                  "name": "idx_center",
+                  "expressions": [
+                    "center_point"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL"
+                },
+                {
+                  "name": "idx_area",
+                  "expressions": [
+                    "area_polygon"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL"
+                },
+                {
+                  "name": "idx_feature_name",
+                  "expressions": [
+                    "feature_name"
+                  ],
+                  "descending": [
+                    false
+                  ]
+                },
+                {
+                  "name": "idx_feature_type",
+                  "expressions": [
+                    "feature_type"
+                  ],
+                  "descending": [
+                    false
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+# Test case removed: SQL Server doesn't support inline spatial index definitions in CREATE TABLE
+# The correct syntax is to create spatial indexes separately using CREATE SPATIAL INDEX
+

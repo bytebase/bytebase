@@ -853,6 +853,27 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 			_, _ = buf.WriteString(")")
 		}
 		return buf.String()
+	case "SPATIAL":
+		_, _ = buf.WriteString(" SPATIAL INDEX [")
+		_, _ = buf.WriteString(index.Name)
+		_, _ = buf.WriteString("] ON [")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("].[")
+		_, _ = buf.WriteString(tableName)
+		_, _ = buf.WriteString("] (")
+		for i, expr := range index.Expressions {
+			if i > 0 {
+				_, _ = buf.WriteString(", ")
+			}
+			_, _ = buf.WriteString("[")
+			_, _ = buf.WriteString(expr)
+			_, _ = buf.WriteString("]")
+		}
+		_, _ = buf.WriteString(")")
+		// Note: SQL Server requires additional parameters for spatial indexes (USING clause and
+		// BOUNDING_BOX for GEOMETRY columns). Since we don't have column type information here,
+		// the generated DDL may need manual adjustment for spatial indexes.
+		return buf.String()
 	default:
 		// Regular indexes
 		if index.Unique {
