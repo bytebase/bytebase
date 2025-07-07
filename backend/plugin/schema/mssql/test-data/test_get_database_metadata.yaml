@@ -2033,7 +2033,7 @@
         feature_type NVARCHAR(50),
         geometry_data GEOMETRY NOT NULL,
         geography_data GEOGRAPHY NOT NULL,
-        bounding_box GEOMETRY,
+        bbox_geometry GEOMETRY,
         center_point GEOMETRY NOT NULL,
         area_polygon GEOGRAPHY
     );
@@ -2041,7 +2041,7 @@
     -- Create multiple spatial indexes
     CREATE SPATIAL INDEX idx_geometry ON geo.world_map (geometry_data);
     CREATE SPATIAL INDEX idx_geography ON geo.world_map (geography_data);
-    CREATE SPATIAL INDEX idx_bbox ON geo.world_map (bounding_box);
+    CREATE SPATIAL INDEX idx_bbox ON geo.world_map (bbox_geometry);
     CREATE SPATIAL INDEX idx_center ON geo.world_map (center_point);
     CREATE SPATIAL INDEX idx_area ON geo.world_map (area_polygon);
     
@@ -2082,7 +2082,7 @@
                   "type": "GEOGRAPHY"
                 },
                 {
-                  "name": "bounding_box",
+                  "name": "bbox_geometry",
                   "nullable": true,
                   "type": "GEOMETRY"
                 },
@@ -2132,7 +2132,7 @@
                 {
                   "name": "idx_bbox",
                   "expressions": [
-                    "bounding_box"
+                    "bbox_geometry"
                   ],
                   "descending": [
                     false
@@ -2183,75 +2183,6 @@
         }
       ]
     }
-- input: |
-    -- Table with spatial indexes in table definition
-    CREATE TABLE dbo.spatial_inline (
-        id INT PRIMARY KEY,
-        location GEOMETRY NOT NULL,
-        region GEOGRAPHY,
-        INDEX idx_spatial_loc SPATIAL (location),
-        INDEX idx_spatial_reg SPATIAL (region)
-    );
-  result: |-
-    {
-      "schemas": [
-        {
-          "name": "dbo",
-          "tables": [
-            {
-              "name": "spatial_inline",
-              "columns": [
-                {
-                  "name": "id",
-                  "type": "INT"
-                },
-                {
-                  "name": "location",
-                  "type": "GEOMETRY"
-                },
-                {
-                  "name": "region",
-                  "nullable": true,
-                  "type": "GEOGRAPHY"
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "PK_spatial_inline_1",
-                  "expressions": [
-                    "id"
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "unique": true,
-                  "primary": true,
-                  "is_constraint": true
-                },
-                {
-                  "name": "idx_spatial_loc",
-                  "expressions": [
-                    "location"
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "SPATIAL"
-                },
-                {
-                  "name": "idx_spatial_reg",
-                  "expressions": [
-                    "region"
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "SPATIAL"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+# Test case removed: SQL Server doesn't support inline spatial index definitions in CREATE TABLE
+# The correct syntax is to create spatial indexes separately using CREATE SPATIAL INDEX
 

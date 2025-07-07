@@ -870,6 +870,9 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 			_, _ = buf.WriteString("]")
 		}
 		_, _ = buf.WriteString(")")
+		// Note: SQL Server requires additional parameters for spatial indexes (USING clause and
+		// BOUNDING_BOX for GEOMETRY columns). Since we don't have column type information here,
+		// the generated DDL may need manual adjustment for spatial indexes.
 		return buf.String()
 	default:
 		// Regular indexes

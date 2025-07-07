@@ -198,27 +198,60 @@ func (e *metadataExtractor) EnterCreate_index(ctx *parser.Create_indexContext) {
 		index.Name, _ = tsql.NormalizeTSQLIdentifier(idList[0])
 	}
 
-	// Check if this is a SPATIAL index by examining the full context text
-	contextText := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-	if strings.Contains(strings.ToUpper(contextText), "SPATIAL INDEX") {
-		index.Type = "SPATIAL"
-	} else {
-		// Regular index type handling
-		if ctx.UNIQUE() != nil {
-			index.Unique = true
-		}
-		if clustered := ctx.Clustered(); clustered != nil {
-			if clustered.CLUSTERED() != nil {
-				index.Type = "CLUSTERED"
-			} else if clustered.NONCLUSTERED() != nil {
-				index.Type = "NONCLUSTERED"
-			}
+	// Index type
+	if ctx.UNIQUE() != nil {
+		index.Unique = true
+	}
+	if clustered := ctx.Clustered(); clustered != nil {
+		if clustered.CLUSTERED() != nil {
+			index.Type = "CLUSTERED"
+		} else if clustered.NONCLUSTERED() != nil {
+			index.Type = "NONCLUSTERED"
 		}
 	}
 
 	// Extract columns
 	if columnList := ctx.Column_name_list_with_order(); columnList != nil {
 		e.extractIndexColumns(columnList, index)
+	}
+
+	tableMetadata.Indexes = append(tableMetadata.Indexes, index)
+}
+
+// EnterCreate_spatial_index is called when entering a create spatial index parse tree node
+func (e *metadataExtractor) EnterCreate_spatial_index(ctx *parser.Create_spatial_indexContext) {
+	if e.err != nil {
+		return
+	}
+
+	// Extract table reference
+	if ctx.Table_name() == nil {
+		return
+	}
+
+	schema, table := e.normalizeTableNameSeparated(ctx.Table_name(), e.currentDatabase, e.currentSchema)
+
+	tableMetadata := e.getOrCreateTable(schema, table)
+
+	// Extract index metadata
+	index := &storepb.IndexMetadata{
+		Type:         "SPATIAL",
+		Expressions:  []string{},
+		Descending:   []bool{},
+		IsConstraint: false,
+	}
+
+	// Index name
+	idList := ctx.AllId_()
+	if len(idList) > 0 {
+		index.Name, _ = tsql.NormalizeTSQLIdentifier(idList[0])
+	}
+
+	// Extract column - spatial indexes have a single column
+	if len(idList) > 1 {
+		colName, _ := tsql.NormalizeTSQLIdentifier(idList[1])
+		index.Expressions = append(index.Expressions, colName)
+		index.Descending = append(index.Descending, false)
 	}
 
 	tableMetadata.Indexes = append(tableMetadata.Indexes, index)

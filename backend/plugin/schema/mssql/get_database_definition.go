@@ -370,7 +370,11 @@ func writeSpatialIndex(out *strings.Builder, schemaName string, tableName string
 		}
 		_, _ = fmt.Fprintf(out, "    [%s]", column)
 	}
-	_, _ = out.WriteString("\n);\n\n")
+	_, _ = out.WriteString("\n)")
+	// Note: SQL Server requires additional parameters for spatial indexes (USING clause and
+	// BOUNDING_BOX for GEOMETRY columns). Since we don't have column type information here,
+	// the generated DDL may need manual adjustment for spatial indexes.
+	_, _ = out.WriteString(";\n\n")
 }
 
 func writeNormalIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
