@@ -37,7 +37,7 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   Default: `https://demo.bytebase.com`
 
 -   **`--service-account`**: The service account email.
-    -   Default: `ci@service.bytebase.com`
+    -   Default: `api@service.bytebase.com`
 
 -   **`--service-account-secret`**: The service account password.
     -   Default: Reads from the `BYTEBASE_SERVICE_ACCOUNT_SECRET` environment variable. You can override this by providing the flag directly.
@@ -45,7 +45,7 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
 
 -   **`--project`**: The target Bytebase project name.
     -   Format: `projects/{project}`
-    -   Default: `projects/project-sample`
+    -   Default: `projects/hr`
 
 -   **`--targets`**: A comma-separated list or multiple uses of the flag specifying the target databases or database groups.
     -   Used when `--plan` is not specified for the `rollout` command.
@@ -58,7 +58,11 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
 -   **`--file-pattern`**: A glob pattern used to find SQL migration files.
     -   Used by subcommands like `check` and `rollout` (when `--plan` is not specified) to locate relevant files.
     -   Default: `""` (empty string)
-    -   Note: Migration filenames should conform to a versioning format. The version part of the filename must start with an optional 'v' or 'V', followed by one or more numbers, with subsequent numbers separated by a dot. For example: v1.2.3_description.sql, 1.0_initial_schema.sql, V2_add_users_table.sql. The version is extracted based on the pattern ^[vV]?(\d+(\.\d+)*).
+    -   Note: Migration filenames should conform to a versioning format. The version part of the filename must start with an optional 'v' or 'V', followed by one or more numbers, with subsequent numbers separated by a dot. For example: v1.2.3_description.sql, 1.0_initial_schema.sql, V2_add_users_table.sql. The version is extracted based on the pattern ^[vV]?(\d+(\.\d+)*)
+    -   **File Type Detection**: Files are automatically categorized based on their base filename suffix:
+        -   **DDL (default)**: Standard schema change files (e.g., `v1.0_create_table.sql`)
+        -   **DML**: Data manipulation files with base filename ending with `dml` (e.g., `v1.0_insert_data_dml.sql`)
+        -   **DDL Ghost**: Schema changes using gh-ost with base filename ending with `ghost` (e.g., `v1.0_alter_table_ghost.sql`).
 
 ### `check` Command Specific Flags
 
@@ -89,7 +93,7 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
         -   `FAIL_ON_ERROR`: Run plan checks and fail only if there are errors.
     -   Default: `SKIP`
 
--   **`--target-stage`**: The target stage up to which the rollout should proceed. This flag is **required** for the `rollout` command.
+-   **`--target-stage`**: The target stage up to which the rollout should proceed. If not specified, the rollout will be created but will not wait for completion.
     -   Format: `environments/{environment}`
     -   Example: `environments/prod`
 
