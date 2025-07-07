@@ -362,6 +362,21 @@ func writeNonClusteredColumnStoreIndex(out *strings.Builder, schemaName string, 
 	_, _ = out.WriteString("\n);\n\n")
 }
 
+func writeSpatialIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+	_, _ = fmt.Fprintf(out, "CREATE SPATIAL INDEX [%s] ON [%s].[%s] (\n", index.Name, schemaName, tableName)
+	for i, column := range index.Expressions {
+		if i != 0 {
+			_, _ = out.WriteString(",\n")
+		}
+		_, _ = fmt.Fprintf(out, "    [%s]", column)
+	}
+	_, _ = out.WriteString("\n)")
+	// Note: SQL Server requires additional parameters for spatial indexes (USING clause and
+	// BOUNDING_BOX for GEOMETRY columns). Since we don't have column type information here,
+	// the generated DDL may need manual adjustment for spatial indexes.
+	_, _ = out.WriteString(";\n\n")
+}
+
 func writeNormalIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
 	_, _ = out.WriteString("CREATE")
 	if index.Unique {
@@ -391,6 +406,8 @@ func writeIndex(out *strings.Builder, schemaName string, tableName string, index
 		writeClusteredColumnStoreIndex(out, schemaName, tableName, index)
 	case "NONCLUSTERED COLUMNSTORE":
 		writeNonClusteredColumnStoreIndex(out, schemaName, tableName, index)
+	case "SPATIAL":
+		writeSpatialIndex(out, schemaName, tableName, index)
 	default:
 		writeNormalIndex(out, schemaName, tableName, index)
 	}
