@@ -166,7 +166,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { cloneDeep, head, includes, isEmpty } from "lodash-es";
+import { cloneDeep, includes, isEmpty } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -202,12 +202,13 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import { usePlanSpecContext } from "../../SpecDetailView/context";
+import { useSelectedSpec } from "../../SpecDetailView/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
-import type { EditState } from "./useTempEditState";
-import { useTempEditState } from "./useTempEditState";
+import { useSpecSheet } from "../useSpecSheet";
 
-type LocalState = EditState & {
+type LocalState = {
+  isEditing: boolean;
+  statement: string;
   showEditorModal: boolean;
   isUploadingFile: boolean;
 };
@@ -215,8 +216,8 @@ type LocalState = EditState & {
 const { t } = useI18n();
 const dialog = useDialog();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, events, planCheckRuns, rollout } = usePlanContext();
-const { selectedSpec } = usePlanSpecContext();
+const { isCreating, plan, planCheckRuns, rollout, events } = usePlanContext();
+const selectedSpec = useSelectedSpec();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const state = reactive<LocalState>({
@@ -266,13 +267,9 @@ const isEditorReadonly = computed(() => {
   return !state.isEditing || isSheetOversize.value || false;
 });
 
-const {
-  sheet,
-  sheetName,
-  sheetReady,
-  sheetStatement,
-  reset: resetTempEditState,
-} = useTempEditState(state);
+const { sheet, sheetName, sheetReady, sheetStatement } = useSpecSheet(
+  selectedSpec.value
+);
 
 const isSheetOversize = computed(() => {
   if (isCreating.value) return false;
@@ -345,7 +342,6 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     await updateStatement(state.statement);
-    resetTempEditState();
   } finally {
     state.isEditing = false;
   }
@@ -399,7 +395,6 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
     if (sheet.value) {
       sheet.value.title = filename;
     }
-    resetTempEditState();
   } finally {
     state.isUploadingFile = false;
   }
@@ -407,13 +402,22 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
 
 const updateStatement = async (statement: string) => {
   const planPatch = cloneDeep(plan.value);
-  if (!planPatch) {
-    return;
-  }
-  const specsToPatch = planPatch.specs.filter(
+  const specToPatch = planPatch.specs.find(
     (spec) => spec.id === selectedSpec.value.id
   );
-  const specEngine = await databaseEngineForSpec(head(specsToPatch));
+  if (!specToPatch) {
+    throw new Error(
+      `Cannot find spec to patch for plan update ${JSON.stringify(
+        selectedSpec.value
+      )}`
+    );
+  }
+  if (specToPatch.config.case !== "changeDatabaseConfig") {
+    throw new Error(
+      `Unsupported spec type for plan update ${JSON.stringify(specToPatch)}`
+    );
+  }
+  const specEngine = await databaseEngineForSpec(specToPatch);
   const sheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
     title: plan.value.title,
@@ -424,27 +428,15 @@ const updateStatement = async (statement: string) => {
     project.value.name,
     sheet
   );
-
-  for (const spec of specsToPatch) {
-    if (spec.config?.case === "changeDatabaseConfig") {
-      spec.config.value.sheet = createdSheet.name;
-    } else if (spec.config?.case === "exportDataConfig") {
-      spec.config.value.sheet = createdSheet.name;
-    } else {
-      throw new Error(
-        `Unsupported spec type for plan update ${JSON.stringify(spec)}`
-      );
-    }
-  }
-
+  specToPatch.config.value.sheet = createdSheet.name;
   const request = create(UpdatePlanRequestSchema, {
     plan: planPatch,
     updateMask: { paths: ["specs"] },
   });
-  const response = await planServiceClientConnect.updatePlan(request);
-
-  Object.assign(plan.value, response);
-  events.emit("status-changed", { eager: true });
+  await planServiceClientConnect.updatePlan(request);
+  events.emit("status-changed", {
+    eager: true,
+  });
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -478,11 +470,5 @@ watch(isCreating, (curr, prev) => {
   if (!curr && prev) {
     state.isEditing = false;
   }
-});
-
-defineExpose({
-  get editor() {
-    return monacoEditorRef.value;
-  },
 });
 </script>

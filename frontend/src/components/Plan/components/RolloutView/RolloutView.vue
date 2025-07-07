@@ -47,9 +47,9 @@ import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import StagesView from "./StagesView.vue";
 import TaskFilter from "./TaskFilter.vue";
 import TaskTableView from "./TaskTableView.vue";
-import { provideRolloutViewContext } from "./context";
+import { useRolloutViewContext } from "./context";
 
-const { rollout, mergedStages } = provideRolloutViewContext();
+const { rollout, mergedStages } = useRolloutViewContext();
 
 const isTableView = ref(false);
 const taskStatusFilter = ref<Task_Status[]>([]);

@@ -56,7 +56,7 @@ export const providePreBackupSettingContext = (refs: {
   const { isCreating, project, plan, selectedSpec, issue, rollout } = refs;
 
   const events = new Emittery<{
-    update: boolean;
+    update: never;
   }>();
 
   const databases = computed(() => {
@@ -149,10 +149,10 @@ export const providePreBackupSettingContext = (refs: {
       }
     } else {
       const planPatch = cloneDeep(unref(plan));
-      const spec = (planPatch?.specs || []).find((s) => {
+      const spec = planPatch.specs.find((s) => {
         return s.id === selectedSpec.value?.id;
       });
-      if (!planPatch || !spec || spec.config?.case !== "changeDatabaseConfig") {
+      if (!planPatch || !spec || spec.config.case !== "changeDatabaseConfig") {
         // Should not reach here.
         throw new Error(
           "Plan or spec is not defined. Cannot update pre-backup setting."
@@ -172,7 +172,7 @@ export const providePreBackupSettingContext = (refs: {
     }
 
     // Emit the update event.
-    events.emit("update", on);
+    events.emit("update");
   };
 
   const context = {

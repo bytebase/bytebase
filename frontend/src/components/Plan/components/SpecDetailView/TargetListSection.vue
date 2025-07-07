@@ -136,7 +136,7 @@ import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
 import AllTargetsDrawer from "./AllTargetsDrawer.vue";
 import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
-import { usePlanSpecContext } from "./context";
+import { useSelectedSpec } from "./context";
 
 interface TargetRow {
   target: string;
@@ -153,8 +153,8 @@ const DEFAULT_VISIBLE_TARGETS = 20;
 
 const { t } = useI18n();
 const router = useRouter();
-const { plan, isCreating, events } = usePlanContext();
-const { selectedSpec } = usePlanSpecContext();
+const { plan, isCreating } = usePlanContext();
+const selectedSpec = useSelectedSpec();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
@@ -283,9 +283,6 @@ const handleUpdateTargets = async (targets: string[]) => {
     });
     const response = await planServiceClientConnect.updatePlan(request);
     Object.assign(plan.value, response);
-    events.emit("status-changed", {
-      eager: true,
-    });
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

@@ -52,7 +52,7 @@
                   v-if="statistics.checkStatus.error > 0"
                   class="flex items-center gap-1"
                 >
-                  <XCircleIcon class="w-6 h-6 text-error" />
+                  <XCircleIcon class="w-5 h-5 text-error" />
                   <span class="text-xl font-semibold text-error">{{
                     statistics.checkStatus.error
                   }}</span>
@@ -61,7 +61,7 @@
                   v-if="statistics.checkStatus.warning > 0"
                   class="flex items-center gap-1"
                 >
-                  <AlertCircleIcon class="w-6 h-6 text-warning" />
+                  <AlertCircleIcon class="w-5 h-5 text-warning" />
                   <span class="text-xl font-semibold text-warning">{{
                     statistics.checkStatus.warning
                   }}</span>
@@ -70,7 +70,7 @@
                   v-if="statistics.checkStatus.success > 0"
                   class="flex items-center gap-1"
                 >
-                  <CheckCircleIcon class="w-6 h-6 text-success" />
+                  <CheckCircleIcon class="w-5 h-5 text-success" />
                   <span class="text-xl font-semibold text-success">{{
                     statistics.checkStatus.success
                   }}</span>
@@ -191,16 +191,20 @@ const statistics = computed(() => {
   const checkStatus = {
     total: 0,
     success:
-      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.SUCCESS] ||
-      0,
+      plan.value.planCheckRunStatusCount[
+        PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
+      ] || 0,
     warning:
-      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.WARNING] ||
-      0,
+      plan.value.planCheckRunStatusCount[
+        PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
+      ] || 0,
     error:
-      plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status.ERROR] || 0,
+      plan.value.planCheckRunStatusCount[
+        PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]
+      ] || 0,
   };
   checkStatus.total =
-    checkStatus.success + checkStatus.warning + checkStatus.error || 0;
+    checkStatus.success + checkStatus.warning + checkStatus.error;
   for (const spec of plan.value.specs) {
     totalTargets += targetsForSpec(spec).length;
   }

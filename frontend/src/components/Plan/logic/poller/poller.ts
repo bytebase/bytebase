@@ -122,7 +122,7 @@ export const provideResourcePoller = () => {
         routeName
       )
     ) {
-      return ["issue", "rollout"];
+      return ["rollout"];
     }
 
     // Default to polling all resources

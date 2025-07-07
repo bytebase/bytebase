@@ -35,7 +35,8 @@ export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
 export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollout`;
 export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUTS}.detail`;
-export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL}.task.detail`;
+export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL}.stage.detail`;
+export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL}.task.detail`;
 
 const cicdRoutes: RouteRecordRaw[] = [
   {
@@ -58,7 +59,7 @@ const cicdRoutes: RouteRecordRaw[] = [
           {
             path: "specs",
             name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-            component: () => import("@/views/project/PlanSpecDetailView.vue"),
+            component: () => import("@/views/project/PlanSpecsView.vue"),
           },
           {
             path: "specs/:specId",
@@ -86,16 +87,27 @@ const cicdRoutes: RouteRecordRaw[] = [
         meta: {
           title: () => t("common.rollout"),
         },
+        component: () => import("@/views/project/RolloutDetailLayout.vue"),
         props: true,
         children: [
           {
             path: "",
             name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-            component: () => import("@/views/project/RolloutDetailView.vue"),
+            component: () =>
+              import(
+                "@/components/Plan/components/RolloutView/RolloutView.vue"
+              ),
             props: true,
             meta: {
               requiredPermissionList: () => ["bb.rollouts.get"],
             },
+          },
+          {
+            path: "stages/:stageId",
+            name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+            component: () =>
+              import("@/components/Plan/components/RolloutView/StageView.vue"),
+            props: true,
           },
           {
             path: "stages/:stageId/tasks/:taskId",

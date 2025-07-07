@@ -11,7 +11,11 @@
       class="w-full flex flex-row justify-between items-center gap-2 px-2 pt-2 pb-1"
     >
       <div class="flex items-center space-x-1">
-        <span class="text-base font-medium">
+        <span
+          class="text-base font-medium"
+          :class="[isCreated && 'cursor-pointer hover:underline']"
+          @click="handleClickStageTitle"
+        >
           {{ environmentStore.getEnvironmentByName(stage.environment).title }}
         </span>
         <NTag v-if="!isCreated" round size="tiny">{{
@@ -103,7 +107,10 @@ import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { rolloutServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   useCurrentProjectV1,
   useEnvironmentV1Store,
@@ -234,5 +241,25 @@ const createRolloutToStage = async () => {
       description: String(error),
     });
   }
+};
+
+const handleClickStageTitle = () => {
+  // Only navigate if the stage is created
+  if (!isCreated.value) return;
+
+  const rolloutId = rollout.value.name.split("/").pop();
+  const stageId = props.stage.name.split("/").pop();
+
+  if (!rolloutId || !stageId) return;
+
+  // Navigate to the stage detail route
+  router.push({
+    name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(project.value.name),
+      rolloutId,
+      stageId,
+    },
+  });
 };
 </script>

@@ -155,15 +155,13 @@ const toggleChecked = async (on: boolean) => {
       plan: planPatch,
       updateMask: { paths: ["specs"] },
     });
-    const response = await planServiceClientConnect.updatePlan(request);
-    Object.assign(plan.value, response);
-
+    await planServiceClientConnect.updatePlan(request);
+    events.emit("update");
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.updated"),
     });
-    events.emit("update");
   }
 };
 </script>
