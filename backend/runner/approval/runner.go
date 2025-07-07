@@ -136,8 +136,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	approvalTemplate, riskLevel, done, err := func() (*storepb.ApprovalTemplate, storepb.IssuePayloadApproval_RiskLevel, bool, error) {
 		// no need to find if
 		// - feature is not enabled
-		// - approval setting rules are empty
-		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil || len(approvalSetting.Rules) == 0 {
+		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
 			// nolint:nilerr
 			return nil, 0, true, nil
 		}
@@ -276,6 +275,10 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 }
 
 func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int32, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
+	if len(approvalSetting.Rules) == 0 {
+		return nil, nil
+	}
+
 	e, err := cel.NewEnv(common.ApprovalFactors...)
 	if err != nil {
 		return nil, err
