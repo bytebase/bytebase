@@ -131,11 +131,11 @@ import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { getSheetStatement, isNullOrUndefined } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
-import { usePlanSpecContext } from "../SpecDetailView/context";
+import { useSelectedSpec } from "../SpecDetailView/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const { plan } = usePlanContext();
-const { selectedSpec } = usePlanSpecContext();
+const selectedSpec = useSelectedSpec();
 
 const isRunningChecks = ref(false);
 const drawerVisible = ref(false);

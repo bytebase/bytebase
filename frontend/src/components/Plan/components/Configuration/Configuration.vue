@@ -14,7 +14,7 @@
 import { computed } from "vue";
 import { useCurrentProjectV1 } from "@/store";
 import { usePlanContext } from "../../logic";
-import { usePlanSpecContext } from "../SpecDetailView/context";
+import { useSelectedSpec } from "../SpecDetailView/context";
 import GhostSection from "./GhostSection";
 import { provideGhostSettingContext } from "./GhostSection/context";
 import PreBackupSection from "./PreBackupSection";
@@ -22,7 +22,7 @@ import { providePreBackupSettingContext } from "./PreBackupSection/context";
 
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, events, issue, rollout } = usePlanContext();
-const { selectedSpec } = usePlanSpecContext();
+const selectedSpec = useSelectedSpec();
 
 const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
   provideGhostSettingContext({

@@ -122,14 +122,11 @@
                 :class="getStatusColor(result.status)"
               />
 
-              <div class="flex-1 min-w-0">
+              <div class="flex-1 min-w-0 space-y-1">
                 <div class="text-sm font-medium text-main">
-                  {{ result.title }}
+                  {{ getResultTitle(result) }}
                 </div>
-                <div
-                  v-if="result.content"
-                  class="text-xs text-control-light mt-1"
-                >
+                <div v-if="result.content" class="text-xs text-control">
                   {{ result.content }}
                 </div>
                 <div
@@ -164,10 +161,12 @@ import {
 } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { getRuleLocalization } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
+  type PlanCheckRun_Result,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { humanizeTs } from "@/utils";
 import { usePlanContext } from "../../logic/context";
@@ -325,5 +324,29 @@ const formatTime = (timestamp: Timestamp | undefined): string => {
   return humanizeTs(
     new Date(Number(timestamp.seconds) * 1000).getTime() / 1000
   );
+};
+
+const messageWithCode = (message: string, code: number | undefined): string => {
+  if (code !== undefined && code !== 0) {
+    return `${message} #${code}`;
+  }
+  return message;
+};
+
+const getResultTitle = (result: PlanCheckRun_Result): string => {
+  let title = result.title;
+  if (title === "OK" || title === "Syntax error") {
+    return title;
+  }
+  // Only apply SQL review localization if this is a SQL review report
+  if (result.report?.case === "sqlReviewReport") {
+    // Convert dots to hyphens in the rule key to match the expected format
+    const normalizedKey = title.replace(/\./g, "-");
+    // Use getRuleLocalization to get the title
+    const localization = getRuleLocalization(normalizedKey);
+    title = localization.title;
+  }
+  // Add error code if present
+  return messageWithCode(title, result.code);
 };
 </script>

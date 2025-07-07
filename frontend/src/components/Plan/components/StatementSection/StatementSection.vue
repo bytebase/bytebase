@@ -1,30 +1,29 @@
 <template>
   <div v-if="viewMode !== 'NONE'" class="px-4 flex flex-col gap-y-2">
-    <EditorView v-if="viewMode === 'EDITOR'" />
+    <EditorView v-if="viewMode === 'EDITOR'" :key="selectedSpec.id" />
     <ReleaseView v-else-if="viewMode === 'RELEASE'" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { usePlanSpecContext } from "../SpecDetailView/context";
+import { useSelectedSpec } from "../SpecDetailView/context";
 import EditorView from "./EditorView";
 import ReleaseView from "./ReleaseView";
 
-const { selectedSpec } = usePlanSpecContext();
+const selectedSpec = useSelectedSpec();
 
 const viewMode = computed((): "NONE" | "EDITOR" | "RELEASE" => {
   if (selectedSpec.value) {
     const spec = selectedSpec.value;
-    // Check if this is a release-based spec (has release but no sheet)
+    // Check if this is a release-based spec first.
     if (
       spec.config?.case === "changeDatabaseConfig" &&
-      spec.config.value.release &&
-      !spec.config.value.sheet
+      spec.config.value.release
     ) {
       return "RELEASE";
     }
-    // Otherwise, it's a sheet-based spec
+    // Otherwise, it's a sheet-based spec.
     return "EDITOR";
   }
   return "NONE";

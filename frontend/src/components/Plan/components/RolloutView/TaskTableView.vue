@@ -11,8 +11,9 @@
     <!-- Task Table -->
     <div class="flex-1 overflow-hidden">
       <TaskTable
-        :task-status-filter="taskStatusFilter"
+        :task-status-filter="props.taskStatusFilter"
         :selected-tasks="selectedTasks"
+        :stage="props.stage"
         @update:selected-tasks="handleSelectedTasksUpdate"
         @refresh="handleRefresh"
       />
@@ -22,13 +23,18 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { Task, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  Task,
+  Task_Status,
+  Stage,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
 import TaskOperations from "./TaskOperations.vue";
 import TaskTable from "./TaskTable.vue";
 
-defineProps<{
+const props = defineProps<{
   taskStatusFilter: Task_Status[];
+  stage?: Stage;
 }>();
 
 const { rollout, events } = usePlanContextWithRollout();
