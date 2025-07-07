@@ -9,7 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	expr "google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/genproto/googleapis/type/expr"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
