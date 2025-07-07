@@ -25,9 +25,9 @@ func getReleaseFiles(pattern string) ([]*v1pb.Release_File, error) {
 		base := filepath.Base(m)
 		t := v1pb.Release_File_DDL
 		switch {
-		case strings.Contains(base, "dml"):
+		case strings.HasSuffix(base, "dml"):
 			t = v1pb.Release_File_DML
-		case strings.Contains(base, "ghost"):
+		case strings.HasSuffix(base, "ghost"):
 			t = v1pb.Release_File_DDL_GHOST
 		}
 
