@@ -335,8 +335,8 @@ const messageWithCode = (message: string, code: number | undefined): string => {
 
 const getResultTitle = (result: PlanCheckRun_Result): string => {
   let title = result.title;
-  if (title === "OK") {
-    return "OK";
+  if (title === "OK" || title === "Syntax error") {
+    return title;
   }
   // Only apply SQL review localization if this is a SQL review report
   if (result.report?.case === "sqlReviewReport") {
