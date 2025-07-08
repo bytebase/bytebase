@@ -823,23 +823,18 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 
 				// every task in the stage terminated
 				// create "stage ends" activity.
-				if err := func() error {
-					s.webhookManager.CreateEvent(ctx, &webhook.Event{
-						Actor:   s.store.GetSystemBotUser(ctx),
-						Type:    common.EventTypeStageStatusUpdate,
-						Comment: "",
-						Issue:   webhook.NewIssue(issueN),
-						Rollout: webhook.NewRollout(pipeline),
-						Project: webhook.NewProject(project),
-						StageStatusUpdate: &webhook.EventStageStatusUpdate{
-							StageTitle: currentEnvironment,
-							StageID:    currentEnvironment,
-						},
-					})
-					return nil
-				}(); err != nil {
-					slog.Error("failed to create ActivityPipelineStageStatusUpdate activity", log.BBError(err))
-				}
+				s.webhookManager.CreateEvent(ctx, &webhook.Event{
+					Actor:   s.store.GetSystemBotUser(ctx),
+					Type:    common.EventTypeStageStatusUpdate,
+					Comment: "",
+					Issue:   webhook.NewIssue(issueN),
+					Rollout: webhook.NewRollout(pipeline),
+					Project: webhook.NewProject(project),
+					StageStatusUpdate: &webhook.EventStageStatusUpdate{
+						StageTitle: currentEnvironment,
+						StageID:    currentEnvironment,
+					},
+				})
 
 				if err := func() error {
 					p := &storepb.IssueCommentPayload{
