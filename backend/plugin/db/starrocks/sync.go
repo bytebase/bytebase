@@ -162,7 +162,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		if defaultStr.Valid {
 			if strings.Contains(extra, "DEFAULT_GENERATED") {
-				column.DefaultExpression = fmt.Sprintf("(%s)", defaultStr.String)
+				// Store in Default field (migration from DefaultExpression to Default)
+				column.Default = fmt.Sprintf("(%s)", defaultStr.String)
 			} else {
 				column.Default = defaultStr.String
 			}
@@ -170,7 +171,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			// TODO(zp): refactor column default value.
 			if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 				// Use the upper case to consistent with MySQL Dump.
-				column.DefaultExpression = autoIncrementSymbol
+				// Store in Default field (migration from DefaultExpression to Default)
+				column.Default = autoIncrementSymbol
 			}
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)

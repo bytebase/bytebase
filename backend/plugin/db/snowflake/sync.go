@@ -451,8 +451,8 @@ func (d *Driver) getTableSchema(ctx context.Context, database string) (map[strin
 			return nil, nil, err
 		}
 		if defaultStr.Valid {
-			// TODO: use correct default type
-			column.DefaultExpression = defaultStr.String
+			// Store in Default field (migration from DefaultExpression to Default)
+			column.Default = defaultStr.String
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {

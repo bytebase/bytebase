@@ -195,8 +195,8 @@ func getColumn(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.Tab
 		}
 		column.Position = int32(position)
 		if defaultStr.Valid {
-			// TODO: use correct default type
-			column.DefaultExpression = defaultStr.StringVal
+			// Store in Default field (migration from DefaultExpression to Default)
+			column.Default = defaultStr.StringVal
 		}
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		columnsMap[key] = append(columnsMap[key], column)

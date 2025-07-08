@@ -114,7 +114,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 				column.DefaultNull = true
 			}
 		} else {
-			column.DefaultExpression = defaultValueExpression
+			// Store in Default field (migration from DefaultExpression to Default)
+			column.Default = defaultValueExpression
 		}
 		columnMap[tableName] = append(columnMap[tableName], column)
 	}
