@@ -1043,17 +1043,11 @@ func writeAddColumn(out *strings.Builder, schema, table string, column *storepb.
 	_, _ = out.WriteString(`" `)
 	_, _ = out.WriteString(column.Type)
 
-	if column.DefaultExpression != "" {
+	defaultExpr := getDefaultExpression(column)
+	if defaultExpr != "" {
 		_, _ = out.WriteString(` DEFAULT `)
-		_, _ = out.WriteString(column.DefaultExpression)
-	} else if column.Default != "" {
-		_, _ = out.WriteString(` DEFAULT '`)
-		_, _ = out.WriteString(column.Default)
-		_, _ = out.WriteString(`'`)
-	} else if column.DefaultNull {
-		_, _ = out.WriteString(` DEFAULT NULL`)
+		_, _ = out.WriteString(defaultExpr)
 	}
-
 	if !column.Nullable {
 		_, _ = out.WriteString(` NOT NULL`)
 	}
