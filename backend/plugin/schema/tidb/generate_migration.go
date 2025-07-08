@@ -456,7 +456,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 			_, _ = buf.WriteString(" AUTO_INCREMENT")
 		} else if hasAutoRandom(col) {
 			_, _ = buf.WriteString(" /*T![auto_rand] ")
-			_, _ = buf.WriteString(col.GetDefaultExpression())
+			_, _ = buf.WriteString(col.GetDefault())
 			_, _ = buf.WriteString(" */")
 		} else if hasDefaultValue(col) && !hasAutoIncrement(col) && !hasAutoRandom(col) {
 			if e := getDefaultExpression(col); e != "" {
@@ -660,7 +660,7 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 		_, _ = buf.WriteString(" AUTO_INCREMENT")
 	} else if hasAutoRandom(column) {
 		_, _ = buf.WriteString(" /*T![auto_rand] ")
-		_, _ = buf.WriteString(column.GetDefaultExpression())
+		_, _ = buf.WriteString(column.GetDefault())
 		_, _ = buf.WriteString(" */")
 	} else if hasDefaultValue(column) && !hasAutoIncrement(column) && !hasAutoRandom(column) {
 		_, _ = buf.WriteString(" DEFAULT ")
@@ -709,7 +709,7 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 		_, _ = buf.WriteString(" AUTO_INCREMENT")
 	} else if hasAutoRandom(column) {
 		_, _ = buf.WriteString(" /*T![auto_rand] ")
-		_, _ = buf.WriteString(column.GetDefaultExpression())
+		_, _ = buf.WriteString(column.GetDefault())
 		_, _ = buf.WriteString(" */")
 	} else if hasDefaultValue(column) && !hasAutoIncrement(column) && !hasAutoRandom(column) {
 		_, _ = buf.WriteString(" DEFAULT ")
@@ -997,7 +997,7 @@ func hasDefaultValue(column *storepb.ColumnMetadata) bool {
 	}
 
 	// Don't treat AUTO_INCREMENT as a default value
-	if strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT") {
+	if strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT") || strings.HasPrefix(column.GetDefault(), "AUTO_RANDOM") {
 		return false
 	}
 
@@ -1017,7 +1017,7 @@ func hasAutoRandom(column *storepb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
-	return strings.HasPrefix(column.GetDefaultExpression(), "AUTO_RANDOM")
+	return strings.HasPrefix(column.GetDefault(), "AUTO_RANDOM") || strings.HasPrefix(column.GetDefaultExpression(), "AUTO_RANDOM")
 }
 
 func escapeString(s string) string {

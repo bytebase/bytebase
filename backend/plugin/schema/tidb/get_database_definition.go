@@ -1109,7 +1109,7 @@ func isAutoIncrement(column *storepb.ColumnMetadata) bool {
 }
 
 func isAutoRandom(column *storepb.ColumnMetadata) bool {
-	return strings.HasPrefix(column.GetDefaultExpression(), autoRandomSymbol)
+	return strings.HasPrefix(column.GetDefault(), autoRandomSymbol) || strings.HasPrefix(column.GetDefaultExpression(), autoRandomSymbol)
 }
 
 func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, table *storepb.TableMetadata) error {
@@ -1157,7 +1157,7 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 			return err
 		}
 	case isAutoRandom(column):
-		if _, err := fmt.Fprintf(buf, " /*T![auto_rand] %s */", column.GetDefaultExpression()); err != nil {
+		if _, err := fmt.Fprintf(buf, " /*T![auto_rand] %s */", column.GetDefault()); err != nil {
 			return err
 		}
 	default:
@@ -1207,6 +1207,12 @@ func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) er
 			// We'll handle this in the following AUTO_INCREMENT clause.
 			return nil
 		}
+		if isAutoRandom(column) {
+			// If the default value is auto_random, then we should not print the default clause
+			// We'll handle this in the following AUTO_RANDOM clause.
+			return nil
+		}
+
 		if _, err := fmt.Fprintf(buf, " DEFAULT %s", column.DefaultExpression); err != nil {
 			return err
 		}
@@ -1219,6 +1225,13 @@ func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) er
 			// We'll handle this in the following AUTO_INCREMENT clause.
 			return nil
 		}
+
+		if isAutoRandom(column) {
+			// If the default value is auto_random, then we should not print the default clause
+			// We'll handle this in the following AUTO_RANDOM clause.
+			return nil
+		}
+
 		if _, err := fmt.Fprintf(buf, " DEFAULT %s", column.Default); err != nil {
 			return err
 		}
