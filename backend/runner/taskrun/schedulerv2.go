@@ -802,58 +802,56 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 				}
 
-				issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+				pipeline, err := s.store.GetPipelineV2ByID(ctx, task.PipelineID)
+				if err != nil {
+					return errors.Wrapf(err, "failed to get pipeline")
+				}
+				if pipeline == nil {
+					return errors.Errorf("pipeline %v not found", task.PipelineID)
+				}
+				project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get project")
+				}
+				if project == nil {
+					return errors.Errorf("project %v not found", pipeline.ProjectID)
+				}
+				issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 				if err != nil {
 					return errors.Wrapf(err, "failed to get issue")
 				}
 
 				// every task in the stage terminated
 				// create "stage ends" activity.
-				if err := func() error {
-					pipeline, err := s.store.GetPipelineV2ByID(ctx, task.PipelineID)
-					if err != nil {
-						return errors.Wrapf(err, "failed to get pipeline")
-					}
-					if pipeline == nil {
-						return errors.Errorf("pipeline %v not found", task.PipelineID)
-					}
-					project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
-					if err != nil {
-						return errors.Wrapf(err, "failed to get project")
-					}
-					if project == nil {
-						return errors.Errorf("project %v not found", pipeline.ProjectID)
-					}
-					s.webhookManager.CreateEvent(ctx, &webhook.Event{
-						Actor:   s.store.GetSystemBotUser(ctx),
-						Type:    common.EventTypeStageStatusUpdate,
-						Comment: "",
-						Issue:   webhook.NewIssue(issue),
-						Rollout: webhook.NewRollout(pipeline),
-						Project: webhook.NewProject(project),
-						StageStatusUpdate: &webhook.EventStageStatusUpdate{
-							StageTitle: currentEnvironment,
-							StageID:    currentEnvironment,
-						},
-					})
-					return nil
-				}(); err != nil {
-					slog.Error("failed to create ActivityPipelineStageStatusUpdate activity", log.BBError(err))
-				}
+				s.webhookManager.CreateEvent(ctx, &webhook.Event{
+					Actor:   s.store.GetSystemBotUser(ctx),
+					Type:    common.EventTypeStageStatusUpdate,
+					Comment: "",
+					Issue:   webhook.NewIssue(issueN),
+					Rollout: webhook.NewRollout(pipeline),
+					Project: webhook.NewProject(project),
+					StageStatusUpdate: &webhook.EventStageStatusUpdate{
+						StageTitle: currentEnvironment,
+						StageID:    currentEnvironment,
+					},
+				})
 
 				if err := func() error {
 					p := &storepb.IssueCommentPayload{
 						Event: &storepb.IssueCommentPayload_StageEnd_{
 							StageEnd: &storepb.IssueCommentPayload_StageEnd{
-								Stage: common.FormatStage(issue.Project.ResourceID, task.PipelineID, task.Environment),
+								Stage: common.FormatStage(project.ResourceID, task.PipelineID, task.Environment),
 							},
 						},
 					}
-					_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-						IssueUID: issue.UID,
-						Payload:  p,
-					}, common.SystemBotID)
-					return err
+					if issueN != nil {
+						_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+							IssueUID: issueN.UID,
+							Payload:  p,
+						}, common.SystemBotID)
+						return err
+					}
+					return nil
 				}(); err != nil {
 					slog.Warn("failed to create issue comment", log.BBError(err))
 				}
@@ -871,8 +869,8 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						Actor:   s.store.GetSystemBotUser(ctx),
 						Type:    common.EventTypeIssueRolloutReady,
 						Comment: "",
-						Issue:   webhook.NewIssue(issue),
-						Project: webhook.NewProject(issue.Project),
+						Issue:   webhook.NewIssue(issueN),
+						Project: webhook.NewProject(project),
 						IssueRolloutReady: &webhook.EventIssueRolloutReady{
 							RolloutPolicy: policy,
 							StageName:     nextEnvironment,
@@ -884,23 +882,23 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				}
 
 				// After all tasks in the pipeline are done, we will resolve the issue if the issue is auto-resolvable.
-				if issue.Project.Setting.AutoResolveIssue && pipelineDone {
+				if issueN != nil && project.Setting.AutoResolveIssue && pipelineDone {
 					if err := func() error {
 						// For those database data export issues, we don't resolve them automatically.
-						if issue.Type == storepb.Issue_DATABASE_EXPORT {
+						if issueN.Type == storepb.Issue_DATABASE_EXPORT {
 							return nil
 						}
 
 						newStatus := storepb.Issue_DONE
-						updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+						updatedIssue, err := s.store.UpdateIssueV2(ctx, issueN.UID, &store.UpdateIssueMessage{Status: &newStatus})
 						if err != nil {
 							return errors.Wrapf(err, "failed to update issue status")
 						}
 
-						fromStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[issue.Status.String()])
+						fromStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[issueN.Status.String()])
 						toStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[updatedIssue.Status.String()])
 						if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-							IssueUID: issue.UID,
+							IssueUID: issueN.UID,
 							Payload: &storepb.IssueCommentPayload{
 								Event: &storepb.IssueCommentPayload_IssueUpdate_{
 									IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
@@ -918,7 +916,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							Type:    common.EventTypeIssueStatusUpdate,
 							Comment: "",
 							Issue:   webhook.NewIssue(updatedIssue),
-							Project: webhook.NewProject(updatedIssue.Project),
+							Project: webhook.NewProject(project),
 						})
 
 						return nil
