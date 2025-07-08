@@ -1,76 +1,95 @@
 <template>
   <div ref="containerRef" class="h-full flex flex-col">
-    <div class="border-b">
-      <BannerSection v-if="!isCreating" />
-      <FeatureAttention :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
-
-      <HeaderSection />
+    <div v-if="isLoading" class="flex items-center justify-center h-full">
+      <BBSpin />
     </div>
-    <div class="flex-1 flex flex-row">
-      <div
-        class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
-      >
-        <StageSection />
+    <template v-else>
+      <div class="border-b">
+        <BannerSection v-if="!isCreating" />
+        <FeatureAttention :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
 
-        <TaskListSection />
+        <HeaderSection />
+      </div>
+      <div class="flex-1 flex flex-row">
+        <div
+          class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
+        >
+          <StageSection />
 
-        <TaskRunSection v-if="!isCreating" />
+          <TaskListSection />
 
-        <SQLCheckSection v-if="isCreating" />
-        <PlanCheckSection v-if="!isCreating" />
+          <TaskRunSection v-if="!isCreating" />
 
-        <StatementSection />
+          <SQLCheckSection v-if="isCreating" />
+          <PlanCheckSection v-if="!isCreating" />
 
-        <DescriptionSection />
+          <StatementSection />
 
-        <IssueCommentSection v-if="!isCreating" />
+          <DescriptionSection />
+
+          <IssueCommentSection v-if="!isCreating" />
+        </div>
+
+        <div
+          v-if="sidebarMode == 'DESKTOP'"
+          class="hide-scrollbar border-l"
+          :style="{
+            width: `${desktopSidebarWidth}px`,
+          }"
+        >
+          <Sidebar />
+        </div>
       </div>
 
-      <div
-        v-if="sidebarMode == 'DESKTOP'"
-        class="hide-scrollbar border-l"
-        :style="{
-          width: `${desktopSidebarWidth}px`,
-        }"
-      >
-        <Sidebar />
-      </div>
-    </div>
+      <template v-if="sidebarMode === 'MOBILE'">
+        <!-- mobile sidebar -->
+        <Drawer :show="mobileSidebarOpen" @close="mobileSidebarOpen = false">
+          <div
+            style="
+              min-width: 240px;
+              width: 80vw;
+              max-width: 320px;
+              padding: 0.5rem;
+            "
+          >
+            <Sidebar v-if="sidebarMode === 'MOBILE'" />
+          </div>
+        </Drawer>
+      </template>
+
+      <IssueReviewActionPanel
+        :action="ongoingIssueReviewAction?.action"
+        @close="ongoingIssueReviewAction = undefined"
+      />
+      <IssueStatusActionPanel
+        :action="ongoingIssueStatusAction?.action"
+        @close="ongoingIssueStatusAction = undefined"
+      />
+      <TaskRolloutActionPanel
+        :action="ongoingTaskRolloutAction?.action"
+        :task-list="ongoingTaskRolloutAction?.taskList ?? []"
+        @close="ongoingTaskRolloutAction = undefined"
+      />
+    </template>
   </div>
-
-  <template v-if="sidebarMode === 'MOBILE'">
-    <!-- mobile sidebar -->
-    <Drawer :show="mobileSidebarOpen" @close="mobileSidebarOpen = false">
-      <div
-        style="min-width: 240px; width: 80vw; max-width: 320px; padding: 0.5rem"
-      >
-        <Sidebar v-if="sidebarMode === 'MOBILE'" />
-      </div>
-    </Drawer>
-  </template>
-
-  <IssueReviewActionPanel
-    :action="ongoingIssueReviewAction?.action"
-    @close="ongoingIssueReviewAction = undefined"
-  />
-  <IssueStatusActionPanel
-    :action="ongoingIssueStatusAction?.action"
-    @close="ongoingIssueStatusAction = undefined"
-  />
-  <TaskRolloutActionPanel
-    :action="ongoingTaskRolloutAction?.action"
-    :task-list="ongoingTaskRolloutAction?.taskList ?? []"
-    @close="ongoingTaskRolloutAction = undefined"
-  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import { FeatureAttention } from "@/components/FeatureGuard";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+} from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1 } from "@/store";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { type Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { extractIssueUID, extractProjectResourceName } from "@/utils";
 import { SQLCheckSection } from "../Plan/components";
 import { providePlanSQLCheckContext } from "../Plan/components/SQLCheckSection";
 import { provideSidebarContext } from "../Plan/logic";
@@ -97,9 +116,13 @@ import type {
 } from "./logic";
 import { specForTask, useIssueContext, usePollIssue } from "./logic";
 
-const containerRef = ref<HTMLElement>();
+const router = useRouter();
+const route = useRoute();
+const { enabledNewLayout } = useIssueLayoutVersion();
 const { isCreating, issue, selectedTask, events } = useIssueContext();
 const { project } = useCurrentProjectV1();
+const containerRef = ref<HTMLElement>();
+const isLoading = ref(true);
 
 const ongoingIssueReviewAction = ref<{
   action: IssueReviewAction;
@@ -151,4 +174,37 @@ const {
   desktopSidebarWidth,
   mobileSidebarOpen,
 } = provideSidebarContext(containerRef);
+
+onMounted(() => {
+  if (
+    enabledNewLayout.value &&
+    issue.value.type === Issue_Type.DATABASE_CHANGE &&
+    issue.value.planEntity?.specs.every(
+      (spec) => spec.config.case === "changeDatabaseConfig"
+    )
+  ) {
+    if (isCreating.value) {
+      // Redirect to plans creation page with original query parameters
+      router.replace({
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+        params: {
+          projectId: extractProjectResourceName(project.value.name),
+          planId: "create",
+        },
+        query: route.query,
+      });
+    } else {
+      router.replace({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+        params: {
+          projectId: extractProjectResourceName(project.value.name),
+          issueId: extractIssueUID(issue.value.name),
+        },
+        query: route.query,
+      });
+    }
+  } else {
+    isLoading.value = false;
+  }
+});
 </script>

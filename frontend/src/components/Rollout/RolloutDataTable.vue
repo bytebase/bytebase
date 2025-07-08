@@ -98,7 +98,7 @@ const columnList = computed(
         },
       },
       {
-        key: "taskStatus",
+        key: "tasks",
         title: t("common.tasks"),
         render: (rollout) => {
           return (

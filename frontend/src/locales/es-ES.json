@@ -1046,7 +1046,8 @@
       "pending-description": "Este problema está pendiente de aprobación. Se requiere una implementación forzada para continuar.",
       "rejected-error": "Se ha rechazado la aprobación del problema. Habilite la implementación forzada para continuar.",
       "pending-error": "La aprobación del problema está pendiente. Habilite la implementación forzada para continuar."
-    }
+    },
+    "new-layout": "Nuevo diseño de CI/CD"
   },
   "plan": {
     "self": "Plan",
@@ -1064,7 +1065,6 @@
       "description": "Ver y administrar todas las especificaciones de este plan",
       "total-specs": "Especificaciones totales",
       "total-targets": "Objetivos totales",
-      "check-status": "Verificar estado",
       "no-checks": "Sin controles",
       "affected-resources": "Recursos afectados"
     },

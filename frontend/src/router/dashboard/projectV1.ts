@@ -79,7 +79,7 @@ const cicdRoutes: RouteRecordRaw[] = [
         meta: {
           requiredPermissionList: () => ["bb.issues.get"],
         },
-        component: () => import("@/views/project/IssueDetailView.vue"),
+        component: () => import("@/views/project/IssueDetailV1View.vue"),
         props: true,
       },
       {
@@ -249,13 +249,14 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("plan.plans"),
           requiredPermissionList: () => ["bb.databases.list", "bb.plans.list"],
         },
-        component: () => import("@/views/ReviewCenter/index.vue"),
+        component: () => import("@/views/project/ProjectPlanDashboard.vue"),
         props: true,
       },
       {
         path: "rollouts",
         name: PROJECT_V1_ROUTE_ROLLOUTS,
         meta: {
+          title: () => t("rollout.rollouts"),
           requiredPermissionList: () => ["bb.rollouts.list"],
         },
         component: () => import("@/views/project/ProjectRolloutDashboard.vue"),
