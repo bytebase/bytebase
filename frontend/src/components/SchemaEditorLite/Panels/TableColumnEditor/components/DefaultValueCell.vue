@@ -123,23 +123,49 @@ const placeholder = computed(() => {
   return getColumnDefaultValuePlaceholder(props.column);
 });
 
-// Computed property for engines that use simple input (PostgreSQL, MySQL, MSSQL, and Oracle)
+// Computed property for engines that use simple input (migrated engines except TiDB)
 const useSimpleInput = computed(() => {
   return (
     props.engine === Engine.POSTGRES ||
     props.engine === Engine.MYSQL ||
     props.engine === Engine.MSSQL ||
-    props.engine === Engine.ORACLE
+    props.engine === Engine.ORACLE ||
+    props.engine === Engine.MARIADB ||
+    props.engine === Engine.OCEANBASE_ORACLE ||
+    props.engine === Engine.OCEANBASE ||
+    props.engine === Engine.SNOWFLAKE ||
+    props.engine === Engine.DM ||
+    props.engine === Engine.CLICKHOUSE ||
+    props.engine === Engine.COCKROACHDB ||
+    props.engine === Engine.SPANNER ||
+    props.engine === Engine.BIGQUERY ||
+    props.engine === Engine.REDSHIFT ||
+    props.engine === Engine.RISINGWAVE ||
+    props.engine === Engine.STARROCKS ||
+    props.engine === Engine.DORIS
   );
 });
 
 const simpleInputValue = computed(() => {
-  // For PostgreSQL, MySQL, MSSQL, and Oracle, we use defaultString field which contains the properly formatted expression
+  // For migrated engines (except TiDB), we use defaultString field which contains the properly formatted expression
   if (
     props.engine === Engine.POSTGRES ||
     props.engine === Engine.MYSQL ||
     props.engine === Engine.MSSQL ||
-    props.engine === Engine.ORACLE
+    props.engine === Engine.ORACLE ||
+    props.engine === Engine.MARIADB ||
+    props.engine === Engine.OCEANBASE_ORACLE ||
+    props.engine === Engine.OCEANBASE ||
+    props.engine === Engine.SNOWFLAKE ||
+    props.engine === Engine.DM ||
+    props.engine === Engine.CLICKHOUSE ||
+    props.engine === Engine.COCKROACHDB ||
+    props.engine === Engine.SPANNER ||
+    props.engine === Engine.BIGQUERY ||
+    props.engine === Engine.REDSHIFT ||
+    props.engine === Engine.RISINGWAVE ||
+    props.engine === Engine.STARROCKS ||
+    props.engine === Engine.DORIS
   ) {
     return props.column.defaultString || "";
   }

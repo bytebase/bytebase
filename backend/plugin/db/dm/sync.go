@@ -212,8 +212,8 @@ func getTableColumns(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb
 			return nil, err
 		}
 		if defaultStr.Valid {
-			// TODO: use correct default type
-			column.DefaultExpression = defaultStr.String
+			// Store in Default field (migration from DefaultExpression to Default)
+			column.Default = defaultStr.String
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
