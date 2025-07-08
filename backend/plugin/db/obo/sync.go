@@ -173,8 +173,8 @@ func getTableColumns(ctx context.Context, txn *sql.Tx, schemaName string) (map[d
 			return nil, err
 		}
 		if defaultStr.Valid {
-			// TODO: use correct default type
-			column.DefaultExpression = defaultStr.String
+			// Store in Default field (migration from DefaultExpression to Default)
+			column.Default = defaultStr.String
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {

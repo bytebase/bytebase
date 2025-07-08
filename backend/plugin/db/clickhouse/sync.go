@@ -110,11 +110,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		column.Nullable = nullableBool
 		if defaultValueExpression == "" {
-			if nullableBool {
-				column.DefaultNull = true
-			}
+			column.Default = "NULL"
 		} else {
-			column.DefaultExpression = defaultValueExpression
+			// Store in Default field (migration from DefaultExpression to Default)
+			column.Default = defaultValueExpression
 		}
 		columnMap[tableName] = append(columnMap[tableName], column)
 	}

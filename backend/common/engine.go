@@ -468,11 +468,10 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 	//exhaustive:enforce
 	switch e {
 	case
-		storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_ORACLE:
-		return true
-	case
-
-		storepb.Engine_TIDB,
+		storepb.Engine_POSTGRES,
+		storepb.Engine_MYSQL,
+		storepb.Engine_MSSQL,
+		storepb.Engine_ORACLE,
 		storepb.Engine_MARIADB,
 		storepb.Engine_OCEANBASE_ORACLE,
 		storepb.Engine_OCEANBASE,
@@ -486,8 +485,8 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 		storepb.Engine_RISINGWAVE,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_DORIS:
-		// These engines still need migration as their sync.go hasn't been updated yet.
-		return false
+		// These engines have been migrated to use the Default field
+		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
@@ -499,6 +498,7 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 		storepb.Engine_ELASTICSEARCH,
 		storepb.Engine_DATABRICKS,
 		storepb.Engine_COSMOSDB,
+		storepb.Engine_TIDB,
 		storepb.Engine_TRINO:
 		// These engines don't have traditional column defaults or are NoSQL databases.
 		return true
