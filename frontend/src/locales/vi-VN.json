@@ -1046,7 +1046,8 @@
       "pending-description": "Sự cố này đang chờ phê duyệt. Cần phải triển khai bắt buộc để tiếp tục.",
       "rejected-error": "Đã từ chối phê duyệt vấn đề. Vui lòng bật triển khai bắt buộc để tiếp tục.",
       "pending-error": "Đang chờ phê duyệt vấn đề. Vui lòng bật triển khai bắt buộc để tiếp tục."
-    }
+    },
+    "new-layout": "Bố cục CI/CD mới"
   },
   "plan": {
     "self": "Kế hoạch",
@@ -1064,7 +1065,6 @@
       "description": "Xem và quản lý tất cả các thông số kỹ thuật trong kế hoạch này",
       "total-specs": "Tổng số thông số kỹ thuật",
       "total-targets": "Tổng số mục tiêu",
-      "check-status": "Kiểm tra trạng thái",
       "no-checks": "Không kiểm tra",
       "affected-resources": "Tài nguyên bị ảnh hưởng"
     },
