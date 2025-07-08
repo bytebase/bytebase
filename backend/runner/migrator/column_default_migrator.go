@@ -95,7 +95,7 @@ func (m *ColumnDefaultMigrator) migrate(ctx context.Context) error {
 				for _, table := range schema.Tables {
 					for _, column := range table.Columns {
 						switch engine {
-						case storepb.Engine_MYSQL:
+						case storepb.Engine_MYSQL, storepb.Engine_TIDB:
 							if column.DefaultNull {
 								column.Default = "NULL"
 								column.DefaultNull = false

@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -255,9 +256,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		// Quoted string has a single quote around it and is escaped by QUOTE().
 		column.Comment = unquoteMySQLString(column.Comment)
-		if defaultStr.Valid {
-			defaultStr.String = stripSingleQuote(defaultStr.String)
-		}
 
 		nullableBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
@@ -390,7 +388,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 								for i, column := range columns {
 									if column.Name == columnName {
 										newColumn := columns[i]
-										newColumn.DefaultExpression = autoRandText
+										// Store AUTO_RANDOM in Default field (migration from DefaultExpression to Default)
+										newColumn.Default = autoRandText
 										break
 									}
 								}
@@ -486,10 +485,11 @@ func isTimeConstant(s string) bool {
 
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
 	if defaultStr.Valid {
-		// In TiDB 7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
+		// TiDB is MySQL-compatible, so use MySQL's default handling approach
+		unquotedDefault := mysql.UnquoteMySQLString(defaultStr.String)
 		switch {
-		case isCurrentTimestampLike(defaultStr.String):
-			column.DefaultExpression = defaultStr.String
+		case mysql.IsCurrentTimestampLike(unquotedDefault):
+			column.Default = unquotedDefault
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
 			// for case:
 			//  CREATE TABLE t1(
@@ -500,21 +500,22 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 			if isTimeConstant(defaultStr.String) {
 				column.Default = defaultStr.String
 			} else {
-				column.DefaultExpression = fmt.Sprintf("(%s)", defaultStr.String)
+				unescapedDefault := mysql.UnescapeExpressionDefault(unquotedDefault)
+				column.Default = fmt.Sprintf("(%s)", unescapedDefault)
 			}
 		default:
-			// For non-generated and non CURRENT_XXX default value, use string.
+			// For non-generated and non CURRENT_XXX default value, preserve quotes for mysqldump compatibility
 			column.Default = defaultStr.String
 		}
 	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 		// TODO(zp): refactor column default value.
 		// Use the upper case to consistent with MySQL Dump.
-		column.DefaultExpression = autoIncrementSymbol
+		column.Default = autoIncrementSymbol
 	} else if nullableBool {
 		// This is NULL if the column has an explicit default of NULL,
 		// or if the column definition includes no DEFAULT clause.
 		// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
-		column.DefaultNull = true
+		column.Default = "NULL"
 	}
 
 	if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {
@@ -527,17 +528,6 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 			column.OnUpdate = "CURRENT_TIMESTAMP"
 		}
 	}
-}
-
-func isCurrentTimestampLike(s string) bool {
-	upper := strings.ToUpper(s)
-	if strings.HasPrefix(upper, "CURRENT_TIMESTAMP") {
-		return true
-	}
-	if strings.HasPrefix(upper, "CURRENT_DATE") {
-		return true
-	}
-	return false
 }
 
 func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {

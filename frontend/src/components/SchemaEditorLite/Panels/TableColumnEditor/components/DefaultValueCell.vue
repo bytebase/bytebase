@@ -123,13 +123,14 @@ const placeholder = computed(() => {
   return getColumnDefaultValuePlaceholder(props.column);
 });
 
-// Computed property for engines that use simple input (migrated engines except TiDB)
+// Computed property for engines that use simple input (all migrated engines)
 const useSimpleInput = computed(() => {
   return (
     props.engine === Engine.POSTGRES ||
     props.engine === Engine.MYSQL ||
     props.engine === Engine.MSSQL ||
     props.engine === Engine.ORACLE ||
+    props.engine === Engine.TIDB ||
     props.engine === Engine.MARIADB ||
     props.engine === Engine.OCEANBASE_ORACLE ||
     props.engine === Engine.OCEANBASE ||
@@ -147,12 +148,13 @@ const useSimpleInput = computed(() => {
 });
 
 const simpleInputValue = computed(() => {
-  // For migrated engines (except TiDB), we use defaultString field which contains the properly formatted expression
+  // For all migrated engines, we use defaultString field which contains the properly formatted expression
   if (
     props.engine === Engine.POSTGRES ||
     props.engine === Engine.MYSQL ||
     props.engine === Engine.MSSQL ||
     props.engine === Engine.ORACLE ||
+    props.engine === Engine.TIDB ||
     props.engine === Engine.MARIADB ||
     props.engine === Engine.OCEANBASE_ORACLE ||
     props.engine === Engine.OCEANBASE ||
