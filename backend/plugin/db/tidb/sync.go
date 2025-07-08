@@ -530,17 +530,6 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 	}
 }
 
-func isCurrentTimestampLike(s string) bool {
-	upper := strings.ToUpper(s)
-	if strings.HasPrefix(upper, "CURRENT_TIMESTAMP") {
-		return true
-	}
-	if strings.HasPrefix(upper, "CURRENT_DATE") {
-		return true
-	}
-	return false
-}
-
 func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
 	const query string = `
 		SELECT
