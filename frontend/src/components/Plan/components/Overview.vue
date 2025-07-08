@@ -19,7 +19,7 @@
               <p class="text-sm text-control-light">
                 {{ $t("plan.overview.total-specs") }}
               </p>
-              <p class="text-xl font-semibold mt-1">
+              <p class="text-xl font-medium mt-1">
                 {{ statistics.totalSpecs }}
               </p>
             </div>
@@ -33,7 +33,7 @@
               <p class="text-sm text-control-light">
                 {{ $t("plan.overview.total-targets") }}
               </p>
-              <p class="text-xl font-semibold mt-1">
+              <p class="text-xl font-medium mt-1">
                 {{ statistics.totalTargets }}
               </p>
             </div>
@@ -53,7 +53,7 @@
                   class="flex items-center gap-1"
                 >
                   <XCircleIcon class="w-5 h-5 text-error" />
-                  <span class="text-xl font-semibold text-error">{{
+                  <span class="text-xl font-medium text-error">{{
                     statistics.checkStatus.error
                   }}</span>
                 </div>
@@ -62,7 +62,7 @@
                   class="flex items-center gap-1"
                 >
                   <AlertCircleIcon class="w-5 h-5 text-warning" />
-                  <span class="text-xl font-semibold text-warning">{{
+                  <span class="text-xl font-medium text-warning">{{
                     statistics.checkStatus.warning
                   }}</span>
                 </div>
@@ -71,7 +71,7 @@
                   class="flex items-center gap-1"
                 >
                   <CheckCircleIcon class="w-5 h-5 text-success" />
-                  <span class="text-xl font-semibold text-success">{{
+                  <span class="text-xl font-medium text-success">{{
                     statistics.checkStatus.success
                   }}</span>
                 </div>
@@ -119,7 +119,7 @@
                   >
                     ({{ resource.instance.environmentEntity.title }})
                   </span>
-                  <span class="font-medium truncate">
+                  <span class="truncate">
                     {{
                       resource.instance
                         ? instanceV1Name(resource.instance)

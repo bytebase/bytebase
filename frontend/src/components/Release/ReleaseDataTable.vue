@@ -61,7 +61,13 @@ const columnList = computed(
         render: (release) => {
           return (
             <p class="inline-flex w-full">
-              <span class="shrink truncate">{release.title}</span>
+              {release.title ? (
+                <span class="shrink truncate">{release.title}</span>
+              ) : (
+                <span class="shrink truncate italic opacity-60">
+                  {t("common.untitled")}
+                </span>
+              )}
               {release.state === State.DELETED && (
                 <NTag class="shrink-0" type="warning" size="small" round>
                   {t("common.archived")}
