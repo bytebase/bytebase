@@ -488,10 +488,6 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 		// These engines have been migrated to use the Default field
 		return true
 	case
-		storepb.Engine_TIDB:
-		// TiDB needs separate handling
-		return false
-	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
 		storepb.Engine_SQLITE,
