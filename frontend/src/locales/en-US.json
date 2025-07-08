@@ -1021,7 +1021,6 @@
         "no-session-found": "No session found."
       }
     },
-    "sql-review-only": "SQL Review Only",
     "title": {
       "edit-schema": "Edit schema",
       "change-data": "Change data",

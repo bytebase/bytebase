@@ -60,16 +60,20 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
             <div class="whitespace-nowrap text-control opacity-60">
               {extractPlanUID(plan.name)}
             </div>
-            <NPerformantEllipsis class="flex-1 truncate">
-              {{
-                default: () => <span>{plan.title}</span>,
-                tooltip: () => (
-                  <div class="whitespace-pre-wrap break-words break-all">
-                    {plan.title}
-                  </div>
-                ),
-              }}
-            </NPerformantEllipsis>
+            {plan.title ? (
+              <NPerformantEllipsis class="flex-1 truncate">
+                {{
+                  default: () => <span>{plan.title}</span>,
+                  tooltip: () => (
+                    <div class="whitespace-pre-wrap break-words break-all">
+                      {plan.title}
+                    </div>
+                  ),
+                }}
+              </NPerformantEllipsis>
+            ) : (
+              <span class="opacity-60 italic">{t("common.untitled")}</span>
+            )}
           </div>
         );
       },

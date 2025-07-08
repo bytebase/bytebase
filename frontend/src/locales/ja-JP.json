@@ -1021,7 +1021,6 @@
         "no-session-found": "セッションが見つかりません。"
       }
     },
-    "sql-review-only": "SQLレビューのみ",
     "title": {
       "edit-schema": "スキーマを編集",
       "change-data": "データの変更",

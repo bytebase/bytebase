@@ -1021,7 +1021,6 @@
         "no-session-found": "未找到会话。"
       }
     },
-    "sql-review-only": "仅 SQL 审核",
     "title": {
       "edit-schema": "变更 Schema",
       "change-data": "变更数据",

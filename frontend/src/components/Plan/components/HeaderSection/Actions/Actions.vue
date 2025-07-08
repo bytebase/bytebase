@@ -10,7 +10,7 @@
 
     <!-- Panels -->
     <IssueCreationActionPanel
-      :action="pendingIssueCreationAction"
+      :show="pendingIssueCreationAction !== undefined"
       @close="pendingIssueCreationAction = undefined"
     />
 
