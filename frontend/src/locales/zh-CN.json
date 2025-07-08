@@ -1126,7 +1126,6 @@
   },
   "rollout": {
     "rollouts": "发布任务",
-    "preview-rollout": "预览发布",
     "force-rollout": "强制发布"
   },
   "quick-action": {

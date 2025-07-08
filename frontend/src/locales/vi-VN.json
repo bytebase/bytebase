@@ -1126,7 +1126,6 @@
   },
   "rollout": {
     "rollouts": "Triển khai",
-    "preview-rollout": "Xem trước bản phát hành",
     "force-rollout": "Buộc triển khai"
   },
   "quick-action": {

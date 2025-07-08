@@ -1126,7 +1126,6 @@
   },
   "rollout": {
     "rollouts": "Despliegues",
-    "preview-rollout": "Vista previa del lanzamiento",
     "force-rollout": "Despliegue de fuerza"
   },
   "quick-action": {
