@@ -94,7 +94,8 @@ func (m *ColumnDefaultMigrator) migrate(ctx context.Context) error {
 			for _, schema := range metadata.Schemas {
 				for _, table := range schema.Tables {
 					for _, column := range table.Columns {
-						if engine == storepb.Engine_MYSQL {
+						switch engine {
+						case storepb.Engine_MYSQL:
 							if column.DefaultNull {
 								column.Default = "NULL"
 								column.DefaultNull = false
@@ -114,7 +115,8 @@ func (m *ColumnDefaultMigrator) migrate(ctx context.Context) error {
 								}
 								changed = true
 							}
-						} else {
+						default:
+							// For Oracle, PostgreSQL, MSSQL and other engines: simple migration
 							if column.DefaultNull {
 								column.Default = "NULL"
 								column.DefaultNull = false

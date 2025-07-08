@@ -123,22 +123,23 @@ const placeholder = computed(() => {
   return getColumnDefaultValuePlaceholder(props.column);
 });
 
-// Computed property for engines that use simple input (PostgreSQL, MySQL, and MSSQL)
+// Computed property for engines that use simple input (PostgreSQL, MySQL, MSSQL, and Oracle)
 const useSimpleInput = computed(() => {
   return (
     props.engine === Engine.POSTGRES ||
     props.engine === Engine.MYSQL ||
-    props.engine === Engine.MSSQL
+    props.engine === Engine.MSSQL ||
+    props.engine === Engine.ORACLE
   );
 });
 
 const simpleInputValue = computed(() => {
-  // For PostgreSQL, we use defaultString field which contains the schema-qualified expression
-  // For MySQL and MSSQL, we also use defaultString for now (until proto types are updated)
+  // For PostgreSQL, MySQL, MSSQL, and Oracle, we use defaultString field which contains the properly formatted expression
   if (
     props.engine === Engine.POSTGRES ||
     props.engine === Engine.MYSQL ||
-    props.engine === Engine.MSSQL
+    props.engine === Engine.MSSQL ||
+    props.engine === Engine.ORACLE
   ) {
     return props.column.defaultString || "";
   }

@@ -558,7 +558,7 @@ func writeColumn(buf *strings.Builder, column *storepb.ColumnMetadata) error {
 		if column.DefaultExpression != "" {
 			defaultExpr = column.DefaultExpression
 		} else if column.Default != "" {
-			defaultExpr = fmt.Sprintf("'%s'", column.Default)
+			defaultExpr = fmt.Sprintf("%s", column.Default)
 		} else if column.DefaultNull {
 			defaultExpr = "NULL"
 		}
