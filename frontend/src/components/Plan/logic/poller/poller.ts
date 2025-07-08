@@ -215,6 +215,7 @@ export const provideResourcePoller = () => {
 
   // Track if we've done initial refresh to avoid duplicate calls
   let hasInitialRefresh = false;
+  const hasCompletedInitialFetch = ref(false);
   // Track which pollers are currently running to avoid unnecessary restarts
   const pollerStates = {
     plan: false,
@@ -245,6 +246,7 @@ export const provideResourcePoller = () => {
     pollerStates.issueComments = false;
     pollerStates.rollout = false;
     hasInitialRefresh = false;
+    hasCompletedInitialFetch.value = false;
 
     // Restart active ones (this will reset the progressive intervals)
     if (activeResources.includes("plan")) {
@@ -403,7 +405,10 @@ export const provideResourcePoller = () => {
       if (!hasInitialRefresh && activeResources.length > 0) {
         hasInitialRefresh = true;
         // Small delay to avoid race conditions with component initialization
-        setTimeout(() => refreshAll(), 100);
+        setTimeout(async () => {
+          await refreshAll();
+          hasCompletedInitialFetch.value = true;
+        }, 100);
       }
     } else {
       // Stop all pollers when creating
@@ -418,6 +423,7 @@ export const provideResourcePoller = () => {
       pollerStates.issue = false;
       pollerStates.issueComments = false;
       pollerStates.rollout = false;
+      hasCompletedInitialFetch.value = false;
     }
   });
 
@@ -427,6 +433,7 @@ export const provideResourcePoller = () => {
     restartActivePollers,
     isRefreshing: computed(() => isRefreshing.value),
     activeResources: resourcesToPolled,
+    hasCompletedInitialFetch: computed(() => hasCompletedInitialFetch.value),
   };
 
   provide(KEY, poller);

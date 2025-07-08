@@ -45,16 +45,6 @@
 
         <div class="flex flex-col gap-y-1">
           <div class="text-control">
-            {{ $t("rollout.preview-rollout") }}
-          </div>
-          <PreviewRollout
-            :plan="plan"
-            @update:validation="previewRolloutValidation = $event"
-          />
-        </div>
-
-        <div class="flex flex-col gap-y-1">
-          <div class="text-control">
             {{ $t("common.title") }}
             <span class="text-red-600">*</span>
           </div>
@@ -130,7 +120,6 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
-import PreviewRollout from "@/components/Plan/components/PreviewRollout.vue";
 import { ErrorList } from "@/components/Plan/components/common";
 import { usePlanContext } from "@/components/Plan/logic";
 import {

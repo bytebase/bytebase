@@ -68,8 +68,16 @@
 
     <!-- Results List -->
     <div class="flex-1 overflow-y-auto">
+      <!-- Loading state -->
       <div
-        v-if="filteredResults.length === 0"
+        v-if="!hasCompletedInitialFetch"
+        class="flex items-center justify-center py-12"
+      >
+        <BBSpin />
+      </div>
+      <!-- Empty state -->
+      <div
+        v-else-if="filteredCheckRuns.length === 0"
         class="flex flex-col items-center justify-center py-12"
       >
         <CheckCircleIcon class="w-12 h-12 text-control-light opacity-50 mb-4" />
@@ -79,7 +87,6 @@
           }}
         </div>
       </div>
-
       <div v-else class="divide-y">
         <!-- Group by check run -->
         <div
@@ -161,6 +168,7 @@ import {
 } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin } from "@/bbkit";
 import { getRuleLocalization } from "@/types";
 import {
   PlanCheckRun_Result_Status,
@@ -170,6 +178,7 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { humanizeTs } from "@/utils";
 import { usePlanContext } from "../../logic/context";
+import { useResourcePoller } from "../../logic/poller";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const props = defineProps<{
@@ -178,6 +187,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { planCheckRuns } = usePlanContext();
+const { hasCompletedInitialFetch } = useResourcePoller();
 
 const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(
   props.defaultStatus
@@ -198,26 +208,8 @@ const filteredCheckRuns = computed(() => {
         return false;
       }
     }
-
     return true;
   });
-});
-
-const filteredResults = computed(() => {
-  const results = [];
-
-  for (const checkRun of filteredCheckRuns.value) {
-    for (const result of checkRun.results) {
-      if (
-        selectedStatus.value === undefined ||
-        result.status === selectedStatus.value
-      ) {
-        results.push({ checkRun, result });
-      }
-    }
-  }
-
-  return results;
 });
 
 const statusCounts = computed(() => {
