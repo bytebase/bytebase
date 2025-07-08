@@ -98,7 +98,7 @@
       <div class="w-full flex flex-row justify-end items-center gap-2">
         <div class="flex justify-end gap-x-3">
           <NButton @click="$emit('close')" quaternary>
-            {{ $t("common.cancel") }}
+            {{ $t("common.close") }}
           </NButton>
 
           <NTooltip :disabled="confirmErrors.length === 0" placement="top">
