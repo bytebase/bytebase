@@ -11,9 +11,10 @@
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
+        :override-route-query="false"
       />
       <PagedDatabaseTable
-        mode="PROJECT"
+        mode="PROJECT_SHORT"
         :show-selection="true"
         :custom-click="true"
         :parent="project.name"
@@ -29,6 +30,7 @@
         :database-group-list="dbGroupList"
         :show-selection="true"
         :single-selection="true"
+        :show-external-link="true"
         :selected-database-group-names="
           databaseSelectState.selectedDatabaseGroup
             ? [databaseSelectState.selectedDatabaseGroup]

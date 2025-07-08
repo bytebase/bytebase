@@ -48,7 +48,7 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { useProjectByName, hasFeature } from "@/store";
 import type { DatabaseResource } from "@/types";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
 
 interface LocalState {

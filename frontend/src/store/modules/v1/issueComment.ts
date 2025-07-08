@@ -1,10 +1,17 @@
+import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { issueServiceClient } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
+import {
+  CreateIssueCommentRequestSchema,
+  IssueCommentSchema,
+  ListIssueCommentsRequestSchema,
+  UpdateIssueCommentRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type {
   IssueComment,
   ListIssueCommentsRequest,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   getProjectIdIssueIdIssueCommentId,
   issueNamePrefix,
@@ -28,15 +35,15 @@ const composeIssueComment = (
   issueComment: IssueComment
 ): ComposedIssueComment => {
   let type = IssueCommentType.USER_COMMENT;
-  if (issueComment.approval !== undefined) {
+  if (issueComment.event?.case === "approval") {
     type = IssueCommentType.APPROVAL;
-  } else if (issueComment.issueUpdate !== undefined) {
+  } else if (issueComment.event?.case === "issueUpdate") {
     type = IssueCommentType.ISSUE_UPDATE;
-  } else if (issueComment.stageEnd !== undefined) {
+  } else if (issueComment.event?.case === "stageEnd") {
     type = IssueCommentType.STAGE_END;
-  } else if (issueComment.taskUpdate !== undefined) {
+  } else if (issueComment.event?.case === "taskUpdate") {
     type = IssueCommentType.TASK_UPDATE;
-  } else if (issueComment.taskPriorBackup !== undefined) {
+  } else if (issueComment.event?.case === "taskPriorBackup") {
     type = IssueCommentType.TASK_PRIOR_BACKUP;
   }
   return {
@@ -50,15 +57,19 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
   const issueCommentMap = reactive(new Map<string, ComposedIssueComment[]>());
 
   const listIssueComments = async (request: ListIssueCommentsRequest) => {
-    const resp = await issueServiceClient.listIssueComments(request);
-    issueCommentMap.set(
-      request.parent,
-      resp.issueComments.map(composeIssueComment)
-    );
+    const connectRequest = create(ListIssueCommentsRequestSchema, {
+      parent: request.parent,
+      pageSize: request.pageSize,
+      pageToken: request.pageToken,
+    });
+    const resp =
+      await issueServiceClientConnect.listIssueComments(connectRequest);
+    const issueComments = resp.issueComments;
+    issueCommentMap.set(request.parent, issueComments.map(composeIssueComment));
 
     return {
       nextPageToken: resp.nextPageToken,
-      issueComments: resp.issueComments,
+      issueComments,
     };
   };
 
@@ -69,12 +80,15 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
     issueName: string;
     comment: string;
   }) => {
-    const issueComment = await issueServiceClient.createIssueComment({
+    const request = create(CreateIssueCommentRequestSchema, {
       parent: issueName,
-      issueComment: {
+      issueComment: create(IssueCommentSchema, {
         comment,
-      },
+      }),
     });
+    const newIssueComment =
+      await issueServiceClientConnect.createIssueComment(request);
+    const issueComment = newIssueComment;
     issueCommentMap.set(issueName, [
       ...(issueCommentMap.get(issueName) ?? []),
       composeIssueComment(issueComment),
@@ -91,14 +105,15 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
     const { projectId, issueId } =
       getProjectIdIssueIdIssueCommentId(issueCommentName);
     const parent = `${projectNamePrefix}${projectId}/${issueNamePrefix}${issueId}`;
-    await issueServiceClient.updateIssueComment({
+    const request = create(UpdateIssueCommentRequestSchema, {
       parent: parent,
-      issueComment: {
+      issueComment: create(IssueCommentSchema, {
         name: issueCommentName,
         comment,
-      },
-      updateMask: ["comment"],
+      }),
+      updateMask: { paths: ["comment"] },
     });
+    await issueServiceClientConnect.updateIssueComment(request);
     issueCommentMap.set(
       parent,
       (issueCommentMap.get(parent) ?? []).map((issueComment) => {

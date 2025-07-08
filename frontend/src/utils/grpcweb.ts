@@ -1,13 +1,15 @@
-import { ClientError, ServerError, Status } from "nice-grpc-common";
+import { Code, ConnectError } from "@connectrpc/connect";
 
 export const getErrorCode = (error: unknown) => {
-  if (error instanceof ClientError || error instanceof ServerError) {
+  if (error instanceof ConnectError) {
     return error.code;
   }
-  return Status.UNKNOWN;
+  return Code.Unknown;
 };
 
 export const extractGrpcErrorMessage = (err: unknown) => {
-  const description = err instanceof ClientError ? err.details : String(err);
-  return description;
+  if (err instanceof ConnectError) {
+    return err.message;
+  }
+  return String(err);
 };

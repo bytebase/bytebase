@@ -15,6 +15,7 @@ import "v1/database_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service PlanService {
+  // Permissions required: bb.plans.get
   rpc GetPlan(GetPlanRequest) returns (Plan) {
     option (google.api.http) = {get: "/v1/{name=projects/*/plans/*}"};
     option (google.api.method_signature) = "name";
@@ -22,6 +23,7 @@ service PlanService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.plans.list
   rpc ListPlans(ListPlansRequest) returns (ListPlansResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/plans"};
     option (google.api.method_signature) = "parent";
@@ -30,6 +32,7 @@ service PlanService {
   }
 
   // Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
+  // Permissions required: bb.plans.get
   rpc SearchPlans(SearchPlansRequest) returns (SearchPlansResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/plans:search"
@@ -40,6 +43,7 @@ service PlanService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Permissions required: bb.plans.create
   rpc CreatePlan(CreatePlanRequest) returns (Plan) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/plans"
@@ -53,6 +57,7 @@ service PlanService {
 
   // UpdatePlan updates the plan.
   // The plan creator and the user with bb.plans.update permission on the project can update the plan.
+  // Permissions required: bb.plans.update
   rpc UpdatePlan(UpdatePlanRequest) returns (Plan) {
     option (google.api.http) = {
       patch: "/v1/{plan.name=projects/*/plans/*}"
@@ -64,6 +69,7 @@ service PlanService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.planCheckRuns.list
   rpc ListPlanCheckRuns(ListPlanCheckRunsRequest) returns (ListPlanCheckRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*}/planCheckRuns"};
     option (google.api.method_signature) = "parent";
@@ -71,6 +77,7 @@ service PlanService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.planCheckRuns.run
   rpc RunPlanChecks(RunPlanChecksRequest) returns (RunPlanChecksResponse) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/plans/*}:runPlanChecks"
@@ -81,6 +88,7 @@ service PlanService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.planCheckRuns.run
   rpc BatchCancelPlanCheckRuns(BatchCancelPlanCheckRunsRequest) returns (BatchCancelPlanCheckRunsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel"

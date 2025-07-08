@@ -3,6 +3,10 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import Emittery from "emittery";
+import { storeToRefs } from "pinia";
+import { computed, reactive, ref, toRef } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -10,11 +14,11 @@ import {
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { AISetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import {
+  AISettingSchema,
+  Setting_SettingName,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { wrapRefAsPromise } from "@/utils";
-import Emittery from "emittery";
-import { storeToRefs } from "pinia";
-import { computed, reactive, ref, toRef } from "vue";
 import { provideAIContext, useChatByTab, useCurrentChat } from "../logic";
 import { useConversationStore } from "../store";
 import type { AIContext, AIContextEvents } from "../types";
@@ -28,7 +32,13 @@ const state = reactive<LocalState>({
 });
 
 const settingV1Store = useSettingV1Store();
-const aiSetting = computed(() => settingV1Store.getSettingByName(Setting_SettingName.AI)?.value?.aiSetting ?? AISetting.create());
+const aiSetting = computed(() => {
+  const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
+  if (setting?.value?.value?.case === "aiSetting") {
+    return setting.value.value.value;
+  }
+  return create(AISettingSchema, {});
+});
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
 const databaseMetadata = useMetadata(

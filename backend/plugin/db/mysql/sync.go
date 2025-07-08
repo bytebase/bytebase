@@ -14,7 +14,6 @@ import (
 
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/transform"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -353,12 +352,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, err
 		}
-		// Quoted string has a single quote around it.
-		column.Comment = stripSingleQuote(column.Comment)
-		if defaultStr.Valid {
-			defaultStr.String = stripSingleQuote(defaultStr.String)
-		}
-
+		// Quoted string has a single quote around it and is escaped by QUOTE().
+		column.Comment = UnquoteMySQLString(column.Comment)
 		nullableBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
@@ -449,6 +444,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, err
 		}
+		// Note: MySQL's information_schema.VIEWS doesn't have a comment column
+		// View comments are not supported in MySQL
+		view.Comment = ""
 		key := db.TableKey{Schema: "", Table: view.Name}
 		view.Columns = columnMap[key]
 		viewMap[key] = view
@@ -545,8 +543,13 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, err
 		}
-		// Quoted string has a single quote around it.
-		comment = stripSingleQuote(comment)
+		// Quoted string has a single quote around it and is escaped by QUOTE().
+		comment = UnquoteMySQLString(comment)
+
+		// Note: We should NOT skip partitioned tables here.
+		// The CREATE_OPTIONS might contain 'partitioned' for partitioned tables,
+		// but we still need to include them in the table list.
+		// The partition details are fetched separately by listPartitionTables.
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		switch tableType {
@@ -658,6 +661,7 @@ func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*stor
 			SqlMode:             sqlMode,
 			CharacterSetClient:  charsetClient,
 			CollationConnection: collationConnection,
+			Comment:             "", // EVENT_COMMENT may not be available in all MySQL versions
 		}
 		events = append(events, event)
 	}
@@ -761,6 +765,7 @@ func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[d
 			SqlMode:             sqlMode,
 			CharacterSetClient:  charsetClient,
 			CollationConnection: collationConnection,
+			Comment:             "", // MySQL doesn't support trigger comments via information_schema
 		}
 		tableKey := db.TableKey{Schema: "", Table: table}
 		triggerMap[tableKey] = append(triggerMap[tableKey], trigger)
@@ -780,7 +785,8 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 			SQL_MODE,
 			CHARACTER_SET_CLIENT,
 			COLLATION_CONNECTION,
-			DATABASE_COLLATION
+			DATABASE_COLLATION,
+			IFNULL(ROUTINE_COMMENT, '')
 		FROM
 			INFORMATION_SCHEMA.ROUTINES
 		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
@@ -794,7 +800,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 	var functions []*storepb.FunctionMetadata
 	var procedures []*storepb.ProcedureMetadata
 	for routineRows.Next() {
-		var name, routineType string
+		var name, routineType, routineComment string
 		var sqlMode, charsetClient, collationConnection, databaseCollation sql.NullString
 		if err := routineRows.Scan(
 			&name,
@@ -803,6 +809,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 			&charsetClient,
 			&collationConnection,
 			&databaseCollation,
+			&routineComment,
 		); err != nil {
 			return nil, nil, err
 		}
@@ -818,6 +825,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 				CharacterSetClient:  charsetClient.String,
 				CollationConnection: collationConnection.String,
 				DatabaseCollation:   databaseCollation.String,
+				Comment:             routineComment,
 			})
 		} else {
 			functionDef, err := d.getCreateFunctionStmt(ctx, databaseName, name)
@@ -831,6 +839,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 				CharacterSetClient:  charsetClient.String,
 				CollationConnection: collationConnection.String,
 				DatabaseCollation:   databaseCollation.String,
+				Comment:             routineComment,
 			})
 		}
 	}
@@ -966,26 +975,26 @@ func (d *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, funct
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
 	if defaultStr.Valid {
 		// In MySQL 5.7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
+		unquotedDefault := UnquoteMySQLString(defaultStr.String)
 		switch {
-		case isCurrentTimestampLike(defaultStr.String):
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+		case IsCurrentTimestampLike(unquotedDefault):
+			column.Default = unquotedDefault
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+			unescapedDefault := UnescapeExpressionDefault(unquotedDefault)
+			column.Default = fmt.Sprintf("(%s)", unescapedDefault)
 		default:
-			// For non-generated and non CURRENT_XXX default value, use string.
-			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+			// For non-generated and non CURRENT_XXX default value, preserve quotes for mysqldump compatibility
+			column.Default = defaultStr.String
 		}
 	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 		// TODO(zp): refactor column default value.
 		// Use the upper case to consistent with MySQL Dump.
-		column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
+		column.Default = autoIncrementSymbol
 	} else if nullableBool {
 		// This is NULL if the column has an explicit default of NULL,
 		// or if the column definition includes no DEFAULT clause.
 		// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
-		column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
-			DefaultNull: true,
-		}
+		column.Default = "NULL"
 	}
 
 	if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {
@@ -1000,7 +1009,14 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 	}
 }
 
-func isCurrentTimestampLike(s string) bool {
+// UnescapeExpressionDefault unescapes the default expression for MySQL.
+func UnescapeExpressionDefault(s string) string {
+	s = strings.ReplaceAll(s, `\'`, `'`) // unescape single quote
+	s = strings.ReplaceAll(s, `\\`, `\`) // unescape backslash
+	return s
+}
+
+func IsCurrentTimestampLike(s string) bool {
 	upper := strings.ToUpper(s)
 	if strings.HasPrefix(upper, "CURRENT_TIMESTAMP") {
 		return true
@@ -1336,4 +1352,58 @@ func stripSingleQuote(s string) string {
 		return s[1 : len(s)-1]
 	}
 	return s
+}
+
+// UnquoteMySQLString unescapes a string that was escaped by MySQL's QUOTE() function.
+// MySQL's QUOTE() function escapes:
+// - \ → \\
+// - ' → \'
+// - ASCII NUL (0x00) → \0
+// - Control-Z (0x1A) → \Z
+func UnquoteMySQLString(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	// First remove surrounding quotes if present
+	s = stripSingleQuote(s)
+
+	// Now unescape the content
+	result := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			switch s[i+1] {
+			case '\\':
+				result = append(result, '\\')
+				i++ // skip next character
+			case '\'':
+				result = append(result, '\'')
+				i++ // skip next character
+			case '0':
+				result = append(result, 0) // ASCII NUL
+				i++                        // skip next character
+			case 'Z':
+				result = append(result, 0x1A) // Control-Z
+				i++                           // skip next character
+			case 'n':
+				result = append(result, '\n') // newline
+				i++                           // skip next character
+			case 't':
+				result = append(result, '\t') // tab
+				i++                           // skip next character
+			case 'r':
+				result = append(result, '\r') // carriage return
+				i++                           // skip next character
+			case 'b':
+				result = append(result, '\b') // backspace
+				i++                           // skip next character
+			default:
+				// Unknown escape sequence, keep the backslash
+				result = append(result, s[i])
+			}
+		} else {
+			result = append(result, s[i])
+		}
+	}
+	return string(result)
 }

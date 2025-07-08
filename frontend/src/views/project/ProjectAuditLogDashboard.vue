@@ -56,9 +56,9 @@ import { FeatureAttention } from "@/components/FeatureGuard";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { featureToRef, useAuditLogStore, useUserStore } from "@/store";
 import { type SearchAuditLogsParams } from "@/types";
-import type { AuditLog } from "@/types/proto/v1/audit_log_service";
-import { ExportFormat } from "@/types/proto/v1/common";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 
 interface LocalState {
@@ -154,7 +154,7 @@ const handleExport = async ({
   reject,
 }: {
   options: ExportOption;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
   resolve: (content: DownloadContent) => void;
 }) => {
   let pageToken = "";
@@ -167,7 +167,7 @@ const handleExport = async ({
       const { content, nextPageToken } = await auditLogStore.exportAuditLogs({
         search: searchAuditLogs.value,
         format: options.format,
-        pageSize: 10000,
+        pageSize: 5000, // The maximum page size is 5000
         pageToken,
       });
       pageToken = nextPageToken;

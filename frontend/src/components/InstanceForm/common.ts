@@ -6,13 +6,19 @@ import {
   UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
-import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import type {
+  DataSource,
+  Instance,
+} from "@/types/proto-es/v1/instance_service_pb";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
 
-export type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
+export type BasicInfo = Omit<
+  Instance,
+  "$typeName" | "dataSources" | "engineVersion" | "lastSyncTime"
+>;
 
 export type EditDataSource = DataSource & {
   pendingCreate: boolean;
@@ -76,7 +82,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     syncInterval: instance?.syncInterval,
     maximumConnections: instance?.maximumConnections ?? 0,
     syncDatabases: instance?.syncDatabases ?? [],
-    roles: instance ? instance?.roles : [],
+    roles: instance?.roles ?? [],
   };
 };
 

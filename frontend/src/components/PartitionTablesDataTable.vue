@@ -18,8 +18,8 @@ import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import type {
   TableMetadata,
   TablePartitionMetadata,
-} from "@/types/proto/v1/database_service";
-import { TablePartitionMetadata_Type } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import { TablePartitionMetadata_Type } from "@/types/proto-es/v1/database_service_pb";
 
 type PartitionTableRowData = {
   name: string;

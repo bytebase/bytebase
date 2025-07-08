@@ -49,25 +49,29 @@ func (s *Store) GetPasswordRestrictionSetting(ctx context.Context) (*storepb.Pas
 	return passwordRestriction, nil
 }
 
-func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
+func (s *Store) GetSQLQueryRestriction(ctx context.Context) *storepb.SQLQueryRestrictionSetting {
+	defaultValue := &storepb.SQLQueryRestrictionSetting{
+		MaximumResultSize: common.DefaultMaximumSQLResultSize,
+		MaximumResultRows: -1,
+	}
 	setting, err := s.GetSettingV2(ctx, storepb.SettingName_SQL_RESULT_SIZE_LIMIT)
 	if err != nil {
 		slog.Error("failed to get setting", slog.String("setting", string(storepb.SettingName_SQL_RESULT_SIZE_LIMIT)), log.BBError(err))
-		return common.DefaultMaximumSQLResultSize
+		return defaultValue
 	}
 	if setting == nil {
-		return common.DefaultMaximumSQLResultSize
+		return defaultValue
 	}
 
-	payload := new(storepb.MaximumSQLResultSizeSetting)
+	payload := new(storepb.SQLQueryRestrictionSetting)
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
 		slog.Error("failed to unmarshaler setting", slog.String("setting", string(storepb.SettingName_SQL_RESULT_SIZE_LIMIT)), log.BBError(err))
-		return common.DefaultMaximumSQLResultSize
+		return defaultValue
 	}
-	if payload.Limit <= 0 {
-		return common.DefaultMaximumSQLResultSize
+	if payload.MaximumResultSize <= 0 {
+		return defaultValue
 	}
-	return payload.Limit
+	return payload
 }
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.

@@ -745,41 +745,57 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					return errors.Wrapf(err, "failed to list tasks")
 				}
 
-				skippedOrDone, err := tasksSkippedOrDone(environmentTasks)
-				if err != nil {
-					return errors.Wrapf(err, "failed to check if tasks are skipped or done")
-				}
+				skippedOrDone := tasksSkippedOrDone(environmentTasks)
 				if !skippedOrDone {
 					return nil
 				}
 
 				pipelineEnvironmentDoneConfirmed[pipelineEnvironment{pipelineUID: task.PipelineID, environment: task.Environment}] = true
 
-				// Get all tasks to determine environments and their order
+				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get plan")
+				}
+
+				// Get environment order from plan deployment config or global settings
+				// Some environments may have zero tasks. We need to filter them out.
+				var environmentOrder []string
+				if plan != nil && len(plan.Config.GetDeployment().GetEnvironments()) > 0 {
+					environmentOrder = plan.Config.Deployment.GetEnvironments()
+				} else {
+					// Use global environment setting order
+					environmentOrder, err = getAllEnvironmentIDs(ctx, s.store)
+					if err != nil {
+						return errors.Wrapf(err, "failed to list environments")
+					}
+				}
+
 				allTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &task.PipelineID})
 				if err != nil {
 					return errors.Wrapf(err, "failed to list tasks")
 				}
+				allTaskEnvironments := map[string]bool{}
+				for _, task := range allTasks {
+					allTaskEnvironments[task.Environment] = true
+				}
 
-				// Group tasks by environment to determine order
-				environmentMap := make(map[string]bool)
-				var environmentOrder []string
-				for _, t := range allTasks {
-					if !environmentMap[t.Environment] {
-						environmentMap[t.Environment] = true
-						environmentOrder = append(environmentOrder, t.Environment)
+				// Filter out environments that have zero tasks
+				filteredEnvironmentOrder := []string{}
+				for _, env := range environmentOrder {
+					if allTaskEnvironments[env] {
+						filteredEnvironmentOrder = append(filteredEnvironmentOrder, env)
 					}
 				}
 
 				currentEnvironment := task.Environment
 				var nextEnvironment string
 				var pipelineDone bool
-				for i, env := range environmentOrder {
+				for i, env := range filteredEnvironmentOrder {
 					if env == currentEnvironment {
-						if i < len(environmentOrder)-1 {
-							nextEnvironment = environmentOrder[i+1]
+						if i < len(filteredEnvironmentOrder)-1 {
+							nextEnvironment = filteredEnvironmentOrder[i+1]
 						}
-						if i == len(environmentOrder)-1 {
+						if i == len(filteredEnvironmentOrder)-1 {
 							pipelineDone = true
 						}
 						break
@@ -961,15 +977,15 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 	}
 }
 
-func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
+func tasksSkippedOrDone(tasks []*store.TaskMessage) bool {
 	for _, task := range tasks {
 		skipped := task.Payload.GetSkipped()
 		done := task.LatestTaskRunStatus == storepb.TaskRun_DONE
 		if !skipped && !done {
-			return false, nil
+			return false
 		}
 	}
-	return true, nil
+	return true
 }
 
 // isSequentialTask returns whether the task should be executed sequentially.
@@ -985,4 +1001,17 @@ func isSequentialTask(taskType storepb.Task_Type) bool {
 	default:
 		return false
 	}
+}
+
+// getAllEnvironmentIDs returns all environment IDs from the store.
+func getAllEnvironmentIDs(ctx context.Context, s *store.Store) ([]string, error) {
+	environments, err := s.GetEnvironmentSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list environments")
+	}
+	var environmentIDs []string
+	for _, e := range environments.GetEnvironments() {
+		environmentIDs = append(environmentIDs, e.Id)
+	}
+	return environmentIDs, nil
 }

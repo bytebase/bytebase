@@ -123,13 +123,16 @@
     - [OIDCIdentityProviderConfig](#bytebase-store-OIDCIdentityProviderConfig)
   
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
+    - [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-store-LDAPIdentityProviderConfig-SecurityProtocol)
     - [OAuth2AuthStyle](#bytebase-store-OAuth2AuthStyle)
   
 - [store/instance.proto](#store_instance-proto)
     - [DataSource](#bytebase-store-DataSource)
+    - [DataSource.AWSCredential](#bytebase-store-DataSource-AWSCredential)
     - [DataSource.Address](#bytebase-store-DataSource-Address)
-    - [DataSource.ClientSecretCredential](#bytebase-store-DataSource-ClientSecretCredential)
+    - [DataSource.AzureCredential](#bytebase-store-DataSource-AzureCredential)
     - [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry)
+    - [DataSource.GCPCredential](#bytebase-store-DataSource-GCPCredential)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [Instance](#bytebase-store-Instance)
@@ -246,7 +249,6 @@
   
 - [store/setting.proto](#store_setting-proto)
     - [AISetting](#bytebase-store-AISetting)
-    - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [Algorithm](#bytebase-store-Algorithm)
     - [Algorithm.FullMask](#bytebase-store-Algorithm-FullMask)
     - [Algorithm.InnerOuterMask](#bytebase-store-Algorithm-InnerOuterMask)
@@ -268,9 +270,9 @@
     - [EnvironmentSetting](#bytebase-store-EnvironmentSetting)
     - [EnvironmentSetting.Environment](#bytebase-store-EnvironmentSetting-Environment)
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry)
-    - [MaximumSQLResultSizeSetting](#bytebase-store-MaximumSQLResultSizeSetting)
     - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
+    - [SQLQueryRestrictionSetting](#bytebase-store-SQLQueryRestrictionSetting)
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
@@ -732,6 +734,7 @@ ANY means approving any node will proceed.
 | request | [string](#string) |  | Marshalled request. |
 | response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |
 | status | [google.rpc.Status](#google-rpc-Status) |  |  |
+| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The latency of the RPC. |
 | service_data | [google.protobuf.Any](#google-protobuf-Any) |  | service-specific data about the request, response, and other activities. |
 | request_metadata | [RequestMetadata](#bytebase-store-RequestMetadata) |  | Metadata about the operation. |
 
@@ -1088,7 +1091,7 @@ ColumnMetadata is the metadata for columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a column. |
 | position | [int32](#int32) |  | The position is the position in columns. |
-| default | [google.protobuf.StringValue](#google-protobuf-StringValue) |  | The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. |
+| default | [string](#string) |  | The default value of column. |
 | default_null | [bool](#bool) |  |  |
 | default_expression | [string](#string) |  |  |
 | default_on_null | [bool](#bool) |  | Oracle specific metadata. The default_on_null is the default on null of a column. |
@@ -1104,6 +1107,15 @@ ColumnMetadata is the metadata for columns.
 | identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-store-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
 | identity_seed | [int64](#int64) |  | The identity_seed is for identity columns, MSSQL only. |
 | identity_increment | [int64](#int64) |  | The identity_increment is for identity columns, MSSQL only. |
+| default_constraint_name | [string](#string) |  | The default_constraint_name is the name of the default constraint, MSSQL only. In MSSQL, default values are implemented as named constraints. When modifying or dropping a column&#39;s default value, you must reference the constraint by name. This field stores the actual constraint name from the database.
+
+Example: A column definition like: CREATE TABLE employees ( status NVARCHAR(20) DEFAULT &#39;active&#39; )
+
+Will create a constraint with an auto-generated name like &#39;DF__employees__statu__3B75D760&#39; or a user-defined name if specified: ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;active&#39; FOR status
+
+To modify the default, you must first drop the existing constraint by name: ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760 ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;inactive&#39; FOR status
+
+This field is populated when syncing from the database. When empty (e.g., when parsing from SQL files), the system cannot automatically drop the constraint. |
 
 
 
@@ -1252,6 +1264,7 @@ DependencyColumn is the metadata for dependency columns.
 | sql_mode | [string](#string) |  |  |
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
 
 
 
@@ -1533,6 +1546,7 @@ ProcedureMetadata is the metadata for procedures.
 | collation_connection | [string](#string) |  |  |
 | database_collation | [string](#string) |  |  |
 | sql_mode | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
 
 
@@ -1577,6 +1591,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
 | packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 | owner | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
 | events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
@@ -2109,7 +2124,7 @@ LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 | bind_password | [string](#string) |  | BindPassword is the password of the user to bind as a service account. |
 | base_dn | [string](#string) |  | BaseDN is the base DN to search for users, e.g. &#34;ou=users,dc=example,dc=com&#34;. |
 | user_filter | [string](#string) |  | UserFilter is the filter to search for users, e.g. &#34;(uid=%s)&#34;. |
-| security_protocol | [string](#string) |  | SecurityProtocol is the security protocol to be used for establishing connections with the LDAP server. It should be either StartTLS or LDAPS, and cannot be empty. |
+| security_protocol | [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-store-LDAPIdentityProviderConfig-SecurityProtocol) |  | SecurityProtocol is the security protocol to be used for establishing connections with the LDAP server. |
 | field_mapping | [FieldMapping](#bytebase-store-FieldMapping) |  | FieldMapping is the mapping of the user attributes returned by the LDAP server. |
 
 
@@ -2174,6 +2189,19 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | OAUTH2 | 1 |  |
 | OIDC | 2 |  |
 | LDAP | 3 |  |
+
+
+
+<a name="bytebase-store-LDAPIdentityProviderConfig-SecurityProtocol"></a>
+
+### LDAPIdentityProviderConfig.SecurityProtocol
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECURITY_PROTOCOL_UNSPECIFIED | 0 |  |
+| START_TLS | 1 | StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS. |
+| LDAPS | 2 | LDAPS is the security protocol that uses TLS from the beginning. |
 
 
 
@@ -2243,7 +2271,9 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | obfuscated_authentication_private_key | [string](#string) |  |  |
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType) |  |  |
-| client_secret_credential | [DataSource.ClientSecretCredential](#bytebase-store-DataSource-ClientSecretCredential) |  |  |
+| azure_credential | [DataSource.AzureCredential](#bytebase-store-DataSource-AzureCredential) |  |  |
+| aws_credential | [DataSource.AWSCredential](#bytebase-store-DataSource-AWSCredential) |  |  |
+| gcp_credential | [DataSource.GCPCredential](#bytebase-store-DataSource-GCPCredential) |  |  |
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
 | additional_addresses | [DataSource.Address](#bytebase-store-DataSource-Address) | repeated | additional_addresses is used for MongoDB replica set. |
 | direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
@@ -2256,6 +2286,26 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | redis_type | [DataSource.RedisType](#bytebase-store-DataSource-RedisType) |  |  |
 | cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 | extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
+
+
+
+
+
+
+<a name="bytebase-store-DataSource-AWSCredential"></a>
+
+### DataSource.AWSCredential
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_key_id | [string](#string) |  |  |
+| obfuscated_access_key_id | [string](#string) |  |  |
+| secret_access_key | [string](#string) |  |  |
+| obfuscated_secret_access_key | [string](#string) |  |  |
+| session_token | [string](#string) |  |  |
+| obfuscated_session_token | [string](#string) |  |  |
 
 
 
@@ -2278,9 +2328,9 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-DataSource-ClientSecretCredential"></a>
+<a name="bytebase-store-DataSource-AzureCredential"></a>
 
-### DataSource.ClientSecretCredential
+### DataSource.AzureCredential
 
 
 
@@ -2306,6 +2356,22 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-DataSource-GCPCredential"></a>
+
+### DataSource.GCPCredential
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) |  |  |
+| obfuscated_content | [string](#string) |  |  |
 
 
 
@@ -3875,22 +3941,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 
 
-<a name="bytebase-store-AgentPluginSetting"></a>
-
-### AgentPluginSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| url | [string](#string) |  | The URL for the agent API. |
-| token | [string](#string) |  | The token for the agent. |
-
-
-
-
-
-
 <a name="bytebase-store-Algorithm"></a>
 
 ### Algorithm
@@ -4245,21 +4295,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 
 
-<a name="bytebase-store-MaximumSQLResultSizeSetting"></a>
-
-### MaximumSQLResultSizeSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| limit | [int64](#int64) |  | The limit is in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
-
-
-
-
-
-
 <a name="bytebase-store-PasswordRestrictionSetting"></a>
 
 ### PasswordRestrictionSetting
@@ -4290,6 +4325,22 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SQLQueryRestrictionSetting"></a>
+
+### SQLQueryRestrictionSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
+| maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
 
 
 
@@ -4395,6 +4446,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | title | [string](#string) |  | the title of the semantic type, it should not be empty. |
 | description | [string](#string) |  | the description of the semantic type, it can be empty. |
 | algorithm | [Algorithm](#bytebase-store-Algorithm) |  |  |
+| icon | [string](#string) |  | icon is the icon for semantic type, it can be emoji or base64 encoded image. |
 
 
 
@@ -4444,7 +4496,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | external_url | [string](#string) |  | The external URL is used for sso authentication callback. |
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
-| outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
 | token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
 | announcement | [Announcement](#bytebase-store-Announcement) |  | The setting of custom announcement |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
@@ -4533,7 +4584,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | APP_IM | 8 |  |
 | WATERMARK | 9 |  |
 | AI | 10 |  |
-| PLUGIN_AGENT | 11 |  |
 | SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |

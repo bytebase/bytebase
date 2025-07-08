@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -100,9 +101,10 @@ import {
   IssueStatusActionToIssueStatusMap,
 } from "@/components/IssueV1/logic";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { issueServiceClient } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { flattenTaskV1List } from "@/utils";
 import CommonDrawer from "./CommonDrawer.vue";
 
@@ -174,12 +176,13 @@ const handleConfirm = async (
 ) => {
   state.loading = true;
   try {
-    await issueServiceClient.batchUpdateIssuesStatus({
+    const request = create(BatchUpdateIssuesStatusRequestSchema, {
       parent: issue.value.project,
       issues: [issue.value.name],
       status: IssueStatusActionToIssueStatusMap[action],
       reason: comment ?? "",
     });
+    await issueServiceClientConnect.batchUpdateIssuesStatus(request);
 
     // notify the issue logic to update issue status
     events.emit("status-changed", { eager: true });

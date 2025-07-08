@@ -65,17 +65,17 @@
     END;
     GO
   expected: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      CONSTRAINT [PK_users_1] PRIMARY KEY ([id])
+    );
     CREATE TABLE [dbo].[orders] (
       [id] int NOT NULL,
       [user_id] int NOT NULL,
       CONSTRAINT [PK_orders_2] PRIMARY KEY ([id])
     );
     CREATE INDEX [IX_orders_user_id] ON [dbo].[orders] ([user_id]);
-    CREATE TABLE [dbo].[users] (
-      [id] int NOT NULL,
-      [name] nvarchar(100) NULL,
-      CONSTRAINT [PK_users_1] PRIMARY KEY ([id])
-    );
     ALTER TABLE [dbo].[orders] ADD CONSTRAINT [FK_orders_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[users] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
     GO
@@ -109,12 +109,13 @@
     SELECT id, name FROM [dbo].[departments];
     GO
     CREATE VIEW [dbo].[v_employees] AS
-    SELECT id, name, dept_id FROM [dbo].[employees];
+    SELECT e.id, e.name, e.dept_id, d.name as dept_name
+    FROM [dbo].[employees] e
+    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
     GO
     CREATE VIEW [dbo].[v_employee_dept] AS
-    SELECT e.id, e.name, d.name as dept_name
-    FROM [dbo].[v_employees] e
-    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
+    SELECT id, name, dept_name
+    FROM [dbo].[v_employees];
     GO
   newSchema: |
     CREATE TABLE [dbo].[departments] (
@@ -134,12 +135,13 @@
     SELECT id, name, location FROM [dbo].[departments];
     GO
     CREATE VIEW [dbo].[v_employees] AS
-    SELECT id, name, dept_id, salary FROM [dbo].[employees];
+    SELECT e.id, e.name, e.dept_id, e.salary, d.name as dept_name, d.location
+    FROM [dbo].[employees] e
+    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
     GO
     CREATE VIEW [dbo].[v_employee_dept] AS
-    SELECT e.id, e.name, e.salary, d.name as dept_name, d.location
-    FROM [dbo].[v_employees] e
-    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
+    SELECT id, name, salary, dept_name, location
+    FROM [dbo].[v_employees];
     GO
     CREATE VIEW [dbo].[v_dept_summary] AS
     SELECT dept_name, location, COUNT(*) as emp_count, AVG(salary) as avg_salary
@@ -164,12 +166,13 @@
     SELECT id, name, location FROM [dbo].[departments];
     GO
     CREATE VIEW [dbo].[v_employees] AS
-    SELECT id, name, dept_id, salary FROM [dbo].[employees];
+    SELECT e.id, e.name, e.dept_id, e.salary, d.name as dept_name, d.location
+    FROM [dbo].[employees] e
+    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
     GO
     CREATE VIEW [dbo].[v_employee_dept] AS
-    SELECT e.id, e.name, e.salary, d.name as dept_name, d.location
-    FROM [dbo].[v_employees] e
-    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
+    SELECT id, name, salary, dept_name, location
+    FROM [dbo].[v_employees];
     GO
     CREATE VIEW [dbo].[v_dept_summary] AS
     SELECT dept_name, location, COUNT(*) as emp_count, AVG(salary) as avg_salary

@@ -8,18 +8,26 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { Undo2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
+import type { LocationQueryRaw } from "vue-router";
 import {
   latestTaskRunForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useSheetV1Store, useStorageStore, useCurrentProjectV1 } from "@/store";
+import {
+  pushNotification,
+  useSheetV1Store,
+  useStorageStore,
+  useCurrentProjectV1,
+} from "@/store";
+import { PreviewTaskRunRollbackRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractIssueUID,
   extractProjectResourceName,
@@ -61,14 +69,17 @@ const createRestoreIssue = async () => {
   }
 
   isLoading.value = true;
-  const { statement } = await rolloutServiceClient.previewTaskRunRollback({
+  const request = create(PreviewTaskRunRollbackRequestSchema, {
     name: latestTaskRun.value.name,
   });
+  const response =
+    await rolloutServiceClientConnect.previewTaskRunRollback(request);
+  const { statement } = response;
   isLoading.value = false;
 
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, statement);
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: "bb.issue.database.data.update",
     name: `Rollback ${selectedTask.value.target} in issue#${extractIssueUID(issue.value.name)}`,
     databaseList: selectedTask.value.target,

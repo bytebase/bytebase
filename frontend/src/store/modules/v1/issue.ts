@@ -1,22 +1,31 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
-import { issueServiceClient } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import { SYSTEM_BOT_EMAIL, type IssueFilter } from "@/types";
 import {
-  SYSTEM_BOT_EMAIL,
-  type ComposedIssue,
-  type IssueFilter,
-} from "@/types";
-import type { ApprovalStep } from "@/types/proto/v1/issue_service";
+  GetIssueRequestSchema,
+  Issue_Type,
+  IssueSchema,
+  SearchIssuesRequestSchema,
+  UpdateIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
+import type { ApprovalStep, Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  issueStatusToJSON,
+  IssueStatus,
   ApprovalNode_Type,
-} from "@/types/proto/v1/issue_service";
-import { memberMapToRolesInProjectIAM } from "@/utils";
+} from "@/types/proto-es/v1/issue_service_pb";
+import {
+  extractProjectResourceName,
+  memberMapToRolesInProjectIAM,
+} from "@/utils";
 import { useUserStore } from "../user";
-import { userNamePrefix } from "./common";
+import { projectNamePrefix, userNamePrefix } from "./common";
 import {
   shallowComposeIssue,
   type ComposeIssueConfig,
@@ -34,12 +43,9 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.creator) {
     filter.push(`creator == "${find.creator}"`);
   }
-  if (find.subscriber) {
-    filter.push(`subscriber == "${find.subscriber}"`);
-  }
   if (find.statusList && find.statusList.length > 0) {
     filter.push(
-      `status in [${find.statusList.map((s) => `"${issueStatusToJSON(s)}"`).join(",")}]`
+      `status in [${find.statusList.map((s) => `"${IssueStatus[s]}"`).join(",")}]`
     );
   }
   if (find.createdTsAfter) {
@@ -53,7 +59,7 @@ export const buildIssueFilter = (find: IssueFilter): string => {
     );
   }
   if (find.type) {
-    filter.push(`type == "${find.type}"`);
+    filter.push(`type == "${Issue_Type[find.type]}"`);
   }
   if (find.taskType) {
     filter.push(`task_type == "${find.taskType}"`);
@@ -75,28 +81,31 @@ export const buildIssueFilter = (find: IssueFilter): string => {
 
 export const useIssueV1Store = defineStore("issue_v1", () => {
   const regenerateReviewV1 = async (name: string) => {
-    await issueServiceClient.updateIssue({
-      issue: {
+    const request = create(UpdateIssueRequestSchema, {
+      issue: create(IssueSchema, {
         name,
         approvalFindingDone: false,
-      },
-      updateMask: ["approval_finding_done"],
+      }),
+      updateMask: { paths: ["approval_finding_done"] },
     });
+    await issueServiceClientConnect.updateIssue(request);
   };
 
   const listIssues = async (
     { find, pageSize, pageToken }: ListIssueParams,
     composeIssueConfig?: ComposeIssueConfig
   ) => {
-    const resp = await issueServiceClient.searchIssues({
+    const request = create(SearchIssuesRequestSchema, {
       parent: find.project,
       filter: buildIssueFilter(find),
       query: find.query,
       pageSize,
       pageToken,
     });
+    const resp = await issueServiceClientConnect.searchIssues(request);
+    const issues = resp.issues;
     const composedIssues = await Promise.all(
-      resp.issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
+      issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
     );
     // Preprare creator for the issues.
     const users = uniq(composedIssues.map((issue) => issue.creator));
@@ -112,7 +121,11 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     composeIssueConfig?: ComposeIssueConfig,
     silent: boolean = false
   ) => {
-    const issue = await issueServiceClient.getIssue({ name }, { silent });
+    const request = create(GetIssueRequestSchema, { name });
+    const newIssue = await issueServiceClientConnect.getIssue(request, {
+      contextValues: createContextValues().set(silentContextKey, silent),
+    });
+    const issue = newIssue;
     return shallowComposeIssue(issue, composeIssueConfig);
   };
 
@@ -126,11 +139,12 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
 // candidatesOfApprovalStepV1 return user name list in users/{email} format.
 // The list could includs users/ALL_USERS_USER_EMAIL
 export const candidatesOfApprovalStepV1 = (
-  issue: ComposedIssue,
+  issue: Issue,
   step: ApprovalStep
 ) => {
-  const project = useProjectV1Store().getProjectByName(issue.project);
-
+  const project = useProjectV1Store().getProjectByName(
+    `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
+  );
   const candidates = step.nodes.flatMap((node) => {
     const { type, role } = node;
     if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
@@ -152,7 +166,6 @@ export const candidatesOfApprovalStepV1 = (
         return false;
       }
       // If the project does not allow self-approval, exclude the creator.
-      const project = useProjectV1Store().getProjectByName(issue.project);
       if (!project.allowSelfApproval && user === issue.creator) {
         return false;
       }

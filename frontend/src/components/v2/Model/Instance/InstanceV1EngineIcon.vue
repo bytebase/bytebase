@@ -22,7 +22,7 @@ import { EngineIcon } from "@/components/Icon";
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 
 type Size = "small" | "medium" | "large";
 

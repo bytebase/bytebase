@@ -17,10 +17,8 @@
 <script setup lang="ts">
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
-import {
-  TaskRun_PriorBackupDetail_Item_Table,
-  TaskRunLogEntry_Type,
-} from "@/types/proto/v1/rollout_service";
+import type { TaskRun_PriorBackupDetail_Item_Table } from "@/types/proto-es/v1/rollout_service_pb";
+import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import type { FlattenLogEntry } from "../common";
 
 const props = defineProps<{

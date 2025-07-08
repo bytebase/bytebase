@@ -14,26 +14,27 @@
 import { computed } from "vue";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import type {
-  SQLEditorTreeNode as TreeNode,
-  SQLEditorTreeFactor as Factor,
-} from "@/types";
+import type { SQLEditorTreeNode as TreeNode } from "@/types";
 
 const props = defineProps<{
   node: TreeNode;
-  factors: Factor[];
   keyword: string;
 }>();
 
-const instance = computed(
-  () => (props.node as TreeNode<"instance">).meta.target
-);
+const instance = computed(() => {
+  const target = (props.node as TreeNode<"instance">).meta.target;
+  // Add $typeName to match InstanceResource type expected by InstanceV1Name
+  return {
+    ...target,
+    $typeName: "bytebase.v1.InstanceResource" as const,
+  };
+});
 
 const environment = computed(() =>
   useEnvironmentV1Store().getEnvironmentByName(instance.value.environment)
 );
 
 const hasEnvironmentContext = computed(() => {
-  return props.factors.includes("environment");
+  return true;
 });
 </script>

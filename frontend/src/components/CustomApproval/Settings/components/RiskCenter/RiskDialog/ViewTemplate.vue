@@ -11,7 +11,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import ExprEditor from "@/components/ExprEditor";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
+import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import {
   getFactorList,
   getOptionConfigMap,

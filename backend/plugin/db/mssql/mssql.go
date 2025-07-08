@@ -107,10 +107,10 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	password := config.Password
 	if config.DataSource.GetAuthenticationType() == storepb.DataSource_AZURE_IAM {
 		driverName = azuread.DriverName
-		if config.DataSource.GetClientSecretCredential() != nil {
+		if azureCredential := config.DataSource.GetAzureCredential(); azureCredential != nil {
 			query.Add("fedauth", azuread.ActiveDirectoryServicePrincipal)
-			query.Add("user id", fmt.Sprintf("%s@%s", config.DataSource.GetClientSecretCredential().ClientId, config.DataSource.GetClientSecretCredential().TenantId))
-			query.Add("password", config.DataSource.GetClientSecretCredential().ClientSecret)
+			query.Add("user id", fmt.Sprintf("%s@%s", azureCredential.ClientId, azureCredential.TenantId))
+			query.Add("password", azureCredential.ClientSecret)
 			password = ""
 		} else {
 			query.Add("fedauth", azuread.ActiveDirectoryDefault)
@@ -394,6 +394,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 	}
 
 	// Regular query processing for non-EXPLAIN queries
+	startTime := time.Now()
 	var stmtTypes []stmtType
 	batchBuf := new(strings.Builder)
 	for _, singleSQL := range singleSQLs {
@@ -488,6 +489,13 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 			skipRowsAffected = true
 		}
 	}
+
+	latency := time.Since(startTime)
+	for i, res := range ret {
+		res.Latency = durationpb.New(latency)
+		res.Statement = singleSQLs[i].Text
+	}
+
 	return ret, nil
 }
 

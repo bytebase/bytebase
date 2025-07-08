@@ -43,17 +43,17 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { TaskSpinner } from "@/components/IssueV1/components/common";
-import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 import { planCheckRunResultStatus } from "./common";
 
 const props = defineProps<{
-  planCheckRunList: PlanCheckRun[];
+  planCheckRuns: PlanCheckRun[];
   type: PlanCheckRun_Type;
   clickable?: boolean;
   selected?: boolean;
@@ -67,7 +67,7 @@ const { t } = useI18n();
 
 const latestPlanCheckRun = computed(() => {
   // Get the latest PlanCheckRun by UID.
-  return maxBy(props.planCheckRunList, (check) =>
+  return maxBy(props.planCheckRuns, (check) =>
     Number(extractPlanCheckRunUID(check.name))
   )!;
 });

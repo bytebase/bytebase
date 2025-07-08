@@ -45,15 +45,16 @@
                 class="w-full"
                 readonly
                 :value="scimUrl"
-                @click="handleCopyUrl(scimUrlFieldRef)"
+                @click="handleSelect(scimUrlFieldRef)"
               />
-              <NButton
-                v-if="isSupported"
+              <CopyButton
+                quaternary
+                :text="false"
+                :size="'medium'"
+                :content="scimUrl"
                 :disabled="!scimUrl"
-                @click="handleCopyUrl(scimUrlFieldRef)"
-              >
-                <ClipboardIcon class="w-4 h-4" />
-              </NButton>
+                @click="handleSelect(scimUrlFieldRef)"
+              />
             </div>
           </div>
 
@@ -73,15 +74,16 @@
                 readonly
                 type="password"
                 :value="scimToken"
-                @click="handleCopyUrl(scimTokenFieldRef)"
+                @click="handleSelect(scimTokenFieldRef)"
               />
-              <NButton
-                v-if="isSupported"
+              <CopyButton
+                quaternary
+                :text="false"
+                :size="'medium'"
+                :content="scimToken"
                 :disabled="!scimToken"
-                @click="handleCopyUrl(scimTokenFieldRef)"
-              >
-                <ClipboardIcon class="w-4 h-4" />
-              </NButton>
+                @click="handleSelect(scimTokenFieldRef)"
+              />
             </div>
             <NButton
               v-if="hasPermission"
@@ -110,8 +112,8 @@
 </template>
 
 <script setup lang="ts">
-import { useClipboard } from "@vueuse/core";
-import { ClipboardIcon, ReplyIcon } from "lucide-vue-next";
+import { create } from "@bufbuild/protobuf";
+import { ReplyIcon } from "lucide-vue-next";
 import { NButton, NInput, useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -119,9 +121,14 @@ import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { CopyButton } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useSettingV1Store } from "@/store";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import {
+  Setting_SettingName,
+  SCIMSettingSchema,
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{
@@ -144,10 +151,12 @@ const hasPermission = computed(() =>
 );
 
 const workspaceId = computed(() => {
-  return (
-    settingV1Store.getSettingByName(Setting_SettingName.WORKSPACE_ID)?.value
-      ?.stringValue ?? ""
+  const setting = settingV1Store.getSettingByName(
+    Setting_SettingName.WORKSPACE_ID
   );
+  return setting?.value?.value?.case === "stringValue"
+    ? setting.value.value.value
+    : "";
 });
 
 const externalUrl = computed(() => {
@@ -162,30 +171,14 @@ const scimUrl = computed(() => {
 });
 
 const scimToken = computed(() => {
-  return (
-    settingV1Store.getSettingByName(Setting_SettingName.SCIM)?.value
-      ?.scimSetting?.token ?? ""
-  );
+  const setting = settingV1Store.getSettingByName(Setting_SettingName.SCIM);
+  return setting?.value?.value?.case === "scimSetting"
+    ? (setting.value.value.value.token ?? "")
+    : "";
 });
 
-const { copy: copyTextToClipboard, isSupported } = useClipboard({
-  legacy: true,
-});
-
-const handleCopyUrl = (component: HTMLInputElement | null) => {
+const handleSelect = (component: HTMLInputElement | null) => {
   component?.select();
-  const value = component?.value;
-  if (!value) {
-    return;
-  }
-
-  copyTextToClipboard(value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.copied"),
-    });
-  });
 };
 
 const configureSetting = () => {
@@ -209,11 +202,14 @@ const resetToken = () => {
       settingV1Store
         .upsertSetting({
           name: Setting_SettingName.SCIM,
-          value: {
-            scimSetting: {
-              token: "",
+          value: create(SettingValueSchema, {
+            value: {
+              case: "scimSetting",
+              value: create(SCIMSettingSchema, {
+                token: "",
+              }),
             },
-          },
+          }),
         })
         .then(() => {
           pushNotification({
@@ -221,8 +217,6 @@ const resetToken = () => {
             style: "SUCCESS",
             title: t("common.updated"),
           });
-
-          handleCopyUrl(scimTokenFieldRef.value);
         });
     },
   });

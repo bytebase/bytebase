@@ -7,7 +7,7 @@
     <div class="flex items-center gap-1">
       <Clock4Icon class="w-4 h-auto textinfolabel" />
       <span class="textlabel">{{
-        humanizeDate(getDateForPbTimestamp(release.createTime))
+        humanizeDate(getDateForPbTimestampProtoEs(release.createTime))
       }}</span>
     </div>
     <div
@@ -16,11 +16,7 @@
     >
       <VCSIcon custom-class="h-4" :type="vcsSource.vcsType" />
       <EllipsisText>
-        <a
-          :href="vcsSource.url"
-          target="_blank"
-          class="normal-link !text-sm"
-        >
+        <a :href="vcsSource.url" target="_blank" class="normal-link !text-sm">
           {{ beautifyUrl(vcsSource.url) }}
         </a>
       </EllipsisText>
@@ -34,8 +30,8 @@ import { computed } from "vue";
 import { BBAvatar } from "@/bbkit";
 import EllipsisText from "@/components/EllipsisText.vue";
 import VCSIcon from "@/components/VCS/VCSIcon.vue";
-import { getDateForPbTimestamp } from "@/types";
-import { VCSType } from "@/types/proto/v1/common";
+import { getDateForPbTimestampProtoEs } from "@/types";
+import { VCSType } from "@/types/proto-es/v1/common_pb";
 import { humanizeDate } from "@/utils";
 import { useReleaseDetailContext } from "./context";
 

@@ -265,7 +265,10 @@ export declare type DeleteProjectRequest = Message<"bytebase.v1.DeleteProjectReq
   name: string;
 
   /**
-   * If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+   * If set to true, any databases from this project will be moved to default project.
+   * Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+   * Open issues will remain open but associated with the deleted project.
+   * If set to false, the operation will fail if the project has databases or open issues.
    *
    * @generated from field: bool force = 2;
    */
@@ -296,6 +299,35 @@ export declare type UndeleteProjectRequest = Message<"bytebase.v1.UndeleteProjec
  * Use `create(UndeleteProjectRequestSchema)` to create a new message.
  */
 export declare const UndeleteProjectRequestSchema: GenMessage<UndeleteProjectRequest>;
+
+/**
+ * @generated from message bytebase.v1.BatchDeleteProjectsRequest
+ */
+export declare type BatchDeleteProjectsRequest = Message<"bytebase.v1.BatchDeleteProjectsRequest"> & {
+  /**
+   * The names of the projects to delete.
+   * Format: projects/{project}
+   *
+   * @generated from field: repeated string names = 1;
+   */
+  names: string[];
+
+  /**
+   * If set to true, any databases from this project will be moved to default project.
+   * Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+   * Open issues will remain open but associated with the deleted project.
+   * If set to false, the operation will fail if the project has databases or open issues.
+   *
+   * @generated from field: bool force = 2;
+   */
+  force: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.BatchDeleteProjectsRequest.
+ * Use `create(BatchDeleteProjectsRequestSchema)` to create a new message.
+ */
+export declare const BatchDeleteProjectsRequestSchema: GenMessage<BatchDeleteProjectsRequest>;
 
 /**
  * @generated from message bytebase.v1.BatchGetIamPolicyRequest
@@ -774,72 +806,72 @@ export enum Activity_Type {
   /**
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = 0,
 
   /**
    * Notifications via webhooks.
    *
-   * TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+   * NOTIFY_ISSUE_APPROVED represents the issue approved notification.
    *
-   * @generated from enum value: TYPE_NOTIFY_ISSUE_APPROVED = 23;
+   * @generated from enum value: NOTIFY_ISSUE_APPROVED = 23;
    */
   NOTIFY_ISSUE_APPROVED = 23,
 
   /**
-   * TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+   * NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
    *
-   * @generated from enum value: TYPE_NOTIFY_PIPELINE_ROLLOUT = 24;
+   * @generated from enum value: NOTIFY_PIPELINE_ROLLOUT = 24;
    */
   NOTIFY_PIPELINE_ROLLOUT = 24,
 
   /**
    * Issue related activity types.
    *
-   * TYPE_ISSUE_CREATE represents creating an issue.
+   * ISSUE_CREATE represents creating an issue.
    *
-   * @generated from enum value: TYPE_ISSUE_CREATE = 1;
+   * @generated from enum value: ISSUE_CREATE = 1;
    */
   ISSUE_CREATE = 1,
 
   /**
-   * TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue.
+   * ISSUE_COMMENT_CREATE represents commenting on an issue.
    *
-   * @generated from enum value: TYPE_ISSUE_COMMENT_CREATE = 2;
+   * @generated from enum value: ISSUE_COMMENT_CREATE = 2;
    */
   ISSUE_COMMENT_CREATE = 2,
 
   /**
-   * TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
+   * ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
    *
-   * @generated from enum value: TYPE_ISSUE_FIELD_UPDATE = 3;
+   * @generated from enum value: ISSUE_FIELD_UPDATE = 3;
    */
   ISSUE_FIELD_UPDATE = 3,
 
   /**
-   * TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
+   * ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
    *
-   * @generated from enum value: TYPE_ISSUE_STATUS_UPDATE = 4;
+   * @generated from enum value: ISSUE_STATUS_UPDATE = 4;
    */
   ISSUE_STATUS_UPDATE = 4,
 
   /**
-   * TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
+   * ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
    *
-   * @generated from enum value: TYPE_ISSUE_APPROVAL_NOTIFY = 21;
+   * @generated from enum value: ISSUE_APPROVAL_NOTIFY = 21;
    */
   ISSUE_APPROVAL_NOTIFY = 21,
 
   /**
-   * TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
+   * ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
    *
-   * @generated from enum value: TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
+   * @generated from enum value: ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
    */
   ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5,
 
   /**
-   * TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
+   * ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
    *
-   * @generated from enum value: TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
+   * @generated from enum value: ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
    */
   ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22,
 }
@@ -854,6 +886,10 @@ export declare const Activity_TypeSchema: GenEnum<Activity_Type>;
  */
 export declare const ProjectService: GenService<{
   /**
+   * GetProject retrieves a project by name.
+   * Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+   * Permissions required: bb.projects.get
+   *
    * @generated from rpc bytebase.v1.ProjectService.GetProject
    */
   getProject: {
@@ -862,6 +898,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.list
+   *
    * @generated from rpc bytebase.v1.ProjectService.ListProjects
    */
   listProjects: {
@@ -870,6 +908,8 @@ export declare const ProjectService: GenService<{
     output: typeof ListProjectsResponseSchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.ProjectService.SearchProjects
    */
   searchProjects: {
@@ -878,6 +918,8 @@ export declare const ProjectService: GenService<{
     output: typeof SearchProjectsResponseSchema;
   },
   /**
+   * Permissions required: bb.projects.create
+   *
    * @generated from rpc bytebase.v1.ProjectService.CreateProject
    */
   createProject: {
@@ -886,6 +928,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.UpdateProject
    */
   updateProject: {
@@ -894,6 +938,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.delete
+   *
    * @generated from rpc bytebase.v1.ProjectService.DeleteProject
    */
   deleteProject: {
@@ -902,6 +948,8 @@ export declare const ProjectService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: bb.projects.undelete
+   *
    * @generated from rpc bytebase.v1.ProjectService.UndeleteProject
    */
   undeleteProject: {
@@ -910,6 +958,18 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.delete
+   *
+   * @generated from rpc bytebase.v1.ProjectService.BatchDeleteProjects
+   */
+  batchDeleteProjects: {
+    methodKind: "unary";
+    input: typeof BatchDeleteProjectsRequestSchema;
+    output: typeof EmptySchema;
+  },
+  /**
+   * Permissions required: bb.projects.getIamPolicy
+   *
    * @generated from rpc bytebase.v1.ProjectService.GetIamPolicy
    */
   getIamPolicy: {
@@ -919,6 +979,7 @@ export declare const ProjectService: GenService<{
   },
   /**
    * Deprecated.
+   * Permissions required: bb.projects.getIamPolicy
    *
    * @generated from rpc bytebase.v1.ProjectService.BatchGetIamPolicy
    */
@@ -928,6 +989,8 @@ export declare const ProjectService: GenService<{
     output: typeof BatchGetIamPolicyResponseSchema;
   },
   /**
+   * Permissions required: bb.projects.setIamPolicy
+   *
    * @generated from rpc bytebase.v1.ProjectService.SetIamPolicy
    */
   setIamPolicy: {
@@ -936,6 +999,8 @@ export declare const ProjectService: GenService<{
     output: typeof IamPolicySchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.AddWebhook
    */
   addWebhook: {
@@ -944,6 +1009,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.UpdateWebhook
    */
   updateWebhook: {
@@ -952,6 +1019,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.RemoveWebhook
    */
   removeWebhook: {
@@ -960,6 +1029,8 @@ export declare const ProjectService: GenService<{
     output: typeof ProjectSchema;
   },
   /**
+   * Permissions required: bb.projects.update
+   *
    * @generated from rpc bytebase.v1.ProjectService.TestWebhook
    */
   testWebhook: {

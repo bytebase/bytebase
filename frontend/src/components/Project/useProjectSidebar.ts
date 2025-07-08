@@ -4,15 +4,17 @@ import {
   Users,
   Settings,
   PencilRuler,
-  SearchCodeIcon,
   DownloadIcon,
   PackageIcon,
+  LayoutList,
+  PlayCircle,
+  Workflow,
 } from "lucide-vue-next";
 import { computed, h, unref } from "vue";
-import type { RouteLocationNormalizedLoaded } from "vue-router";
 import { useRoute } from "vue-router";
-import type { SidebarItem } from "@/components/v2/Sidebar/CommonSidebar.vue";
+import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { t } from "@/plugins/i18n";
 import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
@@ -28,11 +30,12 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_PLANS,
+  PROJECT_V1_ROUTE_ROLLOUTS,
 } from "@/router/dashboard/projectV1";
 import { useAppFeature } from "@/store";
 import type { ComposedProject, MaybeRef } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
@@ -42,11 +45,9 @@ interface ProjectSidebarItem extends SidebarItem {
   children?: ProjectSidebarItem[];
 }
 
-export const useProjectSidebar = (
-  project: MaybeRef<ComposedProject>,
-  _route?: RouteLocationNormalizedLoaded
-) => {
-  const route = _route ?? useRoute();
+export const useProjectSidebar = (project: MaybeRef<ComposedProject>) => {
+  const route = useRoute();
+  const { enabledNewLayout } = useIssueLayoutVersion();
   const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
   const isDefaultProject = computed((): boolean => {
@@ -76,14 +77,75 @@ export const useProjectSidebar = (
   };
 
   const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
-    const sidebarList: ProjectSidebarItem[] = [
-      {
-        title: t("common.issues"),
-        path: PROJECT_V1_ROUTE_ISSUES,
-        icon: () => h(CircleDot),
-        type: "div",
-        hide: isDefaultProject.value,
-      },
+    const cicdRoutes: ProjectSidebarItem[] = enabledNewLayout.value
+      ? [
+          {
+            title: "CI/CD",
+            icon: () => h(Workflow),
+            type: "div",
+            expand: true,
+            hide:
+              isDefaultProject.value ||
+              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+            children: [
+              {
+                title: t("release.releases"),
+                path: PROJECT_V1_ROUTE_RELEASES,
+                type: "div",
+              },
+              {
+                title: t("plan.plans"),
+                path: PROJECT_V1_ROUTE_PLANS,
+                type: "div",
+              },
+              {
+                title: t("rollout.rollouts"),
+                path: PROJECT_V1_ROUTE_ROLLOUTS,
+                type: "div",
+              },
+            ],
+          },
+        ]
+      : [
+          {
+            title: t("changelist.changelists"),
+            path: PROJECT_V1_ROUTE_CHANGELISTS,
+            icon: () => h(PencilRuler),
+            type: "div",
+            hide:
+              isDefaultProject.value ||
+              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+          },
+          {
+            title: t("release.releases"),
+            path: PROJECT_V1_ROUTE_RELEASES,
+            icon: () => h(PackageIcon),
+            type: "div",
+            hide:
+              isDefaultProject.value ||
+              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+          },
+          {
+            title: t("plan.plans"),
+            icon: () => h(LayoutList),
+            path: PROJECT_V1_ROUTE_PLANS,
+            type: "div",
+            hide:
+              isDefaultProject.value ||
+              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+          },
+          {
+            title: t("rollout.rollouts"),
+            path: PROJECT_V1_ROUTE_ROLLOUTS,
+            icon: () => h(PlayCircle),
+            type: "div",
+            hide:
+              isDefaultProject.value ||
+              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+          },
+        ];
+
+    const databaseRoutes: ProjectSidebarItem[] = [
       {
         title: t("common.database"),
         icon: () => h(Database),
@@ -109,34 +171,19 @@ export const useProjectSidebar = (
           },
         ],
       },
+    ];
+
+    const sidebarList: ProjectSidebarItem[] = [
       {
-        title: t("changelist.changelists"),
-        path: PROJECT_V1_ROUTE_CHANGELISTS,
-        icon: () => h(PencilRuler),
+        title: t("common.issues"),
+        path: PROJECT_V1_ROUTE_ISSUES,
+        icon: () => h(CircleDot),
         type: "div",
-        hide:
-          isDefaultProject.value ||
-          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+        hide: isDefaultProject.value,
       },
-      {
-        title: t("release.releases"),
-        path: PROJECT_V1_ROUTE_RELEASES,
-        icon: () => h(PackageIcon),
-        type: "div",
-        hide:
-          isDefaultProject.value ||
-          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
-      },
-      {
-        // TODO(claude): rename title to "Plans".
-        title: t("review-center.self"),
-        icon: () => h(SearchCodeIcon),
-        path: PROJECT_V1_ROUTE_PLANS,
-        type: "div",
-        hide:
-          isDefaultProject.value ||
-          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
-      },
+      ...(enabledNewLayout.value
+        ? [...cicdRoutes, ...databaseRoutes]
+        : [...databaseRoutes, ...cicdRoutes]),
       {
         title: t("export-center.self"),
         icon: () => h(DownloadIcon),

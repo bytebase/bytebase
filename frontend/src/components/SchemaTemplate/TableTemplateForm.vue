@@ -177,6 +177,13 @@
 </template>
 
 <script lang="ts" setup>
+import { create as createProto } from "@bufbuild/protobuf";
+import { cloneDeep, isEqual, pull } from "lodash-es";
+import { PencilIcon, PlusIcon, XIcon } from "lucide-vue-next";
+import type { SelectOption } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
+import { computed, reactive, ref, toRef } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   TableColumnEditor,
   provideSchemaEditorContext,
@@ -195,22 +202,21 @@ import {
 } from "@/components/v2";
 import { pushNotification, useSettingV1Store } from "@/store";
 import { unknownProject } from "@/types";
-import { TableCatalog } from "@/types/proto/v1/database_catalog_service";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { TableCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
-  SchemaTemplateSetting,
-  SchemaTemplateSetting_TableTemplate,
+  ColumnMetadataSchema,
+  type ColumnMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import { type ColumnMetadata as OldColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
+import {
+  SchemaTemplateSettingSchema,
   Setting_SettingName,
   type SchemaTemplateSetting_FieldTemplate,
-} from "@/types/proto/v1/setting_service";
+  type SchemaTemplateSetting_TableTemplate,
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import { cloneDeep, isEqual, pull } from "lodash-es";
-import { PencilIcon, PlusIcon, XIcon } from "lucide-vue-next";
-import type { SelectOption } from "naive-ui";
-import { NButton, NInput } from "naive-ui";
-import { computed, reactive, ref, toRef } from "vue";
-import { useI18n } from "vue-i18n";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
 import {
@@ -299,10 +305,10 @@ const metadataForColumn = (column: ColumnMetadata) => {
     tableMetadata: table,
   } = editing.value;
   return {
-    database,
-    schema,
-    table,
-    column,
+    database: database,
+    schema: schema,
+    table: table,
+    column: column,
   };
 };
 
@@ -343,19 +349,23 @@ const submitDisabled = computed(() => {
 const onSubmit = async () => {
   const template = rebuildTableTemplateFromMetadata({
     ...editing.value,
-    tableCatalog: tableCatalog.value ?? TableCatalog.fromPartial({}),
+    tableCatalog: tableCatalog.value
+      ? tableCatalog.value
+      : createProto(TableCatalogSchema, {}),
   });
   const setting = await settingStore.fetchSettingByName(
     Setting_SettingName.SCHEMA_TEMPLATE
   );
 
-  const settingValue = SchemaTemplateSetting.fromPartial({});
-  if (setting?.value?.schemaTemplateSettingValue) {
-    Object.assign(
-      settingValue,
-      cloneDeep(setting.value.schemaTemplateSettingValue)
-    );
-  }
+  const existingValue =
+    setting?.value?.value?.case === "schemaTemplateSettingValue"
+      ? setting.value.value.value
+      : undefined;
+  const settingValue = createProto(SchemaTemplateSettingSchema, {
+    columnTypes: existingValue?.columnTypes ?? [],
+    fieldTemplates: existingValue?.fieldTemplates ?? [],
+    tableTemplates: existingValue?.tableTemplates ?? [],
+  });
 
   const index = settingValue.tableTemplates.findIndex(
     (t) => t.id === template.id
@@ -368,9 +378,12 @@ const onSubmit = async () => {
 
   await settingStore.upsertSetting({
     name: Setting_SettingName.SCHEMA_TEMPLATE,
-    value: {
-      schemaTemplateSettingValue: settingValue,
-    },
+    value: createProto(SettingValueSchema, {
+      value: {
+        case: "schemaTemplateSettingValue",
+        value: settingValue,
+      },
+    }),
   });
 
   pushNotification({
@@ -389,17 +402,17 @@ const onColumnAdd = () => {
     schemaMetadata: schema,
     tableMetadata: table,
   } = editing.value;
-  const column = ColumnMetadata.fromPartial({});
+  const column = createProto(ColumnMetadataSchema, {});
   table.columns.push(column);
   markColumnStatus(column, "created");
 
   context.queuePendingScrollToColumn({
     db,
     metadata: {
-      database,
-      schema,
-      table,
-      column,
+      database: database,
+      schema: schema,
+      table: table,
+      column: column,
     },
   });
 };
@@ -411,6 +424,7 @@ const handleDropColumn = (column: ColumnMetadata) => {
 
   removeColumnPrimaryKey(tableMetadata, column.name);
   removeColumnFromAllForeignKeys(tableMetadata, column.name);
+  // Convert back to update proto-es tableMetadata
   context.removeColumnCatalog({
     database: editing.value.databaseCatalog.name,
     schema: editing.value.schemaCatalog.name,
@@ -467,7 +481,7 @@ const handleApplyColumnTemplate = (
 };
 
 const handleReorderColumn = (
-  column: ColumnMetadata,
+  column: OldColumnMetadata,
   index: number,
   delta: -1 | 1
 ) => {

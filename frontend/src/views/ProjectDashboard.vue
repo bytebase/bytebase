@@ -1,9 +1,9 @@
 <template>
   <div class="flex flex-col space-y-4">
-    <div class="flex items-center space-x-2 px-4">
-      <SearchBox
-        v-model:value="state.searchText"
-        style="max-width: 100%"
+    <div class="flex items-center justify-between px-4 space-x-2">
+      <AdvancedSearch
+        v-model:params="state.params"
+        :autofocus="false"
         :placeholder="$t('common.filter-by-name')"
       />
       <NButton
@@ -17,17 +17,25 @@
         {{ $t("quick-action.new-project") }}
       </NButton>
     </div>
-    <PagedProjectTable
-      session-key="bb.project-table"
-      :filter="{
-        query: state.searchText,
-        excludeDefault: true,
-      }"
-      :bordered="false"
-      :footer-class="'mx-4'"
-      :prevent-default="!!onRowClick"
-      @row-click="onRowClick"
-    />
+    <div class="space-y-2">
+      <ProjectOperations
+        v-if="hasWorkspacePermissionV2('bb.projects.delete')"
+        :project-list="selectedProjectList"
+        @update="handleBatchOperation"
+      />
+      <PagedProjectTable
+        ref="pagedProjectTableRef"
+        session-key="bb.project-table"
+        :filter="filter"
+        :bordered="false"
+        :footer-class="'mx-4'"
+        :prevent-default="!!onRowClick"
+        :show-selection="true"
+        :selected-project-names="selectedProjectNames"
+        @update:selected-project-names="updateSelectedProjects"
+        @row-click="onRowClick"
+      />
+    </div>
   </div>
   <Drawer
     :auto-focus="true"
@@ -45,18 +53,22 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
+import AdvancedSearch from "@/components/AdvancedSearch";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
-import { SearchBox, PagedProjectTable } from "@/components/v2";
+import { PagedProjectTable } from "@/components/v2";
 import { Drawer } from "@/components/v2";
-import { useUIStateStore } from "@/store";
+import ProjectOperations from "@/components/v2/Model/Project/ProjectOperations.vue";
+import { useProjectV1Store, useUIStateStore } from "@/store";
 import type { ComposedProject } from "@/types";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, type SearchParams } from "@/utils";
 
 interface LocalState {
-  searchText: string;
+  params: SearchParams;
   showCreateDrawer: boolean;
+  selectedProjects: Set<string>;
 }
 
 const props = defineProps<{
@@ -64,10 +76,45 @@ const props = defineProps<{
 }>();
 
 const state = reactive<LocalState>({
-  searchText: "",
+  params: {
+    query: "",
+    scopes: [],
+  },
   showCreateDrawer: false,
+  selectedProjects: new Set(),
 });
+
 const router = useRouter();
+const projectStore = useProjectV1Store();
+
+const pagedProjectTableRef = ref<ComponentExposed<typeof PagedProjectTable>>();
+
+const filter = computed(() => ({
+  query: state.params.query,
+  excludeDefault: true,
+}));
+
+const selectedProjectNames = computed(() => {
+  return Array.from(state.selectedProjects);
+});
+
+const selectedProjectList = computed(() => {
+  if (state.selectedProjects.size === 0) {
+    return [];
+  }
+  return Array.from(state.selectedProjects)
+    .map((name) => projectStore.getProjectByName(name))
+    .filter((p): p is ComposedProject => p !== undefined);
+});
+
+const updateSelectedProjects = (projectNames: string[]) => {
+  state.selectedProjects = new Set(projectNames);
+};
+
+const handleBatchOperation = () => {
+  state.selectedProjects.clear();
+  pagedProjectTableRef.value?.refresh();
+};
 
 onMounted(() => {
   const uiStateStore = useUIStateStore();

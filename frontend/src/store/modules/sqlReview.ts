@@ -1,7 +1,10 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { pullAt, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { reviewConfigServiceClient } from "@/grpcweb";
+import { reviewConfigServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type {
   SchemaPolicyRule,
@@ -11,9 +14,17 @@ import type {
 } from "@/types";
 import {
   PolicyType,
-  policyTypeToJSON,
-} from "@/types/proto/v1/org_policy_service";
-import { ReviewConfig } from "@/types/proto/v1/review_config_service";
+  TagPolicySchema,
+  SQLReviewRuleSchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  DeleteReviewConfigRequestSchema,
+  UpdateReviewConfigRequestSchema,
+  ListReviewConfigsRequestSchema,
+  GetReviewConfigRequestSchema,
+} from "@/types/proto-es/v1/review_config_service_pb";
+import type { ReviewConfig } from "@/types/proto-es/v1/review_config_service_pb";
+import { ReviewConfigSchema } from "@/types/proto-es/v1/review_config_service_pb";
 import { usePolicyV1Store } from "./v1/policy";
 
 const reviewConfigTagName = "bb.tag.review_config";
@@ -30,10 +41,13 @@ const upsertReviewConfigTag = async (
         policy: {
           name: getTagPolicyName(resourcePath),
           type: PolicyType.TAG,
-          tagPolicy: {
-            tags: {
-              [reviewConfigTagName]: configName,
-            },
+          policy: {
+            case: "tagPolicy",
+            value: create(TagPolicySchema, {
+              tags: {
+                [reviewConfigTagName]: configName,
+              },
+            }),
           },
         },
       });
@@ -81,9 +95,7 @@ interface SQLReviewState {
 }
 
 const getTagPolicyName = (environmentPath: string): string => {
-  return `${environmentPath}/${policyNamePrefix}${policyTypeToJSON(
-    PolicyType.TAG
-  ).toLowerCase()}`;
+  return `${environmentPath}/${policyNamePrefix}tag`;
 };
 
 export const useSQLReviewStore = defineStore("sqlReview", {
@@ -145,9 +157,10 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
 
       const targetPolicy = this.reviewPolicyList[index];
-      await reviewConfigServiceClient.deleteReviewConfig({
+      const request = create(DeleteReviewConfigRequestSchema, {
         name: targetPolicy.id,
       });
+      await reviewConfigServiceClientConnect.deleteReviewConfig(request);
 
       await removeReviewConfigTag(targetPolicy.resources);
 
@@ -166,9 +179,9 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       ruleList?: SchemaPolicyRule[];
       resources?: string[];
     }) {
-      const patch: Partial<ReviewConfig> = {
+      const patch: ReviewConfig = create(ReviewConfigSchema, {
         name: id,
-      };
+      });
       const updateMask: string[] = [];
       if (enforce !== undefined) {
         updateMask.push("enabled");
@@ -181,21 +194,23 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       if (ruleList) {
         updateMask.push("rules");
         patch.rules = ruleList.map((r) => {
-          return {
+          return create(SQLReviewRuleSchema, {
             type: r.type as string,
             level: r.level,
             engine: r.engine,
             comment: r.comment,
             payload: r.payload ? JSON.stringify(r.payload) : "{}",
-          };
+          });
         });
       }
 
-      const updated = await reviewConfigServiceClient.updateReviewConfig({
+      const request = create(UpdateReviewConfigRequestSchema, {
         reviewConfig: patch,
-        updateMask,
+        updateMask: { paths: updateMask },
         allowMissing: true,
       });
+      const updated =
+        await reviewConfigServiceClientConnect.updateReviewConfig(request);
 
       if (resources) {
         await this.upsertReviewConfigTag({
@@ -225,8 +240,9 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     },
 
     async fetchReviewPolicyList(): Promise<SQLReviewPolicy[]> {
+      const request = create(ListReviewConfigsRequestSchema, {});
       const { reviewConfigs } =
-        await reviewConfigServiceClient.listReviewConfigs({});
+        await reviewConfigServiceClientConnect.listReviewConfigs(request);
 
       const reviewPolicyList: SQLReviewPolicy[] = [];
       for (const config of reviewConfigs) {
@@ -245,12 +261,11 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       name: string;
       silent?: boolean;
     }) {
-      const reviewConfig = await reviewConfigServiceClient.getReviewConfig(
-        {
-          name,
-        },
-        { silent }
-      );
+      const request = create(GetReviewConfigRequestSchema, { name });
+      const reviewConfig =
+        await reviewConfigServiceClientConnect.getReviewConfig(request, {
+          contextValues: createContextValues().set(silentContextKey, silent),
+        });
       if (!reviewConfig) {
         return;
       }
@@ -287,7 +302,10 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       if (!policy) {
         return;
       }
-      const sqlReviewName = policy.tagPolicy?.tags[reviewConfigTagName];
+      const sqlReviewName =
+        policy.policy?.case === "tagPolicy"
+          ? policy.policy.value.tags[reviewConfigTagName]
+          : undefined;
       if (!sqlReviewName) {
         return;
       }

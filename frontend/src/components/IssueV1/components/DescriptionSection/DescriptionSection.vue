@@ -70,14 +70,18 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NInput, NButton } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
-import { issueServiceClient } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
-import { Issue } from "@/types/proto/v1/issue_service";
+import {
+  IssueSchema,
+  UpdateIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../logic";
 
@@ -123,14 +127,14 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     state.isUpdating = true;
-    const issuePatch = Issue.fromPartial({
-      ...issue.value,
-      description: state.description,
+    const request = create(UpdateIssueRequestSchema, {
+      issue: create(IssueSchema, {
+        name: issue.value.name,
+        description: state.description,
+      }),
+      updateMask: { paths: ["description"] },
     });
-    const updated = await issueServiceClient.updateIssue({
-      issue: issuePatch,
-      updateMask: ["description"],
-    });
+    const updated = await issueServiceClientConnect.updateIssue(request);
     Object.assign(issue.value, updated);
     pushNotification({
       module: "bytebase",

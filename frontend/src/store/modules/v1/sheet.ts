@@ -1,11 +1,18 @@
+import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { sheetServiceClient } from "@/grpcweb";
+import { sheetServiceClientConnect } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { Engine, engineToJSON } from "@/types/proto/v1/common";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import {
+  CreateSheetRequestSchema,
+  GetSheetRequestSchema,
+  UpdateSheetRequestSchema,
+} from "@/types/proto-es/v1/sheet_service_pb";
 import { extractSheetUID, getSheetStatement } from "@/utils";
 
 export type SheetView = "FULL" | "BASIC";
@@ -35,25 +42,32 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
 
   // CRUD
   const createSheet = async (parent: string, sheet: Partial<Sheet>) => {
-    if (!sheet.engine || sheet.engine === Engine.ENGINE_UNSPECIFIED) {
-      const engineStr = sheet.engine
-        ? engineToJSON(sheet.engine)
-        : "<undefined>";
+    if (!sheet.engine) {
       console.warn(
-        `[SheetService.CreateSheet] sheet.engine unspecified: ${engineStr}`
+        `[SheetService.CreateSheet] sheet.engine unspecified: ${sheet.engine}`
       );
-
       sheet.engine = Engine.ENGINE_UNSPECIFIED;
     }
-    const created = await sheetServiceClient.createSheet({
-      parent,
-      sheet,
+    const fullSheet = create(SheetSchema, {
+      name: sheet.name || "",
+      title: sheet.title || "",
+      creator: sheet.creator || "",
+      content: sheet.content || new Uint8Array(),
+      contentSize: sheet.contentSize || BigInt(0),
+      engine: sheet.engine || Engine.MYSQL,
+      payload: sheet.payload,
+      createTime: sheet.createTime,
     });
-    setCache(created, "FULL");
+    const request = create(CreateSheetRequestSchema, {
+      parent,
+      sheet: fullSheet,
+    });
+    const response = await sheetServiceClientConnect.createSheet(request);
+    setCache(response, "FULL");
     if (sheet.name) {
       removeLocalSheet(sheet.name);
     }
-    return created;
+    return response;
   };
 
   /**
@@ -100,11 +114,12 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     }
     try {
       console.debug("[fetchSheetByName]", name, view);
-      const sheet = await sheetServiceClient.getSheet({
+      const request = create(GetSheetRequestSchema, {
         name,
         raw: view === "FULL",
       });
-      return sheet;
+      const response = await sheetServiceClientConnect.getSheet(request);
+      return response;
     } catch {
       return undefined;
     }
@@ -141,12 +156,23 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
 
   const patchSheetContent = async (sheet: Partial<Sheet>) => {
     if (!sheet.name) return;
-    const updated = await sheetServiceClient.updateSheet({
-      sheet,
-      updateMask: ["content"],
+    const fullSheet = create(SheetSchema, {
+      name: sheet.name || "",
+      title: sheet.title || "",
+      creator: sheet.creator || "",
+      content: sheet.content || new Uint8Array(),
+      contentSize: sheet.contentSize || BigInt(0),
+      engine: sheet.engine || Engine.MYSQL,
+      payload: sheet.payload,
+      createTime: sheet.createTime,
     });
-    setCache(updated, "FULL");
-    return updated;
+    const request = create(UpdateSheetRequestSchema, {
+      sheet: fullSheet,
+      updateMask: { paths: ["content"] },
+    });
+    const response = await sheetServiceClientConnect.updateSheet(request);
+    setCache(response, "FULL");
+    return response;
   };
 
   return {

@@ -238,6 +238,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create as createProto } from "@bufbuild/protobuf";
 import { isEqual, cloneDeep } from "lodash-es";
 import { XIcon, PencilIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
@@ -261,13 +262,15 @@ import {
   MiniActionButton,
 } from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
-import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  SchemaTemplateSetting,
-  SchemaTemplateSetting_FieldTemplate,
+  SchemaTemplateSetting_FieldTemplateSchema,
+  SchemaTemplateSettingSchema,
   Setting_SettingName,
-} from "@/types/proto/v1/setting_service";
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import {
   getDataTypeSuggestionList,
   convertKVListToLabels,
@@ -293,28 +296,31 @@ interface LocalState extends SchemaTemplateSetting_FieldTemplate {
 }
 
 const state = reactive<LocalState>({
-  id: props.template.id,
-  engine: props.template.engine,
-  category: props.template.category,
-  column: ColumnMetadata.fromPartial({
-    ...(props.template.column ?? {}),
+  ...createProto(SchemaTemplateSetting_FieldTemplateSchema, {
+    id: props.template.id,
+    engine: props.template.engine,
+    category: props.template.category,
+    column: createProto(ColumnMetadataSchema, props.template.column ?? {}),
+    catalog: createProto(ColumnCatalogSchema, props.template.catalog ?? {}),
   }),
   showClassificationDrawer: false,
   showSemanticTypesDrawer: false,
   showColumnDefaultValueExpressionModal: false,
-  catalog: ColumnCatalog.fromPartial({
-    ...(props.template.catalog ?? {}),
-  }),
   kvList: [],
 });
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
 const semanticTypeList = computed(() => {
-  return (
-    settingStore.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)?.value
-      ?.semanticTypeSettingValue?.types ?? []
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SEMANTIC_TYPES
   );
+  if (!setting?.value?.value) return [];
+  const value = setting.value.value;
+  if (value.case === "semanticTypeSettingValue") {
+    return value.value.types ?? [];
+  }
+  return [];
 });
 
 const columnSemanticType = computed(() => {
@@ -381,8 +387,13 @@ const defaultValueOptions = computed(() => {
 });
 
 const schemaTemplateColumnTypes = computed(() => {
-  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
-  const columnTypes = setting?.value?.schemaTemplateSettingValue?.columnTypes;
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SCHEMA_TEMPLATE
+  );
+  if (!setting?.value?.value) return [];
+  const value = setting.value.value;
+  if (value.case !== "schemaTemplateSettingValue") return [];
+  const columnTypes = value.value.columnTypes;
   if (columnTypes && columnTypes.length > 0) {
     const columnType = columnTypes.find(
       (columnType) => columnType.engine === state.engine
@@ -411,11 +422,15 @@ const submitDisabled = computed(() => {
 });
 
 const submit = async () => {
-  const template = SchemaTemplateSetting_FieldTemplate.fromPartial({
-    ...state,
-    catalog: ColumnCatalog.fromPartial({
-      ...state.catalog,
-      name: state.column?.name,
+  const template = createProto(SchemaTemplateSetting_FieldTemplateSchema, {
+    id: state.id,
+    engine: state.engine,
+    category: state.category,
+    column: state.column,
+    catalog: createProto(ColumnCatalogSchema, {
+      semanticType: state.catalog?.semanticType || "",
+      classification: state.catalog?.classification || "",
+      name: state.column?.name || "",
       labels: convertKVListToLabels(
         state.kvList.filter((item) => item.key),
         false /* !omitEmpty */
@@ -426,12 +441,12 @@ const submit = async () => {
     Setting_SettingName.SCHEMA_TEMPLATE
   );
 
-  const settingValue = SchemaTemplateSetting.fromPartial({});
-  if (setting?.value?.schemaTemplateSettingValue) {
-    Object.assign(
-      settingValue,
-      cloneDeep(setting.value.schemaTemplateSettingValue)
-    );
+  let settingValue = createProto(SchemaTemplateSettingSchema, {});
+  if (
+    setting?.value?.value &&
+    setting.value.value.case === "schemaTemplateSettingValue"
+  ) {
+    settingValue = cloneDeep(setting.value.value.value);
   }
 
   const index = settingValue.fieldTemplates.findIndex(
@@ -445,9 +460,12 @@ const submit = async () => {
 
   await settingStore.upsertSetting({
     name: Setting_SettingName.SCHEMA_TEMPLATE,
-    value: {
-      schemaTemplateSettingValue: settingValue,
-    },
+    value: createProto(SettingValueSchema, {
+      value: {
+        case: "schemaTemplateSettingValue",
+        value: settingValue,
+      },
+    }),
   });
   useNotificationStore().pushNotification({
     module: "bytebase",
@@ -478,14 +496,14 @@ const handleColumnDefaultInput = (value: string) => {
   if (!column) return;
 
   column.hasDefault = true;
-  column.defaultNull = undefined;
+  column.defaultNull = false;
   // If column is text type or has default string, we will treat user's input as string.
   if (
     isTextOfColumnType(state.engine, column.type) ||
     column.defaultString !== undefined
   ) {
     column.defaultString = value;
-    column.defaultExpression = undefined;
+    column.defaultExpression = "";
     return;
   }
   // Otherwise we will treat user's input as expression.
@@ -521,15 +539,17 @@ const handleSelectedColumnDefaultValueExpressionChange = (
     return;
   }
   state.column.hasDefault = true;
-  state.column.defaultNull = undefined;
-  state.column.defaultString = undefined;
+  state.column.defaultNull = false;
+  state.column.defaultString = "";
   state.column.defaultExpression = expression;
   state.showColumnDefaultValueExpressionModal = false;
 };
 
 const onSemanticTypeApply = async (semanticType: string) => {
-  state.catalog = ColumnCatalog.fromPartial({
-    ...state.catalog,
+  state.catalog = createProto(ColumnCatalogSchema, {
+    name: state.catalog?.name,
+    labels: state.catalog?.labels,
+    classification: state.catalog?.classification,
     semanticType,
   });
 };

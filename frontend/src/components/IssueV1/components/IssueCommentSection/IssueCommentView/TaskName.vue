@@ -20,11 +20,12 @@
 <script lang="ts" setup>
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed } from "vue";
+import type { LocationQueryRaw } from "vue-router";
 import { stageForTask, projectOfIssue } from "@/components/IssueV1/logic";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import type { ComposedIssue } from "@/types";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,
   extractSchemaVersionFromTask,
@@ -45,7 +46,7 @@ const schemaVersion = computed(() => {
 const link = computed(() => {
   const { issue, task } = props;
 
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     task: extractTaskUID(task.name),
   };
 
@@ -57,8 +58,8 @@ const link = computed(() => {
   return {
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(issue.project),
-      issueSlug: issueV1Slug(issue),
+      projectId: extractProjectResourceName(issue.name),
+      issueSlug: issueV1Slug(issue.name, issue.title),
     },
     query,
   };

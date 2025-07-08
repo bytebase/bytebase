@@ -60,9 +60,9 @@
 </template>
 
 <script lang="ts" setup>
+import type { ConnectError } from "@connectrpc/connect";
 import { useDebounceFn } from "@vueuse/core";
 import { NButton, NEllipsis, NCollapse, NCollapseItem } from "naive-ui";
-import { ClientError } from "nice-grpc-web";
 import { watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
@@ -183,7 +183,7 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
     state.databaseMatchLists[1].databaseNameList = result.unmatchedDatabaseList;
     await Promise.all(state.databaseMatchLists.map((_, i) => loadMore(i)));
   } catch (error) {
-    state.matchingError = (error as ClientError).details;
+    state.matchingError = (error as ConnectError).message;
     state.databaseMatchLists = getInitialState();
   } finally {
     state.loading = false;

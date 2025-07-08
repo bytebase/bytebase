@@ -53,11 +53,11 @@
         ref="maximumSQLResultSizeSettingRef"
         :allow-edit="allowEdit"
       />
+      <QueryDataPolicySetting ref="queryDataPolicySettingRef" />
       <MaximumRoleExpirationSetting
         ref="maximumRoleExpirationSettingRef"
         :allow-edit="allowEdit"
       />
-      <QueryDataPolicySetting ref="queryDataPolicySettingRef" />
       <DomainRestrictionSetting
         ref="domainRestrictionSettingRef"
         :allow-edit="allowEdit"
@@ -67,6 +67,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { Switch } from "@/components/v2";
@@ -77,11 +78,15 @@ import {
   useSettingV1Store,
 } from "@/store";
 import {
+  ExportDataPolicySchema,
   PolicyResourceType,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  Setting_SettingName,
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
@@ -130,11 +135,19 @@ const { policy: exportDataPolicy } = usePolicyByParentAndType(
 );
 
 const getInitialState = (): LocalState => {
+  const watermarkSetting = settingV1Store.getSettingByName(
+    Setting_SettingName.WATERMARK
+  );
+  let enableWatermark = false;
+  if (watermarkSetting?.value?.value?.case === "stringValue") {
+    enableWatermark = watermarkSetting.value.value.value === "1";
+  }
   return {
-    enableWatermark:
-      settingV1Store.getSettingByName(Setting_SettingName.WATERMARK)?.value
-        ?.stringValue === "1",
-    enableDataExport: !exportDataPolicy.value?.exportDataPolicy?.disable,
+    enableWatermark,
+    enableDataExport:
+      exportDataPolicy.value?.policy?.case === "exportDataPolicy"
+        ? !exportDataPolicy.value.policy.value.disable
+        : true,
   };
 };
 
@@ -155,8 +168,11 @@ const handleDataExportToggle = async () => {
     policy: {
       type: PolicyType.DATA_EXPORT,
       resourceType: PolicyResourceType.WORKSPACE,
-      exportDataPolicy: {
-        disable: !state.enableDataExport,
+      policy: {
+        case: "exportDataPolicy",
+        value: create(ExportDataPolicySchema, {
+          disable: !state.enableDataExport,
+        }),
       },
     },
   });
@@ -166,9 +182,12 @@ const handleWatermarkToggle = async () => {
   const value = state.enableWatermark ? "1" : "0";
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.WATERMARK,
-    value: {
-      stringValue: value,
-    },
+    value: create(SettingValueSchema, {
+      value: {
+        case: "stringValue",
+        value: value,
+      },
+    }),
   });
 };
 

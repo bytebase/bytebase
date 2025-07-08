@@ -12,6 +12,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -422,10 +423,12 @@ type AuditLog struct {
 	// Some fields are omitted because they are too large or contain sensitive information.
 	Response string         `protobuf:"bytes,8,opt,name=response,proto3" json:"response,omitempty"`
 	Status   *status.Status `protobuf:"bytes,9,opt,name=status,proto3" json:"status,omitempty"`
+	// The latency of the RPC.
+	Latency *durationpb.Duration `protobuf:"bytes,10,opt,name=latency,proto3" json:"latency,omitempty"`
 	// service-specific data about the request, response, and other activities.
-	ServiceData *anypb.Any `protobuf:"bytes,10,opt,name=service_data,json=serviceData,proto3" json:"service_data,omitempty"`
+	ServiceData *anypb.Any `protobuf:"bytes,11,opt,name=service_data,json=serviceData,proto3" json:"service_data,omitempty"`
 	// Metadata about the operation.
-	RequestMetadata *RequestMetadata `protobuf:"bytes,11,opt,name=request_metadata,json=requestMetadata,proto3" json:"request_metadata,omitempty"`
+	RequestMetadata *RequestMetadata `protobuf:"bytes,12,opt,name=request_metadata,json=requestMetadata,proto3" json:"request_metadata,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -519,6 +522,13 @@ func (x *AuditLog) GetResponse() string {
 func (x *AuditLog) GetStatus() *status.Status {
 	if x != nil {
 		return x.Status
+	}
+	return nil
+}
+
+func (x *AuditLog) GetLatency() *durationpb.Duration {
+	if x != nil {
+		return x.Latency
 	}
 	return nil
 }
@@ -641,7 +651,7 @@ var File_v1_audit_log_service_proto protoreflect.FileDescriptor
 
 const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1av1/audit_log_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"\xbf\x01\n" +
+	"\x1av1/audit_log_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"\xbf\x01\n" +
 	"\x16SearchAuditLogsRequest\x126\n" +
 	"\x06parent\x18\x05 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\x12\x15bytebase.com/AuditLogR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x01 \x01(\tR\x06filter\x12\x19\n" +
@@ -663,7 +673,7 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"page_token\x18\x06 \x01(\tR\tpageToken\"[\n" +
 	"\x17ExportAuditLogsResponse\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\fR\acontent\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xc9\x04\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xfe\x04\n" +
 	"\bAuditLog\x12\x18\n" +
 	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12A\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
@@ -674,10 +684,11 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\bresource\x18\x06 \x01(\tR\bresource\x12\x18\n" +
 	"\arequest\x18\a \x01(\tR\arequest\x12\x1a\n" +
 	"\bresponse\x18\b \x01(\tR\bresponse\x12*\n" +
-	"\x06status\x18\t \x01(\v2\x12.google.rpc.StatusR\x06status\x127\n" +
-	"\fservice_data\x18\n" +
-	" \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12G\n" +
-	"\x10request_metadata\x18\v \x01(\v2\x1c.bytebase.v1.RequestMetadataR\x0frequestMetadata\"x\n" +
+	"\x06status\x18\t \x01(\v2\x12.google.rpc.StatusR\x06status\x123\n" +
+	"\alatency\x18\n" +
+	" \x01(\v2\x19.google.protobuf.DurationR\alatency\x127\n" +
+	"\fservice_data\x18\v \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12G\n" +
+	"\x10request_metadata\x18\f \x01(\v2\x1c.bytebase.v1.RequestMetadataR\x0frequestMetadata\"x\n" +
 	"\bSeverity\x12\v\n" +
 	"\aDEFAULT\x10\x00\x12\t\n" +
 	"\x05DEBUG\x10\x01\x12\b\n" +
@@ -724,8 +735,9 @@ var file_v1_audit_log_service_proto_goTypes = []any{
 	(ExportFormat)(0),               // 8: bytebase.v1.ExportFormat
 	(*timestamppb.Timestamp)(nil),   // 9: google.protobuf.Timestamp
 	(*status.Status)(nil),           // 10: google.rpc.Status
-	(*anypb.Any)(nil),               // 11: google.protobuf.Any
-	(*PolicyDelta)(nil),             // 12: bytebase.v1.PolicyDelta
+	(*durationpb.Duration)(nil),     // 11: google.protobuf.Duration
+	(*anypb.Any)(nil),               // 12: google.protobuf.Any
+	(*PolicyDelta)(nil),             // 13: bytebase.v1.PolicyDelta
 }
 var file_v1_audit_log_service_proto_depIdxs = []int32{
 	5,  // 0: bytebase.v1.SearchAuditLogsResponse.audit_logs:type_name -> bytebase.v1.AuditLog
@@ -733,18 +745,19 @@ var file_v1_audit_log_service_proto_depIdxs = []int32{
 	9,  // 2: bytebase.v1.AuditLog.create_time:type_name -> google.protobuf.Timestamp
 	0,  // 3: bytebase.v1.AuditLog.severity:type_name -> bytebase.v1.AuditLog.Severity
 	10, // 4: bytebase.v1.AuditLog.status:type_name -> google.rpc.Status
-	11, // 5: bytebase.v1.AuditLog.service_data:type_name -> google.protobuf.Any
-	7,  // 6: bytebase.v1.AuditLog.request_metadata:type_name -> bytebase.v1.RequestMetadata
-	12, // 7: bytebase.v1.AuditData.policy_delta:type_name -> bytebase.v1.PolicyDelta
-	1,  // 8: bytebase.v1.AuditLogService.SearchAuditLogs:input_type -> bytebase.v1.SearchAuditLogsRequest
-	3,  // 9: bytebase.v1.AuditLogService.ExportAuditLogs:input_type -> bytebase.v1.ExportAuditLogsRequest
-	2,  // 10: bytebase.v1.AuditLogService.SearchAuditLogs:output_type -> bytebase.v1.SearchAuditLogsResponse
-	4,  // 11: bytebase.v1.AuditLogService.ExportAuditLogs:output_type -> bytebase.v1.ExportAuditLogsResponse
-	10, // [10:12] is the sub-list for method output_type
-	8,  // [8:10] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	11, // 5: bytebase.v1.AuditLog.latency:type_name -> google.protobuf.Duration
+	12, // 6: bytebase.v1.AuditLog.service_data:type_name -> google.protobuf.Any
+	7,  // 7: bytebase.v1.AuditLog.request_metadata:type_name -> bytebase.v1.RequestMetadata
+	13, // 8: bytebase.v1.AuditData.policy_delta:type_name -> bytebase.v1.PolicyDelta
+	1,  // 9: bytebase.v1.AuditLogService.SearchAuditLogs:input_type -> bytebase.v1.SearchAuditLogsRequest
+	3,  // 10: bytebase.v1.AuditLogService.ExportAuditLogs:input_type -> bytebase.v1.ExportAuditLogsRequest
+	2,  // 11: bytebase.v1.AuditLogService.SearchAuditLogs:output_type -> bytebase.v1.SearchAuditLogsResponse
+	4,  // 12: bytebase.v1.AuditLogService.ExportAuditLogs:output_type -> bytebase.v1.ExportAuditLogsResponse
+	11, // [11:13] is the sub-list for method output_type
+	9,  // [9:11] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_v1_audit_log_service_proto_init() }

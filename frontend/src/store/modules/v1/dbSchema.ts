@@ -1,16 +1,25 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { databaseServiceClient } from "@/grpcweb";
+import { databaseServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+// Removed conversion imports as part of Bold Migration Strategy
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
-import {
+import { GetDatabaseMetadataRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import type {
   TableMetadata,
   DatabaseMetadata,
-  ExternalTableMetadata,
-  ViewMetadata,
-  SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  TableMetadataSchema,
+  DatabaseMetadataSchema,
+  ExternalTableMetadataSchema,
+  ViewMetadataSchema,
+  SchemaMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 
 type DatabaseMetadataCacheKey = [string /* database metadata resource name */];
@@ -131,7 +140,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   const getDatabaseMetadata = (database: string) => {
     return (
       getDatabaseMetadataWithoutDefault(database) ??
-      DatabaseMetadata.fromPartial({
+      create(DatabaseMetadataSchema, {
         name: ensureDatabaseMetadataResourceName(database),
       })
     );
@@ -151,7 +160,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       databaseName === String(UNKNOWN_ID) ||
       databaseName === String(EMPTY_ID)
     ) {
-      return DatabaseMetadata.fromPartial({
+      return create(DatabaseMetadataSchema, {
         name: ensureDatabaseMetadataResourceName(
           `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
         ),
@@ -179,14 +188,12 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     console.debug("[getOrFetchDatabaseMetadata]", {
       name: metadataResourceName,
     });
-    const promise = databaseServiceClient.getDatabaseMetadata(
-      {
-        name: metadataResourceName,
-      },
-      {
-        silent,
-      }
-    );
+    const request = create(GetDatabaseMetadataRequestSchema, {
+      name: metadataResourceName,
+    });
+    const promise = databaseServiceClientConnect.getDatabaseMetadata(request, {
+      contextValues: createContextValues().set(silentContextKey, silent),
+    }); // Work directly with proto-es types
     setRequestCache(metadataResourceName, promise);
     promise.then((res) => {
       mergeCache(res, true);
@@ -208,7 +215,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   }) => {
     return (
       getSchemaList(database).find((s) => s.name === schema) ??
-      SchemaMetadata.create()
+      create(SchemaMetadataSchema, {})
     );
   };
 
@@ -243,7 +250,9 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     schema?: string;
   }) => {
     const tableList = getTableList({ database, schema });
-    return tableList.find((t) => t.name === table) ?? TableMetadata.create();
+    return (
+      tableList.find((t) => t.name === table) ?? create(TableMetadataSchema, {})
+    );
   };
 
   const getOrFetchTableMetadata = async ({
@@ -264,7 +273,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       databaseName === String(UNKNOWN_ID) ||
       databaseName === String(EMPTY_ID)
     ) {
-      return TableMetadata.fromPartial({
+      return create(TableMetadataSchema, {
         name: table,
       });
     }
@@ -291,16 +300,14 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       name: metadataResourceName,
       filter: `schema == "${schema}" && table == "${table}"`,
     });
-    const promise = databaseServiceClient
-      .getDatabaseMetadata(
-        {
-          name: metadataResourceName,
-          filter: `schema == "${schema}" && table == "${table}"`,
-        },
-        {
-          silent,
-        }
-      )
+    const request = create(GetDatabaseMetadataRequestSchema, {
+      name: metadataResourceName,
+      filter: `schema == "${schema}" && table == "${table}"`,
+    });
+    const promise = databaseServiceClientConnect
+      .getDatabaseMetadata(request, {
+        contextValues: createContextValues().set(silentContextKey, silent),
+      })
       .then((res) => mergeCache(res))
       .then((res) => {
         return res.schemas
@@ -348,7 +355,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     return (
       getExternalTableList({ database, schema }).find(
         (metadata) => metadata.name === externalTable
-      ) ?? ExternalTableMetadata.create()
+      ) ?? create(ExternalTableMetadataSchema, {})
     );
   };
 
@@ -394,7 +401,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   }) => {
     return (
       getViewList({ database, schema }).find((v) => v.name === view) ??
-      ViewMetadata.create()
+      create(ViewMetadataSchema, {})
     );
   };
 

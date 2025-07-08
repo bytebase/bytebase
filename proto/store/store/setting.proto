@@ -23,7 +23,6 @@ enum SettingName {
   APP_IM = 8;
   WATERMARK = 9;
   AI = 10;
-  PLUGIN_AGENT = 11;
   SCHEMA_TEMPLATE = 13;
   DATA_CLASSIFICATION = 14;
   SEMANTIC_TYPES = 15;
@@ -42,9 +41,6 @@ message WorkspaceProfileSetting {
 
   // Require 2FA for all users.
   bool require_2fa = 3;
-
-  // outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
-  repeated string outbound_ip_list = 4;
 
   // The duration for token.
   google.protobuf.Duration token_duration = 6;
@@ -85,14 +81,6 @@ message Announcement {
 
   // The optional link, user can follow the link to check extra details
   string link = 3;
-}
-
-message AgentPluginSetting {
-  // The URL for the agent API.
-  string url = 1;
-
-  // The token for the agent.
-  string token = 2;
 }
 
 message WorkspaceApprovalSetting {
@@ -192,6 +180,9 @@ message SemanticTypeSetting {
     string description = 3;
 
     Algorithm algorithm = 6;
+
+    // icon is the icon for semantic type, it can be emoji or base64 encoded image.
+    string icon = 7;
   }
 
   repeated SemanticType types = 1;
@@ -289,10 +280,13 @@ enum DatabaseChangeMode {
   EDITOR = 2;
 }
 
-message MaximumSQLResultSizeSetting {
-  // The limit is in bytes.
+message SQLQueryRestrictionSetting {
+  // The size limit in bytes.
   // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-  int64 limit = 1;
+  int64 maximum_result_size = 1;
+  // The return rows limit.
+  // The default value is -1, means no limit.
+  int32 maximum_result_rows = 2;
 }
 
 message SCIMSetting {

@@ -1,6 +1,6 @@
-import type { Group } from "@/types/proto/v1/group_service";
-import type { Binding } from "@/types/proto/v1/iam_policy";
-import { type User } from "@/types/proto/v1/user_service";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 
 export interface MemberRole {
   workspaceLevelRoles: Set<string>;

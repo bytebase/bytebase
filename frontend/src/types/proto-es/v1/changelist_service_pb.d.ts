@@ -259,6 +259,8 @@ export declare const Changelist_ChangeSchema: GenMessage<Changelist_Change>;
  */
 export declare const ChangelistService: GenService<{
   /**
+   * Permissions required: bb.changelists.create
+   *
    * @generated from rpc bytebase.v1.ChangelistService.CreateChangelist
    */
   createChangelist: {
@@ -267,6 +269,8 @@ export declare const ChangelistService: GenService<{
     output: typeof ChangelistSchema;
   },
   /**
+   * Permissions required: bb.changelists.get
+   *
    * @generated from rpc bytebase.v1.ChangelistService.GetChangelist
    */
   getChangelist: {
@@ -275,6 +279,8 @@ export declare const ChangelistService: GenService<{
     output: typeof ChangelistSchema;
   },
   /**
+   * Permissions required: bb.changelists.list
+   *
    * @generated from rpc bytebase.v1.ChangelistService.ListChangelists
    */
   listChangelists: {
@@ -283,6 +289,8 @@ export declare const ChangelistService: GenService<{
     output: typeof ListChangelistsResponseSchema;
   },
   /**
+   * Permissions required: bb.changelists.update
+   *
    * @generated from rpc bytebase.v1.ChangelistService.UpdateChangelist
    */
   updateChangelist: {
@@ -291,6 +299,8 @@ export declare const ChangelistService: GenService<{
     output: typeof ChangelistSchema;
   },
   /**
+   * Permissions required: bb.changelists.delete
+   *
    * @generated from rpc bytebase.v1.ChangelistService.DeleteChangelist
    */
   deleteChangelist: {

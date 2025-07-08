@@ -13,7 +13,7 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { FeatureBadge } from "@/components/FeatureGuard";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { useCustomApprovalContext } from "../context";
 import { emptyLocalApprovalRule } from "../logic";
 

@@ -115,6 +115,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get routines from database %q", d.databaseName)
 	}
+	materializedViews, err := getMaterializedViews(txn, d.databaseName, columnMap)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", d.databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
@@ -126,13 +130,14 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		LinkedDatabases: dbLinks,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-		Name:       "",
-		Tables:     tableMap[d.databaseName],
-		Views:      viewMap[d.databaseName],
-		Sequences:  sequences,
-		Functions:  functions,
-		Procedures: procedures,
-		Packages:   packages,
+		Name:              "",
+		Tables:            tableMap[d.databaseName],
+		Views:             viewMap[d.databaseName],
+		MaterializedViews: materializedViews,
+		Sequences:         sequences,
+		Functions:         functions,
+		Procedures:        procedures,
+		Packages:          packages,
 	})
 	return databaseMetadata, nil
 }
@@ -212,6 +217,12 @@ func getTriggers(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Tri
 	tableTriggerMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
 	viewTriggerMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
 
+	// Get trigger comments
+	triggerCommentMap, err := getTriggerComments(txn, schemaName)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get trigger comments")
+	}
+
 	query := fmt.Sprintf(`
 		SELECT TRIGGER_NAME, TABLE_NAME, DESCRIPTION, TRIGGER_BODY, BASE_OBJECT_TYPE, TRIGGER_TYPE, TRIGGERING_EVENT
 		FROM sys.all_triggers
@@ -243,6 +254,11 @@ func getTriggers(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Tri
 		}
 		if triggeringEvent.Valid {
 			trigger.Event = triggeringEvent.String
+		}
+		// Add trigger comment if available
+		triggerKey := db.TableKey{Schema: schemaName, Table: triggerName.String}
+		if comment, ok := triggerCommentMap[triggerKey]; ok {
+			trigger.Comment = comment
 		}
 
 		if baseObjectType.String == "TABLE" {
@@ -294,7 +310,10 @@ func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*stor
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
 		FROM all_tables
 		WHERE OWNER = '%s'
-		ORDER BY TABLE_NAME`, schemaName)
+		AND TABLE_NAME NOT IN (
+			SELECT MVIEW_NAME FROM all_mviews WHERE OWNER = '%s'
+		)
+		ORDER BY TABLE_NAME`, schemaName, schemaName)
 
 	slog.Debug("running get tables query")
 	rows, err := txn.Query(query)
@@ -495,8 +514,9 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 		}
 		column.Type = getTypeString(column.Type, dataLength, dataPrecision, dataScale)
 		if defaultStr.Valid {
-			// TODO: use correct default type
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+			// Clean up the default expression to remove current schema name and fix NEXTVAL syntax
+			cleanedDefault := cleanDefaultExpression(defaultStr.String, schemaName)
+			column.DefaultExpression = cleanedDefault
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
@@ -686,6 +706,10 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 			indexMap[key] = append(indexMap[key], index)
 			isConstraint[db.IndexKey{Schema: schemaName, Table: tableName, Index: constraintName}] = true
 		case "C":
+			// Skip system-generated check constraints (e.g., SYS_C*)
+			if strings.HasPrefix(constraintName, "SYS_C") {
+				continue
+			}
 			constraint := &storepb.CheckConstraintMetadata{
 				Name: constraintName,
 			}
@@ -728,6 +752,12 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 		return nil, nil, nil, errors.Wrapf(err, "failed to get constraints")
 	}
 
+	// Get index comments
+	indexCommentMap, err := getIndexComments(txn, schemaName)
+	if err != nil {
+		return nil, nil, nil, errors.Wrapf(err, "failed to get index comments")
+	}
+
 	queryColumn := fmt.Sprintf(`
 		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_NAME, DESCEND
 		FROM sys.all_ind_columns
@@ -750,7 +780,14 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 			return nil, nil, nil, err
 		}
 		key := db.IndexKey{Schema: schemaName, Table: tableName, Index: indexName}
-		indexColumnMap[key] = append(indexColumnMap[key], columnName)
+
+		// Clean up column name but preserve the original if it's already clean
+		cleanColumnName := columnName
+		if strings.HasPrefix(columnName, "\"") && strings.HasSuffix(columnName, "\"") {
+			cleanColumnName = columnName[1 : len(columnName)-1]
+		}
+
+		indexColumnMap[key] = append(indexColumnMap[key], cleanColumnName)
 		descendingMap[key] = append(descendingMap[key], descend.String == "DESC")
 	}
 	if err := colRows.Err(); err != nil {
@@ -811,17 +848,75 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 			continue
 		}
 
+		// Skip system-generated indexes for materialized views and virtual columns
+		if strings.HasPrefix(index.Name, "I_SNAP$_") || strings.HasPrefix(index.Name, "SYS_") {
+			continue
+		}
+
 		index.Unique = unique == "UNIQUE"
 		indexKey := db.IndexKey{Schema: schemaName, Table: tableName, Index: index.Name}
-		if index.Type == "FUNCTION-BASED" {
-			index.Expressions = indexExpressionMap[indexKey]
+		// Handle index expressions - preserve Oracle's classification
+		columns := indexColumnMap[indexKey]
+		expressions := indexExpressionMap[indexKey]
+
+		// For function-based indexes (including those with DESC columns)
+		if len(expressions) > 0 {
+			// Combine regular columns with expressions
+			// Oracle reports ASC columns in ALL_IND_COLUMNS and DESC columns as expressions
+			var combinedExpressions []string
+			exprIdx := 0
+
+			for i := 0; i < len(columns); i++ {
+				if strings.HasPrefix(columns[i], "SYS_NC") {
+					// This is a virtual column for a DESC column, use the expression
+					if exprIdx < len(expressions) {
+						combinedExpressions = append(combinedExpressions, expressions[exprIdx])
+						exprIdx++
+					}
+				} else {
+					// Regular column
+					combinedExpressions = append(combinedExpressions, fmt.Sprintf(`"%s"`, columns[i]))
+				}
+			}
+
+			index.Expressions = combinedExpressions
 		} else {
-			index.Expressions = indexColumnMap[indexKey]
-			index.Descending = descendingMap[indexKey]
+			// Simple column index without expressions
+			// Skip indexes that reference only system-generated virtual columns
+			hasOnlyVirtualColumns := true
+			for _, col := range columns {
+				if !strings.HasPrefix(col, "SYS_NC") {
+					hasOnlyVirtualColumns = false
+					break
+				}
+			}
+			if hasOnlyVirtualColumns {
+				continue
+			}
+
+			// For column-based indexes, quote the column names to match expected format
+			quotedColumns := make([]string, len(columns))
+			for i, col := range columns {
+				quotedColumns[i] = fmt.Sprintf(`"%s"`, col)
+			}
+			index.Expressions = quotedColumns
+		}
+		// Note: Keep index.Type as reported by Oracle (don't modify it)
+
+		// Set descending flags for all indexes (both function-based and normal)
+		if desc, ok := descendingMap[indexKey]; ok && len(desc) > 0 {
+			// Always set descending array if we have column information,
+			// even if all columns are ascending (to maintain consistency)
+			index.Descending = desc
 		}
 		index.Visible = true
 		if visibility.Valid && visibility.String == "INVISIBLE" {
 			index.Visible = false
+		}
+
+		// Add index comment if available
+		if comment, ok := indexCommentMap[indexKey]; ok {
+			index.Comment = comment
 		}
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
@@ -840,6 +935,12 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
+
+	// Get view comments
+	viewCommentMap, err := getViewComments(txn, schemaName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get view comments")
+	}
 
 	query := fmt.Sprintf(`
 		SELECT OWNER, VIEW_NAME, TEXT
@@ -863,6 +964,9 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 		key := db.TableKey{Schema: schemaName, Table: view.Name}
 		view.Columns = columnMap[key]
 		view.Triggers = triggerMap[key]
+		if comment, ok := viewCommentMap[key]; ok {
+			view.Comment = comment
+		}
 
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
@@ -873,12 +977,165 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
+	// Populate view dependencies
+	for schemaName, list := range viewMap {
+		for _, view := range list {
+			dependencies, err := getViewDependencies(txn, schemaName, view.Name)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
+			}
+			view.DependencyColumns = dependencies
+		}
+	}
+
 	return viewMap, nil
+}
+
+// getViewDependencies gets the dependencies of a view.
+func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependencyColumn, error) {
+	var result []*storepb.DependencyColumn
+
+	query := fmt.Sprintf(`
+		SELECT 
+			REFERENCED_OWNER as source_schema,
+			REFERENCED_NAME as source_table,
+			'*' as column_name
+		FROM ALL_DEPENDENCIES
+		WHERE OWNER = '%s'
+			AND NAME = '%s'
+			AND TYPE = 'VIEW'
+			AND REFERENCED_TYPE IN ('TABLE', 'VIEW')
+		ORDER BY REFERENCED_OWNER, REFERENCED_NAME
+	`, schemaName, viewName)
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		dependencyColumn := &storepb.DependencyColumn{}
+		if err := rows.Scan(&dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
+			return nil, err
+		}
+		result = append(result, dependencyColumn)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// getMaterializedViewDependencies gets the dependencies of a materialized view.
+func getMaterializedViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependencyColumn, error) {
+	var result []*storepb.DependencyColumn
+
+	query := fmt.Sprintf(`
+		SELECT 
+			REFERENCED_OWNER as source_schema,
+			REFERENCED_NAME as source_table,
+			'*' as column_name
+		FROM ALL_DEPENDENCIES
+		WHERE OWNER = '%s'
+			AND NAME = '%s'
+			AND TYPE = 'MATERIALIZED VIEW'
+			AND REFERENCED_TYPE IN ('TABLE', 'VIEW')
+		ORDER BY REFERENCED_OWNER, REFERENCED_NAME
+	`, schemaName, viewName)
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		dependencyColumn := &storepb.DependencyColumn{}
+		if err := rows.Scan(&dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
+			return nil, err
+		}
+		result = append(result, dependencyColumn)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// getMaterializedViews gets all materialized views of a database.
+func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*storepb.ColumnMetadata) ([]*storepb.MaterializedViewMetadata, error) {
+	var materializedViews []*storepb.MaterializedViewMetadata
+
+	// Get materialized view comments
+	materializedViewCommentMap, err := getMaterializedViewComments(txn, schemaName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get materialized view comments")
+	}
+
+	query := fmt.Sprintf(`
+		SELECT OWNER, MVIEW_NAME, QUERY
+		FROM sys.all_mviews
+		WHERE OWNER = '%s'
+		ORDER BY MVIEW_NAME
+	`, schemaName)
+
+	slog.Debug("running get materialized views query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		materializedView := &storepb.MaterializedViewMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &materializedView.Name, &materializedView.Definition); err != nil {
+			return nil, err
+		}
+
+		// Ensure the definition ends with a newline to match expected format
+		if materializedView.Definition != "" && !strings.HasSuffix(materializedView.Definition, "\n") {
+			materializedView.Definition += "\n"
+		}
+
+		// Add comment if available
+		key := db.TableKey{Schema: schemaName, Table: materializedView.Name}
+		if comment, ok := materializedViewCommentMap[key]; ok {
+			materializedView.Comment = comment
+		}
+
+		materializedViews = append(materializedViews, materializedView)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	// Populate dependencies for each materialized view
+	for _, materializedView := range materializedViews {
+		dependencies, err := getMaterializedViewDependencies(txn, schemaName, materializedView.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get materialized view %q dependencies", materializedView.Name)
+		}
+		materializedView.DependencyColumns = dependencies
+	}
+
+	return materializedViews, nil
 }
 
 // getSequences gets all sequences of a database.
 func getSequences(txn *sql.Tx, schemaName string) ([]*storepb.SequenceMetadata, error) {
 	var sequences []*storepb.SequenceMetadata
+
+	// Get sequence comments
+	sequenceCommentMap, err := getSequenceComments(txn, schemaName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sequence comments")
+	}
+
 	query := fmt.Sprintf(`
 		SELECT SEQUENCE_NAME FROM ALL_SEQUENCES
 		WHERE SEQUENCE_OWNER = '%s'
@@ -896,6 +1153,14 @@ func getSequences(txn *sql.Tx, schemaName string) ([]*storepb.SequenceMetadata, 
 		if err := rows.Scan(&seq.Name); err != nil {
 			return nil, err
 		}
+		// Skip system-generated sequences (e.g., ISEQ$$_* for IDENTITY columns)
+		if strings.HasPrefix(seq.Name, "ISEQ$$_") {
+			continue
+		}
+		key := db.TableKey{Schema: schemaName, Table: seq.Name}
+		if comment, ok := sequenceCommentMap[key]; ok {
+			seq.Comment = comment
+		}
 		sequences = append(sequences, seq)
 	}
 	if err := rows.Err(); err != nil {
@@ -912,6 +1177,12 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	var functions []*storepb.FunctionMetadata
 	var procedures []*storepb.ProcedureMetadata
 	var packages []*storepb.PackageMetadata
+
+	// Get function comments
+	functionCommentMap, err := getFunctionComments(txn, schemaName)
+	if err != nil {
+		return nil, nil, nil, errors.Wrapf(err, "failed to get function comments")
+	}
 
 	query := fmt.Sprintf(`
 		SELECT
@@ -944,10 +1215,15 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 		} else {
 			switch currentType {
 			case "FUNCTION":
-				functions = append(functions, &storepb.FunctionMetadata{
+				function := &storepb.FunctionMetadata{
 					Name:       currentName,
 					Definition: strings.Join(defText, ""),
-				})
+				}
+				key := db.TableKey{Schema: schemaName, Table: currentName}
+				if comment, ok := functionCommentMap[key]; ok {
+					function.Comment = comment
+				}
+				functions = append(functions, function)
 			case "PROCEDURE":
 				procedures = append(procedures, &storepb.ProcedureMetadata{
 					Name:       currentName,
@@ -966,10 +1242,15 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	}
 	switch currentType {
 	case "FUNCTION":
-		functions = append(functions, &storepb.FunctionMetadata{
+		function := &storepb.FunctionMetadata{
 			Name:       currentName,
 			Definition: strings.Join(defText, ""),
-		})
+		}
+		key := db.TableKey{Schema: schemaName, Table: currentName}
+		if comment, ok := functionCommentMap[key]; ok {
+			function.Comment = comment
+		}
+		functions = append(functions, function)
 	case "PROCEDURE":
 		procedures = append(procedures, &storepb.ProcedureMetadata{
 			Name:       currentName,
@@ -989,4 +1270,291 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	}
 
 	return functions, procedures, packages, nil
+}
+
+// cleanDefaultExpression cleans up Oracle default expressions to make them more portable
+// and fix common syntax issues like schema-qualified sequence NEXTVAL calls
+func cleanDefaultExpression(defaultExpr, currentSchema string) string {
+	if defaultExpr == "" {
+		return defaultExpr
+	}
+
+	// Remove leading/trailing whitespace
+	cleaned := strings.TrimSpace(defaultExpr)
+
+	// Fix schema-qualified sequence NEXTVAL calls
+	// Pattern: "SCHEMA"."SEQUENCE_NAME"."NEXTVAL" -> "SEQUENCE_NAME".NEXTVAL
+	// Keep sequence name quoted for compatibility
+	if strings.Contains(cleaned, ".\"NEXTVAL\"") {
+		// Use regex to match quoted schema and sequence names followed by quoted NEXTVAL
+		re := regexp.MustCompile(`"` + regexp.QuoteMeta(currentSchema) + `"\."([^"]+)"\."NEXTVAL"`)
+		cleaned = re.ReplaceAllString(cleaned, `"$1".NEXTVAL`)
+	}
+
+	// Also handle unquoted NEXTVAL (less common)
+	if strings.Contains(cleaned, ".NEXTVAL") {
+		re := regexp.MustCompile(`"` + regexp.QuoteMeta(currentSchema) + `"\."([^"]+)"\.NEXTVAL`)
+		cleaned = re.ReplaceAllString(cleaned, `"$1".NEXTVAL`)
+	}
+
+	return cleaned
+}
+
+// getViewComments gets comments for views from Oracle system views
+func getViewComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, error) {
+	viewCommentMap := make(map[db.TableKey]string)
+
+	// Oracle stores view comments in ALL_TAB_COMMENTS where TABLE_TYPE = 'VIEW'
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COMMENTS IS NOT NULL
+		AND TABLE_TYPE = 'VIEW'
+		ORDER BY OWNER, TABLE_NAME`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER = '%s' AND COMMENTS IS NOT NULL
+		AND TABLE_TYPE = 'VIEW'
+		ORDER BY TABLE_NAME`, schemaName)
+	}
+
+	slog.Debug("running get view comments query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		// If the query fails (e.g., TABLE_TYPE = 'VIEW' not supported), return empty map
+		slog.Debug("view comments query failed, returning empty map", slog.String("error", err.Error()))
+		return viewCommentMap, nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, viewName, comment string
+		if err := rows.Scan(&schemaName, &viewName, &comment); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: schemaName, Table: viewName}
+		viewCommentMap[key] = comment
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return viewCommentMap, nil
+}
+
+// getSequenceComments gets comments for sequences from Oracle system views
+func getSequenceComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, error) {
+	sequenceCommentMap := make(map[db.TableKey]string)
+
+	// Oracle doesn't have a direct sequence comments view, but we can try user_tab_comments
+	// where TABLE_TYPE might be 'SEQUENCE' in some Oracle versions
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COMMENTS IS NOT NULL
+		AND TABLE_TYPE = 'SEQUENCE'
+		ORDER BY OWNER, TABLE_NAME`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER = '%s' AND COMMENTS IS NOT NULL
+		AND TABLE_TYPE = 'SEQUENCE'
+		ORDER BY TABLE_NAME`, schemaName)
+	}
+
+	slog.Debug("running get sequence comments query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		// If the query fails (e.g., TABLE_TYPE = 'SEQUENCE' not supported), return empty map
+		slog.Debug("sequence comments query failed, returning empty map", slog.String("error", err.Error()))
+		return sequenceCommentMap, nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, sequenceName, comment string
+		if err := rows.Scan(&schemaName, &sequenceName, &comment); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: schemaName, Table: sequenceName}
+		sequenceCommentMap[key] = comment
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return sequenceCommentMap, nil
+}
+
+// getFunctionComments gets comments for functions and procedures from Oracle system views
+func getFunctionComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, error) {
+	functionCommentMap := make(map[db.TableKey]string)
+
+	// Oracle stores function/procedure comments in ALL_OBJECTS or USER_OBJECTS
+	// However, Oracle doesn't have a standard system view for function/procedure comments
+	// We can try to get them from ALL_TAB_COMMENTS where TABLE_TYPE might be 'FUNCTION' or 'PROCEDURE'
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COMMENTS IS NOT NULL
+		AND TABLE_TYPE IN ('FUNCTION', 'PROCEDURE')
+		ORDER BY OWNER, TABLE_NAME`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER = '%s' AND COMMENTS IS NOT NULL
+		AND TABLE_TYPE IN ('FUNCTION', 'PROCEDURE')
+		ORDER BY TABLE_NAME`, schemaName)
+	}
+
+	slog.Debug("running get function comments query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		// If the query fails (e.g., TABLE_TYPE for functions not supported), return empty map
+		slog.Debug("function comments query failed, returning empty map", slog.String("error", err.Error()))
+		return functionCommentMap, nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, functionName, comment string
+		if err := rows.Scan(&schemaName, &functionName, &comment); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: schemaName, Table: functionName}
+		functionCommentMap[key] = comment
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return functionCommentMap, nil
+}
+
+// getIndexComments gets comments for indexes from Oracle system views
+func getIndexComments(_ *sql.Tx, schemaName string) (map[db.IndexKey]string, error) {
+	indexCommentMap := make(map[db.IndexKey]string)
+
+	// Oracle doesn't have a dedicated index comments view in all versions
+	// We need to join ALL_INDEXES with ALL_TAB_COMMENTS to get index comments
+	// However, Oracle stores index comments differently depending on the version
+	// For now, return empty map since Oracle index comments are not consistently available
+	slog.Debug("Oracle index comments not implemented - returning empty map", "schema", schemaName)
+	return indexCommentMap, nil
+}
+
+// getMaterializedViewComments gets comments for materialized views from Oracle system views
+func getMaterializedViewComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, error) {
+	materializedViewCommentMap := make(map[db.TableKey]string)
+
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
+		SELECT OWNER, MVIEW_NAME, COMMENTS
+		FROM all_mview_comments
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COMMENTS IS NOT NULL
+		ORDER BY OWNER, MVIEW_NAME`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, MVIEW_NAME, COMMENTS
+		FROM all_mview_comments
+		WHERE OWNER = '%s' AND COMMENTS IS NOT NULL
+		ORDER BY MVIEW_NAME`, schemaName)
+	}
+
+	slog.Debug("running get materialized view comments query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		// If the view doesn't exist, return empty map
+		slog.Debug("materialized view comments query failed, returning empty map", slog.String("error", err.Error()))
+		return materializedViewCommentMap, nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, mvName, comment string
+		if err := rows.Scan(&schemaName, &mvName, &comment); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: schemaName, Table: mvName}
+		materializedViewCommentMap[key] = comment
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return materializedViewCommentMap, nil
+}
+
+// getTriggerComments gets comments for triggers from Oracle system views
+func getTriggerComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, error) {
+	triggerCommentMap := make(map[db.TableKey]string)
+
+	// Oracle doesn't have a standard trigger comments view
+	// Trigger comments might be stored in ALL_TAB_COMMENTS with TABLE_TYPE = 'TRIGGER'
+	// or in some Oracle versions, they might not be available at all
+	query := ""
+	if schemaName == "" {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND COMMENTS IS NOT NULL
+		AND TABLE_TYPE = 'TRIGGER'
+		ORDER BY OWNER, TABLE_NAME`, systemSchema)
+	} else {
+		query = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, COMMENTS
+		FROM all_tab_comments
+		WHERE OWNER = '%s' AND COMMENTS IS NOT NULL
+		AND TABLE_TYPE = 'TRIGGER'
+		ORDER BY TABLE_NAME`, schemaName)
+	}
+
+	slog.Debug("running get trigger comments query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		// If the query fails (e.g., TABLE_TYPE = 'TRIGGER' not supported), return empty map
+		slog.Debug("trigger comments query failed, returning empty map", slog.String("error", err.Error()))
+		return triggerCommentMap, nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, triggerName, comment string
+		if err := rows.Scan(&schemaName, &triggerName, &comment); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: schemaName, Table: triggerName}
+		triggerCommentMap[key] = comment
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
+	return triggerCommentMap, nil
 }

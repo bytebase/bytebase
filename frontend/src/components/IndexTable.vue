@@ -20,8 +20,8 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import type { IndexMetadata } from "@/types/proto/v1/database_service";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { IndexMetadata } from "@/types/proto-es/v1/database_service_pb";
 
 const props = defineProps({
   database: {
@@ -36,13 +36,12 @@ const props = defineProps({
 
 const { t } = useI18n();
 const showVisibleColumn = computed(() => {
-  return (
-    props.database.instanceResource.engine !== Engine.POSTGRES &&
-    props.database.instanceResource.engine !== Engine.MONGODB
-  );
+  const engine = props.database.instanceResource.engine;
+  return engine !== Engine.POSTGRES && engine !== Engine.MONGODB;
 });
 const showCommentColumn = computed(() => {
-  return props.database.instanceResource.engine !== Engine.MONGODB;
+  const engine = props.database.instanceResource.engine;
+  return engine !== Engine.MONGODB;
 });
 const columns = computed((): DataTableColumn<IndexMetadata>[] => {
   const cols: DataTableColumn<IndexMetadata>[] = [

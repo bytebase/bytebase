@@ -1,13 +1,21 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { changelistServiceClient } from "@/grpcweb";
+import { changelistServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import type {
   Changelist,
   Changelist_Change as Change,
   CreateChangelistRequest,
-  DeepPartial,
   ListChangelistsRequest,
-} from "@/types/proto/v1/changelist_service";
+} from "@/types/proto-es/v1/changelist_service_pb";
+import {
+  GetChangelistRequestSchema,
+  ListChangelistsRequestSchema,
+  UpdateChangelistRequestSchema,
+  DeleteChangelistRequestSchema,
+} from "@/types/proto-es/v1/changelist_service_pb";
 import { ResourceComposer, isChangelogChangeSource } from "@/utils";
 import { useUserStore } from "../user";
 import { useChangelogStore } from "./changelog";
@@ -37,9 +45,10 @@ export const useChangelistStore = defineStore("changelist", () => {
   };
 
   const fetchChangelistByName = async (name: string, silent = false) => {
-    const changelist = await changelistServiceClient.getChangelist(
-      { name },
-      { silent }
+    const request = create(GetChangelistRequestSchema, { name });
+    const changelist = await changelistServiceClientConnect.getChangelist(
+      request,
+      { contextValues: createContextValues().set(silentContextKey, silent) }
     );
     await upsertChangelistMap([changelist], true /* compose */);
     return changelist;
@@ -55,35 +64,37 @@ export const useChangelistStore = defineStore("changelist", () => {
   };
 
   const createChangelist = async (request: CreateChangelistRequest) => {
-    const created = await changelistServiceClient.createChangelist(request);
+    const created =
+      await changelistServiceClientConnect.createChangelist(request);
     await upsertChangelistMap([created], true /* compose */);
     return created;
   };
 
-  const fetchChangelists = async (
-    request: DeepPartial<ListChangelistsRequest>
-  ) => {
-    const response = await changelistServiceClient.listChangelists(request);
+  const fetchChangelists = async (request: Partial<ListChangelistsRequest>) => {
+    const connectRequest = create(ListChangelistsRequestSchema, request as any);
+    const response =
+      await changelistServiceClientConnect.listChangelists(connectRequest);
     await upsertChangelistMap(response.changelists, false /* !compose */);
     return response;
   };
 
   const patchChangelist = async (
-    changelist: DeepPartial<Changelist>,
+    changelist: Changelist,
     updateMask: string[]
   ) => {
-    const updated = await changelistServiceClient.updateChangelist({
-      changelist,
-      updateMask,
+    const connectRequest = create(UpdateChangelistRequestSchema, {
+      changelist: changelist,
+      updateMask: { paths: updateMask },
     });
+    const updated =
+      await changelistServiceClientConnect.updateChangelist(connectRequest);
     await upsertChangelistMap([updated], true /* compose */);
     return updated;
   };
 
   const deleteChangelist = async (name: string) => {
-    await changelistServiceClient.deleteChangelist({
-      name,
-    });
+    const connectRequest = create(DeleteChangelistRequestSchema, { name });
+    await changelistServiceClientConnect.deleteChangelist(connectRequest);
     changelistMapByName.delete(name);
   };
 

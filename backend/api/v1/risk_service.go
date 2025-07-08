@@ -4,19 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // RiskService implements the risk service.
 type RiskService struct {
-	v1pb.UnimplementedRiskServiceServer
+	v1connect.UnimplementedRiskServiceHandler
 	store          *store.Store
 	licenseService *enterprise.LicenseService
 }
@@ -29,7 +30,7 @@ func NewRiskService(store *store.Store, licenseService *enterprise.LicenseServic
 	}
 }
 
-func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
+func convertToRisk(risk *store.RiskMessage) *v1pb.Risk {
 	return &v1pb.Risk{
 		Name:      fmt.Sprintf("%s%v", common.RiskPrefix, risk.ID),
 		Source:    ConvertToV1Source(risk.Source),
@@ -37,87 +38,86 @@ func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
 		Level:     risk.Level,
 		Condition: risk.Expression,
 		Active:    risk.Active,
-	}, nil
+	}
 }
 
 // ListRisks lists risks.
-func (s *RiskService) ListRisks(ctx context.Context, _ *v1pb.ListRisksRequest) (*v1pb.ListRisksResponse, error) {
+func (s *RiskService) ListRisks(ctx context.Context, _ *connect.Request[v1pb.ListRisksRequest]) (*connect.Response[v1pb.ListRisksResponse], error) {
 	risks, err := s.store.ListRisks(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	response := &v1pb.ListRisksResponse{}
 	for _, risk := range risks {
-		r, err := convertToRisk(risk)
-		if err != nil {
-			return nil, err
-		}
+		r := convertToRisk(risk)
 		response.Risks = append(response.Risks, r)
 	}
-	return response, nil
+	return connect.NewResponse(response), nil
 }
 
 // GetRisk gets the risk.
-func (s *RiskService) GetRisk(ctx context.Context, request *v1pb.GetRiskRequest) (*v1pb.Risk, error) {
-	risk, err := s.getRiskByName(ctx, request.Name)
+func (s *RiskService) GetRisk(ctx context.Context, request *connect.Request[v1pb.GetRiskRequest]) (*connect.Response[v1pb.Risk], error) {
+	risk, err := s.getRiskByName(ctx, request.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
-	return convertToRisk(risk)
+	r := convertToRisk(risk)
+	return connect.NewResponse(r), nil
 }
 
 // CreateRisk creates a risk.
-func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRequest) (*v1pb.Risk, error) {
+func (s *RiskService) CreateRisk(ctx context.Context, request *connect.Request[v1pb.CreateRiskRequest]) (*connect.Response[v1pb.Risk], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RISK_ASSESSMENT); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	// Validate the condition.
-	if _, err := common.ConvertUnparsedRisk(request.Risk.Condition); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
+	if _, err := common.ConvertUnparsedRisk(request.Msg.Risk.Condition); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate risk expression"))
 	}
 
 	risk, err := s.store.CreateRisk(ctx, &store.RiskMessage{
-		Source:     convertToSource(request.Risk.Source),
-		Level:      request.Risk.Level,
-		Name:       request.Risk.Title,
-		Active:     request.Risk.Active,
-		Expression: request.Risk.Condition,
+		Source:     convertToSource(request.Msg.Risk.Source),
+		Level:      request.Msg.Risk.Level,
+		Name:       request.Msg.Risk.Title,
+		Active:     request.Msg.Risk.Active,
+		Expression: request.Msg.Risk.Condition,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	return convertToRisk(risk)
+	r := convertToRisk(risk)
+	return connect.NewResponse(r), nil
 }
 
 // UpdateRisk updates a risk.
-func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRequest) (*v1pb.Risk, error) {
+func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v1pb.UpdateRiskRequest]) (*connect.Response[v1pb.Risk], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RISK_ASSESSMENT); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
-	if request.UpdateMask == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	if request.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must be set"))
 	}
-	risk, err := s.getRiskByName(ctx, request.Risk.Name)
+	risk, err := s.getRiskByName(ctx, request.Msg.Risk.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	patch := &store.UpdateRiskMessage{}
-	for _, path := range request.UpdateMask.Paths {
+	for _, path := range request.Msg.UpdateMask.Paths {
 		switch path {
 		case "title":
-			patch.Name = &request.Risk.Title
+			patch.Name = &request.Msg.Risk.Title
 		case "active":
-			patch.Active = &request.Risk.Active
+			patch.Active = &request.Msg.Risk.Active
 		case "level":
-			patch.Level = &request.Risk.Level
+			patch.Level = &request.Msg.Risk.Level
 		case "condition":
-			if _, err := common.ConvertUnparsedRisk(request.Risk.Condition); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
+			if _, err := common.ConvertUnparsedRisk(request.Msg.Risk.Condition); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate risk expression"))
 			}
-			patch.Expression = request.Risk.Condition
+			patch.Expression = request.Msg.Risk.Condition
 		case "source":
-			source := convertToSource(request.Risk.Source)
+			source := convertToSource(request.Msg.Risk.Source)
 			if risk.Source != source {
 				patch.Source = &source
 			}
@@ -126,37 +126,38 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 
 	risk, err = s.store.UpdateRisk(ctx, patch, risk.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return convertToRisk(risk)
+	r := convertToRisk(risk)
+	return connect.NewResponse(r), nil
 }
 
 // DeleteRisk deletes a risk.
-func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRequest) (*emptypb.Empty, error) {
-	riskID, err := common.GetRiskID(request.Name)
+func (s *RiskService) DeleteRisk(ctx context.Context, request *connect.Request[v1pb.DeleteRiskRequest]) (*connect.Response[emptypb.Empty], error) {
+	riskID, err := common.GetRiskID(request.Msg.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	if err := s.store.DeleteRisk(ctx, riskID); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return &emptypb.Empty{}, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 func (s *RiskService) getRiskByName(ctx context.Context, name string) (*store.RiskMessage, error) {
 	riskID, err := common.GetRiskID(name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	risk, err := s.store.GetRisk(ctx, riskID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get risk, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get risk"))
 	}
 	if risk == nil {
-		return nil, status.Errorf(codes.NotFound, "risk %v not found", name)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("risk %v not found", name))
 	}
 	return risk, nil
 }

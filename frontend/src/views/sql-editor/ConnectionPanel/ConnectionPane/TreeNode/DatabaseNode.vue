@@ -1,19 +1,21 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <LinkIcon v-if="connected" class="w-4 textinfolabel" />
+    <LinkIcon
+      v-if="tabStore.currentTab?.connection.database === database.name"
+      class="w-4 textinfolabel"
+    />
     <NCheckbox
-      v-else-if="!disallowBatchQuery && canQuery"
+      v-else-if="canQuery"
       :checked="checked"
-      :disabled="tabStore.currentTab?.connection.database === database.name"
       @click.stop.prevent=""
       @update:checked="$emit('update:checked', $event)"
     />
 
     <RichDatabaseName
       :database="database"
-      :show-instance="!hasInstanceContext"
-      :show-engine-icon="!hasInstanceContext"
-      :show-environment="showEnvironment"
+      :show-instance="true"
+      :show-engine-icon="true"
+      :show-environment="false"
       :show-arrow="true"
       :keyword="keyword"
     />
@@ -37,16 +39,12 @@ import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useAppFeature, useSQLEditorTabStore } from "@/store";
-import type {
-  SQLEditorTreeNode as TreeNode,
-  SQLEditorTreeFactor as Factor,
-} from "@/types";
+import type { SQLEditorTreeNode as TreeNode } from "@/types";
 import { isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
 
 const props = defineProps<{
   node: TreeNode;
-  factors: Factor[];
   keyword: string;
   connected?: boolean;
   checked?: boolean;
@@ -58,15 +56,8 @@ defineEmits<{
 
 const tabStore = useSQLEditorTabStore();
 
-const disallowBatchQuery = useAppFeature(
-  "bb.feature.sql-editor.disallow-batch-query"
-);
-
 const disallowRequestQuery = useAppFeature(
   "bb.feature.sql-editor.disallow-request-query"
-);
-const hideEnvironments = useAppFeature(
-  "bb.feature.sql-editor.hide-environments"
 );
 
 const database = computed(
@@ -76,36 +67,6 @@ const database = computed(
 const canQuery = computed(() => isDatabaseV1Queryable(database.value));
 
 const showRequestQueryButton = computed(() => {
-  return (
-    !disallowRequestQuery.value &&
-    !canQuery.value
-  );
-});
-
-const hasInstanceContext = computed(() => {
-  return props.factors.includes("instance");
-});
-
-const hasEnvironmentContext = computed(() => {
-  return props.factors.includes("environment");
-});
-
-const showEnvironment = computed(() => {
-  // Don't show environment tag anyway if disabled via appFeature
-  if (hideEnvironments.value) {
-    return false;
-  }
-  // If we don't have "environment" factor in the custom tree structure
-  // we should indicate the database's environment
-  if (!hasEnvironmentContext.value) {
-    return true;
-  }
-  // If we have "environment" factor in the custom tree structure
-  // only show the environment tag when a database's effectiveEnvironment is
-  // not equal to it's physical instance's environment
-  return (
-    database.value.effectiveEnvironment !==
-    database.value.instanceResource.environment
-  );
+  return !disallowRequestQuery.value && !canQuery.value;
 });
 </script>

@@ -12,7 +12,7 @@
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { GlobalMaskingRulesView } from "@/components/SensitiveData";
 import { featureToRef } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 defineProps<{
   embedded?: boolean;

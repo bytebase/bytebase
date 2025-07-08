@@ -177,8 +177,8 @@ export declare type SearchWorksheetsRequest = Message<"bytebase.v1.SearchWorkshe
    * creator != "users/{email}"
    * starred == true
    * starred == false
-   * visibility in ["VISIBILITY_PRIVATE", "VISIBILITY_PROJECT_READ", "VISIBILITY_PROJECT_WRITE"]
-   * visibility == "VISIBILITY_PRIVATE"
+   * visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
+   * visibility == "PRIVATE"
    *
    * @generated from field: string filter = 1;
    */
@@ -341,26 +341,26 @@ export enum Worksheet_Visibility {
   /**
    * @generated from enum value: VISIBILITY_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  VISIBILITY_UNSPECIFIED = 0,
 
   /**
    * Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read.
    *
-   * @generated from enum value: VISIBILITY_PROJECT_READ = 1;
+   * @generated from enum value: PROJECT_READ = 1;
    */
   PROJECT_READ = 1,
 
   /**
    * Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet.
    *
-   * @generated from enum value: VISIBILITY_PROJECT_WRITE = 2;
+   * @generated from enum value: PROJECT_WRITE = 2;
    */
   PROJECT_WRITE = 2,
 
   /**
    * Private, only worksheet OWNER can read/write.
    *
-   * @generated from enum value: VISIBILITY_PRIVATE = 3;
+   * @generated from enum value: PRIVATE = 3;
    */
   PRIVATE = 3,
 }
@@ -376,6 +376,7 @@ export declare const Worksheet_VisibilitySchema: GenEnum<Worksheet_Visibility>;
 export declare const WorksheetService: GenService<{
   /**
    * Create a personal worksheet used in SQL Editor.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.WorksheetService.CreateWorksheet
    */
@@ -390,6 +391,7 @@ export declare const WorksheetService: GenService<{
    * - they are the creator of the worksheet;
    * - they have bb.worksheets.get permission on the workspace;
    * - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.WorksheetService.GetWorksheet
    */
@@ -402,6 +404,7 @@ export declare const WorksheetService: GenService<{
    * Search for worksheets.
    * This is used for finding my worksheets or worksheets shared by other people.
    * The sheet accessibility is the same as GetWorksheet().
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.WorksheetService.SearchWorksheets
    */
@@ -416,6 +419,7 @@ export declare const WorksheetService: GenService<{
    * - they are the creator of the worksheet;
    * - they have bb.worksheets.manage permission on the workspace;
    * - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.WorksheetService.UpdateWorksheet
    */
@@ -427,6 +431,7 @@ export declare const WorksheetService: GenService<{
   /**
    * Update the organizer of a worksheet.
    * The access is the same as UpdateWorksheet method.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.WorksheetService.UpdateWorksheetOrganizer
    */
@@ -438,6 +443,7 @@ export declare const WorksheetService: GenService<{
   /**
    * Delete a worksheet.
    * The access is the same as UpdateWorksheet method.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.WorksheetService.DeleteWorksheet
    */

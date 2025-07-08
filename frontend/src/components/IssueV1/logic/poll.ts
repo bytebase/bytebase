@@ -1,4 +1,5 @@
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
+import { isEqual } from "lodash-es";
+import { watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import {
   experimentalFetchIssueByUID,
@@ -8,11 +9,10 @@ import {
 } from "@/store";
 import { useListCache } from "@/store/modules/v1/cache";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { databaseForTask } from "@/utils";
 import { extractIssueUID, flattenTaskV1List } from "@/utils";
-import { isEqual } from "lodash-es";
-import { watch } from "vue";
 import { useIssueContext } from "./context";
 import { projectOfIssue } from "./utils";
 
@@ -33,7 +33,6 @@ const clearCache = (issue: ComposedIssue) => {
           });
         break;
       case Task_Type.DATABASE_EXPORT:
-      case Task_Type.UNRECOGNIZED:
       case Task_Type.TYPE_UNSPECIFIED:
         continue;
       case Task_Type.DATABASE_DATA_UPDATE:

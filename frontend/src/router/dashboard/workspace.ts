@@ -1,7 +1,7 @@
-import DummyRootView from "@/DummyRootView";
-import { t } from "@/plugins/i18n";
 import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
+import DummyRootView from "@/DummyRootView";
+import { t } from "@/plugins/i18n";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -22,11 +22,10 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-  WORKSPACE_ROUTE_SSO,
-  WORKSPACE_ROUTE_SSO_CREATE,
-  WORKSPACE_ROUTE_SSO_DETAIL,
+  WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
+  WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
   WORKSPACE_ROUTE_USER_PROFILE,
-  WORKSPACE_ROUTE_USERS
+  WORKSPACE_ROUTE_USERS,
 } from "./workspaceRoutes";
 
 const rootRoute: RouteRecordRaw = {
@@ -179,7 +178,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     ],
   },
   {
-    path: "sso",
+    path: "idps",
     meta: {
       title: () => t("settings.sidebar.sso"),
     },
@@ -194,23 +193,15 @@ const workspaceRoutes: RouteRecordRaw[] = [
     children: [
       {
         path: "",
-        name: WORKSPACE_ROUTE_SSO,
+        name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
         meta: {
           requiredPermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceSSO.vue"),
       },
       {
-        path: "new",
-        name: WORKSPACE_ROUTE_SSO_CREATE,
-        meta: {
-          requiredPermissionList: () => ["bb.identityProviders.create"],
-        },
-        component: () => import("@/views/SettingWorkspaceSSODetail.vue"),
-      },
-      {
-        path: ":ssoId",
-        name: WORKSPACE_ROUTE_SSO_DETAIL,
+        path: ":idpId",
+        name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
         meta: {
           requiredPermissionList: () => ["bb.identityProviders.get"],
         },

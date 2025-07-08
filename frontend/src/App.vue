@@ -25,14 +25,13 @@
 </template>
 
 <script lang="ts" setup>
+import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
 import {
   NConfigProvider,
   NDialogProvider,
   NNotificationProvider,
 } from "naive-ui";
-import { ServerError } from "nice-grpc-common";
-import { ClientError, Status } from "nice-grpc-web";
 import { onErrorCaptured, watchEffect } from "vue";
 import { watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -61,14 +60,14 @@ watchEffect(async () => {
 });
 
 onErrorCaptured((error: any /* , _, info */) => {
-  // Handle grpc request error.
-  // It looks like: `{"path":"/bytebase.v1.AuthService/Login","code":2,"details":"Response closed without headers"}`
   if (
-    (error instanceof ServerError || error instanceof ClientError) &&
-    Object.values(Status).includes(error.code)
+    error instanceof ConnectError &&
+    Object.values(Code).includes(error.code)
   ) {
-    // Ignored: we will handle request errors in the error handler middleware of nice-grpc-web.
-  } else if (!error.response) {
+    return;
+  }
+
+  if (!error.response) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",

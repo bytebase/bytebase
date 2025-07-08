@@ -66,18 +66,20 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NInput, NButton } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
   useCurrentUserV1,
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
-import { Plan } from "@/types/proto/v1/plan_service";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../logic";
 
@@ -135,15 +137,16 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     state.isUpdating = true;
-    const planPatch = Plan.fromPartial({
+    const planPatch = create(PlanSchema, {
       ...plan.value,
       description: state.description,
     });
-    const updated = await planServiceClient.updatePlan({
+    const request = create(UpdatePlanRequestSchema, {
       plan: planPatch,
-      updateMask: ["description"],
+      updateMask: { paths: ["description"] },
     });
-    Object.assign(plan.value, updated);
+    const response = await planServiceClientConnect.updatePlan(request);
+    Object.assign(plan.value, response);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

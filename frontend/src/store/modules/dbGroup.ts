@@ -1,9 +1,12 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { computedAsync } from "@vueuse/core";
 import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import type { MaybeRef } from "vue";
 import { computed, ref, unref, watch, watchEffect } from "vue";
-import { databaseGroupServiceClient } from "@/grpcweb";
+import { databaseGroupServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   buildCELExpr,
@@ -16,11 +19,20 @@ import type {
   ComposedDatabaseGroup,
   ComposedProject,
 } from "@/types";
-import { Expr } from "@/types/proto/google/type/expr";
-import {
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import type {
   DatabaseGroup,
   DatabaseGroupView,
-} from "@/types/proto/v1/database_group_service";
+} from "@/types/proto-es/v1/database_group_service_pb";
+import {
+  CreateDatabaseGroupRequestSchema,
+  DeleteDatabaseGroupRequestSchema,
+  GetDatabaseGroupRequestSchema,
+  ListDatabaseGroupsRequestSchema,
+  UpdateDatabaseGroupRequestSchema,
+  DatabaseGroupView as DatabaseGroupViewEnum,
+  DatabaseGroupSchema,
+} from "@/types/proto-es/v1/database_group_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
@@ -98,10 +110,10 @@ export const useDBGroupStore = defineStore("db-group", () => {
     databaseGroup: ComposedDatabaseGroup,
     view: DatabaseGroupView
   ) => {
-    if (view === DatabaseGroupView.DATABASE_GROUP_VIEW_FULL) {
+    if (view === DatabaseGroupViewEnum.FULL) {
       cacheByName.invalidateEntity([
         databaseGroup.name,
-        DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC,
+        DatabaseGroupViewEnum.BASIC,
       ]);
     }
     cacheByName.setEntity([databaseGroup.name, view], databaseGroup);
@@ -119,7 +131,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       ...{
         skipCache: false,
         silent: false,
-        view: DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC,
+        view: DatabaseGroupViewEnum.BASIC,
       },
       ...options,
     };
@@ -128,13 +140,14 @@ export const useDBGroupStore = defineStore("db-group", () => {
       if (cached) return cached;
     }
 
-    const databaseGroup = await databaseGroupServiceClient.getDatabaseGroup(
-      {
-        name,
-        view,
-      },
-      { silent }
-    );
+    const request = create(GetDatabaseGroupRequestSchema, {
+      name,
+      view,
+    });
+    const databaseGroup =
+      await databaseGroupServiceClientConnect.getDatabaseGroup(request, {
+        contextValues: createContextValues().set(silentContextKey, silent),
+      });
     const composedData = await batchComposeDatabaseGroup([databaseGroup]);
     const response = composedData[0];
     setDatabaseGroupCache(response, view);
@@ -142,18 +155,16 @@ export const useDBGroupStore = defineStore("db-group", () => {
   };
 
   const fetchDBGroupListByProjectName = async (projectName: string) => {
+    const request = create(ListDatabaseGroupsRequestSchema, {
+      parent: projectName,
+    });
     const { databaseGroups } =
-      await databaseGroupServiceClient.listDatabaseGroups({
-        parent: projectName,
-      });
+      await databaseGroupServiceClientConnect.listDatabaseGroups(request);
     const composedList = [];
     const composeDatabaseGroups =
       await batchComposeDatabaseGroup(databaseGroups);
     for (const composedData of composeDatabaseGroups) {
-      setDatabaseGroupCache(
-        composedData,
-        DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC
-      );
+      setDatabaseGroupCache(composedData, DatabaseGroupViewEnum.BASIC);
       composedList.push(composedData);
     }
     return composedList;
@@ -165,14 +176,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
   ): ComposedDatabaseGroup | undefined => {
     if (!view) {
       return (
-        cacheByName.getEntity([
-          name,
-          DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
-        ]) ??
-        cacheByName.getEntity([
-          name,
-          DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC,
-        ])
+        cacheByName.getEntity([name, DatabaseGroupViewEnum.FULL]) ??
+        cacheByName.getEntity([name, DatabaseGroupViewEnum.BASIC])
       );
     }
     return cacheByName.getEntity([name, view]);
@@ -185,30 +190,38 @@ export const useDBGroupStore = defineStore("db-group", () => {
     validateOnly = false,
   }: {
     projectName: string;
-    databaseGroup: Pick<DatabaseGroup, "name" | "title" | "databaseExpr">;
+    databaseGroup: Pick<
+      DatabaseGroup,
+      "$typeName" | "name" | "title" | "databaseExpr"
+    >;
     databaseGroupId: string;
     validateOnly?: boolean;
   }) => {
+    const newDatabaseGroup = create(DatabaseGroupSchema, {
+      name: databaseGroup.name,
+      title: databaseGroup.title,
+      databaseExpr: databaseGroup.databaseExpr,
+      matchedDatabases: [],
+      unmatchedDatabases: [],
+    });
+    const request = create(CreateDatabaseGroupRequestSchema, {
+      parent: projectName,
+      databaseGroup: newDatabaseGroup,
+      databaseGroupId,
+      validateOnly,
+    });
     const createdDatabaseGroup =
-      await databaseGroupServiceClient.createDatabaseGroup(
-        {
-          parent: projectName,
-          databaseGroup,
-          databaseGroupId,
-          validateOnly,
-        },
-        {
-          silent: validateOnly,
-        }
-      );
+      await databaseGroupServiceClientConnect.createDatabaseGroup(request, {
+        contextValues: createContextValues().set(
+          silentContextKey,
+          validateOnly
+        ),
+      });
     if (!validateOnly) {
       const composedData = await batchComposeDatabaseGroup([
         createdDatabaseGroup,
       ]);
-      setDatabaseGroupCache(
-        composedData[0],
-        DatabaseGroupView.DATABASE_GROUP_VIEW_FULL
-      );
+      setDatabaseGroupCache(composedData[0], DatabaseGroupViewEnum.FULL);
     }
     return createdDatabaseGroup;
   };
@@ -217,33 +230,26 @@ export const useDBGroupStore = defineStore("db-group", () => {
     databaseGroup: DatabaseGroup,
     updateMask: string[]
   ) => {
+    const request = create(UpdateDatabaseGroupRequestSchema, {
+      databaseGroup,
+      updateMask: { paths: updateMask },
+    });
     const updatedDatabaseGroup =
-      await databaseGroupServiceClient.updateDatabaseGroup({
-        databaseGroup,
-        updateMask,
-      });
+      await databaseGroupServiceClientConnect.updateDatabaseGroup(request);
     const composedData = await batchComposeDatabaseGroup([
       updatedDatabaseGroup,
     ]);
-    setDatabaseGroupCache(
-      composedData[0],
-      DatabaseGroupView.DATABASE_GROUP_VIEW_FULL
-    );
+    setDatabaseGroupCache(composedData[0], DatabaseGroupViewEnum.FULL);
     return updatedDatabaseGroup;
   };
 
   const deleteDatabaseGroup = async (name: string) => {
-    await databaseGroupServiceClient.deleteDatabaseGroup({
+    const request = create(DeleteDatabaseGroupRequestSchema, {
       name: name,
     });
-    cacheByName.invalidateEntity([
-      name,
-      DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
-    ]);
-    cacheByName.invalidateEntity([
-      name,
-      DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC,
-    ]);
+    await databaseGroupServiceClientConnect.deleteDatabaseGroup(request);
+    cacheByName.invalidateEntity([name, DatabaseGroupViewEnum.FULL]);
+    cacheByName.invalidateEntity([name, DatabaseGroupViewEnum.BASIC]);
   };
 
   const fetchDatabaseGroupMatchList = async ({
@@ -266,10 +272,10 @@ export const useDBGroupStore = defineStore("db-group", () => {
 
     const result = await createDatabaseGroup({
       projectName: projectName,
-      databaseGroup: DatabaseGroup.fromPartial({
+      databaseGroup: create(DatabaseGroupSchema, {
         name: `${projectName}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
         title: validateOnlyResourceId,
-        databaseExpr: Expr.fromPartial({
+        databaseExpr: create(ExprSchema, {
           expression,
         }),
       }),
@@ -319,15 +325,20 @@ export const useDatabaseInGroupFilter = (
 
   const databaseGroups = computedAsync(
     async () => {
-      const response = await databaseGroupServiceClient.listDatabaseGroups({
+      const request = create(ListDatabaseGroupsRequestSchema, {
         parent: unref(project).name,
       });
+      const response =
+        await databaseGroupServiceClientConnect.listDatabaseGroups(request);
       return Promise.all(
-        response.databaseGroups.map((group) => {
-          return databaseGroupServiceClient.getDatabaseGroup({
+        response.databaseGroups.map(async (group) => {
+          const getRequest = create(GetDatabaseGroupRequestSchema, {
             name: group.name,
-            view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+            view: DatabaseGroupViewEnum.FULL,
           });
+          return await databaseGroupServiceClientConnect.getDatabaseGroup(
+            getRequest
+          );
         })
       );
     },

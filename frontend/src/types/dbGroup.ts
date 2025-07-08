@@ -1,7 +1,7 @@
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { UNKNOWN_ID, type ComposedProject } from "@/types";
 import { extractDatabaseGroupName } from "@/utils";
-import type { DatabaseGroup } from "./proto/v1/database_group_service";
+import type { DatabaseGroup } from "./proto-es/v1/database_group_service_pb";
 
 export interface ComposedDatabaseGroup extends DatabaseGroup {
   projectName: string;

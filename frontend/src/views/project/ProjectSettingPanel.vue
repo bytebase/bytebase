@@ -8,7 +8,7 @@ import ProjectSettingPanel from "@/components/ProjectSettingPanel.vue";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { usePolicyV1Store, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 
 const props = defineProps<{
   projectId: string;

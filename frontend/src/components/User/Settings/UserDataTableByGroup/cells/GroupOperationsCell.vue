@@ -25,8 +25,8 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
-import type { Group } from "@/types/proto/v1/group_service";
-import { GroupMember_Role } from "@/types/proto/v1/group_service";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
+import { GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import RemoveGroupButton from "../../RemoveGroupButton.vue";
 

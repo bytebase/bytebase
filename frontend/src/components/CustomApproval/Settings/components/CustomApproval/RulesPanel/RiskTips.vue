@@ -5,10 +5,7 @@
     keypath="custom-approval.approval-flow.risk-not-configured-tips"
   >
     <template #link>
-      <router-link
-        :to="{ name: WORKSPACE_ROUTE_RISKS }"
-        class="normal-link"
-      >
+      <router-link :to="{ name: WORKSPACE_ROUTE_RISKS }" class="normal-link">
         {{ $t("custom-approval.approval-flow.the-related-risk-rules") }}
       </router-link>
     </template>
@@ -20,7 +17,7 @@ import { computed } from "vue";
 import { WORKSPACE_ROUTE_RISKS } from "@/router/dashboard/workspaceRoutes";
 import { useRiskStore } from "@/store";
 import { DEFAULT_RISK_LEVEL } from "@/types";
-import type { Risk_Source } from "@/types/proto/v1/risk_service";
+import type { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 
 const props = defineProps<{
   level: number;

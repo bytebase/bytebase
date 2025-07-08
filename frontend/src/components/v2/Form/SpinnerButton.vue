@@ -27,15 +27,15 @@ defineComponent({
 </script>
 
 <script lang="ts" setup>
-import { computed, ref, useAttrs } from "vue";
 import { omit } from "lodash-es";
-import type { VueClass } from "@/utils";
 import {
   type ButtonProps,
   type PopconfirmProps,
   NButton,
   NPopconfirm,
 } from "naive-ui";
+import { computed, ref, useAttrs } from "vue";
+import type { VueClass } from "@/utils";
 
 export interface SpinnerButtonProps extends /* @vue-ignore */ ButtonProps {
   onConfirm: () => Promise<any>;

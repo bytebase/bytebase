@@ -105,6 +105,14 @@
       payload:
         type: STRING
         default: _del$
+  engine: REDSHIFT
+- type: table.drop-naming-convention
+  category: TABLE
+  componentList:
+    - key: format
+      payload:
+        type: STRING
+        default: _del$
   engine: MSSQL
 - type: table.drop-naming-convention
   category: TABLE

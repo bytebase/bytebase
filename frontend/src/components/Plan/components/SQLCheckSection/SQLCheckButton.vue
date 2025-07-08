@@ -48,6 +48,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { asyncComputed } from "@vueuse/core";
 import { NButton, NPopover } from "naive-ui";
 import { computed, ref } from "vue";
@@ -56,12 +57,18 @@ import { BBSpin } from "@/bbkit";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { releaseServiceClient } from "@/grpcweb";
+import { releaseServiceClientConnect } from "@/grpcweb";
+import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_pb";
 import {
-  CheckReleaseResponse,
+  CheckReleaseRequestSchema,
+  CheckReleaseResponseSchema,
   ReleaseFileType,
-} from "@/types/proto/v1/release_service";
-import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+} from "@/types/proto-es/v1/release_service_pb";
+import {
+  AdviceSchema,
+  Advice_Status as ProtoESAdvice_Status,
+} from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import { useSpecSheet } from "../StatementSection/useSpecSheet";
@@ -107,7 +114,7 @@ const statementErrors = asyncComputed(async () => {
 }, []);
 
 const runCheckInternal = async (statement: string) => {
-  const result = await releaseServiceClient.checkRelease({
+  const request = create(CheckReleaseRequestSchema, {
     parent: project.value.name,
     release: {
       files: [
@@ -122,7 +129,8 @@ const runCheckInternal = async (statement: string) => {
     },
     targets: [database.value.name],
   });
-  return result;
+  const response = await releaseServiceClientConnect.checkRelease(request);
+  return response;
 };
 
 const handleButtonClick = async () => {
@@ -143,13 +151,13 @@ const runChecks = async () => {
 
   const handleErrors = (errors: string[]) => {
     // Mock the pre-check errors to advices.
-    checkResult.value = CheckReleaseResponse.fromPartial({
+    checkResult.value = create(CheckReleaseResponseSchema, {
       results: [
         {
           advices: errors.map((err) =>
-            Advice.fromPartial({
+            create(AdviceSchema, {
               title: "Pre check",
-              status: Advice_Status.WARNING,
+              status: ProtoESAdvice_Status.WARNING,
               content: err,
             })
           ),

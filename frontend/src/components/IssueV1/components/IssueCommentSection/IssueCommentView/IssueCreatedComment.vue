@@ -12,7 +12,7 @@
             <div
               class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
             >
-              <heroicons-solid:plus-sm class="w-5 h-5 text-control" />
+              <PlusIcon class="w-5 h-5 text-control" />
             </div>
           </div>
         </div>
@@ -23,7 +23,7 @@
               <ActionCreator :creator="issue.creator" />
               <span>{{ $t("activity.sentence.created-issue") }}</span>
               <HumanizeTs
-                :ts="getTimeForPbTimestamp(issue.createTime, 0) / 1000"
+                :ts="getTimeForPbTimestampProtoEs(issue.createTime, 0) / 1000"
                 class="ml-1 text-gray-400"
               />
             </div>
@@ -35,8 +35,9 @@
 </template>
 
 <script lang="ts" setup>
+import { PlusIcon } from "lucide-vue-next";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
+import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
 import ActionCreator from "./ActionCreator.vue";
 import type { DistinctIssueComment } from "./common";
 

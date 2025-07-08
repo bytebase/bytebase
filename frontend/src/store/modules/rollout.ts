@@ -1,10 +1,17 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
-import { rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import type { MaybeRef, Pagination, ComposedRollout } from "@/types";
 import { isValidRolloutName, unknownRollout, unknownUser } from "@/types";
-import type { Rollout } from "@/types/proto/v1/rollout_service";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  GetRolloutRequestSchema,
+  ListRolloutsRequestSchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { useUserStore } from "./user";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";
@@ -21,11 +28,12 @@ export const useRolloutStore = defineStore("rollout", () => {
     project: string,
     pagination?: Pagination
   ) => {
-    const resp = await rolloutServiceClient.listRollouts({
+    const request = create(ListRolloutsRequestSchema, {
       parent: project,
       pageSize: pagination?.pageSize || DEFAULT_PAGE_SIZE,
-      pageToken: pagination?.pageToken,
+      pageToken: pagination?.pageToken || "",
     });
+    const resp = await rolloutServiceClientConnect.listRollouts(request);
     const composedRolloutList = await batchComposeRollout(resp.rollouts);
     composedRolloutList.forEach((rollout) => {
       rolloutMapByName.set(rollout.name, rollout);
@@ -37,7 +45,12 @@ export const useRolloutStore = defineStore("rollout", () => {
   };
 
   const fetchRolloutByName = async (name: string, silent = false) => {
-    const rollout = await rolloutServiceClient.getRollout({ name }, { silent });
+    const request = create(GetRolloutRequestSchema, {
+      name,
+    });
+    const rollout = await rolloutServiceClientConnect.getRollout(request, {
+      contextValues: createContextValues().set(silentContextKey, silent),
+    });
     const [composedRollout] = await batchComposeRollout([rollout]);
     rolloutMapByName.set(composedRollout.name, composedRollout);
     return composedRollout;

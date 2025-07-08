@@ -112,7 +112,6 @@
     "empty": "Empty",
     "creating": "Creating...",
     "address": "Address",
-    "subscribed": "Subscribed",
     "created": "Created",
     "labels": "Labels",
     "mode": "Mode",
@@ -130,6 +129,8 @@
     "delete": "Delete",
     "history": "History",
     "loading": "Loading",
+    "just-now": "just now",
+    "n-seconds-ago": "{count} seconds ago",
     "copy": "Copy",
     "copied": "Copied",
     "click-to-copy": "Click to copy",
@@ -173,6 +174,7 @@
     "will-override-current-data": "Will override current data.",
     "rollout": "Rollout",
     "upload": "Upload",
+    "clear": "Clear",
     "added": "Added",
     "revoke": "Revoke",
     "cannot-undo-this-action": "You cannot undo this action",
@@ -196,7 +198,6 @@
     "schedule": "Schedule",
     "state": "State",
     "condition": "Condition",
-    "search-user": "Search user",
     "info": "Info",
     "minutes": "Minutes",
     "filter-by-name": "Filter by name",
@@ -280,6 +281,14 @@
     "cancel-task": "Cancel task | Cancel tasks",
     "created": "Created",
     "run-immediately": "Run task immediately | Run tasks immediately",
+    "selected-n-tasks": "{n} task selected | {n} tasks selected",
+    "no-tasks": "No tasks",
+    "no-tasks-selected": "No tasks selected",
+    "no-runnable-tasks": "No runnable tasks",
+    "no-skippable-tasks": "No skippable tasks",
+    "no-cancellable-tasks": "No cancellable tasks",
+    "cross-stage-not-supported": "Cross-stage operations not supported",
+    "no-permission": "No permission to perform this action",
     "scheduled-time": "Scheduled time",
     "select-scheduled-time": "Select scheduled time",
     "error": {
@@ -436,26 +445,24 @@
       "delete": "Delete this SSO",
       "form": {
         "type": "Type",
-        "learn-more-with-user-doc": "Learn more about the configuration",
+        "type-description": "Choose the type of identity provider you want to configure",
+        "oauth2-description": "Connect with OAuth 2.0 providers like Google, GitHub, GitLab",
+        "oidc-description": "Connect with OpenID Connect providers like Microsoft Entra ID (Azure AD), Okta, Auth0",
+        "ldap-description": "Connect with LDAP providers like Microsoft Active Directory, OpenLDAP",
         "redirect-url": "Authorization redirect URL",
         "redirect-url-description": "It will be used to fill in the appropriate field in the identity provider application form.",
         "use-template": "Use template",
-        "basic-information": "Basic information",
+        "template-description": "Choose a pre-configured template or set up a custom OAuth 2.0 provider",
         "name": "Name",
         "name-description": "The display name to be shown to the users",
-        "resource-id": "Resource ID",
         "domain": "Domain",
         "domain-description": "The identity provider's domain name",
-        "identity-provider-information": "Identity provider information",
-        "identity-provider-information-description": "The information is provided by your identity provider.",
         "identity-provider-needed-information": "Create your SSO application with the following information.",
         "auth-url-description": "The link to OAuth login page",
         "scopes-description": "A space-separated list of scopes to be carried when accessing the Auth URL",
         "token-url-description": "The API address for obtaining accessToken",
         "user-info-url-description": "The API address for obtaining user information by accessToken",
-        "security-protocol": "Security protocol",
-        "connection-security": "Connection security",
-        "connection-security-skip-tls-verify": "Skip TLS verify",
+        "security-protocol": "Security Protocol",
         "user-information-mapping": "User information mapping",
         "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
         "identifier": "Bytebase user's email",
@@ -463,17 +470,59 @@
         "display-name": "Bytebase user's display name",
         "phone": "Bytebase user's phone number",
         "groups": "Bytebase user's groups",
-        "auth-style": {
-          "self": "Auth style",
-          "in-params": {
-            "self": "In params"
-          },
-          "in-header": {
-            "self": "In header"
-          }
-        }
-      },
-      "copy-redirect-url": "Redirect URL copied to clipboard."
+        "general-setting-description": "Provide basic information about your identity provider.",
+        "configuration": "Configuration",
+        "configuration-description": "Configure the connection settings for your identity provider",
+        "auth-url": "Authorization URL",
+        "auth-url-placeholder": "e.g. https://github.com/login/oauth/authorize",
+        "token-url": "Token URL",
+        "token-url-placeholder": "e.g. https://github.com/login/oauth/access_token",
+        "user-info-url": "User Information URL",
+        "user-info-url-placeholder": "e.g. https://api.github.com/user",
+        "scopes": "Scopes",
+        "scopes-placeholder": "e.g. user email profile",
+        "scopes-placeholder-oidc": "e.g. openid profile email",
+        "authentication-style": "Authentication Style",
+        "in-parameters": "In Parameters",
+        "in-parameters-description": "Send credentials in POST body (recommended)",
+        "in-header": "In Header",
+        "in-header-description": "Send credentials using HTTP Basic Authorization",
+        "security-options": "Security Options",
+        "skip-tls-verification": "Skip TLS Certificate Verification",
+        "skip-tls-warning": "Only enable this for development or testing purposes",
+        "issuer-url-placeholder": "e.g. https://acme.okta.com",
+        "issuer-url-description": "The OIDC issuer URL (well-known configuration will be auto-discovered)",
+        "openid-scopes-description": "Space-separated list of OIDC scopes (openid is required)",
+        "host-placeholder": "e.g. ldap.example.com",
+        "bind-dn": "Bind DN",
+        "bind-dn-placeholder": "e.g. uid=system,ou=Users,dc=example,dc=com",
+        "bind-dn-description": "The DN of the user to bind as for search requests",
+        "bind-password": "Bind Password",
+        "base-dn": "Base DN",
+        "base-dn-placeholder": "e.g. ou=users,dc=example,dc=com",
+        "base-dn-description": "The base DN to search for users",
+        "user-filter": "User Filter",
+        "user-filter-placeholder": "e.g. (uid=%s)",
+        "user-filter-description": "The filter to search for users (%s will be replaced with username)",
+        "starttls": "StartTLS",
+        "starttls-description": "Upgrade connection to TLS (recommended)",
+        "ldaps": "LDAPS",
+        "ldaps-description": "Use TLS from the beginning (port 636)",
+        "none": "None",
+        "none-description": "No encryption (not recommended for production)",
+        "domain-optional-hint": "Optional: Use to concat with identifier if it is not in email format",
+        "provider-type-readonly-hint": "Provider type cannot be changed after creation",
+        "identifier-placeholder": "e.g. login, email",
+        "display-name-placeholder": "e.g. name, displayName",
+        "phone-placeholder": "e.g. phone, mobile",
+        "groups-placeholder": "e.g. groups",
+        "groups-description": "Used for group-based access control (OIDC providers only)",
+        "google-template-description": "Sign in with Google accounts",
+        "github-template-description": "Sign in with GitHub accounts",
+        "gitlab-template-description": "Sign in with GitLab accounts",
+        "microsoft-entra-template-description": "Sign in with Microsoft Entra ID",
+        "custom-template-description": "Configure custom OAuth 2.0 provider"
+      }
     },
     "general": {
       "workspace": {
@@ -527,15 +576,23 @@
           "never-expires": "Never expires"
         },
         "maximum-sql-result": {
-          "self": "Maximum SQL result size",
-          "description": "Limit the output SQL query result size."
+          "size": {
+            "self": "Maximum SQL result size",
+            "description": "Limit the output SQL query result size."
+          },
+          "rows": {
+            "self": "Maximum SQL result rows",
+            "rows": "Rows",
+            "description": "Limit the output rows in SQL query result, the value <= 0 means no limit."
+          }
         },
         "query-data-policy": {
           "timeout": {
             "self": "Maximum query time",
             "description": "The maximum time allowed for a query to run in SQL Editor.",
             "no-time-limit": "No time limit for queries when set to 0."
-          }
+          },
+          "seconds": "Seconds"
         },
         "domain-restriction": {
           "self": "Workspace Domain",
@@ -638,6 +695,7 @@
         "use-predefined-type": "Use Predefined Type",
         "add-from-template": "Add from template",
         "table": {
+          "icon": "Icon",
           "semantic-type": "Semantic Type",
           "description": "Description",
           "masking-algorithm": "Masking Algorithm",
@@ -700,7 +758,6 @@
       "classification": {
         "upload": "Upload classification",
         "upload-label": "You can upload classification file with JSON format.",
-        "copy-succeed": "Copy example succeed",
         "override-title": "Classification data override",
         "override-desc": "Existed classification data will be overridden and affect all projects.",
         "override-confirm": "Still upload"
@@ -762,8 +819,6 @@
         "some-tasks-are-still-running": "Some tasks are still running"
       }
     },
-    "subscribe": "Subscribe",
-    "unsubscribe": "Unsubscribe",
     "add-some-description": "Add some description...",
     "add-a-comment": "Add a comment",
     "leave-a-comment": "Leave a comment...",
@@ -808,10 +863,7 @@
           "title": "Creator",
           "description": "Search by the issue creator"
         },
-        "subscriber": {
-          "title": "Subscriber",
-          "description": "Search by the issue subscriber"
-        },
+        "subscriber": {},
         "approver": {
           "title": "Approver",
           "description": "Search by the issue approver"
@@ -828,8 +880,12 @@
           "title": "Label",
           "description": "Filter by issue label"
         },
+        "table": {
+          "title": "Table",
+          "description": "Input the value then press Enter"
+        },
         "database-label": {
-          "title": "Label",
+          "title": "Database Label",
           "description": "Input the \"key:value\" pair then press Enter"
         },
         "engine": {
@@ -876,7 +932,6 @@
     },
     "approval-flow": {
       "self": "Approval flow",
-      "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk.",
       "pre-issue-created-tips": "After an issue is created, Bytebase will automatically match the corresponding custom approval based on the type and risk level of the issue."
     },
     "risk-level": {
@@ -919,7 +974,6 @@
       "sql-review-violations": "SQL Review Violations"
     },
     "error": {
-      "issue-is-not-open": "The issue is not open",
       "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue",
       "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action",
       "cannot-close-issue-with-running-tasks": "Cannot close issue with running tasks"
@@ -968,8 +1022,6 @@
       }
     },
     "sql-review-only": "SQL Review Only",
-    "create-issue": "Create issue",
-    "this-plan-will-be-converted-to-a-new-issue": "This plan will be converted to a new issue",
     "title": {
       "edit-schema": "Edit schema",
       "change-data": "Change data",
@@ -981,28 +1033,46 @@
     "schema-drift-detected": {
       "self": "Schema drift detected",
       "description": "The selected database(s) has schema drift. Please make sure the drift is expected and safe to apply."
-    }
+    },
+    "review": {
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "under-review": "Under review"
+    },
+    "approval": {
+      "rejected-title": "Issue Approval Rejected",
+      "pending-title": "Issue Approval Pending",
+      "rejected-description": "This issue has been rejected by approvers. Force rollout is required to proceed.",
+      "pending-description": "This issue is waiting for approval. Force rollout is required to proceed.",
+      "rejected-error": "Issue approval has been rejected. Please enable force rollout to proceed.",
+      "pending-error": "Issue approval is pending. Please enable force rollout to proceed."
+    },
+    "new-layout": "New CI/CD Layout"
   },
   "plan": {
+    "self": "Plan",
+    "plans": "Plans",
     "new-plan": "New Plan",
     "add-spec": "Add Specification",
     "change-type": "Change Type",
     "schema-migration": "Schema Migration",
-    "schema-migration-description": "Modify database schema (DDL)",
+    "schema-migration-description": "Database structural changes (DDL) including tables, columns, indexes, constraints and schema alterations",
     "data-change": "Data Change",
-    "data-change-description": "Modify data (DML)",
+    "data-change-description": "Database content modifications (DML) including inserts, updates, deletes and data transformations",
     "select-targets": "Select Targets",
+    "ready-for-review": "Ready for Review",
     "overview": {
       "description": "View and manage all specifications in this plan",
       "total-specs": "Total Specs",
       "total-targets": "Total Targets",
-      "check-status": "Check Status",
       "no-checks": "No checks",
       "affected-resources": "Affected Resources"
     },
     "navigator": {
       "specifications": "Specifications",
       "checks": "Checks",
+      "review": "Review",
+      "rollout": "Rollout",
       "statement-empty": "Statement is empty"
     },
     "spec": {
@@ -1027,7 +1097,8 @@
         "instance": "Instance",
         "database": "Database",
         "database-group": "Database Group"
-      }
+      },
+      "view-all": "View all ({count})"
     },
     "options": {
       "self": "Options",
@@ -1048,10 +1119,15 @@
       "configuration-has-issues": "Configuration has {count} issue | Configuration has {count} issues"
     },
     "checks": {
-      "self": "Checks",
-      "no-checks": "No check results available",
-      "click-to-run-checks": "Click \"Run Checks\" to validate this specification"
+      "self": "Checks"
+    },
+    "refresh-indicator": {
+      "last-refresh": "Last refresh: {time}"
     }
+  },
+  "rollout": {
+    "rollouts": "Rollouts",
+    "force-rollout": "Force rollout"
   },
   "quick-action": {
     "create-db": "Create database",
@@ -1166,7 +1242,6 @@
       "console": {
         "snowflake": "The external console URL managing this instance (e.g. AWS RDS console, your in-house DB instance console)"
       },
-      "outbound-ip-list": "If you make use of inbound firewall rules for your database instance, please include the following IP addresses in its allowlist to allow access by Bytebase Cloud.",
       "create-admin-user": "This is the connection user used by Bytebase to perform DDL and DML (non-SELECT) operations.",
       "create-readonly-user": "This is the connection used by Bytebase to perform read-only operations such as SELECT query.",
       "create-admin-user-non-sql": "This is the connection user used by Bytebase to perform write and admin operations.",
@@ -1207,7 +1282,8 @@
         "redis": {
           "template": "Below is an example to create user {user} with password {password} and grant the user with the needed privileges."
         }
-      }
+      },
+      "firewall-info": "If you use inbound firewall rules for your database instance, please refer to Bytebase Cloud connection instruction."
     },
     "no-password": "No password",
     "type-or-paste-credentials": "Type or paste CREDENTIALS",
@@ -1227,7 +1303,8 @@
       "credential-source": "Credential Source",
       "tenant-id": "Tenant ID",
       "client-id": "Client ID",
-      "client-secret": "Client Secret"
+      "client-secret": "Client Secret",
+      "specific-credential": "Specific Credential"
     },
     "database-region": "Database Region",
     "external-secret-gcp": {
@@ -1267,7 +1344,6 @@
     "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {0}",
     "successfully-created-instance-createdinstance-name": "Successfully created instance '{0}'.",
     "successfully-updated-instance-instance-name": "Successfully updated instance '{0}'.",
-    "copy-grant-statement": "CREATE USER and GRANT statements copied to clipboard. Paste to your {engine} client to apply.",
     "successfully-connected-instance": "Successfully connected instance.",
     "failed-to-connect-instance": "Failed to connect instance.",
     "failed-to-connect-instance-localhost": "If you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
@@ -1440,7 +1516,6 @@
     "batch-action-permission-denied": "Don't have permission to {action} for databases",
     "batch-action-disabled": "Can not {action} for the databases from different projects",
     "batch-action-disabled-for-unassigned": "Can not {action} for unassigned database",
-    "data-export-action-disabled": "Can not export data for more than one database",
     "successfully-transferred-databases": "Successfully transferred databases",
     "nullable": "Nullable",
     "expression": "Expression",
@@ -1565,7 +1640,8 @@
       "new-baseline": {
         "self": "New baseline",
         "successfully-established": "Successfully established new baseline"
-      }
+      },
+      "view-diff": "View diff"
     }
   },
   "project": {
@@ -1700,7 +1776,7 @@
         },
         "max-retries": {
           "self": "Maximum retries count for lock timeout",
-          "description": "The maximum retries count for lock timeout when running the task. The default value is 0."
+          "description": "The maximum retries count for lock timeout when running the task. The default value is 0. Only applicable to Postgres."
         },
         "ci-sampling-size": {
           "self": "CI Data Sampling Size",
@@ -1733,6 +1809,21 @@
       "self": "Masking Exemptions",
       "grant-exemption": "Grant Exemption",
       "revoke-exemption-title": "Remove both export and query masking exemptions for {member}?"
+    },
+    "batch": {
+      "selected": "{count} project selected | {count} projects selected",
+      "archive": {
+        "title": "Archive {count} Project? | Archive {count} Projects?",
+        "description": "This will archive the selected projects. You can restore them later if needed.",
+        "success": "Successfully archived {count} project | Successfully archived {count} projects",
+        "error": "Failed to archive projects"
+      },
+      "force-archive-description": "Force archive even if projects have databases (databases will be moved to default project)",
+      "projects-to-archive": "Projects to archive",
+      "resource-warning": {
+        "title": "Projects with Resources",
+        "description": "The following projects contain databases or open issues:"
+      }
     }
   },
   "data-source": {
@@ -1814,18 +1905,14 @@
       }
     },
     "copy-url": "Copy URL",
-    "notify": {
-      "copy-code-succeed": "Copy code succeed",
-      "copy-share-link": "The share link was copied to Clipboard."
-    },
     "connect-to-a-database": "Connect to a database",
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
     "project-read": "Project read",
-    "project-read-desc": "Both sheet OWNER and project OWNER can read/write, other project members can read",
+    "project-read-desc": "Both sheet owner and users with \"bb.worksheets.manage\" permission can read/write, other project users with \"bb.worksheets.get\" permission can read",
     "project-write": "Project write",
-    "project-write-desc": "Both sheet OWNER and project members can read/write",
+    "project-write-desc": "Both sheet owner and project users with \"bb.worksheets.get\" permission can read/write",
     "create-read-only-data-source": "Go to create",
     "save-sheet": "Save Sheet",
     "save-sheet-input-placeholder": "Please input a sheet name",
@@ -1883,7 +1970,6 @@
     "pending-query": "Pending query",
     "executing-query": "Executing query",
     "request-query": "Request query",
-    "copy-success": "Copy success",
     "connect-in-new-tab": "Connect in new tab",
     "copy-name": "Copy name",
     "preview-table-data": "Preview table data",
@@ -1908,7 +1994,6 @@
       "rows": "rows"
     },
     "n-per-page": "{n} / page",
-    "customize-tree-structure": "Customize tree structure",
     "add-a-new-instance": "Add a new instance",
     "web-socket": {
       "errors": {
@@ -1933,6 +2018,7 @@
     },
     "upload-file": "Upload file",
     "copy-selected-results": "Copy selected data by {action} or {button}",
+    "cancel-selection": "Cancel selection",
     "format-default": "Default",
     "column-display-format": "Column Display Format",
     "next-row": "Next Row",
@@ -1994,7 +2080,8 @@
       "no-default": "No default",
       "expression": "Expression",
       "null": "NULL",
-      "value": "Value"
+      "value": "Value",
+      "placeholder": "Enter default value or leave empty for no default"
     },
     "message": {
       "invalid-schema-name": "Invalid schema name",
@@ -2123,7 +2210,7 @@
         "title": "Free"
       },
       "team": {
-        "title": "Team"
+        "title": "Pro"
       },
       "enterprise": {
         "title": "Enterprise"
@@ -2224,6 +2311,7 @@
       "request": "Request",
       "response": "Response",
       "status": "Status",
+      "latency": "Latency",
       "service-data": "Service Data"
     },
     "advanced-search": {
@@ -2248,7 +2336,18 @@
     "fit-content-with-view": "Fit content within view"
   },
   "identity-provider": {
-    "test-connection": "Test Connection"
+    "test-connection": "Test Connection",
+    "test-connection-success": "Test Connection Successful",
+    "userinfo-description": "The matched user information.",
+    "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
+    "no-claims": "No claims returned by the identity provider.",
+    "identity-provider-created": "Identity provider created successfully",
+    "identity-provider-deleted": "Identity provider deleted successfully",
+    "identity-provider-update-failed": "Failed to update identity provider",
+    "identity-provider-create-failed": "Failed to create identity provider",
+    "identity-provider-delete-failed": "Failed to delete identity provider",
+    "identity-provider-permission-denied": "Permission denied",
+    "delete-warning": "Are you sure you want to delete this identity provider? Users who signed up via this SSO will not be able to sign in with it anymore. If password sign-in is disabled in your workspace settings, these users may be locked out completely."
   },
   "sensitive-data": {
     "self": "Sensitive Data"
@@ -2349,7 +2448,6 @@
           "no-more": "no more"
         }
       },
-      "statement-copied": "Statement copied to clipboard",
       "text2sql": "Text2SQL",
       "actions": {
         "explain-code": "Explain code",
@@ -2453,10 +2551,10 @@
       "re-request-review-issue": "Re-request review issue?",
       "sent-back-issue": "Sent back issue",
       "re-requested-review": "re-requested issue review",
-      "no-one-matched": "No one matched",
-      "any-n-role-can-approve": "Any {role} can approve",
-      "approved-by-n": "Approved by {approver}",
-      "issue-creators-cannot-approve-their-own-issue": "Issue creators cannot approve their own issue"
+      "approved-by": "Approved by",
+      "rejected-by": "Rejected by",
+      "and-n-other-users": "{names} and 1 other user | {names} and {count} other users",
+      "self-approval-not-allowed": "Self-approval is not allowed in this project. So you cannot approve your own issue."
     }
   },
   "schema-template": {
@@ -2578,9 +2676,6 @@
     "self": "Export Center",
     "permission-denied": "Permission denied"
   },
-  "review-center": {
-    "self": "Review Center"
-  },
   "schema-designer": {
     "use-tips": "Click a table to start."
   },
@@ -2649,8 +2744,6 @@
     "title": "Release",
     "releases": "Releases",
     "files": "Files",
-    "create": "Create release",
-    "select": "Select release",
     "archive-this-release": "Archive this release",
     "total-files": "Total {count} files",
     "plan-tip": "This plan is configured to use a release. Database changes will be executed using the SQL statements from the selected release files.",
@@ -2671,15 +2764,8 @@
     "vcs-type": {
       "unspecified": "Unspecified"
     },
-    "actions": {
-      "new-file": "New file",
-      "import-from-release": "Import from release"
-    },
-    "messages": {
-      "succeed-to-create-release": "Succeed to create release",
-      "files-will-always-be-sorted-and-executed-in-version-order": "The files will always be sorted and executed in version order.",
-      "cannot-modify-files-after-created": "You cannot modify files after the release is created."
-    },
+    "actions": {},
+    "messages": {},
     "usage-description": "The release is only used in custom GitOps with API integration."
   },
   "export-data": {
@@ -2724,6 +2810,16 @@
       "built-in": "Use built-in sample",
       "built-in-desc": "Generate sample project and instances"
     }
+  },
+  "masking": {
+    "reason": {
+      "title": "Why is this data masked?",
+      "semantic-type": "Semantic type",
+      "algorithm": "Masking method",
+      "context": "Rule",
+      "classification": "Classification level"
+    },
+    "algorithms": {}
   },
   "landing": {
     "quick-link": {

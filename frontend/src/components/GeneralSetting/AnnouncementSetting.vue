@@ -99,15 +99,20 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { Announcement } from "@/types/proto/v1/setting_service";
-import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import type { Announcement } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  Announcement_AlertLevel,
+  AnnouncementSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 
 const props = defineProps<{
@@ -116,13 +121,15 @@ const props = defineProps<{
 }>();
 
 const settingV1Store = useSettingV1Store();
-const hasAnnouncementFeature = featureToRef(PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT);
+const hasAnnouncementFeature = featureToRef(
+  PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT
+);
 
 const rawAnnouncement = computed(() =>
   cloneDeep(
     settingV1Store.workspaceProfileSetting?.announcement ??
-      Announcement.fromPartial({
-        level: Announcement_AlertLevel.ALERT_LEVEL_INFO,
+      create(AnnouncementSchema, {
+        level: Announcement_AlertLevel.INFO,
       })
   )
 );
@@ -138,7 +145,9 @@ const updateAnnouncementSetting = async () => {
     payload: {
       announcement: { ...state },
     },
-    updateMask: ["value.workspace_profile_setting_value.announcement"],
+    updateMask: create(FieldMaskSchema, {
+      paths: ["value.workspace_profile_setting_value.announcement"],
+    }),
   });
 };
 

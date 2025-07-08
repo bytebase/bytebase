@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import Emittery from "emittery";
 import { cloneDeep } from "lodash-es";
 import {
@@ -9,21 +10,19 @@ import {
   type Ref,
 } from "vue";
 import { isDatabaseChangeSpec, targetsForSpec } from "@/components/Plan/logic";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, type ComposedProject } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { IssueStatus, type Issue } from "@/types/proto/v1/issue_service";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus, type Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan,
   type Plan_Spec,
-} from "@/types/proto/v1/plan_service";
-import {
-  Task,
-  Task_Status,
-  type Rollout,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto-es/v1/plan_service_pb";
+import type { Task, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { flattenTaskV1List, hasProjectPermissionV2 } from "@/utils";
 import { BACKUP_AVAILABLE_ENGINES } from "./common";
 
@@ -57,7 +56,7 @@ export const providePreBackupSettingContext = (refs: {
   const { isCreating, project, plan, selectedSpec, issue, rollout } = refs;
 
   const events = new Emittery<{
-    update: boolean;
+    update: never;
   }>();
 
   const databases = computed(() => {
@@ -72,7 +71,8 @@ export const providePreBackupSettingContext = (refs: {
   const shouldShow = computed((): boolean => {
     if (
       !selectedSpec.value ||
-      selectedSpec.value.changeDatabaseConfig?.type !==
+      selectedSpec.value.config?.case !== "changeDatabaseConfig" ||
+      selectedSpec.value.config.value.type !==
         Plan_ChangeDatabaseConfig_Type.DATA
     ) {
       return false;
@@ -80,7 +80,7 @@ export const providePreBackupSettingContext = (refs: {
     if (isDatabaseChangeSpec(selectedSpec.value)) {
       // If any of the databases in the spec is not supported, do not show.
       if (
-        !databases.value.some((db) =>
+        !databases.value.every((db) =>
           BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
         )
       ) {
@@ -132,43 +132,47 @@ export const providePreBackupSettingContext = (refs: {
   });
 
   const enabled = computed((): boolean => {
-    return Boolean(selectedSpec.value?.changeDatabaseConfig?.enablePriorBackup);
+    if (selectedSpec.value?.config?.case === "changeDatabaseConfig") {
+      return Boolean(selectedSpec.value.config.value.enablePriorBackup);
+    }
+    return false;
   });
 
   const toggle = async (on: boolean) => {
     if (isCreating.value) {
-      if (selectedSpec.value && selectedSpec.value.changeDatabaseConfig) {
+      if (selectedSpec.value?.config?.case === "changeDatabaseConfig") {
         if (on) {
-          selectedSpec.value.changeDatabaseConfig.enablePriorBackup = true;
+          selectedSpec.value.config.value.enablePriorBackup = true;
         } else {
-          selectedSpec.value.changeDatabaseConfig.enablePriorBackup = false;
+          selectedSpec.value.config.value.enablePriorBackup = false;
         }
       }
     } else {
       const planPatch = cloneDeep(unref(plan));
-      const spec = (planPatch?.specs || []).find((s) => {
+      const spec = planPatch.specs.find((s) => {
         return s.id === selectedSpec.value?.id;
       });
-      if (!planPatch || !spec || !spec.changeDatabaseConfig) {
+      if (!planPatch || !spec || spec.config.case !== "changeDatabaseConfig") {
         // Should not reach here.
         throw new Error(
           "Plan or spec is not defined. Cannot update pre-backup setting."
         );
       }
       if (on) {
-        spec.changeDatabaseConfig.enablePriorBackup = true;
+        spec.config.value.enablePriorBackup = true;
       } else {
-        spec.changeDatabaseConfig.enablePriorBackup = false;
+        spec.config.value.enablePriorBackup = false;
       }
 
-      await planServiceClient.updatePlan({
+      const request = create(UpdatePlanRequestSchema, {
         plan: planPatch,
-        updateMask: ["specs"],
+        updateMask: { paths: ["specs"] },
       });
+      await planServiceClientConnect.updatePlan(request);
     }
 
     // Emit the update event.
-    events.emit("update", on);
+    events.emit("update");
   };
 
   const context = {

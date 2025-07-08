@@ -98,22 +98,22 @@ const (
 	PlanFeature_FEATURE_SCHEMA_TEMPLATE                      PlanFeature = 15
 	PlanFeature_FEATURE_ROLLOUT_POLICY                       PlanFeature = 16
 	// SQL Editor & Development
-	PlanFeature_FEATURE_WEB_BASED_SQL_EDITOR           PlanFeature = 17
-	PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE          PlanFeature = 18
-	PlanFeature_FEATURE_NATURAL_LANGUAGE_TO_SQL        PlanFeature = 19
-	PlanFeature_FEATURE_AI_QUERY_EXPLANATION           PlanFeature = 20
-	PlanFeature_FEATURE_AI_QUERY_SUGGESTIONS           PlanFeature = 21
-	PlanFeature_FEATURE_AUTO_COMPLETE                  PlanFeature = 22
-	PlanFeature_FEATURE_SCHEMA_DIAGRAM                 PlanFeature = 23
-	PlanFeature_FEATURE_SCHEMA_EDITOR                  PlanFeature = 24
-	PlanFeature_FEATURE_DATA_EXPORT                    PlanFeature = 25
-	PlanFeature_FEATURE_QUERY_HISTORY                  PlanFeature = 26
-	PlanFeature_FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS   PlanFeature = 27
-	PlanFeature_FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION PlanFeature = 28
-	PlanFeature_FEATURE_BATCH_QUERY                    PlanFeature = 29
-	PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION  PlanFeature = 30
-	PlanFeature_FEATURE_QUERY_POLICY                   PlanFeature = 31
-	PlanFeature_FEATURE_RESTRICT_COPYING_DATA          PlanFeature = 32
+	PlanFeature_FEATURE_WEB_BASED_SQL_EDITOR          PlanFeature = 17
+	PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE         PlanFeature = 18
+	PlanFeature_FEATURE_NATURAL_LANGUAGE_TO_SQL       PlanFeature = 19
+	PlanFeature_FEATURE_AI_QUERY_EXPLANATION          PlanFeature = 20
+	PlanFeature_FEATURE_AI_QUERY_SUGGESTIONS          PlanFeature = 21
+	PlanFeature_FEATURE_AUTO_COMPLETE                 PlanFeature = 22
+	PlanFeature_FEATURE_SCHEMA_DIAGRAM                PlanFeature = 23
+	PlanFeature_FEATURE_SCHEMA_EDITOR                 PlanFeature = 24
+	PlanFeature_FEATURE_DATA_EXPORT                   PlanFeature = 25
+	PlanFeature_FEATURE_DATA_OFFLINE_EXPORT           PlanFeature = 26
+	PlanFeature_FEATURE_QUERY_HISTORY                 PlanFeature = 27
+	PlanFeature_FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS  PlanFeature = 28
+	PlanFeature_FEATURE_BATCH_QUERY                   PlanFeature = 29
+	PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION PlanFeature = 30
+	PlanFeature_FEATURE_QUERY_POLICY                  PlanFeature = 31
+	PlanFeature_FEATURE_RESTRICT_COPYING_DATA         PlanFeature = 32
 	// Security & Compliance
 	PlanFeature_FEATURE_IAM                                    PlanFeature = 33
 	PlanFeature_FEATURE_INSTANCE_SSL_CONNECTION                PlanFeature = 34
@@ -123,26 +123,26 @@ const (
 	PlanFeature_FEATURE_USER_GROUPS                            PlanFeature = 38
 	PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP           PlanFeature = 39
 	PlanFeature_FEATURE_DATABASE_SECRET_VARIABLES              PlanFeature = 40
-	PlanFeature_FEATURE_QUERY_DATASOURCE_RESTRICTION           PlanFeature = 41
-	PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME              PlanFeature = 42
-	PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT       PlanFeature = 43
-	PlanFeature_FEATURE_RISK_ASSESSMENT                        PlanFeature = 44
-	PlanFeature_FEATURE_APPROVAL_WORKFLOW                      PlanFeature = 45
-	PlanFeature_FEATURE_AUDIT_LOG                              PlanFeature = 46
-	PlanFeature_FEATURE_ENTERPRISE_SSO                         PlanFeature = 47
-	PlanFeature_FEATURE_TWO_FA                                 PlanFeature = 48
-	PlanFeature_FEATURE_PASSWORD_RESTRICTIONS                  PlanFeature = 49
-	PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN               PlanFeature = 50
-	PlanFeature_FEATURE_CUSTOM_ROLES                           PlanFeature = 51
-	PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW                  PlanFeature = 52
-	PlanFeature_FEATURE_DATA_MASKING                           PlanFeature = 53
-	PlanFeature_FEATURE_DATA_CLASSIFICATION                    PlanFeature = 54
-	PlanFeature_FEATURE_SCIM                                   PlanFeature = 55
-	PlanFeature_FEATURE_DIRECTORY_SYNC                         PlanFeature = 56
-	PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL              PlanFeature = 57
-	PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER                PlanFeature = 58
-	PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION          PlanFeature = 59
+	PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME              PlanFeature = 41
+	PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT       PlanFeature = 42
+	PlanFeature_FEATURE_RISK_ASSESSMENT                        PlanFeature = 43
+	PlanFeature_FEATURE_APPROVAL_WORKFLOW                      PlanFeature = 44
+	PlanFeature_FEATURE_AUDIT_LOG                              PlanFeature = 45
+	PlanFeature_FEATURE_ENTERPRISE_SSO                         PlanFeature = 46
+	PlanFeature_FEATURE_TWO_FA                                 PlanFeature = 47
+	PlanFeature_FEATURE_PASSWORD_RESTRICTIONS                  PlanFeature = 48
+	PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN               PlanFeature = 49
+	PlanFeature_FEATURE_CUSTOM_ROLES                           PlanFeature = 50
+	PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW                  PlanFeature = 51
+	PlanFeature_FEATURE_DATA_MASKING                           PlanFeature = 52
+	PlanFeature_FEATURE_DATA_CLASSIFICATION                    PlanFeature = 53
+	PlanFeature_FEATURE_SCIM                                   PlanFeature = 54
+	PlanFeature_FEATURE_DIRECTORY_SYNC                         PlanFeature = 55
+	PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL              PlanFeature = 56
+	PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER                PlanFeature = 57
+	PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION          PlanFeature = 58
 	// Administration & Support
+	PlanFeature_FEATURE_PROJECT_MANAGEMENT         PlanFeature = 59
 	PlanFeature_FEATURE_ENVIRONMENT_MANAGEMENT     PlanFeature = 60
 	PlanFeature_FEATURE_IM_NOTIFICATIONS           PlanFeature = 61
 	PlanFeature_FEATURE_TERRAFORM_PROVIDER         PlanFeature = 62
@@ -188,9 +188,9 @@ var (
 		23: "FEATURE_SCHEMA_DIAGRAM",
 		24: "FEATURE_SCHEMA_EDITOR",
 		25: "FEATURE_DATA_EXPORT",
-		26: "FEATURE_QUERY_HISTORY",
-		27: "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS",
-		28: "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION",
+		26: "FEATURE_DATA_OFFLINE_EXPORT",
+		27: "FEATURE_QUERY_HISTORY",
+		28: "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS",
 		29: "FEATURE_BATCH_QUERY",
 		30: "FEATURE_INSTANCE_READ_ONLY_CONNECTION",
 		31: "FEATURE_QUERY_POLICY",
@@ -203,25 +203,25 @@ var (
 		38: "FEATURE_USER_GROUPS",
 		39: "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP",
 		40: "FEATURE_DATABASE_SECRET_VARIABLES",
-		41: "FEATURE_QUERY_DATASOURCE_RESTRICTION",
-		42: "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
-		43: "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
-		44: "FEATURE_RISK_ASSESSMENT",
-		45: "FEATURE_APPROVAL_WORKFLOW",
-		46: "FEATURE_AUDIT_LOG",
-		47: "FEATURE_ENTERPRISE_SSO",
-		48: "FEATURE_TWO_FA",
-		49: "FEATURE_PASSWORD_RESTRICTIONS",
-		50: "FEATURE_DISALLOW_PASSWORD_SIGNIN",
-		51: "FEATURE_CUSTOM_ROLES",
-		52: "FEATURE_REQUEST_ROLE_WORKFLOW",
-		53: "FEATURE_DATA_MASKING",
-		54: "FEATURE_DATA_CLASSIFICATION",
-		55: "FEATURE_SCIM",
-		56: "FEATURE_DIRECTORY_SYNC",
-		57: "FEATURE_SIGN_IN_FREQUENCY_CONTROL",
-		58: "FEATURE_EXTERNAL_SECRET_MANAGER",
-		59: "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
+		41: "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
+		42: "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
+		43: "FEATURE_RISK_ASSESSMENT",
+		44: "FEATURE_APPROVAL_WORKFLOW",
+		45: "FEATURE_AUDIT_LOG",
+		46: "FEATURE_ENTERPRISE_SSO",
+		47: "FEATURE_TWO_FA",
+		48: "FEATURE_PASSWORD_RESTRICTIONS",
+		49: "FEATURE_DISALLOW_PASSWORD_SIGNIN",
+		50: "FEATURE_CUSTOM_ROLES",
+		51: "FEATURE_REQUEST_ROLE_WORKFLOW",
+		52: "FEATURE_DATA_MASKING",
+		53: "FEATURE_DATA_CLASSIFICATION",
+		54: "FEATURE_SCIM",
+		55: "FEATURE_DIRECTORY_SYNC",
+		56: "FEATURE_SIGN_IN_FREQUENCY_CONTROL",
+		57: "FEATURE_EXTERNAL_SECRET_MANAGER",
+		58: "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
+		59: "FEATURE_PROJECT_MANAGEMENT",
 		60: "FEATURE_ENVIRONMENT_MANAGEMENT",
 		61: "FEATURE_IM_NOTIFICATIONS",
 		62: "FEATURE_TERRAFORM_PROVIDER",
@@ -264,9 +264,9 @@ var (
 		"FEATURE_SCHEMA_DIAGRAM":                         23,
 		"FEATURE_SCHEMA_EDITOR":                          24,
 		"FEATURE_DATA_EXPORT":                            25,
-		"FEATURE_QUERY_HISTORY":                          26,
-		"FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS":           27,
-		"FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION":         28,
+		"FEATURE_DATA_OFFLINE_EXPORT":                    26,
+		"FEATURE_QUERY_HISTORY":                          27,
+		"FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS":           28,
 		"FEATURE_BATCH_QUERY":                            29,
 		"FEATURE_INSTANCE_READ_ONLY_CONNECTION":          30,
 		"FEATURE_QUERY_POLICY":                           31,
@@ -279,25 +279,25 @@ var (
 		"FEATURE_USER_GROUPS":                            38,
 		"FEATURE_DISALLOW_SELF_SERVICE_SIGNUP":           39,
 		"FEATURE_DATABASE_SECRET_VARIABLES":              40,
-		"FEATURE_QUERY_DATASOURCE_RESTRICTION":           41,
-		"FEATURE_CUSTOM_INSTANCE_SYNC_TIME":              42,
-		"FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT":       43,
-		"FEATURE_RISK_ASSESSMENT":                        44,
-		"FEATURE_APPROVAL_WORKFLOW":                      45,
-		"FEATURE_AUDIT_LOG":                              46,
-		"FEATURE_ENTERPRISE_SSO":                         47,
-		"FEATURE_TWO_FA":                                 48,
-		"FEATURE_PASSWORD_RESTRICTIONS":                  49,
-		"FEATURE_DISALLOW_PASSWORD_SIGNIN":               50,
-		"FEATURE_CUSTOM_ROLES":                           51,
-		"FEATURE_REQUEST_ROLE_WORKFLOW":                  52,
-		"FEATURE_DATA_MASKING":                           53,
-		"FEATURE_DATA_CLASSIFICATION":                    54,
-		"FEATURE_SCIM":                                   55,
-		"FEATURE_DIRECTORY_SYNC":                         56,
-		"FEATURE_SIGN_IN_FREQUENCY_CONTROL":              57,
-		"FEATURE_EXTERNAL_SECRET_MANAGER":                58,
-		"FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":          59,
+		"FEATURE_CUSTOM_INSTANCE_SYNC_TIME":              41,
+		"FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT":       42,
+		"FEATURE_RISK_ASSESSMENT":                        43,
+		"FEATURE_APPROVAL_WORKFLOW":                      44,
+		"FEATURE_AUDIT_LOG":                              45,
+		"FEATURE_ENTERPRISE_SSO":                         46,
+		"FEATURE_TWO_FA":                                 47,
+		"FEATURE_PASSWORD_RESTRICTIONS":                  48,
+		"FEATURE_DISALLOW_PASSWORD_SIGNIN":               49,
+		"FEATURE_CUSTOM_ROLES":                           50,
+		"FEATURE_REQUEST_ROLE_WORKFLOW":                  51,
+		"FEATURE_DATA_MASKING":                           52,
+		"FEATURE_DATA_CLASSIFICATION":                    53,
+		"FEATURE_SCIM":                                   54,
+		"FEATURE_DIRECTORY_SYNC":                         55,
+		"FEATURE_SIGN_IN_FREQUENCY_CONTROL":              56,
+		"FEATURE_EXTERNAL_SECRET_MANAGER":                57,
+		"FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":          58,
+		"FEATURE_PROJECT_MANAGEMENT":                     59,
 		"FEATURE_ENVIRONMENT_MANAGEMENT":                 60,
 		"FEATURE_IM_NOTIFICATIONS":                       61,
 		"FEATURE_TERRAFORM_PROVIDER":                     62,
@@ -423,15 +423,16 @@ func (x *UpdateSubscriptionRequest) GetLicense() string {
 }
 
 type Subscription struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SeatCount     int32                  `protobuf:"varint,1,opt,name=seat_count,json=seatCount,proto3" json:"seat_count,omitempty"`
-	InstanceCount int32                  `protobuf:"varint,2,opt,name=instance_count,json=instanceCount,proto3" json:"instance_count,omitempty"`
-	ExpiresTime   *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_time,json=expiresTime,proto3" json:"expires_time,omitempty"`
-	Plan          PlanType               `protobuf:"varint,4,opt,name=plan,proto3,enum=bytebase.v1.PlanType" json:"plan,omitempty"`
-	Trialing      bool                   `protobuf:"varint,5,opt,name=trialing,proto3" json:"trialing,omitempty"`
-	OrgName       string                 `protobuf:"bytes,6,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Plan            PlanType               `protobuf:"varint,1,opt,name=plan,proto3,enum=bytebase.v1.PlanType" json:"plan,omitempty"`
+	Seats           int32                  `protobuf:"varint,2,opt,name=seats,proto3" json:"seats,omitempty"`
+	Instances       int32                  `protobuf:"varint,3,opt,name=instances,proto3" json:"instances,omitempty"`
+	ActiveInstances int32                  `protobuf:"varint,4,opt,name=active_instances,json=activeInstances,proto3" json:"active_instances,omitempty"`
+	ExpiresTime     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=expires_time,json=expiresTime,proto3" json:"expires_time,omitempty"`
+	Trialing        bool                   `protobuf:"varint,6,opt,name=trialing,proto3" json:"trialing,omitempty"`
+	OrgName         string                 `protobuf:"bytes,7,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Subscription) Reset() {
@@ -464,16 +465,30 @@ func (*Subscription) Descriptor() ([]byte, []int) {
 	return file_v1_subscription_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Subscription) GetSeatCount() int32 {
+func (x *Subscription) GetPlan() PlanType {
 	if x != nil {
-		return x.SeatCount
+		return x.Plan
+	}
+	return PlanType_PLAN_TYPE_UNSPECIFIED
+}
+
+func (x *Subscription) GetSeats() int32 {
+	if x != nil {
+		return x.Seats
 	}
 	return 0
 }
 
-func (x *Subscription) GetInstanceCount() int32 {
+func (x *Subscription) GetInstances() int32 {
 	if x != nil {
-		return x.InstanceCount
+		return x.Instances
+	}
+	return 0
+}
+
+func (x *Subscription) GetActiveInstances() int32 {
+	if x != nil {
+		return x.ActiveInstances
 	}
 	return 0
 }
@@ -483,13 +498,6 @@ func (x *Subscription) GetExpiresTime() *timestamppb.Timestamp {
 		return x.ExpiresTime
 	}
 	return nil
-}
-
-func (x *Subscription) GetPlan() PlanType {
-	if x != nil {
-		return x.Plan
-	}
-	return PlanType_PLAN_TYPE_UNSPECIFIED
 }
 
 func (x *Subscription) GetTrialing() bool {
@@ -635,15 +643,15 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x1dv1/subscription_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
 	"\x16GetSubscriptionRequest\"5\n" +
 	"\x19UpdateSubscriptionRequest\x12\x18\n" +
-	"\alicense\x18\x01 \x01(\tR\alicense\"\x99\x02\n" +
-	"\fSubscription\x12#\n" +
-	"\n" +
-	"seat_count\x18\x01 \x01(\x05B\x04\xe2A\x01\x03R\tseatCount\x12+\n" +
-	"\x0einstance_count\x18\x02 \x01(\x05B\x04\xe2A\x01\x03R\rinstanceCount\x12C\n" +
-	"\fexpires_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\vexpiresTime\x12/\n" +
-	"\x04plan\x18\x04 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x04\xe2A\x01\x03R\x04plan\x12 \n" +
-	"\btrialing\x18\x05 \x01(\bB\x04\xe2A\x01\x03R\btrialing\x12\x1f\n" +
-	"\borg_name\x18\x06 \x01(\tB\x04\xe2A\x01\x03R\aorgName\"\x87\x01\n" +
+	"\alicense\x18\x01 \x01(\tR\alicense\"\xb8\x02\n" +
+	"\fSubscription\x12/\n" +
+	"\x04plan\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x04\xe2A\x01\x03R\x04plan\x12\x1a\n" +
+	"\x05seats\x18\x02 \x01(\x05B\x04\xe2A\x01\x03R\x05seats\x12\"\n" +
+	"\tinstances\x18\x03 \x01(\x05B\x04\xe2A\x01\x03R\tinstances\x12/\n" +
+	"\x10active_instances\x18\x04 \x01(\x05B\x04\xe2A\x01\x03R\x0factiveInstances\x12C\n" +
+	"\fexpires_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\vexpiresTime\x12 \n" +
+	"\btrialing\x18\x06 \x01(\bB\x04\xe2A\x01\x03R\btrialing\x12\x1f\n" +
+	"\borg_name\x18\a \x01(\tB\x04\xe2A\x01\x03R\aorgName\"\x87\x01\n" +
 	"\n" +
 	"PlanConfig\x122\n" +
 	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\x12E\n" +
@@ -658,7 +666,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04FREE\x10\x01\x12\b\n" +
 	"\x04TEAM\x10\x02\x12\x0e\n" +
 	"\n" +
-	"ENTERPRISE\x10\x03*\xc4\x13\n" +
+	"ENTERPRISE\x10\x03*\xaf\x13\n" +
 	"\vPlanFeature\x12\x17\n" +
 	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17FEATURE_DATABASE_CHANGE\x10\x01\x12,\n" +
@@ -686,10 +694,10 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x15FEATURE_AUTO_COMPLETE\x10\x16\x12\x1a\n" +
 	"\x16FEATURE_SCHEMA_DIAGRAM\x10\x17\x12\x19\n" +
 	"\x15FEATURE_SCHEMA_EDITOR\x10\x18\x12\x17\n" +
-	"\x13FEATURE_DATA_EXPORT\x10\x19\x12\x19\n" +
-	"\x15FEATURE_QUERY_HISTORY\x10\x1a\x12(\n" +
-	"$FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS\x10\x1b\x12*\n" +
-	"&FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION\x10\x1c\x12\x17\n" +
+	"\x13FEATURE_DATA_EXPORT\x10\x19\x12\x1f\n" +
+	"\x1bFEATURE_DATA_OFFLINE_EXPORT\x10\x1a\x12\x19\n" +
+	"\x15FEATURE_QUERY_HISTORY\x10\x1b\x12(\n" +
+	"$FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS\x10\x1c\x12\x17\n" +
 	"\x13FEATURE_BATCH_QUERY\x10\x1d\x12)\n" +
 	"%FEATURE_INSTANCE_READ_ONLY_CONNECTION\x10\x1e\x12\x18\n" +
 	"\x14FEATURE_QUERY_POLICY\x10\x1f\x12!\n" +
@@ -701,26 +709,26 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x1dFEATURE_GOOGLE_AND_GITHUB_SSO\x10%\x12\x17\n" +
 	"\x13FEATURE_USER_GROUPS\x10&\x12(\n" +
 	"$FEATURE_DISALLOW_SELF_SERVICE_SIGNUP\x10'\x12%\n" +
-	"!FEATURE_DATABASE_SECRET_VARIABLES\x10(\x12(\n" +
-	"$FEATURE_QUERY_DATASOURCE_RESTRICTION\x10)\x12%\n" +
-	"!FEATURE_CUSTOM_INSTANCE_SYNC_TIME\x10*\x12,\n" +
-	"(FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT\x10+\x12\x1b\n" +
-	"\x17FEATURE_RISK_ASSESSMENT\x10,\x12\x1d\n" +
-	"\x19FEATURE_APPROVAL_WORKFLOW\x10-\x12\x15\n" +
-	"\x11FEATURE_AUDIT_LOG\x10.\x12\x1a\n" +
-	"\x16FEATURE_ENTERPRISE_SSO\x10/\x12\x12\n" +
-	"\x0eFEATURE_TWO_FA\x100\x12!\n" +
-	"\x1dFEATURE_PASSWORD_RESTRICTIONS\x101\x12$\n" +
-	" FEATURE_DISALLOW_PASSWORD_SIGNIN\x102\x12\x18\n" +
-	"\x14FEATURE_CUSTOM_ROLES\x103\x12!\n" +
-	"\x1dFEATURE_REQUEST_ROLE_WORKFLOW\x104\x12\x18\n" +
-	"\x14FEATURE_DATA_MASKING\x105\x12\x1f\n" +
-	"\x1bFEATURE_DATA_CLASSIFICATION\x106\x12\x10\n" +
-	"\fFEATURE_SCIM\x107\x12\x1a\n" +
-	"\x16FEATURE_DIRECTORY_SYNC\x108\x12%\n" +
-	"!FEATURE_SIGN_IN_FREQUENCY_CONTROL\x109\x12#\n" +
-	"\x1fFEATURE_EXTERNAL_SECRET_MANAGER\x10:\x12)\n" +
-	"%FEATURE_USER_EMAIL_DOMAIN_RESTRICTION\x10;\x12\"\n" +
+	"!FEATURE_DATABASE_SECRET_VARIABLES\x10(\x12%\n" +
+	"!FEATURE_CUSTOM_INSTANCE_SYNC_TIME\x10)\x12,\n" +
+	"(FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT\x10*\x12\x1b\n" +
+	"\x17FEATURE_RISK_ASSESSMENT\x10+\x12\x1d\n" +
+	"\x19FEATURE_APPROVAL_WORKFLOW\x10,\x12\x15\n" +
+	"\x11FEATURE_AUDIT_LOG\x10-\x12\x1a\n" +
+	"\x16FEATURE_ENTERPRISE_SSO\x10.\x12\x12\n" +
+	"\x0eFEATURE_TWO_FA\x10/\x12!\n" +
+	"\x1dFEATURE_PASSWORD_RESTRICTIONS\x100\x12$\n" +
+	" FEATURE_DISALLOW_PASSWORD_SIGNIN\x101\x12\x18\n" +
+	"\x14FEATURE_CUSTOM_ROLES\x102\x12!\n" +
+	"\x1dFEATURE_REQUEST_ROLE_WORKFLOW\x103\x12\x18\n" +
+	"\x14FEATURE_DATA_MASKING\x104\x12\x1f\n" +
+	"\x1bFEATURE_DATA_CLASSIFICATION\x105\x12\x10\n" +
+	"\fFEATURE_SCIM\x106\x12\x1a\n" +
+	"\x16FEATURE_DIRECTORY_SYNC\x107\x12%\n" +
+	"!FEATURE_SIGN_IN_FREQUENCY_CONTROL\x108\x12#\n" +
+	"\x1fFEATURE_EXTERNAL_SECRET_MANAGER\x109\x12)\n" +
+	"%FEATURE_USER_EMAIL_DOMAIN_RESTRICTION\x10:\x12\x1e\n" +
+	"\x1aFEATURE_PROJECT_MANAGEMENT\x10;\x12\"\n" +
 	"\x1eFEATURE_ENVIRONMENT_MANAGEMENT\x10<\x12\x1c\n" +
 	"\x18FEATURE_IM_NOTIFICATIONS\x10=\x12\x1e\n" +
 	"\x1aFEATURE_TERRAFORM_PROVIDER\x10>\x12\x1b\n" +
@@ -764,8 +772,8 @@ var file_v1_subscription_service_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil),     // 7: google.protobuf.Timestamp
 }
 var file_v1_subscription_service_proto_depIdxs = []int32{
-	7, // 0: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
-	0, // 1: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
+	0, // 0: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
+	7, // 1: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
 	6, // 2: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
 	1, // 3: bytebase.v1.PlanConfig.instance_features:type_name -> bytebase.v1.PlanFeature
 	0, // 4: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType

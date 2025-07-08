@@ -123,7 +123,7 @@ import { useResourceByName } from "@/components/v2/ResourceOccupiedModal/useReso
 import { useSQLReviewStore } from "@/store";
 import { reviewConfigNamePrefix } from "@/store/modules/v1/common";
 import type { SQLReviewPolicyTemplateV2 } from "@/types";
-import type { Database } from "@/types/proto/v1/database_service";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   formatEnvironmentName,
   type Environment,

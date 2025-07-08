@@ -18,7 +18,7 @@ import { computed, onMounted, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useChangelistStore } from "@/store";
 import type { ComposedProject } from "@/types";
-import type { Changelist } from "@/types/proto/v1/changelist_service";
+import type { Changelist } from "@/types/proto-es/v1/changelist_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import ChangelistDataTable from "./ChangelistDataTable.vue";
 import CreateChangelistPanel from "./CreateChangelistPanel.vue";

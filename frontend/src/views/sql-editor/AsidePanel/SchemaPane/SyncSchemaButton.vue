@@ -20,7 +20,7 @@
         <i18n-t tag="div" keypath="sql-editor.last-synced">
           <template #time>
             <HumanizeDate
-              :date="getDateForPbTimestamp(database.successfulSyncTime)"
+              :date="getDateForPbTimestampProtoEs(database.successfulSyncTime)"
             />
           </template>
         </i18n-t>
@@ -41,7 +41,7 @@ import {
   useDBSchemaV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { getDateForPbTimestamp, isValidDatabaseName } from "@/types";
+import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 
 defineOptions({
   inheritAttrs: false,

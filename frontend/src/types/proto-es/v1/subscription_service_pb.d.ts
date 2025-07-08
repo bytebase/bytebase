@@ -44,32 +44,37 @@ export declare const UpdateSubscriptionRequestSchema: GenMessage<UpdateSubscript
  */
 export declare type Subscription = Message<"bytebase.v1.Subscription"> & {
   /**
-   * @generated from field: int32 seat_count = 1;
-   */
-  seatCount: number;
-
-  /**
-   * @generated from field: int32 instance_count = 2;
-   */
-  instanceCount: number;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp expires_time = 3;
-   */
-  expiresTime?: Timestamp;
-
-  /**
-   * @generated from field: bytebase.v1.PlanType plan = 4;
+   * @generated from field: bytebase.v1.PlanType plan = 1;
    */
   plan: PlanType;
 
   /**
-   * @generated from field: bool trialing = 5;
+   * @generated from field: int32 seats = 2;
+   */
+  seats: number;
+
+  /**
+   * @generated from field: int32 instances = 3;
+   */
+  instances: number;
+
+  /**
+   * @generated from field: int32 active_instances = 4;
+   */
+  activeInstances: number;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_time = 5;
+   */
+  expiresTime?: Timestamp;
+
+  /**
+   * @generated from field: bool trialing = 6;
    */
   trialing: boolean;
 
   /**
-   * @generated from field: string org_name = 6;
+   * @generated from field: string org_name = 7;
    */
   orgName: string;
 };
@@ -307,19 +312,19 @@ export enum PlanFeature {
   FEATURE_DATA_EXPORT = 25,
 
   /**
-   * @generated from enum value: FEATURE_QUERY_HISTORY = 26;
+   * @generated from enum value: FEATURE_DATA_OFFLINE_EXPORT = 26;
    */
-  FEATURE_QUERY_HISTORY = 26,
+  FEATURE_DATA_OFFLINE_EXPORT = 26,
 
   /**
-   * @generated from enum value: FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 27;
+   * @generated from enum value: FEATURE_QUERY_HISTORY = 27;
    */
-  FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 27,
+  FEATURE_QUERY_HISTORY = 27,
 
   /**
-   * @generated from enum value: FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION = 28;
+   * @generated from enum value: FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 28;
    */
-  FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION = 28,
+  FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 28,
 
   /**
    * @generated from enum value: FEATURE_BATCH_QUERY = 29;
@@ -384,103 +389,103 @@ export enum PlanFeature {
   FEATURE_DATABASE_SECRET_VARIABLES = 40,
 
   /**
-   * @generated from enum value: FEATURE_QUERY_DATASOURCE_RESTRICTION = 41;
+   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 41;
    */
-  FEATURE_QUERY_DATASOURCE_RESTRICTION = 41,
+  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 41,
 
   /**
-   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 42;
+   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 42;
    */
-  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 42,
+  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 42,
 
   /**
-   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 43;
+   * @generated from enum value: FEATURE_RISK_ASSESSMENT = 43;
    */
-  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 43,
+  FEATURE_RISK_ASSESSMENT = 43,
 
   /**
-   * @generated from enum value: FEATURE_RISK_ASSESSMENT = 44;
+   * @generated from enum value: FEATURE_APPROVAL_WORKFLOW = 44;
    */
-  FEATURE_RISK_ASSESSMENT = 44,
+  FEATURE_APPROVAL_WORKFLOW = 44,
 
   /**
-   * @generated from enum value: FEATURE_APPROVAL_WORKFLOW = 45;
+   * @generated from enum value: FEATURE_AUDIT_LOG = 45;
    */
-  FEATURE_APPROVAL_WORKFLOW = 45,
+  FEATURE_AUDIT_LOG = 45,
 
   /**
-   * @generated from enum value: FEATURE_AUDIT_LOG = 46;
+   * @generated from enum value: FEATURE_ENTERPRISE_SSO = 46;
    */
-  FEATURE_AUDIT_LOG = 46,
+  FEATURE_ENTERPRISE_SSO = 46,
 
   /**
-   * @generated from enum value: FEATURE_ENTERPRISE_SSO = 47;
+   * @generated from enum value: FEATURE_TWO_FA = 47;
    */
-  FEATURE_ENTERPRISE_SSO = 47,
+  FEATURE_TWO_FA = 47,
 
   /**
-   * @generated from enum value: FEATURE_TWO_FA = 48;
+   * @generated from enum value: FEATURE_PASSWORD_RESTRICTIONS = 48;
    */
-  FEATURE_TWO_FA = 48,
+  FEATURE_PASSWORD_RESTRICTIONS = 48,
 
   /**
-   * @generated from enum value: FEATURE_PASSWORD_RESTRICTIONS = 49;
+   * @generated from enum value: FEATURE_DISALLOW_PASSWORD_SIGNIN = 49;
    */
-  FEATURE_PASSWORD_RESTRICTIONS = 49,
+  FEATURE_DISALLOW_PASSWORD_SIGNIN = 49,
 
   /**
-   * @generated from enum value: FEATURE_DISALLOW_PASSWORD_SIGNIN = 50;
+   * @generated from enum value: FEATURE_CUSTOM_ROLES = 50;
    */
-  FEATURE_DISALLOW_PASSWORD_SIGNIN = 50,
+  FEATURE_CUSTOM_ROLES = 50,
 
   /**
-   * @generated from enum value: FEATURE_CUSTOM_ROLES = 51;
+   * @generated from enum value: FEATURE_REQUEST_ROLE_WORKFLOW = 51;
    */
-  FEATURE_CUSTOM_ROLES = 51,
+  FEATURE_REQUEST_ROLE_WORKFLOW = 51,
 
   /**
-   * @generated from enum value: FEATURE_REQUEST_ROLE_WORKFLOW = 52;
+   * @generated from enum value: FEATURE_DATA_MASKING = 52;
    */
-  FEATURE_REQUEST_ROLE_WORKFLOW = 52,
+  FEATURE_DATA_MASKING = 52,
 
   /**
-   * @generated from enum value: FEATURE_DATA_MASKING = 53;
+   * @generated from enum value: FEATURE_DATA_CLASSIFICATION = 53;
    */
-  FEATURE_DATA_MASKING = 53,
+  FEATURE_DATA_CLASSIFICATION = 53,
 
   /**
-   * @generated from enum value: FEATURE_DATA_CLASSIFICATION = 54;
+   * @generated from enum value: FEATURE_SCIM = 54;
    */
-  FEATURE_DATA_CLASSIFICATION = 54,
+  FEATURE_SCIM = 54,
 
   /**
-   * @generated from enum value: FEATURE_SCIM = 55;
+   * @generated from enum value: FEATURE_DIRECTORY_SYNC = 55;
    */
-  FEATURE_SCIM = 55,
+  FEATURE_DIRECTORY_SYNC = 55,
 
   /**
-   * @generated from enum value: FEATURE_DIRECTORY_SYNC = 56;
+   * @generated from enum value: FEATURE_SIGN_IN_FREQUENCY_CONTROL = 56;
    */
-  FEATURE_DIRECTORY_SYNC = 56,
+  FEATURE_SIGN_IN_FREQUENCY_CONTROL = 56,
 
   /**
-   * @generated from enum value: FEATURE_SIGN_IN_FREQUENCY_CONTROL = 57;
+   * @generated from enum value: FEATURE_EXTERNAL_SECRET_MANAGER = 57;
    */
-  FEATURE_SIGN_IN_FREQUENCY_CONTROL = 57,
+  FEATURE_EXTERNAL_SECRET_MANAGER = 57,
 
   /**
-   * @generated from enum value: FEATURE_EXTERNAL_SECRET_MANAGER = 58;
+   * @generated from enum value: FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 58;
    */
-  FEATURE_EXTERNAL_SECRET_MANAGER = 58,
-
-  /**
-   * @generated from enum value: FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 59;
-   */
-  FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 59,
+  FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 58,
 
   /**
    * Administration & Support
    *
+   * @generated from enum value: FEATURE_PROJECT_MANAGEMENT = 59;
+   */
+  FEATURE_PROJECT_MANAGEMENT = 59,
+
+  /**
    * @generated from enum value: FEATURE_ENVIRONMENT_MANAGEMENT = 60;
    */
   FEATURE_ENVIRONMENT_MANAGEMENT = 60,
@@ -564,6 +569,7 @@ export declare const SubscriptionService: GenService<{
    * GetSubscription returns the current subscription.
    * If there is no license, we will return a free plan subscription without expiration time.
    * If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.SubscriptionService.GetSubscription
    */
@@ -573,6 +579,8 @@ export declare const SubscriptionService: GenService<{
     output: typeof SubscriptionSchema;
   },
   /**
+   * Permissions required: bb.settings.set
+   *
    * @generated from rpc bytebase.v1.SubscriptionService.UpdateSubscription
    */
   updateSubscription: {

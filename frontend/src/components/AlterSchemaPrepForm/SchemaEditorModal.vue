@@ -129,13 +129,13 @@ import { v4 as uuidv4 } from "uuid";
 import type { PropType } from "vue";
 import { computed, onMounted, h, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, type LocationQuery } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
@@ -149,10 +149,10 @@ import {
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   TinyTimer,
   defer,
@@ -248,12 +248,12 @@ const databaseList = computed(() => {
 });
 
 // Returns the type if it's uniq.
-// Returns Engine.UNRECOGNIZED if there are more than ONE types.
+// Returns Engine.ENGINE_UNSPECIFIED if there are more than ONE types.
 const databaseEngine = computed((): Engine => {
   const engineTypes = uniq(
     databaseList.value.map((db) => db.instanceResource.engine)
   );
-  if (engineTypes.length !== 1) return Engine.UNRECOGNIZED;
+  if (engineTypes.length !== 1) return Engine.ENGINE_UNSPECIFIED;
   return engineTypes[0];
 });
 
@@ -439,7 +439,7 @@ const handlePreviewIssue = async () => {
     // generating one more time below. useful for large schemas
   }
 
-  const query: Record<string, any> = {
+  const query: LocationQuery = {
     template: "bb.issue.database.schema.update",
   };
   query.databaseList = databaseList.value.map((db) => db.name).join(",");
@@ -501,12 +501,13 @@ const handlePreviewIssue = async () => {
 
   const routeInfo = {
     name: state.planOnly
-      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      ? PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
       : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.value.name),
       issueSlug: "create",
       planId: "create",
+      specId: "placeholder", // This will be replaced with the actual spec ID later.
     },
     query,
   };

@@ -148,9 +148,8 @@ func (v *tableRequirePKChecker) generateAdviceList() []*storepb.Advice {
 	return v.adviceList
 }
 
-func (v *tableRequirePKChecker) initEmptyTable(name string) columnSet {
+func (v *tableRequirePKChecker) initEmptyTable(name string) {
 	v.tables[name] = make(columnSet)
-	return v.tables[name]
 }
 
 func (v *tableRequirePKChecker) createTable(node *ast.CreateTableStmt) {

@@ -1,7 +1,10 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch, markRaw } from "vue";
-import { databaseServiceClient } from "@/grpcweb";
+import { databaseServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
   isValidEnvironmentName,
@@ -12,13 +15,24 @@ import {
   unknownEnvironment,
   unknownInstanceResource,
 } from "@/types";
-import { type Engine, engineToJSON } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  GetDatabaseRequestSchema,
+  ListDatabasesRequestSchema,
+  BatchGetDatabasesRequestSchema,
+  BatchUpdateDatabasesRequestSchema,
+  UpdateDatabaseRequestSchema,
+  BatchSyncDatabasesRequestSchema,
+  SyncDatabaseRequestSchema,
+  GetDatabaseSchemaRequestSchema,
+  DiffSchemaRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import type {
   Database,
   UpdateDatabaseRequest,
   DiffSchemaRequest,
   BatchUpdateDatabasesRequest,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import {
   instanceNamePrefix,
@@ -41,6 +55,7 @@ export interface DatabaseFilter {
   engines?: Engine[];
   excludeEngines?: Engine[];
   drifted?: boolean;
+  table?: string;
 }
 
 const isValidParentName = (parent: string): boolean => {
@@ -74,13 +89,13 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
     // engine filter should be:
     // engine in ["MYSQL", "POSTGRES"]
     params.push(
-      `engine in [${filter.engines.map((e) => `"${engineToJSON(e)}"`).join(", ")}]`
+      `engine in [${filter.engines.map((e) => `"${Engine[e]}"`).join(", ")}]`
     );
   } else if (filter.excludeEngines && filter.excludeEngines.length > 0) {
     // engine filter should be:
     // !(engine in ["REDIS", "MONGODB"])
     params.push(
-      `!(engine in [${filter.excludeEngines.map((e) => `"${engineToJSON(e)}"`).join(", ")}])`
+      `!(engine in [${filter.excludeEngines.map((e) => `"${Engine[e]}"`).join(", ")}])`
     );
   }
   if (!isNullOrUndefined(filter.drifted)) {
@@ -107,6 +122,9 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
     for (const [labelKey, labelValues] of labelMap.entries()) {
       params.push(`label == "${labelKey}:${[...labelValues].join(",")}"`);
     }
+  }
+  if (filter.table) {
+    params.push(`table.matches("${filter.table}")`);
   }
 
   return params.join(" && ");
@@ -152,14 +170,16 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       };
     }
 
-    const { databases, nextPageToken } =
-      await databaseServiceClient.listDatabases({
-        parent: params.parent,
-        pageSize: params.pageSize,
-        pageToken: params.pageToken,
-        showDeleted: params.filter?.showDeleted,
-        filter: getListDatabaseFilter(params.filter ?? {}),
-      });
+    const request = create(ListDatabasesRequestSchema, {
+      parent: params.parent,
+      pageSize: params.pageSize,
+      pageToken: params.pageToken,
+      showDeleted: params.filter?.showDeleted,
+      filter: getListDatabaseFilter(params.filter ?? {}),
+    });
+    const response = await databaseServiceClientConnect.listDatabases(request);
+    const databases = response.databases; // Work directly with proto-es types
+    const { nextPageToken } = response;
     if (params.parent.startsWith(instanceNamePrefix)) {
       removeCacheByInstance(params.parent);
     }
@@ -183,19 +203,36 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       if (database.instance !== instance.name) {
         continue;
       }
-      database.instanceResource = instance;
+      // Conversion boundary: Extract InstanceResource fields from ComposedInstance
+      database.instanceResource = {
+        name: instance.name,
+        uid: "",
+        state: instance.state,
+        title: instance.title,
+        engine: instance.engine,
+        externalLink: "",
+        maximumConnections: 0,
+        environment: instance.environment,
+        activation: true,
+        dataSources: [],
+        lastSyncTime: undefined,
+        syncInterval: undefined,
+        options: undefined,
+      } as any; // Cross-service boundary conversion
     }
   };
   const batchSyncDatabases = async (databases: string[]) => {
-    await databaseServiceClient.batchSyncDatabases({
+    const request = create(BatchSyncDatabasesRequestSchema, {
       parent: `${instanceNamePrefix}-`,
       names: databases,
     });
+    await databaseServiceClientConnect.batchSyncDatabases(request);
   };
   const syncDatabase = async (database: string, refresh = false) => {
-    await databaseServiceClient.syncDatabase({
+    const request = create(SyncDatabaseRequestSchema, {
       name: database,
     });
+    await databaseServiceClientConnect.syncDatabase(request);
     if (refresh) {
       await fetchDatabaseByName(database);
     }
@@ -204,14 +241,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return databaseMapByName.get(name) ?? unknownDatabase();
   };
   const fetchDatabaseByName = async (name: string, silent = false) => {
-    const database = await databaseServiceClient.getDatabase(
-      {
-        name,
-      },
-      {
-        silent,
-      }
-    );
+    const request = create(GetDatabaseRequestSchema, {
+      name,
+    });
+    const database = await databaseServiceClientConnect.getDatabase(request, {
+      contextValues: createContextValues().set(silentContextKey, silent),
+    });
 
     const [composed] = await upsertDatabaseMap([database]);
 
@@ -232,36 +267,58 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return request;
   };
   const batchGetDatabases = async (names: string[], silent = true) => {
-    const { databases } = await databaseServiceClient.batchGetDatabases(
+    const request = create(BatchGetDatabasesRequestSchema, {
+      names,
+    });
+    const response = await databaseServiceClientConnect.batchGetDatabases(
+      request,
       {
-        names,
-      },
-      {
-        silent,
+        contextValues: createContextValues().set(silentContextKey, silent),
       }
     );
+    const databases = response.databases; // Work directly with proto-es types
     const composed = await upsertDatabaseMap(databases);
     return composed;
   };
   const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
-    const updated = await databaseServiceClient.batchUpdateDatabases(params);
-    const composed = await upsertDatabaseMap(updated.databases);
+    const request = create(BatchUpdateDatabasesRequestSchema, {
+      parent: params.parent,
+      requests: params.requests.map((req) => ({
+        database: req.database,
+        updateMask: req.updateMask,
+      })),
+    });
+    const response =
+      await databaseServiceClientConnect.batchUpdateDatabases(request);
+    const updatedDatabases = response.databases; // Work directly with proto-es types
+    const composed = await upsertDatabaseMap(updatedDatabases);
     return composed;
   };
   const updateDatabase = async (params: UpdateDatabaseRequest) => {
-    const updated = await databaseServiceClient.updateDatabase(params);
+    if (!params.database) {
+      throw new Error("Database is required for update");
+    }
+    const request = create(UpdateDatabaseRequestSchema, {
+      ...params,
+      database: params.database,
+      updateMask: params.updateMask,
+    });
+    const updated = await databaseServiceClientConnect.updateDatabase(request);
     const [composed] = await upsertDatabaseMap([updated]);
     return composed;
   };
-  const fetchDatabaseSchema = async (name: string, sdlFormat = false) => {
-    const schema = await databaseServiceClient.getDatabaseSchema({
-      name,
+  const fetchDatabaseSchema = async (database: string, sdlFormat = false) => {
+    const request = create(GetDatabaseSchemaRequestSchema, {
+      name: `${database}/schema`,
       sdlFormat,
     });
+    const schema =
+      await databaseServiceClientConnect.getDatabaseSchema(request);
     return schema;
   };
-  const diffSchema = async (request: DiffSchemaRequest) => {
-    const resp = await databaseServiceClient.diffSchema(request);
+  const diffSchema = async (params: DiffSchemaRequest) => {
+    const request = create(DiffSchemaRequestSchema, params);
+    const resp = await databaseServiceClientConnect.diffSchema(request);
     return resp;
   };
 

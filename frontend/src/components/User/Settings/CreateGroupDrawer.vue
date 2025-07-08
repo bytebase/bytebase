@@ -23,7 +23,7 @@
             <EmailInput
               v-model:value="state.group.email"
               :readonly="!isCreating"
-              :domain="workspaceDomain"
+              :show-domain="true"
             />
           </div>
           <div class="flex flex-col gap-y-2">
@@ -131,7 +131,8 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, head, isEqual } from "lodash-es";
+import { create } from "@bufbuild/protobuf";
+import { cloneDeep, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -144,18 +145,18 @@ import {
   useCurrentUserV1,
   pushNotification,
   useUserStore,
-  useSettingV1Store,
 } from "@/store";
 import {
   userNamePrefix,
   groupNamePrefix,
   extractUserId,
 } from "@/store/modules/v1/common";
+import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
 import {
-  Group,
-  GroupMember,
+  GroupSchema,
+  GroupMemberSchema,
   GroupMember_Role,
-} from "@/types/proto/v1/group_service";
+} from "@/types/proto-es/v1/group_service_pb";
 import { isValidEmail, hasWorkspacePermissionV2 } from "@/utils";
 import RemoveGroupButton from "./RemoveGroupButton.vue";
 import GroupMemberRoleSelect from "./UserDataTableByGroup/cells/GroupMemberRoleSelect.vue";
@@ -179,7 +180,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
@@ -192,7 +192,7 @@ const state = reactive<LocalState>({
     description: props.group?.description ?? "",
     members: cloneDeep(
       props.group?.members ?? [
-        GroupMember.fromPartial({
+        create(GroupMemberSchema, {
           role: GroupMember_Role.OWNER,
           member: `${userNamePrefix}${currentUserV1.value.email}`,
         }),
@@ -202,10 +202,6 @@ const state = reactive<LocalState>({
 });
 
 const isCreating = computed(() => !props.group);
-
-const workspaceDomain = computed(() =>
-  head(settingV1Store.workspaceProfileSetting?.domains)
-);
 
 const disallowEditMember = computed(() => !!props.group?.source);
 
@@ -243,7 +239,7 @@ const validGroup = computed(() => {
       memberMap.set(member.member, member);
     }
   }
-  return Group.fromPartial({
+  return create(GroupSchema, {
     name: `${groupNamePrefix}${state.group.email}`,
     title: state.group.title,
     description: state.group.description,
@@ -270,7 +266,7 @@ const allowConfirm = computed(() => {
 });
 
 const addMember = () => {
-  const member = GroupMember.fromPartial({
+  const member = create(GroupMemberSchema, {
     role:
       state.group.members.length === 0
         ? GroupMember_Role.OWNER

@@ -59,7 +59,7 @@ const localeLabel =
 const selectedLanguage = ref(localeLabel);
 const year = new Date().getFullYear();
 
-const changeLanguage = (item: any) => {
+const changeLanguage = (item: { label: string; value: string }) => {
   setLocale(item.value);
   selectedLanguage.value = item.label;
 };

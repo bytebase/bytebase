@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
 import { useElementSize } from "@vueuse/core";
 import { head, pull } from "lodash-es";
 import { ChevronDownIcon } from "lucide-vue-next";
@@ -34,13 +35,16 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
-import {
+import type {
   TablePartitionMetadata,
+  DatabaseMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  TablePartitionMetadataSchema,
   TablePartitionMetadata_Type,
-  type DatabaseMetadata,
-  type SchemaMetadata,
-  type TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import type { EditStatus } from "../..";
 import { useSchemaEditorContext } from "../../context";
 import { markUUID } from "../common";
@@ -393,7 +397,7 @@ const columns = computed(() => {
             }}
             onAdd-sub={() => {
               const first = firstSubPartition.value;
-              const sub = TablePartitionMetadata.fromPartial({
+              const sub = create(TablePartitionMetadataSchema, {
                 type: first?.partition.type ?? TablePartitionMetadata_Type.HASH,
                 expression: first?.partition.expression ?? "",
               });

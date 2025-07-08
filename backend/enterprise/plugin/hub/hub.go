@@ -23,20 +23,20 @@ var _ plugin.LicenseProvider = (*Provider)(nil)
 
 // Provider is the Bytebase Hub license provider.
 type Provider struct {
-	config         *config.Config
-	store          *store.Store
-	remoteProvider *remoteLicenseProvider
+	config *config.Config
+	store  *store.Store
 }
 
 // claims creates a struct that will be encoded to a JWT.
 // We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
 type claims struct {
-	InstanceCount int    `json:"instanceCount"`
-	Seat          int    `json:"seat"`
-	Trialing      bool   `json:"trialing"`
-	Plan          string `json:"plan"`
-	OrgName       string `json:"orgName"`
-	WorkspaceID   string `json:"workspaceId"`
+	ActiveInstances int    `json:"instanceCount"`
+	Instances       int    `json:"instance"`
+	Seats           int    `json:"seat"`
+	Trialing        bool   `json:"trialing"`
+	Plan            string `json:"plan"`
+	OrgName         string `json:"orgName"`
+	WorkspaceID     string `json:"workspaceId"`
 	jwt.RegisteredClaims
 }
 
@@ -68,9 +68,8 @@ func NewProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider,
 	}
 
 	return &Provider{
-		store:          providerConfig.Store,
-		config:         config,
-		remoteProvider: newRemoteLicenseProvider(config, providerConfig.Store),
+		store:  providerConfig.Store,
+		config: config,
 	}, nil
 }
 
@@ -99,12 +98,6 @@ func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 	}
 
 	if license == nil {
-		license, err = p.fetchAndStoreLicense(ctx)
-		if err != nil {
-			slog.Debug("failed to fetch license", log.BBError(err))
-		}
-	}
-	if license == nil {
 		return nil
 	}
 
@@ -113,29 +106,6 @@ func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 		return nil
 	}
 	return license
-}
-
-func (p *Provider) fetchAndStoreLicense(ctx context.Context) (*v1pb.Subscription, error) {
-	license, err := p.remoteProvider.FetchLicense(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if license == "" {
-		return nil, nil
-	}
-	result, err := p.parseLicense(ctx, license)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := p.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
-		Name:  storepb.SettingName_ENTERPRISE_LICENSE,
-		Value: license,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to store the license")
-	}
-
-	return result, nil
 }
 
 func (p *Provider) parseLicense(ctx context.Context, license string) (*v1pb.Subscription, error) {
@@ -163,7 +133,9 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*v1pb.Subscriptio
 				"Load valid license",
 				slog.String("plan", license.Plan.String()),
 				slog.Time("expiresAt", license.ExpiresTime.AsTime()),
-				slog.Int("instanceCount", int(license.InstanceCount)),
+				slog.Int("activeInstances", int(license.ActiveInstances)),
+				slog.Int("instances", int(license.Instances)),
+				slog.Int("seats", int(license.Seats)),
 			)
 			return license, nil
 		}
@@ -203,13 +175,43 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*v1pb.Subscr
 	}
 
 	license := &v1pb.Subscription{
-		InstanceCount: int32(claim.InstanceCount),
-		SeatCount:     int32(claim.Seat),
-		ExpiresTime:   expiresTime,
-		Plan:          planType,
-		Trialing:      claim.Trialing,
-		OrgName:       claim.OrgName,
+		ActiveInstances: int32(claim.ActiveInstances),
+		Instances:       int32(claim.Instances),
+		Seats:           int32(claim.Seats),
+		ExpiresTime:     expiresTime,
+		Plan:            planType,
+		Trialing:        claim.Trialing,
+		OrgName:         claim.OrgName,
 	}
 
 	return license, nil
+}
+
+func parseJWTToken(tokenString, expectVersion, publicKey string, claims jwt.Claims) error {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, common.Errorf(common.Invalid, "unexpected signing method: %v", token.Header["alg"])
+		}
+
+		kid, ok := token.Header["kid"].(string)
+		if !ok || kid != expectVersion {
+			return nil, common.Errorf(common.Invalid, "version '%v' is not valid. expect %s", token.Header["kid"], expectVersion)
+		}
+
+		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(publicKey))
+		if err != nil {
+			return nil, common.Wrap(err, common.Invalid)
+		}
+
+		return key, nil
+	})
+	if err != nil {
+		return common.Wrap(err, common.Invalid)
+	}
+
+	if !token.Valid {
+		return common.Errorf(common.Invalid, "invalid token")
+	}
+
+	return nil
 }

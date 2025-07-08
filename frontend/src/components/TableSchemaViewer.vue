@@ -8,19 +8,7 @@
         {{ resourceName }}
       </div>
       <div class="flex flex-row justify-end items-center">
-        <NTooltip>
-          <template #trigger>
-            <NButton
-              quaternary
-              size="tiny"
-              class="!px-1"
-              @click="handleCopySchemaString"
-            >
-              <ClipboardIcon class="w-4 h-4" />
-            </NButton>
-          </template>
-          {{ $t("common.copy") }}
-        </NTooltip>
+        <CopyButton :content="schemaString || ''" />
       </div>
     </div>
     <MonacoEditor
@@ -32,17 +20,15 @@
 </template>
 
 <script lang="ts" setup>
-import { useClipboard } from "@vueuse/core";
-import { ClipboardIcon } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { create } from "@bufbuild/protobuf";
 import { onMounted, ref, computed } from "vue";
 import { nextTick } from "vue";
-import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import { databaseServiceClient } from "@/grpcweb";
-import { pushNotification } from "@/store";
+import { CopyButton } from "@/components/v2";
+import { databaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
-import type { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
+import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
+import { GetSchemaStringRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
 
 const props = defineProps<{
@@ -52,11 +38,6 @@ const props = defineProps<{
   type?: GetSchemaStringRequest_ObjectType;
 }>();
 
-const { t } = useI18n();
-
-const { copy: copyTextToClipboard, isSupported } = useClipboard({
-  legacy: true,
-});
 const schemaString = ref<string | null>(null);
 
 const engine = computed(() => {
@@ -79,31 +60,15 @@ const resourceName = computed(() => {
 
 onMounted(async () => {
   nextTick(async () => {
-    const response = await databaseServiceClient.getSchemaString({
+    const request = create(GetSchemaStringRequestSchema, {
       name: props.database.name,
       type: props.type,
       schema: props.schema,
       object: props.object,
     });
+    const response =
+      await databaseServiceClientConnect.getSchemaString(request);
     schemaString.value = response.schemaString.trim();
   });
 });
-
-const handleCopySchemaString = () => {
-  if (!isSupported.value) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Copy to clipboard is not enabled in your browser.",
-    });
-    return;
-  }
-
-  copyTextToClipboard(schemaString.value || "");
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("sql-editor.copy-success"),
-  });
-};
 </script>

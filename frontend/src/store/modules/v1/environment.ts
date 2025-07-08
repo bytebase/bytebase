@@ -1,15 +1,25 @@
-import { settingServiceClient } from "@/grpcweb";
-import type { ResourceId } from "@/types";
-import { unknownEnvironment } from "@/types";
-import {
-  EnvironmentSetting,
-  EnvironmentSetting_Environment,
-  Setting_SettingName,
-} from "@/types/proto/v1/setting_service";
-import type { Environment } from "@/types/v1/environment";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
+import { settingServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import type { ResourceId } from "@/types";
+import { unknownEnvironment } from "@/types";
+import type {
+  EnvironmentSetting,
+  EnvironmentSetting_Environment,
+} from "@/types/proto-es/v1/setting_service_pb";
+import {
+  EnvironmentSetting_EnvironmentSchema,
+  EnvironmentSettingSchema,
+  GetSettingRequestSchema,
+  UpdateSettingRequestSchema,
+  SettingSchema,
+  Setting_SettingName,
+} from "@/types/proto-es/v1/setting_service_pb";
+import type { Environment } from "@/types/v1/environment";
 import { environmentNamePrefix } from "./common";
 
 interface EnvironmentState {
@@ -29,12 +39,14 @@ const convertToEnvironments = (
 ): Environment[] => {
   return environments.map<Environment>((env, i) => {
     return {
-      name: `${environmentNamePrefix}${env.id}`,
-      id: env.id,
-      title: env.title,
+      ...create(EnvironmentSetting_EnvironmentSchema, {
+        name: `${environmentNamePrefix}${env.id}`,
+        id: env.id,
+        title: env.title,
+        color: env.color,
+        tags: env.tags,
+      }),
       order: i,
-      color: env.color,
-      tags: env.tags,
     };
   });
 };
@@ -42,14 +54,13 @@ const convertToEnvironments = (
 const convertEnvironment = (
   env: Environment
 ): EnvironmentSetting_Environment => {
-  const res: EnvironmentSetting_Environment = {
+  return create(EnvironmentSetting_EnvironmentSchema, {
     name: env.name,
     id: env.id,
     title: env.title,
     color: env.color,
     tags: env.tags,
-  };
-  return res;
+  });
 };
 
 const convertEnvironments = (
@@ -61,32 +72,45 @@ const convertEnvironments = (
 const getEnvironmentSetting = async (
   silent = false
 ): Promise<Environment[]> => {
-  const setting = await settingServiceClient.getSetting(
-    {
-      name: `settings/${Setting_SettingName.ENVIRONMENT}`,
-    },
-    { silent }
-  );
-  const settingEnvironments =
-    setting.value?.environmentSetting?.environments ?? [];
-  return convertToEnvironments(settingEnvironments);
+  const request = create(GetSettingRequestSchema, {
+    name: `settings/${Setting_SettingName[Setting_SettingName.ENVIRONMENT]}`,
+  });
+  const response = await settingServiceClientConnect.getSetting(request, {
+    contextValues: createContextValues().set(silentContextKey, silent),
+  });
+  // Extract environments from proto-es format
+  if (response.value?.value?.case === "environmentSetting") {
+    const settingEnvironments = response.value.value.value.environments ?? [];
+    return convertToEnvironments(settingEnvironments);
+  }
+  return [];
 };
 
 const updateEnvironmentSetting = async (
   environment: EnvironmentSetting
 ): Promise<Environment[]> => {
-  const setting = await settingServiceClient.updateSetting({
-    setting: {
-      name: `settings/${Setting_SettingName.ENVIRONMENT}`,
+  const setting = create(SettingSchema, {
+    name: `settings/${Setting_SettingName[Setting_SettingName.ENVIRONMENT]}`,
+    value: {
       value: {
-        environmentSetting: environment,
+        case: "environmentSetting",
+        value: environment,
       },
     },
-    updateMask: ["environment_setting"],
   });
-  const settingEnvironments =
-    setting.value?.environmentSetting?.environments ?? [];
-  return convertToEnvironments(settingEnvironments);
+
+  const request = create(UpdateSettingRequestSchema, {
+    setting,
+    updateMask: { paths: ["environment_setting"] },
+  });
+  const response = await settingServiceClientConnect.updateSetting(request);
+
+  // Extract environments from proto-es response
+  if (response.value?.value?.case === "environmentSetting") {
+    const settingEnvironments = response.value.value.value.environments ?? [];
+    return convertToEnvironments(settingEnvironments);
+  }
+  return [];
 };
 
 export const useEnvironmentV1Store = defineStore("environment_v1", {
@@ -114,21 +138,23 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
     async createEnvironment(
       environment: Partial<Environment>
     ): Promise<Environment> {
-      const e: EnvironmentSetting_Environment = {
+      const e = create(EnvironmentSetting_EnvironmentSchema, {
         name: "",
         id: environment.id ?? "",
         title: environment.title ?? "",
         color: environment.color ?? "",
         tags: environment.tags ?? {},
-      };
+      });
       const newEnvironmentSettingValue = [
         ...convertEnvironments(this.environmentList),
         e,
       ];
 
-      const newEnvironments = await updateEnvironmentSetting({
-        environments: newEnvironmentSettingValue,
-      });
+      const newEnvironments = await updateEnvironmentSetting(
+        create(EnvironmentSettingSchema, {
+          environments: newEnvironmentSettingValue,
+        })
+      );
 
       const newEnvironmentMapById = getEnvironmentByIdMap(newEnvironments);
       this.environmentMapById = newEnvironmentMapById;
@@ -147,19 +173,21 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       if (!originData) {
         throw new Error(`environment with id ${update.id} not found`);
       }
-      const newEnvironments = await updateEnvironmentSetting({
-        environments: convertEnvironments(
-          this.environmentList.map((environment) => {
-            if (environment.id === update.id) {
-              environment.title = update.title ?? environment.title;
-              environment.color = update.color ?? environment.color;
-              environment.tags = update.tags ?? environment.tags;
-              environment.order = update.order ?? environment.order;
-            }
-            return environment;
-          })
-        ),
-      });
+      const newEnvironments = await updateEnvironmentSetting(
+        create(EnvironmentSettingSchema, {
+          environments: convertEnvironments(
+            this.environmentList.map((environment) => {
+              if (environment.id === update.id) {
+                environment.title = update.title ?? environment.title;
+                environment.color = update.color ?? environment.color;
+                environment.tags = update.tags ?? environment.tags;
+                environment.order = update.order ?? environment.order;
+              }
+              return environment;
+            })
+          ),
+        })
+      );
 
       const newEnvironmentMapById = getEnvironmentByIdMap(newEnvironments);
       this.environmentMapById = newEnvironmentMapById;
@@ -171,19 +199,23 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
     },
     async deleteEnvironment(name: string): Promise<void> {
       const id = name.replace(environmentNamePrefix, "");
-      const newEnvironments = await updateEnvironmentSetting({
-        environments: convertEnvironments(
-          this.environmentList.filter((environment) => environment.id !== id)
-        ),
-      });
+      const newEnvironments = await updateEnvironmentSetting(
+        create(EnvironmentSettingSchema, {
+          environments: convertEnvironments(
+            this.environmentList.filter((environment) => environment.id !== id)
+          ),
+        })
+      );
       this.environmentMapById = getEnvironmentByIdMap(newEnvironments);
     },
     async reorderEnvironmentList(
       orderedEnvironmentList: Environment[]
     ): Promise<Environment[]> {
-      const newEnvironments = await updateEnvironmentSetting({
-        environments: convertEnvironments(orderedEnvironmentList),
-      });
+      const newEnvironments = await updateEnvironmentSetting(
+        create(EnvironmentSettingSchema, {
+          environments: convertEnvironments(orderedEnvironmentList),
+        })
+      );
       this.environmentMapById = getEnvironmentByIdMap(newEnvironments);
       return newEnvironments;
     },

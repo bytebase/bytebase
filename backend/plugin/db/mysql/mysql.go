@@ -16,8 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/cloudsqlconn"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
@@ -182,7 +180,7 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 // https://repost.aws/knowledge-center/rds-mysql-access-denied
 func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
 	dbEndpoint := fmt.Sprintf("%s:%s", connCfg.DataSource.Host, connCfg.DataSource.Port)
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := util.GetAWSConnectionConfig(ctx, connCfg)
 	if err != nil {
 		return "", errors.Wrap(err, "load aws config failed")
 	}
@@ -204,10 +202,11 @@ func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string,
 }
 
 func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
-	d, err := cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
+	d, err := util.GetGCPConnectionConfig(ctx, connCfg)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "load gcp config failed")
 	}
+
 	mysql.RegisterDialContext("cloudsqlconn",
 		func(ctx context.Context, _ string) (net.Conn, error) {
 			return d.Dial(ctx, connCfg.DataSource.Host)

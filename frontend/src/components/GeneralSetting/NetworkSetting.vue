@@ -39,6 +39,8 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NInput, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
@@ -83,7 +85,9 @@ const updateNetworkSetting = async () => {
     payload: {
       externalUrl: state.externalUrl,
     },
-    updateMask: ["value.workspace_profile_setting_value.external_url"],
+    updateMask: create(FieldMaskSchema, {
+      paths: ["value.workspace_profile_setting_value.external_url"],
+    }),
   });
 
   state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";

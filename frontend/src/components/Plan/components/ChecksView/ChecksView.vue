@@ -1,27 +1,27 @@
 <template>
-  <div class="h-full flex flex-col">
+  <div class="flex-1 flex flex-col pt-2 pb-4">
     <!-- Header with filters -->
     <div class="flex items-center justify-between px-4 py-2">
       <div class="flex items-center gap-4">
         <!-- Check result summary with icons -->
         <div class="flex items-center gap-3">
           <div
-            v-if="statusCounts.success > 0"
+            v-if="statusCounts.error > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
             :class="[
               selectedStatus &&
-                selectedStatus === PlanCheckRun_Result_Status.SUCCESS &&
+                selectedStatus === PlanCheckRun_Result_Status.ERROR &&
                 'bg-gray-100 rounded-lg',
-              'text-lg text-success',
+              'text-lg text-error',
             ]"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.SUCCESS)"
+            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.ERROR)"
           >
-            <CheckCircleIcon class="w-6 h-6" />
+            <XCircleIcon class="w-6 h-6" />
             <span>
-              {{ $t("common.success") }}
+              {{ $t("common.error") }}
             </span>
             <span class="font-semibold">
-              {{ statusCounts.success }}
+              {{ statusCounts.error }}
             </span>
           </div>
           <div
@@ -44,22 +44,22 @@
             </span>
           </div>
           <div
-            v-if="statusCounts.error > 0"
+            v-if="statusCounts.success > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
             :class="[
               selectedStatus &&
-                selectedStatus === PlanCheckRun_Result_Status.ERROR &&
+                selectedStatus === PlanCheckRun_Result_Status.SUCCESS &&
                 'bg-gray-100 rounded-lg',
-              'text-lg text-error',
+              'text-lg text-success',
             ]"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.ERROR)"
+            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.SUCCESS)"
           >
-            <XCircleIcon class="w-6 h-6" />
+            <CheckCircleIcon class="w-6 h-6" />
             <span>
-              {{ $t("common.error") }}
+              {{ $t("common.success") }}
             </span>
             <span class="font-semibold">
-              {{ statusCounts.error }}
+              {{ statusCounts.success }}
             </span>
           </div>
         </div>
@@ -67,26 +67,15 @@
     </div>
 
     <!-- Results List -->
-    <div class="flex-1 overflow-y-auto border-t mt-2">
-      <div v-if="isLoading" class="flex items-center justify-center py-12">
-        <BBSpin />
-      </div>
-
+    <div class="flex-1 overflow-y-auto">
       <div
-        v-else-if="filteredResults.length === 0"
+        v-if="filteredResults.length === 0"
         class="flex flex-col items-center justify-center py-12"
       >
         <CheckCircleIcon class="w-12 h-12 text-control-light opacity-50 mb-4" />
-        <div class="text-lg font-medium text-control-light mb-2">
+        <div class="text-lg text-control-light">
           {{
             hasFilters ? "No results match your filters" : "No check results"
-          }}
-        </div>
-        <div class="text-sm text-control-lighter">
-          {{
-            hasFilters
-              ? "Try adjusting your filters"
-              : "Run checks to see results here"
           }}
         </div>
       </div>
@@ -105,22 +94,16 @@
                 :is="getCheckTypeIcon(checkRun.type)"
                 class="w-5 h-5 text-control-light"
               />
-              <div>
+              <div class="flex flex-row items-center gap-2">
                 <span class="text-sm font-medium">
                   {{ getCheckTypeLabel(checkRun.type) }}
                 </span>
-                <span class="text-xs text-control-light">
-                  Target: {{ formatTarget(checkRun.target) }}
-                </span>
+                <DatabaseDisplay :database="checkRun.target" />
               </div>
             </div>
 
             <div class="flex items-center gap-2">
-              <NBadge
-                :type="getStatusBadgeType(getCheckRunStatus(checkRun))"
-                :value="getStatusLabel(getCheckRunStatus(checkRun))"
-              />
-              <span class="text-xs text-control-lighter">
+              <span class="text-xs text-control">
                 {{ formatTime(checkRun.createTime) }}
               </span>
             </div>
@@ -135,28 +118,26 @@
             >
               <component
                 :is="getStatusIcon(result.status)"
-                class="w-4 h-4 mt-0.5 flex-shrink-0"
+                class="w-5 h-5 flex-shrink-0"
                 :class="getStatusColor(result.status)"
               />
 
-              <div class="flex-1 min-w-0">
+              <div class="flex-1 min-w-0 space-y-1">
                 <div class="text-sm font-medium text-main">
-                  {{ result.title }}
+                  {{ getResultTitle(result) }}
                 </div>
-                <div
-                  v-if="result.content"
-                  class="text-xs text-control-light mt-1"
-                >
+                <div v-if="result.content" class="text-xs text-control">
                   {{ result.content }}
                 </div>
                 <div
                   v-if="
-                    result.sqlReviewReport && result.sqlReviewReport.line > 0
+                    result.report?.case === 'sqlReviewReport' &&
+                    result.report.value.line > 0
                   "
                   class="text-xs text-control-lighter mt-1"
                 >
-                  Line {{ result.sqlReviewReport.line }}, Column
-                  {{ result.sqlReviewReport.column }}
+                  Line {{ result.report.value.line }}, Column
+                  {{ result.report.value.column }}
                 </div>
               </div>
             </div>
@@ -168,6 +149,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import {
   CheckCircleIcon,
   AlertCircleIcon,
@@ -177,30 +159,36 @@ import {
   ShieldIcon,
   SearchCodeIcon,
 } from "lucide-vue-next";
-import { NBadge } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBSpin } from "@/bbkit";
+import { getRuleLocalization } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
-import { extractDatabaseResourceName, humanizeTs } from "@/utils";
+  type PlanCheckRun_Result,
+} from "@/types/proto-es/v1/plan_service_pb";
+import { humanizeTs } from "@/utils";
 import { usePlanContext } from "../../logic/context";
+import DatabaseDisplay from "../common/DatabaseDisplay.vue";
+
+const props = defineProps<{
+  defaultStatus?: PlanCheckRun_Result_Status;
+}>();
 
 const { t } = useI18n();
-const { planCheckRunList } = usePlanContext();
+const { planCheckRuns } = usePlanContext();
 
-const isLoading = ref(false);
-const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(undefined);
+const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(
+  props.defaultStatus
+);
 
 const hasFilters = computed(() => {
   return selectedStatus.value !== undefined;
 });
 
 const filteredCheckRuns = computed(() => {
-  return planCheckRunList.value.filter((checkRun) => {
+  return planCheckRuns.value.filter((checkRun) => {
     // Filter by status - check if any result matches the selected status
     if (selectedStatus.value !== undefined) {
       const hasMatchingResult = checkRun.results.some(
@@ -216,7 +204,7 @@ const filteredCheckRuns = computed(() => {
 });
 
 const filteredResults = computed(() => {
-  const results: Array<{ checkRun: PlanCheckRun; result: any }> = [];
+  const results = [];
 
   for (const checkRun of filteredCheckRuns.value) {
     for (const result of checkRun.results) {
@@ -239,7 +227,7 @@ const statusCounts = computed(() => {
     error: 0,
   };
 
-  for (const checkRun of planCheckRunList.value) {
+  for (const checkRun of planCheckRuns.value) {
     for (const result of checkRun.results) {
       switch (result.status) {
         case PlanCheckRun_Result_Status.SUCCESS:
@@ -273,25 +261,6 @@ const getFilteredResults = (checkRun: PlanCheckRun) => {
       result.status === selectedStatus.value
     );
   });
-};
-
-const getCheckRunStatus = (
-  checkRun: PlanCheckRun
-): PlanCheckRun_Result_Status => {
-  let hasError = false;
-  let hasWarning = false;
-
-  for (const result of checkRun.results) {
-    if (result.status === PlanCheckRun_Result_Status.ERROR) {
-      hasError = true;
-    } else if (result.status === PlanCheckRun_Result_Status.WARNING) {
-      hasWarning = true;
-    }
-  }
-
-  if (hasError) return PlanCheckRun_Result_Status.ERROR;
-  if (hasWarning) return PlanCheckRun_Result_Status.WARNING;
-  return PlanCheckRun_Result_Status.SUCCESS;
 };
 
 const getCheckTypeIcon = (type: PlanCheckRun_Type) => {
@@ -350,42 +319,34 @@ const getStatusColor = (status: PlanCheckRun_Result_Status) => {
   }
 };
 
-const getStatusBadgeType = (status: PlanCheckRun_Result_Status) => {
-  switch (status) {
-    case PlanCheckRun_Result_Status.ERROR:
-      return "error";
-    case PlanCheckRun_Result_Status.WARNING:
-      return "warning";
-    case PlanCheckRun_Result_Status.SUCCESS:
-      return "success";
-    default:
-      return "default";
-  }
-};
-
-const getStatusLabel = (status: PlanCheckRun_Result_Status) => {
-  switch (status) {
-    case PlanCheckRun_Result_Status.ERROR:
-      return "Error";
-    case PlanCheckRun_Result_Status.WARNING:
-      return "Warning";
-    case PlanCheckRun_Result_Status.SUCCESS:
-      return "Success";
-    default:
-      return "Unknown";
-  }
-};
-
-const formatTarget = (target: string): string => {
-  const { instanceName, databaseName } = extractDatabaseResourceName(target);
-  if (instanceName && databaseName) {
-    return `${databaseName} (${instanceName})`;
-  }
-  return target;
-};
-
-const formatTime = (timestamp: any): string => {
+const formatTime = (timestamp: Timestamp | undefined): string => {
   if (!timestamp) return "";
-  return humanizeTs(new Date(timestamp.seconds * 1000).getTime() / 1000);
+  return humanizeTs(
+    new Date(Number(timestamp.seconds) * 1000).getTime() / 1000
+  );
+};
+
+const messageWithCode = (message: string, code: number | undefined): string => {
+  if (code !== undefined && code !== 0) {
+    return `${message} #${code}`;
+  }
+  return message;
+};
+
+const getResultTitle = (result: PlanCheckRun_Result): string => {
+  let title = result.title;
+  if (title === "OK" || title === "Syntax error") {
+    return title;
+  }
+  // Only apply SQL review localization if this is a SQL review report
+  if (result.report?.case === "sqlReviewReport") {
+    // Convert dots to hyphens in the rule key to match the expected format
+    const normalizedKey = title.replace(/\./g, "-");
+    // Use getRuleLocalization to get the title
+    const localization = getRuleLocalization(normalizedKey);
+    title = localization.title;
+  }
+  // Add error code if present
+  return messageWithCode(title, result.code);
 };
 </script>

@@ -7,10 +7,10 @@ import {
   type ComposedProject,
   type Permission,
 } from "@/types";
-import { type User } from "@/types/proto/v1/user_service";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 import { bindingListInIAM } from "@/utils";
-import { useCurrentUserV1 } from "../auth";
 import { useRoleStore } from "../role";
+import { useCurrentUserV1 } from "./auth";
 import { useWorkspaceV1Store } from "./workspace";
 
 export const usePermissionStore = defineStore("permission", () => {

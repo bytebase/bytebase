@@ -41,26 +41,27 @@
 </template>
 
 <script lang="ts" setup>
-import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
-import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
-import {
-  TableCatalog,
-  TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
-import type {
-  DatabaseMetadata,
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
-import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
+import { create } from "@bufbuild/protobuf";
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, pick } from "lodash-es";
+import { pick } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
+import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
+import type { ComposedDatabase } from "@/types";
+import {
+  TableCatalogSchema,
+  TableCatalog_ColumnsSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import type {
+  DatabaseMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
+import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
 import { markUUID } from "../common";
 import { NameCell, OperationCell, SelectionCell } from "./components";
@@ -109,6 +110,7 @@ const {
   showClassificationColumn,
   classificationConfig,
 } = useSchemaEditorContext();
+
 const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
@@ -153,9 +155,12 @@ const catalogForTable = (table: string) => {
       schema: props.schema.name,
       table,
     }) ??
-    TableCatalog.fromPartial({
+    create(TableCatalogSchema, {
       name: table,
-      columns: TableCatalog_Columns.fromPartial({}),
+      kind: {
+        case: "columns",
+        value: create(TableCatalog_ColumnsSchema, {}),
+      },
     })
   );
 };
@@ -374,7 +379,7 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     return;
   }
 
-  const table = cloneDeep(template.table);
+  const table = template.table;
   /* eslint-disable-next-line vue/no-mutating-props */
   props.schema.tables.push(table);
   const metadata = metadataForTable(table);

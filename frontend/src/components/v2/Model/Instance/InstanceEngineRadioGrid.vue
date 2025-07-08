@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { engineNameV1 } from "@/utils";
 import {
   RadioGrid,

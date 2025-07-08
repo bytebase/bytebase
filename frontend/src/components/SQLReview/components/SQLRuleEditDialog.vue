@@ -93,7 +93,7 @@ import { nextTick, reactive, watch, ref } from "vue";
 import { BBModal, BBTextField } from "@/bbkit";
 import { payloadValueListToComponentList } from "@/components/SQLReview/components";
 import { RichEngineName } from "@/components/v2";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
 import { getRuleLocalization } from "@/types/sqlReview";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";

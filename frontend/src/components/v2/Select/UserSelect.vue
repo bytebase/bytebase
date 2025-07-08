@@ -34,7 +34,7 @@ import {
   allUsersUser,
   isValidUserName,
 } from "@/types";
-import { UserType, type User } from "@/types/proto/v1/user_service";
+import { UserType, type User } from "@/types/proto-es/v1/user_service_pb";
 import { getDefaultPagination, ensureUserFullName } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 

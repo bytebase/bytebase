@@ -13,6 +13,7 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service GroupService {
+  // Permissions required: bb.groups.get
   rpc GetGroup(GetGroupRequest) returns (Group) {
     option (google.api.http) = {get: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";
@@ -20,6 +21,7 @@ service GroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.groups.list
   rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups"};
     option (google.api.method_signature) = "";
@@ -27,6 +29,7 @@ service GroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.groups.create
   rpc CreateGroup(CreateGroupRequest) returns (Group) {
     option (google.api.http) = {
       post: "/v1/groups"
@@ -40,6 +43,7 @@ service GroupService {
 
   // UpdateGroup updates the group.
   // Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
+  // Permissions required: bb.groups.update
   rpc UpdateGroup(UpdateGroupRequest) returns (Group) {
     option (google.api.http) = {
       patch: "/v1/{group.name=groups/*}"
@@ -51,6 +55,7 @@ service GroupService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.groups.delete
   rpc DeleteGroup(DeleteGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";

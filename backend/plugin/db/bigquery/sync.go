@@ -6,7 +6,6 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"google.golang.org/api/iterator"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -87,9 +86,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			column.Collation = row.CollationName.String()
 		}
 		if row.ColumnDefault.Valid {
-			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: row.ColumnDefault.String()}}
+			column.Default = row.ColumnDefault.String()
 		} else {
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
+			column.DefaultNull = true
 		}
 
 		key := db.TableKey{Schema: "", Table: row.TableName}

@@ -20,8 +20,8 @@ import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
-import { getTimeForPbTimestamp, type ComposedRelease } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { getTimeForPbTimestampProtoEs, type ComposedRelease } from "@/types";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { getReleaseFileStatement, humanizeTs } from "@/utils";
 
 interface LocalState {
@@ -112,7 +112,9 @@ const columnList = computed(
         title: t("common.created-at"),
         width: 128,
         render: (release) =>
-          humanizeTs(getTimeForPbTimestamp(release.createTime, 0) / 1000),
+          humanizeTs(
+            getTimeForPbTimestampProtoEs(release.createTime, 0) / 1000
+          ),
       },
     ];
     return columns.filter((column) => !column.hide);

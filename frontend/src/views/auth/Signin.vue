@@ -174,6 +174,8 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import type { ConnectError } from "@connectrpc/connect";
 import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
 import { NButton, NCard, NTabPane, NTabs } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -190,8 +192,9 @@ import {
   useIdentityProviderStore,
 } from "@/store";
 import { idpNamePrefix } from "@/store/modules/v1/common";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { IdentityProviderType } from "@/types/proto/v1/idp_service";
+import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
+import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 import { openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 
@@ -258,8 +261,17 @@ watchEffect(() => {
 });
 
 onMounted(async () => {
-  await identityProviderStore.fetchIdentityProviderList();
-
+  try {
+    // Prepare all identity providers.
+    await identityProviderStore.fetchIdentityProviderList();
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `Request error occurred`,
+      description: (error as ConnectError).message,
+    });
+  }
   // Check if there is an identity provider in the query string and try to sign in with it.
   if (route.query["idp"]) {
     const idpName = `${idpNamePrefix}${route.query["idp"] as string}`;
@@ -284,12 +296,14 @@ const trySignin = async (idpName: string) => {
   if (state.isLoading) return;
   state.isLoading = true;
   try {
-    await authStore.login({
-      email: state.email,
-      password: state.password,
-      web: true,
-      idpName: idpName,
-    });
+    await authStore.login(
+      create(LoginRequestSchema, {
+        email: state.email,
+        password: state.password,
+        web: true,
+        idpName: idpName,
+      })
+    );
   } finally {
     state.isLoading = false;
   }
@@ -309,7 +323,7 @@ const trySigninWithIdentityProvider = async (
       module: "bytebase",
       style: "CRITICAL",
       title: `Request error occurred`,
-      description: (error as any).message,
+      description: (error as ConnectError).message,
     });
   }
 };

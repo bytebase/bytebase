@@ -27,12 +27,8 @@
         {{ $t("settings.sso.create") }}
       </NButton>
     </div>
-    <NDataTable
-      key="sso-table"
-      :data="identityProviderList"
-      :row-key="(sso: IdentityProvider) => sso.name"
-      :columns="columnList"
-      :striped="true"
+    <IdentityProviderTable
+      :identity-provider-list="identityProviderList"
       :bordered="true"
       :loading="state.isLoading"
     />
@@ -43,49 +39,42 @@
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
+
+  <IdentityProviderCreateWizard
+    :show="state.showCreateDrawer"
+    @update:show="state.showCreateDrawer = $event"
+    @created="handleProviderCreated"
+  />
 </template>
 
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NDataTable } from "naive-ui";
-import type { DataTableColumn } from "naive-ui";
-import { computed, onMounted, reactive, h } from "vue";
-import { useI18n } from "vue-i18n";
+import { NButton } from "naive-ui";
+import { computed, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import {
-  WORKSPACE_ROUTE_SSO_CREATE,
-  WORKSPACE_ROUTE_SSO_DETAIL,
-} from "@/router/dashboard/workspaceRoutes";
-import { featureToRef } from "@/store";
+  IdentityProviderTable,
+  IdentityProviderCreateWizard,
+} from "@/components/IdentityProvider";
+import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
+import { featureToRef, getIdentityProviderResourceId } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
-import { getSSOId } from "@/store/modules/v1/common";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
-import {
-  hasWorkspacePermissionV2,
-  identityProviderTypeToString,
-} from "@/utils";
+import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   isLoading: boolean;
   showFeatureModal: boolean;
-  showCreatingSSOModal: boolean;
-  selectedIdentityProviderName: string;
+  showCreateDrawer: boolean;
 }
 
-const props = defineProps<{
-  onClickCreate?: () => void;
-  onClickView?: (sso: IdentityProvider) => void;
-}>();
-
-const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
   isLoading: true,
   showFeatureModal: false,
-  showCreatingSSOModal: false,
-  selectedIdentityProviderName: "",
+  showCreateDrawer: false,
 });
 const identityProviderStore = useIdentityProviderStore();
 const hasSSOFeature = featureToRef(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO);
@@ -98,12 +87,8 @@ const allowCreateSSO = computed(() => {
   return hasWorkspacePermissionV2("bb.identityProviders.create");
 });
 
-const allowGetSSO = computed(() => {
-  return hasWorkspacePermissionV2("bb.identityProviders.get");
-});
-
-onMounted(() => {
-  identityProviderStore.fetchIdentityProviderList();
+onMounted(async () => {
+  await identityProviderStore.fetchIdentityProviderList();
   state.isLoading = false;
 });
 
@@ -112,70 +97,16 @@ const handleCreateSSO = () => {
     state.showFeatureModal = true;
     return;
   }
-
-  if (props.onClickCreate) {
-    props.onClickCreate();
-    return;
-  }
-
-  router.push({
-    name: WORKSPACE_ROUTE_SSO_CREATE,
-  });
+  state.showCreateDrawer = true;
 };
 
-const handleViewSSO = (identityProvider: IdentityProvider) => {
-  if (props.onClickView) {
-    props.onClickView(identityProvider);
-    return;
-  }
-  router.push({
-    name: WORKSPACE_ROUTE_SSO_DETAIL,
+const handleProviderCreated = (provider: IdentityProvider) => {
+  state.showCreateDrawer = false;
+  router.replace({
+    name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
     params: {
-      ssoId: getSSOId(identityProvider.name),
+      idpId: getIdentityProviderResourceId(provider.name),
     },
   });
 };
-
-const columnList = computed((): DataTableColumn<IdentityProvider>[] => {
-  const list: DataTableColumn<IdentityProvider>[] = [
-    {
-      key: "name",
-      title: t("settings.sso.form.name"),
-      render: (identityProvider) => identityProvider.title,
-    },
-    {
-      key: "type",
-      title: t("settings.sso.form.type"),
-      render: (identityProvider) =>
-        identityProviderTypeToString(identityProvider.type),
-    },
-    {
-      key: "domain",
-      title: t("settings.sso.form.domain"),
-      render: (identityProvider) => identityProvider.domain,
-    },
-  ];
-  if (allowGetSSO.value) {
-    list.push({
-      key: "view",
-      title: "",
-      render: (identityProvider) =>
-        h(
-          "div",
-          { class: "flex justify-end" },
-          h(
-            NButton,
-            {
-              size: "small",
-              onClick: () => handleViewSSO(identityProvider),
-            },
-            {
-              default: () => t("common.view"),
-            }
-          )
-        ),
-    });
-  }
-  return list;
-});
 </script>

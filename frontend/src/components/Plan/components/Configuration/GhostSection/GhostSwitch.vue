@@ -16,6 +16,7 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { NSwitch, NTooltip } from "naive-ui";
 import { computed } from "vue";
@@ -23,9 +24,10 @@ import { useI18n } from "vue-i18n";
 import { targetsForSpec } from "@/components/Plan/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import { allowGhostForDatabase } from "./common";
 import { useGhostSettingContext } from "./context";
 
@@ -42,11 +44,6 @@ const {
 
 const errors = computed(() => {
   const errors: ErrorItem[] = [];
-  if (databases.value.some((db) => !db.instanceResource.activation)) {
-    errors.push(
-      t("subscription.instance-assignment.missing-license-attention")
-    );
-  }
   const backupUnavailableDatabases = databases.value.filter(
     (db) => !db.backupAvailable || !allowGhostForDatabase(db)
   );
@@ -131,8 +128,12 @@ const toggleChecked = async (on: boolean) => {
   }
 
   if (isCreating.value) {
-    if (!selectedSpec.value || !selectedSpec.value.changeDatabaseConfig) return;
-    selectedSpec.value.changeDatabaseConfig.type = on
+    if (
+      !selectedSpec.value ||
+      selectedSpec.value.config?.case !== "changeDatabaseConfig"
+    )
+      return;
+    selectedSpec.value.config.value.type = on
       ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;
   } else {
@@ -140,27 +141,27 @@ const toggleChecked = async (on: boolean) => {
     const spec = (planPatch?.specs || []).find((spec) => {
       return spec.id === selectedSpec.value?.id;
     });
-    if (!planPatch || !spec || !spec.changeDatabaseConfig) {
+    if (!planPatch || !spec || spec.config?.case !== "changeDatabaseConfig") {
       // Should not reach here.
       throw new Error(
         "Plan or spec is not defined. Cannot update gh-ost setting."
       );
     }
 
-    spec.changeDatabaseConfig.type = on
+    spec.config.value.type = on
       ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
       : Plan_ChangeDatabaseConfig_Type.MIGRATE;
-    await planServiceClient.updatePlan({
+    const request = create(UpdatePlanRequestSchema, {
       plan: planPatch,
-      updateMask: ["specs"],
+      updateMask: { paths: ["specs"] },
     });
-
+    await planServiceClientConnect.updatePlan(request);
+    events.emit("update");
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.updated"),
     });
-    events.emit("update");
   }
 };
 </script>

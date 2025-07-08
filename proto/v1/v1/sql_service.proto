@@ -16,6 +16,7 @@ import "v1/database_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service SQLService {
+  // Permissions required: bb.databases.get
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:query"
@@ -31,6 +32,7 @@ service SQLService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.sql.admin
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     // GRPC streaming / websocket requires GET method instead of POST.
     option (google.api.http) = {get: "/v1:adminExecute"};
@@ -40,6 +42,7 @@ service SQLService {
   }
 
   // SearchQueryHistories searches query histories for the caller.
+  // Permissions required: None
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {
       post: "/v1/queryHistories:search"
@@ -48,6 +51,7 @@ service SQLService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Permissions required: bb.databases.get
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
@@ -71,6 +75,7 @@ service SQLService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.databases.check
   rpc Check(CheckRequest) returns (CheckResponse) {
     option (google.api.http) = {
       post: "/v1/sql/check"
@@ -80,14 +85,7 @@ service SQLService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  rpc ParseMyBatisMapper(ParseMyBatisMapperRequest) returns (ParseMyBatisMapperResponse) {
-    option (google.api.http) = {
-      post: "/v1/sql/parseMyBatisMapper"
-      body: "*"
-    };
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
+  // Permissions required: None
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
     option (google.api.http) = {
       post: "/v1/sql/pretty"
@@ -96,6 +94,7 @@ service SQLService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Permissions required: None
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
     option (google.api.http) = {
       post: "/v1/schemaDesign:diffMetadata"
@@ -105,6 +104,7 @@ service SQLService {
     // This is a util method requiring no authentication thus no authorization.
   }
 
+  // Permissions required: None
   rpc AICompletion(AICompletionRequest) returns (AICompletionResponse) {
     option (google.api.http) = {
       post: "/v1/sql/aiCompletion"
@@ -210,12 +210,6 @@ message QueryResult {
 
   int64 rows_count = 10;
 
-  // Columns are masked or not.
-  repeated bool masked = 4;
-
-  // Columns are sensitive or not.
-  repeated bool sensitive = 5;
-
   // The error message if the query failed.
   string error = 6;
 
@@ -273,6 +267,32 @@ message QueryResult {
   // Informational or debug messages returned by the database engine during query execution.
   // Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
   repeated Message messages = 12;
+
+  // Masking reasons for each column (empty for non-masked columns).
+  repeated MaskingReason masked = 4;
+}
+
+message MaskingReason {
+  // The semantic type that triggered masking (e.g., "SSN", "email", "phone").
+  string semantic_type_id = 1;
+
+  // Human-readable semantic type title.
+  string semantic_type_title = 2;
+
+  // The masking rule ID that matched (if applicable).
+  string masking_rule_id = 3;
+
+  // The masking algorithm used.
+  string algorithm = 4;
+
+  // Additional context (e.g., "Matched global rule: PII Protection").
+  string context = 5;
+
+  // Whether masking was due to classification level.
+  string classification_level = 6;
+
+  // Icon associated with the semantic type (if any).
+  string semantic_type_icon = 7;
 }
 
 message QueryRow {

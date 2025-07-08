@@ -15,12 +15,15 @@
         v-if="taskRunDetailContext.taskRun"
         :key="taskRunDetailContext.taskRun.name"
         :task-run="taskRunDetailContext.taskRun"
+        :database="databaseForTask(project, selectedTask)"
       />
     </DrawerContent>
   </Drawer>
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
+import { type Duration, DurationSchema } from "@bufbuild/protobuf/wkt";
 import { computedAsync } from "@vueuse/core";
 import { last } from "lodash-es";
 import { NButton, type DataTableColumn, NDataTable } from "naive-ui";
@@ -28,14 +31,14 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useSheetV1Store } from "@/store";
+import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import {
-  getDateForPbTimestamp,
-  getTimeForPbTimestamp,
+  getDateForPbTimestampProtoEs,
+  getTimeForPbTimestampProtoEs,
   type ComposedTaskRun,
 } from "@/types";
-import { Duration } from "@/types/proto/google/protobuf/duration";
-import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { databaseForTask } from "@/utils";
 import { humanizeDurationV1, sheetNameOfTaskV1 } from "@/utils";
 import { useIssueContext } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";
@@ -53,6 +56,7 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
+const { project } = useCurrentProjectV1();
 const { selectedTask } = useIssueContext();
 
 const sheet = computedAsync(async () => {
@@ -119,7 +123,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       title: t("task.created"),
       width: 100,
       render: (taskRun: ComposedTaskRun) => (
-        <HumanizeDate date={getDateForPbTimestamp(taskRun.createTime)} />
+        <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.createTime)} />
       ),
     },
     {
@@ -127,7 +131,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       title: t("task.started"),
       width: 100,
       render: (taskRun: ComposedTaskRun) => (
-        <HumanizeDate date={getDateForPbTimestamp(taskRun.startTime)} />
+        <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.startTime)} />
       ),
     },
     {
@@ -159,21 +163,21 @@ const executionDurationOfTaskRun = (
   if (!startTime || !updateTime) {
     return undefined;
   }
-  if (startTime.seconds.isZero()) {
+  if (startTime.seconds === 0n) {
     return undefined;
   }
   if (taskRun.status === TaskRun_Status.RUNNING) {
-    const elapsedMS = Date.now() - getTimeForPbTimestamp(startTime);
-    return Duration.fromPartial({
-      seconds: Math.floor(elapsedMS / 1000),
+    const elapsedMS = Date.now() - getTimeForPbTimestampProtoEs(startTime);
+    return create(DurationSchema, {
+      seconds: BigInt(Math.floor(elapsedMS / 1000)),
       nanos: (elapsedMS % 1000) * 1e6,
     });
   }
-  const startMS = getTimeForPbTimestamp(startTime);
-  const updateMS = getTimeForPbTimestamp(updateTime);
+  const startMS = getTimeForPbTimestampProtoEs(startTime);
+  const updateMS = getTimeForPbTimestampProtoEs(updateTime);
   const elapsedMS = updateMS - startMS;
-  return Duration.fromPartial({
-    seconds: Math.floor(elapsedMS / 1000),
+  return create(DurationSchema, {
+    seconds: BigInt(Math.floor(elapsedMS / 1000)),
     nanos: (elapsedMS % 1000) * 1e6,
   });
 };

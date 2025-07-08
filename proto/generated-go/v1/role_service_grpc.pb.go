@@ -31,10 +31,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RoleServiceClient interface {
+	// Permissions required: bb.roles.list
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
+	// Permissions required: bb.roles.get
 	GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*Role, error)
+	// Permissions required: bb.roles.create
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*Role, error)
+	// Permissions required: bb.roles.update
 	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*Role, error)
+	// Permissions required: bb.roles.delete
 	DeleteRole(ctx context.Context, in *DeleteRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -100,10 +105,15 @@ func (c *roleServiceClient) DeleteRole(ctx context.Context, in *DeleteRoleReques
 // All implementations must embed UnimplementedRoleServiceServer
 // for forward compatibility.
 type RoleServiceServer interface {
+	// Permissions required: bb.roles.list
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
+	// Permissions required: bb.roles.get
 	GetRole(context.Context, *GetRoleRequest) (*Role, error)
+	// Permissions required: bb.roles.create
 	CreateRole(context.Context, *CreateRoleRequest) (*Role, error)
+	// Permissions required: bb.roles.update
 	UpdateRole(context.Context, *UpdateRoleRequest) (*Role, error)
+	// Permissions required: bb.roles.delete
 	DeleteRole(context.Context, *DeleteRoleRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedRoleServiceServer()
 }

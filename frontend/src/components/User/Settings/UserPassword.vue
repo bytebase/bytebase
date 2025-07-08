@@ -102,7 +102,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { type PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
+import { type PasswordRestrictionSetting } from "@/types/proto-es/v1/setting_service_pb";
 
 const props = withDefaults(
   defineProps<{

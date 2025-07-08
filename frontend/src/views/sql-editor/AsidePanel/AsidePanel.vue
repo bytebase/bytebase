@@ -15,7 +15,7 @@
     </div>
     <div class="h-full flex-1 flex flex-col overflow-hidden">
       <div
-        v-if="!strictProject && !hideProjects"
+        v-if="!strictProject"
         class="flex flex-row items-center gap-x-1 px-1 py-1 border-b"
       >
         <ProjectSelect
@@ -69,11 +69,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { ProjectSelect } from "@/components/v2";
 import { SQL_EDITOR_SETTING_PROJECT_MODULE } from "@/router/sqlEditor";
-import {
-  useSQLEditorStore,
-  useAppFeature,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 import { defaultProject, isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../context";
@@ -91,7 +87,6 @@ const { project, projectContextReady, strictProject } =
   storeToRefs(editorStore);
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
-const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
 const allowAccessDefaultProject = computed(() => {
   return hasProjectPermissionV2(defaultProject(), "bb.projects.get");

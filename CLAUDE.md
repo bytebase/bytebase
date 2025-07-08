@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - **Important**: Run golangci-lint repeatedly until there are no issues. The linter has a max-issues limit and may not show all issues in a single run.
 3. **Auto-fix**: Use `golangci-lint run --fix --allow-parallel-runners` to fix issues automatically
 4. **Test**: Run relevant tests before committing
+5. **Build**: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 
 ### After Frontend Code Changes
 1. **Lint**: Run `pnpm --dir frontend lint --fix`
@@ -28,7 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **Generate**: Run `cd proto && buf generate`
 
 ## Build/Test Commands
-- Backend: `go build -ldflags "-w -s" -p=16 -o ./.air/bytebase ./backend/bin/server/main.go`
+- Backend: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 - Start backend: `PG_URL=postgresql://bbdev@localhost/bbdev go run ./backend/bin/server/main.go --port 8080 --data . --debug`
 - Run a single Go test: `go test -v -count=1 github.com/bytebase/bytebase/backend/path/to/tests -run ^TestFunctionName$`
 - Run two Go tests: `go test -v -count=1 github.com/bytebase/bytebase/backend/path/to/tests -run ^(TestFunctionName|TestFunctionNameTwo)$`
@@ -50,6 +51,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Go**: Use standard Go error handling with detailed error messages
 - **API and Proto**: Follow AIPs in https://google.aip.dev/general
 - **Frontend**: Follow TypeScript style with strict type checking
+  - **i18n**: All user-facing display text in the UI must be defined and maintained in `./frontend/src/locales/en-US.json` using the i18n internationalization system. Do not hardcode any display strings directly in the source code.
 - **Naming**: Use American English, avoid plurals like "xxxList"
 - **Git**: Follow conventional commit format
 - **Imports**: Use organized imports (sorted by the import path)
@@ -75,6 +77,7 @@ Always follow these guidelines to avoid common linting errors:
 ## Misc
 
 - The database JSONB columns store JSON marshalled by protojson.Marshal in go code. protojson.Marshal produces camelCased key rather than the snake_case key defined in the proto files. e.g. task_run becomes taskRun.
+- When modifying multiple files, run file modification tasks in parallel whenever possible, instead of processing them sequentially.
 
 ## Individual Preferences
 

@@ -88,6 +88,9 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
+import { isUndefined } from "lodash-es";
+import { NButton, NInput } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
@@ -95,13 +98,10 @@ import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { RoleSelect } from "@/components/v2/Select";
 import { PresetRoleType, type DatabaseResource } from "@/types";
-import type { Binding } from "@/types/proto/v1/iam_policy";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { checkRoleContainsAnyPermission } from "@/utils";
 import { buildConditionExpr } from "@/utils/issue/cel";
-import { isUndefined } from "lodash-es";
-import { NButton, NInput } from "naive-ui";
-import { computed, reactive, watch } from "vue";
 
 const props = withDefaults(
   defineProps<{

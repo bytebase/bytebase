@@ -18,10 +18,12 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { RevisionDataTable } from "@/components/Revision";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { revisionServiceClient } from "@/grpcweb";
+import { revisionServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
+import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
 import { useDatabaseDetailContext } from "./context";
 
 const props = defineProps<{
@@ -37,12 +39,13 @@ const fetchRevisionList = async ({
   pageToken: string;
   pageSize: number;
 }) => {
+  const request = create(ListRevisionsRequestSchema, {
+    parent: props.database.name,
+    pageSize,
+    pageToken,
+  });
   const { nextPageToken, revisions } =
-    await revisionServiceClient.listRevisions({
-      parent: props.database.name,
-      pageSize,
-      pageToken,
-    });
+    await revisionServiceClientConnect.listRevisions(request);
   return {
     nextPageToken,
     list: revisions,

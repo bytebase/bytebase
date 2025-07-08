@@ -23,10 +23,10 @@ import { EllipsisVerticalIcon } from "lucide-vue-next";
 import { NPopover, NButton, NDivider } from "naive-ui";
 import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { useCurrentProjectV1 } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { databaseForTask } from "@/utils";
 import { useInstanceV1EditorLanguage } from "@/utils";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import InstanceRoleSelect from "./InstanceRoleSelect.vue";
@@ -44,7 +44,8 @@ const language = useInstanceV1EditorLanguage(
 
 const shouldShowInstanceRoleSelect = computed(() => {
   // Only works for postgres.
-  if (![Engine.POSTGRES].includes(database.value.instanceResource.engine)) {
+  const engine = database.value.instanceResource.engine;
+  if (engine !== Engine.POSTGRES) {
     return false;
   }
   // Only works for DDL/DML, exclude creating database and schema baseline.

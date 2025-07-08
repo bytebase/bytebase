@@ -13,8 +13,6 @@ import (
 	"time"
 	"unicode"
 
-	"cloud.google.com/go/cloudsqlconn"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -217,7 +215,7 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 }
 
 func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := util.GetAWSConnectionConfig(ctx, conf)
 	if err != nil {
 		return "", errors.Wrap(err, "load aws config failed")
 	}
@@ -252,9 +250,9 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 // https://cloud.google.com/sql/docs/postgres/connect-connectors
 // https://github.com/GoogleCloudPlatform/golang-samples/blob/main/cloudsql/postgres/database-sql/cloudsql.go
 func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
-	d, err := cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
+	d, err := util.GetGCPConnectionConfig(ctx, conf)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "load gcp config failed")
 	}
 
 	dsn := fmt.Sprintf("user=%s", conf.DataSource.Username)
@@ -718,11 +716,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		} else if queryContext.Limit > 0 {
-			// Quick fix for do not add limit to non-select statement.
-			t := util.TrimStatement(statement)
-			if strings.HasPrefix(strings.ToUpper(t), "SELECT") || strings.HasPrefix(strings.ToUpper(t), "WITH") {
-				statement = getStatementWithResultLimit(statement, queryContext.Limit)
-			}
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_POSTGRES, statement)
@@ -818,13 +812,6 @@ func getPgError(e error) *v1pb.QueryResult_PostgresError_ {
 		}
 	}
 	return nil
-}
-
-func getStatementWithResultLimit(stmt string, limit int) string {
-	// To handle cases where there are comments in the query.
-	// eg. select * from t1 -- this is comment;
-	// Add two new line symbol here.
-	return fmt.Sprintf("WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;", util.TrimStatement(stmt), limit)
 }
 
 func isPlSQLBlock(stmt string) bool {

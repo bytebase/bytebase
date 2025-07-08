@@ -1,11 +1,12 @@
+import { create } from "@bufbuild/protobuf";
 import { MD5 } from "crypto-js";
 import { pull, pullAt } from "lodash-es";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ForeignKeyMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
-import { IndexMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import { IndexMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { getFixedPrimaryKey, upsertArray } from "@/utils";
 
 export const upsertColumnPrimaryKey = (
@@ -25,10 +26,11 @@ export const upsertColumnPrimaryKey = (
       name = `${rawName}_${MD5(`${rawName}_${Date.now()}`).toString().slice(0, 6)}`;
     }
     table.indexes.push(
-      IndexMetadata.fromPartial({
+      create(IndexMetadataSchema, {
         name,
         primary: true,
         unique: true,
+        isConstraint: true,
         expressions: [columnName],
       })
     );

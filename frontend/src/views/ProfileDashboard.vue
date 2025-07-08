@@ -67,10 +67,7 @@
       </div>
 
       <!-- Description list -->
-      <div
-        v-if="user.userType === UserType.USER"
-        class="mt-6 mb-2 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
-      >
+      <div class="mt-6 mb-2 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3">
           <div class="sm:col-span-1">
             <dt class="text-sm font-medium text-control-light">
@@ -88,7 +85,11 @@
                   {{ displayRoleTitle(role) }}
                 </NTag>
               </div>
-              <router-link :to="'/setting/subscription'" class="normal-link">
+              <router-link
+                v-if="!hasFeature(PlanFeature.FEATURE_IAM)"
+                :to="'/setting/subscription'"
+                class="normal-link"
+              >
                 {{ $t("settings.profile.subscription") }}
               </router-link>
             </dd>
@@ -102,7 +103,6 @@
               <EmailInput
                 v-if="state.editing"
                 v-model:value="state.editingUser!.email"
-                :domain="workspaceDomain"
               />
               <template v-else>
                 {{ user.email }}
@@ -110,7 +110,7 @@
             </dd>
           </div>
 
-          <div class="sm:col-span-1">
+          <div v-if="user.userType === UserType.USER" class="sm:col-span-1">
             <dt class="text-sm font-medium text-control-light">
               {{ $t("settings.profile.phone") }}
             </dt>
@@ -217,8 +217,11 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import type { ConnectError } from "@connectrpc/connect";
 import { computedAsync, useTitle } from "@vueuse/core";
-import { cloneDeep, head, isEqual } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NInput, NTag } from "naive-ui";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
@@ -238,6 +241,7 @@ import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes
 import { SETTING_ROUTE_PROFILE_TWO_FACTOR } from "@/router/dashboard/workspaceSetting";
 import {
   featureToRef,
+  hasFeature,
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
@@ -251,13 +255,13 @@ import {
   SYSTEM_BOT_USER_NAME,
   unknownUser,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
-  UpdateUserRequest,
+  UpdateUserRequestSchema,
   UserType,
-  type User,
-} from "@/types/proto/v1/user_service";
+} from "@/types/proto-es/v1/user_service_pb";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 
 interface LocalState {
@@ -292,10 +296,6 @@ const state = reactive<LocalState>({
 
 const editNameTextField = ref<InstanceType<typeof NInput>>();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
-
-const workspaceDomain = computed(() =>
-  head(settingV1Store.workspaceProfileSetting?.domains)
-);
 
 const passwordRestrictionSetting = computed(
   () => settingV1Store.passwordRestriction
@@ -350,7 +350,8 @@ const isSelf = computed(() => currentUser.value.name === user.value.name);
 const allowEdit = computed(() => {
   if (
     user.value.name === SYSTEM_BOT_USER_NAME ||
-    user.value.email === ALL_USERS_USER_EMAIL
+    user.value.email === ALL_USERS_USER_EMAIL ||
+    user.value.userType !== UserType.USER
   ) {
     return false;
   }
@@ -391,31 +392,35 @@ const saveEdit = async () => {
   const userPatch = state.editingUser;
   if (!userPatch) return;
 
-  const updateMask: string[] = [];
+  const updateMaskPaths: string[] = [];
   if (userPatch.title !== user.value.title) {
-    updateMask.push("title");
+    updateMaskPaths.push("title");
   }
   if (userPatch.email !== user.value.email) {
-    updateMask.push("email");
+    updateMaskPaths.push("email");
   }
   if (userPatch.phone !== user.value.phone) {
-    updateMask.push("phone");
+    updateMaskPaths.push("phone");
   }
   if (userPatch.password !== "") {
-    updateMask.push("password");
+    updateMaskPaths.push("password");
   }
   try {
-    await userStore.updateUser({
-      user: userPatch,
-      updateMask,
-      regenerateRecoveryCodes: false,
-      regenerateTempMfaSecret: false,
-    });
+    await userStore.updateUser(
+      create(UpdateUserRequestSchema, {
+        user: userPatch,
+        updateMask: create(FieldMaskSchema, {
+          paths: updateMaskPaths,
+        }),
+        regenerateRecoveryCodes: false,
+        regenerateTempMfaSecret: false,
+      })
+    );
   } catch (error) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: (error as any).details || "Failed to update user",
+      title: (error as ConnectError).message || "Failed to update user",
     });
     return;
   }
@@ -424,7 +429,7 @@ const saveEdit = async () => {
   state.editing = false;
 
   // If we update email, we need to redirect to the new email.
-  if (updateMask.includes("email") && props.principalEmail) {
+  if (updateMaskPaths.includes("email") && props.principalEmail) {
     router.replace({
       name: WORKSPACE_ROUTE_USER_PROFILE,
       params: {
@@ -459,12 +464,14 @@ const disable2FA = () => {
 
 const handleDisable2FA = async () => {
   await userStore.updateUser(
-    UpdateUserRequest.fromPartial({
+    create(UpdateUserRequestSchema, {
       user: {
         name: user.value.name,
         mfaEnabled: false,
       },
-      updateMask: ["mfa_enabled"],
+      updateMask: create(FieldMaskSchema, {
+        paths: ["mfa_enabled"],
+      }),
     })
   );
   state.showDisable2FAConfirmModal = false;

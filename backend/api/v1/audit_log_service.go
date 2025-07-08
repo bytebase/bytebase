@@ -6,8 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/google/cel-go/cel"
@@ -21,10 +20,11 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 type AuditLogService struct {
-	v1pb.UnimplementedAuditLogServiceServer
+	v1connect.UnimplementedAuditLogServiceHandler
 	store          *store.Store
 	iamManager     *iam.Manager
 	licenseService *enterprise.LicenseService
@@ -38,23 +38,23 @@ func NewAuditLogService(store *store.Store, iamManager *iam.Manager, licenseServ
 	}
 }
 
-func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.SearchAuditLogsRequest) (*v1pb.SearchAuditLogsResponse, error) {
+func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.Request[v1pb.SearchAuditLogsRequest]) (*connect.Response[v1pb.SearchAuditLogsResponse], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
-	filter, serr := s.getSearchAuditLogsFilter(ctx, request.Filter)
-	if serr != nil {
-		return nil, serr.Err()
+	filter, err := s.getSearchAuditLogsFilter(ctx, request.Msg.Filter)
+	if err != nil {
+		return nil, err
 	}
 
-	orderByKeys, err := getSearchAuditLogsOrderByKeys(request.OrderBy)
+	orderByKeys, err := getSearchAuditLogsOrderByKeys(request.Msg.OrderBy)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get order by keys, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get order by keys"))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
-		token:   request.PageToken,
-		limit:   int(request.PageSize),
+		token:   request.Msg.PageToken,
+		limit:   int(request.Msg.PageSize),
 		maximum: 5000,
 	})
 	if err != nil {
@@ -63,8 +63,8 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	limitPlusOne := offset.limit + 1
 
 	var project *string
-	if request.Parent != "" {
-		project = &request.Parent
+	if request.Msg.Parent != "" {
+		project = &request.Msg.Parent
 	}
 	auditLogFind := &store.AuditLogFind{
 		Project:     project,
@@ -75,14 +75,14 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	}
 	auditLogs, err := s.store.SearchAuditLogs(ctx, auditLogFind)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get audit logs, error: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get audit logs"))
 	}
 
 	var nextPageToken string
 	if len(auditLogs) == limitPlusOne {
 		auditLogs = auditLogs[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
 		}
 	}
 
@@ -90,25 +90,25 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	if err != nil {
 		return nil, err
 	}
-	return &v1pb.SearchAuditLogsResponse{
+	return connect.NewResponse(&v1pb.SearchAuditLogsResponse{
 		AuditLogs:     v1AuditLogs,
 		NextPageToken: nextPageToken,
-	}, nil
+	}), nil
 }
 
-func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.ExportAuditLogsRequest) (*v1pb.ExportAuditLogsResponse, error) {
+func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *connect.Request[v1pb.ExportAuditLogsRequest]) (*connect.Response[v1pb.ExportAuditLogsResponse], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
-	if request.Filter == "" {
-		return nil, status.Error(codes.InvalidArgument, "filter is required to export audit logs")
+	if request.Msg.Filter == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("filter is required to export audit logs"))
 	}
-	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, &v1pb.SearchAuditLogsRequest{
-		Filter:    request.Filter,
-		OrderBy:   request.OrderBy,
-		PageSize:  request.PageSize,
-		PageToken: request.PageToken,
-	})
+	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Filter:    request.Msg.Filter,
+		OrderBy:   request.Msg.OrderBy,
+		PageSize:  request.Msg.PageSize,
+		PageToken: request.Msg.PageToken,
+	}))
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 	result := &v1pb.QueryResult{
 		ColumnNames: []string{"time", "user", "method", "severity", "resource", "request", "response", "status"},
 	}
-	for _, auditLog := range searchAuditLogsResult.AuditLogs {
+	for _, auditLog := range searchAuditLogsResult.Msg.AuditLogs {
 		queryRow := &v1pb.QueryRow{Values: []*v1pb.RowValue{
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.CreateTime.AsTime().Format(time.RFC3339)}},
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.User}},
@@ -135,7 +135,7 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 	}
 
 	var content []byte
-	switch request.Format {
+	switch request.Msg.Format {
 	case v1pb.ExportFormat_CSV:
 		if content, err = exportCSV(result); err != nil {
 			return nil, err
@@ -149,10 +149,10 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 			return nil, err
 		}
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported export format: %s", request.Msg.Format.String()))
 	}
 
-	return &v1pb.ExportAuditLogsResponse{Content: content, NextPageToken: searchAuditLogsResult.NextPageToken}, nil
+	return connect.NewResponse(&v1pb.ExportAuditLogsResponse{Content: content, NextPageToken: searchAuditLogsResult.Msg.NextPageToken}), nil
 }
 
 func convertToAuditLogs(ctx context.Context, stores *store.Store, auditLogs []*store.AuditLog) ([]*v1pb.AuditLog, error) {
@@ -190,6 +190,7 @@ func convertToAuditLog(ctx context.Context, stores *store.Store, l *store.AuditL
 		Request:     l.Payload.Request,
 		Response:    l.Payload.Response,
 		Status:      l.Payload.Status,
+		Latency:     l.Payload.Latency,
 		ServiceData: l.Payload.ServiceData,
 	}, nil
 }
@@ -219,18 +220,18 @@ func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severi
 	}
 }
 
-func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter string) (*store.ListResourceFilter, *status.Status) {
+func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter string) (*store.ListResourceFilter, error) {
 	if filter == "" {
 		return nil, nil
 	}
 
 	e, err := cel.NewEnv()
 	if err != nil {
-		return nil, status.Newf(codes.Internal, "failed to create cel env")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create cel env"))
 	}
 	ast, iss := e.Parse(filter)
 	if iss != nil {
-		return nil, status.Newf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
 	}
 
 	var getFilter func(expr celast.Expr) (string, error)
@@ -299,7 +300,7 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 
 	where, err := getFilter(ast.NativeRep().Expr())
 	if err != nil {
-		return nil, status.Newf(codes.InvalidArgument, "failed to get filter, error: %v", err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get filter"))
 	}
 
 	return &store.ListResourceFilter{
@@ -321,7 +322,7 @@ func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
 			key = "created_at"
 		}
 		if key == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid order by key %v", orderByKey.key)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid order by key %v", orderByKey.key))
 		}
 
 		sortOrder := store.ASC
@@ -339,11 +340,11 @@ func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
 func (s *AuditLogService) getUserByIdentifier(ctx context.Context, identifier string) (*store.UserMessage, error) {
 	email := strings.TrimPrefix(identifier, "users/")
 	if email == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid empty creator identifier"))
 	}
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, email, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, `failed to find user "%s"`, email))
 	}
 	if user == nil {
 		return nil, errors.Errorf("cannot found user %s", email)

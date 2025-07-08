@@ -55,8 +55,8 @@ import { NScrollbar, NEmpty } from "naive-ui";
 import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
-import { hasProjectPermissionV2 } from "@/utils";
 import { useCurrentProjectV1 } from "@/store";
+import { hasProjectPermissionV2 } from "@/utils";
 import StageCard from "./StageCard.vue";
 
 const { isCreating, issue } = useIssueContext();

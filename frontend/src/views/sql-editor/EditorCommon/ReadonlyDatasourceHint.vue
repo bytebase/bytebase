@@ -31,10 +31,8 @@ import { useRouter } from "vue-router";
 import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
 import { useSQLEditorTabStore } from "@/store";
 import { isValidInstanceName } from "@/types";
-import {
-  DataSourceType,
-  InstanceResource,
-} from "@/types/proto/v1/instance_service";
+import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useSidebarItems as useSettingItems } from "../Setting/Sidebar";
 

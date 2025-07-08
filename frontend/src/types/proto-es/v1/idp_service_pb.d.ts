@@ -221,6 +221,19 @@ export declare const OAuth2IdentityProviderTestRequestContextSchema: GenMessage<
  * @generated from message bytebase.v1.TestIdentityProviderResponse
  */
 export declare type TestIdentityProviderResponse = Message<"bytebase.v1.TestIdentityProviderResponse"> & {
+  /**
+   * The map of claims returned by the identity provider.
+   *
+   * @generated from field: map<string, string> claims = 1;
+   */
+  claims: { [key: string]: string };
+
+  /**
+   * The matched user info from the claims.
+   *
+   * @generated from field: map<string, string> user_info = 2;
+   */
+  userInfo: { [key: string]: string };
 };
 
 /**
@@ -480,11 +493,11 @@ export declare type LDAPIdentityProviderConfig = Message<"bytebase.v1.LDAPIdenti
 
   /**
    * SecurityProtocol is the security protocol to be used for establishing
-   * connections with the LDAP server. It must be StartTLS, LDAPS or None.
+   * connections with the LDAP server.
    *
-   * @generated from field: string security_protocol = 8;
+   * @generated from field: bytebase.v1.LDAPIdentityProviderConfig.SecurityProtocol security_protocol = 8;
    */
-  securityProtocol: string;
+  securityProtocol: LDAPIdentityProviderConfig_SecurityProtocol;
 
   /**
    * FieldMapping is the mapping of the user attributes returned by the LDAP
@@ -500,6 +513,35 @@ export declare type LDAPIdentityProviderConfig = Message<"bytebase.v1.LDAPIdenti
  * Use `create(LDAPIdentityProviderConfigSchema)` to create a new message.
  */
 export declare const LDAPIdentityProviderConfigSchema: GenMessage<LDAPIdentityProviderConfig>;
+
+/**
+ * @generated from enum bytebase.v1.LDAPIdentityProviderConfig.SecurityProtocol
+ */
+export enum LDAPIdentityProviderConfig_SecurityProtocol {
+  /**
+   * @generated from enum value: SECURITY_PROTOCOL_UNSPECIFIED = 0;
+   */
+  SECURITY_PROTOCOL_UNSPECIFIED = 0,
+
+  /**
+   * StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS.
+   *
+   * @generated from enum value: START_TLS = 1;
+   */
+  START_TLS = 1,
+
+  /**
+   * LDAPS is the security protocol that uses TLS from the beginning.
+   *
+   * @generated from enum value: LDAPS = 2;
+   */
+  LDAPS = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.LDAPIdentityProviderConfig.SecurityProtocol.
+ */
+export declare const LDAPIdentityProviderConfig_SecurityProtocolSchema: GenEnum<LDAPIdentityProviderConfig_SecurityProtocol>;
 
 /**
  * FieldMapping saves the field names from user info API of identity provider.
@@ -611,6 +653,8 @@ export declare const OAuth2AuthStyleSchema: GenEnum<OAuth2AuthStyle>;
  */
 export declare const IdentityProviderService: GenService<{
   /**
+   * Permissions required: bb.identityProviders.get
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.GetIdentityProvider
    */
   getIdentityProvider: {
@@ -619,6 +663,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
+   * Permissions required: None
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.ListIdentityProviders
    */
   listIdentityProviders: {
@@ -627,6 +673,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof ListIdentityProvidersResponseSchema;
   },
   /**
+   * Permissions required: bb.identityProviders.create
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.CreateIdentityProvider
    */
   createIdentityProvider: {
@@ -635,6 +683,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
+   * Permissions required: bb.identityProviders.update
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.UpdateIdentityProvider
    */
   updateIdentityProvider: {
@@ -643,6 +693,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
+   * Permissions required: bb.identityProviders.delete
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.DeleteIdentityProvider
    */
   deleteIdentityProvider: {
@@ -651,6 +703,8 @@ export declare const IdentityProviderService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: bb.identityProviders.update
+   *
    * @generated from rpc bytebase.v1.IdentityProviderService.TestIdentityProvider
    */
   testIdentityProvider: {

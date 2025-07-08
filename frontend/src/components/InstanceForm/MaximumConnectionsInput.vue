@@ -63,7 +63,7 @@
 import { NInputNumber, NRadio } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useSubscriptionV1Store } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import { useInstanceFormContext } from "./context";
 

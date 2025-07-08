@@ -74,7 +74,7 @@
                 <NPopover
                   trigger="click"
                   placement="bottom"
-                  v-if="supportGetStringSchema(instanceEngine)"
+                  v-if="supportGetStringSchema(instanceEngineNew)"
                   @update:show="(show: boolean) => show"
                 >
                   <template #trigger>
@@ -107,7 +107,7 @@
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
                 <div
-                  v-if="hasTableEngineProperty(instanceEngine)"
+                  v-if="hasTableEngineProperty(instanceEngineNew)"
                   class="col-span-1"
                 >
                   <dt class="text-sm font-medium text-control-light">
@@ -126,7 +126,7 @@
                     <ClassificationCell
                       :classification="tableCatalog.classification"
                       :classification-config="classificationConfig"
-                      :engine="instanceEngine"
+                      :engine="instanceEngineNew"
                       @apply="
                         (id: string) =>
                           $emit('apply-classification', tableName, id)
@@ -149,24 +149,26 @@
                     {{ $t("database.data-size") }}
                   </dt>
                   <dd class="mt-1 text-semibold">
-                    {{ bytesToString(table.dataSize.toNumber()) }}
+                    {{ bytesToString(Number(table.dataSize)) }}
                   </dd>
                 </div>
 
                 <div
-                  v-if="hasIndexSizeProperty(instanceEngine)"
+                  v-if="hasIndexSizeProperty(instanceEngineNew)"
                   class="col-span-1"
                 >
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.index-size") }}
                   </dt>
                   <dd class="mt-1 text-semibold">
-                    {{ bytesToString(table.indexSize.toNumber()) }}
+                    {{ bytesToString(Number(table.indexSize)) }}
                   </dd>
                 </div>
 
                 <template
-                  v-if="instanceV1HasCollationAndCharacterSet(instanceEngine)"
+                  v-if="
+                    instanceV1HasCollationAndCharacterSet(instanceEngineNew)
+                  "
                 >
                   <div class="col-span-1">
                     <dt class="text-sm font-medium text-control-light">
@@ -201,7 +203,7 @@
           </div>
 
           <div
-            v-if="instanceV1SupportsColumn(instanceEngine)"
+            v-if="instanceV1SupportsColumn(instanceEngineNew)"
             class="mt-6 px-6 space-y-4"
           >
             <div class="w-full flex flex-row justify-between items-center">
@@ -229,7 +231,7 @@
           </div>
 
           <div
-            v-if="instanceV1SupportsIndex(instanceEngine)"
+            v-if="instanceV1SupportsIndex(instanceEngineNew)"
             class="mt-6 px-6 space-y-4"
           >
             <div class="text-lg leading-6 font-medium text-main">
@@ -239,7 +241,7 @@
           </div>
 
           <div
-            v-if="instanceV1SupportsTrigger(instanceEngine)"
+            v-if="instanceV1SupportsTrigger(instanceEngineNew)"
             class="mt-6 px-6 space-y-4"
           >
             <div class="text-lg leading-6 font-medium text-main">
@@ -254,7 +256,7 @@
           </div>
 
           <div
-            v-if="instanceV1MaskingForNoSQL(instanceEngine)"
+            v-if="instanceV1MaskingForNoSQL(instanceEngineNew)"
             class="mt-6 px-6 space-y-4"
           >
             <div>
@@ -279,11 +281,10 @@
                 maxRows: 50,
               }"
               :disabled="!hasDatabaseCatalogPermission"
-              :value="JSON.stringify(state.tableCatalog, null, 4)"
-              @update:value="onCatalogChange"
+              v-model:value="state.tableCatalog"
             />
             <div
-              v-if="!isEqual(state.tableCatalog, tableCatalog)"
+              v-if="state.tableCatalog !== initTableCatalog"
               class="w-full flex items-center justify-end space-x-2 mt-2"
             >
               <NButton
@@ -302,8 +303,9 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { CodeIcon } from "lucide-vue-next";
 import { NButton, NPopover, NInput } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -328,15 +330,14 @@ import {
   useDatabaseCatalogV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { TableCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
-  TableCatalog,
-  ObjectSchema,
-  ObjectSchema_Type,
-  ObjectSchema_StructKind,
-} from "@/types/proto/v1/database_catalog_service";
-import { GetSchemaStringRequest_ObjectType } from "@/types/proto/v1/database_service";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+  TableCatalogSchema,
+  SchemaCatalogSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import {
   bytesToString,
   instanceV1HasCollationAndCharacterSet,
@@ -361,7 +362,7 @@ import MaskSpinner from "./misc/MaskSpinner.vue";
 interface LocalState {
   columnNameSearchKeyword: string;
   partitionTableNameSearchKeyword: string;
-  tableCatalog: TableCatalog;
+  tableCatalog: string;
   isUploading: boolean;
 }
 
@@ -384,16 +385,30 @@ const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const catalogStore = useDatabaseCatalogV1Store();
 
+const databaseCatalog = useDatabaseCatalog(props.databaseName, false);
+const tableCatalog = computed(() =>
+  getTableCatalog(databaseCatalog.value, props.schemaName, props.tableName)
+);
+
+const initTableCatalog = computed(() => {
+  if (!tableCatalog.value) {
+    return JSON.stringify(
+      create(TableCatalogSchema, {
+        name: props.tableName,
+      }),
+      null,
+      4
+    );
+  }
+
+  const catalog = cloneDeep(tableCatalog.value);
+  return JSON.stringify(catalog, null, 4);
+});
+
 const state = reactive<LocalState>({
   columnNameSearchKeyword: "",
   partitionTableNameSearchKeyword: "",
-  tableCatalog: TableCatalog.fromPartial({
-    name: props.tableName,
-    objectSchema: ObjectSchema.fromPartial({
-      type: ObjectSchema_Type.OBJECT,
-      structKind: ObjectSchema_StructKind.fromPartial({}),
-    }),
-  }),
+  tableCatalog: "{}",
   isUploading: false,
 });
 const isFetchingTableMetadata = ref(false);
@@ -418,11 +433,6 @@ const table = computedAsync(
   }
 );
 
-const databaseCatalog = useDatabaseCatalog(props.databaseName, false);
-const tableCatalog = computed(() =>
-  getTableCatalog(databaseCatalog.value, props.schemaName, props.tableName)
-);
-
 const hasDatabaseCatalogPermission = computed(() => {
   return hasProjectPermissionV2(
     database.value.projectEntity,
@@ -431,39 +441,16 @@ const hasDatabaseCatalogPermission = computed(() => {
 });
 
 watch(
-  () => tableCatalog.value,
+  () => initTableCatalog.value,
   (catalog) => {
-    if (catalog) {
-      state.tableCatalog = cloneDeep(catalog);
-      // clear
-      state.tableCatalog.columns = undefined;
-      if (!state.tableCatalog.objectSchema) {
-        state.tableCatalog.objectSchema = ObjectSchema.fromPartial({
-          type: ObjectSchema_Type.OBJECT,
-          structKind: ObjectSchema_StructKind.fromPartial({}),
-        });
-      }
-    }
+    state.tableCatalog = catalog;
   },
   { immediate: true, deep: true }
 );
 
-const onCatalogChange = (value: string) => {
-  try {
-    const catalog = JSON.parse(value) as TableCatalog;
-    state.tableCatalog = catalog;
-  } catch (e) {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: t("common.warning"),
-      description: `Failed to parse catalog with error: ${e}`,
-    });
-  }
-};
-
 const onCatalogUpload = async () => {
-  if (state.tableCatalog.name !== props.tableName) {
+  const catalog = JSON.parse(state.tableCatalog) as TableCatalog;
+  if (catalog.name !== props.tableName) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -476,19 +463,25 @@ const onCatalogUpload = async () => {
 
   try {
     const pendingUploadCatalog = cloneDeep(databaseCatalog.value);
-    for (const schemaCatalog of pendingUploadCatalog.schemas) {
-      if (schemaCatalog.name !== props.schemaName) {
-        continue;
-      }
+    const schemaCatalog = pendingUploadCatalog.schemas.find(
+      (schemaCatalog) => schemaCatalog.name === props.schemaName
+    );
+    if (schemaCatalog) {
       const index = schemaCatalog.tables.findIndex(
         (t) => t.name === props.tableName
       );
       if (index >= 0) {
-        schemaCatalog.tables[index] = state.tableCatalog;
+        schemaCatalog.tables[index] = catalog;
       } else {
-        schemaCatalog.tables.push(state.tableCatalog);
+        schemaCatalog.tables.push(catalog);
       }
-      break;
+    } else {
+      pendingUploadCatalog.schemas.push(
+        create(SchemaCatalogSchema, {
+          name: props.schemaName,
+          tables: [catalog],
+        })
+      );
     }
     await catalogStore.updateDatabaseCatalog(pendingUploadCatalog);
 
@@ -508,6 +501,10 @@ const database = computed(() => {
 
 const instanceEngine = computed(() => {
   return database.value.instanceResource.engine;
+});
+
+const instanceEngineNew = computed(() => {
+  return instanceEngine.value;
 });
 
 const allowQuery = computed(() => {

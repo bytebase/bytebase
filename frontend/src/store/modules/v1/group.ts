@@ -1,8 +1,18 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
-import { groupServiceClient } from "@/grpcweb";
-import type { Group } from "@/types/proto/v1/group_service";
+import { groupServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
+import {
+  CreateGroupRequestSchema,
+  DeleteGroupRequestSchema,
+  GetGroupRequestSchema,
+  ListGroupsRequestSchema,
+  UpdateGroupRequestSchema,
+} from "@/types/proto-es/v1/group_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useUserStore } from "../user";
 import { groupNamePrefix } from "./common";
@@ -46,7 +56,8 @@ export const useGroupStore = defineStore("group", () => {
       return [];
     }
 
-    const { groups } = await groupServiceClient.listGroups({});
+    const request = create(ListGroupsRequestSchema, {});
+    const { groups } = await groupServiceClientConnect.listGroups(request);
     resetCache();
     for (const group of groups) {
       await composeGroup(group);
@@ -64,38 +75,41 @@ export const useGroupStore = defineStore("group", () => {
       return existed;
     }
 
-    const group = await groupServiceClient.getGroup(
-      {
-        name: ensureGroupIdentifier(id),
-      },
-      { silent: true }
-    );
+    const request = create(GetGroupRequestSchema, {
+      name: ensureGroupIdentifier(id),
+    });
+    const group = await groupServiceClientConnect.getGroup(request, {
+      contextValues: createContextValues().set(silentContextKey, true),
+    });
     await composeGroup(group);
     return group;
   };
 
   const deleteGroup = async (name: string) => {
-    await groupServiceClient.deleteGroup({ name });
+    const request = create(DeleteGroupRequestSchema, { name });
+    await groupServiceClientConnect.deleteGroup(request);
     groupMapByName.delete(name);
   };
 
   const createGroup = async (group: Group) => {
-    const resp = await groupServiceClient.createGroup({
-      group,
+    const request = create(CreateGroupRequestSchema, {
+      group: group,
       groupEmail: extractGroupEmail(group.name),
     });
-    await composeGroup(resp);
-    return resp;
+    const response = await groupServiceClientConnect.createGroup(request);
+    await composeGroup(response);
+    return response;
   };
 
   const updateGroup = async (group: Group) => {
-    const updated = await groupServiceClient.updateGroup({
-      group,
-      updateMask: ["title", "description", "members"],
+    const request = create(UpdateGroupRequestSchema, {
+      group: group,
+      updateMask: { paths: ["title", "description", "members"] },
       allowMissing: false,
     });
-    await composeGroup(updated);
-    return updated;
+    const response = await groupServiceClientConnect.updateGroup(request);
+    await composeGroup(response);
+    return response;
   };
 
   return {

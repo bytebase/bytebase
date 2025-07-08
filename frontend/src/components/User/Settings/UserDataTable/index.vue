@@ -21,15 +21,20 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, reactive, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
-import { useAppFeature, useUserStore, useWorkspaceV1Store } from "@/store";
-import type { Group } from "@/types/proto/v1/group_service";
-import { type User } from "@/types/proto/v1/user_service";
-import { copyServiceKeyToClipboardIfNeeded } from "../common";
+import { useUserStore, useWorkspaceV1Store, pushNotification } from "@/store";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
+import {
+  type User,
+  UpdateUserRequestSchema,
+} from "@/types/proto-es/v1/user_service_pb";
+import { toClipboard } from "@/utils";
 import GroupsCell from "./cells/GroupsCell.vue";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
@@ -63,7 +68,6 @@ const workspaceStore = useWorkspaceV1Store();
 const state = reactive<LocalState>({
   showResetKeyAlert: false,
 });
-const hideGroups = useAppFeature("bb.feature.members.hide-groups");
 
 const columns = computed(() => {
   const columns: (DataTableColumn<User> & { hide?: boolean })[] = [
@@ -94,7 +98,6 @@ const columns = computed(() => {
     {
       key: "groups",
       title: t("settings.members.table.groups"),
-      hide: hideGroups.value,
       resizable: true,
       render: (user: User) => {
         return h(GroupsCell, {
@@ -138,14 +141,26 @@ const resetServiceKey = () => {
     return;
   }
   userStore
-    .updateUser({
-      user,
-      updateMask: ["service_key"],
-      regenerateRecoveryCodes: false,
-      regenerateTempMfaSecret: false,
-    })
+    .updateUser(
+      create(UpdateUserRequestSchema, {
+        user,
+        updateMask: create(FieldMaskSchema, {
+          paths: ["service_key"],
+        }),
+        regenerateRecoveryCodes: false,
+        regenerateTempMfaSecret: false,
+      })
+    )
     .then((updatedUser) => {
-      copyServiceKeyToClipboardIfNeeded(updatedUser);
+      if (updatedUser.serviceKey) {
+        toClipboard(updatedUser.serviceKey).then(() => {
+          pushNotification({
+            module: "bytebase",
+            style: "INFO",
+            title: t("settings.members.service-key-copied"),
+          });
+        });
+      }
     });
 };
 </script>

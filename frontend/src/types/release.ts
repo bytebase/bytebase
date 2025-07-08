@@ -1,7 +1,9 @@
+import { create } from "@bufbuild/protobuf";
 import { getProjectNameReleaseId } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "./const";
-import { Release } from "./proto/v1/release_service";
-import type { User } from "./proto/v1/user_service";
+import type { Release } from "./proto-es/v1/release_service_pb";
+import { ReleaseSchema } from "./proto-es/v1/release_service_pb";
+import type { User } from "./proto-es/v1/user_service_pb";
 import { unknownUser } from "./v1";
 import {
   UNKNOWN_PROJECT_NAME,
@@ -20,7 +22,7 @@ export const UNKNOWN_RELEASE_NAME = `${UNKNOWN_PROJECT_NAME}/releases/${UNKNOWN_
 
 export const unknownRelease = (): ComposedRelease => {
   const projectEntity = unknownProject();
-  const release = Release.fromPartial({
+  const release = create(ReleaseSchema, {
     name: `${projectEntity.name}/releases/${UNKNOWN_ID}`,
   });
   return {

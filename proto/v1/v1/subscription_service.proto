@@ -14,12 +14,14 @@ service SubscriptionService {
   // GetSubscription returns the current subscription.
   // If there is no license, we will return a free plan subscription without expiration time.
   // If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+  // Permissions required: None
   rpc GetSubscription(GetSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {get: "/v1/subscription"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Permissions required: bb.settings.set
   rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {
       patch: "/v1/subscription"
@@ -48,17 +50,19 @@ enum PlanType {
 }
 
 message Subscription {
-  int32 seat_count = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  PlanType plan = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  int32 instance_count = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 seats = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp expires_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 instances = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  PlanType plan = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 active_instances = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  bool trialing = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp expires_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string org_name = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool trialing = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string org_name = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // PlanFeature represents the available features in Bytebase
@@ -93,9 +97,9 @@ enum PlanFeature {
   FEATURE_SCHEMA_DIAGRAM = 23;
   FEATURE_SCHEMA_EDITOR = 24;
   FEATURE_DATA_EXPORT = 25;
-  FEATURE_QUERY_HISTORY = 26;
-  FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 27;
-  FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION = 28;
+  FEATURE_DATA_OFFLINE_EXPORT = 26;
+  FEATURE_QUERY_HISTORY = 27;
+  FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 28;
   FEATURE_BATCH_QUERY = 29;
   FEATURE_INSTANCE_READ_ONLY_CONNECTION = 30;
   FEATURE_QUERY_POLICY = 31;
@@ -110,27 +114,27 @@ enum PlanFeature {
   FEATURE_USER_GROUPS = 38;
   FEATURE_DISALLOW_SELF_SERVICE_SIGNUP = 39;
   FEATURE_DATABASE_SECRET_VARIABLES = 40;
-  FEATURE_QUERY_DATASOURCE_RESTRICTION = 41;
-  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 42;
-  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 43;
-  FEATURE_RISK_ASSESSMENT = 44;
-  FEATURE_APPROVAL_WORKFLOW = 45;
-  FEATURE_AUDIT_LOG = 46;
-  FEATURE_ENTERPRISE_SSO = 47;
-  FEATURE_TWO_FA = 48;
-  FEATURE_PASSWORD_RESTRICTIONS = 49;
-  FEATURE_DISALLOW_PASSWORD_SIGNIN = 50;
-  FEATURE_CUSTOM_ROLES = 51;
-  FEATURE_REQUEST_ROLE_WORKFLOW = 52;
-  FEATURE_DATA_MASKING = 53;
-  FEATURE_DATA_CLASSIFICATION = 54;
-  FEATURE_SCIM = 55;
-  FEATURE_DIRECTORY_SYNC = 56;
-  FEATURE_SIGN_IN_FREQUENCY_CONTROL = 57;
-  FEATURE_EXTERNAL_SECRET_MANAGER = 58;
-  FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 59;
+  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 41;
+  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 42;
+  FEATURE_RISK_ASSESSMENT = 43;
+  FEATURE_APPROVAL_WORKFLOW = 44;
+  FEATURE_AUDIT_LOG = 45;
+  FEATURE_ENTERPRISE_SSO = 46;
+  FEATURE_TWO_FA = 47;
+  FEATURE_PASSWORD_RESTRICTIONS = 48;
+  FEATURE_DISALLOW_PASSWORD_SIGNIN = 49;
+  FEATURE_CUSTOM_ROLES = 50;
+  FEATURE_REQUEST_ROLE_WORKFLOW = 51;
+  FEATURE_DATA_MASKING = 52;
+  FEATURE_DATA_CLASSIFICATION = 53;
+  FEATURE_SCIM = 54;
+  FEATURE_DIRECTORY_SYNC = 55;
+  FEATURE_SIGN_IN_FREQUENCY_CONTROL = 56;
+  FEATURE_EXTERNAL_SECRET_MANAGER = 57;
+  FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 58;
 
   // Administration & Support
+  FEATURE_PROJECT_MANAGEMENT = 59;
   FEATURE_ENVIRONMENT_MANAGEMENT = 60;
   FEATURE_IM_NOTIFICATIONS = 61;
   FEATURE_TERRAFORM_PROVIDER = 62;

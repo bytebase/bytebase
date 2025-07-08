@@ -1,7 +1,7 @@
 import { stringify } from "qs";
 import type { OAuthState } from "@/types";
-import type { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { IdentityProviderType } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 
 export const SSOConfigSessionKey = "sso-config";
 
@@ -26,10 +26,10 @@ export async function openWindowForSSO(
   };
 
   if (identityProvider.type === IdentityProviderType.OAUTH2) {
-    const oauth2Config = identityProvider.config?.oauth2Config;
-    if (!oauth2Config) {
+    if (identityProvider.config?.config?.case !== "oauth2Config") {
       return null;
     }
+    const oauth2Config = identityProvider.config.config.value;
     uri.basePath = oauth2Config.authUrl;
     Object.assign(uri.query, {
       client_id: oauth2Config.clientId,
@@ -37,10 +37,10 @@ export async function openWindowForSSO(
       redirect_uri: `${window.location.origin}/oauth/callback`,
     });
   } else if (identityProvider.type === IdentityProviderType.OIDC) {
-    const oidcConfig = identityProvider.config?.oidcConfig;
-    if (!oidcConfig) {
+    if (identityProvider.config?.config?.case !== "oidcConfig") {
       return null;
     }
+    const oidcConfig = identityProvider.config.config.value;
     if (oidcConfig.authEndpoint === "") {
       throw new Error(
         `Invalid authentication URL from issuer ${oidcConfig.issuer}, please check your configuration`

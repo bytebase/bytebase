@@ -1,7 +1,7 @@
 <template>
   <template v-if="initialized">
     <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
-    <template v-if="!hideDefaultProject && isDefaultProject">
+    <template v-if="isDefaultProject">
       <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
         {{ $t("database.unassigned-databases") }}
       </h1>
@@ -60,9 +60,9 @@
 </template>
 
 <script lang="tsx" setup>
+import type { ConnectError } from "@connectrpc/connect";
 import { UsersIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NSpin } from "naive-ui";
-import type { ClientError } from "nice-grpc-web";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -82,7 +82,6 @@ import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import {
   pushNotification,
-  useAppFeature,
   usePermissionStore,
   useProjectByName,
   useProjectV1Store,
@@ -94,8 +93,8 @@ import {
   PresetRoleType,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useBodyLayoutContext } from "./common";
 
@@ -119,8 +118,6 @@ const projectStore = useProjectV1Store();
 const { remove: removeVisit } = useRecentVisit();
 const permissionStore = usePermissionStore();
 
-const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
-const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 
 watchEffect(async () => {
@@ -135,7 +132,7 @@ watchEffect(async () => {
       module: "bytebase",
       style: "CRITICAL",
       title: `Failed to fetch project ${props.projectId}`,
-      description: (err as ClientError).details,
+      description: (err as ConnectError).message,
     });
 
     const projectRoute = router.resolve({
@@ -233,7 +230,7 @@ const quickActionList = computed(() => {
 });
 
 const hideQuickActionPanel = computed(() => {
-  return hideQuickAction.value || quickActionList.value.length === 0;
+  return quickActionList.value.length === 0;
 });
 
 const { overrideMainContainerClass } = useBodyLayoutContext();

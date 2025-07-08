@@ -6,7 +6,7 @@
       :type="group.type"
       :clickable="true"
       :selected="group.type === selectedType"
-      :plan-check-run-list="group.list"
+      :planCheckRuns="group.list"
       @click="$emit('select-type', group.type)"
     />
   </div>
@@ -18,7 +18,7 @@ import { computed } from "vue";
 import {
   PlanCheckRun_Type,
   type PlanCheckRun,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import { groupBy } from "@/utils/collections";
 import PlanCheckRunBadge from "./PlanCheckRunBadge.vue";
 

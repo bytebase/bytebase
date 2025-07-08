@@ -17,7 +17,6 @@ export const databaseGroupNamePrefix = "databaseGroups/";
 export const logNamePrefix = "logs/";
 export const issueNamePrefix = "issues/";
 export const secretNamePrefix = "secrets/";
-export const ssoNamePrefix = "idps/";
 export const issueCommentNamePrefix = "issueComments/";
 export const groupNamePrefix = "groups/";
 export const reviewConfigNamePrefix = "reviewConfigs/";
@@ -144,11 +143,6 @@ export const getProjectNameAndDatabaseGroupName = (name: string): string[] => {
   }
 
   return tokens;
-};
-
-export const getSSOId = (name: string) => {
-  const tokens = getNameParentTokens(name, [ssoNamePrefix]);
-  return tokens[0];
 };
 
 export const getProjectIdIssueIdIssueCommentId = (name: string) => {

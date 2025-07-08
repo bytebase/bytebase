@@ -66,7 +66,7 @@
         >
           <div
             v-if="
-              row.checkResult.sqlReviewReport &&
+              (row.checkResult as any).sqlReviewReport &&
               getActiveRule(row.checkResult.title)
             "
             class="pl-2 first:pl-0"
@@ -77,13 +77,16 @@
               >{{ $t("sql-review.rule-detail") }}</span
             >
           </div>
-          <div v-if="row.checkResult.sqlSummaryReport" class="pl-2 first:pl-0">
+          <div
+            v-if="(row.checkResult as any).sqlSummaryReport"
+            class="pl-2 first:pl-0"
+          >
             <span>
-              {{ row.checkResult.sqlSummaryReport.affectedRows }}
+              {{ (row.checkResult as any).sqlSummaryReport?.affectedRows }}
             </span>
           </div>
 
-          <div v-if="!hideDocLink" class="pl-2 first:pl-0">
+          <div class="pl-2 first:pl-0">
             <a
               v-if="row.link"
               class="normal-link"
@@ -96,21 +99,23 @@
 
           <!-- Only show the error line for latest plan check run -->
           <div
-            v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line"
+            v-if="
+              showCodeLocation && (row.checkResult as any).sqlReviewReport?.line
+            "
             class="pl-2 first:pl-0"
           >
             <span
               class="normal-link"
               @click="
                 convertPositionLineToMonacoLine(
-                  row.checkResult.sqlReviewReport!.line
+                  (row.checkResult as any).sqlReviewReport!.line
                 )
               "
             >
               Line
               {{
                 convertPositionLineToMonacoLine(
-                  row.checkResult.sqlReviewReport.line
+                  (row.checkResult as any).sqlReviewReport.line
                 )
               }}
             </span>
@@ -158,7 +163,7 @@
         <span>{{ row.checkResult.content }}</span>
         <template
           v-if="
-            row.checkResult.sqlReviewReport &&
+            (row.checkResult as any).sqlReviewReport &&
             getActiveRule(row.checkResult.title)
           "
         >
@@ -169,12 +174,12 @@
           >
           <span class="border-r border-control-border ml-1"></span>
         </template>
-        <template v-if="row.checkResult.sqlSummaryReport">
-          {{ row.checkResult.sqlSummaryReport.affectedRows }}
+        <template v-if="(row.checkResult as any).sqlSummaryReport">
+          {{ (row.checkResult as any).sqlSummaryReport?.affectedRows }}
         </template>
 
         <a
-          v-if="!hideDocLink && row.link"
+          v-if="row.link"
           class="ml-1 normal-link"
           :href="row.link.url"
           :target="row.link.target"
@@ -184,7 +189,9 @@
 
         <!-- Only show the error line for latest plan check run -->
         <template
-          v-if="showCodeLocation && row.checkResult.sqlReviewReport?.line"
+          v-if="
+            showCodeLocation && (row.checkResult as any).sqlReviewReport?.line
+          "
         >
           <span class="border-r border-control-border ml-1"></span>
           <span
@@ -192,7 +199,7 @@
             @click="
               handleClickPlanCheckDetailLine(
                 convertPositionLineToMonacoLine(
-                  row.checkResult.sqlReviewReport!.line
+                  (row.checkResult as any).sqlReviewReport!.line
                 )
               )
             "
@@ -200,7 +207,7 @@
             Line
             {{
               convertPositionLineToMonacoLine(
-                row.checkResult.sqlReviewReport.line
+                (row.checkResult as any).sqlReviewReport.line
               )
             }}
           </span>
@@ -235,15 +242,16 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { XIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
-import { useAppFeature, useReviewPolicyForDatabase } from "@/store";
+import { useReviewPolicyForDatabase } from "@/store";
 import {
   getProjectNamePlanIdPlanCheckRunId,
   planNamePrefix,
@@ -257,13 +265,17 @@ import {
   ruleTemplateMapV2,
   convertPolicyRuleToRuleTemplate,
 } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import {
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
+import { BatchCancelPlanCheckRunsRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import type {
   PlanCheckRun,
   PlanCheckRun_Result,
+} from "@/types/proto-es/v1/plan_service_pb";
+import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/plan_service";
+  PlanCheckRun_ResultSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { convertPositionLineToMonacoLine } from "@/utils/v1/position";
 import { usePlanCheckRunContext } from "./context";
 import { OnlineMigrationDetail } from "./detail";
@@ -293,7 +305,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const hideDocLink = useAppFeature("bb.feature.sql-check.hide-doc-link");
 const state = reactive<LocalState>({
   activeRule: undefined,
 });
@@ -314,7 +325,7 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
     return props.planCheckRun.results;
   } else if (props.planCheckRun.status === PlanCheckRun_Status.FAILED) {
     return [
-      PlanCheckRun_Result.fromPartial({
+      create(PlanCheckRun_ResultSchema, {
         status: PlanCheckRun_Result_Status.ERROR,
         title: t("common.error"),
         content: props.planCheckRun.error,
@@ -322,7 +333,7 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
     ];
   } else if (props.planCheckRun.status === PlanCheckRun_Status.CANCELED) {
     return [
-      PlanCheckRun_Result.fromPartial({
+      create(PlanCheckRun_ResultSchema, {
         status: PlanCheckRun_Result_Status.WARNING,
         title: t("common.canceled"),
         content: props.planCheckRun.error,
@@ -370,7 +381,7 @@ const builtinRuleLevel = (type: string): SQLReviewRuleLevel => {
 const categoryAndTitle = (
   checkResult: PlanCheckRun_Result
 ): [string, string] => {
-  if (checkResult.sqlReviewReport) {
+  if (checkResult.report.case === "sqlReviewReport") {
     const code = checkResult.code;
     if (!code) {
       return ["", checkResult.title];
@@ -394,8 +405,8 @@ const categoryAndTitle = (
     }
     return ["", messageWithCode(checkResult.title, code)];
   }
-  if (checkResult.sqlSummaryReport) {
-    if (typeof checkResult.sqlSummaryReport.affectedRows === "number") {
+  if (checkResult.report.case === "sqlSummaryReport") {
+    if (typeof checkResult.report.value?.affectedRows === "number") {
       return [
         "",
         `${t("task.check-type.affected-rows.self")} (${t("task.check-type.affected-rows.description")})`,
@@ -430,7 +441,7 @@ const errorCodeLink = (
       };
     default: {
       const errorCodeNamespace =
-        checkResult.sqlReviewReport !== undefined ? "advisor" : "core";
+        checkResult.report.case === "sqlReviewReport" ? "advisor" : "core";
       const domain = "https://www.bytebase.com";
       const path = `/docs/reference/error-code/${errorCodeNamespace}/`;
       const query = `source=console#${code}`;
@@ -493,7 +504,7 @@ const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
     return {
       type,
       category: "BUILTIN",
-      engine,
+      engine: engine,
       level: builtinRuleLevel(type),
       componentList: [],
     };
@@ -528,10 +539,11 @@ const cancelPlanCheckRun = async () => {
   const planCheckRunName = props.planCheckRun.name;
   const [projectName, planId] =
     getProjectNamePlanIdPlanCheckRunId(planCheckRunName);
-  await planServiceClient.batchCancelPlanCheckRuns({
+  const request = create(BatchCancelPlanCheckRunsRequestSchema, {
     parent: `${projectNamePrefix}${projectName}/${planNamePrefix}${planId}`,
     planCheckRuns: [planCheckRunName],
   });
+  await planServiceClientConnect.batchCancelPlanCheckRuns(request);
   if (usePlanCheckRunContext()) {
     usePlanCheckRunContext().events.emit("status-changed");
   }

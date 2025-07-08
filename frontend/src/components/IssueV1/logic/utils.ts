@@ -1,3 +1,6 @@
+import { create } from "@bufbuild/protobuf";
+import { NButton } from "naive-ui";
+import { h } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   useDatabaseV1Store,
@@ -13,18 +16,18 @@ import {
   unknownEnvironment,
   unknownInstance,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Plan } from "@/types/proto/v1/plan_service";
-import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   defer,
   extractDatabaseResourceName,
   flattenTaskV1List,
   isValidIssueName,
 } from "@/utils";
-import { NButton } from "naive-ui";
-import { h } from "vue";
 import type { IssueContext } from "./context";
 
 export const projectOfIssue = (issue: ComposedIssue): ComposedProject =>
@@ -72,11 +75,18 @@ export const mockDatabase = (
   const { instance, databaseName } = extractDatabaseResourceName(db.name);
   db.databaseName = databaseName;
   db.instance = instance;
-  db.instanceResource = {
-    ...db.instanceResource,
-    ...useInstanceResourceByName(instance).instance.value,
-    name: instance,
-  };
+  const { instance: instanceFromStore } = useInstanceResourceByName(instance);
+  // Create InstanceResource from the instance data
+  const instanceData = instanceFromStore.value;
+  db.instanceResource = create(InstanceResourceSchema, {
+    name: instanceData.name,
+    engine: instanceData.engine,
+    title: instanceData.title,
+    activation: instanceData.activation ?? true,
+    dataSources: instanceData.dataSources ?? [],
+    environment: instanceData.environment,
+    engineVersion: instanceData.engineVersion ?? "",
+  });
   db.environment = db.instanceResource.environment;
   db.effectiveEnvironment = db.instanceResource.environment;
   db.effectiveEnvironmentEntity =
@@ -102,7 +112,22 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
     }
 
     const environmentStore = useEnvironmentV1Store();
-    const { instance } = useInstanceResourceByName(instanceName);
+    const { instance: instanceFromStore } =
+      useInstanceResourceByName(instanceName);
+    // Create InstanceResource from the instance data
+    const instanceData = instanceFromStore.value;
+    const instanceResource = create(InstanceResourceSchema, {
+      name: instanceData.name,
+      engine: instanceData.engine,
+      title: instanceData.title,
+      activation: instanceData.activation ?? true,
+      dataSources: instanceData.dataSources ?? [],
+      environment: instanceData.environment,
+      engineVersion: instanceData.engineVersion ?? "",
+    });
+    const effectiveEnvironmentEntity = environmentStore.getEnvironmentByName(
+      instanceResource.environment
+    );
     return {
       ...unknownDatabase(),
       name,
@@ -110,16 +135,15 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       instance: instanceName,
       project: project.name,
       projectEntity: project,
-      effectiveEnvironment: instance.value.environment,
-      effectiveEnvironmentEntity: environmentStore.getEnvironmentByName(
-        instance.value.environment
-      ),
-      instanceResource: instance.value,
+      effectiveEnvironment: instanceResource.environment,
+      effectiveEnvironmentEntity:
+        effectiveEnvironmentEntity ?? unknownEnvironment(),
+      instanceResource,
     };
   };
 
-  if (task.databaseCreate) {
-    const databaseName = task.databaseCreate.database;
+  if (task.payload?.case === "databaseCreate") {
+    const databaseName = task.payload.value.database;
     const instance = task.target;
     return coreDatabaseInfo(instance, databaseName);
   }

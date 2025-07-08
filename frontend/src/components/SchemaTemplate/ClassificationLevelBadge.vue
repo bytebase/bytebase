@@ -15,7 +15,7 @@
 <script lang="ts" setup>
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 
 const props = withDefaults(
   defineProps<{

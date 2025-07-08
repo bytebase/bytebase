@@ -180,6 +180,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { PlusIcon, SettingsIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NPopover, NTabPane, NTabs } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
@@ -206,11 +207,11 @@ import {
   useUserStore,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
-import { State } from "@/types/proto/v1/common";
-import type { Group } from "@/types/proto/v1/group_service";
-import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
-import { type User } from "@/types/proto/v1/user_service";
+import { State } from "@/types/proto-es/v1/common_pb";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
+import { WorkspaceProfileSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;
@@ -317,7 +318,8 @@ const fetchInactiveUserList = async ({
 };
 
 const workspaceProfileSetting = computed(() =>
-  WorkspaceProfileSetting.fromPartial(
+  create(
+    WorkspaceProfileSettingSchema,
     settingV1Store.workspaceProfileSetting || {}
   )
 );

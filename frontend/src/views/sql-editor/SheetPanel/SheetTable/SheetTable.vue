@@ -20,9 +20,9 @@ import { useI18n } from "vue-i18n";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { ProjectV1Name } from "@/components/v2";
 import { useUserStore, useProjectV1Store } from "@/store";
-import { getDateForPbTimestamp } from "@/types";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import { getDateForPbTimestampProtoEs } from "@/types";
+import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
+import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { getHighlightHTMLByRegExp } from "@/utils";
 import type { SheetViewMode } from "../../Sheet";
 import { useSheetContextByView, Dropdown } from "../../Sheet";
@@ -92,7 +92,7 @@ const columns = computed((): DataTableColumn<Worksheet>[] => {
       key: "updatedAt",
       width: 180,
       render: (sheet) => (
-        <HumanizeDate date={getDateForPbTimestamp(sheet.updateTime)} />
+        <HumanizeDate date={getDateForPbTimestampProtoEs(sheet.updateTime)} />
       ),
     },
     {
@@ -141,11 +141,11 @@ const creatorForSheet = (sheet: Worksheet) => {
 
 const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
   switch (visibility) {
-    case Worksheet_Visibility.VISIBILITY_PRIVATE:
+    case Worksheet_Visibility.PRIVATE:
       return t("sql-editor.private");
-    case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
+    case Worksheet_Visibility.PROJECT_READ:
       return t("sql-editor.project-read");
-    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE:
+    case Worksheet_Visibility.PROJECT_WRITE:
       return t("sql-editor.project-write");
     default:
       return "";

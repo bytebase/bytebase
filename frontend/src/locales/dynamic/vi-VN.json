@@ -173,6 +173,10 @@
         "title": "Xuất dữ liệu",
         "desc": "Xuất kết quả truy vấn ở nhiều định dạng khác nhau."
       },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "title": "Xuất dữ liệu ngoại tuyến",
+        "desc": "Xuất dữ liệu để sử dụng và phân tích ngoại tuyến."
+      },
       "FEATURE_QUERY_HISTORY": {
         "title": "Lịch sử truy vấn",
         "desc": "Truy cập lịch sử thực thi truy vấn đầy đủ với khả năng tìm kiếm."
@@ -180,10 +184,6 @@
       "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
         "title": "Lưu và chia sẻ tập lệnh SQL",
         "desc": "Lưu và chia sẻ tập lệnh SQL với các thành viên trong nhóm."
-      },
-      "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION": {
-        "title": "Hạn chế DDL/DML SQL editor",
-        "desc": "Hạn chế các hoạt động DDL và DML trong trình soạn thảo SQL."
       },
       "FEATURE_BATCH_QUERY": {
         "title": "Truy vấn hàng loạt",
@@ -217,6 +217,14 @@
         "title": "Xác thực IAM",
         "desc": "Sử dụng IAM của nhà cung cấp đám mây để xác thực cơ sở dữ liệu."
       },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "Thời gian đồng bộ instance tùy chỉnh",
+        "desc": "Tùy chỉnh khoảng thời gian và cài đặt đồng bộ hóa cơ sở dữ liệu."
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "Giới hạn kết nối instance tùy chỉnh",
+        "desc": "Cấu hình giới hạn kết nối cơ sở dữ liệu tối đa."
+      },
       "FEATURE_GOOGLE_AND_GITHUB_SSO": {
         "title": "Google và GitHub SSO",
         "desc": "Đăng nhập bằng tài khoản Google hoặc GitHub."
@@ -232,18 +240,6 @@
       "FEATURE_DATABASE_SECRET_VARIABLES": {
         "title": "Biến bí mật cơ sở dữ liệu",
         "desc": "Lưu trữ và sử dụng các bí mật được mã hóa trong tập lệnh SQL."
-      },
-      "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
-        "title": "Hạn chế nguồn dữ liệu truy vấn",
-        "desc": "Hạn chế người dùng có thể truy vấn nguồn dữ liệu nào."
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "Thời gian đồng bộ instance tùy chỉnh",
-        "desc": "Tùy chỉnh khoảng thời gian và cài đặt đồng bộ hóa cơ sở dữ liệu."
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "Giới hạn kết nối instance tùy chỉnh",
-        "desc": "Cấu hình giới hạn kết nối cơ sở dữ liệu tối đa."
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Đánh giá rủi ro",
@@ -308,6 +304,10 @@
       "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
         "title": "Hạn chế tên miền email",
         "desc": "Hạn chế đăng nhập cho người dùng từ các tên miền email được chỉ định."
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "title": "Quản lý dự án",
+        "desc": "Quản lý và tổ chức dự án với các khả năng nâng cao."
       },
       "FEATURE_ENVIRONMENT_MANAGEMENT": {
         "title": "Quản lý môi trường",

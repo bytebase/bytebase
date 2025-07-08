@@ -1,17 +1,16 @@
 import { t } from "@/plugins/i18n";
-import { getDateForPbTimestamp } from "@/types";
+import { getDateForPbTimestampProtoEs } from "@/types";
 import {
   TaskRunLogEntry_Type,
-  taskRunLogEntry_TypeToJSON,
   type TaskRunLogEntry_CommandExecute,
   type TaskRunLogEntry_SchemaDump,
   type TaskRunLogEntry_TaskRunStatusUpdate,
   type TaskRunLogEntry_TransactionControl,
   type TaskRunLogEntry_DatabaseSync,
-  TaskRunLogEntry,
-  TaskRunLogEntry_PriorBackup,
-  TaskRunLogEntry_RetryInfo,
-} from "@/types/proto/v1/rollout_service";
+  type TaskRunLogEntry,
+  type TaskRunLogEntry_PriorBackup,
+  type TaskRunLogEntry_RetryInfo,
+} from "@/types/proto-es/v1/rollout_service_pb";
 
 export type FlattenLogEntry = {
   batch: number;
@@ -57,7 +56,7 @@ export const displayTaskRunLogEntryType = (type: TaskRunLogEntry_Type) => {
   }
 
   console.warn(
-    `[displayTaskRunLogEntryType] should never reach this line: type=${taskRunLogEntry_TypeToJSON(type)}`
+    `[displayTaskRunLogEntryType] should never reach this line: type=${TaskRunLogEntry_Type[type]}`
   );
   return "";
 };
@@ -87,7 +86,7 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
       deployId,
       serial: 0,
       type: TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE,
-      startTime: getDateForPbTimestamp(entry.logTime),
+      startTime: getDateForPbTimestampProtoEs(entry.logTime),
       endTime: undefined,
       taskRunStatusUpdate,
     });
@@ -98,8 +97,8 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
       deployId,
       serial: 0,
       type: TaskRunLogEntry_Type.DATABASE_SYNC,
-      startTime: getDateForPbTimestamp(databaseSync.startTime),
-      endTime: getDateForPbTimestamp(databaseSync.endTime),
+      startTime: getDateForPbTimestampProtoEs(databaseSync.startTime),
+      endTime: getDateForPbTimestampProtoEs(databaseSync.endTime),
       databaseSync,
     });
   }
@@ -109,7 +108,7 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
       deployId,
       serial: 0,
       type: TaskRunLogEntry_Type.TRANSACTION_CONTROL,
-      startTime: getDateForPbTimestamp(entry.logTime),
+      startTime: getDateForPbTimestampProtoEs(entry.logTime),
       endTime: undefined,
       transactionControl,
     });
@@ -120,8 +119,8 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
       deployId,
       serial: 0,
       type: TaskRunLogEntry_Type.SCHEMA_DUMP,
-      startTime: getDateForPbTimestamp(schemaDump.startTime),
-      endTime: getDateForPbTimestamp(schemaDump.endTime),
+      startTime: getDateForPbTimestampProtoEs(schemaDump.startTime),
+      endTime: getDateForPbTimestampProtoEs(schemaDump.endTime),
       schemaDump,
     });
   }
@@ -141,8 +140,8 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
         deployId,
         serial,
         type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-        startTime: getDateForPbTimestamp(startTime),
-        endTime: getDateForPbTimestamp(endTime),
+        startTime: getDateForPbTimestampProtoEs(startTime),
+        endTime: getDateForPbTimestampProtoEs(endTime),
         commandExecute: {
           raw: commandExecute,
           commandIndex,
@@ -157,8 +156,8 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
       deployId,
       serial: 0,
       type: TaskRunLogEntry_Type.PRIOR_BACKUP,
-      startTime: getDateForPbTimestamp(priorBackup.startTime),
-      endTime: getDateForPbTimestamp(priorBackup.endTime),
+      startTime: getDateForPbTimestampProtoEs(priorBackup.startTime),
+      endTime: getDateForPbTimestampProtoEs(priorBackup.endTime),
       priorBackup: priorBackup,
     });
   }
@@ -168,7 +167,7 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
       deployId,
       serial: 0,
       type: TaskRunLogEntry_Type.RETRY_INFO,
-      startTime: getDateForPbTimestamp(entry.logTime),
+      startTime: getDateForPbTimestampProtoEs(entry.logTime),
       endTime: undefined,
       retryInfo,
     });

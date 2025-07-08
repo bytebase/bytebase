@@ -242,11 +242,6 @@ export enum Setting_SettingName {
   AI = 10,
 
   /**
-   * @generated from enum value: PLUGIN_AGENT = 11;
-   */
-  PLUGIN_AGENT = 11,
-
-  /**
    * @generated from enum value: SCHEMA_TEMPLATE = 13;
    */
   SCHEMA_TEMPLATE = 13,
@@ -314,12 +309,8 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
     case: "appImSettingValue";
   } | {
     /**
-     * @generated from field: bytebase.v1.AgentPluginSetting agent_plugin_setting_value = 4;
-     */
-    value: AgentPluginSetting;
-    case: "agentPluginSettingValue";
-  } | {
-    /**
+     * reserved 4; // was AgentPluginSetting agent_plugin_setting_value
+     *
      * @generated from field: bytebase.v1.WorkspaceProfileSetting workspace_profile_setting_value = 5;
      */
     value: WorkspaceProfileSetting;
@@ -350,12 +341,6 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
     case: "semanticTypeSettingValue";
   } | {
     /**
-     * @generated from field: bytebase.v1.MaximumSQLResultSizeSetting maximum_sql_result_size_setting = 13;
-     */
-    value: MaximumSQLResultSizeSetting;
-    case: "maximumSqlResultSizeSetting";
-  } | {
-    /**
      * @generated from field: bytebase.v1.SCIMSetting scim_setting = 14;
      */
     value: SCIMSetting;
@@ -378,6 +363,12 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
      */
     value: EnvironmentSetting;
     case: "environmentSetting";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.SQLQueryRestrictionSetting sql_query_restriction_setting = 18;
+     */
+    value: SQLQueryRestrictionSetting;
+    case: "sqlQueryRestrictionSetting";
   } | { case: undefined; value?: undefined };
 };
 
@@ -559,31 +550,6 @@ export declare type AppIMSetting_DingTalk = Message<"bytebase.v1.AppIMSetting.Di
 export declare const AppIMSetting_DingTalkSchema: GenMessage<AppIMSetting_DingTalk>;
 
 /**
- * @generated from message bytebase.v1.AgentPluginSetting
- */
-export declare type AgentPluginSetting = Message<"bytebase.v1.AgentPluginSetting"> & {
-  /**
-   * The URL for the agent API.
-   *
-   * @generated from field: string url = 1;
-   */
-  url: string;
-
-  /**
-   * The token for the agent.
-   *
-   * @generated from field: string token = 2;
-   */
-  token: string;
-};
-
-/**
- * Describes the message bytebase.v1.AgentPluginSetting.
- * Use `create(AgentPluginSettingSchema)` to create a new message.
- */
-export declare const AgentPluginSettingSchema: GenMessage<AgentPluginSetting>;
-
-/**
  * @generated from message bytebase.v1.WorkspaceProfileSetting
  */
 export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProfileSetting"> & {
@@ -607,13 +573,6 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool require_2fa = 3;
    */
   require2fa: boolean;
-
-  /**
-   * outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
-   *
-   * @generated from field: repeated string outbound_ip_list = 4;
-   */
-  outboundIpList: string[];
 
   /**
    * The duration for token.
@@ -712,20 +671,20 @@ export enum Announcement_AlertLevel {
   /**
    * @generated from enum value: ALERT_LEVEL_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  ALERT_LEVEL_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: ALERT_LEVEL_INFO = 1;
+   * @generated from enum value: INFO = 1;
    */
   INFO = 1,
 
   /**
-   * @generated from enum value: ALERT_LEVEL_WARNING = 2;
+   * @generated from enum value: WARNING = 2;
    */
   WARNING = 2,
 
   /**
-   * @generated from enum value: ALERT_LEVEL_CRITICAL = 3;
+   * @generated from enum value: CRITICAL = 3;
    */
   CRITICAL = 3,
 }
@@ -1074,6 +1033,13 @@ export declare type SemanticTypeSetting_SemanticType = Message<"bytebase.v1.Sema
    * @generated from field: bytebase.v1.Algorithm algorithm = 6;
    */
   algorithm?: Algorithm;
+
+  /**
+   * icon is the icon for semantic type, it can be emoji or base64 encoded image.
+   *
+   * @generated from field: string icon = 7;
+   */
+  icon: string;
 };
 
 /**
@@ -1267,23 +1233,31 @@ export enum Algorithm_InnerOuterMask_MaskType {
 export declare const Algorithm_InnerOuterMask_MaskTypeSchema: GenEnum<Algorithm_InnerOuterMask_MaskType>;
 
 /**
- * @generated from message bytebase.v1.MaximumSQLResultSizeSetting
+ * @generated from message bytebase.v1.SQLQueryRestrictionSetting
  */
-export declare type MaximumSQLResultSizeSetting = Message<"bytebase.v1.MaximumSQLResultSizeSetting"> & {
+export declare type SQLQueryRestrictionSetting = Message<"bytebase.v1.SQLQueryRestrictionSetting"> & {
   /**
-   * The limit is in bytes.
+   * The size limit in bytes.
    * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
    *
-   * @generated from field: int64 limit = 1;
+   * @generated from field: int64 maximum_result_size = 1;
    */
-  limit: bigint;
+  maximumResultSize: bigint;
+
+  /**
+   * The return rows limit. If the value <= 0, will be treated as no limit.
+   * The default value is -1.
+   *
+   * @generated from field: int32 maximum_result_rows = 2;
+   */
+  maximumResultRows: number;
 };
 
 /**
- * Describes the message bytebase.v1.MaximumSQLResultSizeSetting.
- * Use `create(MaximumSQLResultSizeSettingSchema)` to create a new message.
+ * Describes the message bytebase.v1.SQLQueryRestrictionSetting.
+ * Use `create(SQLQueryRestrictionSettingSchema)` to create a new message.
  */
-export declare const MaximumSQLResultSizeSettingSchema: GenMessage<MaximumSQLResultSizeSetting>;
+export declare const SQLQueryRestrictionSettingSchema: GenMessage<SQLQueryRestrictionSetting>;
 
 /**
  * @generated from message bytebase.v1.SCIMSetting
@@ -1534,6 +1508,8 @@ export declare const DatabaseChangeModeSchema: GenEnum<DatabaseChangeMode>;
  */
 export declare const SettingService: GenService<{
   /**
+   * Permissions required: bb.settings.list
+   *
    * @generated from rpc bytebase.v1.SettingService.ListSettings
    */
   listSettings: {
@@ -1542,6 +1518,8 @@ export declare const SettingService: GenService<{
     output: typeof ListSettingsResponseSchema;
   },
   /**
+   * Permissions required: bb.settings.get
+   *
    * @generated from rpc bytebase.v1.SettingService.GetSetting
    */
   getSetting: {
@@ -1550,6 +1528,8 @@ export declare const SettingService: GenService<{
     output: typeof SettingSchema;
   },
   /**
+   * Permissions required: bb.settings.set
+   *
    * @generated from rpc bytebase.v1.SettingService.UpdateSetting
    */
   updateSetting: {

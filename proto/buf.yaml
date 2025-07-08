@@ -3,6 +3,7 @@ modules:
   - path: v1
     name: buf.build/bytebase/bytebase
   - path: store
+    name: buf.build/bytebase/store
 
 deps:
   - buf.build/googleapis/googleapis

@@ -18,11 +18,8 @@
 import { NSelect, type SelectOption } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, ref } from "vue";
-import {
-  tablePartitionMetadata_TypeToJSON,
-  type TablePartitionMetadata,
-  TablePartitionMetadata_Type,
-} from "@/types/proto/v1/database_service";
+import type { TablePartitionMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { TablePartitionMetadata_Type } from "@/types/proto-es/v1/database_service_pb";
 
 const props = defineProps<{
   readonly?: boolean;
@@ -54,7 +51,8 @@ const typeOptions = computed(() => {
         TablePartitionMetadata_Type.LINEAR_KEY,
       ];
   return values.map<SelectOption>((type) => {
-    const label = tablePartitionMetadata_TypeToJSON(type);
+    // Convert enum number to string label
+    const label = TablePartitionMetadata_Type[type] || `UNKNOWN_${type}`;
     return {
       value: type,
       label,

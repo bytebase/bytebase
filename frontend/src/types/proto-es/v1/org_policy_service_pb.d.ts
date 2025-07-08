@@ -816,6 +816,8 @@ export declare const SQLReviewRuleLevelSchema: GenEnum<SQLReviewRuleLevel>;
  */
 export declare const OrgPolicyService: GenService<{
   /**
+   * Permissions required: bb.policies.get
+   *
    * @generated from rpc bytebase.v1.OrgPolicyService.GetPolicy
    */
   getPolicy: {
@@ -824,6 +826,8 @@ export declare const OrgPolicyService: GenService<{
     output: typeof PolicySchema;
   },
   /**
+   * Permissions required: bb.policies.list
+   *
    * @generated from rpc bytebase.v1.OrgPolicyService.ListPolicies
    */
   listPolicies: {
@@ -832,6 +836,8 @@ export declare const OrgPolicyService: GenService<{
     output: typeof ListPoliciesResponseSchema;
   },
   /**
+   * Permissions required: bb.policies.create
+   *
    * @generated from rpc bytebase.v1.OrgPolicyService.CreatePolicy
    */
   createPolicy: {
@@ -840,6 +846,8 @@ export declare const OrgPolicyService: GenService<{
     output: typeof PolicySchema;
   },
   /**
+   * Permissions required: bb.policies.update
+   *
    * @generated from rpc bytebase.v1.OrgPolicyService.UpdatePolicy
    */
   updatePolicy: {
@@ -848,6 +856,8 @@ export declare const OrgPolicyService: GenService<{
     output: typeof PolicySchema;
   },
   /**
+   * Permissions required: bb.policies.delete
+   *
    * @generated from rpc bytebase.v1.OrgPolicyService.DeletePolicy
    */
   deletePolicy: {

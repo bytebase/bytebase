@@ -207,9 +207,7 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 			continue
 		}
 		if ctx.StrictMode {
-			if err := diff.diffIndex(oldIndex, newIndex); err != nil {
-				return "", err
-			}
+			diff.diffIndex(oldIndex, newIndex)
 		}
 		delete(oldSchemaInfo.indexMap, id)
 	}
@@ -248,7 +246,7 @@ func getCreateTableWithoutStoreOption(createTable plsql.ICreate_tableContext) st
 	) + ";"
 }
 
-func (diff *diffNode) diffIndex(oldIndex, newIndex *indexInfo) error {
+func (diff *diffNode) diffIndex(oldIndex, newIndex *indexInfo) {
 	// TODO: compare index definition instead of text.
 	oldString := oldIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(oldIndex.createIndex)
 	newString := newIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.createIndex)
@@ -260,7 +258,6 @@ func (diff *diffNode) diffIndex(oldIndex, newIndex *indexInfo) error {
 		}
 		diff.addIndex = append(diff.addIndex, newIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.createIndex))
 	}
-	return nil
 }
 
 func (diff *diffNode) diffTable(oldTable, newTable *tableInfo) error {

@@ -126,3 +126,34 @@
       CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id]),
       CONSTRAINT [CK_products_price] CHECK ([price] > 0)
     );
+- description: Remove default constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL DEFAULT 1,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: ""
+
+- description: Change default constraint value
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL DEFAULT 1,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL DEFAULT 2,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] ADD CONSTRAINT [DF_users_status] DEFAULT 2 FOR [status];
+

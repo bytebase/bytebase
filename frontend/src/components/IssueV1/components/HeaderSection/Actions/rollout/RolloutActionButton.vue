@@ -93,7 +93,7 @@ const actionList = computed(() => {
     tag: "div",
     disabled: errors.value.length > 0,
   };
-  if (selectedTask.value.databaseDataExport) {
+  if (selectedTask.value.payload?.case === "databaseDataExport") {
     return [
       {
         key: `${action}-STAGE`,
@@ -118,7 +118,7 @@ const actionList = computed(() => {
       },
     },
   ];
-  if (props.stageRolloutActionList.includes(action as any)) {
+  if (props.stageRolloutActionList.includes(action)) {
     actionList.push({
       key: `${action}-STAGE`,
       text: t("issue.action-to-current-stage", { action: text }),

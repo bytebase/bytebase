@@ -1,4 +1,4 @@
-import { AuditLog_Severity } from "./proto/v1/audit_log_service";
+import { AuditLog_Severity } from "./proto-es/v1/audit_log_service_pb";
 
 export interface SearchAuditLogsParams {
   parent?: string;

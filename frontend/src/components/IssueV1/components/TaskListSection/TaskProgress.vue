@@ -14,8 +14,8 @@
 <script setup lang="ts">
 import { NProgress } from "naive-ui";
 import { computed } from "vue";
-import type { Task } from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 
 defineProps<{
   task: Task;

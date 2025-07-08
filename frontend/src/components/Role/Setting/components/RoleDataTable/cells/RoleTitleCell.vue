@@ -7,7 +7,7 @@
 
 <script lang="ts" setup>
 import SystemLabel from "@/components/SystemLabel.vue";
-import type { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { displayRoleTitle, isCustomRole } from "@/utils";
 
 defineProps<{

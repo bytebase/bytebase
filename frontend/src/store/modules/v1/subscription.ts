@@ -1,27 +1,28 @@
-import { subscriptionServiceClient } from "@/grpcweb";
-import {
-  PLANS,
-  hasFeature as checkFeature,
-  hasInstanceFeature as checkInstanceFeature,
-  getDateForPbTimestamp,
-  getMinimumRequiredPlan,
-  instanceLimitFeature
-} from "@/types";
-import type {
-  Instance,
-  InstanceResource,
-} from "@/types/proto/v1/instance_service";
-import type { Subscription } from "@/types/proto/v1/subscription_service";
-import {
-  PlanFeature,
-  PlanType,
-  planTypeFromJSON,
-  planTypeToNumber,
-} from "@/types/proto/v1/subscription_service";
+import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { defineStore } from "pinia";
 import type { Ref } from "vue";
 import { computed } from "vue";
+import { subscriptionServiceClientConnect } from "@/grpcweb";
+import {
+  PLANS,
+  hasFeature as checkFeature,
+  hasInstanceFeature as checkInstanceFeature,
+  getDateForPbTimestampProtoEs,
+  getMinimumRequiredPlan,
+  instanceLimitFeature,
+} from "@/types";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto-es/v1/instance_service_pb";
+import type { Subscription } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  GetSubscriptionRequestSchema,
+  UpdateSubscriptionRequestSchema,
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
 
 // The threshold of days before the license expiration date to show the warning.
 // Default is 7 days.
@@ -38,11 +39,15 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     trialingDays: 14,
   }),
   getters: {
-    instanceCountLimit(): number {
+    instanceCountLimit(state): number {
       const limit =
         PLANS.find((plan) => plan.type === this.currentPlan)
           ?.maximumInstanceCount ?? 0;
       if (limit < 0) {
+        const instanceLimitInLicense = state.subscription?.instances ?? 0;
+        if (instanceLimitInLicense > 0) {
+          return instanceLimitInLicense;
+        }
         return Number.MAX_VALUE;
       }
       return limit;
@@ -59,7 +64,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         case PlanType.FREE:
           return limit;
         default: {
-          const seatCount = state.subscription?.seatCount ?? 0;
+          const seatCount = state.subscription?.seats ?? 0;
           if (seatCount < 0) {
             return Number.MAX_VALUE;
           }
@@ -71,7 +76,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
     },
     instanceLicenseCount(state): number {
-      const count = state.subscription?.instanceCount ?? 0;
+      const count = state.subscription?.activeInstances ?? 0;
       if (count < 0) {
         return Number.MAX_VALUE;
       }
@@ -81,7 +86,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       if (!state.subscription) {
         return PlanType.FREE;
       }
-      return planTypeFromJSON(state.subscription.plan);
+      return state.subscription.plan;
     },
     isFreePlan(): boolean {
       return this.currentPlan == PlanType.FREE;
@@ -96,7 +101,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
 
       return dayjs(
-        getDateForPbTimestamp(state.subscription.expiresTime)
+        getDateForPbTimestampProtoEs(state.subscription.expiresTime)
       ).format("YYYY/MM/DD HH:mm:ss");
     },
     isTrialing(state): boolean {
@@ -111,7 +116,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         return false;
       }
       return dayjs(
-        getDateForPbTimestamp(state.subscription.expiresTime)
+        getDateForPbTimestampProtoEs(state.subscription.expiresTime)
       ).isBefore(new Date());
     },
     daysBeforeExpire(state): number {
@@ -124,7 +129,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
 
       const expiresTime = dayjs(
-        getDateForPbTimestamp(state.subscription.expiresTime)
+        getDateForPbTimestampProtoEs(state.subscription.expiresTime)
       );
       return Math.max(expiresTime.diff(new Date(), "day"), 0);
     },
@@ -162,13 +167,17 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       if (this.currentPlan === PlanType.FREE) {
         return this.hasFeature(feature);
       }
-      
+
       // If no instance provided or feature is not instance-limited
       if (!instance || !instanceLimitFeature.has(feature)) {
         return this.hasFeature(feature);
       }
-      
-      return checkInstanceFeature(this.currentPlan, feature, instance.activation);
+
+      return checkInstanceFeature(
+        this.currentPlan,
+        feature,
+        instance.activation
+      );
     },
     instanceMissingLicense(
       feature: PlanFeature,
@@ -185,16 +194,16 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       return this.hasFeature(feature) && !instance.activation;
     },
     currentPlanGTE(plan: PlanType): boolean {
-      return planTypeToNumber(this.currentPlan) >= planTypeToNumber(plan);
+      return this.currentPlan >= plan;
     },
     getMinimumRequiredPlan(feature: PlanFeature): PlanType {
       return getMinimumRequiredPlan(feature);
     },
     async fetchSubscription() {
       try {
-        const subscription = await subscriptionServiceClient.getSubscription(
-          {}
-        );
+        const request = create(GetSubscriptionRequestSchema, {});
+        const subscription =
+          await subscriptionServiceClientConnect.getSubscription(request);
         this.setSubscription(subscription);
         return subscription;
       } catch (e) {
@@ -202,9 +211,11 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
     },
     async patchSubscription(license: string) {
-      const subscription = await subscriptionServiceClient.updateSubscription({
+      const request = create(UpdateSubscriptionRequestSchema, {
         license,
       });
+      const subscription =
+        await subscriptionServiceClientConnect.updateSubscription(request);
       this.setSubscription(subscription);
       return subscription;
     },

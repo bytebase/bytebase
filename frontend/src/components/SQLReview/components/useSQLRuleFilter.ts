@@ -1,6 +1,6 @@
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 
 export type SQLRuleFilterParams = {
   checkedLevel: Set<SQLReviewRuleLevel>;

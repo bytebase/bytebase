@@ -1,18 +1,22 @@
+import { create } from "@bufbuild/protobuf";
+import { reactive } from "vue";
+import { useRoute } from "vue-router";
 import {
   buildPlan,
   extractInitialSQLFromQuery,
   getLocalSheetByName,
   type CreatePlanParams,
 } from "@/components/Plan";
-import { rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useCurrentUserV1, useProjectV1Store, useSheetV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { IssueType } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement } from "@/types";
-import { Issue_Type, IssueStatus } from "@/types/proto/v1/issue_service";
-import { Plan } from "@/types/proto/v1/plan_service";
-import type { Stage } from "@/types/proto/v1/rollout_service";
-import { Rollout } from "@/types/proto/v1/rollout_service";
+import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Stage, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractProjectResourceName,
   extractSheetUID,
@@ -21,8 +25,6 @@ import {
   sheetNameOfTaskV1,
   extractEnvironmentResourceName,
 } from "@/utils";
-import { reactive } from "vue";
-import { useRoute } from "vue-router";
 import { nextUID } from "../base";
 
 export const createIssueSkeleton = async (
@@ -93,12 +95,13 @@ const generateRolloutFromPlan = async (
   const project = await useProjectV1Store().getOrFetchProjectByName(
     `projects/${extractProjectResourceName(plan.name)}`
   );
-  let rollout: Rollout = Rollout.fromPartial({});
+  let rollout: Rollout = create(RolloutSchema, {});
   if (hasProjectPermissionV2(project, "bb.rollouts.preview")) {
-    rollout = await rolloutServiceClient.previewRollout({
+    const request = create(PreviewRolloutRequestSchema, {
       project: params.project.name,
-      plan,
+      plan: plan,
     });
+    rollout = await rolloutServiceClientConnect.previewRollout(request);
   }
   // Touch UIDs for each object for local referencing
   rollout.plan = plan.name;

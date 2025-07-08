@@ -1,7 +1,8 @@
+import { create } from "@bufbuild/protobuf";
 import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch } from "vue";
-import { projectServiceClient } from "@/grpcweb";
+import { projectServiceClientConnect } from "@/grpcweb";
 import {
   ALL_USERS_USER_EMAIL,
   QueryPermissionQueryAny,
@@ -10,14 +11,20 @@ import {
   type MaybeRef,
   type QueryPermission,
 } from "@/types";
-import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
-import type { User } from "@/types/proto/v1/user_service";
+import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import {
+  GetIamPolicyRequestSchema,
+  SetIamPolicyRequestSchema,
+  IamPolicySchema,
+} from "@/types/proto-es/v1/iam_policy_pb";
+import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import { BatchGetIamPolicyRequestSchema } from "@/types/proto-es/v1/project_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
-import { useCurrentUserV1 } from "../auth";
 import { useRoleStore } from "../role";
 import { useUserStore } from "../user";
+import { useCurrentUserV1 } from "./auth";
 import { usePermissionStore } from "./permission";
 
 export const useProjectIamPolicyStore = defineStore(
@@ -51,22 +58,25 @@ export const useProjectIamPolicyStore = defineStore(
         }
       }
 
-      const request = projectServiceClient
-        .getIamPolicy({
-          resource: project,
-        })
-        .then((policy) => {
-          return setIamPolicy(project, policy);
+      const request = create(GetIamPolicyRequestSchema, {
+        resource: project,
+      });
+      const requestPromise = projectServiceClientConnect
+        .getIamPolicy(request)
+        .then((response) => {
+          return setIamPolicy(project, response);
         });
-      requestCache.set(project, request);
-      return request;
+      requestCache.set(project, requestPromise);
+      return requestPromise;
     };
 
     const batchFetchIamPolicy = async (projectList: string[]) => {
-      const response = await projectServiceClient.batchGetIamPolicy({
+      const request = create(BatchGetIamPolicyRequestSchema, {
         scope: "projects/-",
         names: projectList,
       });
+      const response =
+        await projectServiceClientConnect.batchGetIamPolicy(request);
       for (const item of response.policyResults) {
         if (item.policy) {
           await setIamPolicy(item.project, item.policy);
@@ -83,18 +93,19 @@ export const useProjectIamPolicyStore = defineStore(
           binding.members = uniq(binding.members);
         }
       });
-      const updated = await projectServiceClient.setIamPolicy({
+      const request = create(SetIamPolicyRequestSchema, {
         resource: project,
-        policy,
+        policy: policy,
         etag: policy.etag,
       });
-      policyMap.value.set(project, updated);
+      const response = await projectServiceClientConnect.setIamPolicy(request);
+      policyMap.value.set(project, response);
 
       usePermissionStore().invalidCacheByProject(project);
     };
 
     const getProjectIamPolicy = (project: string) => {
-      return policyMap.value.get(project) ?? IamPolicy.fromPartial({});
+      return policyMap.value.get(project) ?? create(IamPolicySchema, {});
     };
 
     const getOrFetchProjectIamPolicy = async (project: string) => {
@@ -147,7 +158,7 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
     { immediate: true }
   );
   const policy = computed(() => {
-    return store.policyMap.get(unref(project)) ?? IamPolicy.fromPartial({});
+    return store.policyMap.get(unref(project)) ?? create(IamPolicySchema, {});
   });
   return { policy, ready };
 };

@@ -1,8 +1,16 @@
+import { create } from "@bufbuild/protobuf";
 import { environmentNamePrefix } from "@/store";
 import type { Environment } from "@/types/v1/environment";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
-import { Engine, State } from "../proto/v1/common";
-import { Instance, InstanceResource } from "../proto/v1/instance_service";
+import { Engine, State } from "../proto-es/v1/common_pb";
+import type {
+  Instance,
+  InstanceResource,
+} from "../proto-es/v1/instance_service_pb";
+import {
+  InstanceSchema,
+  InstanceResourceSchema,
+} from "../proto-es/v1/instance_service_pb";
 import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "./environment";
 
 export const EMPTY_INSTANCE_NAME = `instances/${EMPTY_ID}`;
@@ -14,7 +22,7 @@ export interface ComposedInstance extends Instance {
 
 export const unknownInstance = (): ComposedInstance => {
   const environmentEntity = unknownEnvironment();
-  const instance = Instance.fromPartial({
+  const instance = create(InstanceSchema, {
     name: UNKNOWN_INSTANCE_NAME,
     state: State.ACTIVE,
     title: "<<Unknown instance>>",
@@ -28,16 +36,15 @@ export const unknownInstance = (): ComposedInstance => {
 };
 
 export const unknownInstanceResource = (): InstanceResource => {
-  const instance = {
-    ...unknownInstance(),
-    title: "<<Unknown instance>>",
-  };
-  return {
-    ...instance,
+  const instance = unknownInstance();
+  return create(InstanceResourceSchema, {
     name: UNKNOWN_INSTANCE_NAME,
-    environment: UNKNOWN_ENVIRONMENT_NAME,
+    engine: instance.engine,
+    title: "<<Unknown instance>>",
     activation: true,
-  };
+    dataSources: [],
+    environment: UNKNOWN_ENVIRONMENT_NAME,
+  });
 };
 
 export const isValidInstanceName = (name: any): name is string => {

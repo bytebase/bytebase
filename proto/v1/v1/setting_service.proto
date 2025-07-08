@@ -18,6 +18,7 @@ import "v1/issue_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service SettingService {
+  // Permissions required: bb.settings.list
   rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {
     option (google.api.http) = {get: "/v1/settings"};
     option (google.api.method_signature) = "";
@@ -25,6 +26,7 @@ service SettingService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.settings.get
   rpc GetSetting(GetSettingRequest) returns (Setting) {
     option (google.api.http) = {get: "/v1/{name=settings/*}"};
     option (google.api.method_signature) = "name";
@@ -32,6 +34,7 @@ service SettingService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.settings.set
   rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
     option (google.api.http) = {
       patch: "/v1/{setting.name=settings/*}"
@@ -116,7 +119,6 @@ message Setting {
     APP_IM = 8;
     WATERMARK = 9;
     AI = 10;
-    PLUGIN_AGENT = 11;
     SCHEMA_TEMPLATE = 13;
     DATA_CLASSIFICATION = 14;
     SEMANTIC_TYPES = 15;
@@ -143,17 +145,17 @@ message Value {
     // Defines this value as being a string value.
     string string_value = 1;
     AppIMSetting app_im_setting_value = 3;
-    AgentPluginSetting agent_plugin_setting_value = 4;
+    // reserved 4; // was AgentPluginSetting agent_plugin_setting_value
     WorkspaceProfileSetting workspace_profile_setting_value = 5;
     WorkspaceApprovalSetting workspace_approval_setting_value = 6;
     SchemaTemplateSetting schema_template_setting_value = 9;
     DataClassificationSetting data_classification_setting_value = 10;
     SemanticTypeSetting semantic_type_setting_value = 11;
-    MaximumSQLResultSizeSetting maximum_sql_result_size_setting = 13;
     SCIMSetting scim_setting = 14;
     PasswordRestrictionSetting password_restriction_setting = 15;
     AISetting ai_setting = 16;
     EnvironmentSetting environment_setting = 17;
+    SQLQueryRestrictionSetting sql_query_restriction_setting = 18;
   }
 }
 
@@ -192,14 +194,6 @@ message AppIMSetting {
   DingTalk dingtalk = 5;
 }
 
-message AgentPluginSetting {
-  // The URL for the agent API.
-  string url = 1;
-
-  // The token for the agent.
-  string token = 2;
-}
-
 message WorkspaceProfileSetting {
   // The external URL is used for sso authentication callback.
   string external_url = 1;
@@ -209,9 +203,6 @@ message WorkspaceProfileSetting {
 
   // Require 2FA for all users.
   bool require_2fa = 3;
-
-  // outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
-  repeated string outbound_ip_list = 4;
 
   // The duration for token.
   google.protobuf.Duration token_duration = 6;
@@ -239,9 +230,9 @@ message Announcement {
   // We support three levels of AlertLevel: INFO, WARNING, and ERROR.
   enum AlertLevel {
     ALERT_LEVEL_UNSPECIFIED = 0;
-    ALERT_LEVEL_INFO = 1;
-    ALERT_LEVEL_WARNING = 2;
-    ALERT_LEVEL_CRITICAL = 3;
+    INFO = 1;
+    WARNING = 2;
+    CRITICAL = 3;
   }
 
   // The alert level of announcemnt
@@ -358,6 +349,9 @@ message SemanticTypeSetting {
     string description = 3;
 
     Algorithm algorithm = 6;
+
+    // icon is the icon for semantic type, it can be emoji or base64 encoded image.
+    string icon = 7;
   }
 
   repeated SemanticType types = 1;
@@ -421,10 +415,13 @@ enum DatabaseChangeMode {
   EDITOR = 2;
 }
 
-message MaximumSQLResultSizeSetting {
-  // The limit is in bytes.
+message SQLQueryRestrictionSetting {
+  // The size limit in bytes.
   // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-  int64 limit = 1;
+  int64 maximum_result_size = 1;
+  // The return rows limit. If the value <= 0, will be treated as no limit.
+  // The default value is -1.
+  int32 maximum_result_rows = 2;
 }
 
 message SCIMSetting {

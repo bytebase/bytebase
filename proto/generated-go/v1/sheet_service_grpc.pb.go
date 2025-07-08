@@ -29,9 +29,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SheetServiceClient interface {
+	// Permissions required: bb.sheets.create
 	CreateSheet(ctx context.Context, in *CreateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
+	// Permissions required: bb.sheets.create
 	BatchCreateSheets(ctx context.Context, in *BatchCreateSheetsRequest, opts ...grpc.CallOption) (*BatchCreateSheetsResponse, error)
+	// Permissions required: bb.sheets.get
 	GetSheet(ctx context.Context, in *GetSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
+	// Permissions required: bb.sheets.update
 	UpdateSheet(ctx context.Context, in *UpdateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
 }
 
@@ -87,9 +91,13 @@ func (c *sheetServiceClient) UpdateSheet(ctx context.Context, in *UpdateSheetReq
 // All implementations must embed UnimplementedSheetServiceServer
 // for forward compatibility.
 type SheetServiceServer interface {
+	// Permissions required: bb.sheets.create
 	CreateSheet(context.Context, *CreateSheetRequest) (*Sheet, error)
+	// Permissions required: bb.sheets.create
 	BatchCreateSheets(context.Context, *BatchCreateSheetsRequest) (*BatchCreateSheetsResponse, error)
+	// Permissions required: bb.sheets.get
 	GetSheet(context.Context, *GetSheetRequest) (*Sheet, error)
+	// Permissions required: bb.sheets.update
 	UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error)
 	mustEmbedUnimplementedSheetServiceServer()
 }

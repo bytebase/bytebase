@@ -4,19 +4,7 @@
     tabindex="0"
     v-bind="$attrs"
   >
-    <BBAttention
-      v-if="database.drifted"
-      type="warning"
-      :title="$t('database.drifted.schema-drift-detected.self')"
-      :description="$t('database.drifted.schema-drift-detected.description')"
-      :link="'https://docs.bytebase.com/change-database/drift-detection/?source=console'"
-      :action-text="
-        database.project !== DEFAULT_PROJECT_NAME
-          ? $t('database.drifted.new-baseline.self')
-          : undefined
-      "
-      @click="updateDatabaseDrift"
-    />
+    <DriftedDatabaseAlert :database="database" />
 
     <main class="flex-1 relative">
       <!-- Highlight Panel -->
@@ -39,18 +27,11 @@
                     class="w-5 h-5"
                   />
                 </h1>
-                <div class="flex items-center">
+                <div class="flex items-center space-x-1">
                   <span class="textinfolabel">
                     {{ database.name }}
                   </span>
-                  <NButton
-                    v-if="isSupported"
-                    quaternary
-                    size="tiny"
-                    @click="handleCopyDatabaseName(database.name)"
-                  >
-                    <ClipboardCopyIcon class="w-4 h-4" />
-                  </NButton>
+                  <CopyButton :content="database.name" />
                 </div>
               </div>
             </div>
@@ -213,14 +194,12 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
-import { ArrowRightLeftIcon, ClipboardCopyIcon } from "lucide-vue-next";
+import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter, useRoute } from "vue-router";
-import { BBAttention, BBModal } from "@/bbkit";
+import { useRouter, useRoute, type LocationQueryRaw } from "vue-router";
+import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
@@ -232,6 +211,7 @@ import {
   SQLEditorButtonV1,
   SchemaDiagramButton,
 } from "@/components/DatabaseDetail";
+import DriftedDatabaseAlert from "@/components/DatabaseDetail/DriftedDatabaseAlert.vue";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
@@ -241,25 +221,20 @@ import {
   ProductionEnvironmentV1Icon,
   ProjectV1Name,
 } from "@/components/v2";
+import { CopyButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAppFeature,
   useEnvironmentV1Store,
   useDatabaseV1ByName,
-  pushNotification,
-  useDatabaseV1Store,
 } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import {
-  UNKNOWN_PROJECT_NAME,
-  unknownEnvironment,
-  DEFAULT_PROJECT_NAME,
-} from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { UNKNOWN_PROJECT_NAME, unknownEnvironment } from "@/types";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
@@ -293,9 +268,7 @@ const props = defineProps<{
   databaseName: string;
 }>();
 
-const { t } = useI18n();
 const router = useRouter();
-const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
@@ -314,9 +287,6 @@ const {
   allowAlterSchema,
   allowListChangelogs,
 } = useDatabaseDetailContext();
-const disableSchemaEditor = useAppFeature(
-  "bb.feature.issue.disable-schema-editor"
-);
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 watch(
@@ -369,8 +339,7 @@ const createMigration = async (
   if (type === "bb.issue.database.schema.update") {
     if (
       database.value.state === State.ACTIVE &&
-      allowUsingSchemaEditor([database.value]) &&
-      !disableSchemaEditor.value
+      allowUsingSchemaEditor([database.value])
     ) {
       state.showSchemaEditorModal = true;
       return;
@@ -387,7 +356,7 @@ const createMigration = async (
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
 
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: type,
     name: issueNameParts.join(" "),
     databaseList: database.value.name,
@@ -417,35 +386,4 @@ const environment = computed(() => {
 });
 
 useTitle(computed(() => database.value.databaseName));
-
-const { copy: copyTextToClipboard, isSupported } = useClipboard({
-  legacy: true,
-});
-const handleCopyDatabaseName = (name: string) => {
-  if (!isSupported.value) {
-    return;
-  }
-  copyTextToClipboard(name).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: "Database full name copied.",
-    });
-  });
-};
-
-const updateDatabaseDrift = async () => {
-  await databaseStore.updateDatabase({
-    database: {
-      ...database.value,
-      drifted: false,
-    },
-    updateMask: ["drifted"],
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("database.drifted.new-baseline.successfully-established"),
-  });
-};
 </script>

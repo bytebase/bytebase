@@ -42,8 +42,8 @@
 import { NCheckbox, NEmpty } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { Engine } from "@/types/proto/v1/common";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import TableTemplateTable from "./TableTemplateTable.vue";
 
 interface LocalState {

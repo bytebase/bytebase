@@ -1,6 +1,10 @@
 import { useTitle } from "@vueuse/core";
 import { nextTick, ref } from "vue";
-import { createRouter, createWebHistory } from "vue-router";
+import {
+  createRouter,
+  createWebHistory,
+  type LocationQueryRaw,
+} from "vue-router";
 import {
   hasFeature,
   useAuthStore,
@@ -10,10 +14,8 @@ import {
   useProjectV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
-  useSQLEditorTabStore,
-  useAppFeature,
 } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -70,9 +72,16 @@ router.beforeEach((to, from, next) => {
   const actuatorStore = useActuatorV1Store();
   const authStore = useAuthStore();
   const routerStore = useRouterStore();
-  const disallowNavigateAwaySQLEditor = useAppFeature(
-    "bb.feature.disallow-navigate-to-console"
-  );
+
+  if (
+    to.path.startsWith("/auth") &&
+    authStore.isLoggedIn &&
+    !authStore.unauthenticatedOccurred
+  ) {
+    const redirect = (to.query["redirect"] as string) || "/";
+    next(redirect);
+    return;
+  }
 
   const fromModule = from.name
     ? from.name.toString().split(".")[0]
@@ -113,7 +122,6 @@ router.beforeEach((to, from, next) => {
     to.name === AUTH_PASSWORD_RESET_MODULE ||
     to.name === AUTH_PASSWORD_FORGOT_MODULE
   ) {
-    useSQLEditorTabStore().reset();
     useDatabaseV1Store().reset();
     useProjectV1Store().reset();
     useInstanceV1Store().reset();
@@ -124,7 +132,7 @@ router.beforeEach((to, from, next) => {
     return;
   } else {
     if (!authStore.isLoggedIn) {
-      const query: any = {
+      const query: LocationQueryRaw = {
         ...(to.query || {}),
       };
       if (to.fullPath !== "/") {
@@ -163,7 +171,10 @@ router.beforeEach((to, from, next) => {
   const currentUserV1 = useCurrentUserV1();
 
   // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
-  if (hasFeature(PlanFeature.FEATURE_TWO_FA) && actuatorStore.serverInfo?.require2fa) {
+  if (
+    hasFeature(PlanFeature.FEATURE_TWO_FA) &&
+    actuatorStore.serverInfo?.require2fa
+  ) {
     const user = currentUserV1.value;
     if (user && !user.mfaEnabled) {
       next({
@@ -171,17 +182,6 @@ router.beforeEach((to, from, next) => {
         replace: true,
       });
       return;
-    }
-  }
-
-  // In standalone mode, we don't want to user get out of some standalone pages.
-  if (disallowNavigateAwaySQLEditor.value) {
-    // If user is trying to navigate away from SQL Editor, we'll explicitly return false to cancel the navigation.
-    if (
-      from.name?.toString().startsWith("sql-editor") &&
-      !to.name?.toString().startsWith("sql-editor")
-    ) {
-      return false;
     }
   }
 

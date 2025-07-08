@@ -65,6 +65,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, NDivider, NInput, useDialog } from "naive-ui";
@@ -89,9 +90,12 @@ import {
   getProjectNameAndDatabaseGroupName,
 } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
-import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { Expr } from "@/types/proto/google/type/expr";
-import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
+import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import {
+  DatabaseGroupSchema,
+  type DatabaseGroup,
+} from "@/types/proto-es/v1/database_group_service_pb";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
@@ -220,13 +224,13 @@ const doConfirm = async () => {
     const resourceId = formState.resourceId;
     await dbGroupStore.createDatabaseGroup({
       projectName: props.project.name,
-      databaseGroup: {
+      databaseGroup: create(DatabaseGroupSchema, {
         name: `${props.project.name}/databaseGroups/${resourceId}`,
         title: formState.placeholder,
-        databaseExpr: Expr.fromPartial({
+        databaseExpr: create(ExprSchema, {
           expression: celString,
         }),
-      },
+      }),
       databaseGroupId: resourceId,
     });
     emit("created", resourceId);
@@ -242,7 +246,7 @@ const doConfirm = async () => {
     if (
       !isEqual(
         props.databaseGroup.databaseExpr,
-        Expr.fromPartial({
+        create(ExprSchema, {
           expression: celString,
         })
       )
@@ -253,7 +257,7 @@ const doConfirm = async () => {
       {
         ...props.databaseGroup!,
         title: formState.placeholder,
-        databaseExpr: Expr.fromPartial({
+        databaseExpr: create(ExprSchema, {
           expression: celString,
         }),
       },

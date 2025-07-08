@@ -29,6 +29,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import type { InputInst } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -39,8 +40,9 @@ import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
-import { ViewMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { ViewMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { ViewMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 
 // View name must start with a non-space character, end with a non-space character.
@@ -93,7 +95,7 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (!props.view) {
-    const view = ViewMetadata.fromPartial({
+    const view = create(ViewMetadataSchema, {
       name: state.viewName,
       definition: "",
     });

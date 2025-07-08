@@ -125,7 +125,6 @@
           :should-show-diff="shouldShowDiff"
           :preview-schema-change-message="previewSchemaChangeMessage"
           @statement-change="onStatementChange"
-          @copy-statement="onCopyStatement"
         />
         <div
           v-show="!selectedDatabase"
@@ -157,6 +156,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import { NEllipsis, NTabs, NTabPane } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
@@ -164,18 +164,14 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-} from "@/store";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import {
   isValidDatabaseName,
   type ComposedDatabase,
   type ComposedProject,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { toClipboard } from "@/utils";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { DiffSchemaRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import SourceSchemaInfo from "./SourceSchemaInfo.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
@@ -297,20 +293,6 @@ const handleUnselectDatabase = (database: ComposedDatabase) => {
   }
 };
 
-const onCopyStatement = () => {
-  const editStatement = state.selectedDatabaseName
-    ? schemaDiffCache.value[state.selectedDatabaseName].edited
-    : "";
-
-  toClipboard(editStatement).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: `Statement copied to clipboard.`,
-    });
-  });
-};
-
 const onStatementChange = (statement: string) => {
   if (state.selectedDatabaseName) {
     schemaDiffCache.value[state.selectedDatabaseName].edited = statement;
@@ -337,18 +319,33 @@ watch(
       }
       const db = databaseStore.getDatabaseByName(name);
       const schema = await databaseStore.fetchDatabaseSchema(
-        `${db.name}/schema`,
+        db.name,
         false /* sdlFormat */
       );
       databaseSchemaCache.value[name] = schema.schema;
       if (schemaDiffCache.value[name]) {
         continue;
       } else {
-        const diffResp = await databaseStore.diffSchema({
-          name: db.name,
-          schema: props.sourceSchemaString,
-          sdlFormat: false,
-        });
+        // Use changelog name if source is from changelog, otherwise use schema string
+        const diffRequest = props.changelogSourceSchema?.changelogName
+          ? create(DiffSchemaRequestSchema, {
+              name: db.name,
+              target: {
+                case: "changelog",
+                value: props.changelogSourceSchema.changelogName,
+              },
+              sdlFormat: false,
+            })
+          : create(DiffSchemaRequestSchema, {
+              name: db.name,
+              target: {
+                case: "schema",
+                value: props.sourceSchemaString,
+              },
+              sdlFormat: false,
+            });
+
+        const diffResp = await databaseStore.diffSchema(diffRequest);
         const schemaDiff = diffResp.diff ?? "";
         schemaDiffCache.value[name] = {
           raw: schemaDiff,

@@ -7,10 +7,16 @@
       <label class="textlabel">
         {{ $t("instance.scan-interval.self") }}
       </label>
-      <FeatureBadge
-        :feature="PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME"
-        :instance="instance"
-      />
+
+      <span v-if="instance.lastSyncTime" class="textinfolabel"
+        >({{
+          $t("sql-editor.last-synced", {
+            time: dayjs(
+              getDateForPbTimestampProtoEs(instance.lastSyncTime)
+            ).format("YYYY-MM-DD HH:mm:ss"),
+          })
+        }})</span
+      >
     </div>
     <div class="textinfolabel">
       {{ $t("instance.scan-interval.description") }}
@@ -18,7 +24,7 @@
     <div class="flex items-center gap-x-6">
       <NRadio
         :checked="state.mode === 'DEFAULT'"
-        :disabled="!allowEdit || !hasFeature"
+        :disabled="!allowEdit"
         value="DEFAULT"
         @click="handleModeChange('DEFAULT')"
       >
@@ -28,7 +34,7 @@
       <div class="flex items-center">
         <NRadio
           :checked="state.mode === 'CUSTOM'"
-          :disabled="!allowEdit || !hasFeature"
+          :disabled="!allowEdit"
           value="CUSTOM"
           class="!items-center"
           @click="handleModeChange('CUSTOM')"
@@ -42,7 +48,7 @@
               size="small"
               style="width: 4rem"
               :status="state.isValid ? undefined : 'error'"
-              :disabled="state.mode !== 'CUSTOM' || !hasFeature"
+              :disabled="state.mode !== 'CUSTOM'"
               @update:value="handleMinuteChange($event as number)"
             />
             <span v-if="!state.isValid" class="text-error">
@@ -61,12 +67,13 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
+import type { Duration } from "@bufbuild/protobuf/wkt";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import dayjs from "dayjs";
 import { NInputNumber, NRadio } from "naive-ui";
-import { computed, reactive, watch } from "vue";
-import { useSubscriptionV1Store } from "@/store";
-import { Duration } from "@/types/proto/google/protobuf/duration";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
-import { FeatureBadge } from "../FeatureGuard";
+import { reactive, watch } from "vue";
+import { getDateForPbTimestampProtoEs, type ComposedInstance } from "@/types";
 import { useInstanceFormContext } from "./context";
 
 type Mode = "DEFAULT" | "CUSTOM";
@@ -82,26 +89,19 @@ const MIN_MINUTES = 30;
 const props = defineProps<{
   scanInterval?: Duration | undefined;
   allowEdit: boolean;
+  instance: ComposedInstance;
 }>();
 
 const emit = defineEmits<{
   (event: "update:scan-interval", interval: Duration | undefined): void;
 }>();
 
-const subscriptionStore = useSubscriptionV1Store();
-const { instance, hideAdvancedFeatures } = useInstanceFormContext();
-
-const hasFeature = computed(() => {
-  return subscriptionStore.hasInstanceFeature(
-    PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME,
-    instance.value
-  );
-});
+const { hideAdvancedFeatures } = useInstanceFormContext();
 
 const extractStateFromDuration = (
   duration: Duration | undefined
 ): { mode: Mode; minutes: number | undefined } => {
-  if (!duration || duration.seconds.toNumber() === 0) {
+  if (!duration || Number(duration.seconds) === 0) {
     return {
       mode: "DEFAULT",
       minutes: undefined,
@@ -109,7 +109,7 @@ const extractStateFromDuration = (
   }
   return {
     mode: "CUSTOM",
-    minutes: Math.floor(duration.seconds.toNumber() / 60),
+    minutes: Math.floor(Number(duration.seconds) / 60),
   };
 };
 
@@ -127,15 +127,15 @@ const handleModeChange = (targetMode: Mode) => {
   if (targetMode === "DEFAULT") {
     emit(
       "update:scan-interval",
-      Duration.fromPartial({
-        seconds: 0,
+      create(DurationSchema, {
+        seconds: BigInt(0),
       })
     );
   } else {
     emit(
       "update:scan-interval",
-      Duration.fromPartial({
-        seconds: 24 * 60 * 60,
+      create(DurationSchema, {
+        seconds: BigInt(24 * 60 * 60),
       })
     );
   }
@@ -150,8 +150,8 @@ const handleMinuteChange = (minute: number | undefined) => {
   state.isValid = true;
   emit(
     "update:scan-interval",
-    Duration.fromPartial({
-      seconds: minute * 60,
+    create(DurationSchema, {
+      seconds: BigInt(minute * 60),
     })
   );
 };

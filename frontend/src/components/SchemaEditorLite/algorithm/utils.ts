@@ -1,14 +1,15 @@
-import {
+import { create } from "@bufbuild/protobuf";
+import type {
   TableCatalog,
   SchemaCatalog,
-  TableCatalog_Columns,
   DatabaseCatalog,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import { TableCatalog_ColumnsSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { keyBy } from "@/utils";
 
 export const cleanupUnusedCatalog = (
@@ -21,11 +22,14 @@ export const cleanupUnusedCatalog = (
   ) => {
     const columnMap = keyBy(table.columns, (column) => column.name);
     // Remove unused column catalog
-    if (!tableCatalog.columns) {
-      tableCatalog.columns = TableCatalog_Columns.fromPartial({});
+    if (tableCatalog.kind?.case !== "columns") {
+      tableCatalog.kind = {
+        case: "columns",
+        value: create(TableCatalog_ColumnsSchema, {}),
+      };
     }
-    tableCatalog.columns.columns = tableCatalog.columns?.columns.filter((cc) =>
-      columnMap.has(cc.name)
+    tableCatalog.kind.value.columns = tableCatalog.kind.value.columns.filter(
+      (cc) => columnMap.has(cc.name)
     );
   };
   const cleanupTableCatalog = (

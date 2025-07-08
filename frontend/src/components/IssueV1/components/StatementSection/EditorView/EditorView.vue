@@ -174,6 +174,14 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
+import { useElementSize } from "@vueuse/core";
+import { cloneDeep, head, isEmpty } from "lodash-es";
+import { ExpandIcon } from "lucide-vue-next";
+import { NButton, NTooltip, useDialog } from "naive-ui";
+import { computed, reactive, ref, toRef, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import { BBAttention, BBModal } from "@/bbkit";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -187,21 +195,22 @@ import {
   createEmptyLocalSheet,
   databaseEngineForSpec,
 } from "@/components/Plan";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import {
   pushNotification,
   useCurrentProjectV1,
-  useSheetV1Store
+  useSheetV1Store,
 } from "@/store";
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { Advice } from "@/types/proto/v1/sql_service";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { databaseForTask } from "@/utils";
 import {
   flattenTaskV1List,
   getSheetStatement,
@@ -209,13 +218,6 @@ import {
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
-import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head, isEmpty } from "lodash-es";
-import { ExpandIcon } from "lucide-vue-next";
-import { NButton, NTooltip, useDialog } from "naive-ui";
-import { computed, reactive, ref, toRef, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import EditorActionPopover from "./EditorActionPopover.vue";
 import { provideEditorContext } from "./context";
@@ -281,7 +283,9 @@ const allowEditStatementWhenCreating = computed(() => {
   if (
     (
       issue.value.planEntity?.specs?.filter(
-        (spec) => spec.changeDatabaseConfig?.release
+        (spec) =>
+          spec.config?.case === "changeDatabaseConfig" &&
+          spec.config.value.release
       ) ?? []
     ).length > 0
   ) {
@@ -339,7 +343,9 @@ const shouldShowEditButton = computed(() => {
   if (
     (
       issue.value.planEntity?.specs?.filter(
-        (spec) => spec.changeDatabaseConfig?.release
+        (spec) =>
+          spec.config?.case === "changeDatabaseConfig" &&
+          spec.config.value.release
       ) ?? []
     ).length > 0
   ) {
@@ -450,7 +456,7 @@ const updateStatement = async (statement: string) => {
     throw new Error("Plan is not defined. Cannot update statement.");
   }
 
-  const sheet = Sheet.fromPartial({
+  const sheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
     title: issue.value.title,
     engine: await databaseEngineForSpec(head(planPatch.specs)),
@@ -463,22 +469,20 @@ const updateStatement = async (statement: string) => {
 
   // Update all specs with the created sheet.
   for (const spec of planPatch.specs) {
-    let config = undefined;
-    if (spec.changeDatabaseConfig) {
-      config = spec.changeDatabaseConfig;
-    } else if (spec.exportDataConfig) {
-      config = spec.exportDataConfig;
+    if (spec.config?.case === "changeDatabaseConfig") {
+      spec.config.value.sheet = createdSheet.name;
+    } else if (spec.config?.case === "exportDataConfig") {
+      spec.config.value.sheet = createdSheet.name;
     }
-    if (!config) continue;
-    config.sheet = createdSheet.name;
   }
 
-  const updatedPlan = await planServiceClient.updatePlan({
+  const request = create(UpdatePlanRequestSchema, {
     plan: planPatch,
-    updateMask: ["specs"],
+    updateMask: { paths: ["specs"] },
   });
+  const response = await planServiceClientConnect.updatePlan(request);
 
-  issue.value.planEntity = updatedPlan;
+  issue.value.planEntity = response;
 
   events.emit("status-changed", { eager: true });
 

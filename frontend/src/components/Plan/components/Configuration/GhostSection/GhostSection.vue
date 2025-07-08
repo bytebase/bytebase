@@ -1,6 +1,8 @@
 <template>
   <div class="flex flex-col items-start gap-1">
-    <div class="w-full flex flex-row items-center gap-2 whitespace-nowrap">
+    <div
+      class="w-full flex flex-row items-center gap-2 whitespace-nowrap flex-wrap"
+    >
       <GhostSwitch />
       <div class="textlabel flex items-center gap-x-1 whitespace-nowrap">
         <NTooltip>
@@ -18,7 +20,6 @@
                 <LearnMoreLink
                   url="https://docs.bytebase.com/change-database/online-schema-migration-for-mysql?source=console"
                   color="light"
-                  hide-when-embedded
                 />
               </template>
             </i18n-t>

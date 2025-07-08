@@ -13,6 +13,7 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service IdentityProviderService {
+  // Permissions required: bb.identityProviders.get
   rpc GetIdentityProvider(GetIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {get: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
@@ -20,6 +21,7 @@ service IdentityProviderService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: None
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
     option (google.api.http) = {get: "/v1/idps"};
     option (google.api.method_signature) = "";
@@ -27,6 +29,7 @@ service IdentityProviderService {
     // The method requires no authentication thus no authorization.
   }
 
+  // Permissions required: bb.identityProviders.create
   rpc CreateIdentityProvider(CreateIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {
       post: "/v1/idps"
@@ -38,6 +41,7 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.identityProviders.update
   rpc UpdateIdentityProvider(UpdateIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {
       patch: "/v1/{identity_provider.name=idps/*}"
@@ -49,6 +53,7 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.identityProviders.delete
   rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=idps/*}"};
     option (google.api.method_signature) = "name";
@@ -57,6 +62,7 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.identityProviders.update
   rpc TestIdentityProvider(TestIdentityProviderRequest) returns (TestIdentityProviderResponse) {
     option (google.api.http) = {
       post: "/v1/idps/*:test"
@@ -149,7 +155,12 @@ message OAuth2IdentityProviderTestRequestContext {
   string code = 1;
 }
 
-message TestIdentityProviderResponse {}
+message TestIdentityProviderResponse {
+  // The map of claims returned by the identity provider.
+  map<string, string> claims = 1;
+  // The matched user info from the claims.
+  map<string, string> user_info = 2;
+}
 
 message IdentityProvider {
   option (google.api.resource) = {
@@ -252,11 +263,17 @@ message LDAPIdentityProviderConfig {
   // UserFilter is the filter to search for users, e.g. "(uid=%s)".
   string user_filter = 7;
   // SecurityProtocol is the security protocol to be used for establishing
-  // connections with the LDAP server. It must be StartTLS, LDAPS or None.
-  string security_protocol = 8;
+  // connections with the LDAP server.
+  SecurityProtocol security_protocol = 8;
   // FieldMapping is the mapping of the user attributes returned by the LDAP
   // server.
   FieldMapping field_mapping = 9;
+
+  enum SecurityProtocol {
+    SECURITY_PROTOCOL_UNSPECIFIED = 0;
+    START_TLS = 1; // StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS.
+    LDAPS = 2; // LDAPS is the security protocol that uses TLS from the beginning.
+  }
 }
 
 // FieldMapping saves the field names from user info API of identity provider.

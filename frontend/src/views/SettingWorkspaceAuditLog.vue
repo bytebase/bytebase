@@ -60,9 +60,9 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { type SearchAuditLogsParams } from "@/types";
-import type { AuditLog } from "@/types/proto/v1/audit_log_service";
-import { ExportFormat } from "@/types/proto/v1/common";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { type SearchParams, extractProjectResourceName } from "@/utils";
 
 interface LocalState {
@@ -165,7 +165,7 @@ const handleExport = async ({
       const { content, nextPageToken } = await auditLogStore.exportAuditLogs({
         search: searchAuditLogs.value,
         format: options.format,
-        pageSize: 1,
+        pageSize: 5000, // The maximum page size is 5000
         pageToken,
       });
       pageToken = nextPageToken;

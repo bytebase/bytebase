@@ -55,6 +55,9 @@ const (
 	// ProjectServiceUndeleteProjectProcedure is the fully-qualified name of the ProjectService's
 	// UndeleteProject RPC.
 	ProjectServiceUndeleteProjectProcedure = "/bytebase.v1.ProjectService/UndeleteProject"
+	// ProjectServiceBatchDeleteProjectsProcedure is the fully-qualified name of the ProjectService's
+	// BatchDeleteProjects RPC.
+	ProjectServiceBatchDeleteProjectsProcedure = "/bytebase.v1.ProjectService/BatchDeleteProjects"
 	// ProjectServiceGetIamPolicyProcedure is the fully-qualified name of the ProjectService's
 	// GetIamPolicy RPC.
 	ProjectServiceGetIamPolicyProcedure = "/bytebase.v1.ProjectService/GetIamPolicy"
@@ -80,20 +83,38 @@ const (
 
 // ProjectServiceClient is a client for the bytebase.v1.ProjectService service.
 type ProjectServiceClient interface {
+	// GetProject retrieves a project by name.
+	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+	// Permissions required: bb.projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.list
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	// Permissions required: None
 	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)
+	// Permissions required: bb.projects.create
 	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.update
 	UpdateProject(context.Context, *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.delete
 	DeleteProject(context.Context, *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: bb.projects.undelete
 	UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.delete
+	BatchDeleteProjects(context.Context, *connect.Request[v1.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 	// Deprecated.
+	// Permissions required: bb.projects.getIamPolicy
 	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
+	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Permissions required: bb.projects.update
 	AddWebhook(context.Context, *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.update
 	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.update
 	RemoveWebhook(context.Context, *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.update
 	TestWebhook(context.Context, *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error)
 }
 
@@ -150,6 +171,12 @@ func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(projectServiceMethods.ByName("UndeleteProject")),
 			connect.WithClientOptions(opts...),
 		),
+		batchDeleteProjects: connect.NewClient[v1.BatchDeleteProjectsRequest, emptypb.Empty](
+			httpClient,
+			baseURL+ProjectServiceBatchDeleteProjectsProcedure,
+			connect.WithSchema(projectServiceMethods.ByName("BatchDeleteProjects")),
+			connect.WithClientOptions(opts...),
+		),
 		getIamPolicy: connect.NewClient[v1.GetIamPolicyRequest, v1.IamPolicy](
 			httpClient,
 			baseURL+ProjectServiceGetIamPolicyProcedure,
@@ -197,20 +224,21 @@ func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // projectServiceClient implements ProjectServiceClient.
 type projectServiceClient struct {
-	getProject        *connect.Client[v1.GetProjectRequest, v1.Project]
-	listProjects      *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
-	searchProjects    *connect.Client[v1.SearchProjectsRequest, v1.SearchProjectsResponse]
-	createProject     *connect.Client[v1.CreateProjectRequest, v1.Project]
-	updateProject     *connect.Client[v1.UpdateProjectRequest, v1.Project]
-	deleteProject     *connect.Client[v1.DeleteProjectRequest, emptypb.Empty]
-	undeleteProject   *connect.Client[v1.UndeleteProjectRequest, v1.Project]
-	getIamPolicy      *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
-	batchGetIamPolicy *connect.Client[v1.BatchGetIamPolicyRequest, v1.BatchGetIamPolicyResponse]
-	setIamPolicy      *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
-	addWebhook        *connect.Client[v1.AddWebhookRequest, v1.Project]
-	updateWebhook     *connect.Client[v1.UpdateWebhookRequest, v1.Project]
-	removeWebhook     *connect.Client[v1.RemoveWebhookRequest, v1.Project]
-	testWebhook       *connect.Client[v1.TestWebhookRequest, v1.TestWebhookResponse]
+	getProject          *connect.Client[v1.GetProjectRequest, v1.Project]
+	listProjects        *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
+	searchProjects      *connect.Client[v1.SearchProjectsRequest, v1.SearchProjectsResponse]
+	createProject       *connect.Client[v1.CreateProjectRequest, v1.Project]
+	updateProject       *connect.Client[v1.UpdateProjectRequest, v1.Project]
+	deleteProject       *connect.Client[v1.DeleteProjectRequest, emptypb.Empty]
+	undeleteProject     *connect.Client[v1.UndeleteProjectRequest, v1.Project]
+	batchDeleteProjects *connect.Client[v1.BatchDeleteProjectsRequest, emptypb.Empty]
+	getIamPolicy        *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
+	batchGetIamPolicy   *connect.Client[v1.BatchGetIamPolicyRequest, v1.BatchGetIamPolicyResponse]
+	setIamPolicy        *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
+	addWebhook          *connect.Client[v1.AddWebhookRequest, v1.Project]
+	updateWebhook       *connect.Client[v1.UpdateWebhookRequest, v1.Project]
+	removeWebhook       *connect.Client[v1.RemoveWebhookRequest, v1.Project]
+	testWebhook         *connect.Client[v1.TestWebhookRequest, v1.TestWebhookResponse]
 }
 
 // GetProject calls bytebase.v1.ProjectService.GetProject.
@@ -246,6 +274,11 @@ func (c *projectServiceClient) DeleteProject(ctx context.Context, req *connect.R
 // UndeleteProject calls bytebase.v1.ProjectService.UndeleteProject.
 func (c *projectServiceClient) UndeleteProject(ctx context.Context, req *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error) {
 	return c.undeleteProject.CallUnary(ctx, req)
+}
+
+// BatchDeleteProjects calls bytebase.v1.ProjectService.BatchDeleteProjects.
+func (c *projectServiceClient) BatchDeleteProjects(ctx context.Context, req *connect.Request[v1.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.batchDeleteProjects.CallUnary(ctx, req)
 }
 
 // GetIamPolicy calls bytebase.v1.ProjectService.GetIamPolicy.
@@ -285,20 +318,38 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, req *connect.Req
 
 // ProjectServiceHandler is an implementation of the bytebase.v1.ProjectService service.
 type ProjectServiceHandler interface {
+	// GetProject retrieves a project by name.
+	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+	// Permissions required: bb.projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.list
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	// Permissions required: None
 	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)
+	// Permissions required: bb.projects.create
 	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.update
 	UpdateProject(context.Context, *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.delete
 	DeleteProject(context.Context, *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: bb.projects.undelete
 	UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.delete
+	BatchDeleteProjects(context.Context, *connect.Request[v1.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
 	// Deprecated.
+	// Permissions required: bb.projects.getIamPolicy
 	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
+	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Permissions required: bb.projects.update
 	AddWebhook(context.Context, *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.update
 	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.update
 	RemoveWebhook(context.Context, *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Permissions required: bb.projects.update
 	TestWebhook(context.Context, *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error)
 }
 
@@ -349,6 +400,12 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 		ProjectServiceUndeleteProjectProcedure,
 		svc.UndeleteProject,
 		connect.WithSchema(projectServiceMethods.ByName("UndeleteProject")),
+		connect.WithHandlerOptions(opts...),
+	)
+	projectServiceBatchDeleteProjectsHandler := connect.NewUnaryHandler(
+		ProjectServiceBatchDeleteProjectsProcedure,
+		svc.BatchDeleteProjects,
+		connect.WithSchema(projectServiceMethods.ByName("BatchDeleteProjects")),
 		connect.WithHandlerOptions(opts...),
 	)
 	projectServiceGetIamPolicyHandler := connect.NewUnaryHandler(
@@ -409,6 +466,8 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 			projectServiceDeleteProjectHandler.ServeHTTP(w, r)
 		case ProjectServiceUndeleteProjectProcedure:
 			projectServiceUndeleteProjectHandler.ServeHTTP(w, r)
+		case ProjectServiceBatchDeleteProjectsProcedure:
+			projectServiceBatchDeleteProjectsHandler.ServeHTTP(w, r)
 		case ProjectServiceGetIamPolicyProcedure:
 			projectServiceGetIamPolicyHandler.ServeHTTP(w, r)
 		case ProjectServiceBatchGetIamPolicyProcedure:
@@ -458,6 +517,10 @@ func (UnimplementedProjectServiceHandler) DeleteProject(context.Context, *connec
 
 func (UnimplementedProjectServiceHandler) UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.UndeleteProject is not implemented"))
+}
+
+func (UnimplementedProjectServiceHandler) BatchDeleteProjects(context.Context, *connect.Request[v1.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.BatchDeleteProjects is not implemented"))
 }
 
 func (UnimplementedProjectServiceHandler) GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {

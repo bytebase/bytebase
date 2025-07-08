@@ -16,8 +16,8 @@ import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import DefinitionView from "@/components/DefinitionView.vue";
 import type { ComposedDatabase } from "@/types";
-import type { TaskMetadata } from "@/types/proto/v1/database_service";
-import { TaskMetadata_State } from "@/types/proto/v1/database_service";
+import type { TaskMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { TaskMetadata_State } from "@/types/proto-es/v1/database_service_pb";
 
 const props = defineProps({
   database: {
@@ -37,9 +37,9 @@ const props = defineProps({
 const { t } = useI18n();
 
 const stringifyTaskState = (state: TaskMetadata_State): string => {
-  if (state === TaskMetadata_State.STATE_STARTED) {
+  if (state === TaskMetadata_State.STARTED) {
     return "Started";
-  } else if (state === TaskMetadata_State.STATE_SUSPENDED) {
+  } else if (state === TaskMetadata_State.SUSPENDED) {
     return "Suspended";
   }
   return "-";

@@ -22,6 +22,7 @@
           excludeDefault: true,
         }"
         :bordered="true"
+        :show-selection="false"
       />
       <PagedInstanceTable
         v-else-if="state.selectedTab == 'INSTANCE'"
@@ -46,7 +47,7 @@ import {
   PagedProjectTable,
   PagedInstanceTable,
 } from "@/components/v2";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 type LocalTabType = "PROJECT" | "INSTANCE";

@@ -51,7 +51,7 @@
                 :key="format"
                 :value="format"
               >
-                {{ exportFormatToJSON(format) }}
+                {{ ExportFormat[format] }}
               </NRadio>
             </NRadioGroup>
           </NFormItem>
@@ -138,7 +138,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { BBModal, BBTextField } from "@/bbkit";
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
-import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { isNullOrUndefined } from "@/utils";
 import MaxRowCountSelect from "./GrantRequestPanel/MaxRowCountSelect.vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "./v2";
@@ -232,7 +232,7 @@ const rules: FormRules = {
 const exportDropdownOptions = computed(() => {
   return props.supportFormats.map((format) => ({
     label: t("sql-editor.download-as-file", {
-      file: exportFormatToJSON(format),
+      file: ExportFormat[format],
     }),
     key: format,
   }));
@@ -375,7 +375,7 @@ const doDownloadSingleFile = async (
   const isZip = downloadFileAsZip(options);
   const url = window.URL.createObjectURL(blob);
 
-  const fileFormat = exportFormatToJSON(options.format).toLowerCase();
+  const fileFormat = ExportFormat[options.format].toLowerCase();
   const link = document.createElement("a");
   link.download = `${filename}.${isZip ? "zip" : fileFormat}`;
   link.href = url;
@@ -387,7 +387,7 @@ const doDownload = async (content: DownloadContent, options: ExportOption) => {
     return doDownloadSingleFile(content[0], options);
   }
 
-  const fileFormat = exportFormatToJSON(options.format).toLowerCase();
+  const fileFormat = ExportFormat[options.format].toLowerCase();
   const zip = new JSZip();
   for (const c of content) {
     const blob = await cnovertSingleFile(c.content, options);

@@ -15,6 +15,9 @@ import "v1/iam_policy.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service ProjectService {
+  // GetProject retrieves a project by name.
+  // Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
+  // Permissions required: bb.projects.get
   rpc GetProject(GetProjectRequest) returns (Project) {
     option (google.api.http) = {get: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
@@ -22,6 +25,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.list
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
     option (google.api.http) = {get: "/v1/projects"};
     option (google.api.method_signature) = "";
@@ -29,6 +33,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: None
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
     option (google.api.http) = {
       post: "/v1/projects:search"
@@ -39,6 +44,7 @@ service ProjectService {
     // TODO(d): secure it.
   }
 
+  // Permissions required: bb.projects.create
   rpc CreateProject(CreateProjectRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/projects"
@@ -49,6 +55,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.update
   rpc UpdateProject(UpdateProjectRequest) returns (Project) {
     option (google.api.http) = {
       patch: "/v1/{project.name=projects/*}"
@@ -59,6 +66,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.delete
   rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*}"};
     option (google.api.method_signature) = "name";
@@ -66,6 +74,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.undelete
   rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*}:undelete"
@@ -75,6 +84,17 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.delete
+  rpc BatchDeleteProjects(BatchDeleteProjectsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/projects:batchDelete"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.projects.delete";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // Permissions required: bb.projects.getIamPolicy
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
@@ -82,12 +102,14 @@ service ProjectService {
   }
 
   // Deprecated.
+  // Permissions required: bb.projects.getIamPolicy
   rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
     option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Permissions required: bb.projects.setIamPolicy
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {
       post: "/v1/{resource=projects/*}:setIamPolicy"
@@ -98,6 +120,7 @@ service ProjectService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.projects.update
   rpc AddWebhook(AddWebhookRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:addWebhook"
@@ -107,6 +130,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.update
   rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook"
@@ -117,6 +141,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.update
   rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{webhook.name=projects/*/webhooks/*}:removeWebhook"
@@ -126,6 +151,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.update
   rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:testWebhook"
@@ -255,7 +281,10 @@ message DeleteProjectRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
 
-  // If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+  // If set to true, any databases from this project will be moved to default project.
+  // Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+  // Open issues will remain open but associated with the deleted project.
+  // If set to false, the operation will fail if the project has databases or open issues.
   bool force = 2;
 }
 
@@ -266,6 +295,21 @@ message UndeleteProjectRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
+}
+
+message BatchDeleteProjectsRequest {
+  // The names of the projects to delete.
+  // Format: projects/{project}
+  repeated string names = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // If set to true, any databases from this project will be moved to default project.
+  // Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+  // Open issues will remain open but associated with the deleted project.
+  // If set to false, the operation will fail if the project has databases or open issues.
+  bool force = 2;
 }
 
 message BatchGetIamPolicyRequest {
@@ -444,25 +488,25 @@ message Activity {
     TYPE_UNSPECIFIED = 0;
     // Notifications via webhooks.
     //
-    // TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.
-    TYPE_NOTIFY_ISSUE_APPROVED = 23;
-    // TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
-    TYPE_NOTIFY_PIPELINE_ROLLOUT = 24;
+    // NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+    NOTIFY_ISSUE_APPROVED = 23;
+    // NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+    NOTIFY_PIPELINE_ROLLOUT = 24;
     // Issue related activity types.
     //
-    // TYPE_ISSUE_CREATE represents creating an issue.
-    TYPE_ISSUE_CREATE = 1;
-    // TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue.
-    TYPE_ISSUE_COMMENT_CREATE = 2;
-    // TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
-    TYPE_ISSUE_FIELD_UPDATE = 3;
-    // TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
-    TYPE_ISSUE_STATUS_UPDATE = 4;
-    // TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
-    TYPE_ISSUE_APPROVAL_NOTIFY = 21;
-    // TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
-    TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
-    // TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
-    TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
+    // ISSUE_CREATE represents creating an issue.
+    ISSUE_CREATE = 1;
+    // ISSUE_COMMENT_CREATE represents commenting on an issue.
+    ISSUE_COMMENT_CREATE = 2;
+    // ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
+    ISSUE_FIELD_UPDATE = 3;
+    // ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
+    ISSUE_STATUS_UPDATE = 4;
+    // ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
+    ISSUE_APPROVAL_NOTIFY = 21;
+    // ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
+    ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
+    // ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
+    ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
   }
 }

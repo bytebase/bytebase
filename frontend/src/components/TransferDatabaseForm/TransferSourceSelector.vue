@@ -1,5 +1,5 @@
 <template>
-  <div class="textlabel">
+  <div>
     <div
       class="flex flex-col md:flex-row md:items-center gap-y-2 justify-between"
     >
@@ -55,7 +55,7 @@ import {
   isValidEnvironmentName,
   isValidInstanceName,
 } from "@/types";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import { type InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import EnvironmentSelect from "../v2/Select/EnvironmentSelect.vue";
 import type { TransferSource } from "./utils";
@@ -97,6 +97,10 @@ const changeInstanceFilter = (name: string | undefined) => {
   if (!isValidInstanceName(name)) {
     return emit("update:instance", undefined);
   }
-  emit("update:instance", useInstanceResourceByName(name).instance.value);
+
+  emit(
+    "update:instance",
+    useInstanceResourceByName(name).instance.value as InstanceResource
+  );
 };
 </script>

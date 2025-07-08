@@ -53,7 +53,7 @@ import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import {
-  getTimeForPbTimestamp,
+  getTimeForPbTimestampProtoEs,
   unknownUser,
   type ComposedIssue,
 } from "@/types";
@@ -172,7 +172,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
             <IssueStatusIconWithTaskSummary issue={issue} />
             <a
               href={issueUrl(issue)}
-              class="flex items-center space-x-2 select-none"
+              class="flex items-center space-x-2 select-none truncate"
               onClick={(e: MouseEvent) => {
                 e.stopPropagation();
               }}
@@ -219,7 +219,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       width: 150,
       hide: !showExtendedColumns.value,
       render: (issue) =>
-        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
+        humanizeTs(getTimeForPbTimestampProtoEs(issue.updateTime, 0) / 1000),
     },
     {
       key: "approver",
@@ -252,8 +252,8 @@ const issueUrl = (issue: ComposedIssue) => {
   const route = router.resolve({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(issue.project),
-      issueSlug: issueV1Slug(issue),
+      projectId: extractProjectResourceName(issue.name),
+      issueSlug: issueV1Slug(issue.name, issue.title),
     },
   });
   return route.fullPath;

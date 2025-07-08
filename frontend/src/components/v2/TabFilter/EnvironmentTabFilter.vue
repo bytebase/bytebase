@@ -21,7 +21,11 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentV1List } from "@/store";
-import { formatEnvironmentName, UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "@/types";
+import {
+  formatEnvironmentName,
+  UNKNOWN_ENVIRONMENT_NAME,
+  unknownEnvironment,
+} from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import { EnvironmentV1Name } from "../Model";
 import TabFilter from "./TabFilter.vue";

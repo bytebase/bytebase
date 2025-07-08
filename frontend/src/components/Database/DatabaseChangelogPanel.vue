@@ -109,6 +109,8 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
@@ -132,13 +134,15 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import type { ComposedDatabase, Table, SearchChangeLogParams } from "@/types";
-import { DEFAULT_PROJECT_NAME, getDateForPbTimestamp } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   Changelog_Status,
   Changelog_Type,
   ChangelogView,
-} from "@/types/proto/v1/database_service";
-import type { Changelog } from "@/types/proto/v1/database_service";
+  DatabaseSchema$,
+  UpdateDatabaseRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
 
@@ -173,7 +177,9 @@ const state = reactive<LocalState>({
 const searchChangeLogParams = computed(
   (): SearchChangeLogParams => ({
     tables: state.selectedAffectedTables,
-    types: state.selectedChangeType ? [state.selectedChangeType] : undefined,
+    types: state.selectedChangeType
+      ? [Changelog_Type[state.selectedChangeType]]
+      : undefined,
   })
 );
 
@@ -183,7 +189,9 @@ const searchChangelogFilter = computed(() => {
     searchChangeLogParams.value.types &&
     searchChangeLogParams.value.types.length > 0
   ) {
-    filter.push(`type = "${searchChangeLogParams.value.types.join(" | ")}"`);
+    filter.push(
+      `type = "${searchChangeLogParams.value.types.map(Number).join(" | ")}"`
+    );
   }
   if (
     searchChangeLogParams.value.tables &&
@@ -266,7 +274,7 @@ const handleExportChangelogs = async () => {
   for (const name of state.selectedChangelogNames) {
     const changelog = await changelogStore.fetchChangelog({
       name,
-      view: ChangelogView.CHANGELOG_VIEW_FULL,
+      view: ChangelogView.FULL,
     });
 
     if (changelog) {
@@ -275,7 +283,9 @@ const handleExportChangelogs = async () => {
       }
 
       const filePathPrefix = dayjs(
-        getDateForPbTimestamp(changelog.createTime)
+        changelog.createTime
+          ? new Date(Number(changelog.createTime.seconds) * 1000)
+          : new Date()
       ).format("YYYY-MM-DDTHH-mm-ss");
       if (
         changelog.type === Changelog_Type.MIGRATE ||
@@ -306,13 +316,17 @@ const handleExportChangelogs = async () => {
 };
 
 const updateDatabaseDrift = async () => {
-  await databaseStore.updateDatabase({
-    database: {
-      ...props.database,
-      drifted: false,
-    },
-    updateMask: ["drifted"],
+  const updatedDatabase = create(DatabaseSchema$, {
+    ...props.database,
+    drifted: false,
   });
+
+  await databaseStore.updateDatabase(
+    create(UpdateDatabaseRequestSchema, {
+      database: updatedDatabase,
+      updateMask: create(FieldMaskSchema, { paths: ["drifted"] }),
+    })
+  );
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

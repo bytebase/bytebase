@@ -12,10 +12,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBBadge } from "@/bbkit";
 import type { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
-import {
-  SQLReviewRuleLevel,
-  sQLReviewRuleLevelToJSON,
-} from "@/types/proto/v1/org_policy_service";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 
 const props = withDefaults(
   defineProps<{
@@ -40,10 +37,26 @@ const style = computed((): BBBadgeStyle => {
   }
 });
 
+// Helper function to convert SQLReviewRuleLevel to string
+const sqlReviewRuleLevelToString = (level: SQLReviewRuleLevel): string => {
+  switch (level) {
+    case SQLReviewRuleLevel.LEVEL_UNSPECIFIED:
+      return "LEVEL_UNSPECIFIED";
+    case SQLReviewRuleLevel.ERROR:
+      return "ERROR";
+    case SQLReviewRuleLevel.WARNING:
+      return "WARNING";
+    case SQLReviewRuleLevel.DISABLED:
+      return "DISABLED";
+    default:
+      return "UNKNOWN";
+  }
+};
+
 const text = computed(() => {
   const { level, suffix } = props;
   const parts = [
-    t(`sql-review.level.${sQLReviewRuleLevelToJSON(level).toLowerCase()}`),
+    t(`sql-review.level.${sqlReviewRuleLevelToString(level).toLowerCase()}`),
   ];
   if (suffix) {
     parts.push(suffix);

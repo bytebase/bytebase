@@ -36,12 +36,7 @@
         </NPopover>
         <NPopover placement="bottom">
           <template #trigger>
-            <button
-              class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
-              @click="handleCopy"
-            >
-              <ClipboardIcon class="w-3.5 h-3.5" />
-            </button>
+            <CopyButton :content="code" />
           </template>
           <div class="whitespace-nowrap">
             {{ $t("common.copy") }}
@@ -80,14 +75,13 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { ClipboardIcon, PlayIcon } from "lucide-vue-next";
+import { PlayIcon } from "lucide-vue-next";
 import { NPopover } from "naive-ui";
 import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import { CopyButton } from "@/components/v2";
 import { useAIContext } from "@/plugins/ai/logic";
-import { pushNotification } from "@/store";
-import { findAncestor, toClipboard } from "@/utils";
+import { findAncestor } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import InsertAtCaretIcon from "./InsertAtCaretIcon.vue";
 
@@ -101,7 +95,6 @@ const props = defineProps<
   }
 >();
 
-const { t } = useI18n();
 const { events, showHistoryDialog } = useAIContext();
 const { events: editorEvents } = useSQLEditorContext();
 const containerRef = ref<HTMLElement>();
@@ -129,15 +122,5 @@ const handleInsertAtCaret = () => {
     content: code,
   });
   showHistoryDialog.value = false;
-};
-
-const handleCopy = () => {
-  toClipboard(props.code).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("plugin.ai.statement-copied"),
-    });
-  });
 };
 </script>

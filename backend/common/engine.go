@@ -181,7 +181,8 @@ func EngineSupportStatementAdvise(e storepb.Engine) bool {
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_MSSQL,
 		storepb.Engine_DYNAMODB,
-		storepb.Engine_COCKROACHDB:
+		storepb.Engine_COCKROACHDB,
+		storepb.Engine_REDSHIFT:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
@@ -193,7 +194,6 @@ func EngineSupportStatementAdvise(e storepb.Engine) bool {
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_SPANNER,
 		storepb.Engine_BIGQUERY,
-		storepb.Engine_REDSHIFT,
 		storepb.Engine_MARIADB,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_RISINGWAVE,
@@ -456,5 +456,54 @@ func BackupDatabaseNameOfEngine(e storepb.Engine) string {
 	default:
 		// Fallback to the default name for other engines.
 		return "bbdataarchive"
+	}
+}
+
+// EngineDBSchemaReadyToMigrate returns true if the engine needs column default migration.
+// This is used by both the migrator and the sync process to determine if a database
+// needs the column default migration.
+// When an engine's sync.go is updated to write to the Default field with proper
+// normalization (like schema qualification), we move it to the false case.
+func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
+	//exhaustive:enforce
+	switch e {
+	case
+		storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MSSQL:
+		return true
+	case
+
+		storepb.Engine_TIDB,
+		storepb.Engine_MARIADB,
+		storepb.Engine_ORACLE,
+		storepb.Engine_OCEANBASE_ORACLE,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_DM,
+		storepb.Engine_CLICKHOUSE,
+		storepb.Engine_COCKROACHDB,
+		storepb.Engine_SPANNER,
+		storepb.Engine_BIGQUERY,
+		storepb.Engine_REDSHIFT,
+		storepb.Engine_RISINGWAVE,
+		storepb.Engine_STARROCKS,
+		storepb.Engine_DORIS:
+		// These engines still need migration as their sync.go hasn't been updated yet.
+		return false
+	case
+		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_CASSANDRA,
+		storepb.Engine_SQLITE,
+		storepb.Engine_MONGODB,
+		storepb.Engine_REDIS,
+		storepb.Engine_HIVE,
+		storepb.Engine_DYNAMODB,
+		storepb.Engine_ELASTICSEARCH,
+		storepb.Engine_DATABRICKS,
+		storepb.Engine_COSMOSDB,
+		storepb.Engine_TRINO:
+		// These engines don't have traditional column defaults or are NoSQL databases.
+		return true
+	default:
+		return true
 	}
 }

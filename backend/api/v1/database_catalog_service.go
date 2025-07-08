@@ -4,19 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // DatabaseCatalogService implements the database catalog service.
 type DatabaseCatalogService struct {
-	v1pb.UnimplementedDatabaseCatalogServiceServer
+	v1connect.UnimplementedDatabaseCatalogServiceHandler
 	store          *store.Store
 	licenseService *enterprise.LicenseService
 }
@@ -30,55 +31,55 @@ func NewDatabaseCatalogService(store *store.Store, licenseService *enterprise.Li
 }
 
 // GetDatabaseCatalog gets a database catalog.
-func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, request *v1pb.GetDatabaseCatalogRequest) (*v1pb.DatabaseCatalog, error) {
-	databaseResourceName, err := common.TrimSuffix(request.Name, common.CatalogSuffix)
+func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *connect.Request[v1pb.GetDatabaseCatalogRequest]) (*connect.Response[v1pb.DatabaseCatalog], error) {
+	databaseResourceName, err := common.TrimSuffix(req.Msg.Name, common.CatalogSuffix)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	database, err := getDatabaseMessage(ctx, s.store, databaseResourceName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if dbSchema == nil {
-		return &v1pb.DatabaseCatalog{
+		return connect.NewResponse(&v1pb.DatabaseCatalog{
 			Name: fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.CatalogSuffix),
-		}, nil
+		}), nil
 	}
 
-	return convertDatabaseConfig(database, dbSchema.GetConfig()), nil
+	return connect.NewResponse(convertDatabaseConfig(database, dbSchema.GetConfig())), nil
 }
 
 // UpdateDatabaseCatalog updates a database catalog.
-func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, request *v1pb.UpdateDatabaseCatalogRequest) (*v1pb.DatabaseCatalog, error) {
-	databaseResourceName, err := common.TrimSuffix(request.GetCatalog().GetName(), common.CatalogSuffix)
+func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req *connect.Request[v1pb.UpdateDatabaseCatalogRequest]) (*connect.Response[v1pb.DatabaseCatalog], error) {
+	databaseResourceName, err := common.TrimSuffix(req.Msg.GetCatalog().GetName(), common.CatalogSuffix)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	database, err := getDatabaseMessage(ctx, s.store, databaseResourceName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if dbSchema == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "database schema metadata not found")
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("database schema metadata not found"))
 	}
 
-	databaseConfig := convertDatabaseCatalog(request.GetCatalog())
+	databaseConfig := convertDatabaseCatalog(req.Msg.GetCatalog())
 	if err := s.store.UpdateDBSchema(ctx, database.InstanceID, database.DatabaseName, &store.UpdateDBSchemaMessage{Config: databaseConfig}); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return request.GetCatalog(), nil
+	return connect.NewResponse(req.Msg.GetCatalog()), nil
 }
 
 func convertDatabaseConfig(database *store.DatabaseMessage, config *storepb.DatabaseConfig) *v1pb.DatabaseCatalog {

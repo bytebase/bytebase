@@ -59,12 +59,19 @@ const (
 
 // ReleaseServiceClient is a client for the bytebase.v1.ReleaseService service.
 type ReleaseServiceClient interface {
+	// Permissions required: bb.releases.get
 	GetRelease(context.Context, *connect.Request[v1.GetReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Permissions required: bb.releases.list
 	ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error)
+	// Permissions required: bb.releases.create
 	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Permissions required: bb.releases.update
 	UpdateRelease(context.Context, *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Permissions required: bb.releases.delete
 	DeleteRelease(context.Context, *connect.Request[v1.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: bb.releases.undelete
 	UndeleteRelease(context.Context, *connect.Request[v1.UndeleteReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Permissions required: bb.releases.check
 	CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error)
 }
 
@@ -172,12 +179,19 @@ func (c *releaseServiceClient) CheckRelease(ctx context.Context, req *connect.Re
 
 // ReleaseServiceHandler is an implementation of the bytebase.v1.ReleaseService service.
 type ReleaseServiceHandler interface {
+	// Permissions required: bb.releases.get
 	GetRelease(context.Context, *connect.Request[v1.GetReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Permissions required: bb.releases.list
 	ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error)
+	// Permissions required: bb.releases.create
 	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Permissions required: bb.releases.update
 	UpdateRelease(context.Context, *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Permissions required: bb.releases.delete
 	DeleteRelease(context.Context, *connect.Request[v1.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error)
+	// Permissions required: bb.releases.undelete
 	UndeleteRelease(context.Context, *connect.Request[v1.UndeleteReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Permissions required: bb.releases.check
 	CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error)
 }
 

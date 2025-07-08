@@ -22,14 +22,14 @@
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-solid:plus-sm class="w-5 h-5 text-control" />
+        <PlusIcon class="w-5 h-5 text-control" />
       </div>
     </div>
     <div v-else-if="icon === 'update'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-solid:pencil class="w-4 h-4 text-control" />
+        <PencilIcon class="w-4 h-4 text-control" />
       </div>
     </div>
     <div
@@ -39,49 +39,49 @@
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:play class="w-6 h-6 text-control" />
+        <PlayCircleIcon class="w-5 h-5 text-control" />
       </div>
     </div>
     <div v-else-if="icon === 'approve-review'" class="relative pl-0.5">
       <div
-        class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
+        class="w-7 h-7 bg-success rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:thumb-up class="w-5 h-5 text-control" />
+        <ThumbsUpIcon class="w-4 h-4 text-white" />
       </div>
     </div>
     <div v-else-if="icon === 'reject-review'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-warning rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons:pause-solid class="w-5 h-5 text-white" />
+        <PencilIcon class="w-4 h-4 text-white" />
       </div>
     </div>
     <div v-else-if="icon === 're-request-review'" class="relative pl-0.5">
       <div
-        class="w-7 h-7 bg-success rounded-full ring-4 ring-white flex items-center justify-center icon-re-request-review"
+        class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center icon-re-request-review"
       >
-        <heroicons:play class="w-4 h-4 text-white ml-px" />
+        <PlayIcon class="w-4 h-4 text-control ml-px" />
       </div>
     </div>
     <div v-else-if="icon === 'cancel'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:minus class="w-5 h-5 text-control" />
+        <MinusIcon class="w-5 h-5 text-control" />
       </div>
     </div>
     <div v-else-if="icon === 'fail'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:exclamation-circle class="w-6 h-6 text-error" />
+        <CircleAlertIcon class="w-5 h-5 text-error" />
       </div>
     </div>
     <div v-else-if="icon === 'complete'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:check-circle class="w-6 h-6 text-success" />
+        <CheckCircle2Icon class="w-6 h-6 text-success" />
       </div>
     </div>
     <div v-else-if="icon === 'skip'" class="relative pl-1">
@@ -95,7 +95,7 @@
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <heroicons-outline:code class="w-5 h-5 text-control" />
+        <CodeIcon class="w-5 h-5 text-control" />
       </div>
     </div>
   </div>
@@ -103,6 +103,17 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
+import {
+  ThumbsUpIcon,
+  PlayIcon,
+  CheckCircle2Icon,
+  PlusIcon,
+  PencilIcon,
+  PlayCircleIcon,
+  MinusIcon,
+  CodeIcon,
+  CircleAlertIcon,
+} from "lucide-vue-next";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
@@ -113,13 +124,9 @@ import {
 } from "@/store";
 import { extractUserId } from "@/store";
 import {
-  IssueComment_Approval,
   IssueComment_Approval_Status,
-  IssueComment_IssueUpdate,
-  IssueComment_TaskPriorBackup,
-  IssueComment_TaskUpdate,
   IssueComment_TaskUpdate_Status,
-} from "@/types/proto/v1/issue_service";
+} from "@/types/proto-es/v1/issue_service_pb";
 
 type ActionIconType =
   | "avatar"
@@ -149,10 +156,11 @@ const user = computedAsync(() => {
 
 const icon = computed((): ActionIconType => {
   const { issueComment } = props;
-  if (issueComment.type === IssueCommentType.APPROVAL) {
-    const { status } = IssueComment_Approval.fromPartial(
-      issueComment.approval || {}
-    );
+  if (
+    issueComment.type === IssueCommentType.APPROVAL &&
+    issueComment.event?.case === "approval"
+  ) {
+    const { status } = issueComment.event.value;
     switch (status) {
       case IssueComment_Approval_Status.APPROVED:
         return "approve-review";
@@ -163,10 +171,11 @@ const icon = computed((): ActionIconType => {
     }
   } else if (issueComment.type === IssueCommentType.STAGE_END) {
     return "complete";
-  } else if (issueComment.type === IssueCommentType.TASK_UPDATE) {
-    const { toStatus } = IssueComment_TaskUpdate.fromPartial(
-      issueComment.taskUpdate || {}
-    );
+  } else if (
+    issueComment.type === IssueCommentType.TASK_UPDATE &&
+    issueComment.event?.case === "taskUpdate"
+  ) {
+    const { toStatus } = issueComment.event.value;
     let action: ActionIconType = "update";
     if (toStatus !== undefined) {
       switch (toStatus) {
@@ -197,9 +206,12 @@ const icon = computed((): ActionIconType => {
       }
     }
     return action;
-  } else if (issueComment.type === IssueCommentType.ISSUE_UPDATE) {
+  } else if (
+    issueComment.type === IssueCommentType.ISSUE_UPDATE &&
+    issueComment.event?.case === "issueUpdate"
+  ) {
     const { toTitle, toDescription, toLabels, fromLabels } =
-      IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
+      issueComment.event.value;
     if (
       toTitle !== undefined ||
       toDescription !== undefined ||
@@ -209,10 +221,11 @@ const icon = computed((): ActionIconType => {
       return "update";
     }
     // Otherwise, show avatar icon based on the creator.
-  } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP) {
-    const taskPriorBackup = IssueComment_TaskPriorBackup.fromPartial(
-      issueComment.taskPriorBackup || {}
-    );
+  } else if (
+    issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP &&
+    issueComment.event?.case === "taskPriorBackup"
+  ) {
+    const taskPriorBackup = issueComment.event.value;
     if (taskPriorBackup.error !== "") {
       return "fail";
     } else {

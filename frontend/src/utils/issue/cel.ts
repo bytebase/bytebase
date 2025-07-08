@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { cloneDeep, head } from "lodash-es";
 import type { SimpleExpr } from "@/plugins/cel";
@@ -7,8 +8,9 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
-import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { Expr as ConditionExpr } from "@/types/proto/google/type/expr";
+import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import type { Expr as ConditionExpr } from "@/types/proto-es/google/type/expr_pb";
+import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
   batchConvertCELStringToParsedExpr,
   displayRoleTitle,
@@ -121,7 +123,7 @@ export const buildConditionExpr = ({
     databaseResources,
     rowLimit,
   });
-  return ConditionExpr.create({
+  return create(ConditionExprSchema, {
     title:
       title ||
       buildConditionTitle({
@@ -130,7 +132,7 @@ export const buildConditionExpr = ({
         expirationTimestampInMS,
       }),
     description: description,
-    expression: expresson || undefined,
+    expression: expresson || "",
   });
 };
 

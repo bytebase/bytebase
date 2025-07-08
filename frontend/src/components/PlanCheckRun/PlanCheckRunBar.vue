@@ -33,13 +33,15 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { ref } from "vue";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
+import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type {
   PlanCheckRun,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { VueClass } from "@/utils";
 import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
 import PlanCheckRunButton from "./PlanCheckRunButton.vue";
@@ -66,9 +68,10 @@ const { events } = usePlanCheckRunContext();
 const selectedType = ref<PlanCheckRun_Type>();
 
 const runChecks = async () => {
-  await planServiceClient.runPlanChecks({
+  const request = create(RunPlanChecksRequestSchema, {
     name: props.planName,
   });
+  await planServiceClientConnect.runPlanChecks(request);
   events.emit("status-changed");
 };
 </script>

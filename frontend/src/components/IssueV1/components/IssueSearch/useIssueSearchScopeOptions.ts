@@ -18,8 +18,8 @@ import {
   useUserStore,
 } from "@/store";
 import { SYSTEM_BOT_USER_NAME, UNKNOWN_ID, isValidProjectName } from "@/types";
-import { type Label } from "@/types/proto/v1/project_service";
-import { UserType } from "@/types/proto/v1/user_service";
+import { type Label } from "@/types/proto-es/v1/project_service_pb";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   getDefaultPagination,
@@ -228,16 +228,6 @@ export const useIssueSearchScopeOptions = (
         search: searchPrincipalSearchValueOptions([
           UserType.USER,
           UserType.SERVICE_ACCOUNT,
-        ]),
-      },
-      {
-        id: "subscriber",
-        title: t("issue.advanced-search.scope.subscriber.title"),
-        description: t("issue.advanced-search.scope.subscriber.description"),
-        search: searchPrincipalSearchValueOptions([
-          UserType.USER,
-          UserType.SERVICE_ACCOUNT,
-          UserType.SYSTEM_BOT,
         ]),
       },
       {

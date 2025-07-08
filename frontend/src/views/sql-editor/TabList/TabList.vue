@@ -55,7 +55,7 @@
 
     <div class="flex items-center gap-2">
       <SettingButton v-if="!hideSettingButton" size="small" />
-      <BrandingLogoWrapper v-if="!hideProfile">
+      <BrandingLogoWrapper>
         <ProfileDropdown :link="true" />
       </BrandingLogoWrapper>
     </div>
@@ -110,8 +110,7 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const hideProfile = useAppFeature("bb.feature.sql-editor.hide-profile");
-const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
+const enableSetting = useAppFeature("bb.feature.sql-editor.enable-setting");
 const { events: sheetEvents } = useSheetContext();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
@@ -126,7 +125,7 @@ const scrollState = reactive({
 });
 
 const hideSettingButton = computed(() => {
-  if (disableSetting.value) {
+  if (!enableSetting.value) {
     return true;
   }
   if (strictProject.value) {

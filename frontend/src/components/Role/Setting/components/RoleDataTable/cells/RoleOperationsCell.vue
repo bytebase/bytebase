@@ -19,13 +19,13 @@
 </template>
 
 <script lang="tsx" setup>
+import { Code } from "@connectrpc/connect";
 import { NButton } from "naive-ui";
-import { Status } from "nice-grpc-web";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceOccupiedModal from "@/components/v2/ResourceOccupiedModal/ResourceOccupiedModal.vue";
 import { useRoleStore, useWorkspaceV1Store, pushNotification } from "@/store";
-import type { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { useCustomRoleSettingContext } from "../../../context";
@@ -78,7 +78,7 @@ const onRoleRemove = async () => {
       title: t("common.deleted"),
     });
   } catch (error) {
-    if (getErrorCode(error) === Status.FAILED_PRECONDITION) {
+    if (getErrorCode(error) === Code.FailedPrecondition) {
       const message = extractGrpcErrorMessage(error);
       const resources =
         message.split("used by resources: ")[1]?.split(",") ?? [];

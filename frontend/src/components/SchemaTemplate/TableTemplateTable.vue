@@ -10,6 +10,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { create as createProto } from "@bufbuild/protobuf";
 import { pullAt } from "lodash-es";
 import { PencilIcon, TrashIcon } from "lucide-vue-next";
 import { NPopconfirm, NDataTable } from "naive-ui";
@@ -18,9 +19,13 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
-import type { Engine } from "@/types/proto/v1/common";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
-import { SchemaTemplateSetting, Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  SchemaTemplateSettingSchema,
+  Setting_SettingName,
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { EngineIcon } from "../Icon";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 import { classificationConfig } from "./utils";
@@ -72,13 +77,14 @@ const columns = computed(
       });
     }
 
-    cols.push(
-      {
-        title: t("schema-template.form.comment"),
-        key: "comment",
-        render: (item) => item.table?.userComment ?? "",
-      },
-      {
+    cols.push({
+      title: t("schema-template.form.comment"),
+      key: "comment",
+      render: (item) => item.table?.userComment ?? "",
+    });
+
+    if (!props.readonly) {
+      cols.push({
         title: t("common.operations"),
         key: "operations",
         width: 160,
@@ -92,35 +98,33 @@ const columns = computed(
             >
               <PencilIcon class="w-4 h-4" />
             </MiniActionButton>
-            {!props.readonly && (
-              <NPopconfirm onPositiveClick={() => deleteTemplate(item.id)}>
-                {{
-                  trigger: () => (
-                    <MiniActionButton
-                      onClick={(e: MouseEvent) => e.stopPropagation()}
-                    >
-                      <TrashIcon class="w-4 h-4" />
-                    </MiniActionButton>
-                  ),
-                  default: () => (
-                    <div class="whitespace-nowrap">
-                      {t("common.delete")} '{item.table?.name}'?
-                    </div>
-                  ),
-                }}
-              </NPopconfirm>
-            )}
+            <NPopconfirm onPositiveClick={() => deleteTemplate(item.id)}>
+              {{
+                trigger: () => (
+                  <MiniActionButton
+                    onClick={(e: MouseEvent) => e.stopPropagation()}
+                  >
+                    <TrashIcon class="w-4 h-4" />
+                  </MiniActionButton>
+                ),
+                default: () => (
+                  <div class="whitespace-nowrap">
+                    {t("common.delete")} '{item.table?.name}'?
+                  </div>
+                ),
+              }}
+            </NPopconfirm>
           </div>
         ),
-      }
-    );
+      });
+    }
 
     return cols;
   }
 );
 
 const rowProps = (row: SchemaTemplateSetting_TableTemplate) => {
-  if (!props.readonly && row.engine === props.engine) {
+  if (row.engine === props.engine) {
     return {
       style: "cursor: pointer;",
       onClick: () => {
@@ -136,10 +140,15 @@ const deleteTemplate = async (id: string) => {
     Setting_SettingName.SCHEMA_TEMPLATE
   );
 
-  const settingValue = SchemaTemplateSetting.fromPartial({});
-  if (setting?.value?.schemaTemplateSettingValue) {
-    Object.assign(settingValue, setting.value.schemaTemplateSettingValue);
-  }
+  const existingValue =
+    setting?.value?.value?.case === "schemaTemplateSettingValue"
+      ? setting.value.value.value
+      : undefined;
+  const settingValue = createProto(SchemaTemplateSettingSchema, {
+    fieldTemplates: existingValue?.fieldTemplates || [],
+    columnTypes: existingValue?.columnTypes || [],
+    tableTemplates: existingValue?.tableTemplates || [],
+  });
 
   const index = settingValue.tableTemplates.findIndex((t) => t.id === id);
   if (index >= 0) {
@@ -147,9 +156,12 @@ const deleteTemplate = async (id: string) => {
 
     await settingStore.upsertSetting({
       name: Setting_SettingName.SCHEMA_TEMPLATE,
-      value: {
-        schemaTemplateSettingValue: settingValue,
-      },
+      value: createProto(SettingValueSchema, {
+        value: {
+          case: "schemaTemplateSettingValue",
+          value: settingValue,
+        },
+      }),
     });
   }
 };

@@ -14,7 +14,7 @@
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Release_File } from "@/types/proto/v1/release_service";
+import type { Release_File } from "@/types/proto-es/v1/release_service_pb";
 import { bytesToString, getReleaseFileStatement } from "@/utils";
 
 const props = withDefaults(
@@ -71,7 +71,7 @@ const columnList = computed(() => {
       title: t("common.statement-size"),
       width: 128,
       ellipsis: true,
-      render: (file) => bytesToString(file.statementSize.toNumber()),
+      render: (file) => bytesToString(Number(file.statementSize)),
     },
     {
       key: "statement",

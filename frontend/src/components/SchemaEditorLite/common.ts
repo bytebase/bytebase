@@ -1,10 +1,14 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { isEqual } from "lodash-es";
-import { sqlServiceClient } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import { t } from "@/plugins/i18n";
 import { useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { validateDatabaseMetadata } from "./utils";
 
@@ -54,18 +58,19 @@ export const generateDiffDDL = async ({
       database.projectEntity.dataClassificationConfigId
     );
 
-    const diffResponse = await sqlServiceClient.diffMetadata(
+    const newRequest = create(DiffMetadataRequestSchema, {
+      sourceMetadata: sourceMetadata,
+      targetMetadata: targetMetadata,
+      sourceCatalog,
+      targetCatalog,
+      engine: database.instanceResource.engine,
+      classificationFromConfig:
+        classificationConfig?.classificationFromConfig ?? false,
+    });
+    const diffResponse = await sqlServiceClientConnect.diffMetadata(
+      newRequest,
       {
-        sourceMetadata,
-        targetMetadata,
-        sourceCatalog,
-        targetCatalog,
-        engine: database.instanceResource.engine,
-        classificationFromConfig:
-          classificationConfig?.classificationFromConfig ?? false,
-      },
-      {
-        silent: true,
+        contextValues: createContextValues().set(silentContextKey, true),
       }
     );
     const { diff } = diffResponse;

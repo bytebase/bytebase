@@ -43,7 +43,13 @@
         {{ $t("database.last-successful-sync") }}
       </dt>
       <dd class="mt-1 text-sm text-main">
-        {{ humanizeDate(getDateForPbTimestamp(database.successfulSyncTime)) }}
+        {{
+          humanizeDate(
+            database.successfulSyncTime
+              ? new Date(Number(database.successfulSyncTime.seconds) * 1000)
+              : undefined
+          )
+        }}
       </dd>
     </div>
   </dl>
@@ -52,9 +58,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
-import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
-import { instanceV1HasCollationAndCharacterSet } from "@/utils";
+import type { ComposedDatabase } from "@/types";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import { instanceV1HasCollationAndCharacterSet, humanizeDate } from "@/utils";
 
 const props = defineProps<{
   database: ComposedDatabase;

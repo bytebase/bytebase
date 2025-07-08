@@ -17,16 +17,16 @@
 <script setup lang="ts">
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
-import { TaskRunLogEntry_Type } from "@/types/proto/v1/rollout_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type { FlattenLogEntry } from "../common";
 import AffectedRowsCell from "./AffectedRowsCell.vue";
 import DatabaseSyncCell from "./DatabaseSyncCell.vue";
 import ErrorCell from "./ErrorCell.vue";
 import PriorBackupCell from "./PriorBackupCell.vue";
+import RetryInfoCell from "./RetryInfoCell.vue";
 import StatusUpdateCell from "./StatusUpdateCell.vue";
 import TransactionControlCell from "./TransactionControlCell.vue";
-import RetryInfoCell from "./RetryInfoCell.vue";
 
 type View =
   | "N/A"
@@ -51,7 +51,7 @@ const view = computed((): View => {
     transactionControl,
     databaseSync,
     priorBackup,
-    retryInfo, 
+    retryInfo,
   } = props.entry;
   if (type === TaskRunLogEntry_Type.COMMAND_EXECUTE && commandExecute) {
     if (!commandExecute.raw.response) {

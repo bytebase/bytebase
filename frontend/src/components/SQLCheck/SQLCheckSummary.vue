@@ -16,8 +16,8 @@
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
-import type { Advice } from "@/types/proto/v1/sql_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 
 type Summary = {
   successCount: number;

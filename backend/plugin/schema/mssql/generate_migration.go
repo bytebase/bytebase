@@ -105,9 +105,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	}
 
 	// 1.4 Drop views in reverse topological order (dependent views first)
-	if err := dropViewsInOrder(diff, &buf); err != nil {
-		return "", err
-	}
+	dropViewsInOrder(diff, &buf)
 
 	// 1.5 Drop indexes and constraints from tables being altered
 	for _, tableDiff := range diff.TableChanges {
@@ -149,8 +147,36 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 			}
 
 			// Drop columns
-			for _, colDiff := range tableDiff.ColumnChanges {
+			hasDroppedIndex := false
+			for _, indexDiff := range tableDiff.IndexChanges {
+				if indexDiff.Action == schema.MetadataDiffActionDrop {
+					hasDroppedIndex = true
+					break
+				}
+			}
+
+			for i, colDiff := range tableDiff.ColumnChanges {
 				if colDiff.Action == schema.MetadataDiffActionDrop {
+					// Add GO before first column drop if we dropped indexes
+					if i == 0 && hasDroppedIndex {
+						_, _ = buf.WriteString("GO\n")
+					}
+
+					// If the column has a default constraint, drop it first
+					if getColumnDefaultValue(colDiff.OldColumn) != "" {
+						if colDiff.OldColumn.DefaultConstraintName != "" {
+							// Use the known constraint name directly
+							_, _ = buf.WriteString("ALTER TABLE [")
+							_, _ = buf.WriteString(tableDiff.SchemaName)
+							_, _ = buf.WriteString("].[")
+							_, _ = buf.WriteString(tableDiff.TableName)
+							_, _ = buf.WriteString("] DROP CONSTRAINT [")
+							_, _ = buf.WriteString(colDiff.OldColumn.DefaultConstraintName)
+							_, _ = buf.WriteString("];\n")
+						}
+						// Note: If DefaultConstraintName is empty, we cannot drop the constraint automatically
+					}
+
 					_, _ = buf.WriteString("ALTER TABLE [")
 					_, _ = buf.WriteString(tableDiff.SchemaName)
 					_, _ = buf.WriteString("].[")
@@ -163,14 +189,59 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 
+	// Add GO after table alterations if we had any and we're about to drop tables
+	hasTableAlterations := false
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			for _, colDiff := range tableDiff.ColumnChanges {
+				if colDiff.Action == schema.MetadataDiffActionDrop {
+					hasTableAlterations = true
+					break
+				}
+			}
+		}
+	}
+
 	// 1.6 Drop tables
+	hasTableDrops := false
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionDrop {
+			if !hasTableDrops && hasTableAlterations {
+				_, _ = buf.WriteString("GO\n")
+			}
+			hasTableDrops = true
 			_, _ = buf.WriteString("DROP TABLE [")
 			_, _ = buf.WriteString(tableDiff.SchemaName)
 			_, _ = buf.WriteString("].[")
 			_, _ = buf.WriteString(tableDiff.TableName)
 			_, _ = buf.WriteString("];\n")
+		}
+	}
+
+	// 1.6.1 Drop all tables in schemas that are being dropped
+	// This handles cases where the schema differ doesn't detect tables in dropped schemas
+	for _, schemaDiff := range diff.SchemaChanges {
+		if schemaDiff.Action == schema.MetadataDiffActionDrop && schemaDiff.OldSchema != nil {
+			// Drop all tables in this schema
+			for _, table := range schemaDiff.OldSchema.Tables {
+				// Check if this table is already handled by tableDiff
+				alreadyHandled := false
+				for _, tableDiff := range diff.TableChanges {
+					if tableDiff.Action == schema.MetadataDiffActionDrop &&
+						tableDiff.SchemaName == schemaDiff.SchemaName &&
+						tableDiff.TableName == table.Name {
+						alreadyHandled = true
+						break
+					}
+				}
+				if !alreadyHandled {
+					_, _ = buf.WriteString("DROP TABLE [")
+					_, _ = buf.WriteString(schemaDiff.SchemaName)
+					_, _ = buf.WriteString("].[")
+					_, _ = buf.WriteString(table.Name)
+					_, _ = buf.WriteString("];\n")
+				}
+			}
 		}
 	}
 
@@ -212,41 +283,13 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		_, _ = buf.WriteString("\n")
 	}
 
-	// 2.2 Create new tables WITHOUT foreign keys (sorted for consistent output)
-	var tablesToCreate []*schema.TableDiff
-	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.Action == schema.MetadataDiffActionCreate {
-			tablesToCreate = append(tablesToCreate, tableDiff)
-		}
-	}
-	// Sort by schema.table name for consistent output
-	slices.SortFunc(tablesToCreate, func(i, j *schema.TableDiff) int {
-		iFullName := getObjectID(i.SchemaName, i.TableName)
-		jFullName := getObjectID(j.SchemaName, j.TableName)
-		if iFullName < jFullName {
-			return -1
-		}
-		if iFullName > jFullName {
-			return 1
-		}
-		return 0
-	})
-	for _, tableDiff := range tablesToCreate {
-		createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
-		if err != nil {
-			return "", err
-		}
-		_, _ = buf.WriteString(createTableSQL)
-		_, _ = buf.WriteString("\n")
-	}
+	// 2.2 Create new tables WITHOUT foreign keys (in topological order based on FK dependencies)
+	createTablesInOrder(diff, &buf)
 
 	// 2.3 Alter existing tables (add columns, alter columns)
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionAlter {
-			alterTableSQL, err := generateAlterTable(tableDiff)
-			if err != nil {
-				return "", err
-			}
+			alterTableSQL := generateAlterTable(tableDiff)
 			_, _ = buf.WriteString(alterTableSQL)
 			if alterTableSQL != "" {
 				_, _ = buf.WriteString("\n")
@@ -255,15 +298,114 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	}
 
 	// 2.4 Add foreign keys for newly created tables (after all tables exist)
-	for _, tableDiff := range tablesToCreate {
-		for _, fk := range tableDiff.NewTable.ForeignKeys {
-			fkSQL, err := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fk)
-			if err != nil {
-				return "", err
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
+			for _, fk := range tableDiff.NewTable.ForeignKeys {
+				fkSQL := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fk)
+				_, _ = buf.WriteString(fkSQL)
+				_, _ = buf.WriteString(";\n")
 			}
-			_, _ = buf.WriteString(fkSQL)
-			_, _ = buf.WriteString(";\n")
 		}
+	}
+
+	// 2.5 Handle table and column comments
+	hasCommentChanges := false
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
+			// Add table comment if present
+			if tableDiff.NewTable.Comment != "" {
+				commentSQL := generateTableCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\n")
+				hasCommentChanges = true
+			}
+			// Add column comments if present
+			for _, column := range tableDiff.NewTable.Columns {
+				if column.Comment != "" {
+					commentSQL := generateColumnCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, column.Name, column.Comment)
+					_, _ = buf.WriteString(commentSQL)
+					_, _ = buf.WriteString(";\n")
+					hasCommentChanges = true
+				}
+			}
+		} else if tableDiff.Action == schema.MetadataDiffActionAlter {
+			// Handle table comment changes
+			oldTableComment := ""
+			newTableComment := ""
+			if tableDiff.OldTable != nil {
+				oldTableComment = tableDiff.OldTable.Comment
+			}
+			if tableDiff.NewTable != nil {
+				newTableComment = tableDiff.NewTable.Comment
+			}
+			if oldTableComment != newTableComment {
+				if oldTableComment == "" && newTableComment != "" {
+					// Add new table comment
+					commentSQL := generateTableCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, newTableComment)
+					_, _ = buf.WriteString(commentSQL)
+					_, _ = buf.WriteString(";\n")
+					hasCommentChanges = true
+				} else if oldTableComment != "" && newTableComment == "" {
+					// Drop table comment
+					commentSQL := generateTableCommentSQL("DROP", tableDiff.SchemaName, tableDiff.TableName, "")
+					_, _ = buf.WriteString(commentSQL)
+					_, _ = buf.WriteString(";\n")
+					hasCommentChanges = true
+				} else if oldTableComment != "" && newTableComment != "" {
+					// Update table comment
+					commentSQL := generateTableCommentSQL("UPDATE", tableDiff.SchemaName, tableDiff.TableName, newTableComment)
+					_, _ = buf.WriteString(commentSQL)
+					_, _ = buf.WriteString(";\n")
+					hasCommentChanges = true
+				}
+			}
+			// Handle column comment changes
+			for _, colDiff := range tableDiff.ColumnChanges {
+				if colDiff.Action == schema.MetadataDiffActionCreate && colDiff.NewColumn != nil {
+					if colDiff.NewColumn.Comment != "" {
+						commentSQL := generateColumnCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn.Name, colDiff.NewColumn.Comment)
+						_, _ = buf.WriteString(commentSQL)
+						_, _ = buf.WriteString(";\n")
+						hasCommentChanges = true
+					}
+				} else if colDiff.Action == schema.MetadataDiffActionAlter {
+					oldColComment := ""
+					newColComment := ""
+					if colDiff.OldColumn != nil {
+						oldColComment = colDiff.OldColumn.Comment
+					}
+					if colDiff.NewColumn != nil {
+						newColComment = colDiff.NewColumn.Comment
+					}
+					if oldColComment != newColComment {
+						if oldColComment == "" && newColComment != "" {
+							// Add new column comment
+							commentSQL := generateColumnCommentSQL("ADD", tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn.Name, newColComment)
+							_, _ = buf.WriteString(commentSQL)
+							_, _ = buf.WriteString(";\n")
+							hasCommentChanges = true
+						} else if oldColComment != "" && newColComment == "" {
+							// Drop column comment
+							commentSQL := generateColumnCommentSQL("DROP", tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn.Name, "")
+							_, _ = buf.WriteString(commentSQL)
+							_, _ = buf.WriteString(";\n")
+							hasCommentChanges = true
+						} else if oldColComment != "" && newColComment != "" {
+							// Update column comment
+							commentSQL := generateColumnCommentSQL("UPDATE", tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn.Name, newColComment)
+							_, _ = buf.WriteString(commentSQL)
+							_, _ = buf.WriteString(";\n")
+							hasCommentChanges = true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Add GO after comment changes if we have any
+	if hasCommentChanges {
+		_, _ = buf.WriteString("GO\n")
 	}
 
 	// Add a GO statement to separate table creation/alteration from the next phase
@@ -272,12 +414,10 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		_, _ = buf.WriteString("\nGO\n")
 	}
 
-	// 2.4 Create views in topological order (dependencies first)
-	if err := createViewsInOrder(diff, &buf); err != nil {
-		return "", err
-	}
+	// 2.6 Create views in topological order (dependencies first)
+	createViewsInOrder(diff, &buf)
 
-	// 2.5 Create functions
+	// 2.7 Create functions
 	for _, funcDiff := range diff.FunctionChanges {
 		if funcDiff.Action == schema.MetadataDiffActionCreate {
 			_, _ = buf.WriteString(funcDiff.NewFunction.Definition)
@@ -285,10 +425,17 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 				_, _ = buf.WriteString(";")
 			}
 			_, _ = buf.WriteString("\nGO\n")
+
+			// Add function comment if present
+			if funcDiff.NewFunction.Comment != "" {
+				commentSQL := generateFunctionCommentSQL("ADD", funcDiff.SchemaName, funcDiff.FunctionName, funcDiff.NewFunction.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\nGO\n")
+			}
 		}
 	}
 
-	// 2.6 Create procedures
+	// 2.8 Create procedures
 	for _, procDiff := range diff.ProcedureChanges {
 		switch procDiff.Action {
 		case schema.MetadataDiffActionCreate:
@@ -312,10 +459,36 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 		}
 	}
 
+	// 2.9 Create sequences
+	for _, sequenceDiff := range diff.SequenceChanges {
+		if sequenceDiff.Action == schema.MetadataDiffActionCreate {
+			// Generate CREATE SEQUENCE statement
+			_, _ = buf.WriteString("CREATE SEQUENCE [")
+			_, _ = buf.WriteString(sequenceDiff.SchemaName)
+			_, _ = buf.WriteString("].[")
+			_, _ = buf.WriteString(sequenceDiff.SequenceName)
+			_, _ = buf.WriteString("]")
+
+			if sequenceDiff.NewSequence.DataType != "" {
+				_, _ = buf.WriteString(" AS ")
+				_, _ = buf.WriteString(sequenceDiff.NewSequence.DataType)
+			}
+
+			_, _ = buf.WriteString(";\nGO\n")
+
+			// Add sequence comment if present
+			if sequenceDiff.NewSequence.Comment != "" {
+				commentSQL := generateSequenceCommentSQL("ADD", sequenceDiff.SchemaName, sequenceDiff.SequenceName, sequenceDiff.NewSequence.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\nGO\n")
+			}
+		}
+	}
+
 	return buf.String(), nil
 }
 
-func generateCreateTable(schemaName, tableName string, table *storepb.TableMetadata) (string, error) {
+func generateCreateTable(schemaName, tableName string, table *storepb.TableMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("CREATE TABLE [")
@@ -326,10 +499,7 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 
 	// Add columns
 	for i, column := range table.Columns {
-		columnDef, err := generateColumnDefinition(column)
-		if err != nil {
-			return "", err
-		}
+		columnDef := generateColumnDefinition(column)
 		_, _ = buf.WriteString("  ")
 		_, _ = buf.WriteString(columnDef)
 
@@ -400,10 +570,7 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 	// Add non-primary indexes (after table creation)
 	for _, idx := range table.Indexes {
 		if !idx.IsConstraint {
-			indexSQL, err := generateCreateIndex(schemaName, tableName, idx)
-			if err != nil {
-				return "", err
-			}
+			indexSQL := generateCreateIndex(schemaName, tableName, idx)
 			_, _ = buf.WriteString("\n")
 			_, _ = buf.WriteString(indexSQL)
 			_, _ = buf.WriteString(";")
@@ -412,19 +579,16 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 
 	// Note: Foreign keys are now added in a separate phase after all tables are created
 
-	return buf.String(), nil
+	return buf.String()
 }
 
-func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
+func generateAlterTable(tableDiff *schema.TableDiff) string {
 	var buf strings.Builder
 
 	// Add columns first (other operations might depend on them)
 	for _, colDiff := range tableDiff.ColumnChanges {
 		if colDiff.Action == schema.MetadataDiffActionCreate {
-			columnDef, err := generateColumnDefinition(colDiff.NewColumn)
-			if err != nil {
-				return "", err
-			}
+			columnDef := generateColumnDefinition(colDiff.NewColumn)
 			_, _ = buf.WriteString("ALTER TABLE [")
 			_, _ = buf.WriteString(tableDiff.SchemaName)
 			_, _ = buf.WriteString("].[")
@@ -438,10 +602,7 @@ func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
 	// Alter columns
 	for _, colDiff := range tableDiff.ColumnChanges {
 		if colDiff.Action == schema.MetadataDiffActionAlter {
-			alterColSQL, err := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
-			if err != nil {
-				return "", err
-			}
+			alterColSQL := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
 			_, _ = buf.WriteString(alterColSQL)
 		}
 	}
@@ -481,10 +642,7 @@ func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
 				}
 				_, _ = buf.WriteString(");\n")
 			} else {
-				indexSQL, err := generateCreateIndex(tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
-				if err != nil {
-					return "", err
-				}
+				indexSQL := generateCreateIndex(tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
 				_, _ = buf.WriteString(indexSQL)
 				_, _ = buf.WriteString(";\n")
 			}
@@ -509,44 +667,60 @@ func generateAlterTable(tableDiff *schema.TableDiff) (string, error) {
 	// Add foreign keys last (they depend on other tables/columns)
 	for _, fkDiff := range tableDiff.ForeignKeyChanges {
 		if fkDiff.Action == schema.MetadataDiffActionCreate {
-			fkSQL, err := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey)
-			if err != nil {
-				return "", err
-			}
+			fkSQL := generateAddForeignKey(tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey)
 			_, _ = buf.WriteString(fkSQL)
 			_, _ = buf.WriteString(";\n")
 		}
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }
 
-func generateColumnDefinition(column *storepb.ColumnMetadata) (string, error) {
+func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 	var buf strings.Builder
-
 	_, _ = buf.WriteString("[")
 	_, _ = buf.WriteString(column.Name)
 	_, _ = buf.WriteString("] ")
-	_, _ = buf.WriteString(column.Type)
 
-	// Add nullability
-	if column.Nullable {
-		_, _ = buf.WriteString(" NULL")
+	// Check if this is a computed column by examining the type field
+	isComputedColumn := strings.Contains(column.Type, " AS (") || strings.HasPrefix(column.Type, "AS (")
+
+	if isComputedColumn {
+		// For computed columns, just use the type as-is (it contains the AS expression)
+		_, _ = buf.WriteString(column.Type)
+		// Note: Computed columns don't have explicit nullability, IDENTITY, or defaults
+		// unless they are PERSISTED, which would be included in the type definition
 	} else {
-		_, _ = buf.WriteString(" NOT NULL")
-	}
+		// Regular column: add type, identity, nullability, and default
+		_, _ = buf.WriteString(column.Type)
 
-	// Add default value
-	defaultExpr := getDefaultExpression(column)
-	if defaultExpr != "" {
-		_, _ = buf.WriteString(" DEFAULT ")
-		_, _ = buf.WriteString(defaultExpr)
-	}
+		// Add IDENTITY if applicable
+		if column.IsIdentity {
+			_, _ = buf.WriteString(" IDENTITY(")
+			_, _ = buf.WriteString(fmt.Sprintf("%d,%d", column.IdentitySeed, column.IdentityIncrement))
+			_, _ = buf.WriteString(")")
+		}
 
-	return buf.String(), nil
+		// Add nullability
+		if column.Nullable {
+			_, _ = buf.WriteString(" NULL")
+		} else {
+			_, _ = buf.WriteString(" NOT NULL")
+		}
+
+		// Add default value if present
+		if column.GetDefaultExpression() != "" {
+			_, _ = buf.WriteString(" DEFAULT ")
+			_, _ = buf.WriteString(column.GetDefaultExpression())
+		} else if column.GetDefault() != "" {
+			_, _ = buf.WriteString(" DEFAULT ")
+			_, _ = buf.WriteString(column.GetDefault())
+		}
+	}
+	return buf.String()
 }
 
-func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) (string, error) {
+func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
 	var buf strings.Builder
 
 	// In MSSQL, we need to handle different aspects of column changes separately
@@ -586,48 +760,60 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 	}
 
 	// Handle default value changes
-	oldHasDefault := hasDefaultValue(colDiff.OldColumn)
-	newHasDefault := hasDefaultValue(colDiff.NewColumn)
-	if oldHasDefault || newHasDefault {
-		if !defaultValuesEqual(colDiff.OldColumn, colDiff.NewColumn) {
-			// First drop the old default constraint if it exists
-			if oldHasDefault {
-				// We need to find the default constraint name
-				// In practice, this might require querying system tables
-				// For now, we'll use a naming convention
-				constraintName := fmt.Sprintf("DF_%s_%s", tableName, colDiff.OldColumn.Name)
+	oldDefault := getColumnDefaultValue(colDiff.OldColumn)
+	newDefault := getColumnDefaultValue(colDiff.NewColumn)
+
+	if oldDefault != newDefault {
+		// First, drop the existing default constraint if it exists
+		if oldDefault != "" {
+			if colDiff.OldColumn.DefaultConstraintName != "" {
+				// Use the known constraint name directly (when synced from database)
 				_, _ = buf.WriteString("ALTER TABLE [")
 				_, _ = buf.WriteString(schemaName)
 				_, _ = buf.WriteString("].[")
 				_, _ = buf.WriteString(tableName)
 				_, _ = buf.WriteString("] DROP CONSTRAINT [")
-				_, _ = buf.WriteString(constraintName)
+				_, _ = buf.WriteString(colDiff.OldColumn.DefaultConstraintName)
 				_, _ = buf.WriteString("];\n")
 			}
-
-			// Add new default constraint if needed
-			if newHasDefault {
-				constraintName := fmt.Sprintf("DF_%s_%s", tableName, colDiff.NewColumn.Name)
-				defaultExpr := getDefaultExpression(colDiff.NewColumn)
-				_, _ = buf.WriteString("ALTER TABLE [")
-				_, _ = buf.WriteString(schemaName)
-				_, _ = buf.WriteString("].[")
-				_, _ = buf.WriteString(tableName)
-				_, _ = buf.WriteString("] ADD CONSTRAINT [")
-				_, _ = buf.WriteString(constraintName)
-				_, _ = buf.WriteString("] DEFAULT ")
-				_, _ = buf.WriteString(defaultExpr)
-				_, _ = buf.WriteString(" FOR [")
-				_, _ = buf.WriteString(colDiff.NewColumn.Name)
-				_, _ = buf.WriteString("];\n")
-			}
+			// Note: If DefaultConstraintName is empty (e.g., when parsed from SQL), we cannot drop the constraint
+			// as we don't know its name. The user needs to drop it manually or sync from the database first.
+		}
+		// Then, add the new default constraint if specified
+		if newDefault != "" {
+			_, _ = buf.WriteString("ALTER TABLE [")
+			_, _ = buf.WriteString(schemaName)
+			_, _ = buf.WriteString("].[")
+			_, _ = buf.WriteString(tableName)
+			_, _ = buf.WriteString("] ADD CONSTRAINT [DF_")
+			_, _ = buf.WriteString(tableName)
+			_, _ = buf.WriteString("_")
+			_, _ = buf.WriteString(colDiff.NewColumn.Name)
+			_, _ = buf.WriteString("] DEFAULT ")
+			_, _ = buf.WriteString(newDefault)
+			_, _ = buf.WriteString(" FOR [")
+			_, _ = buf.WriteString(colDiff.NewColumn.Name)
+			_, _ = buf.WriteString("];\n")
 		}
 	}
-
-	return buf.String(), nil
+	return buf.String()
 }
 
-func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetadata) (string, error) {
+// getColumnDefaultValue extracts the default value from a column
+func getColumnDefaultValue(column *storepb.ColumnMetadata) string {
+	if column == nil {
+		return ""
+	}
+	if column.GetDefaultExpression() != "" {
+		return column.GetDefaultExpression()
+	}
+	if column.GetDefault() != "" {
+		return column.GetDefault()
+	}
+	return ""
+}
+
+func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("CREATE")
@@ -644,7 +830,7 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 		_, _ = buf.WriteString(tableName)
 		_, _ = buf.WriteString("]")
 		// Clustered columnstore indexes don't specify columns
-		return buf.String(), nil
+		return buf.String()
 	case "NONCLUSTERED COLUMNSTORE":
 		_, _ = buf.WriteString(" NONCLUSTERED COLUMNSTORE INDEX [")
 		_, _ = buf.WriteString(index.Name)
@@ -666,7 +852,28 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 			}
 			_, _ = buf.WriteString(")")
 		}
-		return buf.String(), nil
+		return buf.String()
+	case "SPATIAL":
+		_, _ = buf.WriteString(" SPATIAL INDEX [")
+		_, _ = buf.WriteString(index.Name)
+		_, _ = buf.WriteString("] ON [")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("].[")
+		_, _ = buf.WriteString(tableName)
+		_, _ = buf.WriteString("] (")
+		for i, expr := range index.Expressions {
+			if i > 0 {
+				_, _ = buf.WriteString(", ")
+			}
+			_, _ = buf.WriteString("[")
+			_, _ = buf.WriteString(expr)
+			_, _ = buf.WriteString("]")
+		}
+		_, _ = buf.WriteString(")")
+		// Note: SQL Server requires additional parameters for spatial indexes (USING clause and
+		// BOUNDING_BOX for GEOMETRY columns). Since we don't have column type information here,
+		// the generated DDL may need manual adjustment for spatial indexes.
+		return buf.String()
 	default:
 		// Regular indexes
 		if index.Unique {
@@ -699,11 +906,11 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 
 		_, _ = buf.WriteString(")")
 
-		return buf.String(), nil
+		return buf.String()
 	}
 }
 
-func generateAddForeignKey(schemaName, tableName string, fk *storepb.ForeignKeyMetadata) (string, error) {
+func generateAddForeignKey(schemaName, tableName string, fk *storepb.ForeignKeyMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("ALTER TABLE [")
@@ -758,7 +965,7 @@ func generateAddForeignKey(schemaName, tableName string, fk *storepb.ForeignKeyM
 		_, _ = buf.WriteString(fk.OnUpdate)
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }
 
 // hasConstraintsInTable checks if the table has any constraints (primary key or unique)
@@ -771,65 +978,100 @@ func hasConstraintsInTable(table *storepb.TableMetadata) bool {
 	return false
 }
 
-// hasDefaultValue checks if a column has any default value
-func hasDefaultValue(column *storepb.ColumnMetadata) bool {
-	if column == nil {
-		return false
+// generateExtendedPropertySQL generates SQL for adding, updating, or dropping extended properties (comments)
+func generateExtendedPropertySQL(action, objectType, schemaName, objectName, comment string) string {
+	var buf strings.Builder
+
+	switch action {
+	case "ADD":
+		_, _ = buf.WriteString("EXEC sp_addextendedproperty 'MS_Description', '")
+		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+		_, _ = buf.WriteString("', 'SCHEMA', '")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("', '")
+		_, _ = buf.WriteString(objectType)
+		_, _ = buf.WriteString("', '")
+		_, _ = buf.WriteString(objectName)
+		_, _ = buf.WriteString("'")
+	case "UPDATE":
+		_, _ = buf.WriteString("EXEC sp_updateextendedproperty 'MS_Description', '")
+		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+		_, _ = buf.WriteString("', 'SCHEMA', '")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("', '")
+		_, _ = buf.WriteString(objectType)
+		_, _ = buf.WriteString("', '")
+		_, _ = buf.WriteString(objectName)
+		_, _ = buf.WriteString("'")
+	case "DROP":
+		_, _ = buf.WriteString("EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', '")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("', '")
+		_, _ = buf.WriteString(objectType)
+		_, _ = buf.WriteString("', '")
+		_, _ = buf.WriteString(objectName)
+		_, _ = buf.WriteString("'")
 	}
-	return column.GetDefaultExpression() != "" ||
-		(column.GetDefault() != nil && column.GetDefault().Value != "") ||
-		column.GetDefaultNull()
+
+	return buf.String()
 }
 
-// defaultValuesEqual checks if two columns have the same default value
-func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
-	if col1 == nil || col2 == nil {
-		return col1 == col2
-	}
-
-	// Check default expression
-	if col1.GetDefaultExpression() != col2.GetDefaultExpression() {
-		return false
-	}
-
-	// Check default value
-	def1 := col1.GetDefault()
-	def2 := col2.GetDefault()
-	if (def1 == nil) != (def2 == nil) {
-		return false
-	}
-	if def1 != nil && def1.Value != def2.Value {
-		return false
-	}
-
-	// Check default null
-	if col1.GetDefaultNull() != col2.GetDefaultNull() {
-		return false
-	}
-
-	return true
+// generateViewCommentSQL generates SQL for view comment changes
+func generateViewCommentSQL(action, schemaName, viewName, comment string) string {
+	return generateExtendedPropertySQL(action, "VIEW", schemaName, viewName, comment)
 }
 
-// getDefaultExpression returns the SQL expression for a column's default value
-func getDefaultExpression(column *storepb.ColumnMetadata) string {
-	if column == nil {
-		return ""
+// generateFunctionCommentSQL generates SQL for function comment changes
+func generateFunctionCommentSQL(action, schemaName, functionName, comment string) string {
+	return generateExtendedPropertySQL(action, "FUNCTION", schemaName, functionName, comment)
+}
+
+// generateSequenceCommentSQL generates SQL for sequence comment changes
+func generateSequenceCommentSQL(action, schemaName, sequenceName, comment string) string {
+	return generateExtendedPropertySQL(action, "SEQUENCE", schemaName, sequenceName, comment)
+}
+
+// generateTableCommentSQL generates SQL for table comment changes
+func generateTableCommentSQL(action, schemaName, tableName, comment string) string {
+	return generateExtendedPropertySQL(action, "TABLE", schemaName, tableName, comment)
+}
+
+// generateColumnCommentSQL generates SQL for column comment changes
+func generateColumnCommentSQL(action, schemaName, tableName, columnName, comment string) string {
+	var buf strings.Builder
+
+	switch action {
+	case "ADD":
+		_, _ = buf.WriteString("EXEC sp_addextendedproperty 'MS_Description', '")
+		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+		_, _ = buf.WriteString("', 'SCHEMA', '")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("', 'TABLE', '")
+		_, _ = buf.WriteString(tableName)
+		_, _ = buf.WriteString("', 'COLUMN', '")
+		_, _ = buf.WriteString(columnName)
+		_, _ = buf.WriteString("'")
+	case "UPDATE":
+		_, _ = buf.WriteString("EXEC sp_updateextendedproperty 'MS_Description', '")
+		_, _ = buf.WriteString(strings.ReplaceAll(comment, "'", "''")) // Escape single quotes
+		_, _ = buf.WriteString("', 'SCHEMA', '")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("', 'TABLE', '")
+		_, _ = buf.WriteString(tableName)
+		_, _ = buf.WriteString("', 'COLUMN', '")
+		_, _ = buf.WriteString(columnName)
+		_, _ = buf.WriteString("'")
+	case "DROP":
+		_, _ = buf.WriteString("EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', '")
+		_, _ = buf.WriteString(schemaName)
+		_, _ = buf.WriteString("', 'TABLE', '")
+		_, _ = buf.WriteString(tableName)
+		_, _ = buf.WriteString("', 'COLUMN', '")
+		_, _ = buf.WriteString(columnName)
+		_, _ = buf.WriteString("'")
 	}
 
-	if expr := column.GetDefaultExpression(); expr != "" {
-		return expr
-	}
-
-	if def := column.GetDefault(); def != nil && def.Value != "" {
-		// Quote string literals
-		return fmt.Sprintf("'%s'", def.Value)
-	}
-
-	if column.GetDefaultNull() {
-		return "NULL"
-	}
-
-	return ""
+	return buf.String()
 }
 
 type queryClauseListener struct {
@@ -926,7 +1168,7 @@ func getObjectID(schema, name string) string {
 }
 
 // dropViewsInOrder drops views in reverse topological order (dependent views first)
-func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
+func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	// Build dependency graph for views being dropped or altered
 	graph := base.NewGraph()
 	viewMap := make(map[string]*schema.ViewDiff)
@@ -1008,7 +1250,7 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			_, _ = buf.WriteString(viewDiff.ViewName)
 			_, _ = buf.WriteString("];\nGO\n")
 		}
-		return nil
+		return
 	}
 
 	// Drop views in order (most dependent first due to edge direction)
@@ -1021,12 +1263,83 @@ func dropViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			_, _ = buf.WriteString("];\nGO\n")
 		}
 	}
+}
 
-	return nil
+// createTablesInOrder creates tables in topological order (dependencies first based on foreign keys)
+func createTablesInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
+	// Build dependency graph for tables being created
+	graph := base.NewGraph()
+	tableMap := make(map[string]*schema.TableDiff)
+
+	// First pass: Add all tables to be created to the graph and tableMap
+	// Sort for deterministic processing order
+	var tablesToCreate []*schema.TableDiff
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionCreate {
+			tablesToCreate = append(tablesToCreate, tableDiff)
+		}
+	}
+	slices.SortFunc(tablesToCreate, func(i, j *schema.TableDiff) int {
+		iFullName := getObjectID(i.SchemaName, i.TableName)
+		jFullName := getObjectID(j.SchemaName, j.TableName)
+		if iFullName < jFullName {
+			return -1
+		}
+		if iFullName > jFullName {
+			return 1
+		}
+		return 0
+	})
+
+	for _, tableDiff := range tablesToCreate {
+		tableID := getObjectID(tableDiff.SchemaName, tableDiff.TableName)
+		graph.AddNode(tableID)
+		tableMap[tableID] = tableDiff
+	}
+
+	// Second pass: Add dependency edges based on foreign keys
+	for _, tableDiff := range tablesToCreate {
+		tableID := getObjectID(tableDiff.SchemaName, tableDiff.TableName)
+
+		// Add edges based on foreign key dependencies
+		if tableDiff.NewTable != nil {
+			for _, fk := range tableDiff.NewTable.ForeignKeys {
+				// Create dependency ID for the referenced table
+				refTableID := getObjectID(fk.ReferencedSchema, fk.ReferencedTable)
+
+				// Only add edge if the referenced table is also being created
+				if _, exists := tableMap[refTableID]; exists {
+					// Edge from referenced table to this table (referenced must be created first)
+					graph.AddEdge(refTableID, tableID)
+				}
+			}
+		}
+	}
+
+	// Get topological order
+	orderedList, err := graph.TopologicalSort()
+	if err != nil {
+		// If there's a cycle or error, fall back to alphabetical order
+		for _, tableDiff := range tablesToCreate {
+			createTableSQL := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
+			_, _ = buf.WriteString(createTableSQL)
+			_, _ = buf.WriteString("\n")
+		}
+		return
+	}
+
+	// Create tables in order
+	for _, tableID := range orderedList {
+		if tableDiff, ok := tableMap[tableID]; ok {
+			createTableSQL := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable)
+			_, _ = buf.WriteString(createTableSQL)
+			_, _ = buf.WriteString("\n")
+		}
+	}
 }
 
 // createViewsInOrder creates views in topological order (dependencies first)
-func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
+func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	// Build dependency graph for views being created or altered
 	graph := base.NewGraph()
 	viewMap := make(map[string]*schema.ViewDiff)
@@ -1108,8 +1421,15 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 				_, _ = buf.WriteString(";")
 			}
 			_, _ = buf.WriteString("\nGO\n")
+
+			// Add view comment if present
+			if viewDiff.NewView.Comment != "" {
+				commentSQL := generateViewCommentSQL("ADD", viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\nGO\n")
+			}
 		}
-		return nil
+		return
 	}
 
 	// Create views in order
@@ -1122,10 +1442,15 @@ func createViewsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 				_, _ = buf.WriteString(";")
 			}
 			_, _ = buf.WriteString("\nGO\n")
+
+			// Add view comment if present
+			if viewDiff.NewView.Comment != "" {
+				commentSQL := generateViewCommentSQL("ADD", viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
+				_, _ = buf.WriteString(commentSQL)
+				_, _ = buf.WriteString(";\nGO\n")
+			}
 		}
 	}
-
-	return nil
 }
 
 // Helper functions to check if diff contains certain types of changes

@@ -83,6 +83,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
@@ -100,10 +101,10 @@ import {
   emptySimpleExpr,
 } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
-import { Expr } from "@/types/proto/google/type/expr";
-import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
-import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import type { MaskingRulePolicy_MaskingRule } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto-es/v1/setting_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
@@ -150,7 +151,10 @@ const semanticTypeSettingValue = computed(() => {
   const semanticTypeSetting = settingStore.getSettingByName(
     Setting_SettingName.SEMANTIC_TYPES
   );
-  return semanticTypeSetting?.value?.semanticTypeSettingValue?.types ?? [];
+  if (semanticTypeSetting?.value?.value?.case === "semanticTypeSettingValue") {
+    return semanticTypeSetting.value.value.value.types ?? [];
+  }
+  return [];
 });
 
 const options = computed(() => {
@@ -218,9 +222,11 @@ const onConfirm = async () => {
   emit("confirm", {
     ...props.maskingRule,
     semanticType: state.semanticType!,
-    condition: Expr.fromPartial({
+    condition: create(ExprSchema, {
       expression: expressions[0],
       title: state.title,
+      description: "",
+      location: "",
     }),
   });
   state.dirty = false;

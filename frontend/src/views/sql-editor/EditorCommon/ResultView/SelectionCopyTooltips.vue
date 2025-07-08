@@ -33,6 +33,11 @@
         </NButton>
       </template>
     </i18n-t>
+    <div class="ml-1">
+      <NButton size="tiny" secondary @click="deselect">
+        {{ $t("sql-editor.cancel-selection") }}
+      </NButton>
+    </div>
   </div>
 </template>
 
@@ -45,7 +50,7 @@ import { pushNotification } from "@/store";
 import { useSelectionContext } from "./DataTable/common/selection-logic";
 
 const { t } = useI18n();
-const { state: selectionState, copy } = useSelectionContext();
+const { state: selectionState, copy, deselect } = useSelectionContext();
 
 const shouldShow = computed(
   () =>

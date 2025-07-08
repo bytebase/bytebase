@@ -54,64 +54,48 @@
     <!-- Status Drawer -->
     <Drawer v-model:show="drawerVisible">
       <DrawerContent
-        :title="drawerTitle"
+        :title="$t('plan.navigator.checks')"
         class="w-[40rem] max-w-[100vw] relative"
       >
         <div class="w-full h-full flex flex-col">
-          <!-- Drawer Header -->
-          <div class="flex items-center justify-between px-2 py-2 border-b">
-            <div class="flex items-center gap-2">
-              <component
-                :is="getStatusIcon(selectedStatus)"
-                class="w-5 h-5"
-                :class="getStatusColor(selectedStatus)"
-              />
-              <h3 class="text-lg font-medium">{{ drawerTitle }}</h3>
-            </div>
-          </div>
-
           <!-- Drawer Content -->
-          <div class="flex-1 overflow-y-auto py-2">
-            <div v-if="drawerAdvices.length > 0" class="space-y-2">
+          <div v-if="drawerAdvices.length > 0" class="w-full space-y-2">
+            <div
+              v-for="(advice, idx) in drawerAdvices"
+              :key="idx"
+              class="space-y-1 p-3 border rounded-lg bg-gray-50"
+            >
+              <div class="flex items-start justify-between">
+                <div class="text-sm font-medium text-main">
+                  {{ getAdviceTitle(advice) }}
+                </div>
+                <component
+                  :is="getStatusIcon(advice.status)"
+                  class="w-4 h-4 flex-shrink-0"
+                  :class="getStatusColor(advice.status)"
+                />
+              </div>
+
+              <!-- Target Database -->
+              <DatabaseDisplay :database="advice.target" />
+
+              <!-- Advice Content -->
+              <div v-if="advice.content" class="text-xs text-control-light">
+                {{ advice.content }}
+              </div>
+
+              <!-- Location Info -->
               <div
-                v-for="(advice, idx) in drawerAdvices"
-                :key="idx"
-                class="space-y-1 p-3 border rounded-lg bg-gray-50"
+                v-if="advice.startPosition && advice.startPosition.line > 0"
+                class="text-xs text-control-lighter"
               >
-                <div class="flex items-start justify-between">
-                  <div class="text-sm font-medium text-main">
-                    {{ getAdviceTitle(advice) }}
-                  </div>
-                  <component
-                    :is="getStatusIcon(advice.status)"
-                    class="w-4 h-4 flex-shrink-0"
-                    :class="getStatusColor(advice.status)"
-                  />
-                </div>
-
-                <!-- Target Database -->
-                <div class="text-xs text-control font-medium">
-                  Database: {{ formatTarget(advice.target) }}
-                </div>
-
-                <!-- Advice Content -->
-                <div v-if="advice.content" class="text-xs text-control-light">
-                  {{ advice.content }}
-                </div>
-
-                <!-- Location Info -->
-                <div
-                  v-if="advice.startPosition && advice.startPosition.line > 0"
-                  class="text-xs text-control-lighter"
-                >
-                  Line {{ advice.startPosition.line }}, Column
-                  {{ advice.startPosition.column }}
-                </div>
+                Line {{ advice.startPosition.line }}, Column
+                {{ advice.startPosition.column }}
               </div>
             </div>
-            <div v-else class="text-center py-8 text-control-light">
-              No {{ selectedStatus.toLowerCase() }} results
-            </div>
+          </div>
+          <div v-else class="w-full text-center py-8 text-control-light">
+            No check results
           </div>
         </div>
       </DrawerContent>
@@ -120,6 +104,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import {
   CheckCircleIcon,
   AlertCircleIcon,
@@ -131,26 +116,26 @@ import { computed, ref, watch } from "vue";
 import { getLocalSheetByName } from "@/components/Plan";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
-import { releaseServiceClient } from "@/grpcweb";
+import { releaseServiceClientConnect } from "@/grpcweb";
 import { getRuleLocalization, ruleTemplateMapV2 } from "@/types";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import {
+  CheckReleaseRequestSchema,
   ReleaseFileType,
+} from "@/types/proto-es/v1/release_service_pb";
+import {
   Release_File_ChangeType,
   type CheckReleaseResponse_CheckResult,
-} from "@/types/proto/v1/release_service";
-import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
-import {
-  getSheetStatement,
-  isNullOrUndefined,
-  extractDatabaseResourceName,
-} from "@/utils";
+} from "@/types/proto-es/v1/release_service_pb";
+import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { getSheetStatement, isNullOrUndefined } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
-import { usePlanSpecContext } from "../SpecDetailView/context";
+import { useSelectedSpec } from "../SpecDetailView/context";
+import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const { plan } = usePlanContext();
-const { selectedSpec } = usePlanSpecContext();
+const selectedSpec = useSelectedSpec();
 
 const isRunningChecks = ref(false);
 const drawerVisible = ref(false);
@@ -161,7 +146,10 @@ const checkResults = ref<CheckReleaseResponse_CheckResult[] | undefined>(
 
 const statement = computed(() => {
   if (!selectedSpec.value) return "";
-  const config = selectedSpec.value.changeDatabaseConfig;
+  const config =
+    selectedSpec.value.config?.case === "changeDatabaseConfig"
+      ? selectedSpec.value.config.value
+      : undefined;
   if (!config) return "";
   const sheet = getLocalSheetByName(config.sheet);
   return getSheetStatement(sheet);
@@ -172,7 +160,7 @@ const show = computed(() => {
     return false;
   }
   // Show for change database configs
-  return !!selectedSpec.value.changeDatabaseConfig;
+  return selectedSpec.value.config?.case === "changeDatabaseConfig";
 });
 
 // Enhanced advice type with target information
@@ -212,12 +200,6 @@ const summary = computed(() => {
   return result;
 });
 
-const drawerTitle = computed(() => {
-  if (selectedStatus.value === "ERROR") return "Error Details";
-  if (selectedStatus.value === "WARNING") return "Warning Details";
-  return "Success Details";
-});
-
 const drawerAdvices = computed(() => {
   return allAdvices.value.filter((advice) => {
     if (selectedStatus.value === "ERROR") {
@@ -233,7 +215,10 @@ const drawerAdvices = computed(() => {
 const runChecks = async () => {
   if (!plan.value.name || !selectedSpec.value) return;
 
-  const config = selectedSpec.value.changeDatabaseConfig;
+  const config =
+    selectedSpec.value.config?.case === "changeDatabaseConfig"
+      ? selectedSpec.value.config.value
+      : undefined;
   if (!config) return;
 
   isRunningChecks.value = true;
@@ -250,7 +235,7 @@ const runChecks = async () => {
     const projectName = `projects/${plan.value.name.split("/")[1]}`;
 
     // Run check for all targets
-    const response = await releaseServiceClient.checkRelease({
+    const request = create(CheckReleaseRequestSchema, {
       parent: projectName,
       release: {
         files: [
@@ -268,6 +253,7 @@ const runChecks = async () => {
       },
       targets,
     });
+    const response = await releaseServiceClientConnect.checkRelease(request);
 
     checkResults.value = response.results || [];
   } finally {
@@ -292,14 +278,6 @@ const getStatusColor = (status: Advice_Status | string) => {
   if (status === Advice_Status.WARNING || status === "WARNING")
     return "text-warning";
   return "text-success";
-};
-
-const formatTarget = (target: string): string => {
-  const { instanceName, databaseName } = extractDatabaseResourceName(target);
-  if (instanceName && databaseName) {
-    return `${databaseName} (${instanceName})`;
-  }
-  return target;
 };
 
 watch(

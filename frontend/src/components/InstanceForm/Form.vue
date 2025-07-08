@@ -4,9 +4,9 @@
       <InstanceEngineRadioGrid
         v-if="isCreating"
         :engine="basicInfo.engine"
-        :engine-list="EngineList"
+        :engine-list="supportedEngineV1List()"
         class="w-full mb-6 grid-cols-4 gap-2"
-        @update:engine="changeInstanceEngine"
+        @update:engine="(newEngine: Engine) => changeInstanceEngine(newEngine)"
       >
         <template #suffix="{ engine }: { engine: Engine }">
           <BBBetaBadge
@@ -360,6 +360,7 @@
           ref="scanIntervalInputRef"
           :scan-interval="basicInfo.syncInterval"
           :allow-edit="allowEdit"
+          :instance="instance as ComposedInstance"
           @update:scan-interval="changeScanInterval"
         />
 
@@ -431,12 +432,19 @@
       </template>
 
       <BBAttention
-        v-if="outboundIpList && actuatorStore.isSaaSMode"
+        v-if="actuatorStore.isSaaSMode"
         class="my-4 border-none"
         type="info"
-        :title="$t('instance.sentence.outbound-ip-list')"
-        :description="outboundIpList"
-      />
+      >
+        <a
+          href="https://docs.bytebase.com/get-started/instance#connect-to-the-instance-from-bytebase-cloud"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="normal-link"
+        >
+          {{ $t("instance.sentence.firewall-info") }}
+        </a>
+      </BBAttention>
 
       <div class="mt-6 pt-0 border-none">
         <div class="flex flex-row space-x-2">
@@ -477,6 +485,8 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
+import type { Duration } from "@bufbuild/protobuf/wkt";
 import { TrashIcon } from "lucide-vue-next";
 import {
   NButton,
@@ -498,7 +508,6 @@ import {
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
-  useSettingV1Store,
   useActuatorV1Store,
   useInstanceV1Store,
   useDatabaseV1Store,
@@ -509,19 +518,22 @@ import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import type { ComposedInstance } from "@/types";
+import { type ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
-import type { Duration } from "@/types/proto/google/protobuf/duration";
-import { Engine } from "@/types/proto/v1/common";
-import { DataSource_AuthenticationType } from "@/types/proto/v1/instance_service";
-import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  DataSource_AuthenticationType,
+  DataSource_AddressSchema,
+} from "@/types/proto-es/v1/instance_service_pb";
+import { DataSource_RedisType } from "@/types/proto-es/v1/instance_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   isDev,
   extractInstanceResourceName,
   onlyAllowNumber,
   autoSubscriptionRoute,
   urlfy,
+  supportedEngineV1List,
 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
@@ -533,7 +545,6 @@ import SyncDatabases from "./SyncDatabases.vue";
 import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,
-  EngineList,
   RedisConnectionType,
 } from "./constants";
 import { useInstanceFormContext } from "./context";
@@ -561,7 +572,6 @@ const { isEngineBeta, defaultPort, instanceLink, allowEditPort } = specs;
 
 const { t } = useI18n();
 const instanceV1Store = useInstanceV1Store();
-const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const scanIntervalInputRef = ref<InstanceType<typeof ScanIntervalInput>>();
@@ -626,13 +636,6 @@ const showAdditionalAddresses = computed(() => {
     return true;
   }
   return false;
-});
-
-const outboundIpList = computed(() => {
-  if (!settingV1Store.workspaceProfileSetting) {
-    return "";
-  }
-  return settingV1Store.workspaceProfileSetting.outboundIpList.join(",");
 });
 
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
@@ -724,10 +727,12 @@ const removeDSAdditionalAddress = (i: number) => {
 };
 
 const addDSAdditionalAddress = () => {
-  editingDataSource.value?.additionalAddresses.push({
-    host: "",
-    port: "",
-  });
+  editingDataSource.value?.additionalAddresses.push(
+    create(DataSource_AddressSchema, {
+      host: "",
+      port: "",
+    })
+  );
   if (adminDataSource.value.additionalAddresses.length !== 0) {
     adminDataSource.value.directConnection = false;
   }

@@ -32,7 +32,7 @@ import { computed } from "vue";
 import {
   PlanCheckRun_Result_Status,
   type Plan,
-} from "@/types/proto/v1/plan_service";
+} from "@/types/proto-es/v1/plan_service_pb";
 
 export type SizeType = "small" | "normal";
 

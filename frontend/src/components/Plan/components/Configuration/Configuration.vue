@@ -1,5 +1,5 @@
 <template>
-  <div v-if="shouldShow" class="flex flex-col gap-y-3 px-4">
+  <div v-if="shouldShow" class="flex flex-col px-4 gap-2">
     <p class="text-base font-medium">
       {{ $t("plan.options.self") }}
     </p>
@@ -14,30 +14,34 @@
 import { computed } from "vue";
 import { useCurrentProjectV1 } from "@/store";
 import { usePlanContext } from "../../logic";
-import { usePlanSpecContext } from "../SpecDetailView/context";
+import { useSelectedSpec } from "../SpecDetailView/context";
 import GhostSection from "./GhostSection";
 import { provideGhostSettingContext } from "./GhostSection/context";
 import PreBackupSection from "./PreBackupSection";
 import { providePreBackupSettingContext } from "./PreBackupSection/context";
 
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, events } = usePlanContext();
-const { selectedSpec } = usePlanSpecContext();
+const { isCreating, plan, events, issue, rollout } = usePlanContext();
+const selectedSpec = useSelectedSpec();
 
 const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
   provideGhostSettingContext({
     project,
-    plan: plan,
+    plan,
     selectedSpec,
     isCreating,
+    issue,
+    rollout,
   });
 
 const { shouldShow: shouldShowPreBackupSection, events: preBackupEvents } =
   providePreBackupSettingContext({
     project,
-    plan: plan,
+    plan,
     selectedSpec,
     isCreating,
+    issue,
+    rollout,
   });
 
 const shouldShow = computed(() => {

@@ -125,6 +125,7 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
    * - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
    * - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
+   * - table: filter by the database table, support "==" and ".matches()" operator.
    *
    * For example:
    * environment == "environments/{environment resource id}"
@@ -139,6 +140,9 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * label == "region:asia" && label == "tenant:bytebase"
    * exclude_unassigned == true
    * drifted == true
+   * table == "sample"
+   * table.matches("sam")
+   *
    * You can combine filter conditions like:
    * environment == "environments/prod" && name.matches("employee")
    *
@@ -725,6 +729,13 @@ export declare type SchemaMetadata = Message<"bytebase.v1.SchemaMetadata"> & {
    * @generated from field: bool skip_dump = 16;
    */
   skipDump: boolean;
+
+  /**
+   * The comment is the comment of a schema.
+   *
+   * @generated from field: string comment = 17;
+   */
+  comment: string;
 };
 
 /**
@@ -807,6 +818,13 @@ export declare type EventMetadata = Message<"bytebase.v1.EventMetadata"> & {
    * @generated from field: string collation_connection = 6;
    */
   collationConnection: string;
+
+  /**
+   * The comment is the comment of an event.
+   *
+   * @generated from field: string comment = 7;
+   */
+  comment: string;
 };
 
 /**
@@ -1381,29 +1399,21 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
   hasDefault: boolean;
 
   /**
-   * The default is the default value of a column.
+   * The default value of column.
    *
-   * @generated from oneof bytebase.v1.ColumnMetadata.default
+   * @generated from field: bool default_null = 4;
    */
-  default: {
-    /**
-     * @generated from field: bool default_null = 4;
-     */
-    value: boolean;
-    case: "defaultNull";
-  } | {
-    /**
-     * @generated from field: string default_string = 5;
-     */
-    value: string;
-    case: "defaultString";
-  } | {
-    /**
-     * @generated from field: string default_expression = 6;
-     */
-    value: string;
-    case: "defaultExpression";
-  } | { case: undefined; value?: undefined };
+  defaultNull: boolean;
+
+  /**
+   * @generated from field: string default_string = 5;
+   */
+  defaultString: string;
+
+  /**
+   * @generated from field: string default_expression = 6;
+   */
+  defaultExpression: string;
 
   /**
    * Oracle specific metadata.
@@ -1497,6 +1507,32 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
    * @generated from field: int64 identity_increment = 21;
    */
   identityIncrement: bigint;
+
+  /**
+   * The default_constraint_name is the name of the default constraint, MSSQL only.
+   * In MSSQL, default values are implemented as named constraints. When modifying or
+   * dropping a column's default value, you must reference the constraint by name.
+   * This field stores the actual constraint name from the database.
+   *
+   * Example: A column definition like:
+   *   CREATE TABLE employees (
+   *     status NVARCHAR(20) DEFAULT 'active'
+   *   )
+   *
+   * Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+   * or a user-defined name if specified:
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+   *
+   * To modify the default, you must first drop the existing constraint by name:
+   *   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+   *   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+   *
+   * This field is populated when syncing from the database. When empty (e.g., when parsing
+   * from SQL files), the system cannot automatically drop the constraint.
+   *
+   * @generated from field: string default_constraint_name = 22;
+   */
+  defaultConstraintName: string;
 };
 
 /**
@@ -1558,15 +1594,15 @@ export enum GenerationMetadata_Type {
   /**
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: TYPE_VIRTUAL = 1;
+   * @generated from enum value: VIRTUAL = 1;
    */
   VIRTUAL = 1,
 
   /**
-   * @generated from enum value: TYPE_STORED = 2;
+   * @generated from enum value: STORED = 2;
    */
   STORED = 2,
 }
@@ -1882,6 +1918,13 @@ export declare type ProcedureMetadata = Message<"bytebase.v1.ProcedureMetadata">
   sqlMode: string;
 
   /**
+   * The comment is the comment of a procedure.
+   *
+   * @generated from field: string comment = 9;
+   */
+  comment: string;
+
+  /**
    * @generated from field: bool skip_dump = 8;
    */
   skipDump: boolean;
@@ -2009,15 +2052,15 @@ export enum TaskMetadata_State {
   /**
    * @generated from enum value: STATE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  STATE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: STATE_STARTED = 1;
+   * @generated from enum value: STARTED = 1;
    */
   STARTED = 1,
 
   /**
-   * @generated from enum value: STATE_SUSPENDED = 2;
+   * @generated from enum value: SUSPENDED = 2;
    */
   SUSPENDED = 2,
 }
@@ -2101,10 +2144,10 @@ export enum StreamMetadata_Type {
   /**
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: TYPE_DELTA = 1;
+   * @generated from enum value: DELTA = 1;
    */
   DELTA = 1,
 }
@@ -2121,20 +2164,20 @@ export enum StreamMetadata_Mode {
   /**
    * @generated from enum value: MODE_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  MODE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: MODE_DEFAULT = 1;
+   * @generated from enum value: DEFAULT = 1;
    */
   DEFAULT = 1,
 
   /**
-   * @generated from enum value: MODE_APPEND_ONLY = 2;
+   * @generated from enum value: APPEND_ONLY = 2;
    */
   APPEND_ONLY = 2,
 
   /**
-   * @generated from enum value: MODE_INSERT_ONLY = 3;
+   * @generated from enum value: INSERT_ONLY = 3;
    */
   INSERT_ONLY = 3,
 }
@@ -3191,6 +3234,8 @@ export declare const ChangelogViewSchema: GenEnum<ChangelogView>;
  */
 export declare const DatabaseService: GenService<{
   /**
+   * Permissions required: bb.databases.get
+   *
    * @generated from rpc bytebase.v1.DatabaseService.GetDatabase
    */
   getDatabase: {
@@ -3199,6 +3244,8 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseSchema$;
   },
   /**
+   * Permissions required: bb.databases.get
+   *
    * @generated from rpc bytebase.v1.DatabaseService.BatchGetDatabases
    */
   batchGetDatabases: {
@@ -3207,6 +3254,8 @@ export declare const DatabaseService: GenService<{
     output: typeof BatchGetDatabasesResponseSchema;
   },
   /**
+   * Permissions required: bb.databases.list
+   *
    * @generated from rpc bytebase.v1.DatabaseService.ListDatabases
    */
   listDatabases: {
@@ -3215,6 +3264,8 @@ export declare const DatabaseService: GenService<{
     output: typeof ListDatabasesResponseSchema;
   },
   /**
+   * Permissions required: bb.databases.update
+   *
    * @generated from rpc bytebase.v1.DatabaseService.UpdateDatabase
    */
   updateDatabase: {
@@ -3223,6 +3274,8 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseSchema$;
   },
   /**
+   * Permissions required: bb.databases.update
+   *
    * @generated from rpc bytebase.v1.DatabaseService.BatchUpdateDatabases
    */
   batchUpdateDatabases: {
@@ -3231,6 +3284,8 @@ export declare const DatabaseService: GenService<{
     output: typeof BatchUpdateDatabasesResponseSchema;
   },
   /**
+   * Permissions required: bb.databases.sync
+   *
    * @generated from rpc bytebase.v1.DatabaseService.SyncDatabase
    */
   syncDatabase: {
@@ -3239,6 +3294,8 @@ export declare const DatabaseService: GenService<{
     output: typeof SyncDatabaseResponseSchema;
   },
   /**
+   * Permissions required: bb.databases.sync
+   *
    * @generated from rpc bytebase.v1.DatabaseService.BatchSyncDatabases
    */
   batchSyncDatabases: {
@@ -3247,6 +3304,8 @@ export declare const DatabaseService: GenService<{
     output: typeof BatchSyncDatabasesResponseSchema;
   },
   /**
+   * Permissions required: bb.databases.getSchema
+   *
    * @generated from rpc bytebase.v1.DatabaseService.GetDatabaseMetadata
    */
   getDatabaseMetadata: {
@@ -3255,6 +3314,8 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseMetadataSchema;
   },
   /**
+   * Permissions required: bb.databases.getSchema
+   *
    * @generated from rpc bytebase.v1.DatabaseService.GetDatabaseSchema
    */
   getDatabaseSchema: {
@@ -3263,6 +3324,8 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseSchemaSchema;
   },
   /**
+   * Permissions required: bb.databases.get
+   *
    * @generated from rpc bytebase.v1.DatabaseService.DiffSchema
    */
   diffSchema: {
@@ -3271,6 +3334,8 @@ export declare const DatabaseService: GenService<{
     output: typeof DiffSchemaResponseSchema;
   },
   /**
+   * Permissions required: bb.databaseSecrets.list
+   *
    * @generated from rpc bytebase.v1.DatabaseService.ListSecrets
    */
   listSecrets: {
@@ -3279,6 +3344,8 @@ export declare const DatabaseService: GenService<{
     output: typeof ListSecretsResponseSchema;
   },
   /**
+   * Permissions required: bb.databaseSecrets.update
+   *
    * @generated from rpc bytebase.v1.DatabaseService.UpdateSecret
    */
   updateSecret: {
@@ -3287,6 +3354,8 @@ export declare const DatabaseService: GenService<{
     output: typeof SecretSchema;
   },
   /**
+   * Permissions required: bb.databaseSecrets.delete
+   *
    * @generated from rpc bytebase.v1.DatabaseService.DeleteSecret
    */
   deleteSecret: {
@@ -3295,6 +3364,8 @@ export declare const DatabaseService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: bb.changelogs.list
+   *
    * @generated from rpc bytebase.v1.DatabaseService.ListChangelogs
    */
   listChangelogs: {
@@ -3303,6 +3374,8 @@ export declare const DatabaseService: GenService<{
     output: typeof ListChangelogsResponseSchema;
   },
   /**
+   * Permissions required: changelogs.get
+   *
    * @generated from rpc bytebase.v1.DatabaseService.GetChangelog
    */
   getChangelog: {
@@ -3311,6 +3384,8 @@ export declare const DatabaseService: GenService<{
     output: typeof ChangelogSchema;
   },
   /**
+   * Permissions required: databases.getSchema
+   *
    * @generated from rpc bytebase.v1.DatabaseService.GetSchemaString
    */
   getSchemaString: {

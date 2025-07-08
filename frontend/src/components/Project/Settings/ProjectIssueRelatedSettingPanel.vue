@@ -266,13 +266,7 @@
 </template>
 
 <script setup lang="tsx">
-import { Switch } from "@/components/v2";
-import { useProjectV1Store } from "@/store";
-import type { ComposedProject } from "@/types";
-import {
-  Label,
-  Project_ExecutionRetryPolicy,
-} from "@/types/proto/v1/project_service";
+import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { TriangleAlertIcon } from "lucide-vue-next";
 import {
@@ -283,6 +277,17 @@ import {
   NTooltip,
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
+import { Switch } from "@/components/v2";
+import { useProjectV1Store } from "@/store";
+import type { ComposedProject } from "@/types";
+import type {
+  Label,
+  Project_ExecutionRetryPolicy,
+} from "@/types/proto-es/v1/project_service_pb";
+import {
+  LabelSchema,
+  Project_ExecutionRetryPolicySchema,
+} from "@/types/proto-es/v1/project_service_pb";
 
 interface LocalState {
   issueLabels: Label[];
@@ -344,11 +349,13 @@ const onLabelsUpdate = (values: string[]) => {
   if (new Set(labelValues.value).has(newValue)) {
     return;
   }
-  state.issueLabels.push({
-    color: defaultColor,
-    value: newValue,
-    group: "",
-  });
+  state.issueLabels.push(
+    createProto(LabelSchema, {
+      color: defaultColor,
+      value: newValue,
+      group: "",
+    })
+  );
 };
 
 const renderLabel = (value: string, index: number) => {
@@ -469,7 +476,7 @@ const updateMask = computed(() => {
 const handleInput = (value: number | null) => {
   if (value === null) return;
   if (value === undefined) return;
-  state.executionRetryPolicy = Project_ExecutionRetryPolicy.create({
+  state.executionRetryPolicy = createProto(Project_ExecutionRetryPolicySchema, {
     maximumRetries: value,
   });
 };

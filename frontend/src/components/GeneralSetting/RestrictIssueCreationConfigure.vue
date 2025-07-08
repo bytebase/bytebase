@@ -25,16 +25,15 @@
 </template>
 
 <script setup lang="ts">
-import {
-  usePolicyByParentAndType,
-  usePolicyV1Store
-} from "@/store";
+import { create } from "@bufbuild/protobuf";
+import { computed, ref, watch } from "vue";
+import { usePolicyByParentAndType, usePolicyV1Store } from "@/store";
 import {
   PolicyResourceType,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
+  RestrictIssueCreationForSQLReviewPolicySchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { computed, ref, watch } from "vue";
 import { Switch } from "../v2";
 
 const props = withDefaults(
@@ -51,10 +50,7 @@ const props = withDefaults(
 const policyV1Store = usePolicyV1Store();
 
 const allowEdit = computed(() => {
-  return (
-    props.allowEdit &&
-    hasWorkspacePermissionV2("bb.policies.update")
-  );
+  return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const { policy, ready } = usePolicyByParentAndType(
@@ -68,7 +64,9 @@ const restrictIssueCreationForSQLReview = ref<boolean>(false);
 
 const resetState = () => {
   restrictIssueCreationForSQLReview.value =
-    policy.value?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false;
+    policy.value?.policy?.case === "restrictIssueCreationForSqlReviewPolicy"
+      ? policy.value.policy.value.disallow
+      : false;
 };
 
 watch(
@@ -86,8 +84,11 @@ const handleRestrictIssueCreationForSQLReviewToggle = async () => {
     policy: {
       type: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
       resourceType: PolicyResourceType.PROJECT,
-      restrictIssueCreationForSqlReviewPolicy: {
-        disallow: restrictIssueCreationForSQLReview.value,
+      policy: {
+        case: "restrictIssueCreationForSqlReviewPolicy",
+        value: create(RestrictIssueCreationForSQLReviewPolicySchema, {
+          disallow: restrictIssueCreationForSQLReview.value,
+        }),
       },
     },
   });
@@ -97,7 +98,9 @@ defineExpose({
   isDirty: computed(
     () =>
       restrictIssueCreationForSQLReview.value !==
-      (policy.value?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false)
+      (policy.value?.policy?.case === "restrictIssueCreationForSqlReviewPolicy"
+        ? policy.value.policy.value.disallow
+        : false)
   ),
   update: handleRestrictIssueCreationForSQLReviewToggle,
   revert: resetState,

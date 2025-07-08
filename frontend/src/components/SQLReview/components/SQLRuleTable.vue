@@ -54,9 +54,9 @@
                   {{
                     $t("sql-review.not-available-for-free", {
                       plan: $t(
-                        `subscription.plan.${
-                          currentPlan.toLowerCase()
-                        }.title`
+                        `subscription.plan.${PlanType[
+                          currentPlan
+                        ].toLowerCase()}.title`
                       ),
                     })
                   }}
@@ -131,11 +131,9 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentPlan } from "@/store";
 import type { RuleTemplateV2 } from "@/types";
-import {
-  getRuleLocalization,
-  ruleIsAvailableInSubscription,
-} from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { getRuleLocalization, ruleIsAvailableInSubscription } from "@/types";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";

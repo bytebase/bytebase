@@ -4,7 +4,7 @@ import PouchDB from "pouchdb";
 import PouchDBFind from "pouchdb-find";
 import { computed } from "vue";
 import type { SQLEditorTab } from "@/types";
-import { useCurrentUserV1 } from "../auth";
+import { useCurrentUserV1 } from "../v1/auth";
 import { extractUserId } from "../v1/common";
 import { useSQLEditorStore } from "./editor";
 

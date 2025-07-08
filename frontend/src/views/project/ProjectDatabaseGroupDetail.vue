@@ -4,7 +4,10 @@
     v-bind="$attrs"
     class="h-full flex-1 relative space-y-4"
   >
-    <FeatureAttention :feature="PlanFeature.FEATURE_DATABASE_GROUPS" class="mb-4" />
+    <FeatureAttention
+      :feature="PlanFeature.FEATURE_DATABASE_GROUPS"
+      class="mb-4"
+    />
 
     <div
       v-if="hasDatabaseGroupFeature && !state.editing"
@@ -65,8 +68,8 @@ import {
   databaseGroupNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
@@ -105,12 +108,14 @@ const hasMatchedDatabases = computed(
   () => (databaseGroup.value?.matchedDatabases.length ?? 0) > 0
 );
 
-const hasDatabaseGroupFeature = featureToRef(PlanFeature.FEATURE_DATABASE_GROUPS);
+const hasDatabaseGroupFeature = featureToRef(
+  PlanFeature.FEATURE_DATABASE_GROUPS
+);
 
 watchEffect(async () => {
   await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value, {
     skipCache: true,
-    view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+    view: DatabaseGroupView.FULL,
   });
 });
 

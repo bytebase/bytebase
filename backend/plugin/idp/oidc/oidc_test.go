@@ -217,7 +217,7 @@ func TestIdentityProvider(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, testAccessToken, oauthToken.AccessToken)
 
-	userInfo, err := oidc.UserInfo(ctx, oauthToken, testNonce)
+	userInfo, _, err := oidc.UserInfo(ctx, oauthToken, testNonce)
 	require.NoError(t, err)
 
 	wantUserInfo := &storepb.IdentityProviderUserInfo{
@@ -291,7 +291,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, testAccessToken, oauthToken.AccessToken)
 
-		userInfo, err := oidc.UserInfo(ctx, oauthToken, testNonce)
+		userInfo, _, err := oidc.UserInfo(ctx, oauthToken, testNonce)
 		require.NoError(t, err)
 
 		wantUserInfo := &storepb.IdentityProviderUserInfo{

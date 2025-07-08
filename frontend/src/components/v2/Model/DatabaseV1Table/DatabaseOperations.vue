@@ -100,6 +100,26 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema as FieldMaskProtoEsSchema } from "@bufbuild/protobuf/wkt";
+import { computedAsync } from "@vueuse/core";
+import {
+  ArrowRightLeftIcon,
+  ChevronsDownIcon,
+  DownloadIcon,
+  PencilIcon,
+  PenSquareIcon,
+  RefreshCcwIcon,
+  SquareStackIcon,
+  TagIcon,
+  UnlinkIcon,
+} from "lucide-vue-next";
+import { NButton, NScrollbar, NTooltip, useDialog } from "naive-ui";
+import type { VNode } from "vue";
+import { computed, h, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import type { LocationQueryRaw } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
@@ -119,9 +139,10 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
-  Database,
-  UpdateDatabaseRequest,
-} from "@/types/proto/v1/database_service";
+  DatabaseSchema$,
+  UpdateDatabaseRequestSchema,
+  BatchUpdateDatabasesRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   allowUsingSchemaEditor,
   extractProjectResourceName,
@@ -129,25 +150,8 @@ import {
   hasPermissionToCreateChangeDatabaseIssue,
   hasPermissionToCreateDataExportIssue,
   hasProjectPermissionV2,
-  instanceV1HasAlterSchema
+  instanceV1HasAlterSchema,
 } from "@/utils";
-import { computedAsync } from "@vueuse/core";
-import {
-  ArrowRightLeftIcon,
-  ChevronsDownIcon,
-  DownloadIcon,
-  PencilIcon,
-  PenSquareIcon,
-  RefreshCcwIcon,
-  SquareStackIcon,
-  TagIcon,
-  UnlinkIcon,
-} from "lucide-vue-next";
-import { NButton, NScrollbar, NTooltip, useDialog } from "naive-ui";
-import type { VNode } from "vue";
-import { computed, h, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 
 interface DatabaseAction {
   icon: VNode;
@@ -193,9 +197,6 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const disableSchemaEditor = useAppFeature(
-  "bb.feature.issue.disable-schema-editor"
-);
 const dialog = useDialog();
 
 const selectedProjectNames = computed(() => {
@@ -249,9 +250,8 @@ const allowChangeData = computed(() => {
 });
 
 const allowTransferOutProject = computed(() => {
-  return props.databases.every(
-    (db) =>
-      hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
+  return props.databases.every((db) =>
+    hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
   );
 });
 
@@ -331,14 +331,13 @@ const generateMultiDb = async (
   if (
     props.databases.length === 1 &&
     type === "bb.issue.database.schema.update" &&
-    allowUsingSchemaEditor(props.databases) &&
-    !disableSchemaEditor.value
+    allowUsingSchemaEditor(props.databases)
   ) {
     state.showSchemaEditorModal = true;
     return;
   }
 
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: type,
     name: generateIssueTitle(
       type,
@@ -397,18 +396,20 @@ const unAssignDatabases = async () => {
   }
   try {
     state.loading = true;
-    await databaseStore.batchUpdateDatabases({
-      parent: "-",
-      requests: assignedDatabases.value.map((database) => {
-        return UpdateDatabaseRequest.fromPartial({
-          database: {
-            name: database.name,
-            project: DEFAULT_PROJECT_NAME,
-          },
-          updateMask: ["project"],
-        });
-      }),
-    });
+    await databaseStore.batchUpdateDatabases(
+      create(BatchUpdateDatabasesRequestSchema, {
+        parent: "-",
+        requests: assignedDatabases.value.map((database) => {
+          return create(UpdateDatabaseRequestSchema, {
+            database: create(DatabaseSchema$, {
+              name: database.name,
+              project: DEFAULT_PROJECT_NAME,
+            }),
+            updateMask: create(FieldMaskProtoEsSchema, { paths: ["project"] }),
+          });
+        }),
+      })
+    );
     emit("refresh");
     pushNotification({
       module: "bytebase",
@@ -440,16 +441,17 @@ const actions = computed((): DatabaseAction[] => {
         resp.push({
           icon: h(DownloadIcon),
           text: t("custom-approval.risk-rule.risk.namespace.data_export"),
-          disabled: !allowExportData.value,
+          disabled:
+            !allowExportData.value ||
+            !selectedProjectName.value ||
+            props.databases.length < 1 ||
+            selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
           click: () => generateMultiDb("bb.issue.database.data.export"),
           tooltip: (action) => {
             if (!allowExportData.value) {
               return t("database.batch-action-permission-denied", {
                 action,
               });
-            }
-            if (props.databases.length > 1) {
-              return t("database.data-export-action-disabled");
             }
             return "";
           },
@@ -610,14 +612,16 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
   const updatedDatabases = await Promise.all(
     props.databases.map(async (database, i) => {
       const label = labelsList[i];
-      const patch = {
-        ...Database.fromPartial(database),
+      const patch = create(DatabaseSchema$, {
+        ...database,
         labels: label,
-      };
-      return await databaseStore.updateDatabase({
-        database: patch,
-        updateMask: ["labels"],
       });
+      return await databaseStore.updateDatabase(
+        create(UpdateDatabaseRequestSchema, {
+          database: patch,
+          updateMask: create(FieldMaskProtoEsSchema, { paths: ["labels"] }),
+        })
+      );
     })
   );
   emit("update", updatedDatabases);
@@ -630,18 +634,22 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
 };
 
 const onEnvironmentUpdate = async (environment: string) => {
-  const updatedDatabases = await databaseStore.batchUpdateDatabases({
-    parent: "-",
-    requests: props.databases.map((database) => {
-      return UpdateDatabaseRequest.fromPartial({
-        database: {
-          name: database.name,
-          environment: environment,
-        },
-        updateMask: ["environment"],
-      });
-    }),
-  });
+  const updatedDatabases = await databaseStore.batchUpdateDatabases(
+    create(BatchUpdateDatabasesRequestSchema, {
+      parent: "-",
+      requests: props.databases.map((database) => {
+        return create(UpdateDatabaseRequestSchema, {
+          database: create(DatabaseSchema$, {
+            name: database.name,
+            environment: environment,
+          }),
+          updateMask: create(FieldMaskProtoEsSchema, {
+            paths: ["environment"],
+          }),
+        });
+      }),
+    })
+  );
   emit("update", updatedDatabases);
 
   pushNotification({

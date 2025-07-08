@@ -14,6 +14,7 @@ import "v1/annotation.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service DatabaseGroupService {
+  // Permissions required: bb.projects.get
   rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/databaseGroups"};
     option (google.api.method_signature) = "parent";
@@ -21,6 +22,7 @@ service DatabaseGroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.get
   rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {get: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";
@@ -28,6 +30,7 @@ service DatabaseGroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.projects.update
   rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/databaseGroups"
@@ -39,6 +42,7 @@ service DatabaseGroupService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.projects.update
   rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {
       patch: "/v1/{database_group.name=projects/*/databaseGroups/*}"
@@ -50,6 +54,7 @@ service DatabaseGroupService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Permissions required: bb.projects.update
   rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/databaseGroups/*}"};
     option (google.api.method_signature) = "name";

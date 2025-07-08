@@ -29,6 +29,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import type { InputInst } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -39,8 +40,9 @@ import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
-import { ProcedureMetadata } from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { ProcedureMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { ProcedureMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 
 // Procedure name must start with a non-space character, end with a non-space character.
@@ -95,7 +97,7 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (!props.procedure) {
-    const procedure = ProcedureMetadata.fromPartial({
+    const procedure = create(ProcedureMetadataSchema, {
       name: state.procedureName,
       definition: [
         "CREATE PROCEDURE `" + state.procedureName + "`(...)",

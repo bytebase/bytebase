@@ -30,6 +30,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { DotIcon, EllipsisIcon } from "lucide-vue-next";
 import type { DropdownProps } from "naive-ui";
 import {
@@ -47,10 +48,11 @@ import {
   useSQLEditorTabStore,
   useTabViewStateStore,
 } from "@/store";
+import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
-  Worksheet,
+  WorksheetSchema,
   Worksheet_Visibility,
-} from "@/types/proto/v1/worksheet_service";
+} from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   isWorksheetWritableV1,
   getSheetStatement,
@@ -162,12 +164,12 @@ const handleAction = async (key: string) => {
       closeOnEsc: false,
       async onPositiveClick() {
         await worksheetV1Store.createWorksheet(
-          Worksheet.fromPartial({
+          create(WorksheetSchema, {
             title: worksheet.title,
             project: worksheet.project,
             content: worksheet.content,
             database: worksheet.database,
-            visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
+            visibility: Worksheet_Visibility.PRIVATE,
           })
         );
         pushNotification({

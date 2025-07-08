@@ -667,6 +667,14 @@ func convertWalkThroughErrorToAdvice(err error) ([]*storepb.Advice, error) {
 			Content:       walkThroughError.Content,
 			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
 		})
+	case catalog.ErrorTypeReferenceOtherDatabase:
+		res = append(res, &storepb.Advice{
+			Status:        storepb.Advice_WARNING,
+			Code:          ReferenceOtherDatabase.Int32(),
+			Title:         "Reference other database",
+			Content:       walkThroughError.Content,
+			StartPosition: common.ConvertANTLRLineToPosition(walkThroughError.Line),
+		})
 	case catalog.ErrorTypeTableExists:
 		res = append(res, &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
@@ -979,7 +987,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnSetDefaultForNotNull:
 		switch engine {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_ORACLE:
 			return MySQLColumnSetDefaultForNotNull, nil
 		}
 	case SchemaRuleColumnDisallowChange:
@@ -1121,7 +1129,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableDropNamingConvention, nil
-		case storepb.Engine_POSTGRES:
+		case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
 			return PostgreSQLTableDropNamingConvention, nil
 		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeTableDropNamingConvention, nil

@@ -66,6 +66,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -76,15 +77,14 @@ import FieldTemplateView from "@/components/SchemaTemplate/FieldTemplateView.vue
 import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { ColumnCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
-  ColumnMetadata,
-} from "@/types/proto/v1/database_service";
-import {
-  ColumnCatalog,
-} from "@/types/proto/v1/database_catalog_service";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import { Setting_SettingName } from "@/types/proto/v1/setting_service";
+  Setting_SettingName,
+  SchemaTemplateSetting_FieldTemplateSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 
 interface LocalState {
   template: SchemaTemplateSetting_FieldTemplate;
@@ -103,21 +103,22 @@ defineEmits<{
   (event: "apply", item: SchemaTemplateSetting_FieldTemplate): void;
 }>();
 
-const initialTemplate = () => ({
-  id: uuidv1(),
-  engine: props.engine ?? Engine.MYSQL,
-  category: "",
-  column: ColumnMetadata.fromPartial({
-    name: "",
-    type: "",
-    nullable: false,
-    comment: "",
-    position: 0,
-    characterSet: "",
-    collation: "",
-  }),
-  catalog: ColumnCatalog.fromPartial({}),
-});
+const initialTemplate = (): SchemaTemplateSetting_FieldTemplate =>
+  create(SchemaTemplateSetting_FieldTemplateSchema, {
+    id: uuidv1(),
+    engine: props.engine ?? Engine.MYSQL,
+    category: "",
+    column: create(ColumnMetadataSchema, {
+      name: "",
+      type: "",
+      nullable: false,
+      comment: "",
+      position: 0,
+      characterSet: "",
+      collation: "",
+    }),
+    catalog: create(ColumnCatalogSchema, {}),
+  });
 
 const state = reactive<LocalState>({
   showDrawer: false,
@@ -153,8 +154,12 @@ const toggleEngineCheck = (engine: Engine) => {
 const settingStore = useSettingV1Store();
 
 const schemaTemplateList = computed(() => {
-  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
-  return setting?.value?.schemaTemplateSettingValue?.fieldTemplates ?? [];
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SCHEMA_TEMPLATE
+  );
+  return setting?.value?.value?.case === "schemaTemplateSettingValue"
+    ? (setting.value.value.value.fieldTemplates ?? [])
+    : [];
 });
 
 const countTemplateByEngine = (engine: Engine) => {

@@ -24,7 +24,6 @@ const (
 	SQLService_SearchQueryHistories_FullMethodName = "/bytebase.v1.SQLService/SearchQueryHistories"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
 	SQLService_Check_FullMethodName                = "/bytebase.v1.SQLService/Check"
-	SQLService_ParseMyBatisMapper_FullMethodName   = "/bytebase.v1.SQLService/ParseMyBatisMapper"
 	SQLService_Pretty_FullMethodName               = "/bytebase.v1.SQLService/Pretty"
 	SQLService_DiffMetadata_FullMethodName         = "/bytebase.v1.SQLService/DiffMetadata"
 	SQLService_AICompletion_FullMethodName         = "/bytebase.v1.SQLService/AICompletion"
@@ -34,15 +33,22 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SQLServiceClient interface {
+	// Permissions required: bb.databases.get
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	// Permissions required: bb.sql.admin
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AdminExecuteRequest, AdminExecuteResponse], error)
 	// SearchQueryHistories searches query histories for the caller.
+	// Permissions required: None
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
+	// Permissions required: bb.databases.get
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
+	// Permissions required: bb.databases.check
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
-	ParseMyBatisMapper(ctx context.Context, in *ParseMyBatisMapperRequest, opts ...grpc.CallOption) (*ParseMyBatisMapperResponse, error)
+	// Permissions required: None
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
+	// Permissions required: None
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
+	// Permissions required: None
 	AICompletion(ctx context.Context, in *AICompletionRequest, opts ...grpc.CallOption) (*AICompletionResponse, error)
 }
 
@@ -107,16 +113,6 @@ func (c *sQLServiceClient) Check(ctx context.Context, in *CheckRequest, opts ...
 	return out, nil
 }
 
-func (c *sQLServiceClient) ParseMyBatisMapper(ctx context.Context, in *ParseMyBatisMapperRequest, opts ...grpc.CallOption) (*ParseMyBatisMapperResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ParseMyBatisMapperResponse)
-	err := c.cc.Invoke(ctx, SQLService_ParseMyBatisMapper_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sQLServiceClient) Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PrettyResponse)
@@ -151,15 +147,22 @@ func (c *sQLServiceClient) AICompletion(ctx context.Context, in *AICompletionReq
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility.
 type SQLServiceServer interface {
+	// Permissions required: bb.databases.get
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	// Permissions required: bb.sql.admin
 	AdminExecute(grpc.BidiStreamingServer[AdminExecuteRequest, AdminExecuteResponse]) error
 	// SearchQueryHistories searches query histories for the caller.
+	// Permissions required: None
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
+	// Permissions required: bb.databases.get
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
+	// Permissions required: bb.databases.check
 	Check(context.Context, *CheckRequest) (*CheckResponse, error)
-	ParseMyBatisMapper(context.Context, *ParseMyBatisMapperRequest) (*ParseMyBatisMapperResponse, error)
+	// Permissions required: None
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
+	// Permissions required: None
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
+	// Permissions required: None
 	AICompletion(context.Context, *AICompletionRequest) (*AICompletionResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
@@ -185,9 +188,6 @@ func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*E
 }
 func (UnimplementedSQLServiceServer) Check(context.Context, *CheckRequest) (*CheckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Check not implemented")
-}
-func (UnimplementedSQLServiceServer) ParseMyBatisMapper(context.Context, *ParseMyBatisMapperRequest) (*ParseMyBatisMapperResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ParseMyBatisMapper not implemented")
 }
 func (UnimplementedSQLServiceServer) Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Pretty not implemented")
@@ -298,24 +298,6 @@ func _SQLService_Check_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_ParseMyBatisMapper_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ParseMyBatisMapperRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).ParseMyBatisMapper(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_ParseMyBatisMapper_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).ParseMyBatisMapper(ctx, req.(*ParseMyBatisMapperRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SQLService_Pretty_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PrettyRequest)
 	if err := dec(in); err != nil {
@@ -392,10 +374,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Check",
 			Handler:    _SQLService_Check_Handler,
-		},
-		{
-			MethodName: "ParseMyBatisMapper",
-			Handler:    _SQLService_ParseMyBatisMapper_Handler,
 		},
 		{
 			MethodName: "Pretty",

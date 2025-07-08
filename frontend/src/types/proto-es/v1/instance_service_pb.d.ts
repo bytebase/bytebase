@@ -4,7 +4,7 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { Duration, EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
+import type { Duration, EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { Engine, State } from "./common_pb";
 import type { InstanceRole } from "./instance_role_service_pb";
 
@@ -580,6 +580,13 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
    * @generated from field: repeated string sync_databases = 15;
    */
   syncDatabases: string[];
+
+  /**
+   * The last time the instance was synced.
+   *
+   * @generated from field: google.protobuf.Timestamp last_sync_time = 16;
+   */
+  lastSyncTime?: Timestamp;
 };
 
 /**
@@ -934,10 +941,22 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
    */
   iamExtension: {
     /**
-     * @generated from field: bytebase.v1.DataSource.ClientSecretCredential client_secret_credential = 23;
+     * @generated from field: bytebase.v1.DataSource.AzureCredential azure_credential = 23;
      */
-    value: DataSource_ClientSecretCredential;
-    case: "clientSecretCredential";
+    value: DataSource_AzureCredential;
+    case: "azureCredential";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.DataSource.AWSCredential aws_credential = 37;
+     */
+    value: DataSource_AWSCredential;
+    case: "awsCredential";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.DataSource.GCPCredential gcp_credential = 38;
+     */
+    value: DataSource_GCPCredential;
+    case: "gcpCredential";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -1020,9 +1039,9 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
 export declare const DataSourceSchema: GenMessage<DataSource>;
 
 /**
- * @generated from message bytebase.v1.DataSource.ClientSecretCredential
+ * @generated from message bytebase.v1.DataSource.AzureCredential
  */
-export declare type DataSource_ClientSecretCredential = Message<"bytebase.v1.DataSource.ClientSecretCredential"> & {
+export declare type DataSource_AzureCredential = Message<"bytebase.v1.DataSource.AzureCredential"> & {
   /**
    * @generated from field: string tenant_id = 1;
    */
@@ -1040,10 +1059,52 @@ export declare type DataSource_ClientSecretCredential = Message<"bytebase.v1.Dat
 };
 
 /**
- * Describes the message bytebase.v1.DataSource.ClientSecretCredential.
- * Use `create(DataSource_ClientSecretCredentialSchema)` to create a new message.
+ * Describes the message bytebase.v1.DataSource.AzureCredential.
+ * Use `create(DataSource_AzureCredentialSchema)` to create a new message.
  */
-export declare const DataSource_ClientSecretCredentialSchema: GenMessage<DataSource_ClientSecretCredential>;
+export declare const DataSource_AzureCredentialSchema: GenMessage<DataSource_AzureCredential>;
+
+/**
+ * @generated from message bytebase.v1.DataSource.AWSCredential
+ */
+export declare type DataSource_AWSCredential = Message<"bytebase.v1.DataSource.AWSCredential"> & {
+  /**
+   * @generated from field: string access_key_id = 1;
+   */
+  accessKeyId: string;
+
+  /**
+   * @generated from field: string secret_access_key = 2;
+   */
+  secretAccessKey: string;
+
+  /**
+   * @generated from field: string session_token = 3;
+   */
+  sessionToken: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DataSource.AWSCredential.
+ * Use `create(DataSource_AWSCredentialSchema)` to create a new message.
+ */
+export declare const DataSource_AWSCredentialSchema: GenMessage<DataSource_AWSCredential>;
+
+/**
+ * @generated from message bytebase.v1.DataSource.GCPCredential
+ */
+export declare type DataSource_GCPCredential = Message<"bytebase.v1.DataSource.GCPCredential"> & {
+  /**
+   * @generated from field: string content = 1;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DataSource.GCPCredential.
+ * Use `create(DataSource_GCPCredentialSchema)` to create a new message.
+ */
+export declare const DataSource_GCPCredentialSchema: GenMessage<DataSource_GCPCredential>;
 
 /**
  * @generated from message bytebase.v1.DataSource.Address
@@ -1281,6 +1342,8 @@ export declare const DataSourceTypeSchema: GenEnum<DataSourceType>;
  */
 export declare const InstanceService: GenService<{
   /**
+   * Permissions required: bb.instances.get
+   *
    * @generated from rpc bytebase.v1.InstanceService.GetInstance
    */
   getInstance: {
@@ -1289,6 +1352,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.list
+   *
    * @generated from rpc bytebase.v1.InstanceService.ListInstances
    */
   listInstances: {
@@ -1297,6 +1362,8 @@ export declare const InstanceService: GenService<{
     output: typeof ListInstancesResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.create
+   *
    * @generated from rpc bytebase.v1.InstanceService.CreateInstance
    */
   createInstance: {
@@ -1305,6 +1372,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.UpdateInstance
    */
   updateInstance: {
@@ -1313,6 +1382,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.delete
+   *
    * @generated from rpc bytebase.v1.InstanceService.DeleteInstance
    */
   deleteInstance: {
@@ -1321,6 +1392,8 @@ export declare const InstanceService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Permissions required: bb.instances.undelete
+   *
    * @generated from rpc bytebase.v1.InstanceService.UndeleteInstance
    */
   undeleteInstance: {
@@ -1329,6 +1402,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.sync
+   *
    * @generated from rpc bytebase.v1.InstanceService.SyncInstance
    */
   syncInstance: {
@@ -1337,6 +1412,8 @@ export declare const InstanceService: GenService<{
     output: typeof SyncInstanceResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.get
+   *
    * @generated from rpc bytebase.v1.InstanceService.ListInstanceDatabase
    */
   listInstanceDatabase: {
@@ -1345,6 +1422,8 @@ export declare const InstanceService: GenService<{
     output: typeof ListInstanceDatabaseResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.sync
+   *
    * @generated from rpc bytebase.v1.InstanceService.BatchSyncInstances
    */
   batchSyncInstances: {
@@ -1353,6 +1432,8 @@ export declare const InstanceService: GenService<{
     output: typeof BatchSyncInstancesResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.BatchUpdateInstances
    */
   batchUpdateInstances: {
@@ -1361,6 +1442,8 @@ export declare const InstanceService: GenService<{
     output: typeof BatchUpdateInstancesResponseSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.AddDataSource
    */
   addDataSource: {
@@ -1369,6 +1452,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.RemoveDataSource
    */
   removeDataSource: {
@@ -1377,6 +1462,8 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Permissions required: bb.instances.update
+   *
    * @generated from rpc bytebase.v1.InstanceService.UpdateDataSource
    */
   updateDataSource: {

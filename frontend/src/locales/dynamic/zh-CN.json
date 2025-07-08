@@ -173,6 +173,10 @@
         "title": "数据导出",
         "desc": "以各种格式导出查询结果。"
       },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "title": "数据离线导出",
+        "desc": "导出数据以供离线使用和分析。"
+      },
       "FEATURE_QUERY_HISTORY": {
         "title": "查询历史",
         "desc": "访问具有搜索功能的完整查询执行历史记录。"
@@ -180,10 +184,6 @@
       "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
         "title": "保存和共享 SQL 脚本",
         "desc": "与团队成员保存和共享 SQL 脚本。"
-      },
-      "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION": {
-        "title": "SQL 编辑器 DDL/DML 限制",
-        "desc": "在 SQL 编辑器中限制 DDL 和 DML 操作。"
       },
       "FEATURE_BATCH_QUERY": {
         "title": "批量查询",
@@ -217,6 +217,14 @@
         "title": "IAM 身份验证",
         "desc": "使用云提供商 IAM 进行数据库身份验证。"
       },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "自定义实例同步时间",
+        "desc": "自定义数据库同步间隔和设置。"
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "自定义实例连接限制",
+        "desc": "配置最大数据库连接限制。"
+      },
       "FEATURE_GOOGLE_AND_GITHUB_SSO": {
         "title": "Google 和 GitHub SSO",
         "desc": "使用 Google 或 GitHub 账户登录。"
@@ -232,18 +240,6 @@
       "FEATURE_DATABASE_SECRET_VARIABLES": {
         "title": "数据库密钥变量",
         "desc": "在 SQL 脚本中存储和使用加密的密钥。"
-      },
-      "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
-        "title": "查询数据源限制",
-        "desc": "限制用户可以查询哪些数据源。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "自定义实例同步时间",
-        "desc": "自定义数据库同步间隔和设置。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "自定义实例连接限制",
-        "desc": "配置最大数据库连接限制。"
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "风险评估",
@@ -308,6 +304,10 @@
       "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
         "title": "电子邮件域限制",
         "desc": "限制来自指定电子邮件域的用户登录。"
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "title": "项目管理",
+        "desc": "使用高级功能管理和组织项目。"
       },
       "FEATURE_ENVIRONMENT_MANAGEMENT": {
         "title": "环境管理",

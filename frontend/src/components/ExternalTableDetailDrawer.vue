@@ -112,7 +112,7 @@
             <ColumnDataTable
               :database="database"
               :schema="schemaName"
-              :table="TableMetadata.fromPartial({})"
+              :table="create(TableMetadataSchema, {})"
               :column-list="externalTable.columns"
               :is-external-table="true"
               :mask-data-list="[]"
@@ -126,6 +126,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { computed, ref, reactive } from "vue";
 import {
@@ -139,7 +140,7 @@ import {
 } from "@/components/v2";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
-import { TableMetadata } from "@/types/proto/v1/database_service";
+import { TableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
   hasProjectPermissionV2,
   hasSchemaProperty,

@@ -53,33 +53,33 @@
 </template>
 
 <script lang="tsx" setup>
-import { DatabaseSelect, EnvironmentSelect } from "@/components/v2";
-import {
-  useChangelogStore,
-  useDBSchemaV1Store,
-  useDatabaseV1Store
-} from "@/store";
-import {
-  UNKNOWN_ID,
-  getDateForPbTimestamp,
-  isValidDatabaseName,
-  type ComposedProject,
-} from "@/types";
-import type { Changelog } from "@/types/proto/v1/database_service";
-import {
-  Changelog_Type,
-  changelog_TypeToJSON,
-} from "@/types/proto/v1/database_service";
-import {
-  extractChangelogUID,
-  isValidChangelogName,
-  mockLatestChangelog,
-} from "@/utils/v1/changelog";
 import { head } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { NSelect, NTag } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { DatabaseSelect, EnvironmentSelect } from "@/components/v2";
+import {
+  useChangelogStore,
+  useDBSchemaV1Store,
+  useDatabaseV1Store,
+} from "@/store";
+import {
+  UNKNOWN_ID,
+  getDateForPbTimestampProtoEs,
+  isValidDatabaseName,
+  type ComposedProject,
+} from "@/types";
+import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
+import {
+  Changelog_Status,
+  Changelog_Type,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  extractChangelogUID,
+  isValidChangelogName,
+  mockLatestChangelog,
+} from "@/utils/v1/changelog";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import { ALLOWED_ENGINES, type ChangelogSourceSchema } from "./types";
 
@@ -143,7 +143,11 @@ const handleDatabaseSelect = async (name: string | undefined) => {
 const databaseChangelogList = (databaseName: string) => {
   return changelogStore
     .changelogListByDatabase(databaseName)
-    .filter((changelog) => ALLOWED_CHANGELOG_TYPES.includes(changelog.type));
+    .filter(
+      (changelog) =>
+        ALLOWED_CHANGELOG_TYPES.includes(changelog.type) &&
+        changelog.status === Changelog_Status.DONE
+    );
 };
 
 const schemaVersionOptions = computed(() => {
@@ -187,10 +191,10 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
     <div class="flex flex-row justify-start items-center truncate gap-1">
       <HumanizeDate
         class="text-control-light"
-        date={getDateForPbTimestamp(changelog.createTime)}
+        date={getDateForPbTimestampProtoEs(changelog.createTime)}
       />
       <NTag round size="small">
-        {changelog_TypeToJSON(changelog.type)}
+        {Changelog_Type[changelog.type]}
       </NTag>
       {changelog.version && (
         <NTag round size="small">
@@ -250,15 +254,15 @@ watch(
     if (database) {
       try {
         isPreparingSchemaVersionOptions.value = true;
-        const changelogList = (
-          await changelogStore.getOrFetchChangelogListOfDatabase(database.name)
-        ).filter((changelog) =>
+        const changelogList =
+          await changelogStore.getOrFetchChangelogListOfDatabase(database.name);
+        const filteredChangelogList = changelogList.filter((changelog) =>
           ALLOWED_CHANGELOG_TYPES.includes(changelog.type)
         );
 
-        if (changelogList.length > 0) {
+        if (filteredChangelogList.length > 0) {
           // Default select the first changelog.
-          state.changelogName = head(changelogList)?.name;
+          state.changelogName = head(filteredChangelogList)?.name;
         } else {
           // If database has no changelog, we will use its latest schema.
           state.changelogName = mockLatestChangelog(database).name;

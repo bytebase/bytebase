@@ -23,15 +23,20 @@
           v-if="release && isValidReleaseName(release.name)"
           size="small"
           tag="a"
+          text
           :href="`/${release.name}`"
           target="_blank"
+          icon-placement="right"
         >
           {{ $t("common.view") }}
+          <template #icon>
+            <ExternalLinkIcon class="w-4 h-4" />
+          </template>
         </NButton>
       </div>
     </div>
 
-    <div v-if="release" class="border rounded-md p-4 bg-gray-50">
+    <div v-if="release" class="border rounded-md px-4 py-3 bg-gray-50">
       <div class="space-y-3">
         <div class="flex items-start justify-between">
           <div>
@@ -120,7 +125,7 @@
 
         <div class="text-xs text-gray-500">
           {{
-            dayjs(getDateForPbTimestamp(release.createTime)).format(
+            dayjs(getDateForPbTimestampProtoEs(release.createTime)).format(
               "YYYY-MM-DD HH:mm:ss"
             )
           }}
@@ -147,23 +152,26 @@
 
 <script setup lang="ts">
 import dayjs from "dayjs";
-import { PackageIcon } from "lucide-vue-next";
+import { PackageIcon, ExternalLinkIcon } from "lucide-vue-next";
 import { NAlert, NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { useReleaseByName } from "@/store";
-import { isValidReleaseName, getDateForPbTimestamp } from "@/types";
-import { VCSType } from "@/types/proto/v1/common";
-import { ReleaseFileType } from "@/types/proto/v1/release_service";
-import type { Release_File_ChangeType } from "@/types/proto/v1/release_service";
-import { usePlanSpecContext } from "../../SpecDetailView/context";
+import { isValidReleaseName, getDateForPbTimestampProtoEs } from "@/types";
+import { VCSType } from "@/types/proto-es/v1/common_pb";
+import { ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
+import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
+import { useSelectedSpec } from "../../SpecDetailView/context";
 
 const { t } = useI18n();
-const { selectedSpec } = usePlanSpecContext();
+const selectedSpec = useSelectedSpec();
 
 const releaseName = computed(() => {
-  return selectedSpec.value?.changeDatabaseConfig?.release || "";
+  if (selectedSpec.value?.config?.case === "changeDatabaseConfig") {
+    return selectedSpec.value.config.value.release || "";
+  }
+  return "";
 });
 
 const { release, ready: loading } = useReleaseByName(releaseName);
@@ -189,11 +197,11 @@ const displayedFiles = computed(() => {
 
 const getChangeTypeText = (changeType: Release_File_ChangeType) => {
   switch (changeType) {
-    case "DDL":
+    case Release_File_ChangeType.DDL:
       return t("release.change-type.ddl");
-    case "DDL_GHOST":
+    case Release_File_ChangeType.DDL_GHOST:
       return t("release.change-type.ddl-ghost");
-    case "DML":
+    case Release_File_ChangeType.DML:
       return t("release.change-type.dml");
     default:
       return t("release.change-type.unspecified");

@@ -45,6 +45,9 @@ import { usePlanSQLCheckContext } from "./context";
 const { database, resultMap } = usePlanSQLCheckContext();
 
 const checkResult = computed(() => {
-  return resultMap.value[database.value.name] || undefined;
+  const result = resultMap.value[database.value.name] || undefined;
+  if (!result) return undefined;
+
+  return result;
 });
 </script>

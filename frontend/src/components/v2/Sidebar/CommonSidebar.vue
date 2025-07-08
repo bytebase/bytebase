@@ -83,22 +83,9 @@
 <script setup lang="ts">
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import { NScrollbar } from "naive-ui";
-import type { VNode } from "vue";
 import { computed, reactive, watch } from "vue";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
-
-export interface SidebarItem {
-  title?: string;
-  // If the type is route, we'd like to use the name instead of the path
-  name?: string;
-  // path is required if the type is div or link
-  path?: string;
-  icon?: () => VNode;
-  hide?: boolean;
-  type: "route" | "div" | "divider" | "link";
-  expand?: boolean;
-  children?: SidebarItem[];
-}
+import type { SidebarItem } from "./type";
 
 interface LocalState {
   expandedSidebar: Set<string>;

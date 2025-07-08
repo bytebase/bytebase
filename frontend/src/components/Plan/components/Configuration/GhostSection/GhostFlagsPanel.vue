@@ -11,7 +11,6 @@
             <LearnMoreLink
               class="text-sm ml-1"
               url="https://github.com/github/gh-ost/blob/master/doc/command-line-flags.md"
-              hide-when-embedded
             />
           </p>
           <FlagsForm v-model:flags="flags" :readonly="readonly" />
@@ -37,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
@@ -44,8 +44,9 @@ import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { planServiceClient } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import FlagsForm from "./FlagsForm";
 import { useGhostSettingContext } from "./context";
 
@@ -65,7 +66,9 @@ const title = computed(() => {
   return t("task.online-migration.configure-ghost-parameters");
 });
 const config = computed(() => {
-  return selectedSpec.value?.changeDatabaseConfig;
+  return selectedSpec.value?.config?.case === "changeDatabaseConfig"
+    ? selectedSpec.value.config.value
+    : undefined;
 });
 const flags = ref<Record<string, string>>({});
 
@@ -96,32 +99,36 @@ const trySave = async () => {
   }
 
   if (isCreating.value) {
-    if (!selectedSpec.value || !selectedSpec.value.changeDatabaseConfig) return;
-    selectedSpec.value.changeDatabaseConfig.ghostFlags = cloneDeep(flags.value);
+    if (
+      !selectedSpec.value ||
+      selectedSpec.value.config?.case !== "changeDatabaseConfig"
+    )
+      return;
+    selectedSpec.value.config.value.ghostFlags = cloneDeep(flags.value);
   } else {
     const planPatch = cloneDeep(plan.value);
     const spec = (planPatch?.specs || []).find((spec) => {
       return spec.id === selectedSpec.value?.id;
     });
-    if (!planPatch || !spec || !spec.changeDatabaseConfig) {
+    if (!planPatch || !spec || spec.config?.case !== "changeDatabaseConfig") {
       // Should not reach here.
       throw new Error(
         "Plan or spec is not defined. Cannot update gh-ost flags."
       );
     }
 
-    spec.changeDatabaseConfig.ghostFlags = cloneDeep(flags.value);
-    await planServiceClient.updatePlan({
+    spec.config.value.ghostFlags = cloneDeep(flags.value);
+    const request = create(UpdatePlanRequestSchema, {
       plan: planPatch,
-      updateMask: ["specs"],
+      updateMask: { paths: ["specs"] },
     });
-
+    await planServiceClientConnect.updatePlan(request);
+    events.emit("update");
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.updated"),
     });
-    events.emit("update");
   }
   close();
 };

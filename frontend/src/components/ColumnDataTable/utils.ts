@@ -1,13 +1,18 @@
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { pushNotification, useDatabaseCatalogV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
-import {
-  SchemaCatalog,
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type {
   ColumnCatalog,
   TableCatalog,
-  TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import {
+  SchemaCatalogSchema,
+  ColumnCatalogSchema,
+  TableCatalogSchema,
+  TableCatalog_ColumnsSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
 
 export const supportClassificationFromCommentFeature = (engine: Engine) => {
   return engine === Engine.MYSQL || engine === Engine.POSTGRES;
@@ -48,26 +53,40 @@ export const updateColumnCatalog = async ({
     (s) => s.name === schema
   );
   if (!targetSchema) {
-    targetSchema = SchemaCatalog.fromPartial({ name: schema, tables: [] });
+    targetSchema = create(SchemaCatalogSchema, { name: schema, tables: [] });
     pendingUpdateCatalog.schemas.push(targetSchema);
   }
 
   let targetTable = targetSchema.tables.find((t) => t.name === table);
   if (!targetTable) {
-    targetTable = TableCatalog.fromPartial({
+    targetTable = create(TableCatalogSchema, {
       name: table,
-      columns: TableCatalog_Columns.fromPartial({}),
+      kind: {
+        case: "columns",
+        value: create(TableCatalog_ColumnsSchema, {}),
+      },
     });
     targetSchema.tables.push(targetTable);
   }
-  if (!targetTable.columns) {
-    targetTable.columns = TableCatalog_Columns.fromPartial({});
+  if (!targetTable.kind || targetTable.kind.case !== "columns") {
+    targetTable.kind = {
+      case: "columns",
+      value: create(TableCatalog_ColumnsSchema, {}),
+    };
   }
 
-  const columns = targetTable.columns?.columns || [];
+  const columns = targetTable.kind.value.columns || [];
   const columnIndex = columns.findIndex((c) => c.name === column);
   if (columnIndex < 0) {
-    columns.push(ColumnCatalog.fromPartial({ name: column, ...columnCatalog }));
+    columns.push(
+      create(ColumnCatalogSchema, {
+        name: column,
+        semanticType: columnCatalog.semanticType,
+        labels: columnCatalog.labels,
+        classification: columnCatalog.classification,
+        objectSchema: columnCatalog.objectSchema,
+      })
+    );
   } else {
     columns[columnIndex] = {
       ...columns[columnIndex],
@@ -104,16 +123,17 @@ export const updateTableCatalog = async ({
     (s) => s.name === schema
   );
   if (!targetSchema) {
-    targetSchema = { name: schema, tables: [] };
+    targetSchema = create(SchemaCatalogSchema, { name: schema, tables: [] });
     pendingUpdateCatalog.schemas.push(targetSchema);
   }
 
   const tableIndex = targetSchema.tables.findIndex((t) => t.name === table);
   if (tableIndex < 0) {
     targetSchema.tables.push(
-      TableCatalog.fromPartial({
+      create(TableCatalogSchema, {
         name: table,
-        ...tableCatalog,
+        kind: tableCatalog.kind,
+        classification: tableCatalog.classification,
       })
     );
   } else {

@@ -27,11 +27,11 @@ import IssueLabelSelector, {
 } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/IssueStatusIconWithTaskSummary.vue";
 import { projectOfIssue } from "@/components/IssueV1/logic";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
-import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
+import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
+import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,
   humanizeTs,
@@ -144,7 +144,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       resizable: true,
       hide: !showExtendedColumns.value,
       render: (issue) =>
-        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
+        humanizeTs(getTimeForPbTimestampProtoEs(issue.updateTime, 0) / 1000),
     },
   ];
   return columns.filter((column) => !column.hide);
@@ -160,8 +160,8 @@ const rowProps = (issue: ComposedIssue) => {
       const route = router.resolve({
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
-          projectId: extractProjectResourceName(issue.project),
-          issueSlug: issueV1Slug(issue),
+          projectId: extractProjectResourceName(issue.name),
+          issueSlug: issueV1Slug(issue.name, issue.title),
         },
       });
       const url = route.fullPath;
@@ -184,7 +184,10 @@ const issueRelatedDatabase = (issue: ComposedIssue) => {
 
 const issueRelatedStatement = (issue: ComposedIssue) => {
   const task = head(flattenTaskV1List(issue.rolloutEntity));
-  const sheetName = task?.databaseDataExport?.sheet;
+  const sheetName =
+    task?.payload?.case === "databaseDataExport"
+      ? task.payload.value.sheet
+      : undefined;
   if (!task || !sheetName) {
     return;
   }
@@ -202,7 +205,10 @@ watch(
     // Prepare the sheet for each issue.
     for (const issue of list) {
       const task = head(flattenTaskV1List(issue.rolloutEntity));
-      const sheetName = task?.databaseDataExport?.sheet;
+      const sheetName =
+        task?.payload?.case === "databaseDataExport"
+          ? task.payload.value.sheet
+          : undefined;
       if (!task || !sheetName) {
         continue;
       }

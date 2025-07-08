@@ -7,17 +7,6 @@
         class="ml-1"
       />
     </NAlert>
-    <!-- Only show create button in dev mode -->
-    <div v-if="isDev" class="w-full flex flex-row justify-end items-center">
-      <router-link :to="`/${project.name}/releases/new`">
-        <NButton type="primary">
-          <template #icon>
-            <PlusIcon />
-          </template>
-          {{ $t("release.create") }}
-        </NButton>
-      </router-link>
-    </div>
     <PagedTable
       :key="project.name"
       :session-key="`project-${project.name}-releases`"
@@ -35,8 +24,7 @@
 </template>
 
 <script lang="ts" setup>
-import { PlusIcon } from "lucide-vue-next";
-import { NAlert, NButton } from "naive-ui";
+import { NAlert } from "naive-ui";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useReleaseStore } from "@/store";

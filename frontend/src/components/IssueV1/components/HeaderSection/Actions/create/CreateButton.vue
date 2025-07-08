@@ -45,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
@@ -65,26 +66,33 @@ import {
 } from "@/components/Plan";
 import { getSpecChangeType } from "@/components/Plan/components/SQLCheckSection/common";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import {
-  issueServiceClient,
-  planServiceClient,
-  releaseServiceClient,
-  rolloutServiceClient,
+  issueServiceClientConnect,
+  planServiceClientConnect,
+  releaseServiceClientConnect,
+  rolloutServiceClientConnect,
 } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
-import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
-import { ReleaseFileType } from "@/types/proto/v1/release_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
-import { Advice_Status } from "@/types/proto/v1/sql_service";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  CheckReleaseRequestSchema,
+  ReleaseFileType,
+} from "@/types/proto-es/v1/release_service_pb";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { databaseForTask } from "@/utils";
 import {
   defer,
   extractIssueUID,
@@ -148,8 +156,12 @@ const issueCreateErrorList = computed(() => {
 
 const doCreateIssue = async () => {
   loading.value = true;
-  // Run SQL check for issue creation.
-  if (!(await runSQLCheckForIssue())) {
+
+  // Run SQL check for database change issues.
+  if (
+    issue.value.type === Issue_Type.DATABASE_CHANGE &&
+    !(await runSQLCheckForIssue())
+  ) {
     loading.value = false;
     return;
   }
@@ -162,28 +174,30 @@ const doCreateIssue = async () => {
     issue.value.plan = createdPlan.name;
     issue.value.planEntity = createdPlan;
 
-    const issueCreate = {
-      ...Issue.fromPartial(issue.value),
+    const issueCreate = create(IssueSchema, {
+      ...issue.value,
       rollout: "",
-    };
-    const createdIssue = await issueServiceClient.createIssue({
+    });
+    const request = create(CreateIssueRequestSchema, {
       parent: issue.value.project,
       issue: issueCreate,
     });
+    const createdIssue = await issueServiceClientConnect.createIssue(request);
 
-    await rolloutServiceClient.createRollout({
+    const rolloutRequest = create(CreateRolloutRequestSchema, {
       parent: issue.value.project,
       rollout: {
         plan: createdPlan.name,
       },
     });
+    await rolloutServiceClientConnect.createRollout(rolloutRequest);
 
     emitIssueCreateWindowEvent(createdIssue);
     router.replace({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(issue.value.project),
-        issueSlug: issueV1Slug(createdIssue),
+        issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
       },
     });
   } catch {
@@ -201,7 +215,12 @@ const createSheets = async () => {
 
   const specList = issue.value.planEntity?.specs ?? [];
   for (const spec of specList) {
-    const config = spec.changeDatabaseConfig || spec.exportDataConfig;
+    const config =
+      spec.config?.case === "changeDatabaseConfig"
+        ? spec.config.value
+        : spec.config?.case === "exportDataConfig"
+          ? spec.config.value
+          : null;
     if (!config) continue;
     configWithSheetList.push(config);
     if (pendingCreateSheetMap.has(config.sheet)) continue;
@@ -212,7 +231,7 @@ const createSheets = async () => {
       const engine = await databaseEngineForSpec(spec);
       sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
-      await maybeFormatSQL(sheet, engine);
+      await maybeFormatSQL(sheet, engine as Engine);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
@@ -237,11 +256,12 @@ const createSheets = async () => {
 const createPlan = async () => {
   const plan = issue.value.planEntity;
   if (!plan) return;
-  const createdPlan = await planServiceClient.createPlan({
+  const request = create(CreatePlanRequestSchema, {
     parent: issue.value.project,
-    plan,
+    plan: plan,
   });
-  return createdPlan;
+  const response = await planServiceClientConnect.createPlan(request);
+  return response;
 };
 
 const maybeFormatSQL = async (sheet: Sheet, engine: Engine) => {
@@ -312,7 +332,7 @@ const runSQLCheckForIssue = async () => {
     );
   }
   for (const [statement, targets] of statementTargetsMap.entries()) {
-    const result = await releaseServiceClient.checkRelease({
+    const request = create(CheckReleaseRequestSchema, {
       parent: issue.value.project,
       release: {
         files: [
@@ -329,8 +349,9 @@ const runSQLCheckForIssue = async () => {
       },
       targets: targets,
     });
+    const response = await releaseServiceClientConnect.checkRelease(request);
     // Upsert check result for each target.
-    for (const r of result?.results || []) {
+    for (const r of response.results) {
       upsertCheckResult(r.target, r);
     }
   }

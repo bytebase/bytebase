@@ -14,7 +14,8 @@ export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.d
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.create`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
-export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
+export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_ISSUES}.detail`;
+export const PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 = `${PROJECT_V1_ROUTE_ISSUES}.detail.v1`;
 export const PROJECT_V1_ROUTE_PLANS = `${PROJECT_V1_ROUTE_DASHBOARD}.plan`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.specs`;
@@ -31,11 +32,95 @@ export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
-export const PROJECT_V1_ROUTE_RELEASE_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.release.create`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
 export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollout`;
 export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUTS}.detail`;
-export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL}.task.detail`;
+export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL}.stage.detail`;
+export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL}.task.detail`;
+
+const cicdRoutes: RouteRecordRaw[] = [
+  {
+    path: "",
+    component: () => import("@/views/project/CICDLayout.vue"),
+    props: true,
+    children: [
+      {
+        path: "plans/:planId",
+        meta: {
+          requiredPermissionList: () => ["bb.plans.get"],
+        },
+        props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+            component: () => import("@/views/project/PlanDetailView.vue"),
+          },
+          {
+            path: "specs",
+            name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+            component: () => import("@/views/project/PlanSpecsView.vue"),
+          },
+          {
+            path: "specs/:specId",
+            name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+            component: () => import("@/views/project/PlanSpecDetailView.vue"),
+          },
+          {
+            path: "planCheckRuns",
+            name: PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
+            component: () => import("@/views/project/PlanCheckRunsView.vue"),
+          },
+        ],
+      },
+      {
+        path: "issues/:issueId(\\d+)",
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+        meta: {
+          requiredPermissionList: () => ["bb.issues.get"],
+        },
+        component: () => import("@/views/project/IssueDetailV1View.vue"),
+        props: true,
+      },
+      {
+        path: "rollouts/:rolloutId",
+        meta: {
+          title: () => t("common.rollout"),
+        },
+        component: () => import("@/views/project/RolloutDetailLayout.vue"),
+        props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+            component: () =>
+              import(
+                "@/components/Plan/components/RolloutView/RolloutView.vue"
+              ),
+            props: true,
+            meta: {
+              requiredPermissionList: () => ["bb.rollouts.get"],
+            },
+          },
+          {
+            path: "stages/:stageId",
+            name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+            component: () =>
+              import("@/components/Plan/components/RolloutView/StageView.vue"),
+            props: true,
+          },
+          {
+            path: "stages/:stageId/tasks/:taskId",
+            name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+            component: () =>
+              import("@/components/Plan/components/RolloutView/TaskView.vue"),
+            props: true,
+          },
+        ],
+      },
+    ],
+  },
+];
 
 const projectV1Routes: RouteRecordRaw[] = [
   {
@@ -156,6 +241,26 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
           },
         ],
+      },
+      {
+        path: "plans",
+        name: PROJECT_V1_ROUTE_PLANS,
+        meta: {
+          title: () => t("plan.plans"),
+          requiredPermissionList: () => ["bb.databases.list", "bb.plans.list"],
+        },
+        component: () => import("@/views/project/ProjectPlanDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "rollouts",
+        name: PROJECT_V1_ROUTE_ROLLOUTS,
+        meta: {
+          title: () => t("rollout.rollouts"),
+          requiredPermissionList: () => ["bb.rollouts.list"],
+        },
+        component: () => import("@/views/project/ProjectRolloutDashboard.vue"),
+        props: true,
       },
       {
         path: "changelists",
@@ -324,61 +429,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "plans",
-        props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_PLANS,
-            meta: {
-              // TODO(claude): rename title to "Plans" later.
-              title: () => t("review-center.self"),
-              requiredPermissionList: () => [
-                "bb.databases.list",
-                "bb.plans.list",
-              ],
-            },
-            component: () => import("@/views/ReviewCenter/index.vue"),
-            props: true,
-          },
-          {
-            path: ":planId",
-            alias: [
-              ":planId/planCheckRuns",
-              ":planId/planCheckRuns/:planCheckRunId",
-            ],
-            name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-            meta: {
-              requiredPermissionList: () => ["bb.plans.get"],
-            },
-            component: () => import("@/views/project/ProjectPlanDetail.vue"),
-            props: true,
-            children: [
-              {
-                path: "specs",
-                name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-                component: () =>
-                  import("@/views/project/ProjectPlanDetail.vue"),
-                children: [
-                  {
-                    path: ":specId",
-                    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-                    component: () =>
-                      import("@/views/project/ProjectPlanDetail.vue"),
-                  },
-                ],
-              },
-              {
-                path: "planCheckRuns",
-                name: PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
-                component: () =>
-                  import("@/views/project/ProjectPlanDetail.vue"),
-              },
-            ],
-          },
-        ],
-      },
-      {
         path: "releases",
         meta: {
           title: () => t("release.releases"),
@@ -396,16 +446,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
           },
           {
-            path: "new",
-            name: PROJECT_V1_ROUTE_RELEASE_CREATE,
-            meta: {
-              title: () => t("release.create"),
-              requiredPermissionList: () => ["bb.releases.create"],
-            },
-            component: () => import("@/components/Release/ReleaseCreate/"),
-            props: true,
-          },
-          {
             path: ":releaseId",
             name: PROJECT_V1_ROUTE_RELEASE_DETAIL,
             meta: {
@@ -416,51 +456,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
         ],
       },
-      {
-        path: "rollouts",
-        meta: {
-          title: () => t("common.rollout"),
-        },
-        props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_ROLLOUTS,
-            meta: {
-              requiredPermissionList: () => ["bb.rollouts.list"],
-            },
-            component: () =>
-              import("@/views/project/ProjectRolloutDashboard.vue"),
-            props: true,
-          },
-          {
-            path: ":rolloutId",
-            component: () =>
-              import(
-                "@/components/Rollout/RolloutDetail/RolloutDetailLayout.vue"
-              ),
-            props: true,
-            meta: {
-              requiredPermissionList: () => ["bb.rollouts.get"],
-            },
-            children: [
-              {
-                path: "",
-                name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-                component: () => import("@/components/Rollout/RolloutDetail/"),
-                props: true,
-              },
-              {
-                path: "stages/:stageId/tasks/:taskId",
-                name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
-                component: () =>
-                  import("@/components/Rollout/RolloutDetail/TaskDetail/"),
-                props: true,
-              },
-            ],
-          },
-        ],
-      },
+      ...cicdRoutes,
     ],
   },
 ];

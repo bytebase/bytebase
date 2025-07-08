@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -15,11 +15,12 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // ChangelistService implements the changelist service.
 type ChangelistService struct {
-	v1pb.UnimplementedChangelistServiceServer
+	v1connect.UnimplementedChangelistServiceHandler
 	store      *store.Store
 	profile    *config.Profile
 	iamManager *iam.Manager
@@ -35,110 +36,110 @@ func NewChangelistService(store *store.Store, profile *config.Profile, iamManage
 }
 
 // CreateChangelist creates a changelist.
-func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.CreateChangelistRequest) (*v1pb.Changelist, error) {
-	if request.Changelist == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "changelist must be set")
+func (s *ChangelistService) CreateChangelist(ctx context.Context, req *connect.Request[v1pb.CreateChangelistRequest]) (*connect.Response[v1pb.Changelist], error) {
+	if req.Msg.Changelist == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("changelist must be set"))
 	}
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("principal ID not found"))
 	}
 
-	projectResourceID, err := common.GetProjectID(request.Parent)
+	projectResourceID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project with resource id %q, err: %v", projectResourceID, err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project with resource id %q", projectResourceID))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project with resource id %q not found", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q not found", projectResourceID))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &request.ChangelistId})
+	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &req.Msg.ChangelistId})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if changelist != nil {
-		return nil, status.Errorf(codes.AlreadyExists, "changelist %q already exists", request.ChangelistId)
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("changelist %q already exists", req.Msg.ChangelistId))
 	}
 
 	changelist, err = s.store.CreateChangelist(ctx, &store.ChangelistMessage{
 		ProjectID:  project.ResourceID,
-		ResourceID: request.ChangelistId,
-		Payload:    convertV1ChangelistPayload(request.Changelist),
+		ResourceID: req.Msg.ChangelistId,
+		Payload:    convertV1ChangelistPayload(req.Msg.Changelist),
 		CreatorID:  principalID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	v1Changelist, err := s.convertStoreChangelist(ctx, changelist)
 	if err != nil {
 		return nil, err
 	}
-	return v1Changelist, nil
+	return connect.NewResponse(v1Changelist), nil
 }
 
 // GetChangelist gets a changelist.
-func (s *ChangelistService) GetChangelist(ctx context.Context, request *v1pb.GetChangelistRequest) (*v1pb.Changelist, error) {
-	projectID, changelistID, err := common.GetProjectIDChangelistID(request.Name)
+func (s *ChangelistService) GetChangelist(ctx context.Context, req *connect.Request[v1pb.GetChangelistRequest]) (*connect.Response[v1pb.Changelist], error) {
+	projectID, changelistID, err := common.GetProjectIDChangelistID(req.Msg.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if changelist == nil {
-		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelist %q not found", changelistID))
 	}
 	v1Changelist, err := s.convertStoreChangelist(ctx, changelist)
 	if err != nil {
 		return nil, err
 	}
-	return v1Changelist, nil
+	return connect.NewResponse(v1Changelist), nil
 }
 
 // GetChangelist gets a changelist.
-func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.ListChangelistsRequest) (*v1pb.ListChangelistsResponse, error) {
-	projectResourceID, err := common.GetProjectID(request.Parent)
+func (s *ChangelistService) ListChangelists(ctx context.Context, req *connect.Request[v1pb.ListChangelistsRequest]) (*connect.Response[v1pb.ListChangelistsResponse], error) {
+	projectResourceID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project with resource id %q, err: %s", projectResourceID, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project with resource id %q", projectResourceID))
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project with resource id %q not found", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q not found", projectResourceID))
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
 	changelists, err := s.store.ListChangelists(ctx, &store.FindChangelistMessage{
 		ProjectID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	resp := &v1pb.ListChangelistsResponse{}
@@ -149,63 +150,63 @@ func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.L
 		}
 		resp.Changelists = append(resp.Changelists, v1Changelist)
 	}
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 // UpdateChangelist updates a changelist.
-func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.UpdateChangelistRequest) (*v1pb.Changelist, error) {
-	if request.Changelist == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "changelist must be set")
+func (s *ChangelistService) UpdateChangelist(ctx context.Context, req *connect.Request[v1pb.UpdateChangelistRequest]) (*connect.Response[v1pb.Changelist], error) {
+	if req.Msg.Changelist == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("changelist must be set"))
 	}
-	if request.UpdateMask == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	if req.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must be set"))
 	}
 
-	projectID, changelistID, err := common.GetProjectIDChangelistID(request.Changelist.Name)
+	projectID, changelistID, err := common.GetProjectIDChangelistID(req.Msg.Changelist.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if changelist == nil {
-		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelist %q not found", changelistID))
 	}
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 	update := &store.UpdateChangelistMessage{
 		UpdaterID:  user.ID,
 		ProjectID:  project.ResourceID,
 		ResourceID: changelistID,
 	}
-	newChangelist := convertV1ChangelistPayload(request.Changelist)
+	newChangelist := convertV1ChangelistPayload(req.Msg.Changelist)
 
-	for _, path := range request.UpdateMask.Paths {
+	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "description":
 			changelist.Payload.Description = newChangelist.Description
 		case "changes":
 			changelist.Payload.Changes = newChangelist.Changes
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupport update_mask "%s"`, path))
 		}
 	}
 	update.Payload = newChangelist
 	if err := s.store.UpdateChangelist(ctx, update); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	changelist, err = s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
@@ -216,37 +217,37 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, err
 	}
-	return v1Changelist, nil
+	return connect.NewResponse(v1Changelist), nil
 }
 
 // DeleteChangelist deletes a changelist.
-func (s *ChangelistService) DeleteChangelist(ctx context.Context, request *v1pb.DeleteChangelistRequest) (*emptypb.Empty, error) {
-	projectID, changelistID, err := common.GetProjectIDChangelistID(request.Name)
+func (s *ChangelistService) DeleteChangelist(ctx context.Context, req *connect.Request[v1pb.DeleteChangelistRequest]) (*connect.Response[emptypb.Empty], error) {
+	projectID, changelistID, err := common.GetProjectIDChangelistID(req.Msg.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if changelist == nil {
-		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelist %q not found", changelistID))
 	}
 
 	if err := s.store.DeleteChangelist(ctx, project.ResourceID, changelistID); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return &emptypb.Empty{}, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 func convertV1ChangelistPayload(changelist *v1pb.Changelist) *storepb.Changelist {
@@ -265,10 +266,10 @@ func convertV1ChangelistPayload(changelist *v1pb.Changelist) *storepb.Changelist
 func (s *ChangelistService) convertStoreChangelist(ctx context.Context, changelist *store.ChangelistMessage) (*v1pb.Changelist, error) {
 	creator, err := s.store.GetUserByID(ctx, changelist.CreatorID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get creator: %v", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get creator"))
 	}
 	if creator == nil {
-		return nil, status.Errorf(codes.NotFound, "cannot find the creator: %d", changelist.CreatorID)
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the creator: %d", changelist.CreatorID))
 	}
 
 	v1Changelist := &v1pb.Changelist{

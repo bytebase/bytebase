@@ -1,6 +1,6 @@
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { SearchAuditLogsParams } from "@/types";
-import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
+import { AuditLog_Severity } from "@/types/proto-es/v1/audit_log_service_pb";
 import { getTsRangeFromSearchParams, type SearchParams } from "@/utils";
 
 export const buildSearchAuditLogParams = (

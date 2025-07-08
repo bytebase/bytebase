@@ -7,7 +7,7 @@ import type {
   TableMetadata,
   TablePartitionMetadata,
   ViewMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 
 export const keyForResource = (
   database: ComposedDatabase,

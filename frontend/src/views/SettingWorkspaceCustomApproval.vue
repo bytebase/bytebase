@@ -33,7 +33,7 @@ import {
   useWorkspaceApprovalSettingStore,
   useRiskStore,
 } from "@/store";
-import { PlanFeature } from "@/types/proto/v1/subscription_service";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 interface LocalState {
   ready: boolean;
@@ -49,7 +49,9 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 const tab = useRouteHash("rules", TabValueList, "replace");
-const hasCustomApprovalFeature = featureToRef(PlanFeature.FEATURE_APPROVAL_WORKFLOW);
+const hasCustomApprovalFeature = featureToRef(
+  PlanFeature.FEATURE_APPROVAL_WORKFLOW
+);
 
 provideCustomApprovalContext({
   hasFeature: hasCustomApprovalFeature,

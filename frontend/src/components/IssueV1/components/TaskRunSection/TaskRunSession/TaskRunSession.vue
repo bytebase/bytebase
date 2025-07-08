@@ -15,11 +15,18 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
-import { rolloutServiceClient } from "@/grpcweb";
-import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
+import { rolloutServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
+import { GetTaskRunSessionRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  TaskRun_Status,
+  type TaskRun,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import PostgresSessionTable from "./PostgresSessionTable.vue";
 
 const props = defineProps<{
@@ -33,18 +40,20 @@ const showSessionTables = computed(
 );
 
 const taskRunSession = computedAsync(
-  () => {
+  async () => {
     if (!showSessionTables.value) {
       return undefined;
     }
-    return rolloutServiceClient.getTaskRunSession(
+    const request = create(GetTaskRunSessionRequestSchema, {
+      parent: props.taskRun.name,
+    });
+    const response = await rolloutServiceClientConnect.getTaskRunSession(
+      request,
       {
-        parent: props.taskRun.name,
-      },
-      {
-        silent: true,
+        contextValues: createContextValues().set(silentContextKey, true),
       }
     );
+    return response;
   },
   undefined,
   {
@@ -52,5 +61,11 @@ const taskRunSession = computedAsync(
   }
 );
 
-const postgresSession = computed(() => taskRunSession.value?.postgres);
+const postgresSession = computed(() => {
+  const session = taskRunSession.value;
+  if (session?.session?.case === "postgres") {
+    return session.session.value;
+  }
+  return undefined;
+});
 </script>

@@ -44,9 +44,9 @@
 import { NTag, NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useIssueContext, projectOfIssue } from "@/components/IssueV1/logic";
-import { databaseForTask } from "@/components/Rollout/RolloutDetail";
-import { type PlanCheckRun } from "@/types/proto/v1/plan_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import { type PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { databaseForTask } from "@/utils";
 import { flattenTaskV1List } from "@/utils";
 
 const props = defineProps<{
@@ -62,16 +62,20 @@ const affectedTaskMap = computed(() => {
   props.taskSummaryReportMap.forEach((planCheckRun, task) => {
     if (
       planCheckRun.results.every(
-        (result) => result.sqlSummaryReport?.affectedRows === undefined
+        (result) =>
+          result.report?.case !== "sqlSummaryReport" ||
+          result.report.value.affectedRows === undefined
       )
     ) {
       return;
     }
 
-    const count = planCheckRun.results.reduce(
-      (acc, result) => acc + (result.sqlSummaryReport?.affectedRows || 0),
-      0
-    );
+    const count = planCheckRun.results.reduce((acc, result) => {
+      if (result.report?.case === "sqlSummaryReport") {
+        return acc + (result.report.value.affectedRows || 0);
+      }
+      return acc;
+    }, 0);
     tempMap.set(task, count);
   });
   return new Map(Array.from(tempMap.entries()).sort((a, b) => b[1] - a[1]));
@@ -91,15 +95,19 @@ const summaryReportResults = computed(() =>
 );
 
 const affectedRows = computed(() =>
-  summaryReportResults.value.reduce(
-    (acc, result) => acc + (result.sqlSummaryReport?.affectedRows || 0),
-    0
-  )
+  summaryReportResults.value.reduce((acc, result) => {
+    if (result.report?.case === "sqlSummaryReport") {
+      return acc + (result.report.value.affectedRows || 0);
+    }
+    return acc;
+  }, 0)
 );
 
 const shouldShow = computed(() =>
   summaryReportResults.value.some(
-    (result) => result.sqlSummaryReport?.affectedRows !== undefined
+    (result) =>
+      result.report?.case === "sqlSummaryReport" &&
+      result.report.value.affectedRows !== undefined
   )
 );
 

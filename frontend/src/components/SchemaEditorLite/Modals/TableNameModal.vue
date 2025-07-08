@@ -29,6 +29,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import type { InputInst } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -36,15 +37,16 @@ import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
+import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
-  ColumnMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
+  ColumnMetadataSchema,
+  TableMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 import { upsertColumnPrimaryKey } from "../edit";
 
@@ -107,7 +109,7 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (!props.table) {
-    const table = TableMetadata.fromPartial({
+    const table = create(TableMetadataSchema, {
       name: state.tableName,
       columns: [],
     });
@@ -121,7 +123,7 @@ const handleConfirmButtonClick = async () => {
       "created"
     );
 
-    const column = ColumnMetadata.fromPartial({});
+    const column = create(ColumnMetadataSchema, {});
     column.name = "id";
     const engine = props.database.instanceResource.engine;
     column.type = engine === Engine.POSTGRES ? "integer" : "int";

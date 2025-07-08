@@ -371,15 +371,23 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.AWSCredential"><span class="badge">M</span>DataSource.AWSCredential</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSource.Address"><span class="badge">M</span>DataSource.Address</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DataSource.ClientSecretCredential"><span class="badge">M</span>DataSource.ClientSecretCredential</a>
+                  <a href="#bytebase.v1.DataSource.AzureCredential"><span class="badge">M</span>DataSource.AzureCredential</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.DataSource.ExtraConnectionParametersEntry"><span class="badge">M</span>DataSource.ExtraConnectionParametersEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DataSource.GCPCredential"><span class="badge">M</span>DataSource.GCPCredential</a>
                 </li>
               
                 <li>
@@ -968,10 +976,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.AgentPluginSetting"><span class="badge">M</span>AgentPluginSetting</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Algorithm"><span class="badge">M</span>Algorithm</a>
                 </li>
               
@@ -1072,15 +1076,15 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.MaximumSQLResultSizeSetting"><span class="badge">M</span>MaximumSQLResultSizeSetting</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PasswordRestrictionSetting"><span class="badge">M</span>PasswordRestrictionSetting</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.SCIMSetting"><span class="badge">M</span>SCIMSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SQLQueryRestrictionSetting"><span class="badge">M</span>SQLQueryRestrictionSetting</a>
                 </li>
               
                 <li>
@@ -1638,12 +1642,24 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TestIdentityProviderResponse.ClaimsEntry"><span class="badge">M</span>TestIdentityProviderResponse.ClaimsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TestIdentityProviderResponse.UserInfoEntry"><span class="badge">M</span>TestIdentityProviderResponse.UserInfoEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateIdentityProviderRequest"><span class="badge">M</span>UpdateIdentityProviderRequest</a>
                 </li>
               
               
                 <li>
                   <a href="#bytebase.v1.IdentityProviderType"><span class="badge">E</span>IdentityProviderType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.LDAPIdentityProviderConfig.SecurityProtocol"><span class="badge">E</span>LDAPIdentityProviderConfig.SecurityProtocol</a>
                 </li>
               
                 <li>
@@ -1923,6 +1939,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.BatchDeleteProjectsRequest"><span class="badge">M</span>BatchDeleteProjectsRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.BatchGetIamPolicyRequest"><span class="badge">M</span>BatchGetIamPolicyRequest</a>
                 </li>
               
@@ -2083,6 +2103,10 @@
               
                 <li>
                   <a href="#bytebase.v1.ExportResponse"><span class="badge">M</span>ExportResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.MaskingReason"><span class="badge">M</span>MaskingReason</a>
                 </li>
               
                 <li>
@@ -3758,14 +3782,14 @@ Format: instances/{instance}/databases/{database}/catalog </p></td>
                 <td>GetDatabaseCatalog</td>
                 <td><a href="#bytebase.v1.GetDatabaseCatalogRequest">GetDatabaseCatalogRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseCatalogs.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateDatabaseCatalog</td>
                 <td><a href="#bytebase.v1.UpdateDatabaseCatalogRequest">UpdateDatabaseCatalogRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseCatalogs.update</p></td>
               </tr>
             
           </tbody>
@@ -4012,14 +4036,14 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 <td>GetInstanceRole</td>
                 <td><a href="#bytebase.v1.GetInstanceRoleRequest">GetInstanceRoleRequest</a></td>
                 <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instanceRoles.get</p></td>
               </tr>
             
               <tr>
                 <td>ListInstanceRoles</td>
                 <td><a href="#bytebase.v1.ListInstanceRolesRequest">ListInstanceRolesRequest</a></td>
                 <td><a href="#bytebase.v1.ListInstanceRolesResponse">ListInstanceRolesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instanceRoles.get</p></td>
               </tr>
             
           </tbody>
@@ -4419,8 +4443,22 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
-                  <td>client_secret_credential</td>
-                  <td><a href="#bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</a></td>
+                  <td>azure_credential</td>
+                  <td><a href="#bytebase.v1.DataSource.AzureCredential">DataSource.AzureCredential</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>aws_credential</td>
+                  <td><a href="#bytebase.v1.DataSource.AWSCredential">DataSource.AWSCredential</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>gcp_credential</td>
+                  <td><a href="#bytebase.v1.DataSource.GCPCredential">DataSource.GCPCredential</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -4510,6 +4548,44 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
 
         
       
+        <h3 id="bytebase.v1.DataSource.AWSCredential">DataSource.AWSCredential</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>access_key_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret_access_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>session_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.DataSource.Address">DataSource.Address</h3>
         <p></p>
 
@@ -4541,7 +4617,7 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
 
         
       
-        <h3 id="bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</h3>
+        <h3 id="bytebase.v1.DataSource.AzureCredential">DataSource.AzureCredential</h3>
         <p></p>
 
         
@@ -4598,6 +4674,30 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
               
                 <tr>
                   <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSource.GCPCredential">DataSource.GCPCredential</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>content</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -4888,6 +4988,13 @@ The default is 10 if the value is unset or zero. </p></td>
                   <td>repeated</td>
                   <td><p>Enable sync for following databases.
 Default empty, means sync all schemas &amp; databases. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>last_sync_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The last time the instance was synced. </p></td>
                 </tr>
               
             </tbody>
@@ -5636,91 +5743,91 @@ Format: instances/{instance} </p></td>
                 <td>GetInstance</td>
                 <td><a href="#bytebase.v1.GetInstanceRequest">GetInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.get</p></td>
               </tr>
             
               <tr>
                 <td>ListInstances</td>
                 <td><a href="#bytebase.v1.ListInstancesRequest">ListInstancesRequest</a></td>
                 <td><a href="#bytebase.v1.ListInstancesResponse">ListInstancesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateInstance</td>
                 <td><a href="#bytebase.v1.CreateInstanceRequest">CreateInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateInstance</td>
                 <td><a href="#bytebase.v1.UpdateInstanceRequest">UpdateInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteInstance</td>
                 <td><a href="#bytebase.v1.DeleteInstanceRequest">DeleteInstanceRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.delete</p></td>
               </tr>
             
               <tr>
                 <td>UndeleteInstance</td>
                 <td><a href="#bytebase.v1.UndeleteInstanceRequest">UndeleteInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.undelete</p></td>
               </tr>
             
               <tr>
                 <td>SyncInstance</td>
                 <td><a href="#bytebase.v1.SyncInstanceRequest">SyncInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.SyncInstanceResponse">SyncInstanceResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.sync</p></td>
               </tr>
             
               <tr>
                 <td>ListInstanceDatabase</td>
                 <td><a href="#bytebase.v1.ListInstanceDatabaseRequest">ListInstanceDatabaseRequest</a></td>
                 <td><a href="#bytebase.v1.ListInstanceDatabaseResponse">ListInstanceDatabaseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.get</p></td>
               </tr>
             
               <tr>
                 <td>BatchSyncInstances</td>
                 <td><a href="#bytebase.v1.BatchSyncInstancesRequest">BatchSyncInstancesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchSyncInstancesResponse">BatchSyncInstancesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.sync</p></td>
               </tr>
             
               <tr>
                 <td>BatchUpdateInstances</td>
                 <td><a href="#bytebase.v1.BatchUpdateInstancesRequest">BatchUpdateInstancesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchUpdateInstancesResponse">BatchUpdateInstancesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
               <tr>
                 <td>AddDataSource</td>
                 <td><a href="#bytebase.v1.AddDataSourceRequest">AddDataSourceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
               <tr>
                 <td>RemoveDataSource</td>
                 <td><a href="#bytebase.v1.RemoveDataSourceRequest">RemoveDataSourceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
               <tr>
                 <td>UpdateDataSource</td>
                 <td><a href="#bytebase.v1.UpdateDataSourceRequest">UpdateDataSourceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.instances.update</p></td>
               </tr>
             
           </tbody>
@@ -6468,7 +6575,7 @@ Or present but not found if deleted </p></td>
                   <td>default_null</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The default value of column. </p></td>
                 </tr>
               
                 <tr>
@@ -6578,6 +6685,32 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p>The identity_increment is for identity columns, MSSQL only. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>default_constraint_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The default_constraint_name is the name of the default constraint, MSSQL only.
+In MSSQL, default values are implemented as named constraints. When modifying or
+dropping a column&#39;s default value, you must reference the constraint by name.
+This field stores the actual constraint name from the database.
+
+Example: A column definition like:
+  CREATE TABLE employees (
+    status NVARCHAR(20) DEFAULT &#39;active&#39;
+  )
+
+Will create a constraint with an auto-generated name like &#39;DF__employees__statu__3B75D760&#39;
+or a user-defined name if specified:
+  ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;active&#39; FOR status
+
+To modify the default, you must first drop the existing constraint by name:
+  ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+  ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;inactive&#39; FOR status
+
+This field is populated when syncing from the database. When empty (e.g., when parsing
+from SQL files), the system cannot automatically drop the constraint. </p></td>
                 </tr>
               
             </tbody>
@@ -7074,6 +7207,13 @@ instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment is the comment of an event. </p></td>
                 </tr>
               
             </tbody>
@@ -7883,6 +8023,7 @@ Supported filter:
 - label: the database label in &#34;{key}:{value1},{value2}&#34; format. Support &#34;==&#34; operator.
 - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator.
 - drifted: should be &#34;true&#34; or &#34;false&#34;, show drifted databases if it&#39;s true, support &#34;==&#34; operator.
+- table: filter by the database table, support &#34;==&#34; and &#34;.matches()&#34; operator.
 
 For example:
 environment == &#34;environments/{environment resource id}&#34;
@@ -7897,6 +8038,9 @@ label == &#34;tenant:asia,europe&#34;
 label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34;
 exclude_unassigned == true
 drifted == true
+table == &#34;sample&#34;
+table.matches(&#34;sam&#34;)
+
 You can combine filter conditions like:
 environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) </p></td>
                 </tr>
@@ -8186,6 +8330,13 @@ function takes. </p></td>
                 </tr>
               
                 <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment is the comment of a procedure. </p></td>
+                </tr>
+              
+                <tr>
                   <td>skip_dump</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -8315,6 +8466,13 @@ Snowflake. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment is the comment of a schema. </p></td>
                 </tr>
               
             </tbody>
@@ -9322,13 +9480,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_VIRTUAL</td>
+                <td>VIRTUAL</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>TYPE_STORED</td>
+                <td>STORED</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
@@ -9416,19 +9574,19 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>MODE_DEFAULT</td>
+                <td>DEFAULT</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>MODE_APPEND_ONLY</td>
+                <td>APPEND_ONLY</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>MODE_INSERT_ONLY</td>
+                <td>INSERT_ONLY</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
@@ -9451,7 +9609,7 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_DELTA</td>
+                <td>DELTA</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
@@ -9539,13 +9697,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>STATE_STARTED</td>
+                <td>STARTED</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>STATE_SUSPENDED</td>
+                <td>SUSPENDED</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
@@ -9569,112 +9727,112 @@ The API will default to the BASIC view.</p></td>
                 <td>GetDatabase</td>
                 <td><a href="#bytebase.v1.GetDatabaseRequest">GetDatabaseRequest</a></td>
                 <td><a href="#bytebase.v1.Database">Database</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>BatchGetDatabases</td>
                 <td><a href="#bytebase.v1.BatchGetDatabasesRequest">BatchGetDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetDatabasesResponse">BatchGetDatabasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>ListDatabases</td>
                 <td><a href="#bytebase.v1.ListDatabasesRequest">ListDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.list</p></td>
               </tr>
             
               <tr>
                 <td>UpdateDatabase</td>
                 <td><a href="#bytebase.v1.UpdateDatabaseRequest">UpdateDatabaseRequest</a></td>
                 <td><a href="#bytebase.v1.Database">Database</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.update</p></td>
               </tr>
             
               <tr>
                 <td>BatchUpdateDatabases</td>
                 <td><a href="#bytebase.v1.BatchUpdateDatabasesRequest">BatchUpdateDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchUpdateDatabasesResponse">BatchUpdateDatabasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.update</p></td>
               </tr>
             
               <tr>
                 <td>SyncDatabase</td>
                 <td><a href="#bytebase.v1.SyncDatabaseRequest">SyncDatabaseRequest</a></td>
                 <td><a href="#bytebase.v1.SyncDatabaseResponse">SyncDatabaseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.sync</p></td>
               </tr>
             
               <tr>
                 <td>BatchSyncDatabases</td>
                 <td><a href="#bytebase.v1.BatchSyncDatabasesRequest">BatchSyncDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchSyncDatabasesResponse">BatchSyncDatabasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.sync</p></td>
               </tr>
             
               <tr>
                 <td>GetDatabaseMetadata</td>
                 <td><a href="#bytebase.v1.GetDatabaseMetadataRequest">GetDatabaseMetadataRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.getSchema</p></td>
               </tr>
             
               <tr>
                 <td>GetDatabaseSchema</td>
                 <td><a href="#bytebase.v1.GetDatabaseSchemaRequest">GetDatabaseSchemaRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseSchema">DatabaseSchema</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.getSchema</p></td>
               </tr>
             
               <tr>
                 <td>DiffSchema</td>
                 <td><a href="#bytebase.v1.DiffSchemaRequest">DiffSchemaRequest</a></td>
                 <td><a href="#bytebase.v1.DiffSchemaResponse">DiffSchemaResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>ListSecrets</td>
                 <td><a href="#bytebase.v1.ListSecretsRequest">ListSecretsRequest</a></td>
                 <td><a href="#bytebase.v1.ListSecretsResponse">ListSecretsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseSecrets.list</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSecret</td>
                 <td><a href="#bytebase.v1.UpdateSecretRequest">UpdateSecretRequest</a></td>
                 <td><a href="#bytebase.v1.Secret">Secret</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseSecrets.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteSecret</td>
                 <td><a href="#bytebase.v1.DeleteSecretRequest">DeleteSecretRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databaseSecrets.delete</p></td>
               </tr>
             
               <tr>
                 <td>ListChangelogs</td>
                 <td><a href="#bytebase.v1.ListChangelogsRequest">ListChangelogsRequest</a></td>
                 <td><a href="#bytebase.v1.ListChangelogsResponse">ListChangelogsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelogs.list</p></td>
               </tr>
             
               <tr>
                 <td>GetChangelog</td>
                 <td><a href="#bytebase.v1.GetChangelogRequest">GetChangelogRequest</a></td>
                 <td><a href="#bytebase.v1.Changelog">Changelog</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: changelogs.get</p></td>
               </tr>
             
               <tr>
                 <td>GetSchemaString</td>
                 <td><a href="#bytebase.v1.GetSchemaStringRequest">GetSchemaStringRequest</a></td>
                 <td><a href="#bytebase.v1.GetSchemaStringResponse">GetSchemaStringResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: databases.getSchema</p></td>
               </tr>
             
           </tbody>
@@ -10326,14 +10484,6 @@ If `true`, approval_templates &amp; approvers &amp; approval_finding_error are a
                 </tr>
               
                 <tr>
-                  <td>subscribers</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The subscribers.
-Format: users/hello@world.com </p></td>
-                </tr>
-              
-                <tr>
                   <td>creator</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -10959,7 +11109,6 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 
 Supported filters:
 - creator: issue creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator.
-- subscriber: issue subscriber full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator.
 - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values.
 - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
 - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values.
@@ -11551,63 +11700,64 @@ Format: projects/{project}/issues/{issue} </p></td>
                 <td>GetIssue</td>
                 <td><a href="#bytebase.v1.GetIssueRequest">GetIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.get</p></td>
               </tr>
             
               <tr>
                 <td>CreateIssue</td>
                 <td><a href="#bytebase.v1.CreateIssueRequest">CreateIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.create</p></td>
               </tr>
             
               <tr>
                 <td>ListIssues</td>
                 <td><a href="#bytebase.v1.ListIssuesRequest">ListIssuesRequest</a></td>
                 <td><a href="#bytebase.v1.ListIssuesResponse">ListIssuesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.list</p></td>
               </tr>
             
               <tr>
                 <td>SearchIssues</td>
                 <td><a href="#bytebase.v1.SearchIssuesRequest">SearchIssuesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchIssuesResponse">SearchIssuesResponse</a></td>
-                <td><p>Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter &amp; query.</p></td>
+                <td><p>Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter &amp; query.
+Permissions required: bb.issues.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateIssue</td>
                 <td><a href="#bytebase.v1.UpdateIssueRequest">UpdateIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.update</p></td>
               </tr>
             
               <tr>
                 <td>ListIssueComments</td>
                 <td><a href="#bytebase.v1.ListIssueCommentsRequest">ListIssueCommentsRequest</a></td>
                 <td><a href="#bytebase.v1.ListIssueCommentsResponse">ListIssueCommentsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issueComments.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateIssueComment</td>
                 <td><a href="#bytebase.v1.CreateIssueCommentRequest">CreateIssueCommentRequest</a></td>
                 <td><a href="#bytebase.v1.IssueComment">IssueComment</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issueComments.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateIssueComment</td>
                 <td><a href="#bytebase.v1.UpdateIssueCommentRequest">UpdateIssueCommentRequest</a></td>
                 <td><a href="#bytebase.v1.IssueComment">IssueComment</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issueComments.update</p></td>
               </tr>
             
               <tr>
                 <td>BatchUpdateIssuesStatus</td>
                 <td><a href="#bytebase.v1.BatchUpdateIssuesStatusRequest">BatchUpdateIssuesStatusRequest</a></td>
                 <td><a href="#bytebase.v1.BatchUpdateIssuesStatusResponse">BatchUpdateIssuesStatusResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.issues.update</p></td>
               </tr>
             
               <tr>
@@ -11615,7 +11765,8 @@ Format: projects/{project}/issues/{issue} </p></td>
                 <td><a href="#bytebase.v1.ApproveIssueRequest">ApproveIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
                 <td><p>ApproveIssue approves the issue.
-The access is based on approval flow.</p></td>
+The access is based on approval flow.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -11623,7 +11774,8 @@ The access is based on approval flow.</p></td>
                 <td><a href="#bytebase.v1.RejectIssueRequest">RejectIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
                 <td><p>RejectIssue rejects the issue.
-The access is based on approval flow.</p></td>
+The access is based on approval flow.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -11631,7 +11783,8 @@ The access is based on approval flow.</p></td>
                 <td><a href="#bytebase.v1.RequestIssueRequest">RequestIssueRequest</a></td>
                 <td><a href="#bytebase.v1.Issue">Issue</a></td>
                 <td><p>RequestIssue requests the issue.
-The access is based on approval flow.</p></td>
+The access is based on approval flow.
+Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -11834,37 +11987,6 @@ The access is based on approval flow.</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.AgentPluginSetting">AgentPluginSetting</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The URL for the agent API. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The token for the agent. </p></td>
                 </tr>
               
             </tbody>
@@ -12788,31 +12910,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.MaximumSQLResultSizeSetting">MaximumSQLResultSizeSetting</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>limit</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The limit is in bytes.
-The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.PasswordRestrictionSetting">PasswordRestrictionSetting</h3>
         <p></p>
 
@@ -12894,6 +12991,39 @@ The default value is 100MB, we will use the default value if the setting not exi
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SQLQueryRestrictionSetting">SQLQueryRestrictionSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>maximum_result_size</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The size limit in bytes.
+The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_result_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The return rows limit. If the value &lt;= 0, will be treated as no limit.
+The default value is -1. </p></td>
                 </tr>
               
             </tbody>
@@ -13145,6 +13275,13 @@ The default value is 100MB, we will use the default value if the setting not exi
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>icon</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>icon is the icon for semantic type, it can be emoji or base64 encoded image. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -13257,17 +13394,10 @@ server would not persist the setting value if it is true. </p></td>
                 </tr>
               
                 <tr>
-                  <td>agent_plugin_setting_value</td>
-                  <td><a href="#bytebase.v1.AgentPluginSetting">AgentPluginSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>workspace_profile_setting_value</td>
                   <td><a href="#bytebase.v1.WorkspaceProfileSetting">WorkspaceProfileSetting</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>reserved 4; // was AgentPluginSetting agent_plugin_setting_value </p></td>
                 </tr>
               
                 <tr>
@@ -13299,13 +13429,6 @@ server would not persist the setting value if it is true. </p></td>
                 </tr>
               
                 <tr>
-                  <td>maximum_sql_result_size_setting</td>
-                  <td><a href="#bytebase.v1.MaximumSQLResultSizeSetting">MaximumSQLResultSizeSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>scim_setting</td>
                   <td><a href="#bytebase.v1.SCIMSetting">SCIMSetting</a></td>
                   <td></td>
@@ -13329,6 +13452,13 @@ server would not persist the setting value if it is true. </p></td>
                 <tr>
                   <td>environment_setting</td>
                   <td><a href="#bytebase.v1.EnvironmentSetting">EnvironmentSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_query_restriction_setting</td>
+                  <td><a href="#bytebase.v1.SQLQueryRestrictionSetting">SQLQueryRestrictionSetting</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -13432,13 +13562,6 @@ For examples:
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Require 2FA for all users. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>outbound_ip_list</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. </p></td>
                 </tr>
               
                 <tr>
@@ -13584,19 +13707,19 @@ For examples:
               </tr>
             
               <tr>
-                <td>ALERT_LEVEL_INFO</td>
+                <td>INFO</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ALERT_LEVEL_WARNING</td>
+                <td>WARNING</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ALERT_LEVEL_CRITICAL</td>
+                <td>CRITICAL</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
@@ -13709,12 +13832,6 @@ Default to this mode.</p></td>
               </tr>
             
               <tr>
-                <td>PLUGIN_AGENT</td>
-                <td>11</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>SCHEMA_TEMPLATE</td>
                 <td>13</td>
                 <td><p></p></td>
@@ -13775,21 +13892,21 @@ Default to this mode.</p></td>
                 <td>ListSettings</td>
                 <td><a href="#bytebase.v1.ListSettingsRequest">ListSettingsRequest</a></td>
                 <td><a href="#bytebase.v1.ListSettingsResponse">ListSettingsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.list</p></td>
               </tr>
             
               <tr>
                 <td>GetSetting</td>
                 <td><a href="#bytebase.v1.GetSettingRequest">GetSettingRequest</a></td>
                 <td><a href="#bytebase.v1.Setting">Setting</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSetting</td>
                 <td><a href="#bytebase.v1.UpdateSettingRequest">UpdateSettingRequest</a></td>
                 <td><a href="#bytebase.v1.Setting">Setting</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.set</p></td>
               </tr>
             
           </tbody>
@@ -14357,7 +14474,8 @@ Could be empty. </p></td>
                 <td><a href="#bytebase.v1.GetUserRequest">GetUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
                 <td><p>Get the user.
-Any authenticated user can get the user.</p></td>
+Any authenticated user can get the user.
+Permissions required: bb.users.get</p></td>
               </tr>
             
               <tr>
@@ -14365,14 +14483,16 @@ Any authenticated user can get the user.</p></td>
                 <td><a href="#bytebase.v1.BatchGetUsersRequest">BatchGetUsersRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetUsersResponse">BatchGetUsersResponse</a></td>
                 <td><p>Get the users in batch.
-Any authenticated user can batch get users.</p></td>
+Any authenticated user can batch get users.
+Permissions required: bb.users.get</p></td>
               </tr>
             
               <tr>
                 <td>GetCurrentUser</td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Get the current authenticated user.</p></td>
+                <td><p>Get the current authenticated user.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -14380,7 +14500,8 @@ Any authenticated user can batch get users.</p></td>
                 <td><a href="#bytebase.v1.ListUsersRequest">ListUsersRequest</a></td>
                 <td><a href="#bytebase.v1.ListUsersResponse">ListUsersResponse</a></td>
                 <td><p>List all users.
-Any authenticated user can list users.</p></td>
+Any authenticated user can list users.
+Permissions required: bb.users.list</p></td>
               </tr>
             
               <tr>
@@ -14389,14 +14510,16 @@ Any authenticated user can list users.</p></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
                 <td><p>Create a user.
 When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-Otherwise, any unauthenticated user can create a user.</p></td>
+Otherwise, any unauthenticated user can create a user.
+Permissions required: bb.users.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateUser</td>
                 <td><a href="#bytebase.v1.UpdateUserRequest">UpdateUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Only the user itself and the user with bb.users.update permission on the workspace can update the user.</p></td>
+                <td><p>Only the user itself and the user with bb.users.update permission on the workspace can update the user.
+Permissions required: bb.users.update</p></td>
               </tr>
             
               <tr>
@@ -14404,14 +14527,16 @@ Otherwise, any unauthenticated user can create a user.</p></td>
                 <td><a href="#bytebase.v1.DeleteUserRequest">DeleteUserRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Only the user with bb.users.delete permission on the workspace can delete the user.
-The last remaining workspace admin cannot be deleted.</p></td>
+The last remaining workspace admin cannot be deleted.
+Permissions required: bb.users.delete</p></td>
               </tr>
             
               <tr>
                 <td>UndeleteUser</td>
                 <td><a href="#bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Only the user with bb.users.undelete permission on the workspace can undelete the user.</p></td>
+                <td><p>Only the user with bb.users.undelete permission on the workspace can undelete the user.
+Permissions required: bb.users.undelete</p></td>
               </tr>
             
           </tbody>
@@ -14834,35 +14959,35 @@ The last remaining workspace admin cannot be deleted.</p></td>
                 <td>GetActuatorInfo</td>
                 <td><a href="#bytebase.v1.GetActuatorInfoRequest">GetActuatorInfoRequest</a></td>
                 <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>UpdateActuatorInfo</td>
                 <td><a href="#bytebase.v1.UpdateActuatorInfoRequest">UpdateActuatorInfoRequest</a></td>
                 <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.set</p></td>
               </tr>
             
               <tr>
                 <td>SetupSample</td>
                 <td><a href="#bytebase.v1.SetupSampleRequest">SetupSampleRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.create</p></td>
               </tr>
             
               <tr>
                 <td>DeleteCache</td>
                 <td><a href="#bytebase.v1.DeleteCacheRequest">DeleteCacheRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>GetResourcePackage</td>
                 <td><a href="#bytebase.v1.GetResourcePackageRequest">GetResourcePackageRequest</a></td>
                 <td><a href="#bytebase.v1.ResourcePackage">ResourcePackage</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -15323,6 +15448,13 @@ Some fields are omitted because they are too large or contain sensitive informat
                 </tr>
               
                 <tr>
+                  <td>latency</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The latency of the RPC. </p></td>
+                </tr>
+              
+                <tr>
                   <td>service_data</td>
                   <td><a href="#google.protobuf.Any">google.protobuf.Any</a></td>
                   <td></td>
@@ -15665,14 +15797,14 @@ to retrieve the next page of log entities. </p></td>
                 <td>SearchAuditLogs</td>
                 <td><a href="#bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</a></td>
                 <td><a href="#bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>ExportAuditLogs</td>
                 <td><a href="#bytebase.v1.ExportAuditLogsRequest">ExportAuditLogsRequest</a></td>
                 <td><a href="#bytebase.v1.ExportAuditLogsResponse">ExportAuditLogsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.auditLogs.export</p></td>
               </tr>
             
           </tbody>
@@ -15945,14 +16077,14 @@ Format: idps/{idp} </p></td>
                 <td>Login</td>
                 <td><a href="#bytebase.v1.LoginRequest">LoginRequest</a></td>
                 <td><a href="#bytebase.v1.LoginResponse">LoginResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>Logout</td>
                 <td><a href="#bytebase.v1.LogoutRequest">LogoutRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -16119,14 +16251,14 @@ Format: idps/{idp} </p></td>
                 <td>BatchParse</td>
                 <td><a href="#bytebase.v1.BatchParseRequest">BatchParseRequest</a></td>
                 <td><a href="#bytebase.v1.BatchParseResponse">BatchParseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>BatchDeparse</td>
                 <td><a href="#bytebase.v1.BatchDeparseRequest">BatchDeparseRequest</a></td>
                 <td><a href="#bytebase.v1.BatchDeparseResponse">BatchDeparseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -16492,35 +16624,35 @@ Format: projects/{project}/changelists/{changelist} </p></td>
                 <td>CreateChangelist</td>
                 <td><a href="#bytebase.v1.CreateChangelistRequest">CreateChangelistRequest</a></td>
                 <td><a href="#bytebase.v1.Changelist">Changelist</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.create</p></td>
               </tr>
             
               <tr>
                 <td>GetChangelist</td>
                 <td><a href="#bytebase.v1.GetChangelistRequest">GetChangelistRequest</a></td>
                 <td><a href="#bytebase.v1.Changelist">Changelist</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.get</p></td>
               </tr>
             
               <tr>
                 <td>ListChangelists</td>
                 <td><a href="#bytebase.v1.ListChangelistsRequest">ListChangelistsRequest</a></td>
                 <td><a href="#bytebase.v1.ListChangelistsResponse">ListChangelistsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.list</p></td>
               </tr>
             
               <tr>
                 <td>UpdateChangelist</td>
                 <td><a href="#bytebase.v1.UpdateChangelistRequest">UpdateChangelistRequest</a></td>
                 <td><a href="#bytebase.v1.Changelist">Changelist</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteChangelist</td>
                 <td><a href="#bytebase.v1.DeleteChangelistRequest">DeleteChangelistRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.changelists.delete</p></td>
               </tr>
             
           </tbody>
@@ -16967,35 +17099,35 @@ The API will default to the BASIC view.</p></td>
                 <td>ListDatabaseGroups</td>
                 <td><a href="#bytebase.v1.ListDatabaseGroupsRequest">ListDatabaseGroupsRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabaseGroupsResponse">ListDatabaseGroupsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.get</p></td>
               </tr>
             
               <tr>
                 <td>GetDatabaseGroup</td>
                 <td><a href="#bytebase.v1.GetDatabaseGroupRequest">GetDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.get</p></td>
               </tr>
             
               <tr>
                 <td>CreateDatabaseGroup</td>
                 <td><a href="#bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>UpdateDatabaseGroup</td>
                 <td><a href="#bytebase.v1.UpdateDatabaseGroupRequest">UpdateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteDatabaseGroup</td>
                 <td><a href="#bytebase.v1.DeleteDatabaseGroupRequest">DeleteDatabaseGroupRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
           </tbody>
@@ -17407,21 +17539,21 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>GetGroup</td>
                 <td><a href="#bytebase.v1.GetGroupRequest">GetGroupRequest</a></td>
                 <td><a href="#bytebase.v1.Group">Group</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.groups.get</p></td>
               </tr>
             
               <tr>
                 <td>ListGroups</td>
                 <td><a href="#bytebase.v1.ListGroupsRequest">ListGroupsRequest</a></td>
                 <td><a href="#bytebase.v1.ListGroupsResponse">ListGroupsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.groups.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateGroup</td>
                 <td><a href="#bytebase.v1.CreateGroupRequest">CreateGroupRequest</a></td>
                 <td><a href="#bytebase.v1.Group">Group</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.groups.create</p></td>
               </tr>
             
               <tr>
@@ -17429,14 +17561,15 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td><a href="#bytebase.v1.UpdateGroupRequest">UpdateGroupRequest</a></td>
                 <td><a href="#bytebase.v1.Group">Group</a></td>
                 <td><p>UpdateGroup updates the group.
-Users with &#34;bb.groups.update&#34; permission on the workspace or the group owner can access this method.</p></td>
+Users with &#34;bb.groups.update&#34; permission on the workspace or the group owner can access this method.
+Permissions required: bb.groups.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteGroup</td>
                 <td><a href="#bytebase.v1.DeleteGroupRequest">DeleteGroupRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.groups.delete</p></td>
               </tr>
             
           </tbody>
@@ -17812,10 +17945,10 @@ search requests. </p></td>
               
                 <tr>
                   <td>security_protocol</td>
-                  <td><a href="#string">string</a></td>
+                  <td><a href="#bytebase.v1.LDAPIdentityProviderConfig.SecurityProtocol">LDAPIdentityProviderConfig.SecurityProtocol</a></td>
                   <td></td>
                   <td><p>SecurityProtocol is the security protocol to be used for establishing
-connections with the LDAP server. It must be StartTLS, LDAPS or None. </p></td>
+connections with the LDAP server. </p></td>
                 </tr>
               
                 <tr>
@@ -18119,6 +18252,92 @@ Should be fetched from the well-known configuration file of the OIDC provider. <
         <p></p>
 
         
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>claims</td>
+                  <td><a href="#bytebase.v1.TestIdentityProviderResponse.ClaimsEntry">TestIdentityProviderResponse.ClaimsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The map of claims returned by the identity provider. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user_info</td>
+                  <td><a href="#bytebase.v1.TestIdentityProviderResponse.UserInfoEntry">TestIdentityProviderResponse.UserInfoEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The matched user info from the claims. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TestIdentityProviderResponse.ClaimsEntry">TestIdentityProviderResponse.ClaimsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TestIdentityProviderResponse.UserInfoEntry">TestIdentityProviderResponse.UserInfoEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       
@@ -18193,6 +18412,35 @@ Format: idps/{identity_provider} </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.LDAPIdentityProviderConfig.SecurityProtocol">LDAPIdentityProviderConfig.SecurityProtocol</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SECURITY_PROTOCOL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>START_TLS</td>
+                <td>1</td>
+                <td><p>StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS.</p></td>
+              </tr>
+            
+              <tr>
+                <td>LDAPS</td>
+                <td>2</td>
+                <td><p>LDAPS is the security protocol that uses TLS from the beginning.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.OAuth2AuthStyle">OAuth2AuthStyle</h3>
         <p></p>
         <table class="enum-table">
@@ -18240,42 +18488,42 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 <td>GetIdentityProvider</td>
                 <td><a href="#bytebase.v1.GetIdentityProviderRequest">GetIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.IdentityProvider">IdentityProvider</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.get</p></td>
               </tr>
             
               <tr>
                 <td>ListIdentityProviders</td>
                 <td><a href="#bytebase.v1.ListIdentityProvidersRequest">ListIdentityProvidersRequest</a></td>
                 <td><a href="#bytebase.v1.ListIdentityProvidersResponse">ListIdentityProvidersResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>CreateIdentityProvider</td>
                 <td><a href="#bytebase.v1.CreateIdentityProviderRequest">CreateIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.IdentityProvider">IdentityProvider</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateIdentityProvider</td>
                 <td><a href="#bytebase.v1.UpdateIdentityProviderRequest">UpdateIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.IdentityProvider">IdentityProvider</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteIdentityProvider</td>
                 <td><a href="#bytebase.v1.DeleteIdentityProviderRequest">DeleteIdentityProviderRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.delete</p></td>
               </tr>
             
               <tr>
                 <td>TestIdentityProvider</td>
                 <td><a href="#bytebase.v1.TestIdentityProviderRequest">TestIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.TestIdentityProviderResponse">TestIdentityProviderResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.identityProviders.update</p></td>
               </tr>
             
           </tbody>
@@ -19386,35 +19634,35 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>GetPolicy</td>
                 <td><a href="#bytebase.v1.GetPolicyRequest">GetPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.Policy">Policy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.get</p></td>
               </tr>
             
               <tr>
                 <td>ListPolicies</td>
                 <td><a href="#bytebase.v1.ListPoliciesRequest">ListPoliciesRequest</a></td>
                 <td><a href="#bytebase.v1.ListPoliciesResponse">ListPoliciesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.list</p></td>
               </tr>
             
               <tr>
                 <td>CreatePolicy</td>
                 <td><a href="#bytebase.v1.CreatePolicyRequest">CreatePolicyRequest</a></td>
                 <td><a href="#bytebase.v1.Policy">Policy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdatePolicy</td>
                 <td><a href="#bytebase.v1.UpdatePolicyRequest">UpdatePolicyRequest</a></td>
                 <td><a href="#bytebase.v1.Policy">Policy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.update</p></td>
               </tr>
             
               <tr>
                 <td>DeletePolicy</td>
                 <td><a href="#bytebase.v1.DeletePolicyRequest">DeletePolicyRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.policies.delete</p></td>
               </tr>
             
           </tbody>
@@ -20950,28 +21198,29 @@ Format: projects/{project}/plans/{plan} </p></td>
                 <td>GetPlan</td>
                 <td><a href="#bytebase.v1.GetPlanRequest">GetPlanRequest</a></td>
                 <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.plans.get</p></td>
               </tr>
             
               <tr>
                 <td>ListPlans</td>
                 <td><a href="#bytebase.v1.ListPlansRequest">ListPlansRequest</a></td>
                 <td><a href="#bytebase.v1.ListPlansResponse">ListPlansResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.plans.list</p></td>
               </tr>
             
               <tr>
                 <td>SearchPlans</td>
                 <td><a href="#bytebase.v1.SearchPlansRequest">SearchPlansRequest</a></td>
                 <td><a href="#bytebase.v1.SearchPlansResponse">SearchPlansResponse</a></td>
-                <td><p>Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query.</p></td>
+                <td><p>Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query.
+Permissions required: bb.plans.get</p></td>
               </tr>
             
               <tr>
                 <td>CreatePlan</td>
                 <td><a href="#bytebase.v1.CreatePlanRequest">CreatePlanRequest</a></td>
                 <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.plans.create</p></td>
               </tr>
             
               <tr>
@@ -20979,28 +21228,29 @@ Format: projects/{project}/plans/{plan} </p></td>
                 <td><a href="#bytebase.v1.UpdatePlanRequest">UpdatePlanRequest</a></td>
                 <td><a href="#bytebase.v1.Plan">Plan</a></td>
                 <td><p>UpdatePlan updates the plan.
-The plan creator and the user with bb.plans.update permission on the project can update the plan.</p></td>
+The plan creator and the user with bb.plans.update permission on the project can update the plan.
+Permissions required: bb.plans.update</p></td>
               </tr>
             
               <tr>
                 <td>ListPlanCheckRuns</td>
                 <td><a href="#bytebase.v1.ListPlanCheckRunsRequest">ListPlanCheckRunsRequest</a></td>
                 <td><a href="#bytebase.v1.ListPlanCheckRunsResponse">ListPlanCheckRunsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.planCheckRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>RunPlanChecks</td>
                 <td><a href="#bytebase.v1.RunPlanChecksRequest">RunPlanChecksRequest</a></td>
                 <td><a href="#bytebase.v1.RunPlanChecksResponse">RunPlanChecksResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.planCheckRuns.run</p></td>
               </tr>
             
               <tr>
                 <td>BatchCancelPlanCheckRuns</td>
                 <td><a href="#bytebase.v1.BatchCancelPlanCheckRunsRequest">BatchCancelPlanCheckRunsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchCancelPlanCheckRunsResponse">BatchCancelPlanCheckRunsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.planCheckRuns.run</p></td>
               </tr>
             
           </tbody>
@@ -21143,6 +21393,41 @@ Format: projects/{project} </p></td>
                   <td><a href="#bytebase.v1.Webhook">Webhook</a></td>
                   <td></td>
                   <td><p>The webhook to add. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchDeleteProjectsRequest">BatchDeleteProjectsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The names of the projects to delete.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>force</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, any databases from this project will be moved to default project.
+Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+Open issues will remain open but associated with the deleted project.
+If set to false, the operation will fail if the project has databases or open issues. </p></td>
                 </tr>
               
             </tbody>
@@ -21295,7 +21580,10 @@ Format: projects/{project} </p></td>
                   <td>force</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. </p></td>
+                  <td><p>If set to true, any databases from this project will be moved to default project.
+Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+Open issues will remain open but associated with the deleted project.
+If set to false, the operation will fail if the project has databases or open issues. </p></td>
                 </tr>
               
             </tbody>
@@ -21975,61 +22263,61 @@ It should not be empty, and should be a subset of the following:
               </tr>
             
               <tr>
-                <td>TYPE_NOTIFY_ISSUE_APPROVED</td>
+                <td>NOTIFY_ISSUE_APPROVED</td>
                 <td>23</td>
                 <td><p>Notifications via webhooks.
 
-TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.</p></td>
+NOTIFY_ISSUE_APPROVED represents the issue approved notification.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_NOTIFY_PIPELINE_ROLLOUT</td>
+                <td>NOTIFY_PIPELINE_ROLLOUT</td>
                 <td>24</td>
-                <td><p>TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.</p></td>
+                <td><p>NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_CREATE</td>
+                <td>ISSUE_CREATE</td>
                 <td>1</td>
                 <td><p>Issue related activity types.
 
-TYPE_ISSUE_CREATE represents creating an issue.</p></td>
+ISSUE_CREATE represents creating an issue.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_COMMENT_CREATE</td>
+                <td>ISSUE_COMMENT_CREATE</td>
                 <td>2</td>
-                <td><p>TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue.</p></td>
+                <td><p>ISSUE_COMMENT_CREATE represents commenting on an issue.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_FIELD_UPDATE</td>
+                <td>ISSUE_FIELD_UPDATE</td>
                 <td>3</td>
-                <td><p>TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.</p></td>
+                <td><p>ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_STATUS_UPDATE</td>
+                <td>ISSUE_STATUS_UPDATE</td>
                 <td>4</td>
-                <td><p>TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.</p></td>
+                <td><p>ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_APPROVAL_NOTIFY</td>
+                <td>ISSUE_APPROVAL_NOTIFY</td>
                 <td>21</td>
-                <td><p>TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.</p></td>
+                <td><p>ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE</td>
+                <td>ISSUE_PIPELINE_STAGE_STATUS_UPDATE</td>
                 <td>5</td>
-                <td><p>TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.</p></td>
+                <td><p>ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.</p></td>
               </tr>
             
               <tr>
-                <td>TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE</td>
+                <td>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE</td>
                 <td>22</td>
-                <td><p>TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.</p></td>
+                <td><p>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.</p></td>
               </tr>
             
           </tbody>
@@ -22110,98 +22398,108 @@ TYPE_ISSUE_CREATE represents creating an issue.</p></td>
                 <td>GetProject</td>
                 <td><a href="#bytebase.v1.GetProjectRequest">GetProjectRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>GetProject retrieves a project by name.
+Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method.
+Permissions required: bb.projects.get</p></td>
               </tr>
             
               <tr>
                 <td>ListProjects</td>
                 <td><a href="#bytebase.v1.ListProjectsRequest">ListProjectsRequest</a></td>
                 <td><a href="#bytebase.v1.ListProjectsResponse">ListProjectsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.list</p></td>
               </tr>
             
               <tr>
                 <td>SearchProjects</td>
                 <td><a href="#bytebase.v1.SearchProjectsRequest">SearchProjectsRequest</a></td>
                 <td><a href="#bytebase.v1.SearchProjectsResponse">SearchProjectsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>CreateProject</td>
                 <td><a href="#bytebase.v1.CreateProjectRequest">CreateProjectRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateProject</td>
                 <td><a href="#bytebase.v1.UpdateProjectRequest">UpdateProjectRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteProject</td>
                 <td><a href="#bytebase.v1.DeleteProjectRequest">DeleteProjectRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.delete</p></td>
               </tr>
             
               <tr>
                 <td>UndeleteProject</td>
                 <td><a href="#bytebase.v1.UndeleteProjectRequest">UndeleteProjectRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.undelete</p></td>
+              </tr>
+            
+              <tr>
+                <td>BatchDeleteProjects</td>
+                <td><a href="#bytebase.v1.BatchDeleteProjectsRequest">BatchDeleteProjectsRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p>Permissions required: bb.projects.delete</p></td>
               </tr>
             
               <tr>
                 <td>GetIamPolicy</td>
                 <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.getIamPolicy</p></td>
               </tr>
             
               <tr>
                 <td>BatchGetIamPolicy</td>
                 <td><a href="#bytebase.v1.BatchGetIamPolicyRequest">BatchGetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetIamPolicyResponse">BatchGetIamPolicyResponse</a></td>
-                <td><p>Deprecated.</p></td>
+                <td><p>Deprecated.
+Permissions required: bb.projects.getIamPolicy</p></td>
               </tr>
             
               <tr>
                 <td>SetIamPolicy</td>
                 <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.setIamPolicy</p></td>
               </tr>
             
               <tr>
                 <td>AddWebhook</td>
                 <td><a href="#bytebase.v1.AddWebhookRequest">AddWebhookRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>UpdateWebhook</td>
                 <td><a href="#bytebase.v1.UpdateWebhookRequest">UpdateWebhookRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>RemoveWebhook</td>
                 <td><a href="#bytebase.v1.RemoveWebhookRequest">RemoveWebhookRequest</a></td>
                 <td><a href="#bytebase.v1.Project">Project</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
               <tr>
                 <td>TestWebhook</td>
                 <td><a href="#bytebase.v1.TestWebhookRequest">TestWebhookRequest</a></td>
                 <td><a href="#bytebase.v1.TestWebhookResponse">TestWebhookResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.projects.update</p></td>
               </tr>
             
           </tbody>
@@ -22288,6 +22586,16 @@ TYPE_ISSUE_CREATE represents creating an issue.</p></td>
                 <td>UndeleteProject</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*}:undelete</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchDeleteProjects</td>
+                <td>POST</td>
+                <td>/v1/projects:batchDelete</td>
                 <td>*</td>
               </tr>
               
@@ -22915,6 +23223,72 @@ data source. </p></td>
 
         
       
+        <h3 id="bytebase.v1.MaskingReason">MaskingReason</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>semantic_type_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The semantic type that triggered masking (e.g., &#34;SSN&#34;, &#34;email&#34;, &#34;phone&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>semantic_type_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Human-readable semantic type title. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>masking_rule_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The masking rule ID that matched (if applicable). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>algorithm</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The masking algorithm used. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>context</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Additional context (e.g., &#34;Matched global rule: PII Protection&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_level</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Whether masking was due to classification level. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>semantic_type_icon</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Icon associated with the semantic type (if any). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ParseMyBatisMapperRequest">ParseMyBatisMapperRequest</h3>
         <p></p>
 
@@ -23277,20 +23651,6 @@ The types come from the Golang SQL driver. </p></td>
                 </tr>
               
                 <tr>
-                  <td>masked</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td>repeated</td>
-                  <td><p>Columns are masked or not. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sensitive</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td>repeated</td>
-                  <td><p>Columns are sensitive or not. </p></td>
-                </tr>
-              
-                <tr>
                   <td>error</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -23331,6 +23691,13 @@ The types come from the Golang SQL driver. </p></td>
                   <td>repeated</td>
                   <td><p>Informational or debug messages returned by the database engine during query execution.
 Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>masked</td>
+                  <td><a href="#bytebase.v1.MaskingReason">MaskingReason</a></td>
+                  <td>repeated</td>
+                  <td><p>Masking reasons for each column (empty for non-masked columns). </p></td>
                 </tr>
               
             </tbody>
@@ -24021,63 +24388,57 @@ Pass this value in the page_token field in the subsequent call to
                 <td>Query</td>
                 <td><a href="#bytebase.v1.QueryRequest">QueryRequest</a></td>
                 <td><a href="#bytebase.v1.QueryResponse">QueryResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>AdminExecute</td>
                 <td><a href="#bytebase.v1.AdminExecuteRequest">AdminExecuteRequest</a> stream</td>
                 <td><a href="#bytebase.v1.AdminExecuteResponse">AdminExecuteResponse</a> stream</td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sql.admin</p></td>
               </tr>
             
               <tr>
                 <td>SearchQueryHistories</td>
                 <td><a href="#bytebase.v1.SearchQueryHistoriesRequest">SearchQueryHistoriesRequest</a></td>
                 <td><a href="#bytebase.v1.SearchQueryHistoriesResponse">SearchQueryHistoriesResponse</a></td>
-                <td><p>SearchQueryHistories searches query histories for the caller.</p></td>
+                <td><p>SearchQueryHistories searches query histories for the caller.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>Export</td>
                 <td><a href="#bytebase.v1.ExportRequest">ExportRequest</a></td>
                 <td><a href="#bytebase.v1.ExportResponse">ExportResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.get</p></td>
               </tr>
             
               <tr>
                 <td>Check</td>
                 <td><a href="#bytebase.v1.CheckRequest">CheckRequest</a></td>
                 <td><a href="#bytebase.v1.CheckResponse">CheckResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ParseMyBatisMapper</td>
-                <td><a href="#bytebase.v1.ParseMyBatisMapperRequest">ParseMyBatisMapperRequest</a></td>
-                <td><a href="#bytebase.v1.ParseMyBatisMapperResponse">ParseMyBatisMapperResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.databases.check</p></td>
               </tr>
             
               <tr>
                 <td>Pretty</td>
                 <td><a href="#bytebase.v1.PrettyRequest">PrettyRequest</a></td>
                 <td><a href="#bytebase.v1.PrettyResponse">PrettyResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>DiffMetadata</td>
                 <td><a href="#bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</a></td>
                 <td><a href="#bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>AICompletion</td>
                 <td><a href="#bytebase.v1.AICompletionRequest">AICompletionRequest</a></td>
                 <td><a href="#bytebase.v1.AICompletionResponse">AICompletionResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -24172,16 +24533,6 @@ Pass this value in the page_token field in the subsequent call to
                 <td>Check</td>
                 <td>POST</td>
                 <td>/v1/sql/check</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ParseMyBatisMapper</td>
-                <td>POST</td>
-                <td>/v1/sql/parseMyBatisMapper</td>
                 <td>*</td>
               </tr>
               
@@ -24873,49 +25224,49 @@ Format: projects/{project}/releases/{release} </p></td>
                 <td>GetRelease</td>
                 <td><a href="#bytebase.v1.GetReleaseRequest">GetReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.get</p></td>
               </tr>
             
               <tr>
                 <td>ListReleases</td>
                 <td><a href="#bytebase.v1.ListReleasesRequest">ListReleasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListReleasesResponse">ListReleasesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateRelease</td>
                 <td><a href="#bytebase.v1.CreateReleaseRequest">CreateReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateRelease</td>
                 <td><a href="#bytebase.v1.UpdateReleaseRequest">UpdateReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteRelease</td>
                 <td><a href="#bytebase.v1.DeleteReleaseRequest">DeleteReleaseRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.delete</p></td>
               </tr>
             
               <tr>
                 <td>UndeleteRelease</td>
                 <td><a href="#bytebase.v1.UndeleteReleaseRequest">UndeleteReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.undelete</p></td>
               </tr>
             
               <tr>
                 <td>CheckRelease</td>
                 <td><a href="#bytebase.v1.CheckReleaseRequest">CheckReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.CheckReleaseResponse">CheckReleaseResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.releases.check</p></td>
               </tr>
             
           </tbody>
@@ -25276,35 +25627,35 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>CreateReviewConfig</td>
                 <td><a href="#bytebase.v1.CreateReviewConfigRequest">CreateReviewConfigRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.create</p></td>
               </tr>
             
               <tr>
                 <td>ListReviewConfigs</td>
                 <td><a href="#bytebase.v1.ListReviewConfigsRequest">ListReviewConfigsRequest</a></td>
                 <td><a href="#bytebase.v1.ListReviewConfigsResponse">ListReviewConfigsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.list</p></td>
               </tr>
             
               <tr>
                 <td>GetReviewConfig</td>
                 <td><a href="#bytebase.v1.GetReviewConfigRequest">GetReviewConfigRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateReviewConfig</td>
                 <td><a href="#bytebase.v1.UpdateReviewConfigRequest">UpdateReviewConfigRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteReviewConfig</td>
                 <td><a href="#bytebase.v1.DeleteReviewConfigRequest">DeleteReviewConfigRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.reviewConfigs.delete</p></td>
               </tr>
             
           </tbody>
@@ -25744,35 +26095,35 @@ projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{task
                 <td>ListRevisions</td>
                 <td><a href="#bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</a></td>
                 <td><a href="#bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.list</p></td>
               </tr>
             
               <tr>
                 <td>GetRevision</td>
                 <td><a href="#bytebase.v1.GetRevisionRequest">GetRevisionRequest</a></td>
                 <td><a href="#bytebase.v1.Revision">Revision</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.get</p></td>
               </tr>
             
               <tr>
                 <td>CreateRevision</td>
                 <td><a href="#bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</a></td>
                 <td><a href="#bytebase.v1.Revision">Revision</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.create</p></td>
               </tr>
             
               <tr>
                 <td>BatchCreateRevisions</td>
                 <td><a href="#bytebase.v1.BatchCreateRevisionsRequest">BatchCreateRevisionsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchCreateRevisionsResponse">BatchCreateRevisionsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.create</p></td>
               </tr>
             
               <tr>
                 <td>DeleteRevision</td>
                 <td><a href="#bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.revisions.delete</p></td>
               </tr>
             
           </tbody>
@@ -26228,35 +26579,35 @@ Format: risks/{risk} </p></td>
                 <td>ListRisks</td>
                 <td><a href="#bytebase.v1.ListRisksRequest">ListRisksRequest</a></td>
                 <td><a href="#bytebase.v1.ListRisksResponse">ListRisksResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateRisk</td>
                 <td><a href="#bytebase.v1.CreateRiskRequest">CreateRiskRequest</a></td>
                 <td><a href="#bytebase.v1.Risk">Risk</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.create</p></td>
               </tr>
             
               <tr>
                 <td>GetRisk</td>
                 <td><a href="#bytebase.v1.GetRiskRequest">GetRiskRequest</a></td>
                 <td><a href="#bytebase.v1.Risk">Risk</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.list</p></td>
               </tr>
             
               <tr>
                 <td>UpdateRisk</td>
                 <td><a href="#bytebase.v1.UpdateRiskRequest">UpdateRiskRequest</a></td>
                 <td><a href="#bytebase.v1.Risk">Risk</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteRisk</td>
                 <td><a href="#bytebase.v1.DeleteRiskRequest">DeleteRiskRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.risks.delete</p></td>
               </tr>
             
           </tbody>
@@ -26632,35 +26983,35 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 <td>ListRoles</td>
                 <td><a href="#bytebase.v1.ListRolesRequest">ListRolesRequest</a></td>
                 <td><a href="#bytebase.v1.ListRolesResponse">ListRolesResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.list</p></td>
               </tr>
             
               <tr>
                 <td>GetRole</td>
                 <td><a href="#bytebase.v1.GetRoleRequest">GetRoleRequest</a></td>
                 <td><a href="#bytebase.v1.Role">Role</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.get</p></td>
               </tr>
             
               <tr>
                 <td>CreateRole</td>
                 <td><a href="#bytebase.v1.CreateRoleRequest">CreateRoleRequest</a></td>
                 <td><a href="#bytebase.v1.Role">Role</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.create</p></td>
               </tr>
             
               <tr>
                 <td>UpdateRole</td>
                 <td><a href="#bytebase.v1.UpdateRoleRequest">UpdateRoleRequest</a></td>
                 <td><a href="#bytebase.v1.Role">Role</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.update</p></td>
               </tr>
             
               <tr>
                 <td>DeleteRole</td>
                 <td><a href="#bytebase.v1.DeleteRoleRequest">DeleteRoleRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.roles.delete</p></td>
               </tr>
             
           </tbody>
@@ -28922,89 +29273,84 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <td>GetRollout</td>
                 <td><a href="#bytebase.v1.GetRolloutRequest">GetRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.rollouts.get</p></td>
               </tr>
             
               <tr>
                 <td>ListRollouts</td>
                 <td><a href="#bytebase.v1.ListRolloutsRequest">ListRolloutsRequest</a></td>
                 <td><a href="#bytebase.v1.ListRolloutsResponse">ListRolloutsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.rollouts.list</p></td>
               </tr>
             
               <tr>
                 <td>CreateRollout</td>
                 <td><a href="#bytebase.v1.CreateRolloutRequest">CreateRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p>CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.</p></td>
+                <td><p>Permissions required: bb.rollouts.create</p></td>
               </tr>
             
               <tr>
                 <td>PreviewRollout</td>
                 <td><a href="#bytebase.v1.PreviewRolloutRequest">PreviewRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.rollouts.preview</p></td>
               </tr>
             
               <tr>
                 <td>ListTaskRuns</td>
                 <td><a href="#bytebase.v1.ListTaskRunsRequest">ListTaskRunsRequest</a></td>
                 <td><a href="#bytebase.v1.ListTaskRunsResponse">ListTaskRunsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>GetTaskRun</td>
                 <td><a href="#bytebase.v1.GetTaskRunRequest">GetTaskRunRequest</a></td>
                 <td><a href="#bytebase.v1.TaskRun">TaskRun</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>GetTaskRunLog</td>
                 <td><a href="#bytebase.v1.GetTaskRunLogRequest">GetTaskRunLogRequest</a></td>
                 <td><a href="#bytebase.v1.TaskRunLog">TaskRunLog</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>GetTaskRunSession</td>
                 <td><a href="#bytebase.v1.GetTaskRunSessionRequest">GetTaskRunSessionRequest</a></td>
                 <td><a href="#bytebase.v1.TaskRunSession">TaskRunSession</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
               <tr>
                 <td>BatchRunTasks</td>
                 <td><a href="#bytebase.v1.BatchRunTasksRequest">BatchRunTasksRequest</a></td>
                 <td><a href="#bytebase.v1.BatchRunTasksResponse">BatchRunTasksResponse</a></td>
-                <td><p>BatchRunTasks creates task runs for the specified tasks.
-DataExport issue only allows the creator to run the task.
-Users with &#34;bb.taskRuns.create&#34; permission can run the task, e.g. Workspace Admin and DBA.
-Follow role-based rollout policy for the environment.</p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>BatchSkipTasks</td>
                 <td><a href="#bytebase.v1.BatchSkipTasksRequest">BatchSkipTasksRequest</a></td>
                 <td><a href="#bytebase.v1.BatchSkipTasksResponse">BatchSkipTasksResponse</a></td>
-                <td><p>BatchSkipTasks skips the specified tasks.
-The access is the same as BatchRunTasks().</p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>BatchCancelTaskRuns</td>
                 <td><a href="#bytebase.v1.BatchCancelTaskRunsRequest">BatchCancelTaskRunsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchCancelTaskRunsResponse">BatchCancelTaskRunsResponse</a></td>
-                <td><p>BatchCancelTaskRuns cancels the specified task runs in batch.
-The access is the same as BatchRunTasks().</p></td>
+                <td><p>Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>PreviewTaskRunRollback</td>
                 <td><a href="#bytebase.v1.PreviewTaskRunRollbackRequest">PreviewTaskRunRollbackRequest</a></td>
                 <td><a href="#bytebase.v1.PreviewTaskRunRollbackResponse">PreviewTaskRunRollbackResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.taskRuns.list</p></td>
               </tr>
             
           </tbody>
@@ -29497,28 +29843,28 @@ Only support update the following fields for now:
                 <td>CreateSheet</td>
                 <td><a href="#bytebase.v1.CreateSheetRequest">CreateSheetRequest</a></td>
                 <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sheets.create</p></td>
               </tr>
             
               <tr>
                 <td>BatchCreateSheets</td>
                 <td><a href="#bytebase.v1.BatchCreateSheetsRequest">BatchCreateSheetsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchCreateSheetsResponse">BatchCreateSheetsResponse</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sheets.create</p></td>
               </tr>
             
               <tr>
                 <td>GetSheet</td>
                 <td><a href="#bytebase.v1.GetSheetRequest">GetSheetRequest</a></td>
                 <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sheets.get</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSheet</td>
                 <td><a href="#bytebase.v1.UpdateSheetRequest">UpdateSheetRequest</a></td>
                 <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.sheets.update</p></td>
               </tr>
             
           </tbody>
@@ -29685,14 +30031,28 @@ Only support update the following fields for now:
             <tbody>
               
                 <tr>
-                  <td>seat_count</td>
+                  <td>plan</td>
+                  <td><a href="#bytebase.v1.PlanType">PlanType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>seats</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>instance_count</td>
+                  <td>instances</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>active_instances</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -29701,13 +30061,6 @@ Only support update the following fields for now:
                 <tr>
                   <td>expires_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plan</td>
-                  <td><a href="#bytebase.v1.PlanType">PlanType</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -29924,19 +30277,19 @@ Only support update the following fields for now:
               </tr>
             
               <tr>
-                <td>FEATURE_QUERY_HISTORY</td>
+                <td>FEATURE_DATA_OFFLINE_EXPORT</td>
                 <td>26</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS</td>
+                <td>FEATURE_QUERY_HISTORY</td>
                 <td>27</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION</td>
+                <td>FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS</td>
                 <td>28</td>
                 <td><p></p></td>
               </tr>
@@ -30014,123 +30367,123 @@ Only support update the following fields for now:
               </tr>
             
               <tr>
-                <td>FEATURE_QUERY_DATASOURCE_RESTRICTION</td>
+                <td>FEATURE_CUSTOM_INSTANCE_SYNC_TIME</td>
                 <td>41</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_CUSTOM_INSTANCE_SYNC_TIME</td>
+                <td>FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT</td>
                 <td>42</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT</td>
+                <td>FEATURE_RISK_ASSESSMENT</td>
                 <td>43</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_RISK_ASSESSMENT</td>
+                <td>FEATURE_APPROVAL_WORKFLOW</td>
                 <td>44</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_APPROVAL_WORKFLOW</td>
+                <td>FEATURE_AUDIT_LOG</td>
                 <td>45</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_AUDIT_LOG</td>
+                <td>FEATURE_ENTERPRISE_SSO</td>
                 <td>46</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_ENTERPRISE_SSO</td>
+                <td>FEATURE_TWO_FA</td>
                 <td>47</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_TWO_FA</td>
+                <td>FEATURE_PASSWORD_RESTRICTIONS</td>
                 <td>48</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_PASSWORD_RESTRICTIONS</td>
+                <td>FEATURE_DISALLOW_PASSWORD_SIGNIN</td>
                 <td>49</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DISALLOW_PASSWORD_SIGNIN</td>
+                <td>FEATURE_CUSTOM_ROLES</td>
                 <td>50</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_CUSTOM_ROLES</td>
+                <td>FEATURE_REQUEST_ROLE_WORKFLOW</td>
                 <td>51</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_REQUEST_ROLE_WORKFLOW</td>
+                <td>FEATURE_DATA_MASKING</td>
                 <td>52</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DATA_MASKING</td>
+                <td>FEATURE_DATA_CLASSIFICATION</td>
                 <td>53</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DATA_CLASSIFICATION</td>
+                <td>FEATURE_SCIM</td>
                 <td>54</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_SCIM</td>
+                <td>FEATURE_DIRECTORY_SYNC</td>
                 <td>55</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_DIRECTORY_SYNC</td>
+                <td>FEATURE_SIGN_IN_FREQUENCY_CONTROL</td>
                 <td>56</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_SIGN_IN_FREQUENCY_CONTROL</td>
+                <td>FEATURE_EXTERNAL_SECRET_MANAGER</td>
                 <td>57</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_EXTERNAL_SECRET_MANAGER</td>
+                <td>FEATURE_USER_EMAIL_DOMAIN_RESTRICTION</td>
                 <td>58</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_USER_EMAIL_DOMAIN_RESTRICTION</td>
+                <td>FEATURE_PROJECT_MANAGEMENT</td>
                 <td>59</td>
-                <td><p></p></td>
+                <td><p>Administration &amp; Support</p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_ENVIRONMENT_MANAGEMENT</td>
                 <td>60</td>
-                <td><p>Administration &amp; Support</p></td>
+                <td><p></p></td>
               </tr>
             
               <tr>
@@ -30267,14 +30620,15 @@ Only support update the following fields for now:
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
                 <td><p>GetSubscription returns the current subscription.
 If there is no license, we will return a free plan subscription without expiration time.
-If there is expired license, we will return a free plan subscription with the expiration time of the expired license.</p></td>
+If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
                 <td>UpdateSubscription</td>
                 <td><a href="#bytebase.v1.UpdateSubscriptionRequest">UpdateSubscriptionRequest</a></td>
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.settings.set</p></td>
               </tr>
             
           </tbody>
@@ -30428,8 +30782,8 @@ creator == &#34;users/{email}&#34;
 creator != &#34;users/{email}&#34;
 starred == true
 starred == false
-visibility in [&#34;VISIBILITY_PRIVATE&#34;, &#34;VISIBILITY_PROJECT_READ&#34;, &#34;VISIBILITY_PROJECT_WRITE&#34;]
-visibility == &#34;VISIBILITY_PRIVATE&#34; </p></td>
+visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;]
+visibility == &#34;PRIVATE&#34; </p></td>
                 </tr>
               
                 <tr>
@@ -30723,19 +31077,19 @@ Format: worksheets/{worksheet} </p></td>
               </tr>
             
               <tr>
-                <td>VISIBILITY_PROJECT_READ</td>
+                <td>PROJECT_READ</td>
                 <td>1</td>
                 <td><p>Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read.</p></td>
               </tr>
             
               <tr>
-                <td>VISIBILITY_PROJECT_WRITE</td>
+                <td>PROJECT_WRITE</td>
                 <td>2</td>
                 <td><p>Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet.</p></td>
               </tr>
             
               <tr>
-                <td>VISIBILITY_PRIVATE</td>
+                <td>PRIVATE</td>
                 <td>3</td>
                 <td><p>Private, only worksheet OWNER can read/write.</p></td>
               </tr>
@@ -30759,7 +31113,8 @@ Format: worksheets/{worksheet} </p></td>
                 <td>CreateWorksheet</td>
                 <td><a href="#bytebase.v1.CreateWorksheetRequest">CreateWorksheetRequest</a></td>
                 <td><a href="#bytebase.v1.Worksheet">Worksheet</a></td>
-                <td><p>Create a personal worksheet used in SQL Editor.</p></td>
+                <td><p>Create a personal worksheet used in SQL Editor.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30770,7 +31125,8 @@ Format: worksheets/{worksheet} </p></td>
 The users can access this method if,
 - they are the creator of the worksheet;
 - they have bb.worksheets.get permission on the workspace;
-- the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.</p></td>
+- the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30779,7 +31135,8 @@ The users can access this method if,
                 <td><a href="#bytebase.v1.SearchWorksheetsResponse">SearchWorksheetsResponse</a></td>
                 <td><p>Search for worksheets.
 This is used for finding my worksheets or worksheets shared by other people.
-The sheet accessibility is the same as GetWorksheet().</p></td>
+The sheet accessibility is the same as GetWorksheet().
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30790,7 +31147,8 @@ The sheet accessibility is the same as GetWorksheet().</p></td>
 The users can access this method if,
 - they are the creator of the worksheet;
 - they have bb.worksheets.manage permission on the workspace;
-- the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.</p></td>
+- the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30798,7 +31156,8 @@ The users can access this method if,
                 <td><a href="#bytebase.v1.UpdateWorksheetOrganizerRequest">UpdateWorksheetOrganizerRequest</a></td>
                 <td><a href="#bytebase.v1.WorksheetOrganizer">WorksheetOrganizer</a></td>
                 <td><p>Update the organizer of a worksheet.
-The access is the same as UpdateWorksheet method.</p></td>
+The access is the same as UpdateWorksheet method.
+Permissions required: None</p></td>
               </tr>
             
               <tr>
@@ -30806,7 +31165,8 @@ The access is the same as UpdateWorksheet method.</p></td>
                 <td><a href="#bytebase.v1.DeleteWorksheetRequest">DeleteWorksheetRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Delete a worksheet.
-The access is the same as UpdateWorksheet method.</p></td>
+The access is the same as UpdateWorksheet method.
+Permissions required: None</p></td>
               </tr>
             
           </tbody>
@@ -30917,14 +31277,14 @@ The access is the same as UpdateWorksheet method.</p></td>
                 <td>GetIamPolicy</td>
                 <td><a href="#bytebase.v1.GetIamPolicyRequest">GetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.workspaces.getIamPolicy</p></td>
               </tr>
             
               <tr>
                 <td>SetIamPolicy</td>
                 <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
+                <td><p>Permissions required: bb.workspaces.setIamPolicy</p></td>
               </tr>
             
           </tbody>

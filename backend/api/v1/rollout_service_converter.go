@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"slices"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -619,7 +618,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 
 		rolloutTask, err := convertToTask(ctx, s, project, task)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert task, error: %v", err)
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert task"))
 		}
 
 		tasksByEnv[task.Environment] = append(tasksByEnv[task.Environment], rolloutTask)

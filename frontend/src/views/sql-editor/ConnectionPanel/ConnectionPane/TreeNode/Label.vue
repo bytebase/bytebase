@@ -1,6 +1,6 @@
 <template>
   <template v-if="type === 'instance'">
-    <InstanceNode :node="node" :factors="factors" :keyword="keyword" />
+    <InstanceNode :node="node" :keyword="keyword" />
   </template>
   <template v-if="type === 'environment'">
     <EnvironmentV1Name
@@ -13,7 +13,6 @@
     <DatabaseNode
       v-bind="$attrs"
       :node="node"
-      :factors="factors"
       :keyword="keyword"
       :checked="checked"
       :connected="connected"
@@ -27,17 +26,13 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
-import type {
-  SQLEditorTreeNode as TreeNode,
-  SQLEditorTreeFactor as Factor,
-} from "@/types";
+import type { SQLEditorTreeNode as TreeNode } from "@/types";
 import DatabaseNode from "./DatabaseNode.vue";
 import InstanceNode from "./InstanceNode.vue";
 import LabelNode from "./LabelNode.vue";
 
 const props = defineProps<{
   node: TreeNode;
-  factors: Factor[];
   keyword: string;
   checked: boolean;
   connected: boolean;

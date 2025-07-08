@@ -13,12 +13,14 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { NButton } from "naive-ui";
 import { parse } from "qs";
 import { onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
+import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import type { OAuthState, OAuthWindowEventPayload } from "../types";
 
 interface LocalState {
@@ -85,15 +87,18 @@ const triggerAuthCallback = async () => {
       window.close();
     } else {
       await authStore.login(
-        {
+        create(LoginRequestSchema, {
           idpName: eventName.split(".").pop()!,
           idpContext: {
-            oauth2Context: {
-              code: state.payload.code,
+            context: {
+              case: "oauth2Context",
+              value: {
+                code: state.payload.code,
+              },
             },
           },
           web: true,
-        },
+        }),
         oAuthState.redirect
       );
     }

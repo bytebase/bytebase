@@ -5,6 +5,7 @@
       :autofocus="false"
       :placeholder="$t('database.filter-database')"
       :scope-options="scopeOptions"
+      :override-route-query="false"
     />
     <NTransfer
       id="database-resource-selector"
@@ -44,14 +45,18 @@ import {
   instanceNamePrefix,
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
-import { DEBOUNCE_SEARCH_DELAY, type ComposedDatabase, type DatabaseResource } from "@/types";
-import { engineFromJSON } from "@/types/proto/v1/common";
+import {
+  DEBOUNCE_SEARCH_DELAY,
+  type ComposedDatabase,
+  type DatabaseResource,
+} from "@/types";
 import {
   getDefaultPagination,
   type SearchParams,
   CommonFilterScopeIdList,
   extractProjectResourceName,
 } from "@/utils";
+import { convertScopeValueToEngine } from "@/utils/v1/common-conversions";
 import Label from "./Label.vue";
 import type { DatabaseTreeOption } from "./common";
 import {
@@ -84,6 +89,7 @@ const scopeOptions = useCommonSearchScopeOptions([
   "project",
   "database-label",
   "engine",
+  "table",
 ]);
 
 const parseResourceToKey = (resource: DatabaseResource): string => {
@@ -172,6 +178,44 @@ const selectedEnvironment = computed(() => {
   return `${environmentNamePrefix}${environmentId}`;
 });
 
+const selectedTable = computed(() => {
+  return params.value.scopes.find((scope) => scope.id === "table")?.value;
+});
+
+const collectExpandedKeys = async ({
+  database,
+  table,
+}: {
+  database: string;
+  table: string;
+}) => {
+  const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+    database,
+  });
+  if (!databaseMetadata) {
+    return;
+  }
+  expandedKeys.value.push(database);
+  for (const schema of databaseMetadata.schemas) {
+    expandedKeys.value.push(`${database}/schemas/${schema.name}`);
+    for (const t of schema.tables) {
+      if (t.name === table) {
+        expandedKeys.value.push(
+          `${database}/schemas/${schema.name}/tables/${t.name}`
+        );
+      }
+    }
+  }
+};
+
+const filterTableList = computed(() => {
+  if (!selectedTable.value) {
+    return undefined;
+  }
+
+  return expandedKeys.value;
+});
+
 const selectedLabels = computed(() => {
   return params.value.scopes
     .filter((scope) => scope.id === "database-label")
@@ -181,7 +225,7 @@ const selectedLabels = computed(() => {
 const selectedEngines = computed(() => {
   return params.value.scopes
     .filter((scope) => scope.id === "engine")
-    .map((scope) => engineFromJSON(scope.value));
+    .map((scope) => convertScopeValueToEngine(scope.value));
 });
 
 const databaseFilter = computed(
@@ -191,6 +235,7 @@ const databaseFilter = computed(
     query: params.value.query,
     labels: selectedLabels.value,
     engines: selectedEngines.value,
+    table: selectedTable.value,
   })
 );
 
@@ -208,6 +253,7 @@ const fetchDatabaseList = useDebounceFn(async () => {
 
     if (pageToken) {
       databaseList.value.push(...databases);
+      databaseList.value = uniqBy(databaseList.value, (db) => db.name);
     } else {
       databaseList.value = databases;
     }
@@ -221,6 +267,7 @@ watch(
   () => databaseFilter.value,
   async () => {
     fetchDataState.value.nextPageToken = "";
+    expandedKeys.value = [];
     await fetchDatabaseList();
     if (!params.value.query && params.value.scopes.length === 1) {
       databaseList.value = uniqBy(
@@ -232,6 +279,16 @@ watch(
         ],
         (db) => db.name
       );
+    }
+
+    if (databaseFilter.value.table) {
+      // expand all
+      for (const database of databaseList.value) {
+        await collectExpandedKeys({
+          database: database.name,
+          table: databaseFilter.value.table,
+        });
+      }
     }
   },
   {
@@ -340,6 +397,7 @@ const sourceTreeOptions = computed(() => {
   return mapTreeOptions({
     databaseList: databaseList.value,
     includeCloumn: props.includeCloumn,
+    filterValueList: filterTableList.value,
   });
 });
 

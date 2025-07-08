@@ -76,7 +76,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 
 	// Get accessed tables for basic query type determination
 	accessTables := q.extractAccessedTables(result.Tree)
-	queryType, isExplainAnalyze := getQueryType(result.Tree, false)
+	queryType, isExplainAnalyze := getQueryType(result.Tree)
 
 	// For non-SELECT queries, return basic span following TSQL pattern
 	if queryType != base.Select && queryType != base.Explain && queryType != base.SelectInfoSchema {

@@ -1,8 +1,8 @@
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
-import type { Worksheet } from "@/types/proto/v1/worksheet_service";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
+import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
 export const extractWorksheetUID = (name: string) => {
@@ -28,10 +28,10 @@ export const isWorksheetReadableV1 = (sheet: Worksheet) => {
   }
 
   switch (sheet.visibility) {
-    case Worksheet_Visibility.VISIBILITY_PRIVATE:
+    case Worksheet_Visibility.PRIVATE:
       return false;
-    case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
-    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE: {
+    case Worksheet_Visibility.PROJECT_READ:
+    case Worksheet_Visibility.PROJECT_WRITE: {
       const projectV1 = useProjectV1Store().getProjectByName(sheet.project);
       if (projectV1.name === UNKNOWN_PROJECT_NAME) {
         return false;
@@ -63,11 +63,11 @@ export const isWorksheetWritableV1 = (sheet: Worksheet) => {
     return false;
   }
   switch (sheet.visibility) {
-    case Worksheet_Visibility.VISIBILITY_PRIVATE:
+    case Worksheet_Visibility.PRIVATE:
       return false;
-    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE:
+    case Worksheet_Visibility.PROJECT_WRITE:
       return hasProjectPermissionV2(projectV1, "bb.projects.get");
-    case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
+    case Worksheet_Visibility.PROJECT_READ:
       return hasProjectPermissionV2(projectV1, "bb.worksheets.manage");
   }
 

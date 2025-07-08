@@ -39,6 +39,12 @@ type MetadataDiff struct {
 
 	// Sequence changes
 	SequenceChanges []*SequenceDiff
+
+	// Enum type changes
+	EnumTypeChanges []*EnumTypeDiff
+
+	// Event changes
+	EventChanges []*EventDiff
 }
 
 // nolint
@@ -72,6 +78,9 @@ type TableDiff struct {
 
 	// Partition changes
 	PartitionChanges []*PartitionDiff
+
+	// Trigger changes
+	TriggerChanges []*TriggerDiff
 }
 
 // ColumnDiff represents changes to a column.
@@ -100,6 +109,13 @@ type CheckConstraintDiff struct {
 	Action             MetadataDiffAction
 	OldCheckConstraint *storepb.CheckConstraintMetadata
 	NewCheckConstraint *storepb.CheckConstraintMetadata
+}
+
+// TriggerDiff represents changes to a trigger.
+type TriggerDiff struct {
+	Action     MetadataDiffAction
+	OldTrigger *storepb.TriggerMetadata
+	NewTrigger *storepb.TriggerMetadata
 }
 
 // PartitionDiff represents changes to table partitions.
@@ -154,8 +170,25 @@ type SequenceDiff struct {
 	NewSequence  *storepb.SequenceMetadata
 }
 
+// EnumTypeDiff represents changes to an enum type.
+type EnumTypeDiff struct {
+	Action       MetadataDiffAction
+	SchemaName   string
+	EnumTypeName string
+	OldEnumType  *storepb.EnumTypeMetadata
+	NewEnumType  *storepb.EnumTypeMetadata
+}
+
+// EventDiff represents changes to an event.
+type EventDiff struct {
+	Action    MetadataDiffAction
+	EventName string
+	OldEvent  *storepb.EventMetadata
+	NewEvent  *storepb.EventMetadata
+}
+
 // GetDatabaseSchemaDiff compares two model.DatabaseSchema instances and returns the differences.
-func GetDatabaseSchemaDiff(oldSchema, newSchema *model.DatabaseSchema) (*MetadataDiff, error) {
+func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.DatabaseSchema) (*MetadataDiff, error) {
 	if oldSchema == nil || newSchema == nil {
 		return nil, nil
 	}
@@ -206,7 +239,7 @@ func GetDatabaseSchemaDiff(oldSchema, newSchema *model.DatabaseSchema) (*Metadat
 			// Compare schema objects
 			oldSchemaMeta := oldMeta.GetSchema(schemaName)
 			if oldSchemaMeta != nil {
-				compareSchemaObjects(diff, schemaName, oldSchemaMeta, newSchemaMeta)
+				compareSchemaObjects(engine, diff, schemaName, oldSchemaMeta, newSchemaMeta)
 			}
 		}
 	}
@@ -293,10 +326,31 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 			})
 		}
 	}
+
+	// Add all enum types
+	for _, enumProto := range schemaProto.EnumTypes {
+		if !enumProto.GetSkipDump() {
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &EnumTypeDiff{
+				Action:       MetadataDiffActionCreate,
+				SchemaName:   schemaName,
+				EnumTypeName: enumProto.Name,
+				NewEnumType:  enumProto,
+			})
+		}
+	}
+
+	// Add all events
+	for _, eventProto := range schemaProto.Events {
+		diff.EventChanges = append(diff.EventChanges, &EventDiff{
+			Action:    MetadataDiffActionCreate,
+			EventName: eventProto.Name,
+			NewEvent:  eventProto,
+		})
+	}
 }
 
 // compareSchemaObjects compares objects between two schemas.
-func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
 	// Compare tables
 
 	// Check for dropped tables
@@ -341,10 +395,10 @@ func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newS
 	}
 
 	// Compare views
-	compareViews(diff, schemaName, oldSchema, newSchema)
+	compareViews(engine, diff, schemaName, oldSchema, newSchema)
 
 	// Compare materialized views
-	compareMaterializedViews(diff, schemaName, oldSchema, newSchema)
+	compareMaterializedViews(engine, diff, schemaName, oldSchema, newSchema)
 
 	// Compare functions
 	compareFunctions(diff, schemaName, oldSchema, newSchema)
@@ -354,6 +408,12 @@ func compareSchemaObjects(diff *MetadataDiff, schemaName string, oldSchema, newS
 
 	// Compare sequences
 	compareSequences(diff, schemaName, oldSchema, newSchema)
+
+	// Compare enum types
+	compareEnumTypes(diff, schemaName, oldSchema, newSchema)
+
+	// Compare events
+	compareEvents(diff, schemaName, oldSchema, newSchema)
 }
 
 // compareTableDetails compares the details of two tables.
@@ -400,6 +460,18 @@ func compareTableDetails(schemaName, tableName string, oldTable, newTable *model
 	partitionChanges := comparePartitions(oldTable.GetProto().Partitions, newTable.GetProto().Partitions)
 	if len(partitionChanges) > 0 {
 		tableDiff.PartitionChanges = partitionChanges
+		hasChanges = true
+	}
+
+	// Compare triggers
+	triggerChanges := compareTriggers(oldTable.GetProto().Triggers, newTable.GetProto().Triggers)
+	if len(triggerChanges) > 0 {
+		tableDiff.TriggerChanges = triggerChanges
+		hasChanges = true
+	}
+
+	// Compare table comments
+	if oldTable.GetProto().Comment != newTable.GetProto().Comment {
 		hasChanges = true
 	}
 
@@ -455,13 +527,89 @@ func columnsEqual(col1, col2 *storepb.ColumnMetadata) bool {
 	if col1.Nullable != col2.Nullable {
 		return false
 	}
-	if col1.DefaultValue != col2.DefaultValue {
+	// Compare default values
+	if !defaultValuesEqual(col1, col2) {
 		return false
 	}
 	if col1.Comment != col2.Comment {
 		return false
 	}
+	// Compare character set and collation
+	if col1.CharacterSet != col2.CharacterSet {
+		return false
+	}
+	if col1.Collation != col2.Collation {
+		return false
+	}
+	// Compare on update clause
+	if col1.OnUpdate != col2.OnUpdate {
+		return false
+	}
+	// Compare Oracle specific metadata
+	if col1.DefaultOnNull != col2.DefaultOnNull {
+		return false
+	}
+	// Compare generated column metadata
+	if !generationMetadataEqual(col1.Generation, col2.Generation) {
+		return false
+	}
+	// Compare identity column metadata
+	if col1.IsIdentity != col2.IsIdentity {
+		return false
+	}
+	if col1.IdentityGeneration != col2.IdentityGeneration {
+		return false
+	}
+	if col1.IdentitySeed != col2.IdentitySeed {
+		return false
+	}
+	// Compare user comment
+	if col1.UserComment != col2.UserComment {
+		return false
+	}
 	return true
+}
+
+// defaultValuesEqual compares default values.
+func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
+	// Check if both have no default
+	hasDefault1 := col1.DefaultNull || col1.Default != "" || col1.DefaultExpression != ""
+	hasDefault2 := col2.DefaultNull || col2.Default != "" || col2.DefaultExpression != ""
+
+	if !hasDefault1 && !hasDefault2 {
+		return true
+	}
+	if hasDefault1 != hasDefault2 {
+		return false
+	}
+
+	// Check default null
+	if col1.DefaultNull != col2.DefaultNull {
+		return false
+	}
+
+	// Check default string value
+	if col1.Default != col2.Default {
+		return false
+	}
+
+	// Check default expression
+	if col1.DefaultExpression != col2.DefaultExpression {
+		return false
+	}
+
+	return true
+}
+
+// generationMetadataEqual compares two generation metadata structs.
+func generationMetadataEqual(gen1, gen2 *storepb.GenerationMetadata) bool {
+	if gen1 == nil && gen2 == nil {
+		return true
+	}
+	if gen1 == nil || gen2 == nil {
+		return false
+	}
+	return gen1.Type == gen2.Type && gen1.Expression == gen2.Expression
 }
 
 // compareIndexes compares indexes between two tables.
@@ -712,6 +860,65 @@ func comparePartitions(oldPartitions, newPartitions []*storepb.TablePartitionMet
 	return changes
 }
 
+// compareTriggers compares two lists of triggers.
+func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*TriggerDiff {
+	var changes []*TriggerDiff
+
+	oldTriggerMap := make(map[string]*storepb.TriggerMetadata)
+	for _, trigger := range oldTriggers {
+		oldTriggerMap[trigger.Name] = trigger
+	}
+
+	newTriggerMap := make(map[string]*storepb.TriggerMetadata)
+	for _, trigger := range newTriggers {
+		newTriggerMap[trigger.Name] = trigger
+	}
+
+	// Check for dropped triggers
+	for triggerName, oldTrigger := range oldTriggerMap {
+		if _, exists := newTriggerMap[triggerName]; !exists {
+			changes = append(changes, &TriggerDiff{
+				Action:     MetadataDiffActionDrop,
+				OldTrigger: oldTrigger,
+			})
+		}
+	}
+
+	// Check for new and modified triggers
+	for triggerName, newTrigger := range newTriggerMap {
+		oldTrigger, exists := oldTriggerMap[triggerName]
+		if !exists {
+			changes = append(changes, &TriggerDiff{
+				Action:     MetadataDiffActionCreate,
+				NewTrigger: newTrigger,
+			})
+		} else if !triggersEqual(oldTrigger, newTrigger) {
+			// Drop and recreate the trigger instead of altering
+			changes = append(changes, &TriggerDiff{
+				Action:     MetadataDiffActionDrop,
+				OldTrigger: oldTrigger,
+			})
+			changes = append(changes, &TriggerDiff{
+				Action:     MetadataDiffActionCreate,
+				NewTrigger: newTrigger,
+			})
+		}
+	}
+
+	return changes
+}
+
+// triggersEqual checks if two triggers are equal.
+func triggersEqual(t1, t2 *storepb.TriggerMetadata) bool {
+	if t1 == nil || t2 == nil {
+		return t1 == t2
+	}
+	return t1.Name == t2.Name &&
+		t1.Event == t2.Event &&
+		t1.Timing == t2.Timing &&
+		t1.Body == t2.Body
+}
+
 // partitionsEqual checks if two partitions are equal.
 func partitionsEqual(part1, part2 *storepb.TablePartitionMetadata) bool {
 	if part1.Type != part2.Type {
@@ -745,7 +952,9 @@ func partitionsEqual(part1, part2 *storepb.TablePartitionMetadata) bool {
 }
 
 // compareViews compares views between two schemas.
-func compareViews(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+	// Get the engine-specific view comparer
+	comparer := GetViewComparer(engine)
 	// Check for dropped views
 	for _, viewName := range oldSchema.ListViewNames() {
 		if newSchema.GetView(viewName) == nil {
@@ -776,20 +985,49 @@ func compareViews(diff *MetadataDiff, schemaName string, oldSchema, newSchema *m
 				ViewName:   viewName,
 				NewView:    newView.GetProto(),
 			})
-		} else if !oldView.GetProto().GetSkipDump() && oldView.Definition != newView.Definition {
-			diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
-				Action:     MetadataDiffActionAlter,
-				SchemaName: schemaName,
-				ViewName:   viewName,
-				OldView:    oldView.GetProto(),
-				NewView:    newView.GetProto(),
-			})
+		} else if !oldView.GetProto().GetSkipDump() {
+			// Use engine-specific comparison
+			changes, err := comparer.CompareView(oldView, newView)
+			if err != nil {
+				// Fallback to simple definition comparison on error
+				if oldView.Definition != newView.Definition {
+					diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
+						Action:     MetadataDiffActionAlter,
+						SchemaName: schemaName,
+						ViewName:   viewName,
+						OldView:    oldView.GetProto(),
+						NewView:    newView.GetProto(),
+					})
+				}
+			} else if len(changes) > 0 {
+				// Check if any change requires recreation
+				requiresRecreation := false
+				for _, change := range changes {
+					if change.RequiresRecreation {
+						requiresRecreation = true
+						break
+					}
+				}
+
+				if requiresRecreation {
+					diff.ViewChanges = append(diff.ViewChanges, &ViewDiff{
+						Action:     MetadataDiffActionAlter,
+						SchemaName: schemaName,
+						ViewName:   viewName,
+						OldView:    oldView.GetProto(),
+						NewView:    newView.GetProto(),
+					})
+				}
+				// TODO: Handle non-recreating changes like comment updates
+			}
 		}
 	}
 }
 
 // compareMaterializedViews compares materialized views between two schemas.
-func compareMaterializedViews(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+func compareMaterializedViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+	// Get the engine-specific view comparer
+	comparer := GetViewComparer(engine)
 	// Check for dropped materialized views
 	for _, mvName := range oldSchema.ListMaterializedViewNames() {
 		if newSchema.GetMaterializedView(mvName) == nil {
@@ -820,14 +1058,41 @@ func compareMaterializedViews(diff *MetadataDiff, schemaName string, oldSchema, 
 				MaterializedViewName: mvName,
 				NewMaterializedView:  newMV.GetProto(),
 			})
-		} else if !oldMV.GetProto().GetSkipDump() && oldMV.Definition != newMV.Definition {
-			diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
-				Action:               MetadataDiffActionAlter,
-				SchemaName:           schemaName,
-				MaterializedViewName: mvName,
-				OldMaterializedView:  oldMV.GetProto(),
-				NewMaterializedView:  newMV.GetProto(),
-			})
+		} else if !oldMV.GetProto().GetSkipDump() {
+			// Use engine-specific comparison
+			changes, err := comparer.CompareMaterializedView(oldMV, newMV)
+			if err != nil {
+				// Fallback to simple definition comparison on error
+				if oldMV.Definition != newMV.Definition {
+					diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
+						Action:               MetadataDiffActionAlter,
+						SchemaName:           schemaName,
+						MaterializedViewName: mvName,
+						OldMaterializedView:  oldMV.GetProto(),
+						NewMaterializedView:  newMV.GetProto(),
+					})
+				}
+			} else if len(changes) > 0 {
+				// Check if any change requires recreation
+				requiresRecreation := false
+				for _, change := range changes {
+					if change.RequiresRecreation {
+						requiresRecreation = true
+						break
+					}
+				}
+
+				if requiresRecreation {
+					diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &MaterializedViewDiff{
+						Action:               MetadataDiffActionAlter,
+						SchemaName:           schemaName,
+						MaterializedViewName: mvName,
+						OldMaterializedView:  oldMV.GetProto(),
+						NewMaterializedView:  newMV.GetProto(),
+					})
+				}
+				// TODO: Handle non-recreating changes like comment updates or index-only changes
+			}
 		}
 	}
 }
@@ -1004,6 +1269,101 @@ func compareSequences(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 				SchemaName:   schemaName,
 				SequenceName: seqName,
 				NewSequence:  newSeq,
+			})
+		}
+	}
+}
+
+// compareEnumTypes compares enum types between two schemas.
+func compareEnumTypes(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+	oldSchemaProto := oldSchema.GetProto()
+	newSchemaProto := newSchema.GetProto()
+
+	// Build maps of enum types
+	oldEnumMap := make(map[string]*storepb.EnumTypeMetadata)
+	for _, enum := range oldSchemaProto.EnumTypes {
+		if !enum.GetSkipDump() {
+			oldEnumMap[enum.Name] = enum
+		}
+	}
+
+	newEnumMap := make(map[string]*storepb.EnumTypeMetadata)
+	for _, enum := range newSchemaProto.EnumTypes {
+		if !enum.GetSkipDump() {
+			newEnumMap[enum.Name] = enum
+		}
+	}
+
+	// Check for dropped enum types
+	for enumName, oldEnum := range oldEnumMap {
+		if _, exists := newEnumMap[enumName]; !exists {
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &EnumTypeDiff{
+				Action:       MetadataDiffActionDrop,
+				SchemaName:   schemaName,
+				EnumTypeName: enumName,
+				OldEnumType:  oldEnum,
+			})
+		}
+	}
+
+	// Check for new enum types
+	for enumName, newEnum := range newEnumMap {
+		if _, exists := oldEnumMap[enumName]; !exists {
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &EnumTypeDiff{
+				Action:       MetadataDiffActionCreate,
+				SchemaName:   schemaName,
+				EnumTypeName: enumName,
+				NewEnumType:  newEnum,
+			})
+		}
+		// Note: We don't support ALTER enum types yet
+		// PostgreSQL doesn't allow modifying enum values easily
+	}
+}
+
+// compareEvents compares events between old and new schemas.
+func compareEvents(diff *MetadataDiff, _ string, oldSchema, newSchema *model.SchemaMetadata) {
+	oldSchemaProto := oldSchema.GetProto()
+	newSchemaProto := newSchema.GetProto()
+
+	// Build maps of events
+	oldEventMap := make(map[string]*storepb.EventMetadata)
+	for _, event := range oldSchemaProto.Events {
+		oldEventMap[event.Name] = event
+	}
+
+	newEventMap := make(map[string]*storepb.EventMetadata)
+	for _, event := range newSchemaProto.Events {
+		newEventMap[event.Name] = event
+	}
+
+	// Check for dropped events
+	for eventName, oldEvent := range oldEventMap {
+		if _, exists := newEventMap[eventName]; !exists {
+			diff.EventChanges = append(diff.EventChanges, &EventDiff{
+				Action:    MetadataDiffActionDrop,
+				EventName: eventName,
+				OldEvent:  oldEvent,
+			})
+		}
+	}
+
+	// Check for new and modified events
+	for eventName, newEvent := range newEventMap {
+		oldEvent, exists := oldEventMap[eventName]
+		if !exists {
+			diff.EventChanges = append(diff.EventChanges, &EventDiff{
+				Action:    MetadataDiffActionCreate,
+				EventName: eventName,
+				NewEvent:  newEvent,
+			})
+		} else if oldEvent.Definition != newEvent.Definition {
+			// Check if event has changed
+			diff.EventChanges = append(diff.EventChanges, &EventDiff{
+				Action:    MetadataDiffActionAlter,
+				EventName: eventName,
+				OldEvent:  oldEvent,
+				NewEvent:  newEvent,
 			})
 		}
 	}

@@ -401,17 +401,14 @@ func parseLine(line string) (method string, url string) {
 	// 1st part is the method
 	method = strings.ToUpper(strings.TrimSpace(line[0:firstWhitespaceIndex]))
 	// 2nd part is the url
-	url, err := removeTrailingWhitespace(strings.TrimSpace(line[firstWhitespaceIndex:]))
-	if err != nil {
-		return "", ""
-	}
+	url = removeTrailingWhitespace(strings.TrimSpace(line[firstWhitespaceIndex:]))
 	return method, url
 }
 
 // This function removes any trailing comments, for example:
 // "_search // comment" -> "_search"
 // Ideally the parser would do that, but currently they are included in the url.
-func removeTrailingWhitespace(s string) (string, error) {
+func removeTrailingWhitespace(s string) string {
 	index := 0
 	whitespaceIndex := -1
 	isQueryParam := false
@@ -429,9 +426,9 @@ func removeTrailingWhitespace(s string) (string, error) {
 		index += sz
 	}
 	if whitespaceIndex > 0 {
-		return s[:whitespaceIndex], nil
+		return s[:whitespaceIndex]
 	}
-	return s, nil
+	return s
 }
 
 func newParser(text string) *parser {
@@ -636,14 +633,14 @@ func (p *parser) object() (map[string]any, error) {
 	object := make(map[string]any)
 
 	if p.ch == '{' {
-		if _, err := p.next('{'); err != nil {
+		if err := p.next('{'); err != nil {
 			return nil, err
 		}
 		if err := p.white(); err != nil {
 			return nil, err
 		}
 		if p.ch == '}' {
-			if _, err := p.next('}'); err != nil {
+			if err := p.next('}'); err != nil {
 				return nil, err
 			}
 			// empty object
@@ -658,7 +655,7 @@ func (p *parser) object() (map[string]any, error) {
 			if err := p.white(); err != nil {
 				return nil, err
 			}
-			if _, err := p.next(':'); err != nil {
+			if err := p.next(':'); err != nil {
 				return nil, err
 			}
 			if _, ok := object[key]; ok {
@@ -673,12 +670,12 @@ func (p *parser) object() (map[string]any, error) {
 				return nil, err
 			}
 			if p.ch == '}' {
-				if _, err := p.next('}'); err != nil {
+				if err := p.next('}'); err != nil {
 					return nil, err
 				}
 				return object, nil
 			}
-			if _, err := p.next(','); err != nil {
+			if err := p.next(','); err != nil {
 				return nil, err
 			}
 			if err := p.white(); err != nil {
@@ -713,46 +710,46 @@ func (p *parser) value() (any, error) {
 func (p *parser) word() (any, error) {
 	switch p.ch {
 	case 't':
-		if _, err := p.next('t'); err != nil {
+		if err := p.next('t'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('r'); err != nil {
+		if err := p.next('r'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('u'); err != nil {
+		if err := p.next('u'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('e'); err != nil {
+		if err := p.next('e'); err != nil {
 			return nil, err
 		}
 	case 'f':
-		if _, err := p.next('f'); err != nil {
+		if err := p.next('f'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('a'); err != nil {
+		if err := p.next('a'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('l'); err != nil {
+		if err := p.next('l'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('s'); err != nil {
+		if err := p.next('s'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('e'); err != nil {
+		if err := p.next('e'); err != nil {
 			return nil, err
 		}
 		return false, nil
 	case 'n':
-		if _, err := p.next('n'); err != nil {
+		if err := p.next('n'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('u'); err != nil {
+		if err := p.next('u'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('l'); err != nil {
+		if err := p.next('l'); err != nil {
 			return nil, err
 		}
-		if _, err := p.next('l'); err != nil {
+		if err := p.next('l'); err != nil {
 			return nil, err
 		}
 		return nil, nil
@@ -764,7 +761,7 @@ func (p *parser) number() (float64, error) {
 	s := ""
 	if p.ch == '-' {
 		s = "-"
-		if _, err := p.next('-'); err != nil {
+		if err := p.next('-'); err != nil {
 			return 0, err
 		}
 	}
@@ -815,14 +812,14 @@ func (p *parser) number() (float64, error) {
 func (p *parser) array() ([]any, error) {
 	var array []any
 	if p.ch == '[' {
-		if _, err := p.next('['); err != nil {
+		if err := p.next('['); err != nil {
 			return nil, err
 		}
 		if err := p.white(); err != nil {
 			return nil, err
 		}
 		if p.ch == ']' {
-			if _, err := p.next(']'); err != nil {
+			if err := p.next(']'); err != nil {
 				return nil, err
 			}
 			// empty array
@@ -839,12 +836,12 @@ func (p *parser) array() ([]any, error) {
 				return nil, err
 			}
 			if p.ch == ']' {
-				if _, err := p.next(']'); err != nil {
+				if err := p.next(']'); err != nil {
 					return nil, err
 				}
 				return array, nil
 			}
-			if _, err := p.next(','); err != nil {
+			if err := p.next(','); err != nil {
 				return nil, err
 			}
 			if err := p.white(); err != nil {
@@ -861,10 +858,10 @@ func (p *parser) string() (string, error) {
 	if p.ch == '"' {
 		if p.peek(0) == '"' && p.peek(1) == '"' {
 			// literal
-			if _, err := p.next('"'); err != nil {
+			if err := p.next('"'); err != nil {
 				return "", err
 			}
-			if _, err := p.next('"'); err != nil {
+			if err := p.next('"'); err != nil {
 				return "", err
 			}
 			return p.nextUpTo(`"""`, `failed to find closing '"""'`)
@@ -966,118 +963,118 @@ func (p *parser) strictWhite() error {
 	return nil
 }
 
-func (p *parser) nextOneOf(rs []rune) (rune, error) {
+func (p *parser) nextOneOf(rs []rune) error {
 	if !includes(rs, p.ch) {
-		return 0, errors.Errorf("expected one of %+v instead of '%c'", rs, p.ch)
+		return errors.Errorf("expected one of %+v instead of '%c'", rs, p.ch)
 	}
 	if p.at >= len(p.text) {
 		// EOF, just increase the at by 1 and set the ch to 0.
 		p.at++
 		p.ch = 0
-		return 0, nil
+		return nil
 	}
 	ch, sz := utf8.DecodeRuneInString(p.text[p.at:])
 	if ch == utf8.RuneError {
 		if sz == 0 {
-			return 0, errors.Errorf("unexpected empty input")
+			return errors.Errorf("unexpected empty input")
 		}
 		if sz == 1 {
-			return 0, errors.Errorf("invalid UTF-8 character")
+			return errors.Errorf("invalid UTF-8 character")
 		}
-		return 0, errors.Errorf("unknown decoding rune error")
+		return errors.Errorf("unknown decoding rune error")
 	}
 	p.ch = ch
 	p.at += sz
-	return ch, nil
+	return nil
 }
 
 func (p *parser) method() (string, error) {
 	uppercase := strings.ToUpper(string(p.ch))
 	switch uppercase {
 	case "G":
-		if _, err := p.nextOneOf([]rune{'G', 'g'}); err != nil {
+		if err := p.nextOneOf([]rune{'G', 'g'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
+		if err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'T', 't'}); err != nil {
+		if err := p.nextOneOf([]rune{'T', 't'}); err != nil {
 			return "", err
 		}
 		return "GET", nil
 	case "H":
-		if _, err := p.nextOneOf([]rune{'H', 'h'}); err != nil {
+		if err := p.nextOneOf([]rune{'H', 'h'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
+		if err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'A', 'a'}); err != nil {
+		if err := p.nextOneOf([]rune{'A', 'a'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'D', 'd'}); err != nil {
+		if err := p.nextOneOf([]rune{'D', 'd'}); err != nil {
 			return "", err
 		}
 		return "HEAD", nil
 	case "D":
-		if _, err := p.nextOneOf([]rune{'D', 'd'}); err != nil {
+		if err := p.nextOneOf([]rune{'D', 'd'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
+		if err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'L', 'l'}); err != nil {
+		if err := p.nextOneOf([]rune{'L', 'l'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
+		if err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'T', 't'}); err != nil {
+		if err := p.nextOneOf([]rune{'T', 't'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
+		if err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
 			return "", err
 		}
-		if _, err := p.nextOneOf([]rune{'S', 's'}); err != nil {
+		if err := p.nextOneOf([]rune{'S', 's'}); err != nil {
 			return "", err
 		}
 		return "DELETE", nil
 	case "P":
-		if _, err := p.nextOneOf([]rune{'P', 'p'}); err != nil {
+		if err := p.nextOneOf([]rune{'P', 'p'}); err != nil {
 			return "", err
 		}
 		nextUppercase := strings.ToUpper(string(p.ch))
 		switch nextUppercase {
 		case "A":
-			if _, err := p.nextOneOf([]rune{'A', 'a'}); err != nil {
+			if err := p.nextOneOf([]rune{'A', 'a'}); err != nil {
 				return "", err
 			}
-			if _, err := p.nextOneOf([]rune{'T', 't'}); err != nil {
+			if err := p.nextOneOf([]rune{'T', 't'}); err != nil {
 				return "", err
 			}
-			if _, err := p.nextOneOf([]rune{'C', 'c'}); err != nil {
+			if err := p.nextOneOf([]rune{'C', 'c'}); err != nil {
 				return "", err
 			}
-			if _, err := p.nextOneOf([]rune{'H', 'h'}); err != nil {
+			if err := p.nextOneOf([]rune{'H', 'h'}); err != nil {
 				return "", err
 			}
 			return "PATCH", nil
 		case "U":
-			if _, err := p.nextOneOf([]rune{'U', 'u'}); err != nil {
+			if err := p.nextOneOf([]rune{'U', 'u'}); err != nil {
 				return "", err
 			}
-			if _, err := p.nextOneOf([]rune{'T', 't'}); err != nil {
+			if err := p.nextOneOf([]rune{'T', 't'}); err != nil {
 				return "", err
 			}
 			return "PUT", nil
 		case "O":
-			if _, err := p.nextOneOf([]rune{'O', 'o'}); err != nil {
+			if err := p.nextOneOf([]rune{'O', 'o'}); err != nil {
 				return "", err
 			}
-			if _, err := p.nextOneOf([]rune{'S', 's'}); err != nil {
+			if err := p.nextOneOf([]rune{'S', 's'}); err != nil {
 				return "", err
 			}
-			if _, err := p.nextOneOf([]rune{'T', 't'}); err != nil {
+			if err := p.nextOneOf([]rune{'T', 't'}); err != nil {
 				return "", err
 			}
 			return "POST", nil
@@ -1150,18 +1147,21 @@ func (p *parser) comment() error {
 }
 
 func (p *parser) peek(offset uint) rune {
+	if p.at >= len(p.text) {
+		return 0
+	}
+	tempAt := p.at
 	var peekCh rune
+	var sz int
 	for i := uint(0); i <= offset; i++ {
-		peekCh, sz := utf8.DecodeRuneInString(p.text[p.at:])
-		if peekCh == utf8.RuneError {
-			if sz == 0 {
-				return 0
-			}
-			if sz == 1 {
-				return 0
-			}
+		if tempAt >= len(p.text) {
 			return 0
 		}
+		peekCh, sz = utf8.DecodeRuneInString(p.text[tempAt:])
+		if peekCh == utf8.RuneError {
+			return 0
+		}
+		tempAt += sz
 	}
 	return peekCh
 }
@@ -1186,7 +1186,7 @@ func (p *parser) white() error {
 			}
 		} else if p.ch == '/' && p.peek(0) == '*' {
 			// If the chars starts with '/*', we are on the multiline comment.
-			if _, err := p.nNextEmptyInput(2); err != nil {
+			if err := p.nNextEmptyInput(2); err != nil {
 				return err
 			}
 			for p.ch != 0 && (p.ch != '*' || p.peek(0) != '/') {
@@ -1196,7 +1196,7 @@ func (p *parser) white() error {
 				}
 			}
 			if p.ch != 0 {
-				if _, err := p.nNextEmptyInput(2); err != nil {
+				if err := p.nNextEmptyInput(2); err != nil {
 					return err
 				}
 			}
@@ -1208,12 +1208,13 @@ func (p *parser) white() error {
 	return nil
 }
 
-func (p *parser) next(c rune) (rune, error) {
+func (p *parser) next(c rune) error {
 	if c != p.ch {
-		return 0, errors.Errorf("expected '%c' instead of '%c'", c, p.ch)
+		return errors.Errorf("expected '%c' instead of '%c'", c, p.ch)
 	}
 
-	return p.nextEmptyInput()
+	_, err := p.nextEmptyInput()
+	return err
 }
 
 func (p *parser) nextEmptyInput() (rune, error) {
@@ -1239,16 +1240,15 @@ func (p *parser) nextEmptyInput() (rune, error) {
 	return nextCh, nil
 }
 
-// call p.nextEmptyInput n times and return the last rune.
-func (p *parser) nNextEmptyInput(n int) (rune, error) {
-	var lastRune rune
+// call p.nextEmptyInput n times.
+func (p *parser) nNextEmptyInput(n int) error {
 	var err error
 	for i := 0; i < n; i++ {
-		if lastRune, err = p.nextEmptyInput(); err != nil {
-			return 0, err
+		if _, err = p.nextEmptyInput(); err != nil {
+			return err
 		}
 	}
-	return lastRune, nil
+	return nil
 }
 
 func includes[T rune](s []T, e T) bool {

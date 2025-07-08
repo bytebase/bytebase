@@ -1080,14 +1080,13 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 			return err
 		}
 
-		if column.DefaultValue != nil {
-			if defaultValue, ok := column.DefaultValue.(*storepb.ColumnMetadata_DefaultExpression); ok {
-				if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
-					return err
-				}
-				if _, err := io.WriteString(out, defaultValue.DefaultExpression); err != nil {
-					return err
-				}
+		// Handle default values
+		if column.Default != "" {
+			if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, column.Default); err != nil {
+				return err
 			}
 		}
 

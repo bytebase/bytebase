@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"connectrpc.com/connect"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -29,51 +29,61 @@ func NewDebugInterceptor(metricReporter *metricreport.Reporter) *DebugIntercepto
 	}
 }
 
-// DebugInterceptor is the unary interceptor for gRPC API.
-func (in *DebugInterceptor) DebugInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	startTime := time.Now()
-	resp, err := handler(ctx, request)
-	in.debugInterceptorDo(ctx, serverInfo.FullMethod, err, startTime)
+func (in *DebugInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		startTime := time.Now()
+		resp, err := next(ctx, req)
+		in.debugInterceptorDo(ctx, req.Spec().Procedure, err, startTime)
 
-	// Truncate error message to 10240 characters.
-	st, _ := status.FromError(err)
-	if msg, truncated := common.TruncateString(st.Message(), 10240); truncated {
-		slog.Info("Truncated error message", slog.String("fullMethod", serverInfo.FullMethod), slog.String("original error message", st.Message()))
-		stp := st.Proto()
-		stp.Message = "[TRUNCATED] " + msg
-		err = status.FromProto(stp).Err()
+		// Truncate error message to 10240 characters.
+		if connectErr := (&connect.Error{}); errors.As(err, &connectErr) {
+			if msg, truncated := common.TruncateString(connectErr.Message(), 10240); truncated {
+				slog.Info("Truncated error message", slog.String("fullMethod", req.Spec().Procedure), slog.String("original error message", connectErr.Message()))
+				err = connect.NewError(connectErr.Code(), errors.New("[TRUNCATED] "+msg))
+			}
+		}
+
+		return resp, err
 	}
-
-	return resp, err
 }
 
-// DebugStreamInterceptor is the unary interceptor for gRPC API.
-func (in *DebugInterceptor) DebugStreamInterceptor(request any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	startTime := time.Now()
-	err := handler(request, ss)
-	ctx := ss.Context()
-	in.debugInterceptorDo(ctx, serverInfo.FullMethod, err, startTime)
+func (*DebugInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		return next(ctx, spec)
+	}
+}
+func (in *DebugInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		startTime := time.Now()
+		err := next(ctx, conn)
+		in.debugInterceptorDo(ctx, conn.Spec().Procedure, err, startTime)
 
-	return err
+		return err
+	}
 }
 
 func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod string, err error, startTime time.Time) {
-	st := status.Convert(err)
 	var logLevel slog.Level
 	var logMsg string
-	switch st.Code() {
-	case codes.OK:
+	if common.IsNil(err) {
 		logLevel = slog.LevelDebug
-		logMsg = "OK"
-	case codes.Unauthenticated, codes.OutOfRange, codes.PermissionDenied, codes.NotFound, codes.InvalidArgument:
-		logLevel = slog.LevelDebug
-		logMsg = "client error"
-	case codes.Internal, codes.Unknown, codes.DataLoss, codes.Unavailable, codes.DeadlineExceeded:
-		logLevel = slog.LevelError
-		logMsg = "server error"
-	default:
-		logLevel = slog.LevelError
-		logMsg = "unknown error"
+		logMsg = "ok"
+	} else {
+		connectErr := (&connect.Error{})
+		if !errors.As(err, &connectErr) {
+			connectErr = connect.NewError(connect.CodeUnknown, err)
+		}
+		switch connectErr.Code() {
+		case connect.CodeUnauthenticated, connect.CodeOutOfRange, connect.CodePermissionDenied, connect.CodeNotFound, connect.CodeInvalidArgument:
+			logLevel = slog.LevelDebug
+			logMsg = "client error"
+		case connect.CodeInternal, connect.CodeUnknown, connect.CodeDataLoss, connect.CodeUnavailable, connect.CodeDeadlineExceeded:
+			logLevel = slog.LevelError
+			logMsg = "server error"
+		default:
+			logLevel = slog.LevelError
+			logMsg = "unknown error"
+		}
 	}
 	slog.Log(ctx, logLevel, logMsg, "method", fullMethod, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
 	in.metricReporter.Report(ctx, &metricplugin.Metric{

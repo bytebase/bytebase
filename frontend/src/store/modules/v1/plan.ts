@@ -1,10 +1,13 @@
+import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { planServiceClient } from "@/grpcweb";
-import { EMPTY_ID, UNKNOWN_ID } from "@/types";
-import type { Plan } from "@/types/proto/v1/plan_service";
-import { emptyPlan, unknownPlan } from "@/types/v1/issue/plan";
+import { planServiceClientConnect } from "@/grpcweb";
+import {
+  SearchPlansRequestSchema,
+  GetPlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
@@ -72,43 +75,33 @@ export type ListPlanParams = {
 
 export const usePlanStore = defineStore("plan", () => {
   const searchPlans = async ({ find, pageSize, pageToken }: ListPlanParams) => {
-    const resp = await planServiceClient.searchPlans({
+    const request = create(SearchPlansRequestSchema, {
       parent: find.project,
       filter: buildPlanFilter(find),
       pageSize,
       pageToken,
     });
+    const resp = await planServiceClientConnect.searchPlans(request);
+    const plans = resp.plans;
     // Prepare creator for the plans.
-    const users = uniq(resp.plans.map((plan) => plan.creator));
+    const users = uniq(plans.map((plan) => plan.creator));
     await useUserStore().batchGetUsers(users);
     return {
       nextPageToken: resp.nextPageToken,
-      plans: resp.plans,
+      plans,
     };
   };
 
   const fetchPlanByName = async (name: string): Promise<Plan> => {
-    const plan = await planServiceClient.getPlan({
+    const request = create(GetPlanRequestSchema, {
       name,
     });
-    return plan;
-  };
-
-  const fetchPlanByUID = async (uid: string, project = "-"): Promise<Plan> => {
-    if (uid === "undefined") {
-      console.warn("undefined plan uid");
-      return emptyPlan();
-    }
-
-    if (uid === String(EMPTY_ID)) return emptyPlan();
-    if (uid === String(UNKNOWN_ID)) return unknownPlan();
-
-    return fetchPlanByName(`projects/${project}/plans/${uid}`);
+    const response = await planServiceClientConnect.getPlan(request);
+    return response;
   };
 
   return {
     searchPlans,
     fetchPlanByName,
-    fetchPlanByUID,
   };
 });

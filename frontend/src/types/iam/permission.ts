@@ -120,8 +120,7 @@ export type Permission =
   | "bb.worksheets.get"
   | "bb.worksheets.manage"
   | "bb.workspaces.getIamPolicy"
-  | "bb.workspaces.setIamPolicy"
-  ;
+  | "bb.workspaces.setIamPolicy";
 
 export type QueryPermission = PickLiteral<
   Permission,

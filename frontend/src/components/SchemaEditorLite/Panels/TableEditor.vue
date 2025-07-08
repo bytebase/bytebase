@@ -185,36 +185,43 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { cloneDeep, head, pull } from "lodash-es";
+import { ArrowLeftIcon, PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
+import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
-  DatabaseCatalog,
-  SchemaCatalog,
-} from "@/types/proto/v1/database_catalog_service";
-import {
+  DatabaseCatalogSchema,
+  SchemaCatalogSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
-  IndexMetadata,
-  TablePartitionMetadata,
+  ForeignKeyMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
   TablePartitionMetadata_Type,
-  type ForeignKeyMetadata,
-  type SchemaMetadata,
-  type TableMetadata,
-} from "@/types/proto/v1/database_service";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+  ColumnMetadataSchema,
+  IndexMetadataSchema,
+  TablePartitionMetadataSchema,
+  DatabaseMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import type { ColumnMetadata as NewColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
 import {
   arraySwap,
   instanceV1AllowsReorderColumns,
   randomString,
 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import { cloneDeep, head, pull } from "lodash-es";
-import { ArrowLeftIcon, PlusIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
-import { computed, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { useSchemaEditorContext } from "../context";
 import {
@@ -272,7 +279,29 @@ const {
   queuePendingScrollToColumn,
   selectionEnabled,
 } = useSchemaEditorContext();
-const engine = computed(() => {
+
+// Conversion function for ColumnMetadata at service boundaries
+const convertNewColumnToOld = (
+  newColumn: NewColumnMetadata
+): ColumnMetadata => {
+  return create(ColumnMetadataSchema, {
+    name: newColumn.name,
+    position: newColumn.position,
+    hasDefault: newColumn.hasDefault,
+    defaultNull: newColumn.defaultNull,
+    defaultString: newColumn.defaultString,
+    defaultExpression: newColumn.defaultExpression,
+    onUpdate: newColumn.onUpdate,
+    nullable: newColumn.nullable,
+    type: newColumn.type,
+    characterSet: newColumn.characterSet,
+    collation: newColumn.collation,
+    userComment: newColumn.userComment,
+    comment: newColumn.comment,
+    // classification, labels, effectiveMaskingLevel are not available in old proto types
+  });
+};
+const engine = computed((): Engine => {
   return props.db.instanceResource.engine;
 });
 const state = reactive<LocalState>({
@@ -378,7 +407,7 @@ const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
 };
 
 const handleAddColumn = () => {
-  const column = ColumnMetadata.fromPartial({});
+  const column = create(ColumnMetadataSchema, {});
   /* eslint-disable-next-line vue/no-mutating-props */
   props.table.columns.push(column);
   markColumnStatus(column, "created");
@@ -408,7 +437,7 @@ const handleApplyColumnTemplate = (
   if (template.engine !== engine.value) {
     return;
   }
-  const column = cloneDeep(template.column);
+  const column = convertNewColumnToOld(template.column);
   /* eslint-disable-next-line vue/no-mutating-props */
   props.table.columns.push(column);
   if (template.catalog) {
@@ -441,7 +470,7 @@ const handleApplyColumnTemplate = (
 const handleAddIndex = () => {
   // eslint-disable-next-line vue/no-mutating-props
   props.table.indexes.push(
-    IndexMetadata.fromPartial({
+    create(IndexMetadataSchema, {
       name: `${props.table.name}_index_${randomString(8).toLowerCase()}`,
     })
   );
@@ -449,7 +478,7 @@ const handleAddIndex = () => {
 };
 const handleAddPartition = () => {
   const first = head(props.table.partitions);
-  const partition = TablePartitionMetadata.fromPartial({
+  const partition = create(TablePartitionMetadataSchema, {
     type: first?.type ?? TablePartitionMetadata_Type.HASH,
     expression: first?.expression ?? "",
   });
@@ -590,7 +619,7 @@ const mocked = computed(() => {
     const status = getColumnStatus(db, { schema, table, column });
     return status !== "dropped";
   });
-  const mockedDatabase = DatabaseMetadata.fromPartial({
+  const mockedDatabase = create(DatabaseMetadataSchema, {
     name: database.name,
     characterSet: database.characterSet,
     collation: database.collation,
@@ -601,7 +630,7 @@ const mocked = computed(() => {
       },
     ],
   });
-  const mockedCatalog = DatabaseCatalog.fromPartial({
+  const mockedCatalog = create(DatabaseCatalogSchema, {
     name: database.name,
   });
   const schemaCatalog = databaseCatalog.schemas.find(
@@ -612,7 +641,7 @@ const mocked = computed(() => {
   );
   if (schemaCatalog && tableCatalog) {
     mockedCatalog.schemas = [
-      SchemaCatalog.fromPartial({
+      create(SchemaCatalogSchema, {
         ...schemaCatalog,
         tables: [cloneDeep(tableCatalog)],
       }),

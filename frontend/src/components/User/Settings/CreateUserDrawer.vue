@@ -6,11 +6,10 @@
     >
       <template #default>
         <div class="space-y-6">
-          <div v-if="!hideServiceAccount" class="w-full mb-4 space-y-2">
+          <div class="w-full mb-4 space-y-2">
             <div class="flex items-center space-x-1">
               <div class="text-sm font-medium">{{ $t("common.type") }}</div>
               <a
-                v-if="!hideServiceAccount"
                 href="https://docs.bytebase.com/get-started/terraform?source=console"
                 target="_blank"
               >
@@ -42,20 +41,19 @@
               {{ $t("common.email") }}
               <span class="text-red-600 ml-0.5">*</span>
             </label>
-            <div
-              v-if="state.user.userType === UserType.SERVICE_ACCOUNT"
-              class="w-full flex flex-col items-start"
-            >
-              <EmailInput
-                v-model:value="state.user.email"
-                :domain="serviceAccountDomain"
-              />
-            </div>
             <EmailInput
-              v-else
               v-model:value="state.user.email"
-              :readonly="false"
-              :domain="enforceIdentityDomain ? workspaceDomain : undefined"
+              :domain-prefix="
+                state.user.userType === UserType.SERVICE_ACCOUNT
+                  ? 'service'
+                  : ''
+              "
+              :fallback-domain="
+                state.user.userType === UserType.SERVICE_ACCOUNT
+                  ? 'bytebase.com'
+                  : ''
+              "
+              :show-domain="state.user.userType === UserType.SERVICE_ACCOUNT"
             />
           </div>
 
@@ -117,7 +115,6 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
 import { NButton, NInput, NRadioGroup, NRadio } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -126,13 +123,13 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
   pushNotification,
-  useAppFeature,
   useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
 import { emptyUser, PresetRoleType } from "@/types";
-import { UserType, User } from "@/types/proto/v1/user_service";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import UserPassword from "./UserPassword.vue";
 
 interface LocalState {
@@ -154,10 +151,6 @@ const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
-const hideServiceAccount = useAppFeature(
-  "bb.feature.members.hide-service-account"
-);
-
 const state = reactive<LocalState>({
   isRequesting: false,
   user: emptyUser(),
@@ -168,23 +161,6 @@ const state = reactive<LocalState>({
 const passwordRestrictionSetting = computed(
   () => settingV1Store.passwordRestriction
 );
-
-const enforceIdentityDomain = computed(() => {
-  return Boolean(settingV1Store.workspaceProfileSetting?.enforceIdentityDomain);
-});
-
-const workspaceDomain = computed(() => {
-  return head(settingV1Store.workspaceProfileSetting?.domains);
-});
-
-// For service account, we use the domain of the workspace if it exists.
-// Otherwise, we use the default domain.
-const serviceAccountDomain = computed(() => {
-  if (workspaceDomain.value) {
-    return "service." + workspaceDomain.value;
-  }
-  return "service.bytebase.com";
-});
 
 const allowConfirm = computed(() => {
   if (!state.user.email) {

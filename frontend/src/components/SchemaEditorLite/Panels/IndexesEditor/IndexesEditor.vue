@@ -33,13 +33,13 @@ import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DatabaseMetadata,
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { markUUID } from "../common";
 import { ColumnsCell, OperationCell } from "./components";
 

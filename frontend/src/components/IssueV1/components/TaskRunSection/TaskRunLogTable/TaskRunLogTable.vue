@@ -9,18 +9,20 @@
 </template>
 
 <script setup lang="tsx">
+import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { last } from "lodash-es";
 import { CircleAlertIcon } from "lucide-vue-next";
 import { NTooltip, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/grpcweb";
+import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   type TaskRun,
   TaskRunLogEntry_Type,
-} from "@/types/proto/v1/rollout_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
+} from "@/types/proto-es/v1/rollout_service_pb";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";
 import LogTimeCell from "./LogTimeCell.vue";
@@ -40,10 +42,12 @@ const { t } = useI18n();
 const isLoading = ref(false);
 
 const taskRunLog = computedAsync(
-  () => {
-    return rolloutServiceClient.getTaskRunLog({
+  async () => {
+    const request = create(GetTaskRunLogRequestSchema, {
       parent: props.taskRun.name,
     });
+    const response = await rolloutServiceClientConnect.getTaskRunLog(request);
+    return response;
   },
   undefined,
   {

@@ -14,10 +14,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
+	"github.com/google/uuid"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/shopspring/decimal"
-	"github.com/xtgo/uuid"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -103,8 +103,8 @@ func getStatementWithResultLimit(statement string, limit int) string {
 }
 
 func makeValueByTypeName(typeName string, columnType *sql.ColumnType) any {
-	if strings.HasPrefix(typeName, "TUPLE") || strings.HasPrefix(typeName, "ARRAY") || strings.HasPrefix(typeName, "MAP") {
-		// For TUPLE, ARRAY, MAP type in ClickHouse, we pass any and the driver will do the rest.
+	if strings.HasPrefix(typeName, "TUPLE") || strings.HasPrefix(typeName, "ARRAY") || strings.HasPrefix(typeName, "MAP") || strings.HasPrefix(typeName, "JSON") {
+		// For TUPLE, ARRAY, MAP, JSON type in ClickHouse, we pass any and the driver will do the rest.
 		var it any
 		return &it
 	}
@@ -114,7 +114,7 @@ func makeValueByTypeName(typeName string, columnType *sql.ColumnType) any {
 }
 
 func convertValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
-	// handle TUPLE ARRAY MAP
+	// handle TUPLE ARRAY MAP JSON
 	if v, ok := value.(*any); ok && v != nil {
 		value, err := json.Marshal(v)
 		if err != nil {

@@ -85,6 +85,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -115,9 +116,9 @@ import {
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { formatEnvironmentName } from "@/types";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
-import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
-import { EnvironmentSetting_Environment } from "@/types/proto/v1/setting_service";
+import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
+import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
+import { EnvironmentSetting_EnvironmentSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
 import { type VueClass } from "@/utils";
@@ -203,7 +204,7 @@ const tabItemList = computed((): BBTabItem[] => {
 
 const getEnvironmentCreate = () => {
   return {
-    ...EnvironmentSetting_Environment.fromPartial({}),
+    ...create(EnvironmentSetting_EnvironmentSchema, {}),
     order: 0,
   };
 };

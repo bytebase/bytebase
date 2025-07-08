@@ -23,7 +23,7 @@ import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { ComposedDatabase } from "@/types";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { autoDatabaseRoute } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 

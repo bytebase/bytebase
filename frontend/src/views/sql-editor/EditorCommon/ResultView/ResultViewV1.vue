@@ -81,10 +81,7 @@
               :database-resource="missingResource!"
             />
             <SyncDatabaseButton
-              v-else-if="
-                !disallowSyncSchema &&
-                resultSet.error.includes('resource not found')
-              "
+              v-else-if="resultSet.error.includes('resource not found')"
               :type="'primary'"
               :text="true"
               :database="database ?? connectedDatabase"
@@ -108,31 +105,14 @@
       </template>
     </div>
 
-    <Drawer v-model:show="detail.show" @close="detail.show = false">
-      <DetailPanel v-if="detail.show" />
+    <Drawer :show="!!detail" @close="detail = undefined">
+      <DetailPanel />
     </Drawer>
   </NConfigProvider>
 </template>
 
 <script lang="ts" setup>
-import { darkThemeOverrides } from "@/../naive-ui.config";
-import { BBSpin } from "@/bbkit";
-import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
-import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
-import { Drawer } from "@/components/v2";
-import {
-  useAppFeature,
-  useConnectionOfCurrentSQLEditorTab,
-  usePolicyV1Store
-} from "@/store";
-import type {
-  ComposedDatabase,
-  DatabaseResource,
-  SQLEditorQueryParams,
-  SQLResultSetV1,
-} from "@/types";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { Code } from "@connectrpc/connect";
 import { Info } from "lucide-vue-next";
 import {
   darkTheme,
@@ -141,9 +121,27 @@ import {
   NTabs,
   NTooltip,
 } from "naive-ui";
-import { Status } from "nice-grpc-common";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
+import { darkThemeOverrides } from "@/../naive-ui.config";
+import { BBSpin } from "@/bbkit";
+import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
+import { Drawer } from "@/components/v2";
+import {
+  useAppFeature,
+  useConnectionOfCurrentSQLEditorTab,
+  usePolicyV1Store,
+} from "@/store";
+import type {
+  ComposedDatabase,
+  DatabaseResource,
+  SQLEditorQueryParams,
+  SQLResultSetV1,
+} from "@/types";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
+import { provideBinaryFormatContext } from "./DataTable/binary-format-store";
 import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
@@ -161,6 +159,7 @@ const props = withDefaults(
     resultSet?: SQLResultSetV1;
     loading?: boolean;
     dark?: boolean;
+    contextId: string;
   }>(),
   {
     executeParams: undefined,
@@ -181,20 +180,13 @@ const { instance, database: connectedDatabase } =
 const disallowRequestQuery = useAppFeature(
   "bb.feature.sql-editor.disallow-request-query"
 );
-const disallowSyncSchema = useAppFeature(
-  "bb.feature.sql-editor.disallow-sync-schema"
-);
 const keyword = ref("");
-const detail: SQLResultViewContext["detail"] = ref({
-  show: false,
-  set: 0,
-  row: 0,
-  col: 0,
-  table: undefined,
-});
+const detail: SQLResultViewContext["detail"] = ref(undefined);
+
+provideBinaryFormatContext(computed(() => props.contextId));
 
 const missingResource = computed((): DatabaseResource | undefined => {
-  if (props.resultSet?.status !== Status.PERMISSION_DENIED) {
+  if (props.resultSet?.status !== Code.PermissionDenied) {
     return;
   }
   const prefix = "permission denied to access resource: ";
@@ -209,10 +201,7 @@ const missingResource = computed((): DatabaseResource | undefined => {
 });
 
 const showRequestQueryButton = computed(() => {
-  return (
-    !disallowRequestQuery.value &&
-    missingResource.value
-  );
+  return !disallowRequestQuery.value && missingResource.value;
 });
 
 const viewMode = computed((): ViewMode => {
@@ -263,7 +252,10 @@ const disallowCopyingData = computed(() => {
       parentPath: props.database?.project,
       policyType: PolicyType.DISABLE_COPY_DATA,
     });
-    if (projectLevelPolicy?.disableCopyDataPolicy?.active) {
+    if (
+      projectLevelPolicy?.policy?.case === "disableCopyDataPolicy" &&
+      projectLevelPolicy.policy.value.active
+    ) {
       return true;
     }
     // If the database is provided, use its effective environment.
@@ -275,7 +267,10 @@ const disallowCopyingData = computed(() => {
     parentPath: environment,
     policyType: PolicyType.DISABLE_COPY_DATA,
   });
-  if (policy?.disableCopyDataPolicy?.active) {
+  if (
+    policy?.policy?.case === "disableCopyDataPolicy" &&
+    policy.policy.value.active
+  ) {
     return true;
   }
   return false;
@@ -292,34 +287,10 @@ const filteredResults = computed(() => {
   });
 });
 
-// Create a ref for column type names to share via context
-// This needs to update when the user switches result tabs
-const columnTypeNamesRef = computed(() => {
-  // If no result set, return undefined
-  if (!props.resultSet?.results) return undefined;
-
-  // For single result mode, use the first result
-  if (viewMode.value === "SINGLE-RESULT") {
-    return props.resultSet.results[0]?.columnTypeNames;
-  }
-
-  // For multi-result mode, use the active tab's result
-  // The active tab corresponds to the detail.set value
-  if (
-    viewMode.value === "MULTI-RESULT" &&
-    detail.value.set < filteredResults.value.length
-  ) {
-    return filteredResults.value[detail.value.set]?.columnTypeNames;
-  }
-
-  return undefined;
-});
-
 provideSQLResultViewContext({
   dark: toRef(props, "dark"),
   disallowCopyingData,
   keyword,
   detail,
-  columnTypeNames: columnTypeNamesRef,
 });
 </script>

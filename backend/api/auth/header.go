@@ -10,57 +10,51 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // GatewayResponseModifier is the response modifier for grpc gateway.
 type GatewayResponseModifier struct {
-	Store *store.Store
+	Store          *store.Store
+	LicenseService *enterprise.LicenseService
 }
 
 // Modify is the mux option for modifying response header.
-func (m *GatewayResponseModifier) Modify(ctx context.Context, response http.ResponseWriter, _ proto.Message) error {
+func (*GatewayResponseModifier) Modify(ctx context.Context, response http.ResponseWriter, _ proto.Message) error {
 	md, ok := runtime.ServerMetadataFromContext(ctx)
 	if !ok {
 		return errors.Errorf("failed to get ServerMetadata from context in the gateway response modifier")
 	}
 
-	isHTTPS := false
-	for _, v := range md.HeaderMD.Get(GatewayMetadataRequestOriginKey) {
-		if strings.HasPrefix(v, "https") {
-			isHTTPS = true
+	if vs := md.HeaderMD.Get("Set-Cookie"); len(vs) > 0 {
+		for _, v := range vs {
+			response.Header().Add("Set-Cookie", v)
 		}
 	}
-	m.processMetadata(ctx, md, GatewayMetadataAccessTokenKey, AccessTokenCookieName, true /* httpOnly */, isHTTPS, response)
 	return nil
 }
 
-func (m *GatewayResponseModifier) processMetadata(ctx context.Context, md runtime.ServerMetadata, metadataKey, cookieName string, httpOnly, isHTTPS bool, response http.ResponseWriter) {
-	values := md.HeaderMD.Get(metadataKey)
-	if len(values) == 0 {
-		return
-	}
-	value := values[0]
-	if value == "" {
-		// Unset cookie.
-		http.SetCookie(response, &http.Cookie{
-			Name:    cookieName,
+// token="" => unset
+func GetTokenCookie(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, origin, token string) *http.Cookie {
+	if token == "" {
+		return &http.Cookie{
+			Name:    AccessTokenCookieName,
 			Value:   "",
 			Expires: time.Unix(0, 0),
 			Path:    "/",
-		})
-		return
+		}
 	}
-
-	// Set cookie.
+	isHTTPS := strings.HasPrefix(origin, "https")
 	sameSite := http.SameSiteStrictMode
 	if isHTTPS {
 		sameSite = http.SameSiteNoneMode
 	}
-	tokenDuration := GetTokenDuration(ctx, m.Store)
-	http.SetCookie(response, &http.Cookie{
-		Name:  cookieName,
-		Value: value,
+	tokenDuration := GetTokenDuration(ctx, stores, licenseService)
+	return &http.Cookie{
+		Name:  AccessTokenCookieName,
+		Value: token,
 		// CookieExpDuration expires slightly earlier than the jwt expiration. Client would be logged out if the user
 		// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
 		// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
@@ -69,15 +63,20 @@ func (m *GatewayResponseModifier) processMetadata(ctx context.Context, md runtim
 		Expires: time.Now().Add(tokenDuration - 1*time.Second),
 		Path:    "/",
 		// Http-only helps mitigate the risk of client side script accessing the protected cookie.
-		HttpOnly: httpOnly,
+		HttpOnly: true,
 		// See https://github.com/bytebase/bytebase/issues/31.
 		Secure:   isHTTPS,
 		SameSite: sameSite,
-	})
+	}
 }
 
-func GetTokenDuration(ctx context.Context, store *store.Store) time.Duration {
+func GetTokenDuration(ctx context.Context, store *store.Store, licenseService *enterprise.LicenseService) time.Duration {
 	tokenDuration := DefaultTokenDuration
+
+	// If the sign-in frequency control feature is not enabled, return default duration
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+		return tokenDuration
+	}
 
 	workspaceProfile, err := store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {

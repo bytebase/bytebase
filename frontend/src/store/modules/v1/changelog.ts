@@ -1,14 +1,19 @@
+import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { databaseServiceClient } from "@/grpcweb";
+import { databaseServiceClientConnect } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
 import {
+  ListChangelogsRequestSchema,
+  GetChangelogRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
   ChangelogView,
-  GetChangelogRequest,
-  ListChangelogsRequest,
+  type GetChangelogRequest,
+  type ListChangelogsRequest,
   type Changelog,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import { DEFAULT_PAGE_SIZE } from "../common";
 
@@ -24,10 +29,7 @@ export const useChangelogStore = defineStore("changelog", () => {
   ) => {
     changelogsMapByDatabase.set(parent, changelogs);
     changelogs.forEach((changelog) => {
-      cache.setEntity(
-        [changelog.name, ChangelogView.CHANGELOG_VIEW_BASIC],
-        changelog
-      );
+      cache.setEntity([changelog.name, ChangelogView.BASIC], changelog);
     });
   };
 
@@ -38,15 +40,23 @@ export const useChangelogStore = defineStore("changelog", () => {
   const fetchChangelogList = async (params: Partial<ListChangelogsRequest>) => {
     const { parent } = params;
     if (!parent) throw new Error('"parent" field is required');
-    const { changelogs, nextPageToken } =
-      await databaseServiceClient.listChangelogs(params);
+    const request = create(ListChangelogsRequestSchema, {
+      parent: params.parent,
+      pageSize: params.pageSize,
+      pageToken: params.pageToken,
+      view: params.view,
+      filter: params.filter,
+    });
+    const response = await databaseServiceClientConnect.listChangelogs(request);
+    const changelogs = response.changelogs;
+    const { nextPageToken } = response;
     await upsertChangelogsMap(parent, changelogs);
     return { changelogs, nextPageToken };
   };
   const getOrFetchChangelogListOfDatabase = async (
     databaseName: string,
     pageSize = DEFAULT_PAGE_SIZE,
-    view = ChangelogView.CHANGELOG_VIEW_BASIC,
+    view = ChangelogView.BASIC,
     filter = ""
   ) => {
     if (changelogsMapByDatabase.has(databaseName)) {
@@ -65,16 +75,21 @@ export const useChangelogStore = defineStore("changelog", () => {
     return changelogsMapByDatabase.get(name) ?? [];
   };
   const fetchChangelog = async (params: Partial<GetChangelogRequest>) => {
-    const changelog = await databaseServiceClient.getChangelog(params);
+    const request = create(GetChangelogRequestSchema, {
+      name: params.name,
+      view: params.view,
+      sdlFormat: params.sdlFormat,
+    });
+    const changelog = await databaseServiceClientConnect.getChangelog(request);
     cache.setEntity(
-      [changelog.name, params.view ?? ChangelogView.CHANGELOG_VIEW_BASIC],
+      [changelog.name, params.view ?? ChangelogView.BASIC],
       changelog
     );
     return changelog;
   };
   const getOrFetchChangelogByName = async (
     name: string,
-    view: ChangelogView = ChangelogView.CHANGELOG_VIEW_BASIC
+    view: ChangelogView = ChangelogView.BASIC
   ) => {
     const uid = extractChangelogUID(name);
     if (!uid || uid === String(UNKNOWN_ID)) {
@@ -104,8 +119,8 @@ export const useChangelogStore = defineStore("changelog", () => {
   ) => {
     if (view === undefined) {
       return (
-        cache.getEntity([name, ChangelogView.CHANGELOG_VIEW_FULL]) ??
-        cache.getEntity([name, ChangelogView.CHANGELOG_VIEW_BASIC])
+        cache.getEntity([name, ChangelogView.FULL]) ??
+        cache.getEntity([name, ChangelogView.BASIC])
       );
     }
     return cache.getEntity([name, view]);

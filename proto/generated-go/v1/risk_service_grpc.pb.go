@@ -31,10 +31,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RiskServiceClient interface {
+	// Permissions required: bb.risks.list
 	ListRisks(ctx context.Context, in *ListRisksRequest, opts ...grpc.CallOption) (*ListRisksResponse, error)
+	// Permissions required: bb.risks.create
 	CreateRisk(ctx context.Context, in *CreateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
+	// Permissions required: bb.risks.list
 	GetRisk(ctx context.Context, in *GetRiskRequest, opts ...grpc.CallOption) (*Risk, error)
+	// Permissions required: bb.risks.update
 	UpdateRisk(ctx context.Context, in *UpdateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
+	// Permissions required: bb.risks.delete
 	DeleteRisk(ctx context.Context, in *DeleteRiskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -100,10 +105,15 @@ func (c *riskServiceClient) DeleteRisk(ctx context.Context, in *DeleteRiskReques
 // All implementations must embed UnimplementedRiskServiceServer
 // for forward compatibility.
 type RiskServiceServer interface {
+	// Permissions required: bb.risks.list
 	ListRisks(context.Context, *ListRisksRequest) (*ListRisksResponse, error)
+	// Permissions required: bb.risks.create
 	CreateRisk(context.Context, *CreateRiskRequest) (*Risk, error)
+	// Permissions required: bb.risks.list
 	GetRisk(context.Context, *GetRiskRequest) (*Risk, error)
+	// Permissions required: bb.risks.update
 	UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error)
+	// Permissions required: bb.risks.delete
 	DeleteRisk(context.Context, *DeleteRiskRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedRiskServiceServer()
 }

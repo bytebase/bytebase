@@ -129,6 +129,55 @@ func (OAuth2AuthStyle) EnumDescriptor() ([]byte, []int) {
 	return file_v1_idp_service_proto_rawDescGZIP(), []int{1}
 }
 
+type LDAPIdentityProviderConfig_SecurityProtocol int32
+
+const (
+	LDAPIdentityProviderConfig_SECURITY_PROTOCOL_UNSPECIFIED LDAPIdentityProviderConfig_SecurityProtocol = 0
+	LDAPIdentityProviderConfig_START_TLS                     LDAPIdentityProviderConfig_SecurityProtocol = 1 // StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS.
+	LDAPIdentityProviderConfig_LDAPS                         LDAPIdentityProviderConfig_SecurityProtocol = 2 // LDAPS is the security protocol that uses TLS from the beginning.
+)
+
+// Enum value maps for LDAPIdentityProviderConfig_SecurityProtocol.
+var (
+	LDAPIdentityProviderConfig_SecurityProtocol_name = map[int32]string{
+		0: "SECURITY_PROTOCOL_UNSPECIFIED",
+		1: "START_TLS",
+		2: "LDAPS",
+	}
+	LDAPIdentityProviderConfig_SecurityProtocol_value = map[string]int32{
+		"SECURITY_PROTOCOL_UNSPECIFIED": 0,
+		"START_TLS":                     1,
+		"LDAPS":                         2,
+	}
+)
+
+func (x LDAPIdentityProviderConfig_SecurityProtocol) Enum() *LDAPIdentityProviderConfig_SecurityProtocol {
+	p := new(LDAPIdentityProviderConfig_SecurityProtocol)
+	*p = x
+	return p
+}
+
+func (x LDAPIdentityProviderConfig_SecurityProtocol) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LDAPIdentityProviderConfig_SecurityProtocol) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_idp_service_proto_enumTypes[2].Descriptor()
+}
+
+func (LDAPIdentityProviderConfig_SecurityProtocol) Type() protoreflect.EnumType {
+	return &file_v1_idp_service_proto_enumTypes[2]
+}
+
+func (x LDAPIdentityProviderConfig_SecurityProtocol) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LDAPIdentityProviderConfig_SecurityProtocol.Descriptor instead.
+func (LDAPIdentityProviderConfig_SecurityProtocol) EnumDescriptor() ([]byte, []int) {
+	return file_v1_idp_service_proto_rawDescGZIP(), []int{13, 0}
+}
+
 type GetIdentityProviderRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -582,7 +631,11 @@ func (x *OAuth2IdentityProviderTestRequestContext) GetCode() string {
 }
 
 type TestIdentityProviderResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The map of claims returned by the identity provider.
+	Claims map[string]string `protobuf:"bytes,1,rep,name=claims,proto3" json:"claims,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// The matched user info from the claims.
+	UserInfo      map[string]string `protobuf:"bytes,2,rep,name=user_info,json=userInfo,proto3" json:"user_info,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -615,6 +668,20 @@ func (x *TestIdentityProviderResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use TestIdentityProviderResponse.ProtoReflect.Descriptor instead.
 func (*TestIdentityProviderResponse) Descriptor() ([]byte, []int) {
 	return file_v1_idp_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *TestIdentityProviderResponse) GetClaims() map[string]string {
+	if x != nil {
+		return x.Claims
+	}
+	return nil
+}
+
+func (x *TestIdentityProviderResponse) GetUserInfo() map[string]string {
+	if x != nil {
+		return x.UserInfo
+	}
+	return nil
 }
 
 type IdentityProvider struct {
@@ -1029,8 +1096,8 @@ type LDAPIdentityProviderConfig struct {
 	// UserFilter is the filter to search for users, e.g. "(uid=%s)".
 	UserFilter string `protobuf:"bytes,7,opt,name=user_filter,json=userFilter,proto3" json:"user_filter,omitempty"`
 	// SecurityProtocol is the security protocol to be used for establishing
-	// connections with the LDAP server. It must be StartTLS, LDAPS or None.
-	SecurityProtocol string `protobuf:"bytes,8,opt,name=security_protocol,json=securityProtocol,proto3" json:"security_protocol,omitempty"`
+	// connections with the LDAP server.
+	SecurityProtocol LDAPIdentityProviderConfig_SecurityProtocol `protobuf:"varint,8,opt,name=security_protocol,json=securityProtocol,proto3,enum=bytebase.v1.LDAPIdentityProviderConfig_SecurityProtocol" json:"security_protocol,omitempty"`
 	// FieldMapping is the mapping of the user attributes returned by the LDAP
 	// server.
 	FieldMapping  *FieldMapping `protobuf:"bytes,9,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
@@ -1117,11 +1184,11 @@ func (x *LDAPIdentityProviderConfig) GetUserFilter() string {
 	return ""
 }
 
-func (x *LDAPIdentityProviderConfig) GetSecurityProtocol() string {
+func (x *LDAPIdentityProviderConfig) GetSecurityProtocol() LDAPIdentityProviderConfig_SecurityProtocol {
 	if x != nil {
 		return x.SecurityProtocol
 	}
-	return ""
+	return LDAPIdentityProviderConfig_SECURITY_PROTOCOL_UNSPECIFIED
 }
 
 func (x *LDAPIdentityProviderConfig) GetFieldMapping() *FieldMapping {
@@ -1238,8 +1305,16 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x0eoauth2_context\x18\x02 \x01(\v25.bytebase.v1.OAuth2IdentityProviderTestRequestContextH\x00R\roauth2ContextB\t\n" +
 	"\acontext\">\n" +
 	"(OAuth2IdentityProviderTestRequestContext\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"\x1e\n" +
-	"\x1cTestIdentityProviderResponse\"\xf1\x01\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\"\xbb\x02\n" +
+	"\x1cTestIdentityProviderResponse\x12M\n" +
+	"\x06claims\x18\x01 \x03(\v25.bytebase.v1.TestIdentityProviderResponse.ClaimsEntryR\x06claims\x12T\n" +
+	"\tuser_info\x18\x02 \x03(\v27.bytebase.v1.TestIdentityProviderResponse.UserInfoEntryR\buserInfo\x1a9\n" +
+	"\vClaimsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a;\n" +
+	"\rUserInfoEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf1\x01\n" +
 	"\x10IdentityProvider\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x04 \x01(\tR\x05title\x12\x16\n" +
@@ -1275,7 +1350,7 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x0fskip_tls_verify\x18\x06 \x01(\bR\rskipTlsVerify\x12;\n" +
 	"\n" +
 	"auth_style\x18\a \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\x12)\n" +
-	"\rauth_endpoint\x18\b \x01(\tB\x04\xe2A\x01\x03R\fauthEndpoint\"\xd1\x02\n" +
+	"\rauth_endpoint\x18\b \x01(\tB\x04\xe2A\x01\x03R\fauthEndpoint\"\xdc\x03\n" +
 	"\x1aLDAPIdentityProviderConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12&\n" +
@@ -1284,9 +1359,13 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\rbind_password\x18\x05 \x01(\tR\fbindPassword\x12\x17\n" +
 	"\abase_dn\x18\x06 \x01(\tR\x06baseDn\x12\x1f\n" +
 	"\vuser_filter\x18\a \x01(\tR\n" +
-	"userFilter\x12+\n" +
-	"\x11security_protocol\x18\b \x01(\tR\x10securityProtocol\x12>\n" +
-	"\rfield_mapping\x18\t \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\"\x85\x01\n" +
+	"userFilter\x12e\n" +
+	"\x11security_protocol\x18\b \x01(\x0e28.bytebase.v1.LDAPIdentityProviderConfig.SecurityProtocolR\x10securityProtocol\x12>\n" +
+	"\rfield_mapping\x18\t \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\"O\n" +
+	"\x10SecurityProtocol\x12!\n" +
+	"\x1dSECURITY_PROTOCOL_UNSPECIFIED\x10\x00\x12\r\n" +
+	"\tSTART_TLS\x10\x01\x12\t\n" +
+	"\x05LDAPS\x10\x02\"\x85\x01\n" +
 	"\fFieldMapping\x12\x1e\n" +
 	"\n" +
 	"identifier\x18\x01 \x01(\tR\n" +
@@ -1325,63 +1404,69 @@ func file_v1_idp_service_proto_rawDescGZIP() []byte {
 	return file_v1_idp_service_proto_rawDescData
 }
 
-var file_v1_idp_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_v1_idp_service_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_v1_idp_service_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_v1_idp_service_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_v1_idp_service_proto_goTypes = []any{
 	(IdentityProviderType)(0),                        // 0: bytebase.v1.IdentityProviderType
 	(OAuth2AuthStyle)(0),                             // 1: bytebase.v1.OAuth2AuthStyle
-	(*GetIdentityProviderRequest)(nil),               // 2: bytebase.v1.GetIdentityProviderRequest
-	(*ListIdentityProvidersRequest)(nil),             // 3: bytebase.v1.ListIdentityProvidersRequest
-	(*ListIdentityProvidersResponse)(nil),            // 4: bytebase.v1.ListIdentityProvidersResponse
-	(*CreateIdentityProviderRequest)(nil),            // 5: bytebase.v1.CreateIdentityProviderRequest
-	(*UpdateIdentityProviderRequest)(nil),            // 6: bytebase.v1.UpdateIdentityProviderRequest
-	(*DeleteIdentityProviderRequest)(nil),            // 7: bytebase.v1.DeleteIdentityProviderRequest
-	(*TestIdentityProviderRequest)(nil),              // 8: bytebase.v1.TestIdentityProviderRequest
-	(*OAuth2IdentityProviderTestRequestContext)(nil), // 9: bytebase.v1.OAuth2IdentityProviderTestRequestContext
-	(*TestIdentityProviderResponse)(nil),             // 10: bytebase.v1.TestIdentityProviderResponse
-	(*IdentityProvider)(nil),                         // 11: bytebase.v1.IdentityProvider
-	(*IdentityProviderConfig)(nil),                   // 12: bytebase.v1.IdentityProviderConfig
-	(*OAuth2IdentityProviderConfig)(nil),             // 13: bytebase.v1.OAuth2IdentityProviderConfig
-	(*OIDCIdentityProviderConfig)(nil),               // 14: bytebase.v1.OIDCIdentityProviderConfig
-	(*LDAPIdentityProviderConfig)(nil),               // 15: bytebase.v1.LDAPIdentityProviderConfig
-	(*FieldMapping)(nil),                             // 16: bytebase.v1.FieldMapping
-	(*fieldmaskpb.FieldMask)(nil),                    // 17: google.protobuf.FieldMask
-	(*emptypb.Empty)(nil),                            // 18: google.protobuf.Empty
+	(LDAPIdentityProviderConfig_SecurityProtocol)(0), // 2: bytebase.v1.LDAPIdentityProviderConfig.SecurityProtocol
+	(*GetIdentityProviderRequest)(nil),               // 3: bytebase.v1.GetIdentityProviderRequest
+	(*ListIdentityProvidersRequest)(nil),             // 4: bytebase.v1.ListIdentityProvidersRequest
+	(*ListIdentityProvidersResponse)(nil),            // 5: bytebase.v1.ListIdentityProvidersResponse
+	(*CreateIdentityProviderRequest)(nil),            // 6: bytebase.v1.CreateIdentityProviderRequest
+	(*UpdateIdentityProviderRequest)(nil),            // 7: bytebase.v1.UpdateIdentityProviderRequest
+	(*DeleteIdentityProviderRequest)(nil),            // 8: bytebase.v1.DeleteIdentityProviderRequest
+	(*TestIdentityProviderRequest)(nil),              // 9: bytebase.v1.TestIdentityProviderRequest
+	(*OAuth2IdentityProviderTestRequestContext)(nil), // 10: bytebase.v1.OAuth2IdentityProviderTestRequestContext
+	(*TestIdentityProviderResponse)(nil),             // 11: bytebase.v1.TestIdentityProviderResponse
+	(*IdentityProvider)(nil),                         // 12: bytebase.v1.IdentityProvider
+	(*IdentityProviderConfig)(nil),                   // 13: bytebase.v1.IdentityProviderConfig
+	(*OAuth2IdentityProviderConfig)(nil),             // 14: bytebase.v1.OAuth2IdentityProviderConfig
+	(*OIDCIdentityProviderConfig)(nil),               // 15: bytebase.v1.OIDCIdentityProviderConfig
+	(*LDAPIdentityProviderConfig)(nil),               // 16: bytebase.v1.LDAPIdentityProviderConfig
+	(*FieldMapping)(nil),                             // 17: bytebase.v1.FieldMapping
+	nil,                                              // 18: bytebase.v1.TestIdentityProviderResponse.ClaimsEntry
+	nil,                                              // 19: bytebase.v1.TestIdentityProviderResponse.UserInfoEntry
+	(*fieldmaskpb.FieldMask)(nil),                    // 20: google.protobuf.FieldMask
+	(*emptypb.Empty)(nil),                            // 21: google.protobuf.Empty
 }
 var file_v1_idp_service_proto_depIdxs = []int32{
-	11, // 0: bytebase.v1.ListIdentityProvidersResponse.identity_providers:type_name -> bytebase.v1.IdentityProvider
-	11, // 1: bytebase.v1.CreateIdentityProviderRequest.identity_provider:type_name -> bytebase.v1.IdentityProvider
-	11, // 2: bytebase.v1.UpdateIdentityProviderRequest.identity_provider:type_name -> bytebase.v1.IdentityProvider
-	17, // 3: bytebase.v1.UpdateIdentityProviderRequest.update_mask:type_name -> google.protobuf.FieldMask
-	11, // 4: bytebase.v1.TestIdentityProviderRequest.identity_provider:type_name -> bytebase.v1.IdentityProvider
-	9,  // 5: bytebase.v1.TestIdentityProviderRequest.oauth2_context:type_name -> bytebase.v1.OAuth2IdentityProviderTestRequestContext
-	0,  // 6: bytebase.v1.IdentityProvider.type:type_name -> bytebase.v1.IdentityProviderType
-	12, // 7: bytebase.v1.IdentityProvider.config:type_name -> bytebase.v1.IdentityProviderConfig
-	13, // 8: bytebase.v1.IdentityProviderConfig.oauth2_config:type_name -> bytebase.v1.OAuth2IdentityProviderConfig
-	14, // 9: bytebase.v1.IdentityProviderConfig.oidc_config:type_name -> bytebase.v1.OIDCIdentityProviderConfig
-	15, // 10: bytebase.v1.IdentityProviderConfig.ldap_config:type_name -> bytebase.v1.LDAPIdentityProviderConfig
-	16, // 11: bytebase.v1.OAuth2IdentityProviderConfig.field_mapping:type_name -> bytebase.v1.FieldMapping
-	1,  // 12: bytebase.v1.OAuth2IdentityProviderConfig.auth_style:type_name -> bytebase.v1.OAuth2AuthStyle
-	16, // 13: bytebase.v1.OIDCIdentityProviderConfig.field_mapping:type_name -> bytebase.v1.FieldMapping
-	1,  // 14: bytebase.v1.OIDCIdentityProviderConfig.auth_style:type_name -> bytebase.v1.OAuth2AuthStyle
-	16, // 15: bytebase.v1.LDAPIdentityProviderConfig.field_mapping:type_name -> bytebase.v1.FieldMapping
-	2,  // 16: bytebase.v1.IdentityProviderService.GetIdentityProvider:input_type -> bytebase.v1.GetIdentityProviderRequest
-	3,  // 17: bytebase.v1.IdentityProviderService.ListIdentityProviders:input_type -> bytebase.v1.ListIdentityProvidersRequest
-	5,  // 18: bytebase.v1.IdentityProviderService.CreateIdentityProvider:input_type -> bytebase.v1.CreateIdentityProviderRequest
-	6,  // 19: bytebase.v1.IdentityProviderService.UpdateIdentityProvider:input_type -> bytebase.v1.UpdateIdentityProviderRequest
-	7,  // 20: bytebase.v1.IdentityProviderService.DeleteIdentityProvider:input_type -> bytebase.v1.DeleteIdentityProviderRequest
-	8,  // 21: bytebase.v1.IdentityProviderService.TestIdentityProvider:input_type -> bytebase.v1.TestIdentityProviderRequest
-	11, // 22: bytebase.v1.IdentityProviderService.GetIdentityProvider:output_type -> bytebase.v1.IdentityProvider
-	4,  // 23: bytebase.v1.IdentityProviderService.ListIdentityProviders:output_type -> bytebase.v1.ListIdentityProvidersResponse
-	11, // 24: bytebase.v1.IdentityProviderService.CreateIdentityProvider:output_type -> bytebase.v1.IdentityProvider
-	11, // 25: bytebase.v1.IdentityProviderService.UpdateIdentityProvider:output_type -> bytebase.v1.IdentityProvider
-	18, // 26: bytebase.v1.IdentityProviderService.DeleteIdentityProvider:output_type -> google.protobuf.Empty
-	10, // 27: bytebase.v1.IdentityProviderService.TestIdentityProvider:output_type -> bytebase.v1.TestIdentityProviderResponse
-	22, // [22:28] is the sub-list for method output_type
-	16, // [16:22] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	12, // 0: bytebase.v1.ListIdentityProvidersResponse.identity_providers:type_name -> bytebase.v1.IdentityProvider
+	12, // 1: bytebase.v1.CreateIdentityProviderRequest.identity_provider:type_name -> bytebase.v1.IdentityProvider
+	12, // 2: bytebase.v1.UpdateIdentityProviderRequest.identity_provider:type_name -> bytebase.v1.IdentityProvider
+	20, // 3: bytebase.v1.UpdateIdentityProviderRequest.update_mask:type_name -> google.protobuf.FieldMask
+	12, // 4: bytebase.v1.TestIdentityProviderRequest.identity_provider:type_name -> bytebase.v1.IdentityProvider
+	10, // 5: bytebase.v1.TestIdentityProviderRequest.oauth2_context:type_name -> bytebase.v1.OAuth2IdentityProviderTestRequestContext
+	18, // 6: bytebase.v1.TestIdentityProviderResponse.claims:type_name -> bytebase.v1.TestIdentityProviderResponse.ClaimsEntry
+	19, // 7: bytebase.v1.TestIdentityProviderResponse.user_info:type_name -> bytebase.v1.TestIdentityProviderResponse.UserInfoEntry
+	0,  // 8: bytebase.v1.IdentityProvider.type:type_name -> bytebase.v1.IdentityProviderType
+	13, // 9: bytebase.v1.IdentityProvider.config:type_name -> bytebase.v1.IdentityProviderConfig
+	14, // 10: bytebase.v1.IdentityProviderConfig.oauth2_config:type_name -> bytebase.v1.OAuth2IdentityProviderConfig
+	15, // 11: bytebase.v1.IdentityProviderConfig.oidc_config:type_name -> bytebase.v1.OIDCIdentityProviderConfig
+	16, // 12: bytebase.v1.IdentityProviderConfig.ldap_config:type_name -> bytebase.v1.LDAPIdentityProviderConfig
+	17, // 13: bytebase.v1.OAuth2IdentityProviderConfig.field_mapping:type_name -> bytebase.v1.FieldMapping
+	1,  // 14: bytebase.v1.OAuth2IdentityProviderConfig.auth_style:type_name -> bytebase.v1.OAuth2AuthStyle
+	17, // 15: bytebase.v1.OIDCIdentityProviderConfig.field_mapping:type_name -> bytebase.v1.FieldMapping
+	1,  // 16: bytebase.v1.OIDCIdentityProviderConfig.auth_style:type_name -> bytebase.v1.OAuth2AuthStyle
+	2,  // 17: bytebase.v1.LDAPIdentityProviderConfig.security_protocol:type_name -> bytebase.v1.LDAPIdentityProviderConfig.SecurityProtocol
+	17, // 18: bytebase.v1.LDAPIdentityProviderConfig.field_mapping:type_name -> bytebase.v1.FieldMapping
+	3,  // 19: bytebase.v1.IdentityProviderService.GetIdentityProvider:input_type -> bytebase.v1.GetIdentityProviderRequest
+	4,  // 20: bytebase.v1.IdentityProviderService.ListIdentityProviders:input_type -> bytebase.v1.ListIdentityProvidersRequest
+	6,  // 21: bytebase.v1.IdentityProviderService.CreateIdentityProvider:input_type -> bytebase.v1.CreateIdentityProviderRequest
+	7,  // 22: bytebase.v1.IdentityProviderService.UpdateIdentityProvider:input_type -> bytebase.v1.UpdateIdentityProviderRequest
+	8,  // 23: bytebase.v1.IdentityProviderService.DeleteIdentityProvider:input_type -> bytebase.v1.DeleteIdentityProviderRequest
+	9,  // 24: bytebase.v1.IdentityProviderService.TestIdentityProvider:input_type -> bytebase.v1.TestIdentityProviderRequest
+	12, // 25: bytebase.v1.IdentityProviderService.GetIdentityProvider:output_type -> bytebase.v1.IdentityProvider
+	5,  // 26: bytebase.v1.IdentityProviderService.ListIdentityProviders:output_type -> bytebase.v1.ListIdentityProvidersResponse
+	12, // 27: bytebase.v1.IdentityProviderService.CreateIdentityProvider:output_type -> bytebase.v1.IdentityProvider
+	12, // 28: bytebase.v1.IdentityProviderService.UpdateIdentityProvider:output_type -> bytebase.v1.IdentityProvider
+	21, // 29: bytebase.v1.IdentityProviderService.DeleteIdentityProvider:output_type -> google.protobuf.Empty
+	11, // 30: bytebase.v1.IdentityProviderService.TestIdentityProvider:output_type -> bytebase.v1.TestIdentityProviderResponse
+	25, // [25:31] is the sub-list for method output_type
+	19, // [19:25] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_v1_idp_service_proto_init() }
@@ -1403,8 +1488,8 @@ func file_v1_idp_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_idp_service_proto_rawDesc), len(file_v1_idp_service_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   15,
+			NumEnums:      3,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

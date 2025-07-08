@@ -14,6 +14,7 @@ import "v1/org_policy_service.proto";
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
 
 service ReviewConfigService {
+  // Permissions required: bb.reviewConfigs.create
   rpc CreateReviewConfig(CreateReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {
       post: "/v1/reviewConfigs"
@@ -24,6 +25,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.reviewConfigs.list
   rpc ListReviewConfigs(ListReviewConfigsRequest) returns (ListReviewConfigsResponse) {
     option (google.api.http) = {get: "/v1/reviewConfigs"};
     option (google.api.method_signature) = "";
@@ -31,6 +33,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.reviewConfigs.get
   rpc GetReviewConfig(GetReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {get: "/v1/{name=reviewConfigs/*}"};
     option (google.api.method_signature) = "name";
@@ -38,6 +41,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.reviewConfigs.update
   rpc UpdateReviewConfig(UpdateReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {
       patch: "/v1/{review_config.name=reviewConfigs/*}"
@@ -48,6 +52,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.reviewConfigs.delete
   rpc DeleteReviewConfig(DeleteReviewConfigRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=reviewConfigs/*}"};
     option (google.api.method_signature) = "name";

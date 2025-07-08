@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { BBButtonConfirm } from "@/bbkit";
 import { useReleaseStore } from "@/store";
-import { State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { useReleaseDetailContext } from "./context";
 
 const { release } = useReleaseDetailContext();

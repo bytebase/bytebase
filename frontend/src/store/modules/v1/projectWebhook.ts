@@ -1,7 +1,14 @@
+import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
-import { projectServiceClient } from "@/grpcweb";
+import { projectServiceClientConnect } from "@/grpcweb";
 import type { IdType } from "@/types";
-import type { Project, Webhook } from "@/types/proto/v1/project_service";
+import type { Project, Webhook } from "@/types/proto-es/v1/project_service_pb";
+import {
+  AddWebhookRequestSchema,
+  UpdateWebhookRequestSchema,
+  RemoveWebhookRequestSchema,
+  TestWebhookRequestSchema,
+} from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectWebhookID } from "@/utils";
 
 export const useProjectWebhookV1Store = defineStore("projectWebhook_v1", () => {
@@ -17,34 +24,40 @@ export const useProjectWebhookV1Store = defineStore("projectWebhook_v1", () => {
     });
   };
   const createProjectWebhook = async (project: string, webhook: Webhook) => {
-    const updatedProject = await projectServiceClient.addWebhook({
+    const request = create(AddWebhookRequestSchema, {
       project,
       webhook,
     });
-    return updatedProject;
+    const response = await projectServiceClientConnect.addWebhook(request);
+    return response;
   };
   const updateProjectWebhook = async (
     webhook: Webhook,
     updateMask: string[]
   ) => {
-    const updatedProject = await projectServiceClient.updateWebhook({
+    const request = create(UpdateWebhookRequestSchema, {
       webhook,
-      updateMask,
+      updateMask: { paths: updateMask },
     });
-    return updatedProject;
+    const response = await projectServiceClientConnect.updateWebhook(request);
+    return response;
   };
   const deleteProjectWebhook = async (webhook: Webhook) => {
-    const updatedProject = await projectServiceClient.removeWebhook({
+    const request = create(RemoveWebhookRequestSchema, {
       webhook,
     });
-    return updatedProject;
+    const response = await projectServiceClientConnect.removeWebhook(request);
+    return response;
   };
   const testProjectWebhook = async (project: Project, webhook: Webhook) => {
-    const response = await projectServiceClient.testWebhook({
+    const request = create(TestWebhookRequestSchema, {
       project: project.name,
       webhook,
     });
-    return response;
+    const response = await projectServiceClientConnect.testWebhook(request);
+    return {
+      error: response.error,
+    };
   };
 
   return {

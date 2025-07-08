@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -255,8 +253,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, err
 		}
-		// Quoted string has a single quote around it.
-		column.Comment = stripSingleQuote(column.Comment)
+		// Quoted string has a single quote around it and is escaped by QUOTE().
+		column.Comment = unquoteMySQLString(column.Comment)
 		if defaultStr.Valid {
 			defaultStr.String = stripSingleQuote(defaultStr.String)
 		}
@@ -297,6 +295,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		key := db.TableKey{Schema: "", Table: view.Name}
 		view.Columns = columnMap[key]
+		// Note: TiDB/MySQL does not support view comments, so view.Comment remains empty
 		viewMap[key] = view
 	}
 	if err := viewRows.Err(); err != nil {
@@ -305,6 +304,12 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 	// Query foreign key info.
 	foreignKeysMap, err := d.getForeignKeyList(ctx, d.databaseName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query sequence info.
+	sequences, err := d.getSequenceList(ctx, d.databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -360,8 +365,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, err
 		}
-		// Quoted string has a single quote around it.
-		comment = stripSingleQuote(comment)
+		// Quoted string has a single quote around it and is escaped by QUOTE().
+		comment = unquoteMySQLString(comment)
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		switch tableType {
@@ -385,7 +390,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 								for i, column := range columns {
 									if column.Name == columnName {
 										newColumn := columns[i]
-										newColumn.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoRandText}
+										newColumn.DefaultExpression = autoRandText
 										break
 									}
 								}
@@ -437,6 +442,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
+	// Add sequences to schema metadata
+	schemaMetadata.Sequences = sequences
+
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
 		Name:    d.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
@@ -481,7 +489,7 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 		// In TiDB 7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
 		switch {
 		case isCurrentTimestampLike(defaultStr.String):
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+			column.DefaultExpression = defaultStr.String
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
 			// for case:
 			//  CREATE TABLE t1(
@@ -490,25 +498,23 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 			// In this case, the extra value is "DEFAULT_GENERATED on update CURRENT_TIMESTAMP".
 			// But the default value is a constant.
 			if isTimeConstant(defaultStr.String) {
-				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+				column.Default = defaultStr.String
 			} else {
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+				column.DefaultExpression = fmt.Sprintf("(%s)", defaultStr.String)
 			}
 		default:
 			// For non-generated and non CURRENT_XXX default value, use string.
-			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+			column.Default = defaultStr.String
 		}
 	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 		// TODO(zp): refactor column default value.
 		// Use the upper case to consistent with MySQL Dump.
-		column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
+		column.DefaultExpression = autoIncrementSymbol
 	} else if nullableBool {
 		// This is NULL if the column has an explicit default of NULL,
 		// or if the column definition includes no DEFAULT clause.
 		// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
-		column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
-			DefaultNull: true,
-		}
+		column.DefaultNull = true
 	}
 
 	if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {
@@ -760,4 +766,113 @@ func stripSingleQuote(s string) string {
 		return s[1 : len(s)-1]
 	}
 	return s
+}
+
+// unquoteMySQLString unescapes a string that was escaped by MySQL's QUOTE() function.
+// MySQL's QUOTE() function escapes:
+// - \ → \\
+// - ' → \'
+// - ASCII NUL (0x00) → \0
+// - Control-Z (0x1A) → \Z
+func unquoteMySQLString(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	// First remove surrounding quotes if present
+	s = stripSingleQuote(s)
+
+	// Now unescape the content
+	result := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			switch s[i+1] {
+			case '\\':
+				result = append(result, '\\')
+				i++ // skip next character
+			case '\'':
+				result = append(result, '\'')
+				i++ // skip next character
+			case '0':
+				result = append(result, 0) // ASCII NUL
+				i++                        // skip next character
+			case 'Z':
+				result = append(result, 0x1A) // Control-Z
+				i++                           // skip next character
+			case 'n':
+				result = append(result, '\n') // newline
+				i++                           // skip next character
+			case 't':
+				result = append(result, '\t') // tab
+				i++                           // skip next character
+			case 'r':
+				result = append(result, '\r') // carriage return
+				i++                           // skip next character
+			case 'b':
+				result = append(result, '\b') // backspace
+				i++                           // skip next character
+			default:
+				// Unknown escape sequence, keep the backslash
+				result = append(result, s[i])
+			}
+		} else {
+			result = append(result, s[i])
+		}
+	}
+	return string(result)
+}
+
+func (d *Driver) getSequenceList(ctx context.Context, databaseName string) ([]*storepb.SequenceMetadata, error) {
+	query := `
+		SELECT
+			SEQUENCE_NAME,
+			START,
+			MIN_VALUE,
+			MAX_VALUE,
+			INCREMENT,
+			CYCLE,
+			CACHE_VALUE,
+			IFNULL(COMMENT, '')
+		FROM information_schema.SEQUENCES
+		WHERE SEQUENCE_SCHEMA = ?
+		ORDER BY SEQUENCE_NAME`
+
+	rows, err := d.db.QueryContext(ctx, query, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var sequences []*storepb.SequenceMetadata
+	for rows.Next() {
+		sequence := &storepb.SequenceMetadata{}
+		var cycleOption int64
+
+		if err := rows.Scan(
+			&sequence.Name,
+			&sequence.Start,
+			&sequence.MinValue,
+			&sequence.MaxValue,
+			&sequence.Increment,
+			&cycleOption,
+			&sequence.CacheSize,
+			&sequence.Comment,
+		); err != nil {
+			return nil, err
+		}
+
+		// TiDB sequences are always numeric, set default data type
+		sequence.DataType = "BIGINT"
+
+		// Convert cycle option to boolean (TiDB uses 0/1 instead of YES/NO)
+		sequence.Cycle = cycleOption != 0
+
+		sequences = append(sequences, sequence)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+
+	return sequences, nil
 }

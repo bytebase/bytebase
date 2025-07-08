@@ -116,18 +116,23 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual, uniq, uniqBy } from "lodash-es";
 import { NButton, NDivider, NInput, NRadioGroup, NRadio } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
 import EngineIcon from "@/components/Icon/EngineIcon.vue";
 import { pushNotification, useSettingV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
-import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import {
-  SchemaTemplateSetting,
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type {
+  SchemaTemplateSetting_FieldTemplate,
   SchemaTemplateSetting_ColumnType,
+} from "@/types/proto-es/v1/setting_service_pb";
+import {
+  SchemaTemplateSetting_ColumnTypeSchema,
+  SchemaTemplateSettingSchema,
   Setting_SettingName,
-} from "@/types/proto/v1/setting_service";
+  ValueSchema as SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { getDataTypeSuggestionList } from "@/utils";
 import ColumnTypesUpdateFailedModal from "./ColumnTypesUpdateFailedModal.vue";
 
@@ -137,13 +142,13 @@ const props = defineProps<{
 
 const settingStore = useSettingV1Store();
 const columnTypeTemplateForMySQL = ref(
-  SchemaTemplateSetting_ColumnType.fromPartial({
+  create(SchemaTemplateSetting_ColumnTypeSchema, {
     engine: Engine.MYSQL,
   })
 );
 const columnTypesForMySQL = ref<string>("");
 const columnTypeTemplateForPostgreSQL = ref(
-  SchemaTemplateSetting_ColumnType.fromPartial({
+  create(SchemaTemplateSetting_ColumnTypeSchema, {
     engine: Engine.POSTGRES,
   })
 );
@@ -154,16 +159,30 @@ const allowToUpdateColumnTypeTemplateForMySQL = computed(() => {
   if (props.readonly) {
     return false;
   }
-  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SCHEMA_TEMPLATE
+  );
   const columnTypes =
-    setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
-  const originTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    setting?.value?.value?.case === "schemaTemplateSettingValue"
+      ? setting.value.value.value.columnTypes || []
+      : [];
+  const existingTemplate = columnTypes.find(
+    (item) => item.engine === Engine.MYSQL
+  );
+  const originTemplate = existingTemplate
+    ? create(SchemaTemplateSetting_ColumnTypeSchema, {
+        engine: existingTemplate.engine,
+        enabled: existingTemplate.enabled,
+        types: existingTemplate.types || [],
+      })
+    : create(SchemaTemplateSetting_ColumnTypeSchema, {
+        engine: Engine.MYSQL,
+        enabled: false,
+        types: [],
+      });
+  const newTemplate = create(SchemaTemplateSetting_ColumnTypeSchema, {
     engine: Engine.MYSQL,
-    ...columnTypes.find((item) => item.engine === Engine.MYSQL),
-  });
-  const newTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
-    ...columnTypeTemplateForMySQL.value,
-    engine: Engine.MYSQL,
+    enabled: columnTypeTemplateForMySQL.value.enabled,
     types: columnTypesForMySQL.value
       .split("\n")
       .map((item) => item.trim())
@@ -184,16 +203,30 @@ const allowToUpdateColumnTypeTemplateForPostgreSQL = computed(() => {
   if (props.readonly) {
     return false;
   }
-  const setting = settingStore.getSettingByName(Setting_SettingName.SCHEMA_TEMPLATE);
+  const setting = settingStore.getSettingByName(
+    Setting_SettingName.SCHEMA_TEMPLATE
+  );
   const columnTypes =
-    setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
-  const originTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    setting?.value?.value?.case === "schemaTemplateSettingValue"
+      ? setting.value.value.value.columnTypes || []
+      : [];
+  const existingTemplate = columnTypes.find(
+    (item) => item.engine === Engine.POSTGRES
+  );
+  const originTemplate = existingTemplate
+    ? create(SchemaTemplateSetting_ColumnTypeSchema, {
+        engine: existingTemplate.engine,
+        enabled: existingTemplate.enabled,
+        types: existingTemplate.types || [],
+      })
+    : create(SchemaTemplateSetting_ColumnTypeSchema, {
+        engine: Engine.POSTGRES,
+        enabled: false,
+        types: [],
+      });
+  const newTemplate = create(SchemaTemplateSetting_ColumnTypeSchema, {
     engine: Engine.POSTGRES,
-    ...columnTypes.find((item) => item.engine === Engine.POSTGRES),
-  });
-  const newTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
-    ...columnTypeTemplateForPostgreSQL.value,
-    engine: Engine.POSTGRES,
+    enabled: columnTypeTemplateForPostgreSQL.value.enabled,
     types: columnTypesForPostgreSQL.value
       .split("\n")
       .map((item) => item.trim())
@@ -215,7 +248,9 @@ const getOrFetchSchemaTemplate = async () => {
     Setting_SettingName.SCHEMA_TEMPLATE
   );
   const columnTypes =
-    setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
+    setting?.value?.value?.case === "schemaTemplateSettingValue"
+      ? setting.value.value.value.columnTypes || []
+      : [];
   const mysqlColumnTypes = columnTypes.find(
     (item) => item.engine === Engine.MYSQL
   );
@@ -224,7 +259,9 @@ const getOrFetchSchemaTemplate = async () => {
   );
   return {
     fieldTemplates:
-      setting?.value?.schemaTemplateSettingValue?.fieldTemplates || [],
+      setting?.value?.value?.case === "schemaTemplateSettingValue"
+        ? setting.value.value.value.fieldTemplates || []
+        : [],
     mysqlColumnTypes,
     postgresqlColumnTypes,
   };
@@ -418,21 +455,26 @@ const upsertSchemaTemplateSetting = async (
   const setting = await settingStore.getOrFetchSettingByName(
     Setting_SettingName.SCHEMA_TEMPLATE
   );
-  const schemaTemplateSettingValue = SchemaTemplateSetting.fromPartial({
-    ...setting?.value?.schemaTemplateSettingValue,
+  const existingValue =
+    setting?.value?.value?.case === "schemaTemplateSettingValue"
+      ? setting.value.value.value
+      : undefined;
+  const schemaTemplateSettingValue = create(SchemaTemplateSettingSchema, {
+    fieldTemplates: existingValue?.fieldTemplates || [],
+    tableTemplates: existingValue?.tableTemplates || [],
     columnTypes: uniqBy(
-      [
-        columnType,
-        ...(setting?.value?.schemaTemplateSettingValue?.columnTypes || []),
-      ],
+      [columnType, ...(existingValue?.columnTypes || [])],
       "engine"
     ),
   });
   await settingStore.upsertSetting({
     name: Setting_SettingName.SCHEMA_TEMPLATE,
-    value: {
-      schemaTemplateSettingValue,
-    },
+    value: create(SettingValueSchema, {
+      value: {
+        case: "schemaTemplateSettingValue",
+        value: schemaTemplateSettingValue,
+      },
+    }),
   });
 };
 </script>

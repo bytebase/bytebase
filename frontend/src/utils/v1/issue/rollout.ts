@@ -1,5 +1,9 @@
 import { last } from "lodash-es";
 import { stringify } from "qs";
+import { useI18n } from "vue-i18n";
+import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1";
+import { mockDatabase } from "@/components/IssueV1/logic/utils";
+import { useDatabaseV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
 import {
   EMPTY_TASK_NAME,
@@ -10,8 +14,18 @@ import {
   EMPTY_ID,
   UNKNOWN_ID,
 } from "@/types";
-import type { Rollout, Stage, Task } from "@/types/proto/v1/rollout_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import {
+  isValidDatabaseName,
+  unknownDatabase,
+  type ComposedProject,
+} from "@/types";
+import {
+  Task_Type,
+  type Rollout,
+  type Stage,
+  type Task,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName } from "../project";
 import { extractIssueUID, flattenTaskV1List, issueV1Slug } from "./issue";
 
@@ -65,7 +79,7 @@ export const stageV1Slug = (stage: Stage): string => {
 };
 
 export const taskV1Slug = (task: Task): string => {
-  return extractTaskUID(task.name)
+  return extractTaskUID(task.name);
 };
 
 export const activeTaskInTaskList = (tasks: Task[]): Task => {
@@ -144,32 +158,40 @@ export const extractSchemaVersionFromTask = (task: Task): string => {
   // The schema version is specified in the filename
   // parsed and stored to the payload.schemaVersion
   // fallback to empty if we can't read the field.
-  return (
-    task.databaseDataUpdate?.schemaVersion ??
-    task.databaseSchemaUpdate?.schemaVersion ??
-    ""
-  );
+  if (task.payload?.case === "databaseDataUpdate") {
+    return task.payload.value.schemaVersion ?? "";
+  }
+  if (task.payload?.case === "databaseSchemaUpdate") {
+    return task.payload.value.schemaVersion ?? "";
+  }
+  return "";
 };
 
 export const sheetNameOfTaskV1 = (task: Task): string => {
-  return (
-    task.databaseCreate?.sheet ??
-    task.databaseDataUpdate?.sheet ??
-    task.databaseSchemaUpdate?.sheet ??
-    task.databaseDataExport?.sheet ??
-    ""
-  );
+  if (task.payload?.case === "databaseCreate") {
+    return task.payload.value.sheet ?? "";
+  }
+  if (task.payload?.case === "databaseDataUpdate") {
+    return task.payload.value.sheet ?? "";
+  }
+  if (task.payload?.case === "databaseSchemaUpdate") {
+    return task.payload.value.sheet ?? "";
+  }
+  if (task.payload?.case === "databaseDataExport") {
+    return task.payload.value.sheet ?? "";
+  }
+  return "";
 };
 
 export const setSheetNameForTask = (task: Task, sheetName: string) => {
-  if (task.databaseCreate) {
-    task.databaseCreate.sheet = sheetName;
-  } else if (task.databaseDataUpdate) {
-    task.databaseDataUpdate.sheet = sheetName;
-  } else if (task.databaseSchemaUpdate) {
-    task.databaseSchemaUpdate.sheet = sheetName;
-  } else if (task.databaseDataExport) {
-    task.databaseDataExport.sheet = sheetName;
+  if (task.payload?.case === "databaseCreate") {
+    task.payload.value.sheet = sheetName;
+  } else if (task.payload?.case === "databaseDataUpdate") {
+    task.payload.value.sheet = sheetName;
+  } else if (task.payload?.case === "databaseSchemaUpdate") {
+    task.payload.value.sheet = sheetName;
+  } else if (task.payload?.case === "databaseDataExport") {
+    task.payload.value.sheet = sheetName;
   }
 };
 
@@ -182,8 +204,10 @@ export const buildIssueV1LinkWithTask = (
     (s) => s.tasks.findIndex((t) => t.name === task.name) >= 0
   );
 
-  const projectId = extractProjectResourceName(issue.project);
-  const issueSlug = simple ? extractIssueUID(issue.name) : issueV1Slug(issue);
+  const projectId = extractProjectResourceName(issue.name);
+  const issueSlug = simple
+    ? extractIssueUID(issue.name)
+    : issueV1Slug(issue.name, issue.title);
   const query: Record<string, string> = {};
   if (stage) {
     // Stage UID is now always the environment ID
@@ -195,4 +219,47 @@ export const buildIssueV1LinkWithTask = (
   const url = `/projects/${projectId}/issues/${issueSlug}?${querystring}`;
 
   return url;
+};
+
+export const stringifyTaskStatus = (status: Task_Status): string => {
+  const { t } = useI18n();
+  switch (status) {
+    case Task_Status.NOT_STARTED:
+      return t("task.status.not-started");
+    case Task_Status.PENDING:
+      return t("task.status.pending");
+    case Task_Status.RUNNING:
+      return t("task.status.running");
+    case Task_Status.DONE:
+      return t("task.status.done");
+    case Task_Status.FAILED:
+      return t("task.status.failed");
+    case Task_Status.CANCELED:
+      return t("task.status.canceled");
+    case Task_Status.SKIPPED:
+      return t("task.status.skipped");
+    default:
+      return Task_Status[status] || String(status);
+  }
+};
+
+export const databaseForTask = (project: ComposedProject, task: Task) => {
+  switch (task.type) {
+    case Task_Type.DATABASE_CREATE:
+      // The database is not created yet.
+      // extract database info from the task's and payload's properties.
+      return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task);
+    case Task_Type.DATABASE_SCHEMA_UPDATE:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
+    case Task_Type.DATABASE_DATA_UPDATE:
+    case Task_Type.DATABASE_EXPORT:
+      const db = useDatabaseV1Store().getDatabaseByName(task.target);
+      if (!isValidDatabaseName(db.name)) {
+        return mockDatabase(project, task.target);
+      }
+      return db;
+    default:
+      return unknownDatabase();
+  }
 };

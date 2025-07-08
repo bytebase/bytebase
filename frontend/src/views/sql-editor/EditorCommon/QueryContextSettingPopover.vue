@@ -85,7 +85,11 @@
           {{ $t("sql-editor.redis-command.only-for-cluster") }}
         </NTooltip>
         <div class="border-t pt-1">
-          <ResultLimitSelect placement="right-start" trigger="hover">
+          <ResultLimitSelect
+            placement="right-start"
+            trigger="hover"
+            :maximum="maximumResultRows"
+          >
             <template
               #default="{ resultRowsLimit }: { resultRowsLimit: number }"
             >
@@ -111,26 +115,28 @@ import { orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-vue-next";
 import { NButton, NPopover, NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { computed, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useConnectionOfCurrentSQLEditorTab,
   usePolicyV1Store,
   useSQLEditorTabStore,
   useSQLEditorStore,
+  useSettingV1Store,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  DataSource,
   DataSourceType,
   DataSource_RedisType,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
-} from "@/types/proto/v1/org_policy_service";
-import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
@@ -143,8 +149,10 @@ const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const policyStore = usePolicyV1Store();
+const settingV1Store = useSettingV1Store();
 
-const { redisCommandOption } = storeToRefs(useSQLEditorStore());
+const { redisCommandOption, resultRowsLimit } =
+  storeToRefs(useSQLEditorStore());
 
 const show = computed(() => {
   return tabStore.currentTab?.mode !== "ADMIN";
@@ -259,4 +267,24 @@ watch(
     immediate: true,
   }
 );
+
+const maximumResultRows = computed(() => {
+  const setting = settingV1Store.getSettingByName(
+    Setting_SettingName.SQL_RESULT_SIZE_LIMIT
+  );
+  if (setting?.value?.value?.case === "sqlQueryRestrictionSetting") {
+    const limit = setting.value.value.value.maximumResultRows ?? -1;
+    if (limit <= 0) {
+      return Number.MAX_VALUE;
+    }
+    return limit;
+  }
+  return Number.MAX_VALUE;
+});
+
+watchEffect(() => {
+  if (resultRowsLimit.value > maximumResultRows.value) {
+    resultRowsLimit.value = maximumResultRows.value;
+  }
+});
 </script>

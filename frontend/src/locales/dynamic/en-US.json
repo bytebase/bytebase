@@ -173,6 +173,10 @@
         "title": "Data export",
         "desc": "Export query results in various formats."
       },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "title": "Data offline export",
+        "desc": "Export data for offline use and analysis."
+      },
       "FEATURE_QUERY_HISTORY": {
         "title": "Query history",
         "desc": "Access full query execution history with search capabilities."
@@ -180,10 +184,6 @@
       "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
         "title": "Saved and shared SQL scripts",
         "desc": "Save and share SQL scripts with team members."
-      },
-      "FEATURE_SQL_EDITOR_DDL_DML_RESTRICTION": {
-        "title": "SQL editor DDL/DML restriction",
-        "desc": "Restrict DDL and DML operations in the SQL editor."
       },
       "FEATURE_BATCH_QUERY": {
         "title": "Batch query",
@@ -217,6 +217,14 @@
         "title": "IAM authentication",
         "desc": "Use cloud provider IAM for database authentication."
       },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "Custom instance sync time",
+        "desc": "Customize database synchronization intervals and settings."
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "Custom instance connection limit",
+        "desc": "Configure maximum database connection limits."
+      },
       "FEATURE_GOOGLE_AND_GITHUB_SSO": {
         "title": "Google and GitHub SSO",
         "desc": "Sign in with Google or GitHub accounts."
@@ -232,18 +240,6 @@
       "FEATURE_DATABASE_SECRET_VARIABLES": {
         "title": "Database secret variables",
         "desc": "Store and use encrypted secrets in SQL scripts."
-      },
-      "FEATURE_QUERY_DATASOURCE_RESTRICTION": {
-        "title": "Query datasource restriction",
-        "desc": "Restrict which data sources users can query."
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "Custom instance sync time",
-        "desc": "Customize database synchronization intervals and settings."
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "Custom instance connection limit",
-        "desc": "Configure maximum database connection limits."
       },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Risk assessment",
@@ -308,6 +304,10 @@
       "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
         "title": "Email domain restriction",
         "desc": "Restrict sign-in to users from specified email domains."
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "title": "Project management",
+        "desc": "Manage and organize projects with advanced capabilities."
       },
       "FEATURE_ENVIRONMENT_MANAGEMENT": {
         "title": "Environment management",

@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -68,9 +69,10 @@ import {
   issueStatusActionDisplayName,
   IssueStatusActionToIssueStatusMap,
 } from "@/components/IssueV1/logic";
-import { issueServiceClient } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { ComposedIssue } from "@/types";
+import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import CommonDrawer from "./CommonDrawer.vue";
 
 type LocalState = {
@@ -118,12 +120,13 @@ const handleConfirm = async (
 
   try {
     emit("updating");
-    await issueServiceClient.batchUpdateIssuesStatus({
+    const request = create(BatchUpdateIssuesStatusRequestSchema, {
       parent: "projects/-",
       issues: props.issueList.map((issue) => issue.name),
       status: IssueStatusActionToIssueStatusMap[action],
       reason: comment ?? "",
     });
+    await issueServiceClientConnect.batchUpdateIssuesStatus(request);
 
     // notify the parent component that issues updated
     pushNotification({

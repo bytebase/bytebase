@@ -1,12 +1,25 @@
-import { policyServiceClient } from "@/grpcweb";
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { Code, ConnectError } from "@connectrpc/connect";
+import { defineStore } from "pinia";
+import { computed, ref, unref, watchEffect } from "vue";
+import { orgPolicyServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
-import { Policy, PolicyResourceType, PolicyType, policyTypeToJSON } from "@/types/proto/v1/org_policy_service";
-import { Status, type ServerError } from "nice-grpc-common";
-import { defineStore } from "pinia";
-import { computed, ref, unref, watchEffect } from "vue";
-import { useCurrentUserV1 } from "../auth";
+import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  PolicyResourceType,
+  PolicyType,
+  GetPolicyRequestSchema,
+  ListPoliciesRequestSchema,
+  PolicySchema,
+  UpdatePolicyRequestSchema,
+  DeletePolicyRequestSchema,
+  RolloutPolicySchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import { useCurrentUserV1 } from "./auth";
 
 interface PolicyState {
   policyMapByName: Map<string, Policy>;
@@ -60,11 +73,14 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       parent?: string;
       showDeleted?: boolean;
     }) {
-      const { policies } = await policyServiceClient.listPolicies({
+      const request = create(ListPoliciesRequestSchema, {
         parent: parent ?? getPolicyParentByResourceType(resourceType),
-        policyType,
+        policyType: policyType,
         showDeleted,
       });
+      const response =
+        await orgPolicyServiceClientConnect.listPolicies(request);
+      const policies = response.policies;
       for (const policy of policies) {
         this.policyMapByName.set(policy.name, policy);
       }
@@ -101,7 +117,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       refresh?: boolean;
     }) {
       const name = replacePolicyTypeNameToLowerCase(
-        `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policyType)}`
+        `${parentPath}/${policyNamePrefix}${PolicyType[policyType]}`
       );
       return this.getOrFetchPolicyByName(name, refresh);
     },
@@ -113,17 +129,17 @@ export const usePolicyV1Store = defineStore("policy_v1", {
         return cachedData;
       }
       try {
-        const policy = await policyServiceClient.getPolicy(
-          { name },
-          { silent: true }
-        );
+        const request = create(GetPolicyRequestSchema, { name });
+        const policy = await orgPolicyServiceClientConnect.getPolicy(request, {
+          contextValues: createContextValues().set(silentContextKey, true),
+        });
         this.policyMapByName.set(policy.name, policy);
         return policy;
       } catch (error) {
-        const se = error as ServerError;
-        if (se.code === Status.NOT_FOUND) {
+        if (error instanceof ConnectError && error.code === Code.NotFound) {
           // To prevent unnecessary requests, cache empty policies if not found.
-          this.policyMapByName.set(name, Policy.fromPartial({ name }));
+          const emptyPolicy = create(PolicySchema, { name });
+          this.policyMapByName.set(name, emptyPolicy);
         }
       }
     },
@@ -135,12 +151,15 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       policyType: PolicyType;
     }) {
       const name = replacePolicyTypeNameToLowerCase(
-        `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policyType)}`
+        `${parentPath}/${policyNamePrefix}${PolicyType[policyType]}`
       );
       return this.getPolicyByName(name);
     },
     getPolicyByName(name: string) {
-      return this.policyMapByName.get(replacePolicyTypeNameToLowerCase(name));
+      const policy = this.policyMapByName.get(
+        replacePolicyTypeNameToLowerCase(name)
+      );
+      return policy;
     },
     async upsertPolicy({
       parentPath,
@@ -152,19 +171,31 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       if (!policy.type) {
         throw new Error("policy type is required");
       }
-      policy.name = replacePolicyTypeNameToLowerCase(
-        `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policy.type)}`
+      const policyName = replacePolicyTypeNameToLowerCase(
+        `${parentPath}/${policyNamePrefix}${PolicyType[policy.type]}`
       );
-      const updatedPolicy = await policyServiceClient.updatePolicy({
-        policy,
-        updateMask: ["payload"],
+      const fullPolicy = create(PolicySchema, {
+        name: policyName,
+        inheritFromParent: policy.inheritFromParent ?? false,
+        type: policy.type,
+        resourceType:
+          policy.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
+        enforce: policy.enforce ?? false,
+        policy: policy.policy,
+      });
+      const request = create(UpdatePolicyRequestSchema, {
+        policy: fullPolicy,
+        updateMask: { paths: ["payload"] },
         allowMissing: true,
       });
-      this.policyMapByName.set(updatedPolicy.name, updatedPolicy);
-      return updatedPolicy;
+      const response =
+        await orgPolicyServiceClientConnect.updatePolicy(request);
+      this.policyMapByName.set(response.name, response);
+      return response;
     },
     async deletePolicy(name: string) {
-      await policyServiceClient.deletePolicy({ name });
+      const request = create(DeletePolicyRequestSchema, { name });
+      await orgPolicyServiceClientConnect.deletePolicy(request);
       this.policyMapByName.delete(name);
     },
   },
@@ -216,7 +247,7 @@ export const usePolicyByParentAndType = (
   const policy = computed(() => {
     const { parentPath, policyType } = unref(params);
     const name = replacePolicyTypeNameToLowerCase(
-      `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policyType)}`
+      `${parentPath}/${policyNamePrefix}${PolicyType[policyType]}`
     );
     const res = store.getPolicyByName(name);
     return res;
@@ -234,20 +265,21 @@ export const getEmptyRolloutPolicy = (
   resourceType: PolicyResourceType
 ): Policy => {
   const name = replacePolicyTypeNameToLowerCase(
-    `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
-      PolicyType.ROLLOUT_POLICY
-    )}`
+    `${parentPath}/${policyNamePrefix}${PolicyType[PolicyType.ROLLOUT_POLICY]}`
   );
-  return Policy.fromPartial({
+  return create(PolicySchema, {
     name,
     inheritFromParent: false,
     type: PolicyType.ROLLOUT_POLICY,
     resourceType,
     enforce: true,
-    rolloutPolicy: {
-      automatic: false,
-      roles: [],
-      issueRoles: [],
+    policy: {
+      case: "rolloutPolicy",
+      value: create(RolloutPolicySchema, {
+        automatic: false,
+        roles: [],
+        issueRoles: [],
+      }),
     },
   });
 };

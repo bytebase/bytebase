@@ -38,15 +38,11 @@ func (l *querySpanPredicatePathsListener) EnterSelect(ctx *parser.SelectContext)
 		fromIdentifier = i.GetText()
 	}
 
-	predicateFields, err := extractPredicateFieldsFromWhereClause(whereClause, originalContainerName, fromIdentifier)
-	if err != nil {
-		l.err = err
-		return
-	}
+	predicateFields := extractPredicateFieldsFromWhereClause(whereClause, originalContainerName, fromIdentifier)
 	l.predicatePaths = predicateFields
 }
 
-func extractPredicateFieldsFromWhereClause(ctx parser.IWhere_clauseContext, originalContainerName string, fromAlias string) (map[string]*base.PathAST, error) {
+func extractPredicateFieldsFromWhereClause(ctx parser.IWhere_clauseContext, originalContainerName string, fromAlias string) map[string]*base.PathAST {
 	scalarExpression := ctx.Scalar_expression_in_where()
 
 	paths := extractPredicateFieldsFromScalarExpressionInWhere(scalarExpression, originalContainerName, fromAlias)
@@ -71,7 +67,7 @@ func extractPredicateFieldsFromWhereClause(ctx parser.IWhere_clauseContext, orig
 		r[str] = ast
 	}
 
-	return r, nil
+	return r
 }
 
 func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expression_in_whereContext, originalContainerName string, fromAlias string) [][]base.SelectorNode {

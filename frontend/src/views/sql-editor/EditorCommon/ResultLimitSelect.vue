@@ -17,7 +17,7 @@
           v-model:value="resultRowsLimit"
           :show-button="false"
           :min="0"
-          :max="100000"
+          :max="Math.min(maximum, 100000)"
           style="width: 5rem"
           size="small"
         />
@@ -34,11 +34,22 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSQLEditorStore } from "@/store";
 
+const props = defineProps<{
+  maximum: number;
+}>();
+
 const { t } = useI18n();
 const { resultRowsLimit } = storeToRefs(useSQLEditorStore());
 
 const options = computed((): SelectOption[] => {
-  return [100, 500, 1000, 5000, 10000, 100000].map((n) => ({
+  const list = [100, 500, 1000, 5000, 10000, 100000].filter(
+    (num) => num <= props.maximum
+  );
+  if (props.maximum !== Number.MAX_VALUE && !list.includes(props.maximum)) {
+    list.push(props.maximum);
+  }
+
+  return list.map((n) => ({
     label: t("sql-editor.result-limit.n-rows", { n }),
     value: n,
   }));

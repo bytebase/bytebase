@@ -1,12 +1,18 @@
 import {
   PlanFeature,
   PlanType,
-  type PlanConfig,
-  type PlanLimitConfig
-} from "@/types/proto/v1/subscription_service";
+  type PlanLimitConfig,
+} from "@/types/proto-es/v1/subscription_service_pb";
 import planData from "./plan.yaml";
 
-export const PLANS: PlanLimitConfig[] = planData.plans;
+// Convert YAML data to proper types
+export const PLANS: PlanLimitConfig[] = planData.plans.map((plan: any) => ({
+  ...plan,
+  type: PlanType[plan.type as keyof typeof PlanType],
+  features: plan.features.map(
+    (f: string) => PlanFeature[f as keyof typeof PlanFeature]
+  ),
+}));
 
 // Create a plan feature matrix from the YAML data
 const planFeatureMatrix = new Map<PlanType, Set<PlanFeature>>();
@@ -17,12 +23,15 @@ export const instanceLimitFeature = new Set<PlanFeature>();
 PLANS.forEach((plan) => {
   planFeatureMatrix.set(plan.type, new Set(plan.features));
 });
-(planData as PlanConfig).instanceFeatures.forEach((feature) => {
-  instanceLimitFeature.add(feature);
+(planData as any).instanceFeatures.forEach((feature: string) => {
+  instanceLimitFeature.add(PlanFeature[feature as keyof typeof PlanFeature]);
 });
 
 // Helper function to check if a plan has a feature
-export const planHasFeature = (plan: PlanType, feature: PlanFeature): boolean => {
+export const planHasFeature = (
+  plan: PlanType,
+  feature: PlanFeature
+): boolean => {
   const planFeatures = planFeatureMatrix.get(plan);
   return planFeatures?.has(feature) ?? false;
 };
@@ -44,20 +53,24 @@ export const hasFeature = (plan: PlanType, feature: PlanFeature): boolean => {
 };
 
 // Helper function to check instance features
-export const hasInstanceFeature = (plan: PlanType, feature: PlanFeature, instanceActivated = true): boolean => {
+export const hasInstanceFeature = (
+  plan: PlanType,
+  feature: PlanFeature,
+  instanceActivated = true
+): boolean => {
   if (!hasFeature(plan, feature)) {
     return false;
   }
-  
+
   // For FREE plan, don't check instance activation
   if (plan === PlanType.FREE) {
     return true;
   }
-  
+
   // For instance-limited features, check activation
   if (instanceLimitFeature.has(feature)) {
     return instanceActivated;
   }
-  
+
   return true;
 };

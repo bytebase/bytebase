@@ -12,7 +12,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
-} from "@/types/proto/v1/database_service";
+} from "@/types/proto-es/v1/database_service_pb";
 import { keyForDependencyColumn } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
 
@@ -519,19 +519,17 @@ const mapTableNodes = (
       );
       node.children.push(triggerNode);
     }
-    
+
     // Map checks
     if (table.checkConstraints.length > 0) {
-      const checksFolderNode = createExpandableTextNode(
-        "check",
-        node.key,
-        () => t("database.checks")
+      const checksFolderNode = createExpandableTextNode("check", node.key, () =>
+        t("database.checks")
       );
       checksFolderNode.children = mapCheckNodes(
         node.meta.target,
         table.checkConstraints,
         checksFolderNode.key
-      )
+      );
       node.children.push(checksFolderNode);
     }
 

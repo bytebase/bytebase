@@ -7,9 +7,6 @@
       {{ editorStore.projectContextReady }}
     </li>
     <li>
-      [ProvideContext]databaseCount: {{ editorStore.databaseList.length }}
-    </li>
-    <li>
       [ProvideContext]allowViewALLProjects:
       {{ editorStore.allowViewALLProjects }}
     </li>
@@ -45,7 +42,6 @@ import {
   useWorkSheetStore,
   useGroupStore,
   pushNotification,
-  useAppFeature,
 } from "@/store";
 import type { SQLEditorConnection } from "@/types";
 import {
@@ -55,7 +51,7 @@ import {
   isValidInstanceName,
   isValidProjectName,
 } from "@/types";
-import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   emptySQLEditorConnection,
   extractProjectResourceName,
@@ -95,7 +91,6 @@ const {
   events: editorEvents,
   maybeSwitchProject,
 } = useSQLEditorContext();
-const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
 const fallbackToFirstProject = async () => {
   const { projects } = await projectStore.fetchProjectList({
@@ -133,12 +128,7 @@ const initializeProjects = async () => {
     editorStore.strictProject = "strict" in route.query;
   } else {
     // plain "/sql-editor"
-    if (hideProjects.value) {
-      // Direct to Default Project
-      project = DEFAULT_PROJECT_NAME;
-    } else {
-      project = editorStore.storedLastViewedProject;
-    }
+    project = editorStore.storedLastViewedProject;
     editorStore.strictProject = false;
   }
 

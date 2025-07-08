@@ -101,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { useLocalStorage } from "@vueuse/core";
 import dayjs from "dayjs";
 import { head } from "lodash-es";
@@ -124,7 +125,8 @@ import {
   useSQLStore,
 } from "@/store";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
-import { ExportFormat } from "@/types/proto/v1/common";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hexToRgb } from "@/utils";
 
 const MAX_EXPORT = 20;
@@ -195,19 +197,19 @@ const isEmptyQueryItem = (item: BatchQueryItem) => {
   );
 };
 
-const filteredItems = computed(() => {
-  if (showEmpty.value) {
-    return items.value;
-  }
-
-  return items.value.filter((item) => !isEmptyQueryItem(item));
-});
-
 const showEmptySwitch = computed(() => {
   if (items.value.length <= 1) {
     return false;
   }
   return items.value.some((item) => isEmptyQueryItem(item));
+});
+
+const filteredItems = computed(() => {
+  if (showEmpty.value || !showEmptySwitch.value) {
+    return items.value;
+  }
+
+  return items.value.filter((item) => !isEmptyQueryItem(item));
 });
 
 const isDatabaseQueryFailed = (item: BatchQueryItem) => {
@@ -271,15 +273,17 @@ const handleExportBtnClick = async ({
       continue;
     }
     try {
-      const content = await sqlStore.exportData({
-        name: databaseName,
-        dataSourceId: context.params.connection.dataSourceId ?? "",
-        format: options.format,
-        statement: context.params.statement,
-        limit: options.limit,
-        admin: tabStore.currentTab?.mode === "ADMIN",
-        password: options.password,
-      });
+      const content = await sqlStore.exportData(
+        create(ExportRequestSchema, {
+          name: databaseName,
+          dataSourceId: context.params.connection.dataSourceId ?? "",
+          format: options.format,
+          statement: context.params.statement,
+          limit: options.limit,
+          admin: tabStore.currentTab?.mode === "ADMIN",
+          password: options.password,
+        })
+      );
 
       contents.push({
         content,

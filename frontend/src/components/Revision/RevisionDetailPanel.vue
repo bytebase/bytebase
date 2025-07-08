@@ -11,7 +11,9 @@
     >
       <span>
         {{ $t("database.revision.applied-at") }}:
-        <HumanizeDate :date="getDateForPbTimestamp(revision.createTime)" />
+        <HumanizeDate
+          :date="getDateForPbTimestampProtoEs(revision.createTime)"
+        />
       </span>
       <span v-if="relatedIssueUID">
         {{ $t("common.issue") }}:
@@ -25,12 +27,9 @@
   <NDivider />
 
   <div class="flex flex-col">
-    <p class="w-auto flex items-center text-base text-main mb-2">
+    <p class="w-auto flex items-center text-base text-main mb-2 gap-x-2">
       <span>{{ $t("common.statement") }}</span>
-      <ClipboardIcon
-        class="ml-1 w-4 h-4 cursor-pointer hover:opacity-80"
-        @click.prevent="copyStatement"
-      />
+      <CopyButton :content="statement" />
     </p>
     <MonacoEditor
       class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
@@ -51,23 +50,17 @@
 </template>
 
 <script lang="ts" setup>
-import { ClipboardIcon } from "lucide-vue-next";
+import { create } from "@bufbuild/protobuf";
 import { NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import { rolloutServiceClient } from "@/grpcweb";
-import {
-  pushNotification,
-  useRevisionStore,
-  useSheetV1Store,
-} from "@/store";
-import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
-import type { TaskRun } from "@/types/proto/v1/rollout_service";
-import {
-  extractIssueUID,
-  getSheetStatement,
-  toClipboard,
-} from "@/utils";
+import { CopyButton } from "@/components/v2";
+import { rolloutServiceClientConnect } from "@/grpcweb";
+import { useRevisionStore, useSheetV1Store } from "@/store";
+import { getDateForPbTimestampProtoEs, type ComposedDatabase } from "@/types";
+import { GetTaskRunRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { extractIssueUID, getSheetStatement } from "@/utils";
 import TaskRunLogTable from "../IssueV1/components/TaskRunSection/TaskRunLogTable/TaskRunLogTable.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 
@@ -98,13 +91,14 @@ watch(
     state.loading = true;
     const revision = await revisionStore.getOrFetchRevisionByName(revisionName);
     if (revision) {
-      const taskRunData = await rolloutServiceClient.getTaskRun({
+      const request = create(GetTaskRunRequestSchema, {
         name: revision.taskRun,
       });
-      taskRun.value = taskRunData;
+      const response = await rolloutServiceClientConnect.getTaskRun(request);
+      taskRun.value = response;
       // Prepare the sheet data from task run.
-      if (taskRunData.sheet) {
-        await sheetStore.getOrFetchSheetByName(taskRunData.sheet, "FULL");
+      if (response.sheet) {
+        await sheetStore.getOrFetchSheetByName(response.sheet, "FULL");
       }
     }
     state.loading = false;
@@ -131,14 +125,4 @@ const relatedIssueUID = computed(() => {
   if (!uid) return null;
   return uid;
 });
-
-const copyStatement = async () => {
-  toClipboard(statement.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: `Statement copied to clipboard.`,
-    });
-  });
-};
 </script>

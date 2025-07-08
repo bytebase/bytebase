@@ -38,7 +38,7 @@
 import { reactive } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
-import type { Instance } from "@/types/proto/v1/instance_service";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { extractInstanceResourceName, instanceV1Name } from "@/utils";
 import InstanceDashboard from "@/views/InstanceDashboard.vue";
 import InstanceDetail from "@/views/InstanceDetail.vue";

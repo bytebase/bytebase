@@ -7,16 +7,18 @@ import {
   languageOfEngineV1,
   unknownInstance,
 } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { State } from "@/types/proto-es/v1/common_pb";
+// Using proto-es types directly, no conversions needed
 import type {
   Instance,
   InstanceResource,
-} from "@/types/proto/v1/instance_service";
+} from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSourceType,
   type DataSource,
-} from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+} from "@/types/proto-es/v1/instance_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 export function instanceV1Name(instance: Instance | InstanceResource) {
   const store = useSubscriptionV1Store();
@@ -324,13 +326,13 @@ export const instanceV1MaskingForNoSQL = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  return [Engine.MONGODB, Engine.COSMOSDB].includes(engine);
+  return [Engine.MONGODB].includes(engine);
 };
 
 export const engineOfInstanceV1 = (
   instanceOrEngine: Instance | InstanceResource | Engine
-) => {
-  if (typeof instanceOrEngine === "string") {
+): Engine => {
+  if (typeof instanceOrEngine === "number") {
     return instanceOrEngine;
   }
   return instanceOrEngine.engine;

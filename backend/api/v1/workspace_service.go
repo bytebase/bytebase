@@ -3,8 +3,8 @@ package v1
 import (
 	"context"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -13,11 +13,12 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
 )
 
 // WorkspaceService implements the workspace service.
 type WorkspaceService struct {
-	v1pb.UnimplementedWorkspaceServiceServer
+	v1connect.UnimplementedWorkspaceServiceHandler
 	store      *store.Store
 	iamManager *iam.Manager
 }
@@ -30,22 +31,28 @@ func NewWorkspaceService(store *store.Store, iamManager *iam.Manager) *Workspace
 	}
 }
 
-func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
+func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find iam policy with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
 	}
 
-	return convertToV1IamPolicy(ctx, s.store, policy)
+	v1Policy, err := convertToV1IamPolicy(ctx, s.store, policy)
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(v1Policy), nil
 }
 
-func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
+func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
+	request := req.Msg
 	policyMessage, err := s.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace iam policy with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace iam policy"))
 	}
 	if request.Etag != "" && request.Etag != policyMessage.Etag {
-		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the workspace iam policy, please refresh and try again.")
+		return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
 	}
 
 	if _, err := validateIAMPolicy(ctx, s.store, s.iamManager, request.Policy, policyMessage); err != nil {
@@ -58,12 +65,12 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 	}
 	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, common.WorkspaceAdmin, iamPolicy)
 	if !containsActiveEndUser(users) {
-		return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace must have at least one admin"))
 	}
 
 	payloadBytes, err := protojson.Marshal(iamPolicy)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal iam policy with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal iam policy"))
 	}
 	payloadStr := string(payloadBytes)
 	patch := &store.UpdatePolicyMessage{
@@ -73,7 +80,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 	}
 
 	if _, err := s.store.UpdatePolicyV2(ctx, patch); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
@@ -82,10 +89,15 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 
 	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find iam policy with error: %v", err.Error())
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
 	}
 
-	return convertToV1IamPolicy(ctx, s.store, policy)
+	v1Policy, err := convertToV1IamPolicy(ctx, s.store, policy)
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(v1Policy), nil
 }
 
 func containsActiveEndUser(users []*store.UserMessage) bool {

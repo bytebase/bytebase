@@ -31,10 +31,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ActuatorServiceClient interface {
+	// Permissions required: None
 	GetActuatorInfo(ctx context.Context, in *GetActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
+	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(ctx context.Context, in *UpdateActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
+	// Permissions required: bb.projects.create
 	SetupSample(ctx context.Context, in *SetupSampleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Permissions required: None
 	DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Permissions required: None
 	GetResourcePackage(ctx context.Context, in *GetResourcePackageRequest, opts ...grpc.CallOption) (*ResourcePackage, error)
 }
 
@@ -100,10 +105,15 @@ func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, in *GetR
 // All implementations must embed UnimplementedActuatorServiceServer
 // for forward compatibility.
 type ActuatorServiceServer interface {
+	// Permissions required: None
 	GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error)
+	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error)
+	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *SetupSampleRequest) (*emptypb.Empty, error)
+	// Permissions required: None
 	DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error)
+	// Permissions required: None
 	GetResourcePackage(context.Context, *GetResourcePackageRequest) (*ResourcePackage, error)
 	mustEmbedUnimplementedActuatorServiceServer()
 }

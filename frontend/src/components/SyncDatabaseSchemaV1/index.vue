@@ -79,7 +79,7 @@ import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, onMounted, reactive, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute, useRouter, type LocationQueryRaw } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -91,8 +91,8 @@ import {
 } from "@/store";
 import type { ComposedProject } from "@/types";
 import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { ChangelogView } from "@/types/proto/v1/database_service";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 import {
   extractDatabaseNameAndChangelogUID,
@@ -155,7 +155,7 @@ const sourceSchemaString = asyncComputed(async () => {
       return "";
     } else if (isValidDatabaseName(changelogSourceSchemaState.databaseName)) {
       const databaseSchema = await databaseStore.fetchDatabaseSchema(
-        `${changelogSourceSchemaState.databaseName}/schema`
+        changelogSourceSchemaState.databaseName
       );
       return databaseSchema.schema;
     }
@@ -192,7 +192,7 @@ onMounted(async () => {
     // Prepare source schema from the selected changelog.
     await changelogStore.getOrFetchChangelogByName(
       changelogName,
-      ChangelogView.CHANGELOG_VIEW_FULL
+      ChangelogView.FULL
     );
     const { databaseName } = extractDatabaseNameAndChangelogUID(changelogName);
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
@@ -281,7 +281,7 @@ const tryChangeStep = async (nextStepIndex: number) => {
     if (changelogSourceSchemaState?.changelogName) {
       await changelogStore.getOrFetchChangelogByName(
         changelogSourceSchemaState.changelogName,
-        ChangelogView.CHANGELOG_VIEW_FULL
+        ChangelogView.FULL
       );
     }
   }
@@ -294,7 +294,7 @@ const tryFinishSetup = async () => {
   }
 
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
-  const query: Record<string, any> = {
+  const query: LocationQueryRaw = {
     template: "bb.issue.database.schema.update",
     mode: "normal",
   };
