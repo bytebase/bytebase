@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -160,22 +161,32 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, err
 		}
-		if defaultStr.Valid {
-			if strings.Contains(extra, "DEFAULT_GENERATED") {
-				column.DefaultExpression = fmt.Sprintf("(%s)", defaultStr.String)
-			} else {
-				column.Default = defaultStr.String
-			}
-		} else {
-			// TODO(zp): refactor column default value.
-			if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
-				// Use the upper case to consistent with MySQL Dump.
-				column.DefaultExpression = autoIncrementSymbol
-			}
-		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
+		}
+		if defaultStr.Valid {
+			// StarRocks is MySQL-compatible, so use MySQL's default handling approach
+			unquotedDefault := mysql.UnquoteMySQLString(defaultStr.String)
+			switch {
+			case mysql.IsCurrentTimestampLike(unquotedDefault):
+				column.Default = unquotedDefault
+			case strings.Contains(extra, "DEFAULT_GENERATED"):
+				unescapedDefault := mysql.UnescapeExpressionDefault(unquotedDefault)
+				column.Default = fmt.Sprintf("(%s)", unescapedDefault)
+			default:
+				// For non-generated and non CURRENT_XXX default value, preserve quotes for mysqldump compatibility
+				column.Default = defaultStr.String
+			}
+		} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
+			// TODO(zp): refactor column default value.
+			// Use the upper case to consistent with MySQL Dump.
+			column.Default = autoIncrementSymbol
+		} else if isNullBool {
+			// This is NULL if the column has an explicit default of NULL,
+			// or if the column definition includes no DEFAULT clause.
+			// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
+			column.Default = "NULL"
 		}
 		column.Nullable = isNullBool
 
