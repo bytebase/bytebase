@@ -1105,7 +1105,7 @@ func printPrimaryKeyClause(buf *strings.Builder, table *storepb.TableMetadata) e
 }
 
 func isAutoIncrement(column *storepb.ColumnMetadata) bool {
-	return strings.EqualFold(column.GetDefaultExpression(), autoIncrementSymbol)
+	return strings.EqualFold(column.GetDefault(), autoIncrementSymbol)
 }
 
 func isAutoRandom(column *storepb.ColumnMetadata) bool {
@@ -1186,7 +1186,7 @@ func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) er
 		return nil
 	}
 
-	if column.DefaultNull {
+	if column.Default == "NULL" || column.DefaultNull {
 		if !column.Nullable || !typeSupportsDefaultValue(column.Type) {
 			// If the column is not nullable, then the default value should not be null.
 			// For this case, we should not print the default clause.
@@ -1214,7 +1214,12 @@ func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) er
 	}
 
 	if column.Default != "" {
-		if _, err := fmt.Fprintf(buf, " DEFAULT '%s'", column.Default); err != nil {
+		if isAutoIncrement(column) {
+			// If the default value is auto_increment, then we should not print the default clause.
+			// We'll handle this in the following AUTO_INCREMENT clause.
+			return nil
+		}
+		if _, err := fmt.Fprintf(buf, " DEFAULT %s", column.Default); err != nil {
 			return err
 		}
 	}

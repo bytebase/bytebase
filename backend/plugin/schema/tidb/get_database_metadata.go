@@ -188,10 +188,10 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			case ast.ColumnOptionNull:
 				column.Nullable = true
 			case ast.ColumnOptionAutoIncrement:
-				column.DefaultExpression = "AUTO_INCREMENT"
+				column.Default = "AUTO_INCREMENT"
 			case ast.ColumnOptionDefaultValue:
 				if defaultValue := m.getDefaultValue(option.Expr); defaultValue != "" {
-					column.DefaultExpression = defaultValue
+					column.Default = defaultValue
 				}
 			case ast.ColumnOptionComment:
 				// Handle comment - extract from various expression types
@@ -564,7 +564,7 @@ func (m *metadataExtractor) processTiDBTableComment(comment string, table *store
 		for _, col := range table.Columns {
 			if m.isPrimaryKeyColumn(col, table) {
 				bits := matches[1]
-				col.DefaultExpression = fmt.Sprintf("AUTO_RANDOM(%s)", bits)
+				col.Default = fmt.Sprintf("AUTO_RANDOM(%s)", bits)
 				break
 			}
 		}

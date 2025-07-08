@@ -2,7 +2,6 @@ package tidb
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -460,8 +459,10 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 			_, _ = buf.WriteString(col.GetDefaultExpression())
 			_, _ = buf.WriteString(" */")
 		} else if hasDefaultValue(col) && !hasAutoIncrement(col) && !hasAutoRandom(col) {
-			_, _ = buf.WriteString(" DEFAULT ")
-			_, _ = buf.WriteString(getDefaultExpression(col))
+			if e := getDefaultExpression(col); e != "" {
+				_, _ = buf.WriteString(" DEFAULT ")
+				_, _ = buf.WriteString(e)
+			}
 		}
 
 		// Handle ON UPDATE
@@ -978,18 +979,13 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 		return column.DefaultExpression
 	}
 
-	// Check for string default value
-	if column.Default != "" {
-		// Check if it's a numeric value or needs quotes
-		if isNumeric(column.Default) || isKeyword(column.Default) {
-			return column.Default
-		}
-		return fmt.Sprintf("'%s'", escapeString(column.Default))
-	}
-
 	// Check for NULL default
 	if column.DefaultNull {
 		return "NULL"
+	}
+
+	if column.GetDefault() != "" {
+		return column.GetDefault()
 	}
 
 	return ""
@@ -999,6 +995,12 @@ func hasDefaultValue(column *storepb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
+
+	// Don't treat AUTO_INCREMENT as a default value
+	if strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT") {
+		return false
+	}
+
 	return column.DefaultNull || column.DefaultExpression != "" || (column.Default != "")
 }
 
@@ -1006,7 +1008,9 @@ func hasAutoIncrement(column *storepb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
-	return strings.EqualFold(column.GetDefaultExpression(), "AUTO_INCREMENT")
+
+	// Check if column has AUTO_INCREMENT in default field (new logic) or default expression (old logic)
+	return strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT") || strings.EqualFold(column.GetDefaultExpression(), "AUTO_INCREMENT")
 }
 
 func hasAutoRandom(column *storepb.ColumnMetadata) bool {
@@ -1045,19 +1049,6 @@ func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *stor
 
 	_, _ = buf.WriteString(";\n")
 	return nil
-}
-
-func isNumeric(s string) bool {
-	// Simple check for numeric values
-	_, err := fmt.Sscanf(s, "%f", new(float64))
-	return err == nil
-}
-
-func isKeyword(s string) bool {
-	// Check for common MySQL/TiDB keywords that don't need quotes
-	keywords := []string{"CURRENT_TIMESTAMP", "CURRENT_DATE", "CURRENT_TIME", "NULL"}
-	upper := strings.ToUpper(s)
-	return slices.Contains(keywords, upper)
 }
 
 func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *storepb.TriggerMetadata) error {
