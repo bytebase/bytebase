@@ -498,6 +498,7 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 		storepb.Engine_ELASTICSEARCH,
 		storepb.Engine_DATABRICKS,
 		storepb.Engine_COSMOSDB,
+		storepb.Engine_TIDB,
 		storepb.Engine_TRINO:
 		// These engines don't have traditional column defaults or are NoSQL databases.
 		return true
