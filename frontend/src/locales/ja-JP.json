@@ -1046,7 +1046,8 @@
       "pending-description": "この問題は承認待ちです。続行するには強制ロールアウトが必要です。",
       "rejected-error": "問題の承認が拒否されました。続行するには強制ロールアウトを有効にしてください。",
       "pending-error": "問題の承認が保留中です。続行するには強制ロールアウトを有効にしてください。"
-    }
+    },
+    "new-layout": "新しいCI/CDレイアウト"
   },
   "plan": {
     "self": "プラン",
@@ -1064,7 +1065,6 @@
       "description": "このプランのすべての仕様を表示および管理します",
       "total-specs": "合計スペック",
       "total-targets": "合計ターゲット",
-      "check-status": "ステータスを確認する",
       "no-checks": "チェックなし",
       "affected-resources": "影響を受けるリソース"
     },

@@ -1046,7 +1046,8 @@
       "pending-description": "This issue is waiting for approval. Force rollout is required to proceed.",
       "rejected-error": "Issue approval has been rejected. Please enable force rollout to proceed.",
       "pending-error": "Issue approval is pending. Please enable force rollout to proceed."
-    }
+    },
+    "new-layout": "New CI/CD Layout"
   },
   "plan": {
     "self": "Plan",
@@ -1064,7 +1065,6 @@
       "description": "View and manage all specifications in this plan",
       "total-specs": "Total Specs",
       "total-targets": "Total Targets",
-      "check-status": "Check Status",
       "no-checks": "No checks",
       "affected-resources": "Affected Resources"
     },
