@@ -14,7 +14,6 @@
       @update:value="onIssueLabelsUpdate"
     />
 
-    <!-- Description Section -->
     <div class="w-full flex flex-col">
       <h3 class="textlabel mb-1">
         {{ $t("common.description") }}
@@ -34,11 +33,11 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { isEqual } from "lodash-es";
 import { NInput } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
+import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { issueServiceClientConnect } from "@/grpcweb";
 import {
   extractUserId,
@@ -59,6 +58,7 @@ const { t } = useI18n();
 const { issue } = usePlanContextWithIssue();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
+const { requestEnhancedPolling } = useResourcePoller();
 
 const allowChange = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) {
@@ -74,10 +74,6 @@ const allowChange = computed(() => {
 });
 
 const onIssueLabelsUpdate = async (labels: string[]) => {
-  if (isEqual(labels, issue.value.labels)) {
-    return; // No change, do nothing.
-  }
-
   const issuePatch = {
     ...issue.value,
     labels,
@@ -87,7 +83,7 @@ const onIssueLabelsUpdate = async (labels: string[]) => {
     updateMask: { paths: ["labels"] },
   });
   await issueServiceClientConnect.updateIssue(request);
-  // TODO(claude): trigger re-fetch of issue if needed.
+  requestEnhancedPolling(["issue"], true /** once */);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -96,10 +92,6 @@ const onIssueLabelsUpdate = async (labels: string[]) => {
 };
 
 const onIssueDescriptionUpdate = async (description: string) => {
-  if (issue.value.description === description) {
-    return; // No change, do nothing.
-  }
-
   const issuePatch = {
     ...issue.value,
     description,
@@ -109,7 +101,8 @@ const onIssueDescriptionUpdate = async (description: string) => {
     updateMask: { paths: ["description"] },
   });
   await issueServiceClientConnect.updateIssue(request);
-  // TODO(claude): trigger re-fetch of issue if needed.
+  // After running checks, we need to refresh the plan and plan check runs.
+  requestEnhancedPolling(["issue"], true /** once */);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

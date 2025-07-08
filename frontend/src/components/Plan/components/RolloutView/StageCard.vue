@@ -1,6 +1,6 @@
 <template>
   <div
-    class="!w-80 shrink-0 bg-white z-[1] rounded-lg p-1"
+    class="!w-72 shrink-0 bg-white z-[1] rounded-lg p-1"
     :class="
       twMerge(
         isCreated ? 'bg-white shadow' : 'bg-zinc-50 border-2 border-dashed'
