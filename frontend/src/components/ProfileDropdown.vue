@@ -13,12 +13,14 @@
   </NDropdown>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import type { DropdownOption } from "naive-ui";
 import { NSwitch, NDropdown } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, ref, h } from "vue";
+import { twMerge } from "tailwind-merge";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   useActuatorV1Store,
@@ -101,6 +103,8 @@ const switchDebug = () => {
   });
 };
 
+const { enabledNewLayout, toggleLayout } = useIssueLayoutVersion();
+
 const toggleLocale = (lang: string) => {
   setLocale(lang);
   showDropdown.value = false;
@@ -147,21 +151,21 @@ const languageOptions = computed((): DropdownOption[] => {
       key: item.value,
       type: "render",
       render() {
-        return h(
-          "div",
-          {
-            key: item.value,
-            class: classes.join(" "),
-            onClick: () => toggleLocale(item.value),
-          },
-          h("div", { class: "radio cursor-pointer text-sm" }, [
-            h("input", {
-              type: "radio",
-              class: "btn",
-              checked: locale.value === item.value,
-            }),
-            h("label", { class: "ml-2 cursor-pointer" }, item.label),
-          ])
+        return (
+          <div
+            key={item.value}
+            class={twMerge(classes)}
+            onClick={() => toggleLocale(item.value)}
+          >
+            <div class="radio cursor-pointer text-sm">
+              <input
+                type="radio"
+                class="btn"
+                checked={locale.value === item.value}
+              />
+              <label class="ml-2 cursor-pointer">{item.label}</label>
+            </div>
+          </div>
         );
       },
     };
@@ -197,21 +201,21 @@ const licenseOptions = computed((): DropdownOption[] => {
       key: item.plan,
       type: "render",
       render() {
-        return h(
-          "div",
-          {
-            key: item.value,
-            class: classes.join(" "),
-            onClick: () => switchPlan(item.value),
-          },
-          h("div", { class: "radio cursor-pointer text-sm" }, [
-            h("input", {
-              type: "radio",
-              class: "btn",
-              checked: currentPlan.value === item.plan,
-            }),
-            h("label", { class: "ml-2 cursor-pointer" }, item.label),
-          ])
+        return (
+          <div
+            key={item.value}
+            class={classes.join(" ")}
+            onClick={() => switchPlan(item.value)}
+          >
+            <div class="radio cursor-pointer text-sm">
+              <input
+                type="radio"
+                class="btn"
+                checked={currentPlan.value === item.plan}
+              />
+              <label class="ml-2 cursor-pointer">{item.label}</label>
+            </div>
+          </div>
         );
       },
     };
@@ -223,10 +227,7 @@ const options = computed((): DropdownOption[] => [
     key: "profile",
     type: "render",
     render() {
-      return h(ProfilePreview, {
-        link: props.link,
-        onClick: () => (showDropdown.value = false),
-      });
+      return <ProfilePreview link={props.link} />;
     },
   },
   {
@@ -237,21 +238,14 @@ const options = computed((): DropdownOption[] => [
     key: "language",
     type: "render",
     render() {
-      return h(
-        NDropdown,
-        {
-          key: "switch-language",
-          options: languageOptions.value,
-          placement: "left-start",
-        },
-        () =>
-          h(
-            "div",
-            {
-              class: "menu-item",
-            },
-            t("common.language")
-          )
+      return (
+        <NDropdown
+          key="switch-language"
+          options={languageOptions.value}
+          placement="left-start"
+        >
+          <div class="menu-item">{t("common.language")}</div>
+        </NDropdown>
       );
     },
   },
@@ -260,21 +254,14 @@ const options = computed((): DropdownOption[] => [
     type: "render",
     show: isDev(),
     render() {
-      return h(
-        NDropdown,
-        {
-          key: "switch-license",
-          options: licenseOptions.value,
-          placement: "left-start",
-        },
-        () =>
-          h(
-            "div",
-            {
-              class: "menu-item",
-            },
-            t("common.license")
-          )
+      return (
+        <NDropdown
+          key="switch-license"
+          options={licenseOptions.value}
+          placement="left-start"
+        >
+          <div class="menu-item">{t("common.license")}</div>
+        </NDropdown>
       );
     },
   },
@@ -283,13 +270,10 @@ const options = computed((): DropdownOption[] => [
     type: "render",
     show: !hideQuickstart.value,
     render() {
-      return h(
-        "div",
-        {
-          class: "menu-item",
-          onClick: resetQuickstart,
-        },
-        t("quick-start.self")
+      return (
+        <div class="menu-item" onClick={resetQuickstart}>
+          {t("quick-start.self")}
+        </div>
       );
     },
   },
@@ -298,14 +282,14 @@ const options = computed((): DropdownOption[] => [
     type: "render",
     show: !hideHelp.value,
     render() {
-      return h(
-        "a",
-        {
-          class: "menu-item",
-          target: "_blank",
-          href: "https://docs.bytebase.com/introduction/what-is-bytebase/?source=console",
-        },
-        t("common.help")
+      return (
+        <a
+          class="menu-item"
+          target="_blank"
+          href="https://docs.bytebase.com/introduction/what-is-bytebase/?source=console"
+        >
+          {t("common.help")}
+        </a>
       );
     },
   },
@@ -317,7 +301,7 @@ const options = computed((): DropdownOption[] => [
     key: "version",
     type: "render",
     render() {
-      return h(Version, { tooltipProps: { placement: "left" } });
+      return <Version tooltipProps={{ placement: "left" }} />;
     },
   },
   {
@@ -325,46 +309,50 @@ const options = computed((): DropdownOption[] => [
     type: "render",
     show: allowToggleDebug.value,
     render() {
-      return h(
-        "div",
-        {
-          class: "menu-item",
-        },
-        [
-          h(
-            "div",
-            {
-              class: "flex flex-row items-center space-x-2 justify-between",
-            },
-            [
-              h("span", {}, "Debug"),
-              h(NSwitch, {
-                size: "small",
-                value: isDebug.value,
-                "onUpdate:value": switchDebug,
-              }),
-            ]
-          ),
-        ]
+      return (
+        <div class="menu-item">
+          <div class="flex flex-row items-center space-x-2 justify-between">
+            <span>Debug</span>
+            <NSwitch
+              size="small"
+              value={isDebug.value}
+              onUpdate:value={switchDebug}
+            />
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    key: "enable-new-layout",
+    type: "render",
+    render() {
+      return (
+        <div class="menu-item">
+          <div class="flex flex-row items-center gap-2 justify-between">
+            <span>{t("issue.new-layout")}</span>
+            <NSwitch
+              size="small"
+              value={enabledNewLayout.value}
+              onUpdate:value={toggleLayout}
+            />
+          </div>
+        </div>
       );
     },
   },
   {
     key: "header-divider",
     type: "divider",
-    show: allowToggleDebug.value,
   },
   {
     key: "logout",
     type: "render",
     render() {
-      return h(
-        "div",
-        {
-          class: "menu-item",
-          onClick: logout,
-        },
-        t("common.logout")
+      return (
+        <div class="menu-item" onClick={logout}>
+          {t("common.logout")}
+        </div>
       );
     },
   },

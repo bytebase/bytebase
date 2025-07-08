@@ -45,7 +45,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-control-light">
-                {{ $t("plan.overview.check-status") }}
+                {{ $t("plan.navigator.checks") }}
               </p>
               <div class="flex items-center gap-3 mt-1">
                 <div
