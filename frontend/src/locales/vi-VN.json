@@ -1021,7 +1021,6 @@
         "no-session-found": "Không tìm thấy phiên."
       }
     },
-    "sql-review-only": "Chỉ đánh giá SQL",
     "title": {
       "edit-schema": "Chỉnh sửa lược đồ",
       "change-data": "Thay đổi dữ liệu",

@@ -56,7 +56,7 @@
         </template>
       </div>
     </template>
-    {{ status }}
+    {{ Task_Status[status] }}
   </NTooltip>
 </template>
 

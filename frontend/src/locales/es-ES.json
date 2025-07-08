@@ -1021,7 +1021,6 @@
         "no-session-found": "No se encontró ninguna sesión."
       }
     },
-    "sql-review-only": "Sólo revisión de SQL",
     "title": {
       "edit-schema": "Editar esquema",
       "change-data": "Cambiar datos",
