@@ -168,10 +168,6 @@ const state = reactive<Pick<Issue, "title" | "description" | "labels">>({
   description: "",
   labels: [],
 });
-const previewRolloutValidation = ref<{
-  isValid: boolean;
-  error?: string;
-}>({ isValid: true });
 const { project } = useCurrentProjectV1();
 const currentUser = useCurrentUserV1();
 const policyV1Store = usePolicyV1Store();
@@ -248,12 +244,6 @@ const confirmErrors = computed(() => {
   if (project.value.forceIssueLabels && state.labels.length === 0) {
     errors.push(
       t("project.settings.issue-related.labels.force-issue-labels.warning")
-    );
-  }
-
-  if (!previewRolloutValidation.value.isValid) {
-    errors.push(
-      previewRolloutValidation.value.error || "Invalid preview rollout"
     );
   }
 
