@@ -55,6 +55,7 @@ import { targetsForSpec } from "@/components/Plan";
 import AddSpecDrawer from "@/components/Plan/components/AddSpecDrawer.vue";
 import PlanDataTable from "@/components/Plan/components/PlanDataTable";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useCurrentUserV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
@@ -78,11 +79,9 @@ import {
 
 interface LocalState {
   params: SearchParams;
-  selectedPlanOnlyType?:
-    | "bb.issue.database.schema.update"
-    | "bb.issue.database.data.update";
 }
 
+const { enabledNewLayout } = useIssueLayoutVersion();
 const { project, ready } = useCurrentProjectV1();
 const showAddSpecDrawer = ref(false);
 
@@ -138,10 +137,14 @@ const planSearchParams = computed(() => {
 });
 
 const mergedPlanFind = computed(() => {
-  return buildPlanFindBySearchParams(planSearchParams.value, {
-    hasIssue: false,
-    hasPipeline: false,
-  });
+  const defaultFind = enabledNewLayout.value
+    ? undefined
+    : // Default find for legacy layout.
+      {
+        hasIssue: false,
+        hasPipeline: false,
+      };
+  return buildPlanFindBySearchParams(planSearchParams.value, defaultFind);
 });
 
 const fetchPlanList = async ({

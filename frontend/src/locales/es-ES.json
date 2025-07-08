@@ -1021,7 +1021,6 @@
         "no-session-found": "No se encontró ninguna sesión."
       }
     },
-    "sql-review-only": "Sólo revisión de SQL",
     "title": {
       "edit-schema": "Editar esquema",
       "change-data": "Cambiar datos",
@@ -1127,6 +1126,7 @@
   },
   "rollout": {
     "rollouts": "Despliegues",
+    "preview-rollout": "Vista previa del lanzamiento",
     "force-rollout": "Despliegue de fuerza"
   },
   "quick-action": {

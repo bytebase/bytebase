@@ -1021,7 +1021,6 @@
         "no-session-found": "セッションが見つかりません。"
       }
     },
-    "sql-review-only": "SQLレビューのみ",
     "title": {
       "edit-schema": "スキーマを編集",
       "change-data": "データの変更",
@@ -1127,6 +1126,7 @@
   },
   "rollout": {
     "rollouts": "ロールアウト",
+    "preview-rollout": "プレビューロールアウト",
     "force-rollout": "強制展開"
   },
   "quick-action": {

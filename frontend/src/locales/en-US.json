@@ -1021,7 +1021,6 @@
         "no-session-found": "No session found."
       }
     },
-    "sql-review-only": "SQL Review Only",
     "title": {
       "edit-schema": "Edit schema",
       "change-data": "Change data",
@@ -1127,6 +1126,7 @@
   },
   "rollout": {
     "rollouts": "Rollouts",
+    "preview-rollout": "Preview Rollout",
     "force-rollout": "Force rollout"
   },
   "quick-action": {
