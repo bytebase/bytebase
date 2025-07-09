@@ -221,6 +221,7 @@ type ActionResult struct {
 func executeActionCommand(ctx context.Context, args ...string) (*ActionResult, error) {
 	// Create new world instance for test isolation
 	w := world.NewWorld()
+	w.Platform = world.LocalPlatform
 
 	// Create new command instance using the factory function
 	cmd := command.NewRootCommand(w)

@@ -43,7 +43,7 @@ func validateCheckFlags(w *world.World) func(*cobra.Command, []string) error {
 
 func runCheck(w *world.World) func(*cobra.Command, []string) error {
 	return func(*cobra.Command, []string) error {
-		platform := getJobPlatform()
+		platform := w.Platform
 		w.Logger.Info("running on platform", "platform", platform.String())
 		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
 		if err != nil {
@@ -69,19 +69,19 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 
 		// Generate platform-specific outputs
 		switch platform {
-		case GitHub:
+		case world.GitHub:
 			if err := github.CreateCommentAndAnnotation(checkReleaseResponse); err != nil {
 				return err
 			}
-		case GitLab:
+		case world.GitLab:
 			if err := writeReleaseCheckToCodeQualityJSON(checkReleaseResponse); err != nil {
 				return err
 			}
-		case AzureDevOps:
+		case world.AzureDevOps:
 			if err := loggingReleaseChecks(checkReleaseResponse); err != nil {
 				return err
 			}
-		case Bitbucket:
+		case world.Bitbucket:
 			if err := createBitbucketReport(checkReleaseResponse); err != nil {
 				return err
 			}

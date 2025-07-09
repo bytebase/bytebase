@@ -1,10 +1,13 @@
 package world
 
-import "log/slog"
+import (
+	"log/slog"
+)
 
 // World is the world environment for bytebase-action.
 type World struct {
-	Logger *slog.Logger
+	Logger   *slog.Logger
+	Platform JobPlatform
 	// bytebase-action flags
 	Output               string
 	URL                  string

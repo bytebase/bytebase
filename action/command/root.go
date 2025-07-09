@@ -39,6 +39,10 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		w.Logger = slog.New(slog.NewTextHandler(cmd.ErrOrStderr(), nil))
 
+		if w.Platform == world.UnspecifiedPlatform {
+			w.Platform = world.GetJobPlatform()
+		}
+
 		if w.ServiceAccount == "" {
 			return errors.Errorf("service-account is required and cannot be empty")
 		}

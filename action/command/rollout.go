@@ -81,7 +81,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			createReleaseResponse, err := client.createRelease(w.Project, &v1pb.Release{
 				Title:     w.ReleaseTitle,
 				Files:     releaseFiles,
-				VcsSource: getVCSSource(),
+				VcsSource: getVCSSource(w),
 			})
 			if err != nil {
 				return errors.Wrapf(err, "failed to create release")
@@ -419,24 +419,24 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 	return nil
 }
 
-func getVCSSource() *v1pb.Release_VCSSource {
-	switch getJobPlatform() {
-	case GitHub:
+func getVCSSource(w *world.World) *v1pb.Release_VCSSource {
+	switch w.Platform {
+	case world.GitHub:
 		return &v1pb.Release_VCSSource{
 			VcsType: v1pb.VCSType_GITHUB,
 			Url:     os.Getenv("GITHUB_SERVER_URL") + "/" + os.Getenv("GITHUB_REPOSITORY") + "/commit/" + os.Getenv("GITHUB_SHA"),
 		}
-	case GitLab:
+	case world.GitLab:
 		return &v1pb.Release_VCSSource{
 			VcsType: v1pb.VCSType_GITLAB,
 			Url:     os.Getenv("CI_PROJECT_URL") + "/-/commit/" + os.Getenv("CI_COMMIT_SHA"),
 		}
-	case Bitbucket:
+	case world.Bitbucket:
 		return &v1pb.Release_VCSSource{
 			VcsType: v1pb.VCSType_BITBUCKET,
 			Url:     os.Getenv("BITBUCKET_GIT_HTTP_ORIGIN") + "/commits/" + os.Getenv("BITBUCKET_COMMIT"),
 		}
-	case AzureDevOps:
+	case world.AzureDevOps:
 		return &v1pb.Release_VCSSource{
 			VcsType: v1pb.VCSType_AZURE_DEVOPS,
 			Url:     os.Getenv("SYSTEM_COLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_git/" + os.Getenv("BUILD_REPOSITORY_NAME") + "/commit/" + os.Getenv("BUILD_SOURCEVERSION"),
