@@ -57,7 +57,7 @@ import {
   type UnifiedAction,
 } from "./unified";
 
-const { isCreating, issue } = usePlanContext();
+const { isCreating, issue, rollout } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 
@@ -77,6 +77,10 @@ const availableActions = computed(() => {
 
   // If no issue exists, show create issue action
   if (!issue?.value) {
+    // If rollout exists, no actions are available.
+    if (rollout?.value) {
+      return actions;
+    }
     const canCreateIssue = hasProjectPermissionV2(
       project.value,
       "bb.plans.create"
