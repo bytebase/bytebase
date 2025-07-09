@@ -18,6 +18,8 @@ import (
 )
 
 func TestActionCheckCommand(t *testing.T) {
+	t.Parallel()
+
 	t.Run("ValidMigrations", func(t *testing.T) {
 		t.Parallel()
 		a := require.New(t)
@@ -29,7 +31,7 @@ func TestActionCheckCommand(t *testing.T) {
 		defer ctl.Close(ctx)
 
 		// Create test instance and database
-		_, database := ctl.createTestDatabase(ctx, t)
+		database := ctl.createTestDatabase(ctx, t)
 
 		// Create test data directory
 		testDataDir := t.TempDir()
@@ -95,7 +97,7 @@ func TestActionCheckCommand(t *testing.T) {
 		defer ctl.Close(ctx)
 
 		// Create test database
-		_, database := ctl.createTestDatabase(ctx, t)
+		database := ctl.createTestDatabase(ctx, t)
 
 		// Create test data directory with syntax error migration
 		testDataDir := t.TempDir()
@@ -154,8 +156,8 @@ func TestActionCheckCommand(t *testing.T) {
 		defer ctl.Close(ctx)
 
 		// Create multiple test databases
-		_, database1 := ctl.createTestDatabase(ctx, t)
-		_, database2 := ctl.createTestDatabase(ctx, t)
+		database1 := ctl.createTestDatabase(ctx, t)
+		database2 := ctl.createTestDatabase(ctx, t)
 
 		// Create test data directory
 		testDataDir := t.TempDir()
@@ -262,7 +264,7 @@ func executeActionCommand(ctx context.Context, args ...string) (*ActionResult, e
 }
 
 // createTestDatabase creates a test SQLite database instance and database
-func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) (*v1pb.Instance, *v1pb.Database) {
+func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) *v1pb.Database {
 	a := require.New(t)
 
 	// Create SQLite instance
@@ -294,10 +296,12 @@ func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) (*v
 	}))
 	a.NoError(err)
 
-	return instanceResp.Msg, databaseResp.Msg
+	return databaseResp.Msg
 }
 
 func TestActionRolloutCommand(t *testing.T) {
+	t.Parallel()
+
 	t.Run("BasicRollout", func(t *testing.T) {
 		t.Parallel()
 		a := require.New(t)
@@ -309,7 +313,7 @@ func TestActionRolloutCommand(t *testing.T) {
 		defer ctl.Close(ctx)
 
 		// Create test database
-		_, database := ctl.createTestDatabase(ctx, t)
+		database := ctl.createTestDatabase(ctx, t)
 
 		// Create test data directory and migration file
 		testDataDir := t.TempDir()
@@ -447,7 +451,7 @@ func TestActionRolloutCommand(t *testing.T) {
 		defer ctl.Close(ctx)
 
 		// Create test database
-		_, database := ctl.createTestDatabase(ctx, t)
+		database := ctl.createTestDatabase(ctx, t)
 
 		// Create test data directory and multiple migration files
 		testDataDir := t.TempDir()
@@ -605,6 +609,8 @@ func TestActionRolloutCommand(t *testing.T) {
 }
 
 func TestActionErrorScenarios(t *testing.T) {
+	t.Parallel()
+
 	t.Run("InvalidServiceAccountSecret", func(t *testing.T) {
 		t.Parallel()
 		a := require.New(t)
@@ -616,7 +622,7 @@ func TestActionErrorScenarios(t *testing.T) {
 		defer ctl.Close(ctx)
 
 		// Create test database
-		_, database := ctl.createTestDatabase(ctx, t)
+		database := ctl.createTestDatabase(ctx, t)
 
 		// Create test data directory and migration file
 		testDataDir := t.TempDir()
@@ -688,7 +694,7 @@ func TestActionErrorScenarios(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		_, database := ctl.createTestDatabase(ctx, t)
+		database := ctl.createTestDatabase(ctx, t)
 
 		// Create test data directory (but don't create any files)
 		testDataDir := t.TempDir()
