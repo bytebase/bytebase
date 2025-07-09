@@ -1,4 +1,3 @@
-import protobufjs from "protobufjs";
 import "regenerator-runtime/runtime";
 import { createApp } from "vue";
 import App from "./App.vue";
@@ -19,8 +18,6 @@ import {
   useSubscriptionV1Store,
 } from "./store";
 import { humanizeDate, humanizeTs, isDev, isRelease } from "./utils";
-
-protobufjs.configure();
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());

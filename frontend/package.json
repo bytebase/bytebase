@@ -134,7 +134,6 @@
     "micromark-util-sanitize-uri": "^2.0.1",
     "postcss": "8.5.4",
     "prettier": "3.5.3",
-    "protobufjs": "^7.5.3",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "rollup": "4.41.1",
