@@ -287,7 +287,6 @@
     "no-runnable-tasks": "Không có tác vụ nào có thể chạy được",
     "no-skippable-tasks": "Không có nhiệm vụ nào có thể bỏ qua",
     "no-cancellable-tasks": "Không có nhiệm vụ nào có thể hủy bỏ",
-    "cross-stage-not-supported": "Hoạt động liên giai đoạn không được hỗ trợ",
     "no-permission": "Không có quyền thực hiện hành động này",
     "scheduled-time": "Thời gian đã lên lịch",
     "select-scheduled-time": "Chọn thời gian đã lên lịch",
@@ -314,6 +313,8 @@
     }
   },
   "task-run": {
+    "history": "Lịch sử thực hiện nhiệm vụ",
+    "latest-logs": "Nhật ký mới nhất",
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
@@ -1128,7 +1129,7 @@
     "rollouts": "Triển khai",
     "force-rollout": "Buộc triển khai",
     "stage": {
-      "stages": "Các giai đoạn",
+      "self": "Giai đoạn | Các giai đoạn",
       "start-stage": "Giai đoạn bắt đầu"
     }
   },

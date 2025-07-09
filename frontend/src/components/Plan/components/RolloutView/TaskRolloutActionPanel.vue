@@ -166,9 +166,9 @@
         </div>
         <div v-else></div>
 
-        <div class="flex justify-end gap-x-3">
-          <NButton @click="$emit('close')">
-            {{ $t("common.cancel") }}
+        <div class="flex justify-end gap-x-2">
+          <NButton quaternary @click="$emit('close')">
+            {{ $t("common.close") }}
           </NButton>
 
           <NTooltip :disabled="confirmErrors.length === 0" placement="top">
@@ -257,6 +257,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "close"): void;
+  (event: "confirm"): void;
 }>();
 
 const { t } = useI18n();
@@ -480,6 +481,7 @@ const handleConfirm = async () => {
       style: "SUCCESS",
       title: t("common.success"),
     });
+    emit("confirm");
   } catch (error) {
     pushNotification({
       module: "bytebase",
