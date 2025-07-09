@@ -233,7 +233,8 @@
     "summary": "Tóm tắt",
     "errors": "Lỗi",
     "removed": "LOẠI BỎ",
-    "submit": "Nộp"
+    "submit": "Nộp",
+    "start": "Bắt đầu"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -282,7 +283,6 @@
     "created": "Đã tạo",
     "run-immediately": "Chạy nhiệm vụ ngay lập tức",
     "selected-n-tasks": "{n} nhiệm vụ đã chọn | {n} nhiệm vụ đã chọn",
-    "no-tasks": "Không có nhiệm vụ",
     "no-tasks-selected": "Không có nhiệm vụ nào được chọn",
     "no-runnable-tasks": "Không có tác vụ nào có thể chạy được",
     "no-skippable-tasks": "Không có nhiệm vụ nào có thể bỏ qua",
@@ -1126,7 +1126,11 @@
   },
   "rollout": {
     "rollouts": "Triển khai",
-    "force-rollout": "Buộc triển khai"
+    "force-rollout": "Buộc triển khai",
+    "stage": {
+      "stages": "Các giai đoạn",
+      "start-stage": "Giai đoạn bắt đầu"
+    }
   },
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",

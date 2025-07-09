@@ -14,11 +14,12 @@
 
 <script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
-import { NPerformantEllipsis, NDataTable } from "naive-ui";
+import { NPerformantEllipsis, NDataTable, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
@@ -41,6 +42,7 @@ withDefaults(
 const { t } = useI18n();
 const router = useRouter();
 const userStore = useUserStore();
+const { enabledNewLayout } = useIssueLayoutVersion();
 
 const columnList = computed((): DataTableColumn<Plan>[] => {
   const columns: (DataTableColumn<Plan> & { hide?: boolean })[] = [
@@ -55,13 +57,15 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       title: t("issue.table.name"),
       resizable: true,
       render: (plan) => {
+        const showDraftTag =
+          enabledNewLayout.value && plan.issue === "" && plan.rollout === "";
         return (
           <div class="flex items-center overflow-hidden space-x-2">
             <div class="whitespace-nowrap text-control opacity-60">
               {extractPlanUID(plan.name)}
             </div>
             {plan.title ? (
-              <NPerformantEllipsis class="flex-1 truncate">
+              <NPerformantEllipsis class="truncate">
                 {{
                   default: () => <span>{plan.title}</span>,
                   tooltip: () => (
@@ -74,6 +78,11 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
             ) : (
               <span class="opacity-60 italic">{t("common.untitled")}</span>
             )}
+            {showDraftTag && (
+              <NTag round size="small">
+                Draft
+              </NTag>
+            )}
           </div>
         );
       },
@@ -81,14 +90,14 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
     {
       key: "updateTime",
       title: t("issue.table.updated"),
-      width: 150,
+      width: 128,
       render: (plan) =>
         humanizeTs(getTimeForPbTimestampProtoEs(plan.updateTime, 0) / 1000),
     },
     {
       key: "creator",
-      width: 150,
       title: t("issue.table.creator"),
+      width: 128,
       render: (plan) => {
         const creator =
           userStore.getUserByIdentifier(plan.creator) || unknownUser();

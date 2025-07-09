@@ -18,6 +18,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1 } from "@/store";
@@ -117,6 +118,7 @@ export const provideResourcePoller = () => {
       includes(
         [
           PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+          PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
           PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
         ],
         routeName

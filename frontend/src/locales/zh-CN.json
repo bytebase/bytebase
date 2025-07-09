@@ -233,7 +233,8 @@
     "summary": "总结",
     "errors": "错误",
     "removed": "已移除",
-    "submit": "提交"
+    "submit": "提交",
+    "start": "开始"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -282,7 +283,6 @@
     "created": "创建于",
     "run-immediately": "立即运行任务",
     "selected-n-tasks": "已选择 {n} 个任务",
-    "no-tasks": "没有任务",
     "no-tasks-selected": "未选择任何任务",
     "no-runnable-tasks": "没有可运行的任务",
     "no-skippable-tasks": "没有可跳过的任务",
@@ -1126,7 +1126,11 @@
   },
   "rollout": {
     "rollouts": "发布任务",
-    "force-rollout": "强制发布"
+    "force-rollout": "强制发布",
+    "stage": {
+      "stages": "阶段",
+      "start-stage": "开始该阶段"
+    }
   },
   "quick-action": {
     "create-db": "创建数据库",
