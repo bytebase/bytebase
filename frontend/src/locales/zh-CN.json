@@ -1062,7 +1062,6 @@
     "select-targets": "选择变更对象",
     "ready-for-review": "提交审批",
     "overview": {
-      "description": "查看和管理此变更计划中的所有变更项",
       "total-specs": "变更项",
       "total-targets": "变更对象",
       "no-checks": "没有检查",

@@ -43,7 +43,7 @@ type ViewMode = "EDIT" | "VIEW";
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, issue } = usePlanContext();
+const { isCreating, plan, issue, readonly } = usePlanContext();
 
 const state = reactive({
   isEditing: false,
@@ -83,6 +83,9 @@ const style = computed(() => {
 });
 
 const allowEdit = computed(() => {
+  if (readonly.value) {
+    return false;
+  }
   if (isCreating.value) {
     return true;
   }

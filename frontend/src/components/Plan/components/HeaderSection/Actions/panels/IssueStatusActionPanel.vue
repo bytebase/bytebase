@@ -40,8 +40,8 @@
       >
         <div></div>
         <div class="flex justify-end gap-x-3">
-          <NButton @click="$emit('close')">
-            {{ $t("common.cancel") }}
+          <NButton quaternary @click="$emit('close')">
+            {{ $t("common.close") }}
           </NButton>
 
           <NButton type="primary" @click="handleConfirm">

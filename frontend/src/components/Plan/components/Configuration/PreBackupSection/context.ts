@@ -50,10 +50,12 @@ export const providePreBackupSettingContext = (refs: {
   selectedTask?: Ref<Task | undefined>;
   issue?: Ref<Issue | undefined>;
   rollout?: Ref<Rollout | undefined>;
+  readonly?: Ref<boolean>;
 }) => {
   const currentUser = useCurrentUserV1();
   const databaseStore = useDatabaseV1Store();
-  const { isCreating, project, plan, selectedSpec, issue, rollout } = refs;
+  const { isCreating, project, plan, selectedSpec, issue, rollout, readonly } =
+    refs;
 
   const events = new Emittery<{
     update: never;
@@ -91,6 +93,11 @@ export const providePreBackupSettingContext = (refs: {
   });
 
   const allowChange = computed((): boolean => {
+    // If readonly mode, disallow changes
+    if (readonly?.value) {
+      return false;
+    }
+
     // Allow toggle pre-backup when creating.
     if (isCreating.value) {
       return true;

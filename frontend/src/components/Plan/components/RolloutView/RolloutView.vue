@@ -13,6 +13,7 @@
       <StagesView
         :rollout="rollout"
         :merged-stages="mergedStages"
+        :readonly="readonly"
         @run-tasks="handleRunTasks"
         @create-rollout-to-stage="handleCreateRolloutToStage"
       />
@@ -45,7 +46,7 @@ import { useRolloutViewContext } from "./context";
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
-const { events } = usePlanContextWithRollout();
+const { events, readonly } = usePlanContextWithRollout();
 const { rollout, mergedStages } = useRolloutViewContext();
 
 const runTasksPanel = ref<{

@@ -153,7 +153,7 @@ const DEFAULT_VISIBLE_TARGETS = 20;
 
 const { t } = useI18n();
 const router = useRouter();
-const { plan, isCreating } = usePlanContext();
+const { plan, isCreating, readonly } = usePlanContext();
 const selectedSpec = useSelectedSpec();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
@@ -179,10 +179,11 @@ const project = computed(() => {
   return projectStore.getProjectByName(projectName);
 });
 
-// Only allow editing in creation mode or if the plan is editable.
+// Only allow editing in creation mode or if the plan is editable and not readonly.
 // An empty string for `plan.value.rollout` indicates that the plan is in a draft or uninitialized state,
 // which allows edits to be made.
 const allowEdit = computed(() => {
+  if (readonly.value) return false;
   return (isCreating.value || plan.value.rollout === "") && selectedSpec.value;
 });
 
