@@ -62,6 +62,7 @@
 <script setup lang="ts">
 import { create as createProto } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
+import Long from "long";
 import { NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
@@ -107,7 +108,7 @@ const show = computed(() => {
 const isSheetOversize = computed(() => {
   if (!sheet.value) return false;
   return getStatementSize(getSheetStatement(sheet.value)).lt(
-    sheet.value.contentSize
+    Long.fromBigInt(sheet.value.contentSize)
   );
 });
 
