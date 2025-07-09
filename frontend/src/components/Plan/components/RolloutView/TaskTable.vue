@@ -28,11 +28,8 @@ import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
-import type {
-  Task,
-  Task_Status,
-  Stage,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import type { Task, Stage } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,
@@ -149,6 +146,9 @@ const columnList = computed((): DataTableColumn<Task>[] => {
     {
       type: "selection",
       width: 50,
+      disabled: (task: Task) => {
+        return task.status === Task_Status.DONE;
+      },
       cellProps: () => {
         return {
           onClick: (e: MouseEvent) => {

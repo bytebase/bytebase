@@ -287,7 +287,6 @@
     "no-runnable-tasks": "No hay tareas ejecutables",
     "no-skippable-tasks": "No hay tareas que se puedan omitir",
     "no-cancellable-tasks": "No hay tareas cancelables",
-    "cross-stage-not-supported": "No se admiten operaciones entre etapas",
     "no-permission": "No hay permiso para realizar esta acción",
     "scheduled-time": "Hora programada",
     "select-scheduled-time": "Seleccionar hora programada",
@@ -314,6 +313,8 @@
     }
   },
   "task-run": {
+    "history": "Historial de ejecución de tareas",
+    "latest-logs": "Últimos registros",
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
@@ -1128,7 +1129,7 @@
     "rollouts": "Despliegues",
     "force-rollout": "Despliegue de fuerza",
     "stage": {
-      "stages": "Etapas",
+      "self": "Escenario | Escenarios",
       "start-stage": "Etapa de inicio"
     }
   },

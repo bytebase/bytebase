@@ -13,7 +13,7 @@
     <div class="px-4">
       <!-- Task Filter -->
       <TaskFilter
-        :rollout="rollout || emptyRollout"
+        :rollout="rollout"
         :task-status-list="taskStatusFilter"
         :stage="stage"
         @update:task-status-list="taskStatusFilter = $event"
@@ -28,19 +28,13 @@
 </template>
 
 <script setup lang="ts">
-import { create } from "@bufbuild/protobuf";
 import { NDivider, NTag } from "naive-ui";
-import { computed, ref, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { rolloutServiceClientConnect } from "@/grpcweb";
-import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
-import type { Stage, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  GetRolloutRequestSchema,
-  RolloutSchema,
-  Task_Status,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import { useEnvironmentV1Store } from "@/store";
+import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { usePlanContextWithRollout } from "../../logic";
 import TaskFilter from "./TaskFilter.vue";
 import TaskTableView from "./TaskTableView.vue";
 
@@ -49,51 +43,37 @@ const props = defineProps<{
   stageId: string;
 }>();
 
-const { t: _t } = useI18n();
 const route = useRoute();
-const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
+const { rollout } = usePlanContextWithRollout();
 
-const rolloutRef = ref<Rollout>();
-const routeStageRef = ref<Stage>();
+const stage = computed(() => {
+  return rollout.value.stages.find((s) => s.id === props.stageId) as Stage;
+});
+
 const taskStatusFilter = ref<Task_Status[]>([]);
 
-// Create an empty rollout for TaskFilter when rollout is not available
-const emptyRollout = create(RolloutSchema, {});
+// Watch for query parameter changes
+watch(
+  () => route.query.taskStatus,
+  (taskStatus) => {
+    if (taskStatus && typeof taskStatus === "string") {
+      // Find the Task_Status enum value from the string
+      const statusValue = Object.entries(Task_Status).find(
+        ([key]) => key === taskStatus
+      )?.[1];
 
-// Get the stage - either from props or from fetched rollout
-const stage = computed(() => {
-  if (routeStageRef.value) return routeStageRef.value;
-  return undefined;
-});
-
-// Get rollout
-const rollout = computed(() => rolloutRef.value);
-
-// Fetch rollout and stage when in route mode
-watchEffect(async () => {
-  const rolloutId = props.rolloutId || (route.params.rolloutId as string);
-  const stageId = props.stageId || (route.params.stageId as string);
-
-  if (!rolloutId || !stageId) return;
-
-  try {
-    const rolloutName = `projects/${project.value.name.split("/")[1]}/rollouts/${rolloutId}`;
-    const request = create(GetRolloutRequestSchema, { name: rolloutName });
-    const rollout = await rolloutServiceClientConnect.getRollout(request);
-    rolloutRef.value = rollout;
-
-    // Find the specific stage
-    for (const rolloutStage of rollout.stages) {
-      if (rolloutStage.name.endsWith(`/${stageId}`)) {
-        routeStageRef.value = rolloutStage;
-        return;
+      if (statusValue !== undefined && typeof statusValue === "number") {
+        taskStatusFilter.value = [statusValue as Task_Status];
+      } else {
+        taskStatusFilter.value = [];
       }
+    } else {
+      taskStatusFilter.value = [];
     }
-  } catch (error) {
-    console.error("Failed to fetch rollout:", error);
-  }
-});
+  },
+  { immediate: true }
+);
 
 // Stage environment info
 const environmentTitle = computed(() => {
