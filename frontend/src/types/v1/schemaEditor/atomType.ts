@@ -1,5 +1,3 @@
-import type Long from "long";
-
 type Status = "normal" | "created" | "dropped";
 
 export interface ColumnDefaultValue {
@@ -38,8 +36,8 @@ export interface Table {
   name: string;
   engine: string;
   collation: string;
-  rowCount: Long;
-  dataSize: Long;
+  rowCount: bigint;
+  dataSize: bigint;
   comment: string;
   userComment: string;
   columnList: Column[];
