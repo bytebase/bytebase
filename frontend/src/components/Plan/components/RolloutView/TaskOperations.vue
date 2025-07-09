@@ -43,6 +43,7 @@
       :show="state.showActionPanel"
       :action="state.selectedAction"
       :target="actionTarget"
+      @confirm="handleActionPanelConfirm"
       @close="handleActionPanelClose"
     />
   </template>
@@ -81,11 +82,12 @@ interface LocalState {
 const props = defineProps<{
   tasks: Task[];
   rollout: Rollout;
+  stage: Stage;
 }>();
 
 const emit = defineEmits<{
   (event: "refresh"): void;
-  (event: "task-action-completed"): void;
+  (event: "action-confirmed"): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -97,24 +99,6 @@ const { t } = useI18n();
 const { project } = useCurrentProjectV1();
 const planContext = usePlanContext();
 const { canPerformTaskAction } = useTaskActionPermissions();
-
-// Get stages for selected tasks
-const selectedTaskStages = computed(() => {
-  const stageMap = new Map<string, Stage>();
-  props.rollout.stages.forEach((stage) => {
-    stage.tasks.forEach((task) => {
-      if (props.tasks.some((selectedTask) => selectedTask.name === task.name)) {
-        stageMap.set(stage.name, stage);
-      }
-    });
-  });
-  return Array.from(stageMap.values());
-});
-
-// Check if selected tasks are from multiple stages (cross-stage)
-const isCrossStage = computed(() => {
-  return selectedTaskStages.value.length > 1;
-});
 
 // Permission checks for each action
 const canRunTasks = computed(() => {
@@ -149,7 +133,7 @@ const canCancelTasks = computed(() => {
 
 // Action target for the panel
 const actionTarget = computed(() => {
-  if (!state.selectedAction || selectedTaskStages.value.length === 0) {
+  if (!state.selectedAction) {
     return undefined;
   }
 
@@ -158,13 +142,13 @@ const actionTarget = computed(() => {
     return {
       type: "tasks" as const,
       tasks: props.tasks,
-      stage: selectedTaskStages.value[0], // Use first stage for simplicity
+      stage: props.stage,
     };
   } else {
     return {
       type: "tasks" as const,
       tasks: props.tasks,
-      stage: selectedTaskStages.value[0], // Use first stage for simplicity
+      stage: props.stage,
     };
   }
 });
@@ -196,9 +180,6 @@ const getDisabledTooltip = (_action: string) => {
   if (props.tasks.length === 0) {
     return t("task.no-tasks-selected");
   }
-  if (isCrossStage.value) {
-    return t("task.cross-stage-not-supported");
-  }
   return "";
 };
 
@@ -210,19 +191,13 @@ const actions = computed((): TaskAction[] => {
     icon: h(PlayIcon),
     text: t("common.run"),
     disabled:
-      props.tasks.length === 0 ||
-      isCrossStage.value ||
-      !canRunTasks.value ||
-      !hasRunnableTasks.value,
+      props.tasks.length === 0 || !canRunTasks.value || !hasRunnableTasks.value,
     click: () => {
       state.selectedAction = "RUN";
       state.showActionPanel = true;
     },
     tooltip: (action) => {
       if (props.tasks.length === 0) {
-        return getDisabledTooltip(action);
-      }
-      if (isCrossStage.value) {
         return getDisabledTooltip(action);
       }
       if (!canRunTasks.value) {
@@ -241,7 +216,6 @@ const actions = computed((): TaskAction[] => {
     text: t("common.skip"),
     disabled:
       props.tasks.length === 0 ||
-      isCrossStage.value ||
       !canSkipTasks.value ||
       !hasSkippableTasks.value,
     click: () => {
@@ -250,9 +224,6 @@ const actions = computed((): TaskAction[] => {
     },
     tooltip: (action) => {
       if (props.tasks.length === 0) {
-        return getDisabledTooltip(action);
-      }
-      if (isCrossStage.value) {
         return getDisabledTooltip(action);
       }
       if (!canSkipTasks.value) {
@@ -271,7 +242,6 @@ const actions = computed((): TaskAction[] => {
     text: t("common.cancel"),
     disabled:
       props.tasks.length === 0 ||
-      isCrossStage.value ||
       !canCancelTasks.value ||
       !hasCancellableTasks.value,
     click: () => {
@@ -280,9 +250,6 @@ const actions = computed((): TaskAction[] => {
     },
     tooltip: (action) => {
       if (props.tasks.length === 0) {
-        return getDisabledTooltip(action);
-      }
-      if (isCrossStage.value) {
         return getDisabledTooltip(action);
       }
       if (!canCancelTasks.value) {
@@ -298,10 +265,14 @@ const actions = computed((): TaskAction[] => {
   return resp;
 });
 
+const handleActionPanelConfirm = () => {
+  emit("refresh");
+  emit("action-confirmed");
+  handleActionPanelClose();
+};
+
 const handleActionPanelClose = () => {
   state.showActionPanel = false;
   state.selectedAction = undefined;
-  emit("task-action-completed");
-  emit("refresh");
 };
 </script>

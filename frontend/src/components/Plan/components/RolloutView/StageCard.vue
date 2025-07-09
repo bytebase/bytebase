@@ -26,118 +26,37 @@
           </div>
 
           <!-- Task status counts -->
-          <div class="flex items-center gap-x-3 gap-y-2 flex-wrap">
-            <NTag v-if="taskCounts.done > 0" round size="medium" type="default">
-              <template #avatar>
-                <TaskStatus :status="Task_Status.DONE" size="small" />
-              </template>
-              <div class="flex flex-row items-center gap-2">
-                <span class="select-none text-base">{{
-                  stringifyTaskStatus(Task_Status.DONE)
-                }}</span>
-                <span class="select-none text-base font-medium">{{
-                  taskCounts.done
-                }}</span>
-              </div>
-            </NTag>
-            <NTag
-              v-if="taskCounts.notStarted > 0"
-              round
-              size="medium"
-              type="default"
-            >
-              <template #avatar>
-                <TaskStatus :status="Task_Status.NOT_STARTED" size="small" />
-              </template>
-              <div class="flex flex-row items-center gap-2">
-                <span class="select-none text-base">{{
-                  stringifyTaskStatus(Task_Status.NOT_STARTED)
-                }}</span>
-                <span class="select-none text-base font-medium">{{
-                  taskCounts.notStarted
-                }}</span>
-              </div>
-            </NTag>
-            <NTag v-if="taskCounts.running > 0" round size="medium" type="info">
-              <template #avatar>
-                <TaskStatus :status="Task_Status.RUNNING" size="small" />
-              </template>
-              <div class="flex flex-row items-center gap-2">
-                <span class="select-none text-base">{{
-                  stringifyTaskStatus(Task_Status.RUNNING)
-                }}</span>
-                <span class="select-none text-base font-medium">{{
-                  taskCounts.running
-                }}</span>
-              </div>
-            </NTag>
-            <NTag v-if="taskCounts.failed > 0" round size="medium" type="error">
-              <template #avatar>
-                <TaskStatus :status="Task_Status.FAILED" size="small" />
-              </template>
-              <div class="flex flex-row items-center gap-2">
-                <span class="select-none text-base">{{
-                  stringifyTaskStatus(Task_Status.FAILED)
-                }}</span>
-                <span class="select-none text-base font-medium">{{
-                  taskCounts.failed
-                }}</span>
-              </div>
-            </NTag>
-            <NTag
-              v-if="taskCounts.canceled > 0"
-              round
-              size="medium"
-              type="default"
-            >
-              <template #avatar>
-                <TaskStatus :status="Task_Status.CANCELED" size="small" />
-              </template>
-              <div class="flex flex-row items-center gap-2">
-                <span class="select-none text-base">{{
-                  stringifyTaskStatus(Task_Status.CANCELED)
-                }}</span>
-                <span class="select-none text-base font-medium">{{
-                  taskCounts.canceled
-                }}</span>
-              </div>
-            </NTag>
-            <NTag
-              v-if="taskCounts.pending > 0"
-              round
-              size="medium"
-              type="warning"
-            >
-              <template #avatar>
-                <TaskStatus :status="Task_Status.PENDING" size="small" />
-              </template>
-              <div class="flex flex-row items-center gap-2">
-                <span class="select-none text-base">{{
-                  stringifyTaskStatus(Task_Status.PENDING)
-                }}</span>
-                <span class="select-none text-base font-medium">{{
-                  taskCounts.pending
-                }}</span>
-              </div>
-            </NTag>
-            <NTag
-              v-if="taskCounts.skipped > 0"
-              round
-              size="medium"
-              type="default"
-            >
-              <template #avatar>
-                <TaskStatus :status="Task_Status.SKIPPED" size="small" />
-              </template>
-              <div class="flex flex-row items-center gap-2">
-                <span class="select-none text-base">{{
-                  stringifyTaskStatus(Task_Status.SKIPPED)
-                }}</span>
-                <span class="select-none text-base font-medium">{{
-                  taskCounts.skipped
-                }}</span>
-              </div>
-            </NTag>
+          <div class="flex items-center gap-2 flex-wrap">
+            <template v-for="status in TASK_STATUS_FILTERS" :key="status">
+              <NTag
+                v-if="getTaskCount(status) > 0"
+                round
+                size="medium"
+                :type="
+                  status === Task_Status.RUNNING
+                    ? 'info'
+                    : status === Task_Status.FAILED
+                      ? 'error'
+                      : status === Task_Status.PENDING
+                        ? 'warning'
+                        : 'default'
+                "
+                class="cursor-pointer hover:opacity-80 transition-opacity"
+                @click.stop="handleTaskStatusClick(status)"
+              >
+                <template #avatar>
+                  <TaskStatus :status="status" size="small" />
+                </template>
+                <div class="flex flex-row items-center gap-2">
+                  <span class="select-none text-base">{{
+                    stringifyTaskStatus(status)
+                  }}</span>
+                  <span class="select-none text-base font-medium">{{
+                    getTaskCount(status)
+                  }}</span>
+                </div>
+              </NTag>
+            </template>
           </div>
         </div>
 
@@ -216,6 +135,16 @@ const emit = defineEmits<{
 
 const { canPerformTaskAction } = useTaskActionPermissions();
 
+const TASK_STATUS_FILTERS: Task_Status[] = [
+  Task_Status.DONE,
+  Task_Status.RUNNING,
+  Task_Status.PENDING,
+  Task_Status.FAILED,
+  Task_Status.CANCELED,
+  Task_Status.NOT_STARTED,
+  Task_Status.SKIPPED,
+];
+
 const isCreated = computed(() => {
   return props.rollout.stages.some(
     (stage) => stage.environment === props.stage.environment
@@ -262,45 +191,9 @@ const stageStatus = computed(() => {
   return getStageStatus(stageWithFilteredTasks);
 });
 
-const taskCounts = computed(() => {
-  const counts = {
-    done: 0,
-    notStarted: 0,
-    running: 0,
-    failed: 0,
-    canceled: 0,
-    pending: 0,
-    skipped: 0,
-  };
-
-  filteredTasks.value.forEach((task) => {
-    switch (task.status) {
-      case Task_Status.DONE:
-        counts.done++;
-        break;
-      case Task_Status.NOT_STARTED:
-        counts.notStarted++;
-        break;
-      case Task_Status.RUNNING:
-        counts.running++;
-        break;
-      case Task_Status.FAILED:
-        counts.failed++;
-        break;
-      case Task_Status.CANCELED:
-        counts.canceled++;
-        break;
-      case Task_Status.PENDING:
-        counts.pending++;
-        break;
-      case Task_Status.SKIPPED:
-        counts.skipped++;
-        break;
-    }
-  });
-
-  return counts;
-});
+const getTaskCount = (status: Task_Status) => {
+  return filteredTasks.value.filter((task) => task.status === status).length;
+};
 
 const handleRunAllTasks = () => {
   emit("run-tasks", props.stage, runableTasks.value);
@@ -326,6 +219,29 @@ const handleClickStageTitle = () => {
       projectId: extractProjectResourceName(project.value.name),
       rolloutId,
       stageId,
+    },
+  });
+};
+
+const handleTaskStatusClick = (status: Task_Status) => {
+  // Only navigate if the stage is created
+  if (!isCreated.value) return;
+
+  const rolloutId = props.rollout.name.split("/").pop();
+  const stageId = props.stage.name.split("/").pop();
+
+  if (!rolloutId || !stageId) return;
+
+  // Navigate to the stage detail route with task status filter
+  router.push({
+    name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(project.value.name),
+      rolloutId,
+      stageId,
+    },
+    query: {
+      taskStatus: Task_Status[status],
     },
   });
 };
