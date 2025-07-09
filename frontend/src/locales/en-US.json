@@ -233,7 +233,8 @@
     "summary": "Summary",
     "errors": "Errors",
     "removed": "Removed",
-    "submit": "Submit"
+    "submit": "Submit",
+    "start": "Start"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -282,7 +283,6 @@
     "created": "Created",
     "run-immediately": "Run task immediately | Run tasks immediately",
     "selected-n-tasks": "{n} task selected | {n} tasks selected",
-    "no-tasks": "No tasks",
     "no-tasks-selected": "No tasks selected",
     "no-runnable-tasks": "No runnable tasks",
     "no-skippable-tasks": "No skippable tasks",
@@ -1126,7 +1126,11 @@
   },
   "rollout": {
     "rollouts": "Rollouts",
-    "force-rollout": "Force rollout"
+    "force-rollout": "Force rollout",
+    "stage": {
+      "stages": "Stages",
+      "start-stage": "Start stage"
+    }
   },
   "quick-action": {
     "create-db": "Create database",

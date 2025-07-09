@@ -233,7 +233,8 @@
     "summary": "Resumen",
     "errors": "Errores",
     "removed": "Remoto",
-    "submit": "Entregar"
+    "submit": "Entregar",
+    "start": "Comenzar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -282,7 +283,6 @@
     "created": "Creado",
     "run-immediately": "Ejecutar tarea inmediatamente",
     "selected-n-tasks": "{n} tarea seleccionada | {n} tareas seleccionadas",
-    "no-tasks": "Sin tareas",
     "no-tasks-selected": "No hay tareas seleccionadas",
     "no-runnable-tasks": "No hay tareas ejecutables",
     "no-skippable-tasks": "No hay tareas que se puedan omitir",
@@ -1126,7 +1126,11 @@
   },
   "rollout": {
     "rollouts": "Despliegues",
-    "force-rollout": "Despliegue de fuerza"
+    "force-rollout": "Despliegue de fuerza",
+    "stage": {
+      "stages": "Etapas",
+      "start-stage": "Etapa de inicio"
+    }
   },
   "quick-action": {
     "create-db": "Crear base de datos",
