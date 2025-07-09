@@ -1,12 +1,11 @@
 <template>
   <NButton
     v-if="hasRunnableTasks && canRunTasks"
-    size="tiny"
     v-bind="$attrs"
-    @click="handleRunTasks"
+    @click.stop="handleRunTasks"
   >
     <template #icon>
-      <PlayIcon class="w-4 h-4" />
+      <PlayIcon />
     </template>
     {{ $t("common.run") }}
   </NButton>

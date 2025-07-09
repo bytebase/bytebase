@@ -20,7 +20,12 @@ import { RouterLink, useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
-import { getTimeForPbTimestampProtoEs, type ComposedRollout } from "@/types";
+import { useEnvironmentV1Store, useUserStore } from "@/store";
+import {
+  getTimeForPbTimestampProtoEs,
+  unknownUser,
+  type ComposedRollout,
+} from "@/types";
 import { Task_Status as TaskStatusEnum } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -28,6 +33,7 @@ import {
   extractProjectResourceName,
   humanizeTs,
   stringifyTaskStatus,
+  getStageStatus,
 } from "@/utils";
 
 const props = withDefaults(
@@ -46,6 +52,8 @@ const props = withDefaults(
 
 const { t } = useI18n();
 const router = useRouter();
+const userStore = useUserStore();
+const environmentStore = useEnvironmentV1Store();
 
 const TASK_STATUS_FILTERS: Task_Status[] = [
   TaskStatusEnum.DONE,
@@ -98,6 +106,35 @@ const columnList = computed(
         },
       },
       {
+        key: "stages",
+        title: t("rollout.stage.stages"),
+        render: (rollout) => {
+          return (
+            <div class="flex items-center gap-2">
+              {rollout.stages.map((stage, index) => {
+                const environment = environmentStore.getEnvironmentByName(
+                  stage.environment
+                );
+                const stageStatus = getStageStatus(stage);
+                return (
+                  <>
+                    <div key={stage.name} class="flex items-center gap-1">
+                      <TaskStatus status={stageStatus} size="small" />
+                      <span class="text-sm font-medium text-gray-700">
+                        {environment.title}
+                      </span>
+                    </div>
+                    {index < rollout.stages.length - 1 && (
+                      <span class="text-gray-400">→</span>
+                    )}
+                  </>
+                );
+              })}
+            </div>
+          );
+        },
+      },
+      {
         key: "tasks",
         title: t("common.tasks"),
         render: (rollout) => {
@@ -130,17 +167,6 @@ const columnList = computed(
         },
       },
       {
-        key: "creator",
-        title: t("common.creator"),
-        width: 128,
-        render: (rollout) => (
-          <div class="flex flex-row items-center overflow-hidden gap-x-2">
-            <BBAvatar size="SMALL" username={rollout.creatorEntity.title} />
-            <span class="truncate">{rollout.creatorEntity.title}</span>
-          </div>
-        ),
-      },
-      {
         key: "createTime",
         title: t("common.created-at"),
         width: 128,
@@ -148,6 +174,21 @@ const columnList = computed(
           humanizeTs(
             getTimeForPbTimestampProtoEs(rollout.createTime, 0) / 1000
           ),
+      },
+      {
+        key: "creator",
+        title: t("common.creator"),
+        width: 128,
+        render: (rollout) => {
+          const creator =
+            userStore.getUserByIdentifier(rollout.creator) || unknownUser();
+          return (
+            <div class="flex flex-row items-center overflow-hidden gap-x-2">
+              <BBAvatar size="SMALL" username={creator.title} />
+              <span class="truncate">{creator.title}</span>
+            </div>
+          );
+        },
       },
     ];
     return columns.filter((column) => !column.hide);
