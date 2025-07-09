@@ -5,11 +5,12 @@
       class="flex-1 bg-white rounded-lg border p-4 shadow-sm"
       :class="
         twMerge(
-          isCreated ? 'border-gray-200' : 'border-gray-300 border-dashed',
-          !readonly && 'cursor-pointer hover:shadow-md transition-shadow'
+          isCreated
+            ? 'border-gray-200 cursor-pointer hover:shadow-md transition-shadow'
+            : 'border-gray-300 border-dashed'
         )
       "
-      @click="!readonly && isCreated && handleClickStageTitle()"
+      @click="isCreated && handleClickStageTitle()"
     >
       <div class="flex items-center justify-between gap-4">
         <!-- Left side: Stage title and status counts -->

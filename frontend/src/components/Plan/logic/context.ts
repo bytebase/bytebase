@@ -1,6 +1,6 @@
 import type Emittery from "emittery";
 import { v4 as uuidv4 } from "uuid";
-import type { InjectionKey, Ref } from "vue";
+import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { inject, provide } from "vue";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
@@ -29,6 +29,8 @@ export type PlanContext = {
   planCheckRuns: Ref<PlanCheckRun[]>;
   issue?: Ref<Issue | undefined>;
   rollout?: Ref<Rollout | undefined>;
+
+  readonly: ComputedRef<boolean>;
 
   // UI events
   events: PlanEvents;
