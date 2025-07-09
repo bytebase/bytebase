@@ -2,11 +2,15 @@
   <div v-if="stage" class="w-full h-full flex flex-col">
     <div class="px-4">
       <!-- Stage Header -->
-      <div class="w-full flex flex-row pt-2 pb-4 gap-2">
+      <div class="w-full flex flex-row pt-2 gap-2">
         <NTag round>{{ $t("common.stage") }}</NTag>
         <span class="font-medium text-lg">{{ environmentTitle }}</span>
       </div>
+    </div>
 
+    <NDivider class="!my-4" />
+
+    <div class="px-4">
       <!-- Task Filter -->
       <TaskFilter
         :rollout="rollout || emptyRollout"
@@ -25,7 +29,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { NTag } from "naive-ui";
+import { NDivider, NTag } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";

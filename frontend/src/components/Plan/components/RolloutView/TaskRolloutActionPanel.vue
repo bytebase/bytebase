@@ -9,22 +9,21 @@
     <template #default>
       <div class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1">
         <!-- Issue Approval Alert -->
-        <div v-if="shouldShowForceRollout" class="shrink-0">
-          <NAlert
-            type="warning"
-            :title="
-              issueApprovalStatus.status === 'rejected'
-                ? $t('issue.approval.rejected-title')
-                : $t('issue.approval.pending-title')
-            "
-          >
-            {{
-              issueApprovalStatus.status === "rejected"
-                ? $t("issue.approval.rejected-description")
-                : $t("issue.approval.pending-description")
-            }}
-          </NAlert>
-        </div>
+        <NAlert
+          v-if="shouldShowForceRollout"
+          type="warning"
+          :title="
+            issueApprovalStatus.status === 'rejected'
+              ? $t('issue.approval.rejected-title')
+              : $t('issue.approval.pending-title')
+          "
+        >
+          {{
+            issueApprovalStatus.status === "rejected"
+              ? $t("issue.approval.rejected-description")
+              : $t("issue.approval.pending-description")
+          }}
+        </NAlert>
 
         <div
           class="flex flex-row gap-x-2 shrink-0 overflow-y-hidden justify-start items-center"

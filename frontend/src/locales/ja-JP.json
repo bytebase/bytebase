@@ -233,7 +233,8 @@
     "summary": "まとめ",
     "errors": "エラー",
     "removed": "削除されました",
-    "submit": "提出する"
+    "submit": "提出する",
+    "start": "始める"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -282,7 +283,6 @@
     "created": "内蔵",
     "run-immediately": "すぐに実行",
     "selected-n-tasks": "{n} 個のタスクが選択されました | {n} 個のタスクが選択されました",
-    "no-tasks": "タスクなし",
     "no-tasks-selected": "タスクが選択されていません",
     "no-runnable-tasks": "実行可能なタスクはありません",
     "no-skippable-tasks": "スキップ可能なタスクはありません",
@@ -1126,7 +1126,11 @@
   },
   "rollout": {
     "rollouts": "ロールアウト",
-    "force-rollout": "強制展開"
+    "force-rollout": "強制展開",
+    "stage": {
+      "stages": "ステージ",
+      "start-stage": "スタートステージ"
+    }
   },
   "quick-action": {
     "create-db": "データベースの作成",

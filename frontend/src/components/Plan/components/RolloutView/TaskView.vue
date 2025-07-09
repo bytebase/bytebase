@@ -12,7 +12,7 @@
               :instance="database.instanceResource"
             />
             <span>{{ database.instanceResource.title }}</span>
-            <ChevronRightIcon class="inline opacity-60 mx-2 w-5" />
+            <ChevronRightIcon class="inline opacity-40 mx-1 w-5" />
             <span class="font-medium">{{ database.databaseName }}</span>
           </div>
         </div>
