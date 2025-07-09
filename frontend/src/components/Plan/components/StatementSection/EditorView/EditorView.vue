@@ -167,7 +167,6 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, includes, isEmpty } from "lodash-es";
-import Long from "long";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -277,8 +276,8 @@ const isSheetOversize = computed(() => {
   if (state.isEditing) return false;
   if (!sheetReady.value) return false;
   if (!sheet.value) return false;
-  return getStatementSize(getSheetStatement(sheet.value)).lt(
-    Long.fromBigInt(sheet.value.contentSize)
+  return (
+    getStatementSize(getSheetStatement(sheet.value)) < sheet.value.contentSize
   );
 });
 

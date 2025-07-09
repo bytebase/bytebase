@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { uniqBy } from "lodash-es";
-import Long from "long";
 import { defineStore } from "pinia";
 import { computed } from "vue";
 import { worksheetServiceClientConnect } from "@/grpcweb";
@@ -315,9 +314,7 @@ export const useWorkSheetAndTabStore = defineStore("worksheet_and_tab", () => {
 
     // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.、
     const statement = getSheetStatement(worksheet);
-    if (
-      getStatementSize(statement).ne(Long.fromBigInt(worksheet.contentSize))
-    ) {
+    if (getStatementSize(statement) !== worksheet.contentSize) {
       return true;
     }
 

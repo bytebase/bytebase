@@ -67,10 +67,6 @@ export default defineConfig({
           if (id.includes("sql-formatter") || id.includes("antlr4")) {
             return "sql-tools";
           }
-          // Protobuf - separate chunk
-          if (id.includes("protobufjs")) {
-            return "protobuf";
-          }
           // UI framework
           if (id.includes("naive-ui")) {
             return "ui-framework";
