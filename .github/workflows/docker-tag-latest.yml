@@ -60,7 +60,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            bytebase/bytebase-demo:latest
+            bytebase/website:demo
           build-args: |
             VERSION=${{ env.VERSION }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
