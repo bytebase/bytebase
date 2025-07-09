@@ -1,7 +1,7 @@
 <template>
   <div>
     <div
-      v-if="primaryAction || dropdownOptions.length > 0"
+      v-if="!props.readonly && (primaryAction || dropdownOptions.length > 0)"
       class="flex flex-row justify-end items-center gap-x-2"
     >
       <NButton
@@ -66,6 +66,7 @@ const props = defineProps<{
   task: Task;
   taskRuns: TaskRun[];
   rollout?: Rollout;
+  readonly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -97,22 +98,11 @@ const currentPanelAction = computed((): PanelAction => {
 // Determine target based on action type
 const actionTarget = computed(() => {
   if (!currentPanelAction.value) return undefined;
-
-  if (currentPanelAction.value === "CANCEL") {
-    // For cancel actions, we need task runs
-    return {
-      type: "taskRuns" as const,
-      taskRuns: props.taskRuns,
-      stage: stage.value,
-    };
-  } else {
-    // For run and skip actions, we use specific tasks
-    return {
-      type: "tasks" as const,
-      tasks: [props.task],
-      stage: stage.value,
-    };
-  }
+  return {
+    type: "tasks" as const,
+    tasks: [props.task],
+    stage: stage.value,
+  };
 });
 
 // Get the stage for the current task
