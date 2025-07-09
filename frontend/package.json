@@ -129,7 +129,6 @@
     "events": "^3.3.0",
     "jquery": "3.7.1",
     "jsdom": "25.0.1",
-    "micromark": "^4.0.2",
     "micromark-util-sanitize-uri": "^2.0.1",
     "postcss": "8.5.4",
     "prettier": "3.5.3",

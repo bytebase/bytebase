@@ -344,9 +344,6 @@ importers:
       jsdom:
         specifier: 25.0.1
         version: 25.0.1
-      micromark:
-        specifier: ^4.0.2
-        version: 4.0.2
       micromark-util-sanitize-uri:
         specifier: ^2.0.1
         version: 2.0.1
