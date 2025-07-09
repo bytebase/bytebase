@@ -321,7 +321,9 @@ const isSheetOversize = computed(() => {
   if (state.isEditing) return false;
   if (!sheetReady.value) return false;
   if (!sheet.value) return false;
-  return getStatementSize(getSheetStatement(sheet.value)) < sheet.value.contentSize;
+  return (
+    getStatementSize(getSheetStatement(sheet.value)) < sheet.value.contentSize
+  );
 });
 
 const denyEditStatementReasons = computed(() =>
