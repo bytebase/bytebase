@@ -1,8 +1,6 @@
 package command
 
 import (
-	"log/slog"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -26,7 +24,14 @@ func NewCheckCommand(w *world.World) *cobra.Command {
 }
 
 func validateCheckFlags(w *world.World) func(*cobra.Command, []string) error {
-	return func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if p := cmd.Parent(); p != nil {
+			if p.PersistentPreRunE != nil {
+				if err := p.PersistentPreRunE(cmd, args); err != nil {
+					return err
+				}
+			}
+		}
 		switch w.CheckRelease {
 		case "SKIP", "FAIL_ON_WARNING", "FAIL_ON_ERROR":
 		default:
@@ -38,17 +43,17 @@ func validateCheckFlags(w *world.World) func(*cobra.Command, []string) error {
 
 func runCheck(w *world.World) func(*cobra.Command, []string) error {
 	return func(*cobra.Command, []string) error {
-		platform := getJobPlatform()
-		slog.Info("running on platform", "platform", platform.String())
+		platform := w.Platform
+		w.Logger.Info("running on platform", "platform", platform.String())
 		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
 		if err != nil {
 			return err
 		}
 
 		// Check version compatibility
-		checkVersionCompatibility(client, args.Version)
+		checkVersionCompatibility(w, client, args.Version)
 
-		releaseFiles, err := getReleaseFiles(w.FilePattern)
+		releaseFiles, err := getReleaseFiles(w, w.FilePattern)
 		if err != nil {
 			return err
 		}
@@ -60,23 +65,23 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 			return err
 		}
 
-		slog.Info("check release response", "resultCount", len(checkReleaseResponse.Results))
+		w.Logger.Info("check release response", "resultCount", len(checkReleaseResponse.Results))
 
 		// Generate platform-specific outputs
 		switch platform {
-		case GitHub:
+		case world.GitHub:
 			if err := github.CreateCommentAndAnnotation(checkReleaseResponse); err != nil {
 				return err
 			}
-		case GitLab:
+		case world.GitLab:
 			if err := writeReleaseCheckToCodeQualityJSON(checkReleaseResponse); err != nil {
 				return err
 			}
-		case AzureDevOps:
+		case world.AzureDevOps:
 			if err := loggingReleaseChecks(checkReleaseResponse); err != nil {
 				return err
 			}
-		case Bitbucket:
+		case world.Bitbucket:
 			if err := createBitbucketReport(checkReleaseResponse); err != nil {
 				return err
 			}
