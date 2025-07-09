@@ -29,7 +29,7 @@ type Client struct {
 // NewClient returns the new Bytebase API client.
 func NewClient(url, serviceAccount, serviceAccountSecret string) (*Client, error) {
 	c := Client{
-		client: &http.Client{Timeout: 10 * time.Second},
+		client: &http.Client{Timeout: 120 * time.Second},
 		url:    url,
 	}
 
