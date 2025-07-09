@@ -1062,7 +1062,6 @@
     "select-targets": "Seleccionar objetivos",
     "ready-for-review": "Listo para revisión",
     "overview": {
-      "description": "Ver y administrar todas las especificaciones de este plan",
       "total-specs": "Especificaciones totales",
       "total-targets": "Objetivos totales",
       "no-checks": "Sin controles",

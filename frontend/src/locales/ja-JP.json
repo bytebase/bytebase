@@ -1062,7 +1062,6 @@
     "select-targets": "ターゲットを選択",
     "ready-for-review": "レビュー準備完了",
     "overview": {
-      "description": "このプランのすべての仕様を表示および管理します",
       "total-specs": "合計スペック",
       "total-targets": "合計ターゲット",
       "no-checks": "チェックなし",

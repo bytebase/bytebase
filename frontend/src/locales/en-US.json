@@ -1062,7 +1062,6 @@
     "select-targets": "Select Targets",
     "ready-for-review": "Ready for Review",
     "overview": {
-      "description": "View and manage all specifications in this plan",
       "total-specs": "Total Specs",
       "total-targets": "Total Targets",
       "no-checks": "No checks",
