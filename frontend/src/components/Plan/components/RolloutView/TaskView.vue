@@ -112,7 +112,7 @@ const props = defineProps<{
 }>();
 
 const { project } = useCurrentProjectV1();
-const { rollout, readonly } = usePlanContextWithRollout();
+const { rollout, readonly, events } = usePlanContextWithRollout();
 const sheetStore = useSheetV1Store();
 const taskRunsRef = ref<TaskRun[]>([]);
 
@@ -191,5 +191,6 @@ const handleTaskActionConfirmed = async () => {
       console.error("Failed to refresh task runs:", error);
     }
   }
+  events.emit("status-changed", { eager: true });
 };
 </script>

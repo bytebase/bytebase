@@ -508,12 +508,12 @@ const handleConfirm = async () => {
       await rolloutServiceClientConnect.batchCancelTaskRuns(request);
     }
 
+    emit("confirm");
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.success"),
     });
-    emit("confirm");
   } catch (error) {
     pushNotification({
       module: "bytebase",
