@@ -1,10 +1,8 @@
-import Long from "long";
-
 // Default maximum size of a statement in bytes (100MB).
 export const MAX_UPLOAD_FILE_SIZE_MB = 100;
 
-export const getStatementSize = (statement: string): Long => {
-  return Long.fromNumber(new TextEncoder().encode(statement).length);
+export const getStatementSize = (statement: string): bigint => {
+  return BigInt(new TextEncoder().encode(statement).length);
 };
 
 export const readFileAsArrayBuffer = (

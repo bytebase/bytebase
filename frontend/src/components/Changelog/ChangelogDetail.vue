@@ -130,7 +130,6 @@
 </template>
 
 <script lang="ts" setup>
-import Long from "long";
 import { NSwitch, NTag } from "naive-ui";
 import { computed, reactive, watch, unref } from "vue";
 import { BBSpin } from "@/bbkit";
@@ -204,9 +203,7 @@ const changelogStatement = computed(() => {
   }
   let statement = changelog.value.statement;
   if (
-    getStatementSize(changelog.value.statement).lt(
-      Long.fromBigInt(changelog.value.statementSize)
-    )
+    getStatementSize(changelog.value.statement) < changelog.value.statementSize
   ) {
     statement = `${statement}${statement.endsWith("\n") ? "" : "\n"}...`;
   }
