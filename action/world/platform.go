@@ -1,4 +1,4 @@
-package command
+package world
 
 import "os"
 
@@ -6,7 +6,8 @@ import "os"
 type JobPlatform int
 
 const (
-	LocalPlatform JobPlatform = iota
+	UnspecifiedPlatform JobPlatform = iota
+	LocalPlatform
 	GitHub
 	GitLab
 	Bitbucket
@@ -29,8 +30,8 @@ func (p JobPlatform) String() string {
 	}
 }
 
-// getJobPlatform returns the platform where the job is running as a JobPlatform.
-func getJobPlatform() JobPlatform {
+// GetJobPlatform returns the platform where the job is running as a JobPlatform.
+func GetJobPlatform() JobPlatform {
 	// https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
 		return GitHub
