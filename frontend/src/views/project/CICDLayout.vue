@@ -3,6 +3,22 @@
     <template v-if="ready">
       <PollerProvider>
         <div class="h-full flex flex-col">
+          <!-- Banner Section -->
+          <div v-if="showBanner" class="banner-section">
+            <div
+              v-if="showClosedBanner"
+              class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
+            >
+              {{ $t("common.closed") }}
+            </div>
+            <div
+              v-else-if="showSuccessBanner"
+              class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center"
+            >
+              {{ $t("common.done") }}
+            </div>
+          </div>
+
           <HeaderSection />
           <NTabs
             type="line"
@@ -68,6 +84,7 @@ import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractIssueUID,
   extractPlanUID,
@@ -101,6 +118,7 @@ const { isCreating, plan, planCheckRuns, issue, rollout, isInitializing } =
 const planBaseContext = useBasePlanContext({
   isCreating,
   plan,
+  issue,
 });
 
 const ready = computed(() => {
@@ -288,5 +306,19 @@ const documentTitle = computed(() => {
   }
   return t("common.loading");
 });
+
+// Banner conditions
+const showClosedBanner = computed(() => {
+  return issue.value && issue.value.status === IssueStatus.CANCELED;
+});
+
+const showSuccessBanner = computed(() => {
+  return issue.value && issue.value.status === IssueStatus.DONE;
+});
+
+const showBanner = computed(() => {
+  return showClosedBanner.value || showSuccessBanner.value;
+});
+
 useTitle(documentTitle);
 </script>

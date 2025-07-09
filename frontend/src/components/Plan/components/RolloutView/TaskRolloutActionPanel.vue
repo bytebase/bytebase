@@ -221,22 +221,26 @@ import { semanticTaskType } from "@/components/IssueV1";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import { rolloutServiceClientConnect } from "@/grpcweb";
-import { pushNotification, useEnvironmentV1Store } from "@/store";
+import {
+  pushNotification,
+  useCurrentProjectV1,
+  useEnvironmentV1Store,
+} from "@/store";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import {
   BatchRunTasksRequestSchema,
   BatchSkipTasksRequestSchema,
   BatchCancelTaskRunsRequestSchema,
+  ListTaskRunsRequestSchema,
+  TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type {
-  Stage,
-  Task,
-  TaskRun,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { usePlanContext } from "../../logic";
+import { hasWorkspacePermissionV2 } from "@/utils";
+import { usePlanContextWithRollout } from "../../logic";
 import { useIssueReviewContext } from "../../logic/issue-review";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
+import { useTaskActionPermissions } from "./taskPermissions";
 
 // Default delay for running tasks if not scheduled immediately.
 const DEFAULT_RUN_DELAY_MS = 60000;
@@ -245,9 +249,7 @@ type LocalState = {
   loading: boolean;
 };
 
-export type TargetType =
-  | { type: "tasks"; tasks?: Task[]; stage: Stage }
-  | { type: "taskRuns"; taskRuns: TaskRun[]; stage: Stage };
+export type TargetType = { type: "tasks"; tasks?: Task[]; stage: Stage };
 
 const props = defineProps<{
   show: boolean;
@@ -261,12 +263,14 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { issue } = usePlanContext();
+const { project } = useCurrentProjectV1();
+const { issue, rollout } = usePlanContextWithRollout();
 const reviewContext = useIssueReviewContext();
 const state = reactive<LocalState>({
   loading: false,
 });
 const environmentStore = useEnvironmentV1Store();
+const { canPerformTaskAction } = useTaskActionPermissions();
 const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
 const forceRollout = ref(false);
@@ -310,7 +314,8 @@ const shouldShowForceRollout = computed(() => {
   return (
     props.action === "RUN" &&
     issueApprovalStatus.value.hasIssue &&
-    !issueApprovalStatus.value.isApproved
+    !issueApprovalStatus.value.isApproved &&
+    hasWorkspacePermissionV2("bb.taskRuns.create")
   );
 });
 
@@ -323,14 +328,6 @@ const targetStage = computed(() => {
 const targetTasks = computed(() => {
   if (props.target.type === "tasks") {
     return props.target.tasks;
-  }
-  return undefined;
-});
-
-// Extract task runs if provided
-const targetTaskRuns = computed(() => {
-  if (props.target.type === "taskRuns") {
-    return props.target.taskRuns;
   }
   return undefined;
 });
@@ -407,6 +404,18 @@ const confirmErrors = computed(() => {
     errors.push(t("common.no-data"));
   }
 
+  if (
+    !canPerformTaskAction(
+      runnableTasks.value,
+      rollout.value,
+      project.value,
+      issue?.value
+    ) &&
+    !hasWorkspacePermissionV2("bb.taskRuns.create")
+  ) {
+    errors.push(t("task.no-permission"));
+  }
+
   // Validate scheduled time if not running immediately (only for RUN)
   if (props.action === "RUN" && runTimeInMS.value !== undefined) {
     if (runTimeInMS.value <= Date.now()) {
@@ -428,12 +437,16 @@ const confirmErrors = computed(() => {
     }
   }
 
-  // For CANCEL, we need task runs
   if (
     props.action === "CANCEL" &&
-    (!targetTaskRuns.value || targetTaskRuns.value.length === 0)
+    runnableTasks.value.some(
+      (task) =>
+        task.status !== Task_Status.PENDING &&
+        task.status !== Task_Status.RUNNING
+    )
   ) {
-    errors.push("No active task runs to cancel");
+    // Check task status.
+    errors.push("No active task to cancel");
   }
 
   return errors;
@@ -468,20 +481,39 @@ const handleConfirm = async () => {
       });
       await rolloutServiceClientConnect.batchSkipTasks(request);
     } else if (props.action === "CANCEL") {
+      // Fetch task runs for the tasks to be canceled.
+      const taskRuns = (
+        await Promise.all(
+          runnableTasks.value.map(async (task) => {
+            const request = create(ListTaskRunsRequestSchema, {
+              parent: task.name,
+              pageSize: 10,
+            });
+            return rolloutServiceClientConnect
+              .listTaskRuns(request)
+              .then((response) => response.taskRuns || []);
+          })
+        )
+      ).flat();
+      const cancelableTaskRuns = taskRuns.filter(
+        (taskRun) =>
+          taskRun.status === TaskRun_Status.PENDING ||
+          taskRun.status === TaskRun_Status.RUNNING
+      );
       const request = create(BatchCancelTaskRunsRequestSchema, {
         parent: `${targetStage.value.name}/tasks/-`,
-        taskRuns: targetTaskRuns.value?.map((taskRun) => taskRun.name) || [],
+        taskRuns: cancelableTaskRuns.map((taskRun) => taskRun.name),
         reason: comment.value,
       });
       await rolloutServiceClientConnect.batchCancelTaskRuns(request);
     }
 
+    emit("confirm");
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.success"),
     });
-    emit("confirm");
   } catch (error) {
     pushNotification({
       module: "bytebase",

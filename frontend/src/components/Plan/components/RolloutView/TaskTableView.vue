@@ -5,6 +5,7 @@
       :tasks="selectedTasks"
       :rollout="rollout"
       :stage="props.stage"
+      :readonly="props.readonly"
       @refresh="handleRefresh"
       @action-confirmed="handleTaskActionConfirmed"
     />
@@ -36,6 +37,7 @@ import TaskTable from "./TaskTable.vue";
 const props = defineProps<{
   taskStatusFilter: Task_Status[];
   stage: Stage;
+  readonly?: boolean;
 }>();
 
 const { rollout, events } = usePlanContextWithRollout();
