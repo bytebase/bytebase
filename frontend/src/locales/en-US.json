@@ -287,7 +287,6 @@
     "no-runnable-tasks": "No runnable tasks",
     "no-skippable-tasks": "No skippable tasks",
     "no-cancellable-tasks": "No cancellable tasks",
-    "cross-stage-not-supported": "Cross-stage operations not supported",
     "no-permission": "No permission to perform this action",
     "scheduled-time": "Scheduled time",
     "select-scheduled-time": "Select scheduled time",
@@ -314,6 +313,8 @@
     }
   },
   "task-run": {
+    "history": "Execution History",
+    "latest-logs": "Latest Logs",
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
@@ -1128,7 +1129,7 @@
     "rollouts": "Rollouts",
     "force-rollout": "Force rollout",
     "stage": {
-      "stages": "Stages",
+      "self": "Stage | Stages",
       "start-stage": "Start stage"
     }
   },

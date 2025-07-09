@@ -287,7 +287,6 @@
     "no-runnable-tasks": "実行可能なタスクはありません",
     "no-skippable-tasks": "スキップ可能なタスクはありません",
     "no-cancellable-tasks": "キャンセル可能なタスクはありません",
-    "cross-stage-not-supported": "ステージ間の操作はサポートされていません",
     "no-permission": "この操作を実行する権限がありません",
     "scheduled-time": "予定時刻",
     "select-scheduled-time": "予定時刻を選択してください",
@@ -314,6 +313,8 @@
     }
   },
   "task-run": {
+    "history": "タスク実行履歴",
+    "latest-logs": "最新のログ",
     "status": {
       "enqueued": "処刑を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",
@@ -1128,7 +1129,7 @@
     "rollouts": "ロールアウト",
     "force-rollout": "強制展開",
     "stage": {
-      "stages": "ステージ",
+      "self": "ステージ | ステージ",
       "start-stage": "スタートステージ"
     }
   },

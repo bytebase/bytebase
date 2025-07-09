@@ -69,7 +69,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "task-action-completed": [];
+  "action-confirmed": [];
 }>();
 
 const { t } = useI18n();
@@ -201,6 +201,6 @@ const handleDropdownSelect = (action: TaskStatusAction) => {
 const handleActionPanelClose = () => {
   showActionPanel.value = false;
   selectedAction.value = undefined;
-  emit("task-action-completed");
+  emit("action-confirmed");
 };
 </script>

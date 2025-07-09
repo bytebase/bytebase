@@ -2,6 +2,14 @@
   <div class="w-full h-full flex flex-col">
     <!-- Content area -->
     <div class="w-full flex-1 p-4">
+      <div class="flex items-center gap-1 mb-4 pl-4">
+        <h3 class="text-base font-medium">
+          {{ $t("rollout.stage.self", mergedStages.length) }}
+        </h3>
+        <span class="text-control-light" v-if="mergedStages.length > 1"
+          >({{ mergedStages.length }})</span
+        >
+      </div>
       <StagesView
         :rollout="rollout"
         :merged-stages="mergedStages"
@@ -16,7 +24,8 @@
       :show="runTasksPanel.show"
       action="RUN"
       :target="runTasksPanel.target"
-      @close="handlePanelClose"
+      @confirm="handleTaskActionPanelConfirm"
+      @close="handleTaskActionPanelClose"
     />
   </div>
 </template>
@@ -83,7 +92,13 @@ const handleCreateRolloutToStage = async (stage: Stage) => {
   }
 };
 
-const handlePanelClose = () => {
+const handleTaskActionPanelConfirm = () => {
+  // Refresh the rollout data after task action is confirmed.
+  events.emit("status-changed", { eager: true });
+  handleTaskActionPanelClose();
+};
+
+const handleTaskActionPanelClose = () => {
   runTasksPanel.value = {
     show: false,
   };

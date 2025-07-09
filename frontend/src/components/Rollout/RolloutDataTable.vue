@@ -107,8 +107,15 @@ const columnList = computed(
       },
       {
         key: "stages",
-        title: t("rollout.stage.stages"),
+        title: t("rollout.stage.self", 2),
         render: (rollout) => {
+          if (rollout.stages.length === 0) {
+            return (
+              <span class="text-sm text-gray-400 italic">
+                {t("common.no-data")}
+              </span>
+            );
+          }
           return (
             <div class="flex items-center gap-2">
               {rollout.stages.map((stage, index) => {

@@ -5,7 +5,7 @@
         {{ $t("common.tasks") }}
       </h3>
     </div>
-    <div class="flex flex-row gap-1 items-center">
+    <div class="flex flex-row gap-2 items-center">
       <template v-for="status in TASK_STATUS_FILTERS" :key="status">
         <NTag
           v-if="getTaskCount(status) > 0"
