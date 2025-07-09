@@ -183,7 +183,7 @@ func getIndices(txn *sql.Tx) (map[string][]*storepb.IndexMetadata, error) {
 	for rows.Next() {
 		var tableName, statement string
 		index := &storepb.IndexMetadata{}
-		if err := rows.Scan(tableName, &index.Name, &statement); err != nil {
+		if err := rows.Scan(&tableName, &index.Name, &statement); err != nil {
 			return nil, err
 		}
 		index.Unique = strings.Contains(statement, " UNIQUE INDEX ")

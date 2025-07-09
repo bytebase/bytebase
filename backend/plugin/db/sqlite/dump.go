@@ -61,12 +61,16 @@ func (d *Driver) dumpOneDatabase(ctx context.Context, out io.Writer) error {
 	var sqliteSchemas []sqliteSchema
 	for rows.Next() {
 		var s sqliteSchema
+		var sql sql.NullString
 		if err := rows.Scan(
 			&s.schemaType,
 			&s.name,
-			&s.statement,
+			&sql,
 		); err != nil {
 			return err
+		}
+		if sql.Valid {
+			s.statement = sql.String
 		}
 		sqliteSchemas = append(sqliteSchemas, s)
 	}
