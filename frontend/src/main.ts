@@ -1,4 +1,3 @@
-import Long from "long";
 import protobufjs from "protobufjs";
 import "regenerator-runtime/runtime";
 import { createApp } from "vue";
@@ -21,7 +20,6 @@ import {
 } from "./store";
 import { humanizeDate, humanizeTs, isDev, isRelease } from "./utils";
 
-protobufjs.util.Long = Long;
 protobufjs.configure();
 
 console.debug("dev:", isDev());

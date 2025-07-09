@@ -1,6 +1,5 @@
 import { toJson } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import Long from "long";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -270,11 +269,11 @@ export const compareQueryRowValues = (
   if (isNullOrUndefined(valueA)) return 1;
   if (isNullOrUndefined(valueB)) return -1;
 
-  // Check if the values are Longs and compare them.
+  // Check if the values are bigints and compare them.
   const rawA = extractSQLRowValueRaw(a);
   const rawB = extractSQLRowValueRaw(b);
-  if (Long.isLong(rawA) && Long.isLong(rawB)) {
-    return rawA.compare(rawB);
+  if (typeof rawA === "bigint" && typeof rawB === "bigint") {
+    return rawA < rawB ? -1 : rawA > rawB ? 1 : 0;
   }
 
   if (typeof valueA === "number" && typeof valueB === "number") {
