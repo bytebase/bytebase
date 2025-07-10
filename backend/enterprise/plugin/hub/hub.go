@@ -15,8 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 var _ plugin.LicenseProvider = (*Provider)(nil)

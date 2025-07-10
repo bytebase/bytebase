@@ -8,7 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {

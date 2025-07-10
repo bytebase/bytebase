@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 const systemSchema = "'CTISYS','SYS','SYSAUDITOR','SYSDBA','SYSSSO'"

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 
 	"github.com/google/uuid"
 	"github.com/paulmach/orb"
@@ -24,7 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // QueryConn queries a SQL statement in a given connection.

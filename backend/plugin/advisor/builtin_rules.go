@@ -1,6 +1,6 @@
 package advisor
 
-import storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+import storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 
 const (
 	BuiltinRulePriorBackupCheck SQLReviewRuleType = "builtin.prior-backup-check"

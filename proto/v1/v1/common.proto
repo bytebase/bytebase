@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
-option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 enum State {
   STATE_UNSPECIFIED = 0;

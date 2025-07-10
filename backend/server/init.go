@@ -12,7 +12,7 @@ import (
 	metriccollector "github.com/bytebase/bytebase/backend/metric/collector"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func (s *Server) initializeSetting(ctx context.Context) error {

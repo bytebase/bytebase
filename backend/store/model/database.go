@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // DatabaseSchema is the database schema including the metadata and schema (raw dump).

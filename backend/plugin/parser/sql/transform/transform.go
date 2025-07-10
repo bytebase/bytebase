@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // SchemaTransformer is the interface for schema SDL format transformer.

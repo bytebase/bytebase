@@ -14,8 +14,8 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
 // DatabaseGroupService implements the database group service.
