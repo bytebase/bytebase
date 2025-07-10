@@ -621,3 +621,206 @@
 
     GO
 
+- input: |
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "spatial_features",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "INT",
+                  "isIdentity": true,
+                  "identitySeed": "1",
+                  "identityIncrement": "1"
+                },
+                {
+                  "name": "feature_name",
+                  "position": 2,
+                  "type": "NVARCHAR(200)",
+                  "nullable": false
+                },
+                {
+                  "name": "location_point",
+                  "position": 3,
+                  "type": "GEOMETRY",
+                  "nullable": false
+                },
+                {
+                  "name": "boundary_polygon",
+                  "position": 4,
+                  "type": "GEOMETRY",
+                  "nullable": false
+                },
+                {
+                  "name": "geo_location",
+                  "position": 5,
+                  "type": "GEOGRAPHY",
+                  "nullable": false
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_spatial_features",
+                  "expressions": ["id"],
+                  "descending": [false],
+                  "primary": true,
+                  "isConstraint": true,
+                  "type": "CLUSTERED"
+                },
+                {
+                  "name": "idx_location_point",
+                  "expressions": ["location_point"],
+                  "descending": [false],
+                  "type": "SPATIAL",
+                  "spatialConfig": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOMETRY_GRID",
+                      "boundingBox": {
+                        "xmin": -180,
+                        "ymin": -90,
+                        "xmax": 180,
+                        "ymax": 90
+                      },
+                      "gridLevels": [
+                        {
+                          "level": 1,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 2,
+                          "density": "HIGH"
+                        },
+                        {
+                          "level": 3,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 4,
+                          "density": "LOW"
+                        }
+                      ],
+                      "cellsPerObject": 32
+                    },
+                    "storage": {
+                      "padIndex": true,
+                      "fillfactor": 85,
+                      "sortInTempdb": "ON",
+                      "allowRowLocks": true,
+                      "allowPageLocks": true,
+                      "maxdop": 2,
+                      "dataCompression": "PAGE"
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "dataType": "GEOMETRY"
+                    }
+                  }
+                },
+                {
+                  "name": "idx_boundary_polygon",
+                  "expressions": ["boundary_polygon"],
+                  "descending": [false],
+                  "type": "SPATIAL",
+                  "spatialConfig": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOMETRY_AUTO_GRID",
+                      "cellsPerObject": 16
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "dataType": "GEOMETRY"
+                    }
+                  }
+                },
+                {
+                  "name": "idx_geo_location",
+                  "expressions": ["geo_location"],
+                  "descending": [false],
+                  "type": "SPATIAL",
+                  "spatialConfig": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOGRAPHY_GRID",
+                      "gridLevels": [
+                        {
+                          "level": 1,
+                          "density": "LOW"
+                        },
+                        {
+                          "level": 2,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 3,
+                          "density": "HIGH"
+                        },
+                        {
+                          "level": 4,
+                          "density": "MEDIUM"
+                        }
+                      ],
+                      "cellsPerObject": 8
+                    },
+                    "storage": {
+                      "fillfactor": 80,
+                      "online": true
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "dataType": "GEOGRAPHY"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  output: |+
+    CREATE TABLE [dbo].[spatial_features] (
+        [id] INT IDENTITY(1,1) NOT NULL,
+        [feature_name] NVARCHAR(200) NOT NULL,
+        [location_point] GEOMETRY NOT NULL,
+        [boundary_polygon] GEOMETRY NOT NULL,
+        [geo_location] GEOGRAPHY NOT NULL,
+        CONSTRAINT [PK_spatial_features] PRIMARY KEY CLUSTERED ([id] ASC)
+    );
+
+    CREATE SPATIAL INDEX [idx_location_point] ON [dbo].[spatial_features] ([location_point])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-180, -90, 180, 90),
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 32,
+        PAD_INDEX = ON,
+        FILLFACTOR = 85,
+        SORT_IN_TEMPDB = ON,
+        MAXDOP = 2,
+        DATA_COMPRESSION = PAGE
+    );
+
+    CREATE SPATIAL INDEX [idx_boundary_polygon] ON [dbo].[spatial_features] ([boundary_polygon])
+    USING GEOMETRY_AUTO_GRID
+    WITH (
+        CELLS_PER_OBJECT = 16
+    );
+
+    CREATE SPATIAL INDEX [idx_geo_location] ON [dbo].[spatial_features] ([geo_location])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 8,
+        FILLFACTOR = 80,
+        ONLINE = ON,
+        ALLOW_ROW_LOCKS = OFF,
+        ALLOW_PAGE_LOCKS = OFF
+    );
+

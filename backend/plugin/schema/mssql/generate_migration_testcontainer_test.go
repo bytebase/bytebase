@@ -2078,6 +2078,300 @@ ALTER TABLE [edge].[test_defaults] DROP CONSTRAINT [DF_test_defaults_nullable_ne
 `,
 			description: "Reverse of edge case defaults - dropping special default constraints and columns",
 		},
+		{
+			name: "spatial_index_operations",
+			initialSchema: `
+CREATE SCHEMA [geo];
+GO
+
+-- Enable spatial types
+CREATE TABLE [geo].[locations] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(200) NOT NULL,
+    [geo_point] GEOMETRY NOT NULL,
+    [geo_polygon] GEOMETRY NOT NULL,
+    [geo_location] GEOGRAPHY NOT NULL,
+    [description] NVARCHAR(MAX)
+);
+`,
+			migrationDDL: `
+-- Add spatial indexes with different configurations
+
+-- GEOMETRY_GRID index with full parameters
+CREATE SPATIAL INDEX [idx_geo_point] ON [geo].[locations] ([geo_point]) 
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (-180, -90, 180, 90),
+    GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = LOW),
+    CELLS_PER_OBJECT = 32,
+    PAD_INDEX = ON,
+    FILLFACTOR = 85,
+    SORT_IN_TEMPDB = ON,
+    ALLOW_ROW_LOCKS = ON,
+    ALLOW_PAGE_LOCKS = ON,
+    MAXDOP = 2,
+    DATA_COMPRESSION = PAGE
+);
+
+-- GEOMETRY_AUTO_GRID index (requires bounding box)
+CREATE SPATIAL INDEX [idx_geo_polygon] ON [geo].[locations] ([geo_polygon]) 
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (-1000, -1000, 1000, 1000),
+    GRIDS = (LEVEL_1 = LOW, LEVEL_2 = LOW, LEVEL_3 = LOW, LEVEL_4 = LOW)
+);
+
+-- GEOGRAPHY_GRID index with specific grid levels
+CREATE SPATIAL INDEX [idx_geo_location] ON [geo].[locations] ([geo_location]) 
+USING GEOGRAPHY_GRID 
+WITH (
+    GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
+    CELLS_PER_OBJECT = 8,
+    FILLFACTOR = 80
+);
+
+-- Add another table with spatial columns
+CREATE TABLE [geo].[boundaries] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [boundary_name] NVARCHAR(100) NOT NULL,
+    [boundary_shape] GEOMETRY NOT NULL,
+    [center_point] GEOMETRY NOT NULL
+);
+
+-- Add spatial index on new table
+CREATE SPATIAL INDEX [idx_boundary_shape] ON [geo].[boundaries] ([boundary_shape]) 
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (0, 0, 1000, 1000),
+    GRIDS = (LEVEL_1 = HIGH, LEVEL_2 = HIGH, LEVEL_3 = LOW, LEVEL_4 = LOW),
+    CELLS_PER_OBJECT = 64
+);
+`,
+			description: "Spatial index operations with various tessellation schemes and parameters",
+		},
+		{
+			name: "reverse_spatial_table_operations",
+			initialSchema: `
+CREATE SCHEMA [geo];
+GO
+
+-- Create table with spatial columns and indexes
+CREATE TABLE [geo].[locations] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(200) NOT NULL,
+    [location] GEOGRAPHY NOT NULL,
+    [area] GEOGRAPHY NOT NULL
+);
+GO
+
+-- Create spatial indexes that will be dropped with the table
+-- Using GEOGRAPHY_GRID which doesn't require BOUNDING_BOX
+CREATE SPATIAL INDEX [idx_location] ON [geo].[locations] ([location]) 
+USING GEOGRAPHY_GRID 
+WITH (
+    GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
+    CELLS_PER_OBJECT = 16
+);
+GO
+
+CREATE SPATIAL INDEX [idx_area] ON [geo].[locations] ([area]) 
+USING GEOGRAPHY_GRID 
+WITH (
+    GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
+    CELLS_PER_OBJECT = 8
+);
+GO
+
+CREATE TABLE [geo].[regions] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [region_name] NVARCHAR(100) NOT NULL,
+    [boundary] GEOMETRY NOT NULL
+);
+GO
+`,
+			migrationDDL: `
+-- Drop entire table (this drops spatial indexes too)
+DROP TABLE [geo].[locations];
+
+-- Add columns to remaining table
+ALTER TABLE [geo].[regions] ADD [population] INT;
+ALTER TABLE [geo].[regions] ADD [area_sqkm] FLOAT;
+`,
+			description: "Reverse spatial table operations - dropping table with spatial indexes",
+		},
+		{
+			name: "reverse_spatial_indexes",
+			initialSchema: `
+CREATE SCHEMA [geo];
+GO
+
+-- Create table with spatial columns and spatial indexes that can be preserved
+CREATE TABLE [geo].[locations] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(200) NOT NULL,
+    [geo_point] GEOMETRY NOT NULL,
+    [geo_polygon] GEOMETRY NOT NULL,
+    [geo_location] GEOGRAPHY NOT NULL,
+    [description] NVARCHAR(MAX)
+);
+GO
+
+-- Create spatial indexes with basic configuration to avoid preservation issues
+CREATE SPATIAL INDEX [idx_geo_point] ON [geo].[locations] ([geo_point]) 
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (-180, -90, 180, 90),
+    GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM)
+);
+GO
+
+CREATE SPATIAL INDEX [idx_geo_location] ON [geo].[locations] ([geo_location]) 
+USING GEOGRAPHY_GRID 
+WITH (
+    GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM)
+);
+GO
+`,
+			migrationDDL: `
+-- Drop and recreate spatial indexes to test preservation
+DROP INDEX [idx_geo_point] ON [geo].[locations];
+DROP INDEX [idx_geo_location] ON [geo].[locations];
+
+-- Recreate with same configuration (should work with DDL preservation)
+CREATE SPATIAL INDEX [idx_geo_point] ON [geo].[locations] ([geo_point]) 
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (-180, -90, 180, 90),
+    GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM)
+);
+
+CREATE SPATIAL INDEX [idx_geo_location] ON [geo].[locations] ([geo_location]) 
+USING GEOGRAPHY_GRID 
+WITH (
+    GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM)
+);
+`,
+			description: "Reverse spatial index operations - dropping and recreating spatial indexes",
+		},
+		{
+			name: "spatial_index_modifications",
+			initialSchema: `
+CREATE SCHEMA [geo];
+GO
+
+CREATE TABLE [geo].[spatial_data] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [name] NVARCHAR(100) NOT NULL,
+    [location] GEOMETRY NOT NULL,
+    [region] GEOMETRY,
+    [area] GEOGRAPHY
+);
+GO
+
+-- Create initial spatial indexes
+CREATE SPATIAL INDEX [idx_location] ON [geo].[spatial_data] ([location])
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (-100, -100, 100, 100),
+    GRIDS = (LEVEL_1 = LOW, LEVEL_2 = LOW, LEVEL_3 = LOW, LEVEL_4 = LOW),
+    CELLS_PER_OBJECT = 16
+);
+GO
+
+CREATE SPATIAL INDEX [idx_area] ON [geo].[spatial_data] ([area])
+USING GEOGRAPHY_GRID 
+WITH (
+    GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
+    CELLS_PER_OBJECT = 32
+);
+GO
+`,
+			migrationDDL: `
+-- Drop and recreate spatial index with different parameters
+DROP INDEX [idx_location] ON [geo].[spatial_data];
+GO
+
+CREATE SPATIAL INDEX [idx_location] ON [geo].[spatial_data] ([location])
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (-200, -200, 200, 200),  -- Expanded bounding box
+    GRIDS = (LEVEL_1 = HIGH, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = LOW),  -- Changed grid densities
+    CELLS_PER_OBJECT = 64,  -- Increased cells per object
+    PAD_INDEX = ON,
+    FILLFACTOR = 90,
+    ALLOW_ROW_LOCKS = ON,
+    ALLOW_PAGE_LOCKS = ON
+);
+GO
+
+-- Add new spatial index on previously unindexed column
+CREATE SPATIAL INDEX [idx_region] ON [geo].[spatial_data] ([region])
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (-500, -500, 500, 500),
+    GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
+    CELLS_PER_OBJECT = 32
+);
+GO
+
+-- Drop spatial index on geography column
+DROP INDEX [idx_area] ON [geo].[spatial_data];
+GO
+`,
+			description: "Spatial index modifications - recreating with different parameters and adding/dropping indexes",
+		},
+		{
+			name: "spatial_table_schema_changes",
+			initialSchema: `
+CREATE SCHEMA [geo];
+GO
+
+CREATE TABLE [geo].[points] (
+    [id] INT IDENTITY(1,1) PRIMARY KEY,
+    [point_name] NVARCHAR(50) NOT NULL,
+    [location] GEOMETRY NOT NULL
+);
+GO
+
+CREATE SPATIAL INDEX [idx_points_location] ON [geo].[points] ([location])
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (0, 0, 100, 100),
+    GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM)
+);
+GO
+`,
+			migrationDDL: `
+-- Add new spatial and non-spatial columns
+ALTER TABLE [geo].[points] ADD [altitude] FLOAT;
+ALTER TABLE [geo].[points] ADD [boundary] GEOMETRY;
+ALTER TABLE [geo].[points] ADD [geo_location] GEOGRAPHY;
+ALTER TABLE [geo].[points] ADD [created_at] DATETIME2 DEFAULT GETDATE();
+
+-- Create spatial indexes on new columns
+CREATE SPATIAL INDEX [idx_points_boundary] ON [geo].[points] ([boundary])
+USING GEOMETRY_GRID 
+WITH (
+    BOUNDING_BOX = (-50, -50, 150, 150),
+    GRIDS = (LEVEL_1 = HIGH, LEVEL_2 = LOW, LEVEL_3 = LOW, LEVEL_4 = LOW),
+    CELLS_PER_OBJECT = 8
+);
+GO
+
+CREATE SPATIAL INDEX [idx_points_geo_location] ON [geo].[points] ([geo_location])
+USING GEOGRAPHY_GRID 
+WITH (
+    GRIDS = (LEVEL_1 = HIGH, LEVEL_2 = HIGH, LEVEL_3 = HIGH, LEVEL_4 = HIGH),
+    CELLS_PER_OBJECT = 16
+);
+GO
+
+-- Modify existing column (rename)
+EXEC sp_rename '[geo].[points].[point_name]', 'name', 'COLUMN';
+GO
+`,
+			description: "Spatial table schema changes - adding columns and indexes while preserving existing spatial indexes",
+		},
 	}
 
 	for _, testCase := range testCases {

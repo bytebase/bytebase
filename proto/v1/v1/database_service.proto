@@ -1076,6 +1076,115 @@ message StreamMetadata {
   string definition = 8;
 }
 
+// SpatialIndexConfig defines the spatial index configuration for spatial databases.
+message SpatialIndexConfig {
+  // Spatial indexing method (e.g., "SPATIAL", "R-TREE", "GIST")
+  string method = 1;
+
+  // Tessellation configuration for grid-based spatial indexes
+  TessellationConfig tessellation = 2;
+
+  // Storage and performance configuration
+  StorageConfig storage = 3;
+
+  // Dimensional configuration
+  DimensionalConfig dimensional = 4;
+}
+
+// TessellationConfig defines tessellation parameters for spatial indexes.
+message TessellationConfig {
+  // Tessellation scheme (e.g., "GEOMETRY_GRID", "GEOGRAPHY_GRID", "GEOMETRY_AUTO_GRID")
+  string scheme = 1;
+
+  // Grid levels and densities for multi-level tessellation
+  repeated GridLevel grid_levels = 2;
+
+  // Number of cells per object (1-8192 for SQL Server)
+  int32 cells_per_object = 3;
+
+  // Bounding box for GEOMETRY tessellation (not used for GEOGRAPHY)
+  BoundingBox bounding_box = 4;
+}
+
+// GridLevel defines a tessellation grid level with its density.
+message GridLevel {
+  // Grid level number (1-4 for SQL Server)
+  int32 level = 1;
+
+  // Grid density (LOW, MEDIUM, HIGH)
+  string density = 2;
+}
+
+// BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
+message BoundingBox {
+  // Minimum X coordinate
+  double xmin = 1;
+
+  // Minimum Y coordinate
+  double ymin = 2;
+
+  // Maximum X coordinate
+  double xmax = 3;
+
+  // Maximum Y coordinate
+  double ymax = 4;
+}
+
+// StorageConfig defines storage and performance parameters for spatial indexes.
+message StorageConfig {
+  // Fill factor percentage (1-100)
+  int32 fillfactor = 1;
+
+  // Buffering mode for PostgreSQL (auto, on, off)
+  string buffering = 2;
+
+  // Tablespace configuration for Oracle
+  string tablespace = 3;
+  string work_tablespace = 4;
+  int32 sdo_level = 5;
+  int32 commit_interval = 6;
+
+  // SQL Server specific parameters
+  bool pad_index = 7;
+  string sort_in_tempdb = 8; // ON, OFF
+  bool drop_existing = 9;
+  bool online = 10;
+  bool allow_row_locks = 11;
+  bool allow_page_locks = 12;
+  int32 maxdop = 13;
+  string data_compression = 14; // NONE, ROW, PAGE
+}
+
+// DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
+message DimensionalConfig {
+  // Number of dimensions (2-4, default 2)
+  int32 dimensions = 1;
+
+  // Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)
+  string data_type = 2;
+
+  // Spatial reference system identifier (SRID)
+  int32 srid = 3;
+
+  // Coordinate system constraints
+  repeated DimensionConstraint constraints = 4;
+}
+
+// DimensionConstraint defines constraints for a spatial dimension.
+message DimensionConstraint {
+  // Dimension name/type (X, Y, Z, M, etc.)
+  string dimension = 1;
+
+  // Minimum value for this dimension
+  double min_value = 2;
+
+  // Maximum value for this dimension
+  double max_value = 3;
+
+  // Tolerance for this dimension
+  double tolerance = 4;
+}
+
 // IndexMetadata is the metadata for indexes.
 message IndexMetadata {
   // The name is the name of an index.
@@ -1122,6 +1231,9 @@ message IndexMetadata {
   // It's a PostgreSQL specific field.
   // The unique constraint and unique index are not the same thing in PostgreSQL.
   bool is_constraint = 14;
+
+  // Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc.
+  SpatialIndexConfig spatial_config = 15;
 }
 
 // ExtensionMetadata is the metadata for extensions.

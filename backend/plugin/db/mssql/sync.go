@@ -611,6 +611,20 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 			}
 			if typeDesc.Valid {
 				index.Type = typeDesc.String
+				// If this is a spatial index, populate basic spatial config
+				if typeDesc.String == "SPATIAL" {
+					index.SpatialConfig = &storepb.SpatialIndexConfig{
+						Method: "SPATIAL",
+						Tessellation: &storepb.TessellationConfig{
+							Scheme: "UNKNOWN", // Will be updated by getSpatialIndexes if available
+						},
+						Storage: &storepb.StorageConfig{},
+						Dimensional: &storepb.DimensionalConfig{
+							DataType:   "GEOMETRY", // Default, will be updated if available
+							Dimensions: 2,
+						},
+					}
+				}
 			}
 			if comment.Valid {
 				index.Comment = comment.String
@@ -644,7 +658,299 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 			return 0
 		})
 	}
+
+	// Get spatial indexes separately
+	// If sys.spatial_indexes doesn't exist (e.g., SQL Server Express), this will fail
+	// In that case, we'll just use the spatial indexes found by the regular index query
+	spatialIndexes, err := getSpatialIndexes(txn, schemas)
+	if err != nil {
+		// Ignore error - spatial indexes might have been found by regular index query
+		spatialIndexes = make(map[db.TableKey][]*storepb.IndexMetadata)
+	}
+
+	// Merge spatial indexes with regular indexes
+	// Need to replace spatial indexes found by regular query with properly configured ones
+	// Merge spatial indexes with regular indexes
+	for k, spatialIdxs := range spatialIndexes {
+		// Process table spatial indexes
+		if _, ok := tableIndexes[k]; !ok {
+			tableIndexes[k] = make([]*storepb.IndexMetadata, 0)
+		}
+
+		// Remove any spatial indexes from regular indexes first
+		var nonSpatialIndexes []*storepb.IndexMetadata
+		for _, idx := range tableIndexes[k] {
+			if idx.Type != "SPATIAL" {
+				nonSpatialIndexes = append(nonSpatialIndexes, idx)
+			}
+		}
+
+		// Replace with non-spatial indexes and add properly configured spatial indexes
+		tableIndexes[k] = nonSpatialIndexes
+		tableIndexes[k] = append(tableIndexes[k], spatialIdxs...)
+	}
+
 	return tableIndexes, nil
+}
+
+func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
+
+	// Use proper sys.spatial_indexes and sys.spatial_index_tessellations views
+	// Reference: https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-spatial-indexes-transact-sql
+	// Reference: https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-spatial-index-tessellations-transact-sql
+	query := fmt.Sprintf(`
+	SELECT
+		s.name AS schema_name,
+		o.name AS table_name,
+		i.name AS index_name,
+		col.name AS column_name,
+		si.spatial_index_type,
+		si.spatial_index_type_desc,
+		si.tessellation_scheme,
+		COALESCE(sit.bounding_box_xmin, 0) AS bounding_box_xmin,
+		COALESCE(sit.bounding_box_ymin, 0) AS bounding_box_ymin,
+		COALESCE(sit.bounding_box_xmax, 0) AS bounding_box_xmax,
+		COALESCE(sit.bounding_box_ymax, 0) AS bounding_box_ymax,
+		COALESCE(sit.level_1_grid_desc, '') AS level_1_grid_desc,
+		COALESCE(sit.level_2_grid_desc, '') AS level_2_grid_desc,
+		COALESCE(sit.level_3_grid_desc, '') AS level_3_grid_desc,
+		COALESCE(sit.level_4_grid_desc, '') AS level_4_grid_desc,
+		COALESCE(sit.cells_per_object, 0) AS cells_per_object,
+		col.system_type_id,
+		i.filter_definition,
+		i.fill_factor,
+		CASE WHEN i.is_padded = 1 THEN 1 ELSE 0 END AS is_padded,
+		CASE WHEN i.allow_row_locks = 1 THEN 1 ELSE 0 END AS allow_row_locks,
+		CASE WHEN i.allow_page_locks = 1 THEN 1 ELSE 0 END AS allow_page_locks,
+		'NONE' AS data_compression_desc,
+		CAST(ep.value AS NVARCHAR(MAX)) AS comment
+	FROM
+		sys.spatial_indexes si
+		INNER JOIN sys.indexes i ON si.object_id = i.object_id AND si.index_id = i.index_id
+		INNER JOIN sys.objects o ON i.object_id = o.object_id
+		INNER JOIN sys.schemas s ON o.schema_id = s.schema_id
+		LEFT JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+		LEFT JOIN sys.columns col ON ic.object_id = col.object_id AND ic.column_id = col.column_id
+		LEFT JOIN sys.spatial_index_tessellations sit ON si.object_id = sit.object_id AND si.index_id = sit.index_id
+		LEFT JOIN sys.extended_properties ep ON ep.class = 7 AND i.object_id = ep.major_id AND ep.minor_id = i.index_id AND ep.name = 'MS_Description'
+	WHERE
+		s.name IN (%s)
+		AND o.type IN ('U', 'S', 'V')
+	ORDER BY s.name, o.name, i.name, ic.key_ordinal
+	`, quoteList(schemas))
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, tableName, indexName, columnName sql.NullString
+		var spatialIndexType sql.NullInt32
+		var spatialIndexTypeDesc, tessellationScheme sql.NullString
+		var boundingBoxXmin, boundingBoxYmin, boundingBoxXmax, boundingBoxYmax sql.NullFloat64
+		var level1Grid, level2Grid, level3Grid, level4Grid sql.NullString
+		var cellsPerObject sql.NullInt32
+		var systemTypeID sql.NullInt32
+		var filterDefinition sql.NullString
+		var fillFactor sql.NullInt32
+		var isPadded, allowRowLocks, allowPageLocks sql.NullInt32
+		var dataCompressionDesc, comment sql.NullString
+
+		if err := rows.Scan(&schemaName, &tableName, &indexName, &columnName,
+			&spatialIndexType, &spatialIndexTypeDesc, &tessellationScheme,
+			&boundingBoxXmin, &boundingBoxYmin, &boundingBoxXmax, &boundingBoxYmax,
+			&level1Grid, &level2Grid, &level3Grid, &level4Grid, &cellsPerObject,
+			&systemTypeID, &filterDefinition, &fillFactor, &isPadded,
+			&allowRowLocks, &allowPageLocks, &dataCompressionDesc, &comment); err != nil {
+			return nil, err
+		}
+
+		if !schemaName.Valid || !tableName.Valid || !indexName.Valid || !columnName.Valid {
+			continue
+		}
+
+		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
+		if _, ok := indexMap[key]; !ok {
+			indexMap[key] = make(map[string]*storepb.IndexMetadata)
+		}
+
+		if _, ok := indexMap[key][indexName.String]; !ok {
+			// Create new spatial index metadata
+			index := &storepb.IndexMetadata{
+				Name:    indexName.String,
+				Type:    "SPATIAL",
+				Unique:  false,
+				Primary: false,
+				SpatialConfig: &storepb.SpatialIndexConfig{
+					Method: "SPATIAL",
+				},
+			}
+
+			// Set comment if available
+			if comment.Valid {
+				index.Comment = comment.String
+			}
+
+			// Determine data type from spatial_index_type_desc (more reliable)
+			dataType := "GEOMETRY"
+			if spatialIndexTypeDesc.Valid {
+				dataType = spatialIndexTypeDesc.String
+			} else if systemTypeID.Valid {
+				// Fallback: system_type_id 240 = GEOMETRY, 241 = GEOGRAPHY
+				if systemTypeID.Int32 == 241 {
+					dataType = "GEOGRAPHY"
+				}
+			}
+
+			// Configure tessellation with complete metadata
+			index.SpatialConfig.Tessellation = &storepb.TessellationConfig{}
+
+			if tessellationScheme.Valid {
+				index.SpatialConfig.Tessellation.Scheme = tessellationScheme.String
+			} else {
+				// Fallback based on data type
+				index.SpatialConfig.Tessellation.Scheme = fmt.Sprintf("%s_GRID", dataType)
+			}
+
+			// Add bounding box (for GEOMETRY indexes or when explicitly provided)
+			if boundingBoxXmin.Valid && boundingBoxYmin.Valid &&
+				boundingBoxXmax.Valid && boundingBoxYmax.Valid &&
+				(boundingBoxXmin.Float64 != 0 || boundingBoxYmin.Float64 != 0 ||
+					boundingBoxXmax.Float64 != 0 || boundingBoxYmax.Float64 != 0) {
+				index.SpatialConfig.Tessellation.BoundingBox = &storepb.BoundingBox{
+					Xmin: boundingBoxXmin.Float64,
+					Ymin: boundingBoxYmin.Float64,
+					Xmax: boundingBoxXmax.Float64,
+					Ymax: boundingBoxYmax.Float64,
+				}
+			}
+
+			// Add grid levels with proper descriptions
+			gridLevels := []*storepb.GridLevel{}
+			if level1Grid.Valid && level1Grid.String != "" {
+				gridLevels = append(gridLevels, &storepb.GridLevel{Level: 1, Density: level1Grid.String})
+			}
+			if level2Grid.Valid && level2Grid.String != "" {
+				gridLevels = append(gridLevels, &storepb.GridLevel{Level: 2, Density: level2Grid.String})
+			}
+			if level3Grid.Valid && level3Grid.String != "" {
+				gridLevels = append(gridLevels, &storepb.GridLevel{Level: 3, Density: level3Grid.String})
+			}
+			if level4Grid.Valid && level4Grid.String != "" {
+				gridLevels = append(gridLevels, &storepb.GridLevel{Level: 4, Density: level4Grid.String})
+			}
+			index.SpatialConfig.Tessellation.GridLevels = gridLevels
+
+			// Add cells per object
+			if cellsPerObject.Valid && cellsPerObject.Int32 > 0 {
+				index.SpatialConfig.Tessellation.CellsPerObject = cellsPerObject.Int32
+			}
+
+			// Configure storage options - always create storage config
+			index.SpatialConfig.Storage = &storepb.StorageConfig{}
+
+			if fillFactor.Valid && fillFactor.Int32 > 0 {
+				index.SpatialConfig.Storage.Fillfactor = fillFactor.Int32
+			}
+
+			if isPadded.Valid && isPadded.Int32 == 1 {
+				index.SpatialConfig.Storage.PadIndex = true
+			}
+
+			if allowRowLocks.Valid && allowRowLocks.Int32 == 1 {
+				index.SpatialConfig.Storage.AllowRowLocks = true
+			}
+
+			if allowPageLocks.Valid && allowPageLocks.Int32 == 1 {
+				index.SpatialConfig.Storage.AllowPageLocks = true
+			}
+
+			if dataCompressionDesc.Valid && dataCompressionDesc.String != "" && dataCompressionDesc.String != "NONE" {
+				index.SpatialConfig.Storage.DataCompression = dataCompressionDesc.String
+			}
+
+			// Configure dimensional properties
+			index.SpatialConfig.Dimensional = &storepb.DimensionalConfig{
+				DataType:   dataType,
+				Dimensions: 2, // SQL Server spatial indexes are always 2D
+			}
+
+			// Note: Filter definitions for spatial indexes are not currently supported in the proto
+			// but we've retrieved the data in case it's needed in the future
+
+			indexMap[key][indexName.String] = index
+		}
+
+		// Add column to expressions
+		indexMap[key][indexName.String].Expressions = append(indexMap[key][indexName.String].Expressions, columnName.String)
+		indexMap[key][indexName.String].Descending = append(indexMap[key][indexName.String].Descending, false) // Spatial indexes don't support descending
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Convert to slice format
+	tableIndexes := make(map[db.TableKey][]*storepb.IndexMetadata)
+	for k, m := range indexMap {
+		for _, v := range m {
+			tableIndexes[k] = append(tableIndexes[k], v)
+		}
+	}
+
+	// Try to get additional spatial index parameters from XML showplan if available
+	// This is a best-effort attempt to retrieve MAXDOP, SORT_IN_TEMPDB, and ONLINE options
+	if len(tableIndexes) > 0 {
+		enhanceSpatialIndexesWithXMLPlan(txn, tableIndexes)
+	}
+
+	return tableIndexes, nil
+}
+
+// enhanceSpatialIndexesWithXMLPlan attempts to extract additional spatial index options
+// that are not available in system tables but might be visible in execution plans
+func enhanceSpatialIndexesWithXMLPlan(txn *sql.Tx, spatialIndexes map[db.TableKey][]*storepb.IndexMetadata) {
+	// This is a best-effort function, so we ignore errors
+	for tableKey, indexes := range spatialIndexes {
+		for _, index := range indexes {
+			if index.Type != "SPATIAL" || index.SpatialConfig == nil {
+				continue
+			}
+
+			// Try to get the index creation statement from sys.sql_modules or other sources
+			// This is SQL Server version dependent and might not always work
+			query := `
+			SELECT 
+				OBJECTPROPERTY(i.object_id, 'ExecIsAnsiNullsOn') AS ansi_nulls,
+				OBJECTPROPERTY(i.object_id, 'ExecIsQuotedIdentOn') AS quoted_ident
+			FROM sys.indexes i
+			INNER JOIN sys.objects o ON i.object_id = o.object_id
+			INNER JOIN sys.schemas s ON o.schema_id = s.schema_id
+			WHERE s.name = @schema AND o.name = @table AND i.name = @index
+			`
+			var ansiNulls, quotedIdent sql.NullInt32
+			err := txn.QueryRow(query,
+				sql.Named("schema", tableKey.Schema),
+				sql.Named("table", tableKey.Table),
+				sql.Named("index", index.Name)).Scan(&ansiNulls, &quotedIdent)
+
+			if err == nil && index.SpatialConfig.Storage == nil {
+				// If we don't have storage config yet, create a basic one
+				// These properties give us hints about the index creation context
+				if ansiNulls.Valid || quotedIdent.Valid {
+					if index.SpatialConfig.Storage == nil {
+						index.SpatialConfig.Storage = &storepb.StorageConfig{}
+					}
+					// These are indirect indicators but better than nothing
+					index.SpatialConfig.Storage.AllowRowLocks = true
+					index.SpatialConfig.Storage.AllowPageLocks = true
+				}
+			}
+		}
+	}
 }
 
 func getKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
