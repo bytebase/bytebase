@@ -40,6 +40,7 @@ enum Engine {
   COSMOSDB = 26;
   TRINO = 27;
   CASSANDRA = 28;
+  DATABEND  = 29;
 }
 
 enum VCSType {
