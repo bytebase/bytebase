@@ -68,16 +68,9 @@
 
     <!-- Results List -->
     <div class="flex-1 overflow-y-auto">
-      <!-- Loading state -->
-      <div
-        v-if="!hasCompletedInitialFetch"
-        class="flex items-center justify-center py-12"
-      >
-        <BBSpin />
-      </div>
       <!-- Empty state -->
       <div
-        v-else-if="filteredCheckRuns.length === 0"
+        v-if="filteredCheckRuns.length === 0"
         class="flex flex-col items-center justify-center py-12"
       >
         <CheckCircleIcon class="w-12 h-12 text-control-light opacity-50 mb-4" />
@@ -168,7 +161,6 @@ import {
 } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBSpin } from "@/bbkit";
 import { getRuleLocalization } from "@/types";
 import {
   PlanCheckRun_Result_Status,
@@ -178,7 +170,6 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { humanizeTs } from "@/utils";
 import { usePlanContext } from "../../logic/context";
-import { useResourcePoller } from "../../logic/poller";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const props = defineProps<{
@@ -187,7 +178,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { planCheckRuns } = usePlanContext();
-const { hasCompletedInitialFetch } = useResourcePoller();
 
 const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(
   props.defaultStatus
