@@ -59,7 +59,7 @@
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
 import { NSpin, NTab, NTabs } from "naive-ui";
-import { computed, toRef } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -75,6 +75,7 @@ import { useSpecsValidation } from "@/components/Plan/components/common";
 import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
@@ -88,8 +89,10 @@ import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractIssueUID,
   extractPlanUID,
+  extractProjectResourceName,
   extractRolloutUID,
   isNullOrUndefined,
+  issueV1Slug,
 } from "@/utils";
 
 enum TabKey {
@@ -120,9 +123,10 @@ const planBaseContext = useBasePlanContext({
   plan,
   issue,
 });
+const isLoading = ref(true);
 
 const ready = computed(() => {
-  return !isInitializing.value && !!plan.value;
+  return !isInitializing.value && !!plan.value && !isLoading.value;
 });
 
 const route = useRoute();
@@ -138,6 +142,36 @@ providePlanContext({
 });
 
 provideIssueReviewContext(issue);
+
+watch(
+  () => isInitializing.value,
+  () => {
+    if (isInitializing.value) {
+      return;
+    }
+
+    // Redirect all non-changeDatabaseConfig plans to the legacy issue page.
+    // Including create database and export data plans.
+    if (
+      plan.value.issue &&
+      plan.value.specs.some(
+        (spec) => spec.config.case !== "changeDatabaseConfig"
+      )
+    ) {
+      router.replace({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(plan.value.name),
+          issueSlug: issueV1Slug(plan.value.issue),
+        },
+        query: route.query,
+      });
+    } else {
+      isLoading.value = false;
+    }
+  },
+  { once: true }
+);
 
 const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
 
