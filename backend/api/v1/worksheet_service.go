@@ -20,8 +20,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-	"github.com/bytebase/bytebase/proto/generated-go/v1/v1connect"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
 // WorksheetService implements the worksheet service.

@@ -13,7 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 const (

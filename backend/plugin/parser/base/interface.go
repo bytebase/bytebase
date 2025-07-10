@@ -14,7 +14,7 @@ import (
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/store/model"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 var (

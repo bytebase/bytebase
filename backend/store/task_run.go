@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // TaskRunMessage is message for task run.

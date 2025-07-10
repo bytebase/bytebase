@@ -12,7 +12,7 @@ import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
 
-option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 service IssueService {
   // Permissions required: bb.issues.get

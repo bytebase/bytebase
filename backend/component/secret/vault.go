@@ -8,7 +8,7 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/api/auth/approle"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExternalSecret) (*vault.Client, error) {

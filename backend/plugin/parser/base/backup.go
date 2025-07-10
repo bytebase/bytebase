@@ -1,7 +1,7 @@
 package base
 
 import (
-	storebp "github.com/bytebase/bytebase/proto/generated-go/store"
+	storebp "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 type BackupStatement struct {

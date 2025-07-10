@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
+	"github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 type restoreCase struct {

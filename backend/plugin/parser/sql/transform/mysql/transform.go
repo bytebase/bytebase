@@ -15,7 +15,7 @@ import (
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 )

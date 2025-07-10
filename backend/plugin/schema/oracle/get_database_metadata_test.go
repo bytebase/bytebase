@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	oracledb "github.com/bytebase/bytebase/backend/plugin/db/oracle"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function

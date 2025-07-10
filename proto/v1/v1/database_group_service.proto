@@ -11,7 +11,7 @@ import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
 
-option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 service DatabaseGroupService {
   // Permissions required: bb.projects.get

@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/action/common"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {

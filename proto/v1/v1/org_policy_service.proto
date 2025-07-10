@@ -13,7 +13,7 @@ import "google/type/expr.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 
-option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 service OrgPolicyService {
   // Permissions required: bb.policies.get

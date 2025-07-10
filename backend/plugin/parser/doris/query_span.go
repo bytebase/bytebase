@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func init() {

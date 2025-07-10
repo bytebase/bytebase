@@ -17,7 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	pgdb "github.com/bytebase/bytebase/backend/plugin/db/pg"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function

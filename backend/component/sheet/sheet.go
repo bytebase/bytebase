@@ -31,7 +31,7 @@ import (
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 const (

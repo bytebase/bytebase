@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestExtractChangedResources(t *testing.T) {

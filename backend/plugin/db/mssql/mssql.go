@@ -29,8 +29,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 var (

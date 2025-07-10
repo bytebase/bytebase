@@ -12,7 +12,7 @@ import (
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 var (

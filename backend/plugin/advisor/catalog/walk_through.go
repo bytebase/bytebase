@@ -11,7 +11,7 @@ import (
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.

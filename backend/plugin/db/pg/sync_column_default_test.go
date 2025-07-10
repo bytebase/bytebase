@@ -8,7 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestSync_ColumnDefaultSchemaQualification(t *testing.T) {

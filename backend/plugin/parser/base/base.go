@@ -6,7 +6,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // SingleSQL is a separate SQL split from multi-SQL.

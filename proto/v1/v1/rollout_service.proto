@@ -11,7 +11,7 @@ import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/plan_service.proto";
 
-option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 service RolloutService {
   // Permissions required: bb.rollouts.get
