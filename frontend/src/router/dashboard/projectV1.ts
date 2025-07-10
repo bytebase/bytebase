@@ -20,7 +20,6 @@ export const PROJECT_V1_ROUTE_PLANS = `${PROJECT_V1_ROUTE_DASHBOARD}.plan`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.specs`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.spec.detail`;
-export const PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.check-runs`;
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
 export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-schema`;
@@ -54,7 +53,9 @@ const cicdRoutes: RouteRecordRaw[] = [
           {
             path: "",
             name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-            component: () => import("@/views/project/PlanDetailView.vue"),
+            redirect: {
+              name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+            },
           },
           {
             path: "specs",
@@ -65,11 +66,6 @@ const cicdRoutes: RouteRecordRaw[] = [
             path: "specs/:specId",
             name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
             component: () => import("@/views/project/PlanSpecDetailView.vue"),
-          },
-          {
-            path: "planCheckRuns",
-            name: PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
-            component: () => import("@/views/project/PlanCheckRunsView.vue"),
           },
         ],
       },

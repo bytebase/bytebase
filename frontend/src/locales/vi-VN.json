@@ -1064,13 +1064,11 @@
     "overview": {
       "total-specs": "Tổng số thông số kỹ thuật",
       "total-targets": "Tổng số mục tiêu",
-      "no-checks": "Không kiểm tra",
-      "affected-resources": "Tài nguyên bị ảnh hưởng"
+      "no-checks": "Không kiểm tra"
     },
     "navigator": {
-      "specifications": "Thông số kỹ thuật",
+      "changes": "Thay đổi",
       "checks": "Kiểm tra",
-      "review": "Ôn tập",
       "rollout": "Triển khai",
       "statement-empty": "Câu lệnh trống rỗng"
     },
@@ -1088,9 +1086,6 @@
     "targets": {
       "title": "Mục tiêu",
       "no-targets-found": "Không tìm thấy mục tiêu",
-      "one-database": "1 cơ sở dữ liệu",
-      "multiple-databases": "{count} cơ sở dữ liệu",
-      "database-group": "Nhóm cơ sở dữ liệu",
       "database-not-found": "Không tìm thấy cơ sở dữ liệu",
       "type": {
         "instance": "Ví dụ",

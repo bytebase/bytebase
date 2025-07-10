@@ -1,7 +1,8 @@
 <template>
   <div class="flex-1 flex w-full">
     <!-- Left Panel - Activity -->
-    <div class="flex-1 shrink">
+    <div class="flex-1 shrink px-4">
+      <OverviewSection />
       <ActivitySection />
     </div>
 
@@ -20,6 +21,7 @@ import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../..";
 import { ActivitySection } from "./ActivitySection";
+import OverviewSection from "./OverviewSection.vue";
 import { Sidebar } from "./Sidebar";
 
 const { project, ready } = useCurrentProjectV1();

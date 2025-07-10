@@ -1064,13 +1064,11 @@
     "overview": {
       "total-specs": "Total Specs",
       "total-targets": "Total Targets",
-      "no-checks": "No checks",
-      "affected-resources": "Affected Resources"
+      "no-checks": "No checks"
     },
     "navigator": {
-      "specifications": "Specifications",
+      "changes": "Changes",
       "checks": "Checks",
-      "review": "Review",
       "rollout": "Rollout",
       "statement-empty": "Statement is empty"
     },
@@ -1088,9 +1086,6 @@
     "targets": {
       "title": "Targets",
       "no-targets-found": "No targets found",
-      "one-database": "1 database",
-      "multiple-databases": "{count} databases",
-      "database-group": "Database Group",
       "database-not-found": "Database not found",
       "type": {
         "instance": "Instance",
