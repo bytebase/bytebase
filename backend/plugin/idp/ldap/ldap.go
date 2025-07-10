@@ -9,7 +9,7 @@ import (
 	"github.com/go-ldap/ldap/v3"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // IdentityProvider represents an LDAP Identity Provider.

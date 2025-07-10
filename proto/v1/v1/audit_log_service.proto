@@ -13,7 +13,7 @@ import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/iam_policy.proto";
 
-option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 service AuditLogService {
   // Permissions required: None

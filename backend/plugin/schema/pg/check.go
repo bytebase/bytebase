@@ -3,9 +3,9 @@ package pg
 import (
 	"fmt"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {

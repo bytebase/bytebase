@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/action/world"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, error) {

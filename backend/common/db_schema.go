@@ -1,7 +1,7 @@
 package common
 
 import (
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // GetClassificationAndUserComment parses classification and user comment from the given comment.
