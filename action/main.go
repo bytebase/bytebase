@@ -11,7 +11,6 @@ import (
 	"github.com/bytebase/bytebase/action/args"
 	"github.com/bytebase/bytebase/action/command"
 	"github.com/bytebase/bytebase/action/world"
-	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 func main() {
@@ -32,7 +31,7 @@ func main() {
 	cmd := command.NewRootCommand(w)
 
 	if err := cmd.ExecuteContext(ctx); err != nil {
-		slog.Error("failed to execute command", log.BBError(err))
+		slog.Error("failed to execute command", "error", fmt.Sprintf("%+v", err))
 		os.Exit(1)
 	}
 }
