@@ -2310,7 +2310,7 @@ export declare type BoundingBox = Message<"bytebase.v1.BoundingBox"> & {
   xmin: number;
 
   /**
-   * Minimum Y coordinate  
+   * Minimum Y coordinate
    *
    * @generated from field: double ymin = 2;
    */

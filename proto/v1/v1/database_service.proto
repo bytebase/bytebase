@@ -1120,7 +1120,7 @@ message BoundingBox {
   // Minimum X coordinate
   double xmin = 1;
 
-  // Minimum Y coordinate  
+  // Minimum Y coordinate
   double ymin = 2;
 
   // Maximum X coordinate
