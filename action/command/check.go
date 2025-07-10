@@ -7,7 +7,7 @@ import (
 	"github.com/bytebase/bytebase/action/args"
 	"github.com/bytebase/bytebase/action/github"
 	"github.com/bytebase/bytebase/action/world"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func NewCheckCommand(w *world.World) *cobra.Command {

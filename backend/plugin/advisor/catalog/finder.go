@@ -1,7 +1,7 @@
 package catalog
 
 import (
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // FinderContext is the context for finder.

@@ -15,8 +15,8 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/idp"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // IdentityProvider represents an OIDC Identity Provider.

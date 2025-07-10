@@ -16,9 +16,9 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {

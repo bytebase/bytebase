@@ -11,9 +11,9 @@ import (
 
 	parser "github.com/bytebase/tsql-parser"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {

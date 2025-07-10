@@ -14,10 +14,10 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	tidbdb "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestGetDatabaseDefinition(t *testing.T) {

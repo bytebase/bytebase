@@ -18,12 +18,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	oracledb "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // TestGenerateMigrationWithTestcontainer tests the generate migration function

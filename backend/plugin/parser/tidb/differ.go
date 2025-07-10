@@ -25,8 +25,8 @@ import (
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register pingcap parser driver.
 	driver "github.com/pingcap/tidb/pkg/types/parser_driver"

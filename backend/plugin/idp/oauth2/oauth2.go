@@ -15,8 +15,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/idp"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // IdentityProvider represents an OAuth2 Identity Provider.

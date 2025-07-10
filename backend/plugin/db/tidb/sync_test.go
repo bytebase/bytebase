@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestSetColumnMetadataDefault(t *testing.T) {

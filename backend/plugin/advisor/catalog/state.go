@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func newDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext) *DatabaseState {

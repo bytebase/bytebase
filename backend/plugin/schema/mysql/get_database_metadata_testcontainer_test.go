@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
