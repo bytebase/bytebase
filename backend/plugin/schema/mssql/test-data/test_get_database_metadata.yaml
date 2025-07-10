@@ -2412,7 +2412,10 @@
                       ],
                       "cells_per_object": 16
                     },
-                    "storage": {},
+                    "storage": {
+                      "allow_row_locks": true,
+                      "allow_page_locks": true
+                    },
                     "dimensional": {
                       "dimensions": 2,
                       "data_type": "GEOGRAPHY"
@@ -2434,7 +2437,10 @@
                       "scheme": "GEOMETRY_AUTO_GRID",
                       "cells_per_object": 8
                     },
-                    "storage": {},
+                    "storage": {
+                      "allow_row_locks": true,
+                      "allow_page_locks": true
+                    },
                     "dimensional": {
                       "dimensions": 2,
                       "data_type": "GEOMETRY"

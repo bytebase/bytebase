@@ -794,9 +794,33 @@
         CONSTRAINT [PK_spatial_features] PRIMARY KEY CLUSTERED ([id] ASC)
     );
 
-    CREATE SPATIAL INDEX [idx_location_point] ON [dbo].[spatial_features] ([location_point]) USING GEOMETRY_GRID WITH (BOUNDING_BOX = (-180, -90, 180, 90), GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = LOW), CELLS_PER_OBJECT = 32, PAD_INDEX = ON, FILLFACTOR = 85, SORT_IN_TEMPDB = ON, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, MAXDOP = 2, DATA_COMPRESSION = PAGE);
+    CREATE SPATIAL INDEX [idx_location_point] ON [dbo].[spatial_features] ([location_point])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-180, -90, 180, 90),
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 32,
+        PAD_INDEX = ON,
+        FILLFACTOR = 85,
+        SORT_IN_TEMPDB = ON,
+        MAXDOP = 2,
+        DATA_COMPRESSION = PAGE
+    );
 
-    CREATE SPATIAL INDEX [idx_boundary_polygon] ON [dbo].[spatial_features] ([boundary_polygon]) USING GEOMETRY_AUTO_GRID WITH (CELLS_PER_OBJECT = 16);
+    CREATE SPATIAL INDEX [idx_boundary_polygon] ON [dbo].[spatial_features] ([boundary_polygon])
+    USING GEOMETRY_AUTO_GRID
+    WITH (
+        CELLS_PER_OBJECT = 16
+    );
 
-    CREATE SPATIAL INDEX [idx_geo_location] ON [dbo].[spatial_features] ([geo_location]) USING GEOGRAPHY_GRID WITH (GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM), CELLS_PER_OBJECT = 8, FILLFACTOR = 80, ONLINE = ON);
+    CREATE SPATIAL INDEX [idx_geo_location] ON [dbo].[spatial_features] ([geo_location])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 8,
+        FILLFACTOR = 80,
+        ONLINE = ON,
+        ALLOW_ROW_LOCKS = OFF,
+        ALLOW_PAGE_LOCKS = OFF
+    );
 

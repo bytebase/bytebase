@@ -621,7 +621,7 @@ func buildStorageParams(storage *storepb.StorageConfig) []string {
 	}
 
 	// ALLOW_ROW_LOCKS and ALLOW_PAGE_LOCKS (default to ON for spatial indexes)
-	// Only output when explicitly set to OFF
+	// Only output when they differ from the default (ON)
 	if !storage.AllowRowLocks {
 		params = append(params, "ALLOW_ROW_LOCKS = OFF")
 	}

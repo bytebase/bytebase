@@ -2,7 +2,6 @@ package mssql
 
 import (
 	"fmt"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -265,27 +264,20 @@ func (e *metadataExtractor) EnterCreate_spatial_index(ctx *parser.Create_spatial
 }
 
 func (e *metadataExtractor) parseSpatialIndexConfig(ctx *parser.Create_spatial_indexContext, index *storepb.IndexMetadata) {
-	// Get the full text of the spatial index statement to parse configuration
-	fullText := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-
 	// Initialize tessellation config
 	index.SpatialConfig.Tessellation = &storepb.TessellationConfig{}
 
-	// Parse tessellation scheme from the full text
-	upperText := strings.ToUpper(fullText)
-	if strings.Contains(upperText, "USING GEOMETRY_GRID") {
-		index.SpatialConfig.Tessellation.Scheme = "GEOMETRY_GRID"
-	} else if strings.Contains(upperText, "USING GEOGRAPHY_GRID") {
-		index.SpatialConfig.Tessellation.Scheme = "GEOGRAPHY_GRID"
-	} else if strings.Contains(upperText, "USING GEOMETRY_AUTO_GRID") {
-		index.SpatialConfig.Tessellation.Scheme = "GEOMETRY_AUTO_GRID"
-	} else if strings.Contains(upperText, "USING GEOGRAPHY_AUTO_GRID") {
-		index.SpatialConfig.Tessellation.Scheme = "GEOGRAPHY_AUTO_GRID"
+	// Parse tessellation scheme using ANTLR context
+	if tessellationCtx := ctx.Spatial_tessellation_scheme(); tessellationCtx != nil {
+		scheme := tessellationCtx.GetText()
+		// Remove "USING" prefix if present
+		scheme = strings.TrimSpace(strings.TrimPrefix(strings.ToUpper(scheme), "USING"))
+		index.SpatialConfig.Tessellation.Scheme = scheme
 	}
 
-	// Parse WITH clause parameters
-	if strings.Contains(upperText, "WITH") {
-		e.parseSpatialIndexWithClause(fullText, index)
+	// Parse WITH clause parameters using ANTLR context
+	if optionsCtx := ctx.Spatial_index_options(); optionsCtx != nil {
+		e.parseSpatialIndexWithClause(optionsCtx, index)
 	}
 
 	// Set dimensional configuration
@@ -305,62 +297,9 @@ func (e *metadataExtractor) parseSpatialIndexConfig(ctx *parser.Create_spatial_i
 	}
 }
 
-func (*metadataExtractor) parseSpatialIndexWithClause(fullText string, index *storepb.IndexMetadata) {
-	// Parse WITH clause parameters using basic string matching
-	// This is a simplified implementation - ideally we would use more robust parsing
-
-	upperText := strings.ToUpper(fullText)
-
+func (*metadataExtractor) parseSpatialIndexWithClause(optionsCtx parser.ISpatial_index_optionsContext, index *storepb.IndexMetadata) {
 	if index.SpatialConfig.Tessellation == nil {
 		index.SpatialConfig.Tessellation = &storepb.TessellationConfig{}
-	}
-
-	// Parse BOUNDING_BOX
-	if boundingBoxMatch := regexp.MustCompile(`BOUNDING_BOX\s*=\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\)`).FindStringSubmatch(upperText); boundingBoxMatch != nil {
-		if len(boundingBoxMatch) == 5 {
-			if xmin, err := strconv.ParseFloat(boundingBoxMatch[1], 64); err == nil {
-				if ymin, err := strconv.ParseFloat(boundingBoxMatch[2], 64); err == nil {
-					if xmax, err := strconv.ParseFloat(boundingBoxMatch[3], 64); err == nil {
-						if ymax, err := strconv.ParseFloat(boundingBoxMatch[4], 64); err == nil {
-							index.SpatialConfig.Tessellation.BoundingBox = &storepb.BoundingBox{
-								Xmin: xmin,
-								Ymin: ymin,
-								Xmax: xmax,
-								Ymax: ymax,
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// Parse GRIDS
-	if gridsMatch := regexp.MustCompile(`GRIDS\s*=\s*\(\s*([^)]+)\s*\)`).FindStringSubmatch(upperText); gridsMatch != nil {
-		gridLevels := []*storepb.GridLevel{}
-		gridStr := gridsMatch[1]
-
-		// Parse individual grid levels
-		levelMatches := regexp.MustCompile(`LEVEL_(\d+)\s*=\s*(\w+)`).FindAllStringSubmatch(gridStr, -1)
-		for _, levelMatch := range levelMatches {
-			if len(levelMatch) == 3 {
-				if level, err := strconv.Atoi(levelMatch[1]); err == nil {
-					gridLevels = append(gridLevels, &storepb.GridLevel{
-						Level:   int32(level),
-						Density: levelMatch[2],
-					})
-				}
-			}
-		}
-
-		index.SpatialConfig.Tessellation.GridLevels = gridLevels
-	}
-
-	// Parse CELLS_PER_OBJECT
-	if cellsMatch := regexp.MustCompile(`CELLS_PER_OBJECT\s*=\s*(\d+)`).FindStringSubmatch(upperText); cellsMatch != nil {
-		if cellsPerObject, err := strconv.Atoi(cellsMatch[1]); err == nil {
-			index.SpatialConfig.Tessellation.CellsPerObject = int32(cellsPerObject)
-		}
 	}
 
 	// Initialize storage config for spatial index options
@@ -368,43 +307,150 @@ func (*metadataExtractor) parseSpatialIndexWithClause(fullText string, index *st
 		index.SpatialConfig.Storage = &storepb.StorageConfig{}
 	}
 
-	// Parse storage options
-	if strings.Contains(upperText, "PAD_INDEX = ON") {
-		index.SpatialConfig.Storage.PadIndex = true
-	}
+	// ALLOW_ROW_LOCKS and ALLOW_PAGE_LOCKS default to ON for spatial indexes
+	// Set defaults first
+	index.SpatialConfig.Storage.AllowRowLocks = true
+	index.SpatialConfig.Storage.AllowPageLocks = true
 
-	if fillFactorMatch := regexp.MustCompile(`FILLFACTOR\s*=\s*(\d+)`).FindStringSubmatch(upperText); fillFactorMatch != nil {
-		if fillFactor, err := strconv.Atoi(fillFactorMatch[1]); err == nil {
-			index.SpatialConfig.Storage.Fillfactor = int32(fillFactor)
+	// Parse each spatial index option
+	optionsList := optionsCtx.AllSpatial_index_option()
+	for _, optionCtx := range optionsList {
+		parseSpatialIndexOption(optionCtx, index)
+	}
+}
+
+func parseSpatialIndexOption(optionCtx parser.ISpatial_index_optionContext, index *storepb.IndexMetadata) {
+	// Handle BOUNDING_BOX
+	if optionCtx.BOUNDING_BOX() != nil {
+		coords := optionCtx.AllSigned_decimal()
+		if len(coords) == 4 {
+			xmin, _ := strconv.ParseFloat(coords[0].GetText(), 64)
+			ymin, _ := strconv.ParseFloat(coords[1].GetText(), 64)
+			xmax, _ := strconv.ParseFloat(coords[2].GetText(), 64)
+			ymax, _ := strconv.ParseFloat(coords[3].GetText(), 64)
+
+			index.SpatialConfig.Tessellation.BoundingBox = &storepb.BoundingBox{
+				Xmin: xmin,
+				Ymin: ymin,
+				Xmax: xmax,
+				Ymax: ymax,
+			}
 		}
 	}
 
-	if strings.Contains(upperText, "SORT_IN_TEMPDB = ON") {
-		index.SpatialConfig.Storage.SortInTempdb = "ON"
-	} else if strings.Contains(upperText, "SORT_IN_TEMPDB = OFF") {
-		index.SpatialConfig.Storage.SortInTempdb = "OFF"
+	// Handle GRIDS
+	if optionCtx.GRIDS() != nil {
+		var gridLevels []*storepb.GridLevel
+
+		gridLevelsList := optionCtx.AllSpatial_grid_level()
+		for _, gridLevelCtx := range gridLevelsList {
+			levelText := gridLevelCtx.GetText()
+			// Parse "LEVEL_1=LOW" format
+			parts := strings.Split(levelText, "=")
+			if len(parts) == 2 {
+				levelPart := strings.TrimSpace(parts[0])
+				densityPart := strings.TrimSpace(parts[1])
+
+				// Extract level number from "LEVEL_1", "LEVEL_2", etc.
+				levelNum := 0
+				if strings.HasPrefix(strings.ToUpper(levelPart), "LEVEL_") {
+					if num, err := strconv.Atoi(levelPart[6:]); err == nil {
+						levelNum = num
+					}
+				}
+
+				gridLevels = append(gridLevels, &storepb.GridLevel{
+					Level:   int32(levelNum),
+					Density: strings.ToUpper(densityPart),
+				})
+			}
+		}
+
+		index.SpatialConfig.Tessellation.GridLevels = gridLevels
 	}
 
-	if strings.Contains(upperText, "ONLINE = ON") {
-		index.SpatialConfig.Storage.Online = true
-	}
-
-	if strings.Contains(upperText, "ALLOW_ROW_LOCKS = ON") {
-		index.SpatialConfig.Storage.AllowRowLocks = true
-	}
-
-	if strings.Contains(upperText, "ALLOW_PAGE_LOCKS = ON") {
-		index.SpatialConfig.Storage.AllowPageLocks = true
-	}
-
-	if maxdopMatch := regexp.MustCompile(`MAXDOP\s*=\s*(\d+)`).FindStringSubmatch(upperText); maxdopMatch != nil {
-		if maxdop, err := strconv.Atoi(maxdopMatch[1]); err == nil {
-			index.SpatialConfig.Storage.Maxdop = int32(maxdop)
+	// Handle CELLS_PER_OBJECT
+	if optionCtx.CELLS_PER_OBJECT() != nil {
+		if decimalCtx := optionCtx.DECIMAL(); decimalCtx != nil {
+			if cellsPerObject, err := strconv.Atoi(decimalCtx.GetText()); err == nil {
+				index.SpatialConfig.Tessellation.CellsPerObject = int32(cellsPerObject)
+			}
 		}
 	}
 
-	if compressionMatch := regexp.MustCompile(`DATA_COMPRESSION\s*=\s*(\w+)`).FindStringSubmatch(upperText); compressionMatch != nil {
-		index.SpatialConfig.Storage.DataCompression = compressionMatch[1]
+	// Handle rebuild_index_option (includes standard index options)
+	if rebuildCtx := optionCtx.Rebuild_index_option(); rebuildCtx != nil {
+		parseRebuildIndexOption(rebuildCtx, index)
+	}
+}
+
+func parseRebuildIndexOption(rebuildCtx parser.IRebuild_index_optionContext, index *storepb.IndexMetadata) {
+	// Handle PAD_INDEX
+	if rebuildCtx.PAD_INDEX() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.PadIndex = strings.EqualFold(onOffCtx.GetText(), "ON")
+		}
+	}
+
+	// Handle FILLFACTOR
+	if rebuildCtx.FILLFACTOR() != nil {
+		if decimalCtx := rebuildCtx.DECIMAL(); decimalCtx != nil {
+			if fillFactor, err := strconv.Atoi(decimalCtx.GetText()); err == nil {
+				index.SpatialConfig.Storage.Fillfactor = int32(fillFactor)
+			}
+		}
+	}
+
+	// Handle SORT_IN_TEMPDB
+	if rebuildCtx.SORT_IN_TEMPDB() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.SortInTempdb = strings.ToUpper(onOffCtx.GetText())
+		}
+	}
+
+	// Handle ONLINE
+	if rebuildCtx.ONLINE() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.Online = strings.EqualFold(onOffCtx.GetText(), "ON")
+		}
+	}
+
+	// Handle ALLOW_ROW_LOCKS
+	if rebuildCtx.ALLOW_ROW_LOCKS() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.AllowRowLocks = strings.EqualFold(onOffCtx.GetText(), "ON")
+		}
+	}
+
+	// Handle ALLOW_PAGE_LOCKS
+	if rebuildCtx.ALLOW_PAGE_LOCKS() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.AllowPageLocks = strings.EqualFold(onOffCtx.GetText(), "ON")
+		}
+	}
+
+	// Handle MAXDOP
+	if rebuildCtx.MAXDOP() != nil {
+		if decimalCtx := rebuildCtx.DECIMAL(); decimalCtx != nil {
+			if maxdop, err := strconv.Atoi(decimalCtx.GetText()); err == nil {
+				index.SpatialConfig.Storage.Maxdop = int32(maxdop)
+			}
+		}
+	}
+
+	// Handle DATA_COMPRESSION
+	if rebuildCtx.DATA_COMPRESSION() != nil {
+		if rebuildCtx.NONE() != nil {
+			index.SpatialConfig.Storage.DataCompression = "NONE"
+		} else if rebuildCtx.ROW() != nil {
+			index.SpatialConfig.Storage.DataCompression = "ROW"
+		} else if rebuildCtx.PAGE() != nil {
+			index.SpatialConfig.Storage.DataCompression = "PAGE"
+		} else if rebuildCtx.COLUMNSTORE() != nil {
+			index.SpatialConfig.Storage.DataCompression = "COLUMNSTORE"
+		} else if rebuildCtx.COLUMNSTORE_ARCHIVE() != nil {
+			index.SpatialConfig.Storage.DataCompression = "COLUMNSTORE_ARCHIVE"
+		}
 	}
 }
 
