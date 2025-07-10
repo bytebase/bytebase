@@ -1951,7 +1951,7 @@
         position GEOMETRY NOT NULL,
         area GEOGRAPHY
     );
-    
+
     CREATE SPATIAL INDEX idx_locations_position ON dbo.locations (position);
     CREATE SPATIAL INDEX idx_locations_area ON dbo.locations (area);
   result: |-
@@ -2005,7 +2005,15 @@
                   "descending": [
                     false
                   ],
-                  "type": "SPATIAL"
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {},
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
                 },
                 {
                   "name": "idx_locations_area",
@@ -2015,7 +2023,15 @@
                   "descending": [
                     false
                   ],
-                  "type": "SPATIAL"
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {},
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
                 }
               ]
             }
@@ -2025,7 +2041,7 @@
     }
 - input: |
     CREATE SCHEMA geo;
-    
+
     -- Multiple spatial indexes on same table
     CREATE TABLE geo.world_map (
         feature_id INT IDENTITY(1,1) PRIMARY KEY,
@@ -2037,14 +2053,14 @@
         center_point GEOMETRY NOT NULL,
         area_polygon GEOGRAPHY
     );
-    
+
     -- Create multiple spatial indexes
     CREATE SPATIAL INDEX idx_geometry ON geo.world_map (geometry_data);
     CREATE SPATIAL INDEX idx_geography ON geo.world_map (geography_data);
     CREATE SPATIAL INDEX idx_bbox ON geo.world_map (bbox_geometry);
     CREATE SPATIAL INDEX idx_center ON geo.world_map (center_point);
     CREATE SPATIAL INDEX idx_area ON geo.world_map (area_polygon);
-    
+
     -- Also create regular indexes
     CREATE INDEX idx_feature_name ON geo.world_map (feature_name);
     CREATE INDEX idx_feature_type ON geo.world_map (feature_type);
@@ -2117,7 +2133,15 @@
                   "descending": [
                     false
                   ],
-                  "type": "SPATIAL"
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {},
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
                 },
                 {
                   "name": "idx_geography",
@@ -2127,7 +2151,15 @@
                   "descending": [
                     false
                   ],
-                  "type": "SPATIAL"
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {},
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
                 },
                 {
                   "name": "idx_bbox",
@@ -2137,7 +2169,15 @@
                   "descending": [
                     false
                   ],
-                  "type": "SPATIAL"
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {},
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
                 },
                 {
                   "name": "idx_center",
@@ -2147,7 +2187,15 @@
                   "descending": [
                     false
                   ],
-                  "type": "SPATIAL"
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {},
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
                 },
                 {
                   "name": "idx_area",
@@ -2157,7 +2205,15 @@
                   "descending": [
                     false
                   ],
-                  "type": "SPATIAL"
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {},
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
                 },
                 {
                   "name": "idx_feature_name",
@@ -2183,6 +2239,217 @@
         }
       ]
     }
-# Test case removed: SQL Server doesn't support inline spatial index definitions in CREATE TABLE
-# The correct syntax is to create spatial indexes separately using CREATE SPATIAL INDEX
+- input: |
+    -- Comprehensive spatial index test with full parameters
+    CREATE TABLE dbo.spatial_test (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(100) NOT NULL,
+        geo_point GEOMETRY NOT NULL,
+        geo_polygon GEOMETRY NOT NULL,
+        geo_location GEOGRAPHY NOT NULL
+    );
 
+    -- Create spatial index with GEOMETRY_GRID and full parameters
+    CREATE SPATIAL INDEX idx_geo_point ON dbo.spatial_test (geo_point)
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-100, -100, 100, 100),
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 64,
+        PAD_INDEX = ON,
+        FILLFACTOR = 90,
+        SORT_IN_TEMPDB = ON,
+        ALLOW_ROW_LOCKS = ON,
+        ALLOW_PAGE_LOCKS = ON,
+        MAXDOP = 4,
+        DATA_COMPRESSION = ROW
+    );
+
+    -- Create spatial index with GEOGRAPHY_GRID
+    CREATE SPATIAL INDEX idx_geo_location ON dbo.spatial_test (geo_location)
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = HIGH),
+        CELLS_PER_OBJECT = 16
+    );
+
+    -- Create spatial index with GEOMETRY_AUTO_GRID
+    CREATE SPATIAL INDEX idx_geo_polygon ON dbo.spatial_test (geo_polygon)
+    USING GEOMETRY_AUTO_GRID
+    WITH (
+        CELLS_PER_OBJECT = 8
+    );
+  result: |-
+    {
+      "schemas": [
+        {
+          "name": "dbo",
+          "tables": [
+            {
+              "name": "spatial_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "INT",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "name",
+                  "type": "NVARCHAR(100)"
+                },
+                {
+                  "name": "geo_point",
+                  "type": "GEOMETRY"
+                },
+                {
+                  "name": "geo_polygon",
+                  "type": "GEOMETRY"
+                },
+                {
+                  "name": "geo_location",
+                  "type": "GEOGRAPHY"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_spatial_test_1",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "idx_geo_point",
+                  "expressions": [
+                    "geo_point"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOMETRY_GRID",
+                      "bounding_box": {
+                        "xmin": -100,
+                        "ymin": -100,
+                        "xmax": 100,
+                        "ymax": 100
+                      },
+                      "grid_levels": [
+                        {
+                          "level": 1,
+                          "density": "LOW"
+                        },
+                        {
+                          "level": 2,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 3,
+                          "density": "HIGH"
+                        },
+                        {
+                          "level": 4,
+                          "density": "LOW"
+                        }
+                      ],
+                      "cells_per_object": 64
+                    },
+                    "storage": {
+                      "fillfactor": 90,
+                      "pad_index": true,
+                      "sort_in_tempdb": "ON",
+                      "allow_row_locks": true,
+                      "allow_page_locks": true,
+                      "maxdop": 4,
+                      "data_compression": "ROW"
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
+                },
+                {
+                  "name": "idx_geo_location",
+                  "expressions": [
+                    "geo_location"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOGRAPHY_GRID",
+                      "grid_levels": [
+                        {
+                          "level": 1,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 2,
+                          "density": "HIGH"
+                        },
+                        {
+                          "level": 3,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 4,
+                          "density": "HIGH"
+                        }
+                      ],
+                      "cells_per_object": 16
+                    },
+                    "storage": {
+                      "allow_row_locks": true,
+                      "allow_page_locks": true
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOGRAPHY"
+                    }
+                  }
+                },
+                {
+                  "name": "idx_geo_polygon",
+                  "expressions": [
+                    "geo_polygon"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOMETRY_AUTO_GRID",
+                      "cells_per_object": 8
+                    },
+                    "storage": {
+                      "allow_row_locks": true,
+                      "allow_page_locks": true
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }

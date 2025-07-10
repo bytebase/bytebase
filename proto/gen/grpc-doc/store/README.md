@@ -55,6 +55,7 @@
   
 - [store/data_source.proto](#store_data_source-proto)
 - [store/database.proto](#store_database-proto)
+    - [BoundingBox](#bytebase-store-BoundingBox)
     - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
     - [ColumnCatalog](#bytebase-store-ColumnCatalog)
     - [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry)
@@ -65,6 +66,7 @@
     - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
     - [DependencyColumn](#bytebase-store-DependencyColumn)
     - [DependencyTable](#bytebase-store-DependencyTable)
+    - [DimensionalConfig](#bytebase-store-DimensionalConfig)
     - [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata)
     - [EventMetadata](#bytebase-store-EventMetadata)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
@@ -72,6 +74,7 @@
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
     - [FunctionMetadata](#bytebase-store-FunctionMetadata)
     - [GenerationMetadata](#bytebase-store-GenerationMetadata)
+    - [GridLevel](#bytebase-store-GridLevel)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
@@ -86,11 +89,15 @@
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [Secret](#bytebase-store-Secret)
     - [SequenceMetadata](#bytebase-store-SequenceMetadata)
+    - [SpatialIndexConfig](#bytebase-store-SpatialIndexConfig)
+    - [SpatialIndexConfig.EngineSpecificEntry](#bytebase-store-SpatialIndexConfig-EngineSpecificEntry)
+    - [StorageConfig](#bytebase-store-StorageConfig)
     - [StreamMetadata](#bytebase-store-StreamMetadata)
     - [TableCatalog](#bytebase-store-TableCatalog)
     - [TableMetadata](#bytebase-store-TableMetadata)
     - [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata)
     - [TaskMetadata](#bytebase-store-TaskMetadata)
+    - [TessellationConfig](#bytebase-store-TessellationConfig)
     - [TriggerMetadata](#bytebase-store-TriggerMetadata)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
@@ -1027,6 +1034,24 @@ Metadata about the request.
 
 
 
+<a name="bytebase-store-BoundingBox"></a>
+
+### BoundingBox
+BoundingBox defines the bounding box for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| xmin | [double](#double) |  |  |
+| ymin | [double](#double) |  |  |
+| xmax | [double](#double) |  |  |
+| ymax | [double](#double) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-CheckConstraintMetadata"></a>
 
 ### CheckConstraintMetadata
@@ -1232,6 +1257,25 @@ DependencyColumn is the metadata for dependency columns.
 
 
 
+<a name="bytebase-store-DimensionalConfig"></a>
+
+### DimensionalConfig
+DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| dimensions | [int32](#int32) |  | Number of dimensions (2-4, default 2) |
+| data_type | [string](#string) |  | Spatial data type Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc. |
+| operator_class | [string](#string) |  | PostgreSQL operator class Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc. |
+| layer_gtype | [string](#string) |  | Oracle geometry type constraint Examples: POINT, LINE, POLYGON, COLLECTION |
+| parallel_build | [bool](#bool) |  | Parallel index creation |
+
+
+
+
+
+
 <a name="bytebase-store-EnumTypeMetadata"></a>
 
 ### EnumTypeMetadata
@@ -1369,6 +1413,22 @@ FunctionMetadata is the metadata for functions.
 
 
 
+<a name="bytebase-store-GridLevel"></a>
+
+### GridLevel
+GridLevel defines a grid level for spatial tessellation.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [int32](#int32) |  | 1-4 for SQL Server |
+| density | [string](#string) |  | LOW, MEDIUM, HIGH |
+
+
+
+
+
+
 <a name="bytebase-store-IndexMetadata"></a>
 
 ### IndexMetadata
@@ -1391,6 +1451,7 @@ IndexMetadata is the metadata for indexes.
 | parent_index_name | [string](#string) |  | The index name of the parent index. |
 | granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
 | is_constraint | [bool](#bool) |  | It&#39;s a PostgreSQL specific field. The unique constraint and unique index are not the same thing in PostgreSQL. |
+| spatial_config | [SpatialIndexConfig](#bytebase-store-SpatialIndexConfig) |  | Spatial index specific configuration |
 
 
 
@@ -1645,6 +1706,71 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 
 
+<a name="bytebase-store-SpatialIndexConfig"></a>
+
+### SpatialIndexConfig
+SpatialIndexConfig is the configuration for spatial indexes across different database engines.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| method | [string](#string) |  | Index method/type (database-specific) Examples: &#34;SPATIAL&#34; (MySQL/SQL Server), &#34;GIST&#34;/&#34;SPGIST&#34; (PostgreSQL), &#34;MDSYS.SPATIAL_INDEX_V2&#34; (Oracle) |
+| tessellation | [TessellationConfig](#bytebase-store-TessellationConfig) |  | Tessellation configuration (primarily SQL Server) |
+| storage | [StorageConfig](#bytebase-store-StorageConfig) |  | Storage and performance parameters |
+| dimensional | [DimensionalConfig](#bytebase-store-DimensionalConfig) |  | Dimensional and constraint parameters |
+| engine_specific | [SpatialIndexConfig.EngineSpecificEntry](#bytebase-store-SpatialIndexConfig-EngineSpecificEntry) | repeated | Database-specific parameters (stored as key-value pairs for extensibility) |
+
+
+
+
+
+
+<a name="bytebase-store-SpatialIndexConfig-EngineSpecificEntry"></a>
+
+### SpatialIndexConfig.EngineSpecificEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-StorageConfig"></a>
+
+### StorageConfig
+StorageConfig defines storage and performance parameters for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| fillfactor | [int32](#int32) |  | PostgreSQL parameters
+
+10-100 |
+| buffering | [string](#string) |  | auto, on, off |
+| tablespace | [string](#string) |  | Oracle parameters |
+| work_tablespace | [string](#string) |  |  |
+| sdo_level | [int32](#int32) |  |  |
+| commit_interval | [int32](#int32) |  |  |
+| pad_index | [bool](#bool) |  | SQL Server parameters |
+| sort_in_tempdb | [string](#string) |  | ON, OFF |
+| drop_existing | [bool](#bool) |  |  |
+| online | [bool](#bool) |  |  |
+| allow_row_locks | [bool](#bool) |  |  |
+| allow_page_locks | [bool](#bool) |  |  |
+| maxdop | [int32](#int32) |  |  |
+| data_compression | [string](#string) |  | NONE, ROW, PAGE |
+
+
+
+
+
+
 <a name="bytebase-store-StreamMetadata"></a>
 
 ### StreamMetadata
@@ -1761,6 +1887,24 @@ TablePartitionMetadata is the metadata for table partitions.
 | state | [TaskMetadata.State](#bytebase-store-TaskMetadata-State) |  | The state of the task. |
 | condition | [string](#string) |  | The condition of the task. |
 | definition | [string](#string) |  | The definition of the task. |
+
+
+
+
+
+
+<a name="bytebase-store-TessellationConfig"></a>
+
+### TessellationConfig
+TessellationConfig defines tessellation parameters for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| scheme | [string](#string) |  | Tessellation scheme Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID |
+| bounding_box | [BoundingBox](#bytebase-store-BoundingBox) |  | Bounding box for GEOMETRY indexes (SQL Server) |
+| grid_levels | [GridLevel](#bytebase-store-GridLevel) | repeated | Grid level configuration (SQL Server) |
+| cells_per_object | [int32](#int32) |  | Cells per object (SQL Server) |
 
 
 
