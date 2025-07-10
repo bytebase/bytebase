@@ -16,8 +16,8 @@ import (
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
 
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
 func init() {

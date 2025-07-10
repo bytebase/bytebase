@@ -2,8 +2,8 @@ package webhook
 
 import (
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 type Event struct {

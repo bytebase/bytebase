@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 // https://docs.datastax.com/en/cql/hcd/reference/system-virtual-tables/system-keyspace-tables.html

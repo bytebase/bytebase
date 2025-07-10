@@ -11,8 +11,8 @@ import (
 	hjson "github.com/hjson/hjson-go/v4"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type ParseResult struct {

@@ -4,8 +4,8 @@ package catalog
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // Catalog is the database catalog.

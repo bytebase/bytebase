@@ -2,8 +2,8 @@
 package metric
 
 import (
-	"github.com/bytebase/bytebase/backend/plugin/metric"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/metric"
 )
 
 const (

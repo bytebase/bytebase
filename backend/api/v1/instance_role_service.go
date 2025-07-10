@@ -7,9 +7,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // InstanceRoleService implements the database role service.

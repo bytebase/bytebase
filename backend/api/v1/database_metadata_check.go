@@ -3,8 +3,8 @@ package v1
 import (
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
 func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {

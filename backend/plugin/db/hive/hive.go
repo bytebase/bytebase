@@ -21,9 +21,9 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
 	// register splitter functions init().
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 )
 
 func hiveDriverFunc() db.Driver {
