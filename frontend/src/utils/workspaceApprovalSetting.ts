@@ -289,7 +289,7 @@ const buildParsedExpression = async (parsed: ParsedApprovalRule[]) => {
     const sourceExpr: EqualityExpr = {
       type: ExprType.Condition,
       operator: "_==_",
-      args: ["source", source],
+      args: ["source", Risk_Source[source]],
     };
     const levelExpr: EqualityExpr = {
       type: ExprType.Condition,
