@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestSyncSpatialIndexWithTestcontainer(t *testing.T) {

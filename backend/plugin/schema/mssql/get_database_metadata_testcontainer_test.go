@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	mssqldb "github.com/bytebase/bytebase/backend/plugin/db/mssql"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {

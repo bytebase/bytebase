@@ -20,9 +20,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
-	// register splitter functions init().
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+
+	// register splitter functions init().
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 )
 
