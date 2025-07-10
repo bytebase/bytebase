@@ -132,6 +132,7 @@ const planSearchParams = computed(() => {
     },
   ];
   return {
+    query: state.params.query.trim().toLowerCase(),
     scopes: [...state.params.scopes, ...defaultScopes],
   } as SearchParams;
 });
