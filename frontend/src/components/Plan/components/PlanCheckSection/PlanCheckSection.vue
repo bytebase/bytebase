@@ -162,8 +162,6 @@ const runChecks = async () => {
 };
 
 const openDrawer = (status: PlanCheckRun_Result_Status) => {
-  // Fetch the latest plan check runs for the selected status.
-  requestEnhancedPolling(["planCheckRuns"], true /** once */);
   selectedStatus.value = status;
   drawerVisible.value = true;
 };

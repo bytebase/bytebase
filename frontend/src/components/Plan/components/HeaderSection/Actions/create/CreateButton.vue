@@ -29,7 +29,6 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { includes } from "lodash-es";
 import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref } from "vue";
@@ -45,12 +44,7 @@ import {
 } from "@/components/Plan/logic";
 import { usePlanContext } from "@/components/Plan/logic";
 import { planServiceClientConnect } from "@/grpcweb";
-import {
-  PROJECT_V1_ROUTE_PLAN_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-} from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
@@ -99,24 +93,8 @@ const doCreatePlan = async () => {
     if (!createdPlan) return;
 
     nextTick(() => {
-      let routeName = router.currentRoute.value.name;
-      if (routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL) {
-        routeName = PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS;
-      }
-      if (
-        !includes(
-          [
-            PROJECT_V1_ROUTE_PLAN_DETAIL,
-            PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-            PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
-          ],
-          routeName
-        )
-      ) {
-        routeName = PROJECT_V1_ROUTE_PLAN_DETAIL;
-      }
       router.replace({
-        name: routeName,
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
           projectId: extractProjectResourceName(createdPlan.name),
           planId: extractPlanUID(createdPlan.name),

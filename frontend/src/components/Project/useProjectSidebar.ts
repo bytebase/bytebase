@@ -89,11 +89,6 @@ export const useProjectSidebar = (project: MaybeRef<ComposedProject>) => {
               databaseChangeMode.value === DatabaseChangeMode.EDITOR,
             children: [
               {
-                title: t("release.releases"),
-                path: PROJECT_V1_ROUTE_RELEASES,
-                type: "div",
-              },
-              {
                 title: t("plan.plans"),
                 path: PROJECT_V1_ROUTE_PLANS,
                 type: "div",
@@ -101,6 +96,11 @@ export const useProjectSidebar = (project: MaybeRef<ComposedProject>) => {
               {
                 title: t("rollout.rollouts"),
                 path: PROJECT_V1_ROUTE_ROLLOUTS,
+                type: "div",
+              },
+              {
+                title: t("release.releases"),
+                path: PROJECT_V1_ROUTE_RELEASES,
                 type: "div",
               },
             ],
