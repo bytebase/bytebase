@@ -5,7 +5,7 @@ WORKDIR /action-build
 COPY action/ action/
 COPY . .
 RUN go build \ 
---ldflags="-X 'github.com/bytebase/bytebase/action/args.Version=${VERSION}' -X 'github.com/bytebase/bytebase/action/args.Gitcommit=${GIT_COMMIT}'" \
+--ldflags="-w -s -X 'github.com/bytebase/bytebase/action/args.Version=${VERSION}' -X 'github.com/bytebase/bytebase/action/args.Gitcommit=${GIT_COMMIT}'" \
 -o bytebase-action action/*.go
 
 FROM alpine:3.22

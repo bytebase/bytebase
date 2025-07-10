@@ -17,6 +17,7 @@ import { useUserStore } from "../user";
 
 export interface PlanFind {
   project: string;
+  query?: string;
   creator?: string;
   createdTsAfter?: number;
   createdTsBefore?: number;
@@ -26,6 +27,9 @@ export interface PlanFind {
 
 export const buildPlanFilter = (find: PlanFind): string => {
   const filter: string[] = [];
+  if (find.query) {
+    filter.push(`title.matches("${find.query.trim().toLowerCase()}")`);
+  }
   if (find.creator) {
     filter.push(`creator == "${find.creator}"`);
   }
@@ -60,6 +64,7 @@ export const buildPlanFindBySearchParams = (
   const filter: PlanFind = {
     ...defaultFind,
     project: `projects/${projectScope?.value ?? "-"}`,
+    query: params.query,
     createdTsAfter: createdTsRange?.[0],
     createdTsBefore: createdTsRange?.[1],
     creator: getValueFromSearchParams(params, "creator", "users/"),

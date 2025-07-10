@@ -36,6 +36,7 @@ export const provideGhostSettingContext = (refs: {
   selectedTask?: Ref<Task | undefined>;
   issue?: Ref<Issue | undefined>;
   rollout?: Ref<Rollout | undefined>;
+  readonly?: Ref<boolean>;
 }) => {
   const currentUser = useCurrentUserV1();
   const databaseStore = useDatabaseV1Store();
@@ -48,6 +49,7 @@ export const provideGhostSettingContext = (refs: {
     selectedTask,
     issue,
     rollout,
+    readonly,
   } = refs;
 
   const events = new Emittery<{
@@ -75,6 +77,11 @@ export const provideGhostSettingContext = (refs: {
   });
 
   const allowChange = computed(() => {
+    // If readonly mode, disallow changes
+    if (readonly?.value) {
+      return false;
+    }
+
     // Allow toggle pre-backup when creating.
     if (isCreating.value) {
       return true;

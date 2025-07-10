@@ -180,21 +180,21 @@ const columns = computed(() => {
       },
     },
     {
-      key: "log-time",
-      title: () => t("common.time"),
-      width: 120,
-      rowSpan,
-      render: (entry) => {
-        return <LogTimeCell entry={entry} />;
-      },
-    },
-    {
       key: "duration",
       title: () => t("common.duration"),
       width: 120,
       rowSpan,
       render: (entry) => {
         return <DurationCell entry={entry} />;
+      },
+    },
+    {
+      key: "log-time",
+      title: () => t("common.time"),
+      width: 120,
+      rowSpan,
+      render: (entry) => {
+        return <LogTimeCell entry={entry} />;
       },
     },
   ];

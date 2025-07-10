@@ -4,8 +4,10 @@
     <TaskOperations
       :tasks="selectedTasks"
       :rollout="rollout"
+      :stage="props.stage"
+      :readonly="props.readonly"
       @refresh="handleRefresh"
-      @task-action-completed="handleTaskActionCompleted"
+      @action-confirmed="handleTaskActionConfirmed"
     />
 
     <!-- Task Table -->
@@ -34,7 +36,8 @@ import TaskTable from "./TaskTable.vue";
 
 const props = defineProps<{
   taskStatusFilter: Task_Status[];
-  stage?: Stage;
+  stage: Stage;
+  readonly?: boolean;
 }>();
 
 const { rollout, events } = usePlanContextWithRollout();
@@ -48,8 +51,8 @@ const handleRefresh = () => {
   events.emit("status-changed", { eager: true });
 };
 
-const handleTaskActionCompleted = () => {
-  // Clear selection after action is completed
+const handleTaskActionConfirmed = () => {
+  // Clear selection after action is confirmed.
   selectedTasks.value = [];
   handleRefresh();
 };

@@ -2,7 +2,7 @@
   <NDataTable
     size="small"
     :columns="columnList"
-    :data="sortedRolloutList"
+    :data="rolloutList"
     :striped="true"
     :bordered="bordered"
     :loading="loading"
@@ -36,7 +36,7 @@ import {
   getStageStatus,
 } from "@/utils";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     rolloutList: ComposedRollout[];
     bordered?: boolean;
@@ -107,8 +107,15 @@ const columnList = computed(
       },
       {
         key: "stages",
-        title: t("rollout.stage.stages"),
+        title: t("rollout.stage.self", 2),
         render: (rollout) => {
+          if (rollout.stages.length === 0) {
+            return (
+              <span class="text-sm text-gray-400 italic">
+                {t("common.no-data")}
+              </span>
+            );
+          }
           return (
             <div class="flex items-center gap-2">
               {rollout.stages.map((stage, index) => {
@@ -120,7 +127,7 @@ const columnList = computed(
                   <>
                     <div key={stage.name} class="flex items-center gap-1">
                       <TaskStatus status={stageStatus} size="small" />
-                      <span class="text-sm font-medium text-gray-700">
+                      <span class="text-sm font-medium text-gray-700 whitespace-nowrap">
                         {environment.title}
                       </span>
                     </div>
@@ -194,10 +201,6 @@ const columnList = computed(
     return columns.filter((column) => !column.hide);
   }
 );
-
-const sortedRolloutList = computed(() => {
-  return props.rolloutList;
-});
 
 const rowProps = (rollout: ComposedRollout) => {
   return {

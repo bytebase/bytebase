@@ -112,7 +112,7 @@
         }"
         @update:content="handleStatementChange"
       />
-      <div class="absolute bottom-1 right-4">
+      <div v-if="!readonly" class="absolute bottom-1 right-4">
         <NButton
           size="small"
           :quaternary="true"
@@ -167,7 +167,6 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, includes, isEmpty } from "lodash-es";
-import Long from "long";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -217,7 +216,8 @@ type LocalState = {
 const { t } = useI18n();
 const dialog = useDialog();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, planCheckRuns, rollout, events } = usePlanContext();
+const { isCreating, plan, planCheckRuns, rollout, events, readonly } =
+  usePlanContext();
 const selectedSpec = useSelectedSpec();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -262,6 +262,9 @@ const { markers } = useSQLAdviceMarkers(
  * - Disallowed to edit statement
  */
 const isEditorReadonly = computed(() => {
+  if (readonly.value) {
+    return true;
+  }
   if (isCreating.value) {
     return false;
   }
@@ -277,8 +280,8 @@ const isSheetOversize = computed(() => {
   if (state.isEditing) return false;
   if (!sheetReady.value) return false;
   if (!sheet.value) return false;
-  return getStatementSize(getSheetStatement(sheet.value)).lt(
-    Long.fromBigInt(sheet.value.contentSize)
+  return (
+    getStatementSize(getSheetStatement(sheet.value)) < sheet.value.contentSize
   );
 });
 
@@ -287,6 +290,10 @@ const denyEditStatementReasons = computed(() => {
 });
 
 const shouldShowEditButton = computed(() => {
+  // Not allowed to edit if readonly.
+  if (readonly.value) {
+    return false;
+  }
   // Need not to show "Edit" while the plan is still pending create.
   if (isCreating.value) {
     return false;

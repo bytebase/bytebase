@@ -49,9 +49,11 @@ import { uniq } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import AddProjectMemberForm from "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClientConnect } from "@/grpcweb";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { getUserEmailInBinding } from "@/types";
@@ -63,7 +65,12 @@ import {
   Issue_Type as NewIssue_Type,
   GrantRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { generateIssueTitle, displayRoleTitle } from "@/utils";
+import {
+  generateIssueTitle,
+  displayRoleTitle,
+  issueV1Slug,
+  extractProjectResourceName,
+} from "@/utils";
 
 interface LocalState {
   binding: Binding;
@@ -92,6 +99,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const projectStore = useProjectV1Store();
+const router = useRouter();
 
 const state = reactive<LocalState>({
   binding: create(BindingSchema, {
@@ -152,10 +160,16 @@ const doCreateIssue = async () => {
   });
   const response = await issueServiceClientConnect.createIssue(request);
 
-  // TODO(ed): handle no permission
-  const path = `/${response.name}`;
+  const route = router.resolve({
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(response.name),
+      issueSlug: issueV1Slug(response.name, response.title),
+    },
+  });
 
-  window.open(path, "_blank");
+  // TODO(ed): handle no permission
+  window.open(route.fullPath, "_blank");
 
   emit("close");
 };

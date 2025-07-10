@@ -3,6 +3,22 @@
     <template v-if="ready">
       <PollerProvider>
         <div class="h-full flex flex-col">
+          <!-- Banner Section -->
+          <div v-if="showBanner" class="banner-section">
+            <div
+              v-if="showClosedBanner"
+              class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
+            >
+              {{ $t("common.closed") }}
+            </div>
+            <div
+              v-else-if="showSuccessBanner"
+              class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center"
+            >
+              {{ $t("common.done") }}
+            </div>
+          </div>
+
           <HeaderSection />
           <NTabs
             type="line"
@@ -43,7 +59,7 @@
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
 import { NSpin, NTab, NTabs } from "naive-ui";
-import { computed, toRef } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -59,6 +75,7 @@ import { useSpecsValidation } from "@/components/Plan/components/common";
 import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
@@ -68,11 +85,14 @@ import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractIssueUID,
   extractPlanUID,
+  extractProjectResourceName,
   extractRolloutUID,
   isNullOrUndefined,
+  issueV1Slug,
 } from "@/utils";
 
 enum TabKey {
@@ -101,10 +121,12 @@ const { isCreating, plan, planCheckRuns, issue, rollout, isInitializing } =
 const planBaseContext = useBasePlanContext({
   isCreating,
   plan,
+  issue,
 });
+const isLoading = ref(true);
 
 const ready = computed(() => {
-  return !isInitializing.value && !!plan.value;
+  return !isInitializing.value && !!plan.value && !isLoading.value;
 });
 
 const route = useRoute();
@@ -120,6 +142,36 @@ providePlanContext({
 });
 
 provideIssueReviewContext(issue);
+
+watch(
+  () => isInitializing.value,
+  () => {
+    if (isInitializing.value) {
+      return;
+    }
+
+    // Redirect all non-changeDatabaseConfig plans to the legacy issue page.
+    // Including create database and export data plans.
+    if (
+      plan.value.issue &&
+      plan.value.specs.some(
+        (spec) => spec.config.case !== "changeDatabaseConfig"
+      )
+    ) {
+      router.replace({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(plan.value.name),
+          issueSlug: issueV1Slug(plan.value.issue),
+        },
+        query: route.query,
+      });
+    } else {
+      isLoading.value = false;
+    }
+  },
+  { once: true }
+);
 
 const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
 
@@ -288,5 +340,19 @@ const documentTitle = computed(() => {
   }
   return t("common.loading");
 });
+
+// Banner conditions
+const showClosedBanner = computed(() => {
+  return issue.value && issue.value.status === IssueStatus.CANCELED;
+});
+
+const showSuccessBanner = computed(() => {
+  return issue.value && issue.value.status === IssueStatus.DONE;
+});
+
+const showBanner = computed(() => {
+  return showClosedBanner.value || showSuccessBanner.value;
+});
+
 useTitle(documentTitle);
 </script>
