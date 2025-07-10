@@ -363,17 +363,9 @@ func writeNonClusteredColumnStoreIndex(out *strings.Builder, schemaName string, 
 }
 
 func writeSpatialIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
-	_, _ = fmt.Fprintf(out, "CREATE SPATIAL INDEX [%s] ON [%s].[%s] (\n", index.Name, schemaName, tableName)
-	for i, column := range index.Expressions {
-		if i != 0 {
-			_, _ = out.WriteString(",\n")
-		}
-		_, _ = fmt.Fprintf(out, "    [%s]", column)
-	}
-	_, _ = out.WriteString("\n)")
-	// Note: SQL Server requires additional parameters for spatial indexes (USING clause and
-	// BOUNDING_BOX for GEOMETRY columns). Since we don't have column type information here,
-	// the generated DDL may need manual adjustment for spatial indexes.
+	// Use the enhanced spatial index DDL generation
+	spatialDDL := generateSpatialIndexDefinition(index, schemaName, tableName)
+	_, _ = out.WriteString(spatialDDL)
 	_, _ = out.WriteString(";\n\n")
 }
 
@@ -512,4 +504,141 @@ func GetProcedureDefinition(schemaName string, procedure *storepb.ProcedureMetad
 	var buf strings.Builder
 	writeProcedure(&buf, schemaName, procedure)
 	return buf.String(), nil
+}
+
+func generateSpatialIndexDefinition(index *storepb.IndexMetadata, schemaName, tableName string) string {
+	var buf strings.Builder
+
+	// Build the CREATE SPATIAL INDEX statement
+	buf.WriteString("CREATE SPATIAL INDEX [")
+	buf.WriteString(index.Name)
+	buf.WriteString("] ON [")
+	buf.WriteString(schemaName)
+	buf.WriteString("].[")
+	buf.WriteString(tableName)
+	buf.WriteString("] (")
+
+	// Add column expressions
+	for i, expr := range index.Expressions {
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+		buf.WriteString("[")
+		buf.WriteString(expr)
+		buf.WriteString("]")
+	}
+	buf.WriteString(")")
+
+	// Check if spatial configuration exists
+	if index.SpatialConfig == nil || index.SpatialConfig.Tessellation == nil {
+		return buf.String()
+	}
+
+	tessellation := index.SpatialConfig.Tessellation
+
+	// Add USING clause for tessellation scheme
+	if tessellation.Scheme != "" {
+		buf.WriteString("\nUSING ")
+		buf.WriteString(tessellation.Scheme)
+	}
+
+	// Build WITH clause parameters
+	withParams := []string{}
+
+	// Add tessellation parameters
+	withParams = append(withParams, buildTessellationParams(tessellation)...)
+
+	// Add storage parameters
+	if index.SpatialConfig.Storage != nil {
+		withParams = append(withParams, buildStorageParams(index.SpatialConfig.Storage)...)
+	}
+
+	// Add WITH clause if we have parameters
+	if len(withParams) > 0 {
+		buf.WriteString("\nWITH (\n    ")
+		buf.WriteString(strings.Join(withParams, ",\n    "))
+		buf.WriteString("\n)")
+	}
+
+	return buf.String()
+}
+
+func buildTessellationParams(tessellation *storepb.TessellationConfig) []string {
+	params := []string{}
+
+	// BOUNDING_BOX for GEOMETRY indexes
+	if tessellation.BoundingBox != nil {
+		bbox := tessellation.BoundingBox
+		params = append(params, fmt.Sprintf("BOUNDING_BOX = (%g, %g, %g, %g)",
+			bbox.Xmin, bbox.Ymin, bbox.Xmax, bbox.Ymax))
+	}
+
+	// GRIDS configuration
+	if len(tessellation.GridLevels) > 0 {
+		gridParts := []string{}
+		for _, level := range tessellation.GridLevels {
+			gridParts = append(gridParts, fmt.Sprintf("LEVEL_%d = %s", level.Level, level.Density))
+		}
+		if len(gridParts) > 0 {
+			params = append(params, fmt.Sprintf("GRIDS = (%s)", strings.Join(gridParts, ", ")))
+		}
+	}
+
+	// CELLS_PER_OBJECT
+	if tessellation.CellsPerObject > 0 {
+		params = append(params, fmt.Sprintf("CELLS_PER_OBJECT = %d", tessellation.CellsPerObject))
+	}
+
+	return params
+}
+
+func buildStorageParams(storage *storepb.StorageConfig) []string {
+	params := []string{}
+
+	// PAD_INDEX (defaults to OFF, so only output when ON)
+	if storage.PadIndex {
+		params = append(params, "PAD_INDEX = ON")
+	}
+
+	// FILLFACTOR
+	if storage.Fillfactor > 0 {
+		params = append(params, fmt.Sprintf("FILLFACTOR = %d", storage.Fillfactor))
+	}
+
+	// SORT_IN_TEMPDB
+	if storage.SortInTempdb != "" {
+		params = append(params, fmt.Sprintf("SORT_IN_TEMPDB = %s", storage.SortInTempdb))
+	}
+
+	// DROP_EXISTING
+	if storage.DropExisting {
+		params = append(params, "DROP_EXISTING = ON")
+	}
+
+	// ONLINE
+	if storage.Online {
+		params = append(params, "ONLINE = ON")
+	}
+
+	// ALLOW_ROW_LOCKS and ALLOW_PAGE_LOCKS (default to ON for spatial indexes)
+	// Only output when they differ from the default (ON)
+	if !storage.AllowRowLocks {
+		params = append(params, "ALLOW_ROW_LOCKS = OFF")
+	}
+
+	if !storage.AllowPageLocks {
+		params = append(params, "ALLOW_PAGE_LOCKS = OFF")
+	}
+
+	// MAXDOP
+	if storage.Maxdop > 0 {
+		params = append(params, fmt.Sprintf("MAXDOP = %d", storage.Maxdop))
+	}
+
+	// DATA_COMPRESSION
+	if storage.DataCompression != "" && storage.DataCompression != "NONE" {
+		params = append(params, fmt.Sprintf("DATA_COMPRESSION = %s", storage.DataCompression))
+	}
+
+	return params
 }

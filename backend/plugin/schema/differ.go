@@ -672,7 +672,181 @@ func indexesEqual(idx1, idx2 *storepb.IndexMetadata) bool {
 			return false
 		}
 	}
+
+	// Compare key lengths
+	if len(idx1.KeyLength) != len(idx2.KeyLength) {
+		return false
+	}
+	for i, keyLen := range idx1.KeyLength {
+		if keyLen != idx2.KeyLength[i] {
+			return false
+		}
+	}
+
+	// Compare descending order
+	if len(idx1.Descending) != len(idx2.Descending) {
+		return false
+	}
+	for i, desc := range idx1.Descending {
+		if desc != idx2.Descending[i] {
+			return false
+		}
+	}
+
+	// Compare visibility
+	if idx1.Visible != idx2.Visible {
+		return false
+	}
+
+	// Compare spatial configuration
+	if !spatialConfigsEqual(idx1.SpatialConfig, idx2.SpatialConfig) {
+		return false
+	}
+
 	return true
+}
+
+// spatialConfigsEqual checks if two spatial index configurations are equal.
+func spatialConfigsEqual(cfg1, cfg2 *storepb.SpatialIndexConfig) bool {
+	if cfg1 == nil && cfg2 == nil {
+		return true
+	}
+	if cfg1 == nil || cfg2 == nil {
+		return false
+	}
+
+	// Compare method
+	if cfg1.Method != cfg2.Method {
+		return false
+	}
+
+	// Compare tessellation config
+	if !tessellationConfigsEqual(cfg1.Tessellation, cfg2.Tessellation) {
+		return false
+	}
+
+	// Compare storage config
+	if !storageConfigsEqual(cfg1.Storage, cfg2.Storage) {
+		return false
+	}
+
+	// Compare dimensional config
+	if !dimensionalConfigsEqual(cfg1.Dimensional, cfg2.Dimensional) {
+		return false
+	}
+
+	// Compare engine-specific parameters
+	if len(cfg1.EngineSpecific) != len(cfg2.EngineSpecific) {
+		return false
+	}
+	for key, val1 := range cfg1.EngineSpecific {
+		val2, exists := cfg2.EngineSpecific[key]
+		if !exists || val1 != val2 {
+			return false
+		}
+	}
+
+	return true
+}
+
+// tessellationConfigsEqual checks if two tessellation configurations are equal.
+func tessellationConfigsEqual(cfg1, cfg2 *storepb.TessellationConfig) bool {
+	if cfg1 == nil && cfg2 == nil {
+		return true
+	}
+	if cfg1 == nil || cfg2 == nil {
+		return false
+	}
+
+	if cfg1.Scheme != cfg2.Scheme {
+		return false
+	}
+
+	if !boundingBoxesEqual(cfg1.BoundingBox, cfg2.BoundingBox) {
+		return false
+	}
+
+	if !gridLevelsEqual(cfg1.GridLevels, cfg2.GridLevels) {
+		return false
+	}
+
+	if cfg1.CellsPerObject != cfg2.CellsPerObject {
+		return false
+	}
+
+	return true
+}
+
+// boundingBoxesEqual checks if two bounding boxes are equal.
+func boundingBoxesEqual(bb1, bb2 *storepb.BoundingBox) bool {
+	if bb1 == nil && bb2 == nil {
+		return true
+	}
+	if bb1 == nil || bb2 == nil {
+		return false
+	}
+
+	return bb1.Xmin == bb2.Xmin &&
+		bb1.Ymin == bb2.Ymin &&
+		bb1.Xmax == bb2.Xmax &&
+		bb1.Ymax == bb2.Ymax
+}
+
+// gridLevelsEqual checks if two grid level lists are equal.
+func gridLevelsEqual(grids1, grids2 []*storepb.GridLevel) bool {
+	if len(grids1) != len(grids2) {
+		return false
+	}
+
+	for i, grid1 := range grids1 {
+		grid2 := grids2[i]
+		if grid1.Level != grid2.Level || grid1.Density != grid2.Density {
+			return false
+		}
+	}
+
+	return true
+}
+
+// storageConfigsEqual checks if two storage configurations are equal.
+func storageConfigsEqual(cfg1, cfg2 *storepb.StorageConfig) bool {
+	if cfg1 == nil && cfg2 == nil {
+		return true
+	}
+	if cfg1 == nil || cfg2 == nil {
+		return false
+	}
+
+	return cfg1.Fillfactor == cfg2.Fillfactor &&
+		cfg1.Buffering == cfg2.Buffering &&
+		cfg1.Tablespace == cfg2.Tablespace &&
+		cfg1.WorkTablespace == cfg2.WorkTablespace &&
+		cfg1.SdoLevel == cfg2.SdoLevel &&
+		cfg1.CommitInterval == cfg2.CommitInterval &&
+		cfg1.PadIndex == cfg2.PadIndex &&
+		cfg1.SortInTempdb == cfg2.SortInTempdb &&
+		cfg1.DropExisting == cfg2.DropExisting &&
+		cfg1.Online == cfg2.Online &&
+		cfg1.AllowRowLocks == cfg2.AllowRowLocks &&
+		cfg1.AllowPageLocks == cfg2.AllowPageLocks &&
+		cfg1.Maxdop == cfg2.Maxdop &&
+		cfg1.DataCompression == cfg2.DataCompression
+}
+
+// dimensionalConfigsEqual checks if two dimensional configurations are equal.
+func dimensionalConfigsEqual(cfg1, cfg2 *storepb.DimensionalConfig) bool {
+	if cfg1 == nil && cfg2 == nil {
+		return true
+	}
+	if cfg1 == nil || cfg2 == nil {
+		return false
+	}
+
+	return cfg1.Dimensions == cfg2.Dimensions &&
+		cfg1.DataType == cfg2.DataType &&
+		cfg1.OperatorClass == cfg2.OperatorClass &&
+		cfg1.LayerGtype == cfg2.LayerGtype &&
+		cfg1.ParallelBuild == cfg2.ParallelBuild
 }
 
 // compareForeignKeys compares two lists of foreign keys.

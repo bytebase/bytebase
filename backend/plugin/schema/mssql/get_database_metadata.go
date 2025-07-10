@@ -239,6 +239,9 @@ func (e *metadataExtractor) EnterCreate_spatial_index(ctx *parser.Create_spatial
 		Expressions:  []string{},
 		Descending:   []bool{},
 		IsConstraint: false,
+		SpatialConfig: &storepb.SpatialIndexConfig{
+			Method: "SPATIAL",
+		},
 	}
 
 	// Index name
@@ -254,7 +257,201 @@ func (e *metadataExtractor) EnterCreate_spatial_index(ctx *parser.Create_spatial
 		index.Descending = append(index.Descending, false)
 	}
 
+	// Parse spatial index configuration
+	e.parseSpatialIndexConfig(ctx, index)
+
 	tableMetadata.Indexes = append(tableMetadata.Indexes, index)
+}
+
+func (e *metadataExtractor) parseSpatialIndexConfig(ctx *parser.Create_spatial_indexContext, index *storepb.IndexMetadata) {
+	// Initialize tessellation config
+	index.SpatialConfig.Tessellation = &storepb.TessellationConfig{}
+
+	// Parse tessellation scheme using ANTLR context
+	if tessellationCtx := ctx.Spatial_tessellation_scheme(); tessellationCtx != nil {
+		scheme := tessellationCtx.GetText()
+		// Remove "USING" prefix if present
+		scheme = strings.TrimSpace(strings.TrimPrefix(strings.ToUpper(scheme), "USING"))
+		index.SpatialConfig.Tessellation.Scheme = scheme
+	}
+
+	// Parse WITH clause parameters using ANTLR context
+	if optionsCtx := ctx.Spatial_index_options(); optionsCtx != nil {
+		e.parseSpatialIndexWithClause(optionsCtx, index)
+	}
+
+	// Set dimensional configuration
+	if index.SpatialConfig.Dimensional == nil {
+		index.SpatialConfig.Dimensional = &storepb.DimensionalConfig{
+			Dimensions: 2, // SQL Server spatial indexes are always 2D
+		}
+	}
+
+	// Determine data type based on tessellation scheme
+	if index.SpatialConfig.Tessellation != nil {
+		if strings.Contains(index.SpatialConfig.Tessellation.Scheme, "GEOGRAPHY") {
+			index.SpatialConfig.Dimensional.DataType = "GEOGRAPHY"
+		} else {
+			index.SpatialConfig.Dimensional.DataType = "GEOMETRY"
+		}
+	}
+}
+
+func (*metadataExtractor) parseSpatialIndexWithClause(optionsCtx parser.ISpatial_index_optionsContext, index *storepb.IndexMetadata) {
+	if index.SpatialConfig.Tessellation == nil {
+		index.SpatialConfig.Tessellation = &storepb.TessellationConfig{}
+	}
+
+	// Initialize storage config for spatial index options
+	if index.SpatialConfig.Storage == nil {
+		index.SpatialConfig.Storage = &storepb.StorageConfig{}
+	}
+
+	// ALLOW_ROW_LOCKS and ALLOW_PAGE_LOCKS default to ON for spatial indexes
+	// Set defaults first
+	index.SpatialConfig.Storage.AllowRowLocks = true
+	index.SpatialConfig.Storage.AllowPageLocks = true
+
+	// Parse each spatial index option
+	optionsList := optionsCtx.AllSpatial_index_option()
+	for _, optionCtx := range optionsList {
+		parseSpatialIndexOption(optionCtx, index)
+	}
+}
+
+func parseSpatialIndexOption(optionCtx parser.ISpatial_index_optionContext, index *storepb.IndexMetadata) {
+	// Handle BOUNDING_BOX
+	if optionCtx.BOUNDING_BOX() != nil {
+		coords := optionCtx.AllSigned_decimal()
+		if len(coords) == 4 {
+			xmin, _ := strconv.ParseFloat(coords[0].GetText(), 64)
+			ymin, _ := strconv.ParseFloat(coords[1].GetText(), 64)
+			xmax, _ := strconv.ParseFloat(coords[2].GetText(), 64)
+			ymax, _ := strconv.ParseFloat(coords[3].GetText(), 64)
+
+			index.SpatialConfig.Tessellation.BoundingBox = &storepb.BoundingBox{
+				Xmin: xmin,
+				Ymin: ymin,
+				Xmax: xmax,
+				Ymax: ymax,
+			}
+		}
+	}
+
+	// Handle GRIDS
+	if optionCtx.GRIDS() != nil {
+		var gridLevels []*storepb.GridLevel
+
+		gridLevelsList := optionCtx.AllSpatial_grid_level()
+		for _, gridLevelCtx := range gridLevelsList {
+			levelText := gridLevelCtx.GetText()
+			// Parse "LEVEL_1=LOW" format
+			parts := strings.Split(levelText, "=")
+			if len(parts) == 2 {
+				levelPart := strings.TrimSpace(parts[0])
+				densityPart := strings.TrimSpace(parts[1])
+
+				// Extract level number from "LEVEL_1", "LEVEL_2", etc.
+				levelNum := 0
+				if strings.HasPrefix(strings.ToUpper(levelPart), "LEVEL_") {
+					if num, err := strconv.Atoi(levelPart[6:]); err == nil {
+						levelNum = num
+					}
+				}
+
+				gridLevels = append(gridLevels, &storepb.GridLevel{
+					Level:   int32(levelNum),
+					Density: strings.ToUpper(densityPart),
+				})
+			}
+		}
+
+		index.SpatialConfig.Tessellation.GridLevels = gridLevels
+	}
+
+	// Handle CELLS_PER_OBJECT
+	if optionCtx.CELLS_PER_OBJECT() != nil {
+		if decimalCtx := optionCtx.DECIMAL(); decimalCtx != nil {
+			if cellsPerObject, err := strconv.Atoi(decimalCtx.GetText()); err == nil {
+				index.SpatialConfig.Tessellation.CellsPerObject = int32(cellsPerObject)
+			}
+		}
+	}
+
+	// Handle rebuild_index_option (includes standard index options)
+	if rebuildCtx := optionCtx.Rebuild_index_option(); rebuildCtx != nil {
+		parseRebuildIndexOption(rebuildCtx, index)
+	}
+}
+
+func parseRebuildIndexOption(rebuildCtx parser.IRebuild_index_optionContext, index *storepb.IndexMetadata) {
+	// Handle PAD_INDEX
+	if rebuildCtx.PAD_INDEX() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.PadIndex = strings.EqualFold(onOffCtx.GetText(), "ON")
+		}
+	}
+
+	// Handle FILLFACTOR
+	if rebuildCtx.FILLFACTOR() != nil {
+		if decimalCtx := rebuildCtx.DECIMAL(); decimalCtx != nil {
+			if fillFactor, err := strconv.Atoi(decimalCtx.GetText()); err == nil {
+				index.SpatialConfig.Storage.Fillfactor = int32(fillFactor)
+			}
+		}
+	}
+
+	// Handle SORT_IN_TEMPDB
+	if rebuildCtx.SORT_IN_TEMPDB() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.SortInTempdb = strings.ToUpper(onOffCtx.GetText())
+		}
+	}
+
+	// Handle ONLINE
+	if rebuildCtx.ONLINE() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.Online = strings.EqualFold(onOffCtx.GetText(), "ON")
+		}
+	}
+
+	// Handle ALLOW_ROW_LOCKS
+	if rebuildCtx.ALLOW_ROW_LOCKS() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.AllowRowLocks = strings.EqualFold(onOffCtx.GetText(), "ON")
+		}
+	}
+
+	// Handle ALLOW_PAGE_LOCKS
+	if rebuildCtx.ALLOW_PAGE_LOCKS() != nil {
+		if onOffCtx := rebuildCtx.On_off(); onOffCtx != nil {
+			index.SpatialConfig.Storage.AllowPageLocks = strings.EqualFold(onOffCtx.GetText(), "ON")
+		}
+	}
+
+	// Handle MAXDOP
+	if rebuildCtx.MAXDOP() != nil {
+		if decimalCtx := rebuildCtx.DECIMAL(); decimalCtx != nil {
+			if maxdop, err := strconv.Atoi(decimalCtx.GetText()); err == nil {
+				index.SpatialConfig.Storage.Maxdop = int32(maxdop)
+			}
+		}
+	}
+
+	// Handle DATA_COMPRESSION
+	if rebuildCtx.DATA_COMPRESSION() != nil {
+		if rebuildCtx.NONE() != nil {
+			index.SpatialConfig.Storage.DataCompression = "NONE"
+		} else if rebuildCtx.ROW() != nil {
+			index.SpatialConfig.Storage.DataCompression = "ROW"
+		} else if rebuildCtx.PAGE() != nil {
+			index.SpatialConfig.Storage.DataCompression = "PAGE"
+		} else if rebuildCtx.COLUMNSTORE() != nil {
+			index.SpatialConfig.Storage.DataCompression = "COLUMNSTORE"
+		} else if rebuildCtx.COLUMNSTORE_ARCHIVE() != nil {
+			index.SpatialConfig.Storage.DataCompression = "COLUMNSTORE_ARCHIVE"
+		}
+	}
 }
 
 // EnterCreate_view is called when entering a create view parse tree node

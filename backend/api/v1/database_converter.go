@@ -296,6 +296,7 @@ func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata
 		ParentIndexName:   index.ParentIndexName,
 		Granularity:       index.Granularity,
 		IsConstraint:      index.IsConstraint,
+		SpatialConfig:     convertStoreSpatialIndexConfig(index.SpatialConfig),
 	}
 }
 
@@ -759,6 +760,161 @@ func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {
 		ParentIndexName:   index.ParentIndexName,
 		Granularity:       index.Granularity,
 		IsConstraint:      index.IsConstraint,
+		SpatialConfig:     convertV1SpatialIndexConfig(index.SpatialConfig),
+	}
+}
+
+func convertStoreSpatialIndexConfig(spatial *storepb.SpatialIndexConfig) *v1pb.SpatialIndexConfig {
+	if spatial == nil {
+		return nil
+	}
+	return &v1pb.SpatialIndexConfig{
+		Method:       spatial.Method,
+		Tessellation: convertStoreTessellationConfig(spatial.Tessellation),
+		Storage:      convertStoreStorageConfig(spatial.Storage),
+		Dimensional:  convertStoreDimensionalConfig(spatial.Dimensional),
+	}
+}
+
+func convertV1SpatialIndexConfig(spatial *v1pb.SpatialIndexConfig) *storepb.SpatialIndexConfig {
+	if spatial == nil {
+		return nil
+	}
+	return &storepb.SpatialIndexConfig{
+		Method:       spatial.Method,
+		Tessellation: convertV1TessellationConfig(spatial.Tessellation),
+		Storage:      convertV1StorageConfig(spatial.Storage),
+		Dimensional:  convertV1DimensionalConfig(spatial.Dimensional),
+	}
+}
+
+func convertStoreTessellationConfig(tessellation *storepb.TessellationConfig) *v1pb.TessellationConfig {
+	if tessellation == nil {
+		return nil
+	}
+	gridLevels := make([]*v1pb.GridLevel, len(tessellation.GridLevels))
+	for i, level := range tessellation.GridLevels {
+		gridLevels[i] = &v1pb.GridLevel{
+			Level:   level.Level,
+			Density: level.Density,
+		}
+	}
+	return &v1pb.TessellationConfig{
+		Scheme:         tessellation.Scheme,
+		GridLevels:     gridLevels,
+		CellsPerObject: tessellation.CellsPerObject,
+		BoundingBox:    convertStoreBoundingBox(tessellation.BoundingBox),
+	}
+}
+
+func convertV1TessellationConfig(tessellation *v1pb.TessellationConfig) *storepb.TessellationConfig {
+	if tessellation == nil {
+		return nil
+	}
+	gridLevels := make([]*storepb.GridLevel, len(tessellation.GridLevels))
+	for i, level := range tessellation.GridLevels {
+		gridLevels[i] = &storepb.GridLevel{
+			Level:   level.Level,
+			Density: level.Density,
+		}
+	}
+	return &storepb.TessellationConfig{
+		Scheme:         tessellation.Scheme,
+		GridLevels:     gridLevels,
+		CellsPerObject: tessellation.CellsPerObject,
+		BoundingBox:    convertV1BoundingBox(tessellation.BoundingBox),
+	}
+}
+
+func convertStoreBoundingBox(bbox *storepb.BoundingBox) *v1pb.BoundingBox {
+	if bbox == nil {
+		return nil
+	}
+	return &v1pb.BoundingBox{
+		Xmin: bbox.Xmin,
+		Ymin: bbox.Ymin,
+		Xmax: bbox.Xmax,
+		Ymax: bbox.Ymax,
+	}
+}
+
+func convertV1BoundingBox(bbox *v1pb.BoundingBox) *storepb.BoundingBox {
+	if bbox == nil {
+		return nil
+	}
+	return &storepb.BoundingBox{
+		Xmin: bbox.Xmin,
+		Ymin: bbox.Ymin,
+		Xmax: bbox.Xmax,
+		Ymax: bbox.Ymax,
+	}
+}
+
+func convertStoreStorageConfig(storage *storepb.StorageConfig) *v1pb.StorageConfig {
+	if storage == nil {
+		return nil
+	}
+	return &v1pb.StorageConfig{
+		Fillfactor:      storage.Fillfactor,
+		Buffering:       storage.Buffering,
+		Tablespace:      storage.Tablespace,
+		WorkTablespace:  storage.WorkTablespace,
+		SdoLevel:        storage.SdoLevel,
+		CommitInterval:  storage.CommitInterval,
+		PadIndex:        storage.PadIndex,
+		SortInTempdb:    storage.SortInTempdb,
+		DropExisting:    storage.DropExisting,
+		Online:          storage.Online,
+		AllowRowLocks:   storage.AllowRowLocks,
+		AllowPageLocks:  storage.AllowPageLocks,
+		Maxdop:          storage.Maxdop,
+		DataCompression: storage.DataCompression,
+	}
+}
+
+func convertV1StorageConfig(storage *v1pb.StorageConfig) *storepb.StorageConfig {
+	if storage == nil {
+		return nil
+	}
+	return &storepb.StorageConfig{
+		Fillfactor:      storage.Fillfactor,
+		Buffering:       storage.Buffering,
+		Tablespace:      storage.Tablespace,
+		WorkTablespace:  storage.WorkTablespace,
+		SdoLevel:        storage.SdoLevel,
+		CommitInterval:  storage.CommitInterval,
+		PadIndex:        storage.PadIndex,
+		SortInTempdb:    storage.SortInTempdb,
+		DropExisting:    storage.DropExisting,
+		Online:          storage.Online,
+		AllowRowLocks:   storage.AllowRowLocks,
+		AllowPageLocks:  storage.AllowPageLocks,
+		Maxdop:          storage.Maxdop,
+		DataCompression: storage.DataCompression,
+	}
+}
+
+func convertStoreDimensionalConfig(dimensional *storepb.DimensionalConfig) *v1pb.DimensionalConfig {
+	if dimensional == nil {
+		return nil
+	}
+	return &v1pb.DimensionalConfig{
+		Dimensions: dimensional.Dimensions,
+		DataType:   dimensional.DataType,
+		// Note: Srid and Constraints fields exist only in v1 proto
+		// Store proto uses OperatorClass instead
+	}
+}
+
+func convertV1DimensionalConfig(dimensional *v1pb.DimensionalConfig) *storepb.DimensionalConfig {
+	if dimensional == nil {
+		return nil
+	}
+	return &storepb.DimensionalConfig{
+		Dimensions: dimensional.Dimensions,
+		DataType:   dimensional.DataType,
+		// Note: OperatorClass field exists only in store proto
+		// V1 proto uses Srid and Constraints instead
 	}
 }
 

@@ -2188,6 +2188,333 @@ export enum StreamMetadata_Mode {
 export declare const StreamMetadata_ModeSchema: GenEnum<StreamMetadata_Mode>;
 
 /**
+ * SpatialIndexConfig defines the spatial index configuration for spatial databases.
+ *
+ * @generated from message bytebase.v1.SpatialIndexConfig
+ */
+export declare type SpatialIndexConfig = Message<"bytebase.v1.SpatialIndexConfig"> & {
+  /**
+   * Spatial indexing method (e.g., "SPATIAL", "R-TREE", "GIST")
+   *
+   * @generated from field: string method = 1;
+   */
+  method: string;
+
+  /**
+   * Tessellation configuration for grid-based spatial indexes
+   *
+   * @generated from field: bytebase.v1.TessellationConfig tessellation = 2;
+   */
+  tessellation?: TessellationConfig;
+
+  /**
+   * Storage and performance configuration
+   *
+   * @generated from field: bytebase.v1.StorageConfig storage = 3;
+   */
+  storage?: StorageConfig;
+
+  /**
+   * Dimensional configuration
+   *
+   * @generated from field: bytebase.v1.DimensionalConfig dimensional = 4;
+   */
+  dimensional?: DimensionalConfig;
+};
+
+/**
+ * Describes the message bytebase.v1.SpatialIndexConfig.
+ * Use `create(SpatialIndexConfigSchema)` to create a new message.
+ */
+export declare const SpatialIndexConfigSchema: GenMessage<SpatialIndexConfig>;
+
+/**
+ * TessellationConfig defines tessellation parameters for spatial indexes.
+ *
+ * @generated from message bytebase.v1.TessellationConfig
+ */
+export declare type TessellationConfig = Message<"bytebase.v1.TessellationConfig"> & {
+  /**
+   * Tessellation scheme (e.g., "GEOMETRY_GRID", "GEOGRAPHY_GRID", "GEOMETRY_AUTO_GRID")
+   *
+   * @generated from field: string scheme = 1;
+   */
+  scheme: string;
+
+  /**
+   * Grid levels and densities for multi-level tessellation
+   *
+   * @generated from field: repeated bytebase.v1.GridLevel grid_levels = 2;
+   */
+  gridLevels: GridLevel[];
+
+  /**
+   * Number of cells per object (1-8192 for SQL Server)
+   *
+   * @generated from field: int32 cells_per_object = 3;
+   */
+  cellsPerObject: number;
+
+  /**
+   * Bounding box for GEOMETRY tessellation (not used for GEOGRAPHY)
+   *
+   * @generated from field: bytebase.v1.BoundingBox bounding_box = 4;
+   */
+  boundingBox?: BoundingBox;
+};
+
+/**
+ * Describes the message bytebase.v1.TessellationConfig.
+ * Use `create(TessellationConfigSchema)` to create a new message.
+ */
+export declare const TessellationConfigSchema: GenMessage<TessellationConfig>;
+
+/**
+ * GridLevel defines a tessellation grid level with its density.
+ *
+ * @generated from message bytebase.v1.GridLevel
+ */
+export declare type GridLevel = Message<"bytebase.v1.GridLevel"> & {
+  /**
+   * Grid level number (1-4 for SQL Server)
+   *
+   * @generated from field: int32 level = 1;
+   */
+  level: number;
+
+  /**
+   * Grid density (LOW, MEDIUM, HIGH)
+   *
+   * @generated from field: string density = 2;
+   */
+  density: string;
+};
+
+/**
+ * Describes the message bytebase.v1.GridLevel.
+ * Use `create(GridLevelSchema)` to create a new message.
+ */
+export declare const GridLevelSchema: GenMessage<GridLevel>;
+
+/**
+ * BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
+ *
+ * @generated from message bytebase.v1.BoundingBox
+ */
+export declare type BoundingBox = Message<"bytebase.v1.BoundingBox"> & {
+  /**
+   * Minimum X coordinate
+   *
+   * @generated from field: double xmin = 1;
+   */
+  xmin: number;
+
+  /**
+   * Minimum Y coordinate
+   *
+   * @generated from field: double ymin = 2;
+   */
+  ymin: number;
+
+  /**
+   * Maximum X coordinate
+   *
+   * @generated from field: double xmax = 3;
+   */
+  xmax: number;
+
+  /**
+   * Maximum Y coordinate
+   *
+   * @generated from field: double ymax = 4;
+   */
+  ymax: number;
+};
+
+/**
+ * Describes the message bytebase.v1.BoundingBox.
+ * Use `create(BoundingBoxSchema)` to create a new message.
+ */
+export declare const BoundingBoxSchema: GenMessage<BoundingBox>;
+
+/**
+ * StorageConfig defines storage and performance parameters for spatial indexes.
+ *
+ * @generated from message bytebase.v1.StorageConfig
+ */
+export declare type StorageConfig = Message<"bytebase.v1.StorageConfig"> & {
+  /**
+   * Fill factor percentage (1-100)
+   *
+   * @generated from field: int32 fillfactor = 1;
+   */
+  fillfactor: number;
+
+  /**
+   * Buffering mode for PostgreSQL (auto, on, off)
+   *
+   * @generated from field: string buffering = 2;
+   */
+  buffering: string;
+
+  /**
+   * Tablespace configuration for Oracle
+   *
+   * @generated from field: string tablespace = 3;
+   */
+  tablespace: string;
+
+  /**
+   * @generated from field: string work_tablespace = 4;
+   */
+  workTablespace: string;
+
+  /**
+   * @generated from field: int32 sdo_level = 5;
+   */
+  sdoLevel: number;
+
+  /**
+   * @generated from field: int32 commit_interval = 6;
+   */
+  commitInterval: number;
+
+  /**
+   * SQL Server specific parameters
+   *
+   * @generated from field: bool pad_index = 7;
+   */
+  padIndex: boolean;
+
+  /**
+   * ON, OFF
+   *
+   * @generated from field: string sort_in_tempdb = 8;
+   */
+  sortInTempdb: string;
+
+  /**
+   * @generated from field: bool drop_existing = 9;
+   */
+  dropExisting: boolean;
+
+  /**
+   * @generated from field: bool online = 10;
+   */
+  online: boolean;
+
+  /**
+   * @generated from field: bool allow_row_locks = 11;
+   */
+  allowRowLocks: boolean;
+
+  /**
+   * @generated from field: bool allow_page_locks = 12;
+   */
+  allowPageLocks: boolean;
+
+  /**
+   * @generated from field: int32 maxdop = 13;
+   */
+  maxdop: number;
+
+  /**
+   * NONE, ROW, PAGE
+   *
+   * @generated from field: string data_compression = 14;
+   */
+  dataCompression: string;
+};
+
+/**
+ * Describes the message bytebase.v1.StorageConfig.
+ * Use `create(StorageConfigSchema)` to create a new message.
+ */
+export declare const StorageConfigSchema: GenMessage<StorageConfig>;
+
+/**
+ * DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
+ *
+ * @generated from message bytebase.v1.DimensionalConfig
+ */
+export declare type DimensionalConfig = Message<"bytebase.v1.DimensionalConfig"> & {
+  /**
+   * Number of dimensions (2-4, default 2)
+   *
+   * @generated from field: int32 dimensions = 1;
+   */
+  dimensions: number;
+
+  /**
+   * Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)
+   *
+   * @generated from field: string data_type = 2;
+   */
+  dataType: string;
+
+  /**
+   * Spatial reference system identifier (SRID)
+   *
+   * @generated from field: int32 srid = 3;
+   */
+  srid: number;
+
+  /**
+   * Coordinate system constraints
+   *
+   * @generated from field: repeated bytebase.v1.DimensionConstraint constraints = 4;
+   */
+  constraints: DimensionConstraint[];
+};
+
+/**
+ * Describes the message bytebase.v1.DimensionalConfig.
+ * Use `create(DimensionalConfigSchema)` to create a new message.
+ */
+export declare const DimensionalConfigSchema: GenMessage<DimensionalConfig>;
+
+/**
+ * DimensionConstraint defines constraints for a spatial dimension.
+ *
+ * @generated from message bytebase.v1.DimensionConstraint
+ */
+export declare type DimensionConstraint = Message<"bytebase.v1.DimensionConstraint"> & {
+  /**
+   * Dimension name/type (X, Y, Z, M, etc.)
+   *
+   * @generated from field: string dimension = 1;
+   */
+  dimension: string;
+
+  /**
+   * Minimum value for this dimension
+   *
+   * @generated from field: double min_value = 2;
+   */
+  minValue: number;
+
+  /**
+   * Maximum value for this dimension
+   *
+   * @generated from field: double max_value = 3;
+   */
+  maxValue: number;
+
+  /**
+   * Tolerance for this dimension
+   *
+   * @generated from field: double tolerance = 4;
+   */
+  tolerance: number;
+};
+
+/**
+ * Describes the message bytebase.v1.DimensionConstraint.
+ * Use `create(DimensionConstraintSchema)` to create a new message.
+ */
+export declare const DimensionConstraintSchema: GenMessage<DimensionConstraint>;
+
+/**
  * IndexMetadata is the metadata for indexes.
  *
  * @generated from message bytebase.v1.IndexMetadata
@@ -2293,6 +2620,13 @@ export declare type IndexMetadata = Message<"bytebase.v1.IndexMetadata"> & {
    * @generated from field: bool is_constraint = 14;
    */
   isConstraint: boolean;
+
+  /**
+   * Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc.
+   *
+   * @generated from field: bytebase.v1.SpatialIndexConfig spatial_config = 15;
+   */
+  spatialConfig?: SpatialIndexConfig;
 };
 
 /**
