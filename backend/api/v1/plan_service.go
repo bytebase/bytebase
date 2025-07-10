@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -1041,14 +1043,26 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
 	}
 
-	var parseFilter func(expr celast.Expr) (string, error)
-	parseFilter = func(expr celast.Expr) (string, error) {
+	var getFilter func(expr celast.Expr) (string, error)
+	var positionalArgs []any
+
+	parseToSQL := func(variable string, value any) (string, error) {
+		switch variable {
+		case "title":
+			positionalArgs = append(positionalArgs, value)
+			return fmt.Sprintf("plan.name = $%d", len(positionalArgs)), nil
+		default:
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported variable %q", variable))
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (string, error) {
 		switch expr.Kind() {
 		case celast.CallKind:
 			functionName := expr.AsCall().FunctionName()
 			switch functionName {
 			case celoperators.LogicalAnd:
-				return getSubConditionFromExpr(expr, parseFilter, "AND")
+				return getSubConditionFromExpr(expr, getFilter, "AND")
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
@@ -1057,25 +1071,28 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 					if err != nil {
 						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
 					}
-					planFind.CreatorID = &user.ID
+					positionalArgs = append(positionalArgs, user.ID)
+					return fmt.Sprintf("plan.creator_id = $%d", len(positionalArgs)), nil
 				case "has_pipeline":
 					hasPipeline, ok := value.(bool)
 					if !ok {
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`"has_pipeline" should be bool`))
 					}
 					if !hasPipeline {
-						planFind.NoPipeline = true
+						return "plan.pipeline_id IS NULL", nil
 					}
+					return "plan.pipeline_id IS NOT NULL", nil
 				case "has_issue":
 					hasIssue, ok := value.(bool)
 					if !ok {
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`"has_issue" should be bool`))
 					}
 					if !hasIssue {
-						planFind.NoIssue = true
+						return "issue.id IS NULL", nil
 					}
+					return "issue.id IS NOT NULL", nil
 				default:
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q with %v operator", variable, celoperators.Equals))
+					return parseToSQL(variable, value)
 				}
 			case celoperators.GreaterEquals, celoperators.LessEquals:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
@@ -1090,20 +1107,48 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 				if err != nil {
 					return "", errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
+				positionalArgs = append(positionalArgs, t)
 				if functionName == celoperators.GreaterEquals {
-					planFind.CreatedAtAfter = &t
-				} else {
-					planFind.CreatedAtBefore = &t
+					return fmt.Sprintf("plan.created_at >= $%d", len(positionalArgs)), nil
 				}
+				return fmt.Sprintf("plan.created_at <= $%d", len(positionalArgs)), nil
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
+				}
+				strValue = strings.ToLower(strValue)
+
+				switch variable {
+				case "title":
+					return "LOWER(plan.name) LIKE '%" + strValue + "%'", nil
+				default:
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "title" supports %q operator, but found %q`, celoverloads.Matches, variable))
+				}
+			default:
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported function %v", functionName))
 			}
 		default:
 			return "", errors.Errorf("unexpected expr kind %v", expr.Kind())
 		}
-		return "", nil
 	}
 
-	if _, err := parseFilter(ast.NativeRep().Expr()); err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter, error: %v", err))
+	where, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return err
+	}
+
+	if where != "" {
+		planFind.Filter = &store.ListResourceFilter{
+			Where: "(" + where + ")",
+			Args:  positionalArgs,
+		}
 	}
 
 	return nil

@@ -33,19 +33,15 @@ type PlanMessage struct {
 
 // FindPlanMessage is the message to find a plan.
 type FindPlanMessage struct {
-	UID             *int64
-	ProjectID       *string
-	ProjectIDs      *[]string
-	CreatorID       *int
-	PipelineID      *int
-	CreatedAtBefore *time.Time
-	CreatedAtAfter  *time.Time
+	UID        *int64
+	ProjectID  *string
+	ProjectIDs *[]string
+	PipelineID *int
 
 	Limit  *int
 	Offset *int
 
-	NoIssue    bool
-	NoPipeline bool
+	Filter *ListResourceFilter
 }
 
 // UpdatePlanMessage is the message to update a plan.
@@ -127,6 +123,10 @@ func (s *Store) GetPlan(ctx context.Context, find *FindPlanMessage) (*PlanMessag
 // ListPlans retrieves a list of plans.
 func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if filter := find.Filter; filter != nil {
+		where = append(where, filter.Where)
+		args = append(args, filter.Args...)
+	}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -134,25 +134,14 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		where, args = append(where, fmt.Sprintf("plan.project = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectIDs; v != nil {
-		where, args = append(where, fmt.Sprintf("plan.project = ANY($%d)", len(args)+1)), append(args, *v)
+		if len(*v) == 0 {
+			where = append(where, "FALSE")
+		} else {
+			where, args = append(where, fmt.Sprintf("plan.project = ANY($%d)", len(args)+1)), append(args, *v)
+		}
 	}
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.pipeline_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.CreatorID; v != nil {
-		where, args = append(where, fmt.Sprintf("plan.creator_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.CreatedAtBefore; v != nil {
-		where, args = append(where, fmt.Sprintf("plan.created_at < $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.CreatedAtAfter; v != nil {
-		where, args = append(where, fmt.Sprintf("plan.created_at > $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.NoIssue; v {
-		where = append(where, "issue.id IS NULL")
-	}
-	if v := find.NoPipeline; v {
-		where = append(where, "plan.pipeline_id IS NULL")
 	}
 
 	query := fmt.Sprintf(`

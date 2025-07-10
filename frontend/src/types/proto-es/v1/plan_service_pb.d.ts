@@ -142,10 +142,13 @@ export declare type SearchPlansRequest = Message<"bytebase.v1.SearchPlansRequest
    * - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
    * - has_pipeline: the plan has pipeline or not, support "==" operator, the value should be "true" or "false".
    * - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
+   * - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
    *
    * For example:
    * creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
    * has_pipeline == false && has_issue == true
+   * title == "My Plan"
+   * title.matches("database migration")
    *
    * @generated from field: string filter = 4;
    */
