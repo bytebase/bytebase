@@ -2,15 +2,6 @@
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a int
   changeType: 1
-  want:
-    - status: 2
-      code: 407
-      title: column.disallow-changing-order
-      content: '"ALTER TABLE t MODIFY COLUMN a int" changes column order'
-      startposition:
-        line: 1
-        column: 0
-      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t MODIFY COLUMN a int FIRST
