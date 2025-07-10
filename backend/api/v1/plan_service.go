@@ -1080,9 +1080,8 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 					}
 					if !hasPipeline {
 						return "plan.pipeline_id IS NULL", nil
-					} else {
-						return "plan.pipeline_id IS NOT NULL", nil
 					}
+					return "plan.pipeline_id IS NOT NULL", nil
 				case "has_issue":
 					hasIssue, ok := value.(bool)
 					if !ok {
@@ -1090,9 +1089,8 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 					}
 					if !hasIssue {
 						return "issue.id IS NULL", nil
-					} else {
-						return "issue.id IS NOT NULL", nil
 					}
+					return "issue.id IS NOT NULL", nil
 				default:
 					return parseToSQL(variable, value)
 				}
@@ -1112,9 +1110,8 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 				positionalArgs = append(positionalArgs, t)
 				if functionName == celoperators.GreaterEquals {
 					return fmt.Sprintf("plan.created_at >= $%d", len(positionalArgs)), nil
-				} else {
-					return fmt.Sprintf("plan.created_at <= $%d", len(positionalArgs)), nil
 				}
+				return fmt.Sprintf("plan.created_at <= $%d", len(positionalArgs)), nil
 			case celoverloads.Matches:
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
