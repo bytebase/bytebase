@@ -11,8 +11,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	secretcomp "github.com/bytebase/bytebase/backend/component/secret"
-	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 var defaultConfig = struct {

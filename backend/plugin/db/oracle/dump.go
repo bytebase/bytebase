@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
 // Dump dumps the database.

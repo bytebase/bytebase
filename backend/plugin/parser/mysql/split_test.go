@@ -11,8 +11,8 @@ import (
 
 	parser "github.com/bytebase/mysql-parser"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type splitTestData struct {

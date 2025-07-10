@@ -11,8 +11,8 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	tsqlparser "github.com/bytebase/tsql-parser"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {

@@ -10,8 +10,8 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/common"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )

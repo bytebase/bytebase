@@ -3,8 +3,8 @@ package pg
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 func TestPostgreSQLRules(t *testing.T) {

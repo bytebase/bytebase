@@ -4,8 +4,8 @@ package mssql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 func TestMSSQLRules(t *testing.T) {

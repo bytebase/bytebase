@@ -3,8 +3,8 @@ package clickhouse
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
