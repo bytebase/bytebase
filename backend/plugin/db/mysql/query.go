@@ -14,9 +14,9 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {

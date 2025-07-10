@@ -12,8 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (

@@ -12,9 +12,9 @@ import (
 
 	lsp "github.com/bytebase/lsp-protocol"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/store/model"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (

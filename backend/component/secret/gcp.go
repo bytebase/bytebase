@@ -13,7 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func getGCPSecretManagerClient(ctx context.Context) (*secretmanager.Client, error) {

@@ -15,9 +15,9 @@ import (
 	tidbdriver "github.com/pingcap/tidb/pkg/types/parser_driver"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {

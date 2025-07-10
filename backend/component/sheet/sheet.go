@@ -19,6 +19,7 @@ import (
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	crparser "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -31,7 +32,6 @@ import (
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (

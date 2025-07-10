@@ -1,8 +1,8 @@
 package schema
 
 import (
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // ViewChangeType represents the type of change detected in a view.

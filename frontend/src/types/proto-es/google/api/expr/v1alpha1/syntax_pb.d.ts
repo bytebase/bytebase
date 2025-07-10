@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,14 +33,16 @@ export declare const file_google_api_expr_v1alpha1_syntax: GenFile;
  * operators with the exception of the '.' operator are modelled as function
  * calls. This makes it easy to represent new operators into the existing AST.
  *
- * All references within expressions must resolve to a [Decl][google.api.expr.v1alpha1.Decl] provided at
- * type-check for an expression to be valid. A reference may either be a bare
- * identifier `name` or a qualified identifier `google.api.name`. References
- * may either refer to a value or a function declaration.
+ * All references within expressions must resolve to a
+ * [Decl][google.api.expr.v1alpha1.Decl] provided at type-check for an
+ * expression to be valid. A reference may either be a bare identifier `name` or
+ * a qualified identifier `google.api.name`. References may either refer to a
+ * value or a function declaration.
  *
  * For example, the expression `google.api.name.startsWith('expr')` references
- * the declaration `google.api.name` within a [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression, and
- * the function declaration `startsWith`.
+ * the declaration `google.api.name` within a
+ * [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression, and the
+ * function declaration `startsWith`.
  *
  * @generated from message google.api.expr.v1alpha1.Expr
  */
@@ -134,7 +136,8 @@ export declare type Expr_Ident = Message<"google.api.expr.v1alpha1.Expr.Ident"> 
    * Required. Holds a single, unqualified identifier, possibly preceded by a
    * '.'.
    *
-   * Qualified names are represented by the [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression.
+   * Qualified names are represented by the
+   * [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression.
    *
    * @generated from field: string name = 1;
    */
@@ -384,18 +387,60 @@ export declare const Expr_CreateStruct_EntrySchema: GenMessage<Expr_CreateStruct
  * macro tests whether the property is set to its default. For map and struct
  * types, the macro tests whether the property `x` is defined on `m`.
  *
+ * Comprehensions for the standard environment macros evaluation can be best
+ * visualized as the following pseudocode:
+ *
+ * ```
+ * let `accu_var` = `accu_init`
+ * for (let `iter_var` in `iter_range`) {
+ *   if (!`loop_condition`) {
+ *     break
+ *   }
+ *   `accu_var` = `loop_step`
+ * }
+ * return `result`
+ * ```
+ *
+ * Comprehensions for the optional V2 macros which support map-to-map
+ * translation differ slightly from the standard environment macros in that
+ * they expose both the key or index in addition to the value for each list
+ * or map entry:
+ *
+ * ```
+ * let `accu_var` = `accu_init`
+ * for (let `iter_var`, `iter_var2` in `iter_range`) {
+ *   if (!`loop_condition`) {
+ *     break
+ *   }
+ *   `accu_var` = `loop_step`
+ * }
+ * return `result`
+ * ```
+ *
  * @generated from message google.api.expr.v1alpha1.Expr.Comprehension
  */
 export declare type Expr_Comprehension = Message<"google.api.expr.v1alpha1.Expr.Comprehension"> & {
   /**
-   * The name of the iteration variable.
+   * The name of the first iteration variable.
+   * When the iter_range is a list, this variable is the list element.
+   * When the iter_range is a map, this variable is the map entry key.
    *
    * @generated from field: string iter_var = 1;
    */
   iterVar: string;
 
   /**
-   * The range over which var iterates.
+   * The name of the second iteration variable, empty if not set.
+   * When the iter_range is a list, this variable is the integer index.
+   * When the iter_range is a map, this variable is the map entry value.
+   * This field is only set for comprehension v2 macros.
+   *
+   * @generated from field: string iter_var2 = 8;
+   */
+  iterVar2: string;
+
+  /**
+   * The range over which the comprehension iterates.
    *
    * @generated from field: google.api.expr.v1alpha1.Expr iter_range = 2;
    */
@@ -416,7 +461,7 @@ export declare type Expr_Comprehension = Message<"google.api.expr.v1alpha1.Expr.
   accuInit?: Expr;
 
   /**
-   * An expression which can contain iter_var and accu_var.
+   * An expression which can contain iter_var, iter_var2, and accu_var.
    *
    * Returns false when the result has been computed and may be used as
    * a hint to short-circuit the remainder of the comprehension.
@@ -426,7 +471,7 @@ export declare type Expr_Comprehension = Message<"google.api.expr.v1alpha1.Expr.
   loopCondition?: Expr;
 
   /**
-   * An expression which can contain iter_var and accu_var.
+   * An expression which can contain iter_var, iter_var2, and accu_var.
    *
    * Computes the next value of accu_var.
    *
@@ -460,7 +505,8 @@ export declare const Expr_ComprehensionSchema: GenMessage<Expr_Comprehension>;
  * primitives.
  *
  * Lists and structs are not included as constants as these aggregate types may
- * contain [Expr][google.api.expr.v1alpha1.Expr] elements which require evaluation and are thus not constant.
+ * contain [Expr][google.api.expr.v1alpha1.Expr] elements which require
+ * evaluation and are thus not constant.
  *
  * Examples of literals include: `"hello"`, `b'bytes'`, `1u`, `4.2`, `-2`,
  * `true`, `null`.

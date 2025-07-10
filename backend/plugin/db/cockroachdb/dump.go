@@ -8,7 +8,7 @@ import (
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // Dump dumps the database.

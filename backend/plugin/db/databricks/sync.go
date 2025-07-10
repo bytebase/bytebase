@@ -8,8 +8,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type tableUnion struct {

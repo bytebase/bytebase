@@ -7,7 +7,7 @@ import "google/protobuf/empty.proto";
 import "v1/annotation.proto";
 import "v1/user_service.proto";
 
-option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 service AuthService {
   // Permissions required: None

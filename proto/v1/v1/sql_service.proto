@@ -13,7 +13,7 @@ import "v1/common.proto";
 import "v1/database_catalog_service.proto";
 import "v1/database_service.proto";
 
-option go_package = "github.com/bytebase/bytebase/proto/generated-go/v1";
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 service SQLService {
   // Permissions required: bb.databases.get

@@ -10,9 +10,9 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	plsql "github.com/bytebase/plsql-parser"
 
+	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (

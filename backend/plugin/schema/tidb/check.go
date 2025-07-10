@@ -3,9 +3,9 @@ package tidb
 import (
 	"fmt"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
