@@ -388,6 +388,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.BoundingBox"><span class="badge">M</span>BoundingBox</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.CheckConstraintMetadata"><span class="badge">M</span>CheckConstraintMetadata</a>
                 </li>
               
@@ -428,6 +432,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.DimensionalConfig"><span class="badge">M</span>DimensionalConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.EnumTypeMetadata"><span class="badge">M</span>EnumTypeMetadata</a>
                 </li>
               
@@ -453,6 +461,10 @@
               
                 <li>
                   <a href="#bytebase.store.GenerationMetadata"><span class="badge">M</span>GenerationMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.GridLevel"><span class="badge">M</span>GridLevel</a>
                 </li>
               
                 <li>
@@ -512,6 +524,18 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.SpatialIndexConfig"><span class="badge">M</span>SpatialIndexConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SpatialIndexConfig.EngineSpecificEntry"><span class="badge">M</span>SpatialIndexConfig.EngineSpecificEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.StorageConfig"><span class="badge">M</span>StorageConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.StreamMetadata"><span class="badge">M</span>StreamMetadata</a>
                 </li>
               
@@ -529,6 +553,10 @@
               
                 <li>
                   <a href="#bytebase.store.TaskMetadata"><span class="badge">M</span>TaskMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TessellationConfig"><span class="badge">M</span>TessellationConfig</a>
                 </li>
               
                 <li>
@@ -3071,6 +3099,51 @@ Format: projects/{project}/sheets/{sheet} </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.store.BoundingBox">BoundingBox</h3>
+        <p>BoundingBox defines the bounding box for spatial indexes.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>xmin</td>
+                  <td><a href="#double">double</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ymin</td>
+                  <td><a href="#double">double</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>xmax</td>
+                  <td><a href="#double">double</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ymax</td>
+                  <td><a href="#double">double</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.CheckConstraintMetadata">CheckConstraintMetadata</h3>
         <p></p>
 
@@ -3663,6 +3736,61 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
 
         
       
+        <h3 id="bytebase.store.DimensionalConfig">DimensionalConfig</h3>
+        <p>DimensionalConfig defines dimensional and constraint parameters for spatial indexes.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>dimensions</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Number of dimensions (2-4, default 2) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Spatial data type
+Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>operator_class</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>PostgreSQL operator class
+Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>layer_gtype</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Oracle geometry type constraint
+Examples: POINT, LINE, POLYGON, COLLECTION </p></td>
+                </tr>
+              
+                <tr>
+                  <td>parallel_build</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Parallel index creation </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.EnumTypeMetadata">EnumTypeMetadata</h3>
         <p></p>
 
@@ -4061,6 +4189,37 @@ For PostgreSQL, it&#39;s the list of tables that the function depends on the ret
 
         
       
+        <h3 id="bytebase.store.GridLevel">GridLevel</h3>
+        <p>GridLevel defines a grid level for spatial tessellation.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>level</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>1-4 for SQL Server </p></td>
+                </tr>
+              
+                <tr>
+                  <td>density</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>LOW, MEDIUM, HIGH </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.IndexMetadata">IndexMetadata</h3>
         <p>IndexMetadata is the metadata for indexes.</p>
 
@@ -4170,6 +4329,13 @@ If the key length is not specified, it&#39;s -1. </p></td>
                   <td></td>
                   <td><p>It&#39;s a PostgreSQL specific field.
 The unique constraint and unique index are not the same thing in PostgreSQL. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>spatial_config</td>
+                  <td><a href="#bytebase.store.SpatialIndexConfig">SpatialIndexConfig</a></td>
+                  <td></td>
+                  <td><p>Spatial index specific configuration </p></td>
                 </tr>
               
             </tbody>
@@ -4861,6 +5027,207 @@ Snowflake. </p></td>
 
         
       
+        <h3 id="bytebase.store.SpatialIndexConfig">SpatialIndexConfig</h3>
+        <p>SpatialIndexConfig is the configuration for spatial indexes across different database engines.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>method</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Index method/type (database-specific)
+Examples: &#34;SPATIAL&#34; (MySQL/SQL Server), &#34;GIST&#34;/&#34;SPGIST&#34; (PostgreSQL), &#34;MDSYS.SPATIAL_INDEX_V2&#34; (Oracle) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tessellation</td>
+                  <td><a href="#bytebase.store.TessellationConfig">TessellationConfig</a></td>
+                  <td></td>
+                  <td><p>Tessellation configuration (primarily SQL Server) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>storage</td>
+                  <td><a href="#bytebase.store.StorageConfig">StorageConfig</a></td>
+                  <td></td>
+                  <td><p>Storage and performance parameters </p></td>
+                </tr>
+              
+                <tr>
+                  <td>dimensional</td>
+                  <td><a href="#bytebase.store.DimensionalConfig">DimensionalConfig</a></td>
+                  <td></td>
+                  <td><p>Dimensional and constraint parameters </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine_specific</td>
+                  <td><a href="#bytebase.store.SpatialIndexConfig.EngineSpecificEntry">SpatialIndexConfig.EngineSpecificEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>Database-specific parameters (stored as key-value pairs for extensibility) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SpatialIndexConfig.EngineSpecificEntry">SpatialIndexConfig.EngineSpecificEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.StorageConfig">StorageConfig</h3>
+        <p>StorageConfig defines storage and performance parameters for spatial indexes.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>fillfactor</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>PostgreSQL parameters
+
+10-100 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>buffering</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>auto, on, off </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tablespace</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Oracle parameters </p></td>
+                </tr>
+              
+                <tr>
+                  <td>work_tablespace</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sdo_level</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_interval</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pad_index</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>SQL Server parameters </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sort_in_tempdb</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>ON, OFF </p></td>
+                </tr>
+              
+                <tr>
+                  <td>drop_existing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>online</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_row_locks</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_page_locks</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maxdop</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data_compression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>NONE, ROW, PAGE </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.StreamMetadata">StreamMetadata</h3>
         <p></p>
 
@@ -5324,6 +5691,52 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The definition of the task. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TessellationConfig">TessellationConfig</h3>
+        <p>TessellationConfig defines tessellation parameters for spatial indexes.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>scheme</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Tessellation scheme
+Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID </p></td>
+                </tr>
+              
+                <tr>
+                  <td>bounding_box</td>
+                  <td><a href="#bytebase.store.BoundingBox">BoundingBox</a></td>
+                  <td></td>
+                  <td><p>Bounding box for GEOMETRY indexes (SQL Server) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>grid_levels</td>
+                  <td><a href="#bytebase.store.GridLevel">GridLevel</a></td>
+                  <td>repeated</td>
+                  <td><p>Grid level configuration (SQL Server) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cells_per_object</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Cells per object (SQL Server) </p></td>
                 </tr>
               
             </tbody>

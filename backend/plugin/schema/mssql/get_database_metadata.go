@@ -2,6 +2,7 @@ package mssql
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -239,6 +240,9 @@ func (e *metadataExtractor) EnterCreate_spatial_index(ctx *parser.Create_spatial
 		Expressions:  []string{},
 		Descending:   []bool{},
 		IsConstraint: false,
+		SpatialConfig: &storepb.SpatialIndexConfig{
+			Method: "SPATIAL",
+		},
 	}
 
 	// Index name
@@ -254,7 +258,154 @@ func (e *metadataExtractor) EnterCreate_spatial_index(ctx *parser.Create_spatial
 		index.Descending = append(index.Descending, false)
 	}
 
+	// Parse spatial index configuration
+	e.parseSpatialIndexConfig(ctx, index)
+
 	tableMetadata.Indexes = append(tableMetadata.Indexes, index)
+}
+
+func (e *metadataExtractor) parseSpatialIndexConfig(ctx *parser.Create_spatial_indexContext, index *storepb.IndexMetadata) {
+	// Get the full text of the spatial index statement to parse configuration
+	fullText := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+
+	// Initialize tessellation config
+	index.SpatialConfig.Tessellation = &storepb.TessellationConfig{}
+
+	// Parse tessellation scheme from the full text
+	upperText := strings.ToUpper(fullText)
+	if strings.Contains(upperText, "USING GEOMETRY_GRID") {
+		index.SpatialConfig.Tessellation.Scheme = "GEOMETRY_GRID"
+	} else if strings.Contains(upperText, "USING GEOGRAPHY_GRID") {
+		index.SpatialConfig.Tessellation.Scheme = "GEOGRAPHY_GRID"
+	} else if strings.Contains(upperText, "USING GEOMETRY_AUTO_GRID") {
+		index.SpatialConfig.Tessellation.Scheme = "GEOMETRY_AUTO_GRID"
+	} else if strings.Contains(upperText, "USING GEOGRAPHY_AUTO_GRID") {
+		index.SpatialConfig.Tessellation.Scheme = "GEOGRAPHY_AUTO_GRID"
+	}
+
+	// Parse WITH clause parameters
+	if strings.Contains(upperText, "WITH") {
+		e.parseSpatialIndexWithClause(fullText, index)
+	}
+
+	// Set dimensional configuration
+	if index.SpatialConfig.Dimensional == nil {
+		index.SpatialConfig.Dimensional = &storepb.DimensionalConfig{
+			Dimensions: 2, // SQL Server spatial indexes are always 2D
+		}
+	}
+
+	// Determine data type based on tessellation scheme
+	if index.SpatialConfig.Tessellation != nil {
+		if strings.Contains(index.SpatialConfig.Tessellation.Scheme, "GEOGRAPHY") {
+			index.SpatialConfig.Dimensional.DataType = "GEOGRAPHY"
+		} else {
+			index.SpatialConfig.Dimensional.DataType = "GEOMETRY"
+		}
+	}
+}
+
+func (*metadataExtractor) parseSpatialIndexWithClause(fullText string, index *storepb.IndexMetadata) {
+	// Parse WITH clause parameters using basic string matching
+	// This is a simplified implementation - ideally we would use more robust parsing
+
+	upperText := strings.ToUpper(fullText)
+
+	if index.SpatialConfig.Tessellation == nil {
+		index.SpatialConfig.Tessellation = &storepb.TessellationConfig{}
+	}
+
+	// Parse BOUNDING_BOX
+	if boundingBoxMatch := regexp.MustCompile(`BOUNDING_BOX\s*=\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\)`).FindStringSubmatch(upperText); boundingBoxMatch != nil {
+		if len(boundingBoxMatch) == 5 {
+			if xmin, err := strconv.ParseFloat(boundingBoxMatch[1], 64); err == nil {
+				if ymin, err := strconv.ParseFloat(boundingBoxMatch[2], 64); err == nil {
+					if xmax, err := strconv.ParseFloat(boundingBoxMatch[3], 64); err == nil {
+						if ymax, err := strconv.ParseFloat(boundingBoxMatch[4], 64); err == nil {
+							index.SpatialConfig.Tessellation.BoundingBox = &storepb.BoundingBox{
+								Xmin: xmin,
+								Ymin: ymin,
+								Xmax: xmax,
+								Ymax: ymax,
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Parse GRIDS
+	if gridsMatch := regexp.MustCompile(`GRIDS\s*=\s*\(\s*([^)]+)\s*\)`).FindStringSubmatch(upperText); gridsMatch != nil {
+		gridLevels := []*storepb.GridLevel{}
+		gridStr := gridsMatch[1]
+
+		// Parse individual grid levels
+		levelMatches := regexp.MustCompile(`LEVEL_(\d+)\s*=\s*(\w+)`).FindAllStringSubmatch(gridStr, -1)
+		for _, levelMatch := range levelMatches {
+			if len(levelMatch) == 3 {
+				if level, err := strconv.Atoi(levelMatch[1]); err == nil {
+					gridLevels = append(gridLevels, &storepb.GridLevel{
+						Level:   int32(level),
+						Density: levelMatch[2],
+					})
+				}
+			}
+		}
+
+		index.SpatialConfig.Tessellation.GridLevels = gridLevels
+	}
+
+	// Parse CELLS_PER_OBJECT
+	if cellsMatch := regexp.MustCompile(`CELLS_PER_OBJECT\s*=\s*(\d+)`).FindStringSubmatch(upperText); cellsMatch != nil {
+		if cellsPerObject, err := strconv.Atoi(cellsMatch[1]); err == nil {
+			index.SpatialConfig.Tessellation.CellsPerObject = int32(cellsPerObject)
+		}
+	}
+
+	// Initialize storage config for spatial index options
+	if index.SpatialConfig.Storage == nil {
+		index.SpatialConfig.Storage = &storepb.StorageConfig{}
+	}
+
+	// Parse storage options
+	if strings.Contains(upperText, "PAD_INDEX = ON") {
+		index.SpatialConfig.Storage.PadIndex = true
+	}
+
+	if fillFactorMatch := regexp.MustCompile(`FILLFACTOR\s*=\s*(\d+)`).FindStringSubmatch(upperText); fillFactorMatch != nil {
+		if fillFactor, err := strconv.Atoi(fillFactorMatch[1]); err == nil {
+			index.SpatialConfig.Storage.Fillfactor = int32(fillFactor)
+		}
+	}
+
+	if strings.Contains(upperText, "SORT_IN_TEMPDB = ON") {
+		index.SpatialConfig.Storage.SortInTempdb = "ON"
+	} else if strings.Contains(upperText, "SORT_IN_TEMPDB = OFF") {
+		index.SpatialConfig.Storage.SortInTempdb = "OFF"
+	}
+
+	if strings.Contains(upperText, "ONLINE = ON") {
+		index.SpatialConfig.Storage.Online = true
+	}
+
+	if strings.Contains(upperText, "ALLOW_ROW_LOCKS = ON") {
+		index.SpatialConfig.Storage.AllowRowLocks = true
+	}
+
+	if strings.Contains(upperText, "ALLOW_PAGE_LOCKS = ON") {
+		index.SpatialConfig.Storage.AllowPageLocks = true
+	}
+
+	if maxdopMatch := regexp.MustCompile(`MAXDOP\s*=\s*(\d+)`).FindStringSubmatch(upperText); maxdopMatch != nil {
+		if maxdop, err := strconv.Atoi(maxdopMatch[1]); err == nil {
+			index.SpatialConfig.Storage.Maxdop = int32(maxdop)
+		}
+	}
+
+	if compressionMatch := regexp.MustCompile(`DATA_COMPRESSION\s*=\s*(\w+)`).FindStringSubmatch(upperText); compressionMatch != nil {
+		index.SpatialConfig.Storage.DataCompression = compressionMatch[1]
+	}
 }
 
 // EnterCreate_view is called when entering a create view parse tree node
