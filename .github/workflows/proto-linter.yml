@@ -1,6 +1,10 @@
 name: Proto linter
 
 on:
+  push:
+    branches:
+      - 'main'
+      - 'release/*.*.*'
   pull_request:
     branches:
       - 'main'
@@ -25,3 +29,4 @@ jobs:
         with:
           input: "proto"
           breaking: false
+          token: ${{ secrets.BUF_TOKEN }}

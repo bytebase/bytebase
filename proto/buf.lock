@@ -2,8 +2,5 @@
 version: v2
 deps:
   - name: buf.build/googleapis/googleapis
-    commit: cc916c31859748a68fd229a3c8d7a2e8
-    digest: b5:3b4e241d18fbebc6b30ff28968527af2cdd618026930d2a9666bbad2868b1aa164d20229477464691bdfd053a77b5c727468039bd1d2b550cb4151ee4c1499fe
-  - name: buf.build/grpc-ecosystem/grpc-gateway
-    commit: a1ecdc58eccd49aa8bea2a7a9022dc27
-    digest: b5:74f71040b7c3dfc67bc5e5cf358eafaaf0ca9a7b623d025e2102cd9659f11f87cd2caadb4cfd1e323fd39f5ac855dbd722a0bf68ec51abfdb5da794728d42714
+    commit: 61b203b9a9164be9a834f58c37be6f62
+    digest: b5:7811a98b35bd2e4ae5c3ac73c8b3d9ae429f3a790da15de188dc98fc2b77d6bb10e45711f14903af9553fa9821dff256054f2e4b7795789265bc476bec2f088c
