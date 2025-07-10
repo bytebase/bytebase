@@ -94,6 +94,7 @@
     - [BatchSyncDatabasesResponse](#bytebase-v1-BatchSyncDatabasesResponse)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
+    - [BoundingBox](#bytebase-v1-BoundingBox)
     - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
     - [ChangedResourceFunction](#bytebase-v1-ChangedResourceFunction)
     - [ChangedResourceProcedure](#bytebase-v1-ChangedResourceProcedure)
@@ -113,6 +114,8 @@
     - [DependencyTable](#bytebase-v1-DependencyTable)
     - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
     - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
+    - [DimensionConstraint](#bytebase-v1-DimensionConstraint)
+    - [DimensionalConfig](#bytebase-v1-DimensionalConfig)
     - [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata)
     - [EventMetadata](#bytebase-v1-EventMetadata)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
@@ -126,6 +129,7 @@
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest)
     - [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse)
+    - [GridLevel](#bytebase-v1-GridLevel)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
     - [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest)
     - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
@@ -139,12 +143,15 @@
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [Secret](#bytebase-v1-Secret)
     - [SequenceMetadata](#bytebase-v1-SequenceMetadata)
+    - [SpatialIndexConfig](#bytebase-v1-SpatialIndexConfig)
+    - [StorageConfig](#bytebase-v1-StorageConfig)
     - [StreamMetadata](#bytebase-v1-StreamMetadata)
     - [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest)
     - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
     - [TableMetadata](#bytebase-v1-TableMetadata)
     - [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
+    - [TessellationConfig](#bytebase-v1-TessellationConfig)
     - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
@@ -1978,6 +1985,24 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
+<a name="bytebase-v1-BoundingBox"></a>
+
+### BoundingBox
+BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| xmin | [double](#double) |  | Minimum X coordinate |
+| ymin | [double](#double) |  | Minimum Y coordinate |
+| xmax | [double](#double) |  | Maximum X coordinate |
+| ymax | [double](#double) |  | Maximum Y coordinate |
+
+
+
+
+
+
 <a name="bytebase-v1-ChangedResourceDatabase"></a>
 
 ### ChangedResourceDatabase
@@ -2340,6 +2365,42 @@ DependencyColumn is the metadata for dependency columns.
 
 
 
+<a name="bytebase-v1-DimensionConstraint"></a>
+
+### DimensionConstraint
+DimensionConstraint defines constraints for a spatial dimension.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| dimension | [string](#string) |  | Dimension name/type (X, Y, Z, M, etc.) |
+| min_value | [double](#double) |  | Minimum value for this dimension |
+| max_value | [double](#double) |  | Maximum value for this dimension |
+| tolerance | [double](#double) |  | Tolerance for this dimension |
+
+
+
+
+
+
+<a name="bytebase-v1-DimensionalConfig"></a>
+
+### DimensionalConfig
+DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| dimensions | [int32](#int32) |  | Number of dimensions (2-4, default 2) |
+| data_type | [string](#string) |  | Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.) |
+| srid | [int32](#int32) |  | Spatial reference system identifier (SRID) |
+| constraints | [DimensionConstraint](#bytebase-v1-DimensionConstraint) | repeated | Coordinate system constraints |
+
+
+
+
+
+
 <a name="bytebase-v1-EnumTypeMetadata"></a>
 
 ### EnumTypeMetadata
@@ -2579,6 +2640,22 @@ For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; schema == &
 
 
 
+<a name="bytebase-v1-GridLevel"></a>
+
+### GridLevel
+GridLevel defines a tessellation grid level with its density.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [int32](#int32) |  | Grid level number (1-4 for SQL Server) |
+| density | [string](#string) |  | Grid density (LOW, MEDIUM, HIGH) |
+
+
+
+
+
+
 <a name="bytebase-v1-IndexMetadata"></a>
 
 ### IndexMetadata
@@ -2601,6 +2678,7 @@ IndexMetadata is the metadata for indexes.
 | parent_index_name | [string](#string) |  | The index name of the parent index. |
 | granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
 | is_constraint | [bool](#bool) |  | It&#39;s a PostgreSQL specific field. The unique constraint and unique index are not the same thing in PostgreSQL. |
+| spatial_config | [SpatialIndexConfig](#bytebase-v1-SpatialIndexConfig) |  | Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc. |
 
 
 
@@ -2865,6 +2943,52 @@ Secret is the secret of the database now.
 
 
 
+<a name="bytebase-v1-SpatialIndexConfig"></a>
+
+### SpatialIndexConfig
+SpatialIndexConfig defines the spatial index configuration for spatial databases.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| method | [string](#string) |  | Spatial indexing method (e.g., &#34;SPATIAL&#34;, &#34;R-TREE&#34;, &#34;GIST&#34;) |
+| tessellation | [TessellationConfig](#bytebase-v1-TessellationConfig) |  | Tessellation configuration for grid-based spatial indexes |
+| storage | [StorageConfig](#bytebase-v1-StorageConfig) |  | Storage and performance configuration |
+| dimensional | [DimensionalConfig](#bytebase-v1-DimensionalConfig) |  | Dimensional configuration |
+
+
+
+
+
+
+<a name="bytebase-v1-StorageConfig"></a>
+
+### StorageConfig
+StorageConfig defines storage and performance parameters for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| fillfactor | [int32](#int32) |  | Fill factor percentage (1-100) |
+| buffering | [string](#string) |  | Buffering mode for PostgreSQL (auto, on, off) |
+| tablespace | [string](#string) |  | Tablespace configuration for Oracle |
+| work_tablespace | [string](#string) |  |  |
+| sdo_level | [int32](#int32) |  |  |
+| commit_interval | [int32](#int32) |  |  |
+| pad_index | [bool](#bool) |  | SQL Server specific parameters |
+| sort_in_tempdb | [string](#string) |  | ON, OFF |
+| drop_existing | [bool](#bool) |  |  |
+| online | [bool](#bool) |  |  |
+| allow_row_locks | [bool](#bool) |  |  |
+| allow_page_locks | [bool](#bool) |  |  |
+| maxdop | [int32](#int32) |  |  |
+| data_compression | [string](#string) |  | NONE, ROW, PAGE |
+
+
+
+
+
+
 <a name="bytebase-v1-StreamMetadata"></a>
 
 ### StreamMetadata
@@ -2988,6 +3112,24 @@ TablePartitionMetadata is the metadata for table partitions.
 | state | [TaskMetadata.State](#bytebase-v1-TaskMetadata-State) |  | The state of the task. |
 | condition | [string](#string) |  | The condition of the task. |
 | definition | [string](#string) |  | The definition of the task. |
+
+
+
+
+
+
+<a name="bytebase-v1-TessellationConfig"></a>
+
+### TessellationConfig
+TessellationConfig defines tessellation parameters for spatial indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| scheme | [string](#string) |  | Tessellation scheme (e.g., &#34;GEOMETRY_GRID&#34;, &#34;GEOGRAPHY_GRID&#34;, &#34;GEOMETRY_AUTO_GRID&#34;) |
+| grid_levels | [GridLevel](#bytebase-v1-GridLevel) | repeated | Grid levels and densities for multi-level tessellation |
+| cells_per_object | [int32](#int32) |  | Number of cells per object (1-8192 for SQL Server) |
+| bounding_box | [BoundingBox](#bytebase-v1-BoundingBox) |  | Bounding box for GEOMETRY tessellation (not used for GEOGRAPHY) |
 
 
 
