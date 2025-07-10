@@ -8857,6 +8857,22 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
                     description: The parsed expression of the condition.
+        BoundingBox:
+            type: object
+            properties:
+                xmin:
+                    type: number
+                    format: double
+                ymin:
+                    type: number
+                    format: double
+                xmax:
+                    type: number
+                    format: double
+                ymax:
+                    type: number
+                    format: double
+            description: BoundingBox defines the bounding box for spatial indexes.
         Candidate_Content:
             type: object
             properties:
@@ -9915,6 +9931,32 @@ components:
             properties:
                 diff:
                     type: string
+        DimensionalConfig:
+            type: object
+            properties:
+                dimensions:
+                    type: integer
+                    description: Number of dimensions (2-4, default 2)
+                    format: int32
+                dataType:
+                    type: string
+                    description: |-
+                        Spatial data type
+                         Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.
+                operatorClass:
+                    type: string
+                    description: |-
+                        PostgreSQL operator class
+                         Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc.
+                layerGtype:
+                    type: string
+                    description: |-
+                        Oracle geometry type constraint
+                         Examples: POINT, LINE, POLYGON, COLLECTION
+                parallelBuild:
+                    type: boolean
+                    description: Parallel index creation
+            description: DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
         EnvironmentSetting:
             type: object
             properties:
@@ -10368,6 +10410,15 @@ components:
                 expiration:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
+        GridLevel:
+            type: object
+            properties:
+                level:
+                    type: integer
+                    format: int32
+                density:
+                    type: string
+            description: GridLevel defines a grid level for spatial tessellation.
         Group:
             type: object
             properties:
@@ -10509,6 +10560,10 @@ components:
                     description: |-
                         It's a PostgreSQL specific field.
                          The unique constraint and unique index are not the same thing in PostgreSQL.
+                spatialConfig:
+                    allOf:
+                        - $ref: '#/components/schemas/SpatialIndexConfig'
+                    description: Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc.
             description: IndexMetadata is the metadata for indexes.
         Instance:
             type: object
@@ -13414,6 +13469,32 @@ components:
                     items:
                         $ref: '#/components/schemas/SheetCommand'
                     description: The start and end position of each command in the sheet statement.
+        SpatialIndexConfig:
+            type: object
+            properties:
+                method:
+                    type: string
+                    description: |-
+                        Index method/type (database-specific)
+                         Examples: "SPATIAL" (MySQL/SQL Server), "GIST"/"SPGIST" (PostgreSQL), "MDSYS.SPATIAL_INDEX_V2" (Oracle)
+                tessellation:
+                    allOf:
+                        - $ref: '#/components/schemas/TessellationConfig'
+                    description: Tessellation configuration (primarily SQL Server)
+                storage:
+                    allOf:
+                        - $ref: '#/components/schemas/StorageConfig'
+                    description: Storage and performance parameters
+                dimensional:
+                    allOf:
+                        - $ref: '#/components/schemas/DimensionalConfig'
+                    description: Dimensional and constraint parameters
+                engineSpecific:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: Database-specific parameters (stored as key-value pairs for extensibility)
+            description: SpatialIndexConfig is the configuration for spatial indexes across different database engines.
         Stage:
             type: object
             properties:
@@ -13451,6 +13532,45 @@ components:
                         $ref: '#/components/schemas/GoogleProtobufAny'
                     description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
             description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        StorageConfig:
+            type: object
+            properties:
+                fillfactor:
+                    type: integer
+                    description: PostgreSQL parameters
+                    format: int32
+                buffering:
+                    type: string
+                tablespace:
+                    type: string
+                    description: Oracle parameters
+                workTablespace:
+                    type: string
+                sdoLevel:
+                    type: integer
+                    format: int32
+                commitInterval:
+                    type: integer
+                    format: int32
+                padIndex:
+                    type: boolean
+                    description: SQL Server parameters
+                sortInTempdb:
+                    type: string
+                dropExisting:
+                    type: boolean
+                online:
+                    type: boolean
+                allowRowLocks:
+                    type: boolean
+                allowPageLocks:
+                    type: boolean
+                maxdop:
+                    type: integer
+                    format: int32
+                dataCompression:
+                    type: string
+            description: StorageConfig defines storage and performance parameters for spatial indexes.
         Subscription:
             type: object
             properties:
@@ -13978,6 +14098,28 @@ components:
                     description: 'Format: projects/{project}/sheets/{sheet}'
                 schemaVersion:
                     type: string
+        TessellationConfig:
+            type: object
+            properties:
+                scheme:
+                    type: string
+                    description: |-
+                        Tessellation scheme
+                         Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
+                boundingBox:
+                    allOf:
+                        - $ref: '#/components/schemas/BoundingBox'
+                    description: Bounding box for GEOMETRY indexes (SQL Server)
+                gridLevels:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GridLevel'
+                    description: Grid level configuration (SQL Server)
+                cellsPerObject:
+                    type: integer
+                    description: Cells per object (SQL Server)
+                    format: int32
+            description: TessellationConfig defines tessellation parameters for spatial indexes.
         TestIdentityProviderRequest:
             type: object
             properties:
